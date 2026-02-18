@@ -1,2 +1,0 @@
-astraweave-nav/src/lib.rs:438:39: replace < with == in NavMesh::bake
-astraweave-nav/src/lib.rs:438:39: replace < with <= in NavMesh::bake

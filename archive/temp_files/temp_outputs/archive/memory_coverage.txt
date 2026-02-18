@@ -1,0 +1,622 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-embeddings v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-embeddings)
+warning: unexpected `cfg` condition value: `small_rng`
+  --> astraweave-embeddings\src\client.rs:98:7
+   |
+98 | #[cfg(feature = "small_rng")]
+   |       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `candle`, `candle-core`, `candle-nn`, `candle-transformers`, `default`, `hnsw`, `hnsw_rs`, `http`, `onnx`, `ort`, and `reqwest`
+   = help: consider adding `small_rng` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `anyhow`
+ --> astraweave-embeddings\src\client.rs:8:14
+  |
+8 | use anyhow::{anyhow, Result};
+  |              ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `StoredVector`
+ --> astraweave-embeddings\src\utils.rs:7:37
+  |
+7 | use crate::{Memory, MemoryCategory, StoredVector};
+  |                                     ^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-embeddings\src\lib.rs:48:5
+   |
+48 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+  --> astraweave-embeddings\src\client.rs:77:29
+   |
+77 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen_range`: Renamed to `random_range`
+  --> astraweave-embeddings\src\client.rs:81:32
+   |
+81 |             embedding.push(rng.gen_range(-1.0..1.0));
+   |                                ^^^^^^^^^
+
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+warning: `astraweave-embeddings` (lib) generated 6 warnings (run `cargo fix --lib -p astraweave-embeddings` to apply 3 suggestions)
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling astraweave-context v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+   Compiling astraweave-prompts v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\src\context.rs:5:5
+  |
+5 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-prompts\src\lib.rs:62:5
+   |
+62 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `path`
+   --> astraweave-prompts\src\library.rs:111:32
+    |
+111 |     pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: fields `name` and `metadata` are never read
+  --> astraweave-prompts\src\library.rs:14:5
+   |
+12 | pub struct TemplateLibrary {
+   |            --------------- fields in this struct
+13 |     /// Library name
+14 |     name: String,
+   |     ^^^^
+...
+18 |     metadata: LibraryMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateLibrary` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `metadata` is never read
+  --> astraweave-prompts\src\library.rs:58:5
+   |
+52 | pub struct TemplateCollection {
+   |            ------------------ field in this struct
+...
+58 |     metadata: CollectionMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateCollection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `config` is never read
+  --> astraweave-prompts\src\template.rs:78:5
+   |
+76 | pub struct TemplateProcessor {
+   |            ----------------- field in this struct
+77 |     /// Processing configuration
+78 |     config: ProcessorConfig,
+   |     ^^^^^^
+   |
+   = note: `TemplateProcessor` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: unused `Result` that must be used
+  --> astraweave-prompts\src\engine.rs:88:9
+   |
+88 | /         self.inner
+89 | |             .register_template(name.to_string(), template.template);
+   | |___________________________________________________________________^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+88 |         let _ = self.inner
+   |         +++++++
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+   Compiling astraweave-rag v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+warning: unused import: `MemoryCategory`
+ --> astraweave-rag\src\consolidation.rs:6:37
+  |
+6 | use astraweave_embeddings::{Memory, MemoryCategory};
+  |                                     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-rag\src\consolidation.rs:8:5
+  |
+8 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ConversationHistory`
+  --> astraweave-rag\src\pipeline.rs:12:26
+   |
+12 | use astraweave_context::{ConversationHistory, TokenCounter};
+   |                          ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-rag\src\lib.rs:66:5
+   |
+66 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-rag\src\pipeline.rs:623:37
+    |
+623 |                 let mut rng = rand::thread_rng();
+    |                                     ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: unused variable: `duration`
+   --> astraweave-rag\src\pipeline.rs:198:17
+    |
+198 |             let duration = start_time.elapsed().as_millis() as f32;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_duration`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: method `should_forget` is never used
+   --> astraweave-rag\src\forgetting.rs:152:8
+    |
+86  | impl ForgettingEngine {
+    | --------------------- method in this implementation
+...
+152 |     fn should_forget(&self, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: field `query_hash` is never read
+   --> astraweave-rag\src\pipeline.rs:122:5
+    |
+119 | struct CachedResult {
+    |        ------------ field in this struct
+...
+122 |     query_hash: u64,
+    |     ^^^^^^^^^^
+    |
+    = note: `CachedResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `astraweave-prompts` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-prompts` to apply 2 suggestions)
+   Compiling astraweave-memory v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-memory)
+warning: unused imports: `MemoryContent`, `MemoryMetadata`, and `MemorySource`
+  --> astraweave-memory\src\memory_manager.rs:12:28
+   |
+12 |     Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+   |                            ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\consolidation.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> astraweave-memory\src\consolidation.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\forgetting.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\compression.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\retrieval.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\sharing.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `astraweave-context` (lib) generated 13 warnings (run `cargo fix --lib -p astraweave-context` to apply 6 suggestions)
+warning: field `detector` is never read
+   --> astraweave-memory\src\dynamic_weighting.rs:110:5
+    |
+106 | pub struct AdaptiveWeightManager {
+    |            --------------------- field in this struct
+...
+110 |     detector: PatternDetector,
+    |     ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: `astraweave-rag` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-rag` to apply 4 suggestions)
+warning: unused import: `chrono::Utc`
+   --> astraweave-memory\src\retrieval.rs:394:9
+    |
+394 |     use chrono::Utc;
+    |         ^^^^^^^^^^^
+
+warning: unused variable: `weight_after_update`
+   --> astraweave-memory\src\dynamic_weighting.rs:424:13
+    |
+424 |         let weight_after_update = manager.get_weight(BehaviorNodeType::Combat);
+    |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_weight_after_update`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-memory` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-memory` to apply 7 suggestions)
+warning: unused variable: `adapted_weight`
+   --> astraweave-memory\tests\adaptive_behavior_tests.rs:171:9
+    |
+171 |     let adapted_weight = manager.get_weight(BehaviorNodeType::Combat);
+    |         ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_adapted_weight`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `combat_weight_phase1`
+   --> astraweave-memory\tests\adaptive_behavior_tests.rs:409:9
+    |
+409 |     let combat_weight_phase1 = manager.get_weight(BehaviorNodeType::Combat);
+    |         ^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_combat_weight_phase1`
+
+warning: unused import: `PreferenceProfile`
+ --> astraweave-memory\tests\pattern_tests.rs:8:55
+  |
+8 |     MemoryStorage, PatternDetector, PlaystylePattern, PreferenceProfile, ProfileBuilder,
+  |                                                       ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `category`
+   --> astraweave-memory\tests\pattern_tests.rs:296:13
+    |
+296 |         let category = if i < 10 {
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_category`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-memory` (test "adaptive_behavior_tests") generated 2 warnings
+warning: `astraweave-memory` (test "pattern_tests") generated 2 warnings (run `cargo fix --test "pattern_tests"` to apply 1 suggestion)
+warning: `astraweave-memory` (lib test) generated 10 warnings (8 duplicates) (run `cargo fix --lib -p astraweave-memory --tests` to apply 1 suggestion)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 19s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_memory-ca3cf75232a69804.exe)
+
+running 86 tests
+test compression::tests::test_memory_compression ... ok
+test compression::tests::test_should_not_compress_permanent ... ok
+test dynamic_weighting::tests::test_manager_creation ... ok
+test dynamic_weighting::tests::test_node_weight_calculation ... ok
+test compression::tests::test_compression_engine_creation ... ok
+test compression::tests::test_compression_stats ... ok
+test consolidation::tests::test_conceptual_similarity ... ok
+test consolidation::tests::test_consolidation_engine ... ok
+test dynamic_weighting::tests::test_node_weight_reset ... ok
+test dynamic_weighting::tests::test_pattern_to_node_mapping ... ok
+test episode::tests::test_action_counting ... ok
+test dynamic_weighting::tests::test_node_weight_clamping ... ok
+test dynamic_weighting::tests::test_node_weight_creation ... ok
+test episode::tests::test_average_player_health ... ok
+test dynamic_weighting::tests::test_reset_weights ... ok
+test dynamic_weighting::tests::test_weight_adaptation ... ok
+test episode::tests::test_episode_observations ... ok
+test episode::tests::test_episode_to_memory_conversion ... ok
+test episode::tests::test_episode_completion ... ok
+test episode::tests::test_episode_creation ... ok
+test episode::tests::test_outcome_quality_score ... ok
+test episode_recorder::tests::test_abort_all_episodes ... ok
+test episode_recorder::tests::test_abort_episode ... ok
+test episode_recorder::tests::test_complete_all_episodes ... ok
+test episode_recorder::tests::test_flush_timer ... ok
+test episode_recorder::tests::test_get_mutable_episode ... ok
+test episode_recorder::tests::test_end_episode ... ok
+test episode_recorder::tests::test_episode_replacement ... ok
+test episode_recorder::tests::test_recorder_creation ... ok
+test forgetting::tests::test_memory_strength_decay ... ok
+test episode_recorder::tests::test_start_episode ... ok
+test episode_recorder::tests::test_multiple_companions ... ok
+test episode_recorder::tests::test_record_observation ... ok
+test episode_recorder::tests::test_tag_active_episode ... ok
+test forgetting::tests::test_forgetting_engine_creation ... ok
+test forgetting::tests::test_permanent_memory_protection ... ok
+test learned_behavior_validator::tests::test_add_safety_rule ... ok
+test forgetting::tests::test_spaced_repetition_effect ... ok
+test learned_behavior_validator::tests::test_safety_rule_creation ... ok
+test learned_behavior_validator::tests::test_validation_result_creation ... ok
+test learned_behavior_validator::tests::test_clear_cache ... ok
+test learned_behavior_validator::tests::test_validation_with_insufficient_data ... ok
+test learned_behavior_validator::tests::test_batch_validation ... ok
+test learned_behavior_validator::tests::test_validator_with_thresholds ... ok
+test learned_behavior_validator::tests::test_validation_caching ... ok
+test learned_behavior_validator::tests::test_validator_creation ... ok
+test learned_behavior_validator::tests::test_validation_with_sufficient_data ... ok
+test memory_manager::tests::test_memory_cleanup ... ok
+test memory_manager::tests::test_store_and_retrieve_memory ... ok
+test memory_manager::tests::test_memory_clustering ... ok
+test memory_types::tests::test_cluster_management ... ok
+test memory_manager::tests::test_memory_manager_creation ... ok
+test memory_types::tests::test_memory_strength_calculation ... ok
+test pattern_detection::tests::test_cautious_pattern_detection ... ok
+test memory_types::tests::test_retrieval_context_matching ... ok
+test pattern_detection::tests::test_action_sequence_extraction ... ok
+test memory_types::tests::test_memory_creation ... ok
+test pattern_detection::tests::test_aggressive_pattern_detection ... ok
+test memory_types::tests::test_memory_associations ... ok
+test pattern_detection::tests::test_detector_creation ... ok
+test pattern_detection::tests::test_efficient_pattern_detection ... ok
+test pattern_detection::tests::test_explorative_pattern_detection ... ok
+test pattern_detection::tests::test_pattern_confidence_calculation ... ok
+test preference_profile::tests::test_action_recommendation ... ok
+test preference_profile::tests::test_builder_creation ... ok
+test preference_profile::tests::test_primary_pattern_extraction ... ok
+test preference_profile::tests::test_learning_confidence_calculation ... ok
+test pattern_detection::tests::test_social_pattern_detection ... ok
+test preference_profile::tests::test_preferred_category_extraction ... ok
+test preference_profile::tests::test_satisfaction_prediction ... ok
+test retrieval::tests::test_memory_retrieval ... ok
+test retrieval::tests::test_find_similar_memories ... ok
+test retrieval::tests::test_retrieval_engine_creation ... ok
+test retrieval::tests::test_semantic_similarity ... ok
+test sharing::tests::test_audit_logging ... ok
+test sharing::tests::test_memory_sharing ... ok
+test sharing::tests::test_sharing_validation ... ok
+test sharing::tests::test_sharing_engine_creation ... ok
+test storage::tests::test_delete ... ok
+test storage::tests::test_importance_query ... ok
+test storage::tests::test_query_by_type ... ok
+test preference_profile::tests::test_profile_with_storage ... ok
+test storage::tests::test_stats ... ok
+test storage::tests::test_storage_creation ... ok
+test storage::tests::test_store_and_retrieve ... ok
+test storage::tests::test_tags ... ok
+
+test result: ok. 86 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running tests\adaptive_behavior_tests.rs (target\llvm-cov-target\debug\deps\adaptive_behavior_tests-f4d1a5147f1a283f.exe)
+
+running 12 tests
+test test_validator_insufficient_data ... ok
+test test_validator_with_poor_history ... ok
+test test_validator_with_good_history ... ok
+test test_validator_custom_safety_rule ... ok
+test test_validator_caching ... ok
+test test_validation_alternatives ... ok
+test test_weight_adaptation_cautious_playstyle ... ok
+test test_integrated_adaptation_and_validation ... ok
+test test_weight_evolution_over_time ... ok
+test test_weight_adaptation_aggressive_playstyle ... ok
+test test_weight_reset ... ok
+test test_batch_validation ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests\episode_tests.rs (target\llvm-cov-target\debug\deps\episode_tests-2599c9445211e792.exe)
+
+running 9 tests
+test test_episode_analysis_helpers ... ok
+test test_episode_category_display ... ok
+test test_graceful_shutdown_scenario ... ok
+test test_multiple_companion_episodes ... ok
+test test_action_result_multipliers ... ok
+test test_end_to_end_episode_workflow ... ok
+test test_episode_emotional_context_mapping ... ok
+test test_outcome_quality_scoring ... ok
+test test_episode_to_memory_conversion ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\pattern_tests.rs (target\llvm-cov-target\debug\deps\pattern_tests-10cda974ee58d452.exe)
+
+running 12 tests
+test test_category_distribution ... ok
+test test_category_preference_detection ... ok
+test test_pattern_confidence_threshold ... ok
+test test_pattern_detection_from_storage ... ok
+test test_action_recommendation ... ok
+test test_action_sequence_detection ... ok
+test test_companion_effectiveness_analysis ... ok
+test test_learning_confidence_growth ... ok
+test test_profile_convergence ... ok
+test test_social_pattern_detection ... ok
+test test_preference_profile_building ... ok
+test test_primary_pattern_identification ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.93s
+
+     Running tests\property_memory.rs (target\llvm-cov-target\debug\deps\property_memory-a5135318687064ad.exe)
+
+running 1 test
+test test_dynamic_memory_update ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\storage_tests.rs (target\llvm-cov-target\debug\deps\storage_tests-3ff63890dc5fe67f.exe)
+
+running 14 tests
+test test_embedding_storage ... ok
+test test_episode_to_memory_storage ... ok
+test test_prune_operations ... ok
+test test_persistence_across_instances ... ok
+test test_basic_crud_operations ... ok
+test test_multiple_episode_storage ... ok
+test test_optimize_operation ... ok
+test test_query_by_tag ... ok
+test test_query_by_type_and_importance ... ok
+test test_query_important ... ok
+test test_storage_stats ... ok
+test test_query_by_type ... ok
+test test_storage_initialization ... ok
+test test_query_recent ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+warning: 2 functions have mismatched data
+Filename                          Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+compression.rs                        318               121    61.95%          26                12    53.85%         190                69    63.68%           0                 0         -
+consolidation.rs                      258                28    89.15%          15                 1    93.33%         160                21    86.88%           0                 0         -
+dynamic_weighting.rs                  342                38    88.89%          28                 6    78.57%         255                31    87.84%           0                 0         -
+episode.rs                            419                 9    97.85%          38                 1    97.37%         334                 3    99.10%           0                 0         -
+episode_recorder.rs                   434                 9    97.93%          32                 2    93.75%         224                 5    97.77%           0                 0         -
+forgetting.rs                         282               117    58.51%          14                 6    57.14%         241                85    64.73%           0                 0         -
+learned_behavior_validator.rs         465                 6    98.71%          31                 1    96.77%         328                 3    99.09%           0                 0         -
+memory_manager.rs                     356                84    76.40%          26                10    61.54%         220                62    71.82%           0                 0         -
+memory_types.rs                       326                43    86.81%          24                 4    83.33%         250                28    88.80%           0                 0         -
+pattern_detection.rs                  533                61    88.56%          30                 2    93.33%         363                31    91.46%           0                 0         -
+persona.rs                             30                11    63.33%           6                 4    33.33%          30                11    63.33%           0                 0         -
+preference_profile.rs                 389                20    94.86%          26                 2    92.31%         351                10    97.15%           0                 0         -
+retrieval.rs                          411                94    77.13%          22                 4    81.82%         277                57    79.42%           0                 0         -
+sharing.rs                            344               107    68.90%          18                 3    83.33%         295                96    67.46%           0                 0         -
+storage.rs                            613                68    88.91%          43                 1    97.67%         371                25    93.26%           0                 0         -
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                5520               816    85.22%         379                59    84.43%        3889               537    86.19%           0                 0         -

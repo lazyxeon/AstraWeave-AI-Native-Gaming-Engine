@@ -1,5 +1,0 @@
-astraweave-core/src/perception.rs:53:76: replace > with >= in build_snapshot
-astraweave-core/src/perception.rs:53:35: replace - with + in build_snapshot
-astraweave-core/src/perception.rs:53:60: replace - with + in build_snapshot
-astraweave-core/src/schema.rs:329:9: replace PlanIntent::empty -> Self with Default::default()
-astraweave-core/src/schema.rs:464:41: delete - in CardinalDirection::to_unit_vector

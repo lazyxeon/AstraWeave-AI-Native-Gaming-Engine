@@ -1,0 +1,336 @@
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling astraweave-prompts v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\src\context.rs:5:5
+  |
+5 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-prompts\src\lib.rs:62:5
+   |
+62 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `path`
+   --> astraweave-prompts\src\library.rs:111:32
+    |
+111 |     pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: fields `name` and `metadata` are never read
+  --> astraweave-prompts\src\library.rs:14:5
+   |
+12 | pub struct TemplateLibrary {
+   |            --------------- fields in this struct
+13 |     /// Library name
+14 |     name: String,
+   |     ^^^^
+...
+18 |     metadata: LibraryMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateLibrary` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `metadata` is never read
+  --> astraweave-prompts\src\library.rs:58:5
+   |
+52 | pub struct TemplateCollection {
+   |            ------------------ field in this struct
+...
+58 |     metadata: CollectionMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateCollection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `config` is never read
+  --> astraweave-prompts\src\template.rs:78:5
+   |
+76 | pub struct TemplateProcessor {
+   |            ----------------- field in this struct
+77 |     /// Processing configuration
+78 |     config: ProcessorConfig,
+   |     ^^^^^^
+   |
+   = note: `TemplateProcessor` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused `Result` that must be used
+  --> astraweave-prompts\src\engine.rs:88:9
+   |
+88 | /         self.inner
+89 | |             .register_template(name.to_string(), template.template);
+   | |___________________________________________________________________^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+88 |         let _ = self.inner
+   |         +++++++
+
+warning: `astraweave-prompts` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-prompts` to apply 2 suggestions)
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: unused import: `PromptEngine`
+ --> astraweave-prompts\benches\prompts_benchmarks.rs:2:41
+  |
+2 | use astraweave_prompts::{PromptContext, PromptEngine, PromptTemplate, TemplateEngine};
+  |                                         ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-prompts` (bench "prompts_benchmarks") generated 1 warning (run `cargo fix --bench "prompts_benchmarks"` to apply 1 suggestion)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1m 29s
+     Running benches\prompts_benchmarks.rs (target\release\deps\prompts_benchmarks-3f5b05fd9698cb4e.exe)
+Gnuplot not found, using plotters backend
+Benchmarking template_creation_simple
+Benchmarking template_creation_simple: Warming up for 3.0000 s
+Benchmarking template_creation_simple: Collecting 100 samples in estimated 5.0006 s (22M iterations)
+Benchmarking template_creation_simple: Analyzing
+template_creation_simple
+                        time:   [217.73 ns 227.73 ns 237.19 ns]
+Found 21 outliers among 100 measurements (21.00%)
+  8 (8.00%) low severe
+  2 (2.00%) low mild
+  9 (9.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking template_creation_complex
+Benchmarking template_creation_complex: Warming up for 3.0000 s
+Benchmarking template_creation_complex: Collecting 100 samples in estimated 5.0003 s (10.0M iterations)
+Benchmarking template_creation_complex: Analyzing
+template_creation_complex
+                        time:   [472.01 ns 477.64 ns 485.09 ns]
+Found 18 outliers among 100 measurements (18.00%)
+  2 (2.00%) low mild
+  1 (1.00%) high mild
+  15 (15.00%) high severe
+
+Benchmarking template_creation_dialogue
+Benchmarking template_creation_dialogue: Warming up for 3.0000 s
+Benchmarking template_creation_dialogue: Collecting 100 samples in estimated 5.0003 s (14M iterations)
+Benchmarking template_creation_dialogue: Analyzing
+template_creation_dialogue
+                        time:   [367.91 ns 373.72 ns 380.73 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking context_creation_simple
+Benchmarking context_creation_simple: Warming up for 3.0000 s
+Benchmarking context_creation_simple: Collecting 100 samples in estimated 5.0012 s (8.4M iterations)
+Benchmarking context_creation_simple: Analyzing
+context_creation_simple time:   [565.69 ns 598.77 ns 633.77 ns]
+Found 15 outliers among 100 measurements (15.00%)
+  4 (4.00%) low mild
+  6 (6.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking context_creation_complex
+Benchmarking context_creation_complex: Warming up for 3.0000 s
+Benchmarking context_creation_complex: Collecting 100 samples in estimated 5.0155 s (1.2M iterations)
+Benchmarking context_creation_complex: Analyzing
+context_creation_complex
+                        time:   [3.6816 ┬╡s 3.7278 ┬╡s 3.7888 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking template_render_simple
+Benchmarking template_render_simple: Warming up for 3.0000 s
+Benchmarking template_render_simple: Collecting 100 samples in estimated 5.0008 s (2.6M iterations)
+Benchmarking template_render_simple: Analyzing
+template_render_simple  time:   [1.8996 ┬╡s 1.9082 ┬╡s 1.9170 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking template_render_complex
+Benchmarking template_render_complex: Warming up for 3.0000 s
+Benchmarking template_render_complex: Collecting 100 samples in estimated 5.0003 s (313k iterations)
+Benchmarking template_render_complex: Analyzing
+template_render_complex time:   [16.776 ┬╡s 17.210 ┬╡s 17.602 ┬╡s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) low mild
+
+Benchmarking template_render_dialogue
+Benchmarking template_render_dialogue: Warming up for 3.0000 s
+Benchmarking template_render_dialogue: Collecting 100 samples in estimated 5.0135 s (677k iterations)
+Benchmarking template_render_dialogue: Analyzing
+template_render_dialogue
+                        time:   [7.0220 ┬╡s 7.1017 ┬╡s 7.1962 ┬╡s]
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking engine_creation
+Benchmarking engine_creation: Warming up for 3.0000 s
+Benchmarking engine_creation: Collecting 100 samples in estimated 5.0000 s (479M iterations)
+Benchmarking engine_creation: Analyzing
+engine_creation         time:   [11.622 ns 11.989 ns 12.419 ns]
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking engine_register_template/1
+Benchmarking engine_register_template/1: Warming up for 3.0000 s
+Benchmarking engine_register_template/1: Collecting 100 samples in estimated 5.0041 s (5.0M iterations)
+Benchmarking engine_register_template/1: Analyzing
+engine_register_template/1
+                        time:   [761.78 ns 787.11 ns 810.43 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) low mild
+  1 (1.00%) high severe
+Benchmarking engine_register_template/10
+Benchmarking engine_register_template/10: Warming up for 3.0000 s
+Benchmarking engine_register_template/10: Collecting 100 samples in estimated 5.0083 s (611k iterations)
+Benchmarking engine_register_template/10: Analyzing
+engine_register_template/10
+                        time:   [7.2489 ┬╡s 7.3927 ┬╡s 7.6030 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  6 (6.00%) high severe
+Benchmarking engine_register_template/50
+Benchmarking engine_register_template/50: Warming up for 3.0000 s
+Benchmarking engine_register_template/50: Collecting 100 samples in estimated 5.1411 s (126k iterations)
+Benchmarking engine_register_template/50: Analyzing
+engine_register_template/50
+                        time:   [35.556 ┬╡s 35.931 ┬╡s 36.373 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking engine_render
+Benchmarking engine_render: Warming up for 3.0000 s
+Benchmarking engine_render: Collecting 100 samples in estimated 5.0000 s (2.1M iterations)
+Benchmarking engine_render: Analyzing
+engine_render           time:   [2.3361 ┬╡s 2.3690 ┬╡s 2.4050 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking batch_render/10
+Benchmarking batch_render/10: Warming up for 3.0000 s
+Benchmarking batch_render/10: Collecting 100 samples in estimated 5.0651 s (258k iterations)
+Benchmarking batch_render/10: Analyzing
+batch_render/10         time:   [12.086 ┬╡s 13.158 ┬╡s 14.457 ┬╡s]
+Benchmarking batch_render/50
+Benchmarking batch_render/50: Warming up for 3.0000 s
+Benchmarking batch_render/50: Collecting 100 samples in estimated 5.0440 s (50k iterations)
+Benchmarking batch_render/50: Analyzing
+batch_render/50         time:   [103.02 ┬╡s 105.32 ┬╡s 108.13 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking batch_render/100
+Benchmarking batch_render/100: Warming up for 3.0000 s
+Benchmarking batch_render/100: Collecting 100 samples in estimated 5.1897 s (25k iterations)
+Benchmarking batch_render/100: Analyzing
+batch_render/100        time:   [197.45 ┬╡s 198.76 ┬╡s 200.24 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking context_add_variables/5
+Benchmarking context_add_variables/5: Warming up for 3.0000 s
+Benchmarking context_add_variables/5: Collecting 100 samples in estimated 5.0031 s (2.3M iterations)
+Benchmarking context_add_variables/5: Analyzing
+context_add_variables/5 time:   [1.7465 ┬╡s 1.8455 ┬╡s 1.9449 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking context_add_variables/10
+Benchmarking context_add_variables/10: Warming up for 3.0000 s
+Benchmarking context_add_variables/10: Collecting 100 samples in estimated 5.0113 s (1.2M iterations)
+Benchmarking context_add_variables/10: Analyzing
+context_add_variables/10
+                        time:   [3.1820 ┬╡s 3.3401 ┬╡s 3.4924 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  7 (7.00%) low severe
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+Benchmarking context_add_variables/20
+Benchmarking context_add_variables/20: Warming up for 3.0000 s
+Benchmarking context_add_variables/20: Collecting 100 samples in estimated 5.0202 s (545k iterations)
+Benchmarking context_add_variables/20: Analyzing
+context_add_variables/20
+                        time:   [7.2524 ┬╡s 7.4069 ┬╡s 7.6050 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking context_to_string_map
+Benchmarking context_to_string_map: Warming up for 3.0000 s
+Benchmarking context_to_string_map: Collecting 100 samples in estimated 5.0090 s (1.3M iterations)
+Benchmarking context_to_string_map: Analyzing
+context_to_string_map   time:   [4.1018 ┬╡s 4.3992 ┬╡s 4.7997 ┬╡s]
+Found 17 outliers among 100 measurements (17.00%)
+  5 (5.00%) high mild
+  12 (12.00%) high severe
+
+Benchmarking template_clone
+Benchmarking template_clone: Warming up for 3.0000 s
+Benchmarking template_clone: Collecting 100 samples in estimated 5.0004 s (26M iterations)
+Benchmarking template_clone: Analyzing
+template_clone          time:   [190.07 ns 196.87 ns 203.28 ns]
+Found 13 outliers among 100 measurements (13.00%)
+  1 (1.00%) low severe
+  7 (7.00%) low mild
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking context_clone
+Benchmarking context_clone: Warming up for 3.0000 s
+Benchmarking context_clone: Collecting 100 samples in estimated 5.0091 s (2.2M iterations)
+Benchmarking context_clone: Analyzing
+context_clone           time:   [2.1725 ┬╡s 2.2031 ┬╡s 2.2421 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking template_render_map
+Benchmarking template_render_map: Warming up for 3.0000 s
+Benchmarking template_render_map: Collecting 100 samples in estimated 5.0021 s (1.9M iterations)
+Benchmarking template_render_map: Analyzing
+template_render_map     time:   [2.5544 ┬╡s 2.5700 ┬╡s 2.5867 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+

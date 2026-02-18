@@ -1,0 +1,13 @@
+warning: struct `Name` is never constructed
+   --> astraweave-ecs\src\system_param.rs:316:12
+    |
+316 |     struct Name {
+    |            ^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-ecs` (lib test) generated 1 warning
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.74s
+     Running unittests src\lib.rs (target\debug\deps\astraweave_ecs-5d8a5c39ef635cb5.exe)
+error: Unrecognized option: 'no-fail-fast'
+error: test failed, to rerun pass `-p astraweave-ecs --lib`

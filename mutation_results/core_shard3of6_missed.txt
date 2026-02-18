@@ -1,3 +1,0 @@
-astraweave-core/src/schema.rs:966:13: delete match arm Self::Revive{ally_id} in ActionStep::target_entity
-astraweave-core/src/schema.rs:967:13: delete match arm Self::Heal{target_id} in ActionStep::target_entity
-astraweave-core/src/tools.rs:109:16: replace != with == in path_exists

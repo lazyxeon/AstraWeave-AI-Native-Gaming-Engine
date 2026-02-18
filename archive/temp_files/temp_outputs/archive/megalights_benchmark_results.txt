@@ -1,0 +1,138 @@
+warning: unused imports: `MeshVertex` and `compute_tangents`
+ --> astraweave-render\src\mesh_gltf.rs:1:19
+  |
+1 | use crate::mesh::{compute_tangents, CpuMesh, MeshVertex};
+  |                   ^^^^^^^^^^^^^^^^           ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Vec2`, `Vec3`, and `Vec4`
+ --> astraweave-render\src\mesh_obj.rs:3:12
+  |
+3 | use glam::{Vec2, Vec3, Vec4};
+  |            ^^^^  ^^^^  ^^^^
+
+warning: unused import: `MeshVertex`
+ --> astraweave-render\src\mesh_obj.rs:5:28
+  |
+5 | use crate::mesh::{CpuMesh, MeshVertex};
+  |                            ^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> astraweave-render\src\terrain.rs:250:9
+    |
+250 |     let mut generator = WorldGenerator::new(world_config.clone());
+    |         ----^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: fields `light_counts_buffer` and `light_offsets_buffer` are never read
+  --> astraweave-render\src\clustered_forward.rs:86:5
+   |
+76 | pub struct ClusteredForwardRenderer {
+   |            ------------------------ fields in this struct
+...
+86 |     light_counts_buffer: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^^^^^^^
+87 |     #[cfg(feature = "megalights")]
+88 |     light_offsets_buffer: wgpu::Buffer,
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: multiple fields are never read
+   --> astraweave-render\src\renderer.rs:301:5
+    |
+289 | pub struct Renderer {
+    |            -------- fields in this struct
+...
+301 |     post_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^
+...
+310 |     hdr_aux_tex: wgpu::Texture,
+    |     ^^^^^^^^^^^
+...
+314 |     fx_gi_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+315 |     #[cfg(feature = "postfx")]
+316 |     fx_gi_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+317 |     #[cfg(feature = "postfx")]
+318 |     fx_ao_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+319 |     #[cfg(feature = "postfx")]
+320 |     fx_ao_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+321 |     #[cfg(feature = "postfx")]
+322 |     post_fx_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^^^
+...
+337 |     bloom_mip_textures: Vec<wgpu::Texture>,
+    |     ^^^^^^^^^^^^^^^^^^
+...
+341 |     bloom_threshold_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+342 |     #[cfg(feature = "postfx")]
+343 |     bloom_intensity_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+344 |     #[cfg(feature = "postfx")]
+345 |     bloom_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^
+
+warning: `astraweave-render` (lib) generated 6 warnings (run `cargo fix --lib -p astraweave-render` to apply 4 suggestions)
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:15:17
+   |
+15 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+   |                 ^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:77:25
+   |
+77 |                         black_box(&lights),
+   |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:84:21
+   |
+84 |                     black_box(offsets);
+   |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:137:68
+    |
+137 |                     let result = megalights.dispatch(&mut encoder, black_box(count as u32));
+    |                                                                    ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:138:21
+    |
+138 |                     black_box(result).expect("GPU dispatch failed");
+    |                     ^^^^^^^^^
+
+warning: unused `std::result::Result` that must be used
+   --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:142:21
+    |
+142 |                     device.poll(wgpu::MaintainBase::Wait);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+142 |                     let _ = device.poll(wgpu::MaintainBase::Wait);
+    |                     +++++++
+
+warning: `astraweave-render` (bench "cluster_gpu_vs_cpu") generated 6 warnings
+    Finished `bench` profile [optimized + debuginfo] target(s) in 18.21s
+     Running benches\cluster_gpu_vs_cpu.rs (target\release\deps\cluster_gpu_vs_cpu-bbc4d3fac2638bfd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

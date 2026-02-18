@@ -1,0 +1,801 @@
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\src\context.rs:5:5
+  |
+5 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-prompts\src\lib.rs:62:5
+   |
+62 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `path`
+   --> astraweave-prompts\src\library.rs:111:32
+    |
+111 |     pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: fields `name` and `metadata` are never read
+  --> astraweave-prompts\src\library.rs:14:5
+   |
+12 | pub struct TemplateLibrary {
+   |            --------------- fields in this struct
+13 |     /// Library name
+14 |     name: String,
+   |     ^^^^
+...
+18 |     metadata: LibraryMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateLibrary` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `metadata` is never read
+  --> astraweave-prompts\src\library.rs:58:5
+   |
+52 | pub struct TemplateCollection {
+   |            ------------------ field in this struct
+...
+58 |     metadata: CollectionMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateCollection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `config` is never read
+  --> astraweave-prompts\src\template.rs:78:5
+   |
+76 | pub struct TemplateProcessor {
+   |            ----------------- field in this struct
+77 |     /// Processing configuration
+78 |     config: ProcessorConfig,
+   |     ^^^^^^
+   |
+   = note: `TemplateProcessor` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused `Result` that must be used
+  --> astraweave-prompts\src\engine.rs:88:9
+   |
+88 | /         self.inner
+89 | |             .register_template(name.to_string(), template.template);
+   | |___________________________________________________________________^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+88 |         let _ = self.inner
+   |         +++++++
+
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+warning: unexpected `cfg` condition value: `small_rng`
+  --> astraweave-embeddings\src\client.rs:98:7
+   |
+98 | #[cfg(feature = "small_rng")]
+   |       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `candle`, `candle-core`, `candle-nn`, `candle-transformers`, `default`, `hnsw`, `hnsw_rs`, `http`, `onnx`, `ort`, and `reqwest`
+   = help: consider adding `small_rng` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `anyhow`
+ --> astraweave-embeddings\src\client.rs:8:14
+  |
+8 | use anyhow::{anyhow, Result};
+  |              ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `StoredVector`
+ --> astraweave-embeddings\src\utils.rs:7:37
+  |
+7 | use crate::{Memory, MemoryCategory, StoredVector};
+  |                                     ^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-embeddings\src\lib.rs:48:5
+   |
+48 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+  --> astraweave-embeddings\src\client.rs:77:29
+   |
+77 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen_range`: Renamed to `random_range`
+  --> astraweave-embeddings\src\client.rs:81:32
+   |
+81 |             embedding.push(rng.gen_range(-1.0..1.0));
+   |                                ^^^^^^^^^
+
+warning: `astraweave-prompts` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-prompts` to apply 2 suggestions)
+warning: `astraweave-context` (lib) generated 13 warnings (run `cargo fix --lib -p astraweave-context` to apply 6 suggestions)
+warning: `astraweave-embeddings` (lib) generated 6 warnings (run `cargo fix --lib -p astraweave-embeddings` to apply 3 suggestions)
+warning: unused import: `MemoryCategory`
+ --> astraweave-rag\src\consolidation.rs:6:37
+  |
+6 | use astraweave_embeddings::{Memory, MemoryCategory};
+  |                                     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-rag\src\consolidation.rs:8:5
+  |
+8 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ConversationHistory`
+  --> astraweave-rag\src\pipeline.rs:12:26
+   |
+12 | use astraweave_context::{ConversationHistory, TokenCounter};
+   |                          ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-rag\src\lib.rs:66:5
+   |
+66 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-rag\src\pipeline.rs:623:37
+    |
+623 |                 let mut rng = rand::thread_rng();
+    |                                     ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: unused variable: `duration`
+   --> astraweave-rag\src\pipeline.rs:198:17
+    |
+198 |             let duration = start_time.elapsed().as_millis() as f32;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_duration`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: method `should_forget` is never used
+   --> astraweave-rag\src\forgetting.rs:152:8
+    |
+86  | impl ForgettingEngine {
+    | --------------------- method in this implementation
+...
+152 |     fn should_forget(&self, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: field `query_hash` is never read
+   --> astraweave-rag\src\pipeline.rs:122:5
+    |
+119 | struct CachedResult {
+    |        ------------ field in this struct
+...
+122 |     query_hash: u64,
+    |     ^^^^^^^^^^
+    |
+    = note: `CachedResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `astraweave-rag` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-rag` to apply 4 suggestions)
+warning: unused imports: `MemoryContent`, `MemoryMetadata`, and `MemorySource`
+  --> astraweave-memory\src\memory_manager.rs:12:28
+   |
+12 |     Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+   |                            ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\consolidation.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> astraweave-memory\src\consolidation.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\forgetting.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\compression.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\retrieval.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\sharing.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `detector` is never read
+   --> astraweave-memory\src\dynamic_weighting.rs:110:5
+    |
+106 | pub struct AdaptiveWeightManager {
+    |            --------------------- field in this struct
+...
+110 |     detector: PatternDetector,
+    |     ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-memory` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-memory` to apply 7 suggestions)
+warning: unused import: `Entity`
+ --> astraweave-persistence-ecs\benches\persistence_ecs_benchmarks.rs:1:22
+  |
+1 | use astraweave_ecs::{Entity, World};
+  |                      ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `SaveMetadata`, `calculate_world_hash`, `deserialize_ecs_world`, and `serialize_ecs_world`
+ --> astraweave-persistence-ecs\benches\persistence_ecs_benchmarks.rs:3:5
+  |
+3 |     calculate_world_hash, deserialize_ecs_world, serialize_ecs_world, CPersistenceManager,
+  |     ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+4 |     CReplayState, SaveMetadata,
+  |                   ^^^^^^^^^^^^
+
+warning: `astraweave-persistence-ecs` (bench "persistence_ecs_benchmarks") generated 2 warnings (run `cargo fix --bench "persistence_ecs_benchmarks"` to apply 2 suggestions)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1.32s
+     Running unittests src\lib.rs (target\release\deps\astraweave_persistence_ecs-8a810079a727a7b3.exe)
+
+running 4 tests
+test tests::deserialize_empty_world ... ignored
+test tests::persistence_manager_creation ... ignored
+test tests::replay_state_initialization ... ignored
+test tests::serialize_empty_world ... ignored
+
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches\persistence_ecs_benchmarks.rs (target\release\deps\persistence_ecs_benchmarks-1226ba89222d52a2.exe)
+Gnuplot not found, using plotters backend
+Benchmarking ecs_serialization/single_component/serialize_position
+Benchmarking ecs_serialization/single_component/serialize_position: Warming up for 3.0000 s
+Benchmarking ecs_serialization/single_component/serialize_position: Collecting 100 samples in estimated 5.0007 s (22M iterations)
+Benchmarking ecs_serialization/single_component/serialize_position: Analyzing
+ecs_serialization/single_component/serialize_position
+                        time:   [241.46 ns 260.20 ns 280.53 ns]
+Found 18 outliers among 100 measurements (18.00%)
+  7 (7.00%) low mild
+  4 (4.00%) high mild
+  7 (7.00%) high severe
+Benchmarking ecs_serialization/single_component/deserialize_position
+Benchmarking ecs_serialization/single_component/deserialize_position: Warming up for 3.0000 s
+Benchmarking ecs_serialization/single_component/deserialize_position: Collecting 100 samples in estimated 5.0000 s (1.5B iterations)
+Benchmarking ecs_serialization/single_component/deserialize_position: Analyzing
+ecs_serialization/single_component/deserialize_position
+                        time:   [3.2967 ns 3.5037 ns 3.7455 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking ecs_serialization/single_component/serialize_health
+Benchmarking ecs_serialization/single_component/serialize_health: Warming up for 3.0000 s
+Benchmarking ecs_serialization/single_component/serialize_health: Collecting 100 samples in estimated 5.0000 s (49M iterations)
+Benchmarking ecs_serialization/single_component/serialize_health: Analyzing
+ecs_serialization/single_component/serialize_health
+                        time:   [89.428 ns 96.298 ns 104.56 ns]
+Benchmarking ecs_serialization/single_component/deserialize_health
+Benchmarking ecs_serialization/single_component/deserialize_health: Warming up for 3.0000 s
+Benchmarking ecs_serialization/single_component/deserialize_health: Collecting 100 samples in estimated 5.0000 s (975M iterations)
+Benchmarking ecs_serialization/single_component/deserialize_health: Analyzing
+ecs_serialization/single_component/deserialize_health
+                        time:   [3.4905 ns 3.6030 ns 3.7419 ns]
+Found 14 outliers among 100 measurements (14.00%)
+  7 (7.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking ecs_serialization/entity_batch/serialize/10
+Benchmarking ecs_serialization/entity_batch/serialize/10: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/serialize/10: Collecting 100 samples in estimated 5.0014 s (3.7M iterations)
+Benchmarking ecs_serialization/entity_batch/serialize/10: Analyzing
+ecs_serialization/entity_batch/serialize/10
+                        time:   [855.94 ns 864.64 ns 874.66 ns]
+Found 13 outliers among 100 measurements (13.00%)
+  11 (11.00%) high mild
+  2 (2.00%) high severe
+Benchmarking ecs_serialization/entity_batch/deserialize/10
+Benchmarking ecs_serialization/entity_batch/deserialize/10: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/deserialize/10: Collecting 100 samples in estimated 5.0026 s (1.9M iterations)
+Benchmarking ecs_serialization/entity_batch/deserialize/10: Analyzing
+ecs_serialization/entity_batch/deserialize/10
+                        time:   [2.2495 ┬╡s 2.4124 ┬╡s 2.5819 ┬╡s]
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+Benchmarking ecs_serialization/entity_batch/serialize/50
+Benchmarking ecs_serialization/entity_batch/serialize/50: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/serialize/50: Collecting 100 samples in estimated 5.0095 s (1.3M iterations)
+Benchmarking ecs_serialization/entity_batch/serialize/50: Analyzing
+ecs_serialization/entity_batch/serialize/50
+                        time:   [3.1002 ┬╡s 3.3270 ┬╡s 3.6087 ┬╡s]
+Benchmarking ecs_serialization/entity_batch/deserialize/50
+Benchmarking ecs_serialization/entity_batch/deserialize/50: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/deserialize/50: Collecting 100 samples in estimated 5.0417 s (323k iterations)
+Benchmarking ecs_serialization/entity_batch/deserialize/50: Analyzing
+ecs_serialization/entity_batch/deserialize/50
+                        time:   [11.820 ┬╡s 12.772 ┬╡s 13.978 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking ecs_serialization/entity_batch/serialize/100
+Benchmarking ecs_serialization/entity_batch/serialize/100: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/serialize/100: Collecting 100 samples in estimated 5.0081 s (747k iterations)
+Benchmarking ecs_serialization/entity_batch/serialize/100: Analyzing
+ecs_serialization/entity_batch/serialize/100
+                        time:   [5.6935 ┬╡s 6.2002 ┬╡s 6.8258 ┬╡s]
+Benchmarking ecs_serialization/entity_batch/deserialize/100
+Benchmarking ecs_serialization/entity_batch/deserialize/100: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/deserialize/100: Collecting 100 samples in estimated 5.0373 s (167k iterations)
+Benchmarking ecs_serialization/entity_batch/deserialize/100: Analyzing
+ecs_serialization/entity_batch/deserialize/100
+                        time:   [23.618 ┬╡s 25.539 ┬╡s 27.941 ┬╡s]
+Benchmarking ecs_serialization/entity_batch/serialize/500
+Benchmarking ecs_serialization/entity_batch/serialize/500: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/serialize/500: Collecting 100 samples in estimated 5.0844 s (152k iterations)
+Benchmarking ecs_serialization/entity_batch/serialize/500: Analyzing
+ecs_serialization/entity_batch/serialize/500
+                        time:   [21.617 ┬╡s 22.071 ┬╡s 22.615 ┬╡s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking ecs_serialization/entity_batch/deserialize/500
+Benchmarking ecs_serialization/entity_batch/deserialize/500: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/deserialize/500: Collecting 100 samples in estimated 5.2519 s (35k iterations)
+Benchmarking ecs_serialization/entity_batch/deserialize/500: Analyzing
+ecs_serialization/entity_batch/deserialize/500
+                        time:   [120.99 ┬╡s 134.28 ┬╡s 149.50 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) high mild
+  7 (7.00%) high severe
+Benchmarking ecs_serialization/entity_batch/serialize/1000
+Benchmarking ecs_serialization/entity_batch/serialize/1000: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/serialize/1000: Collecting 100 samples in estimated 5.3300 s (71k iterations)
+Benchmarking ecs_serialization/entity_batch/serialize/1000: Analyzing
+ecs_serialization/entity_batch/serialize/1000
+                        time:   [44.512 ┬╡s 45.665 ┬╡s 46.902 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking ecs_serialization/entity_batch/deserialize/1000
+Benchmarking ecs_serialization/entity_batch/deserialize/1000: Warming up for 3.0000 s
+Benchmarking ecs_serialization/entity_batch/deserialize/1000: Collecting 100 samples in estimated 5.9848 s (20k iterations)
+Benchmarking ecs_serialization/entity_batch/deserialize/1000: Analyzing
+ecs_serialization/entity_batch/deserialize/1000
+                        time:   [191.75 ┬╡s 195.15 ┬╡s 198.88 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  7 (7.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking world_hash/calculation/10
+Benchmarking world_hash/calculation/10: Warming up for 3.0000 s
+Benchmarking world_hash/calculation/10: Collecting 100 samples in estimated 5.0000 s (51M iterations)
+Benchmarking world_hash/calculation/10: Analyzing
+world_hash/calculation/10
+                        time:   [92.923 ns 99.149 ns 106.67 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking world_hash/calculation/50
+Benchmarking world_hash/calculation/50: Warming up for 3.0000 s
+Benchmarking world_hash/calculation/50: Collecting 100 samples in estimated 5.0009 s (10M iterations)
+Benchmarking world_hash/calculation/50: Analyzing
+world_hash/calculation/50
+                        time:   [434.60 ns 457.30 ns 484.98 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking world_hash/calculation/100
+Benchmarking world_hash/calculation/100: Warming up for 3.0000 s
+Benchmarking world_hash/calculation/100: Collecting 100 samples in estimated 5.0041 s (5.3M iterations)
+Benchmarking world_hash/calculation/100: Analyzing
+world_hash/calculation/100
+                        time:   [810.85 ns 855.24 ns 909.89 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking world_hash/calculation/500
+Benchmarking world_hash/calculation/500: Warming up for 3.0000 s
+Benchmarking world_hash/calculation/500: Collecting 100 samples in estimated 5.0019 s (1.1M iterations)
+Benchmarking world_hash/calculation/500: Analyzing
+world_hash/calculation/500
+                        time:   [4.0095 ┬╡s 4.4178 ┬╡s 4.8592 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  2 (2.00%) high mild
+  10 (10.00%) high severe
+Benchmarking world_hash/calculation/1000
+Benchmarking world_hash/calculation/1000: Warming up for 3.0000 s
+Benchmarking world_hash/calculation/1000: Collecting 100 samples in estimated 5.0351 s (490k iterations)
+Benchmarking world_hash/calculation/1000: Analyzing
+world_hash/calculation/1000
+                        time:   [9.5681 ┬╡s 10.138 ┬╡s 10.690 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking save_load_cycle/full_pipeline/save/10
+Benchmarking save_load_cycle/full_pipeline/save/10: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/save/10: Collecting 100 samples in estimated 5.1793 s (1200 iterations)
+Benchmarking save_load_cycle/full_pipeline/save/10: Analyzing
+save_load_cycle/full_pipeline/save/10
+                        time:   [3.6428 ms 4.0920 ms 4.5897 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking save_load_cycle/full_pipeline/load/10
+Benchmarking save_load_cycle/full_pipeline/load/10: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/load/10: Collecting 100 samples in estimated 6.0057 s (25k iterations)
+Benchmarking save_load_cycle/full_pipeline/load/10: Analyzing
+save_load_cycle/full_pipeline/load/10
+                        time:   [181.17 ┬╡s 195.57 ┬╡s 214.08 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking save_load_cycle/full_pipeline/save/50
+Benchmarking save_load_cycle/full_pipeline/save/50: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/save/50: Collecting 100 samples in estimated 5.0255 s (1500 iterations)
+Benchmarking save_load_cycle/full_pipeline/save/50: Analyzing
+save_load_cycle/full_pipeline/save/50
+                        time:   [3.4893 ms 3.8974 ms 4.3464 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking save_load_cycle/full_pipeline/load/50
+Benchmarking save_load_cycle/full_pipeline/load/50: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/load/50: Collecting 100 samples in estimated 5.6752 s (20k iterations)
+Benchmarking save_load_cycle/full_pipeline/load/50: Analyzing
+save_load_cycle/full_pipeline/load/50
+                        time:   [182.27 ┬╡s 183.88 ┬╡s 185.68 ┬╡s]
+Found 15 outliers among 100 measurements (15.00%)
+  8 (8.00%) high mild
+  7 (7.00%) high severe
+Benchmarking save_load_cycle/full_pipeline/save/100
+Benchmarking save_load_cycle/full_pipeline/save/100: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/save/100: Collecting 100 samples in estimated 5.1522 s (1300 iterations)
+Benchmarking save_load_cycle/full_pipeline/save/100: Analyzing
+save_load_cycle/full_pipeline/save/100
+                        time:   [3.8210 ms 4.3560 ms 5.0413 ms]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking save_load_cycle/full_pipeline/load/100
+Benchmarking save_load_cycle/full_pipeline/load/100: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/load/100: Collecting 100 samples in estimated 6.3416 s (20k iterations)
+Benchmarking save_load_cycle/full_pipeline/load/100: Analyzing
+save_load_cycle/full_pipeline/load/100
+                        time:   [253.87 ┬╡s 276.18 ┬╡s 304.37 ┬╡s]
+Benchmarking save_load_cycle/full_pipeline/save/500
+Benchmarking save_load_cycle/full_pipeline/save/500: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/save/500: Collecting 100 samples in estimated 5.0032 s (900 iterations)
+Benchmarking save_load_cycle/full_pipeline/save/500: Analyzing
+save_load_cycle/full_pipeline/save/500
+                        time:   [3.4337 ms 3.7744 ms 4.3708 ms]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking save_load_cycle/full_pipeline/load/500
+Benchmarking save_load_cycle/full_pipeline/load/500: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_pipeline/load/500: Collecting 100 samples in estimated 5.4291 s (15k iterations)
+Benchmarking save_load_cycle/full_pipeline/load/500: Analyzing
+save_load_cycle/full_pipeline/load/500
+                        time:   [261.20 ┬╡s 263.72 ┬╡s 266.52 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking replay/operations/serialize/10
+Benchmarking replay/operations/serialize/10: Warming up for 3.0000 s
+Benchmarking replay/operations/serialize/10: Collecting 100 samples in estimated 5.0029 s (4.0M iterations)
+Benchmarking replay/operations/serialize/10: Analyzing
+replay/operations/serialize/10
+                        time:   [876.14 ns 895.76 ns 918.23 ns]
+Found 14 outliers among 100 measurements (14.00%)
+  5 (5.00%) high mild
+  9 (9.00%) high severe
+Benchmarking replay/operations/deserialize/10
+Benchmarking replay/operations/deserialize/10: Warming up for 3.0000 s
+Benchmarking replay/operations/deserialize/10: Collecting 100 samples in estimated 5.0105 s (2.3M iterations)
+Benchmarking replay/operations/deserialize/10: Analyzing
+replay/operations/deserialize/10
+                        time:   [1.4557 ┬╡s 1.4848 ┬╡s 1.5164 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking replay/operations/serialize/50
+Benchmarking replay/operations/serialize/50: Warming up for 3.0000 s
+Benchmarking replay/operations/serialize/50: Collecting 100 samples in estimated 5.0043 s (1.1M iterations)
+Benchmarking replay/operations/serialize/50: Analyzing
+replay/operations/serialize/50
+                        time:   [4.9312 ┬╡s 5.3068 ┬╡s 5.6977 ┬╡s]
+Found 13 outliers among 100 measurements (13.00%)
+  6 (6.00%) low mild
+  6 (6.00%) high mild
+  1 (1.00%) high severe
+Benchmarking replay/operations/deserialize/50
+Benchmarking replay/operations/deserialize/50: Warming up for 3.0000 s
+Benchmarking replay/operations/deserialize/50: Collecting 100 samples in estimated 5.0830 s (298k iterations)
+Benchmarking replay/operations/deserialize/50: Analyzing
+replay/operations/deserialize/50
+                        time:   [12.312 ┬╡s 13.195 ┬╡s 14.176 ┬╡s]
+Benchmarking replay/operations/serialize/100
+Benchmarking replay/operations/serialize/100: Warming up for 3.0000 s
+Benchmarking replay/operations/serialize/100: Collecting 100 samples in estimated 5.0115 s (717k iterations)
+Benchmarking replay/operations/serialize/100: Analyzing
+replay/operations/serialize/100
+                        time:   [5.7471 ┬╡s 6.2071 ┬╡s 6.7627 ┬╡s]
+Benchmarking replay/operations/deserialize/100
+Benchmarking replay/operations/deserialize/100: Warming up for 3.0000 s
+Benchmarking replay/operations/deserialize/100: Collecting 100 samples in estimated 5.0503 s (232k iterations)
+Benchmarking replay/operations/deserialize/100: Analyzing
+replay/operations/deserialize/100
+                        time:   [15.705 ┬╡s 16.020 ┬╡s 16.417 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking replay/operations/serialize/500
+Benchmarking replay/operations/serialize/500: Warming up for 3.0000 s
+Benchmarking replay/operations/serialize/500: Collecting 100 samples in estimated 5.0893 s (157k iterations)
+Benchmarking replay/operations/serialize/500: Analyzing
+replay/operations/serialize/500
+                        time:   [24.785 ┬╡s 26.696 ┬╡s 29.137 ┬╡s]
+Benchmarking replay/operations/deserialize/500
+Benchmarking replay/operations/deserialize/500: Warming up for 3.0000 s
+Benchmarking replay/operations/deserialize/500: Collecting 100 samples in estimated 5.3501 s (45k iterations)
+Benchmarking replay/operations/deserialize/500: Analyzing
+replay/operations/deserialize/500
+                        time:   [95.390 ┬╡s 102.16 ┬╡s 110.93 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking replay/tick_advance/advance_tick
+Benchmarking replay/tick_advance/advance_tick: Warming up for 3.0000 s
+Benchmarking replay/tick_advance/advance_tick: Collecting 100 samples in estimated 5.0002 s (83M iterations)
+Benchmarking replay/tick_advance/advance_tick: Analyzing
+replay/tick_advance/advance_tick
+                        time:   [59.712 ns 65.407 ns 72.115 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking persistence_manager/operations/list_saves
+Benchmarking persistence_manager/operations/list_saves: Warming up for 3.0000 s
+Benchmarking persistence_manager/operations/list_saves: Collecting 100 samples in estimated 5.2438 s (56k iterations)
+Benchmarking persistence_manager/operations/list_saves: Analyzing
+persistence_manager/operations/list_saves
+                        time:   [83.419 ┬╡s 92.261 ┬╡s 103.22 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+Benchmarking persistence_manager/operations/load_game
+Benchmarking persistence_manager/operations/load_game: Warming up for 3.0000 s
+Benchmarking persistence_manager/operations/load_game: Collecting 100 samples in estimated 5.5502 s (25k iterations)
+Benchmarking persistence_manager/operations/load_game: Analyzing
+persistence_manager/operations/load_game
+                        time:   [177.98 ┬╡s 194.65 ┬╡s 215.89 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking persistence_manager/operations/save_game
+Benchmarking persistence_manager/operations/save_game: Warming up for 3.0000 s
+Benchmarking persistence_manager/operations/save_game: Collecting 100 samples in estimated 6.4600 s (400 iterations)
+Benchmarking persistence_manager/operations/save_game: Analyzing
+persistence_manager/operations/save_game
+                        time:   [15.705 ms 17.014 ms 18.685 ms]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking scaling/entity_count/full_save/100
+Benchmarking scaling/entity_count/full_save/100: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_save/100: Collecting 100 samples in estimated 5.1203 s (1500 iterations)
+Benchmarking scaling/entity_count/full_save/100: Analyzing
+scaling/entity_count/full_save/100
+                        time:   [3.4664 ms 3.8286 ms 4.2065 ms]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking scaling/entity_count/full_load/100
+Benchmarking scaling/entity_count/full_load/100: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_load/100: Collecting 100 samples in estimated 5.0068 s (20k iterations)
+Benchmarking scaling/entity_count/full_load/100: Analyzing
+scaling/entity_count/full_load/100
+                        time:   [206.42 ┬╡s 230.20 ┬╡s 262.08 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) high mild
+  4 (4.00%) high severe
+Benchmarking scaling/entity_count/full_save/500
+Benchmarking scaling/entity_count/full_save/500: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_save/500: Collecting 100 samples in estimated 5.6261 s (700 iterations)
+Benchmarking scaling/entity_count/full_save/500: Analyzing
+scaling/entity_count/full_save/500
+                        time:   [6.8062 ms 8.0024 ms 9.5281 ms]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) high mild
+  5 (5.00%) high severe
+Benchmarking scaling/entity_count/full_load/500
+Benchmarking scaling/entity_count/full_load/500: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_load/500: Collecting 100 samples in estimated 7.4514 s (15k iterations)
+Benchmarking scaling/entity_count/full_load/500: Analyzing
+scaling/entity_count/full_load/500
+                        time:   [294.44 ┬╡s 323.95 ┬╡s 359.92 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/entity_count/full_save/1000
+Benchmarking scaling/entity_count/full_save/1000: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_save/1000: Collecting 100 samples in estimated 5.4348 s (1000 iterations)
+Benchmarking scaling/entity_count/full_save/1000: Analyzing
+scaling/entity_count/full_save/1000
+                        time:   [3.5195 ms 3.6384 ms 3.7699 ms]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/entity_count/full_load/1000
+Benchmarking scaling/entity_count/full_load/1000: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_load/1000: Collecting 100 samples in estimated 6.5481 s (15k iterations)
+Benchmarking scaling/entity_count/full_load/1000: Analyzing
+scaling/entity_count/full_load/1000
+                        time:   [321.45 ┬╡s 347.02 ┬╡s 380.06 ┬╡s]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/entity_count/full_save/5000
+Benchmarking scaling/entity_count/full_save/5000: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_save/5000: Collecting 100 samples in estimated 5.1171 s (800 iterations)
+Benchmarking scaling/entity_count/full_save/5000: Analyzing
+scaling/entity_count/full_save/5000
+                        time:   [4.1349 ms 4.2008 ms 4.2754 ms]
+Found 10 outliers among 100 measurements (10.00%)
+  7 (7.00%) high mild
+  3 (3.00%) high severe
+Benchmarking scaling/entity_count/full_load/5000
+Benchmarking scaling/entity_count/full_load/5000: Warming up for 3.0000 s
+Benchmarking scaling/entity_count/full_load/5000: Collecting 100 samples in estimated 8.6756 s (10k iterations)
+Benchmarking scaling/entity_count/full_load/5000: Analyzing
+scaling/entity_count/full_load/5000
+                        time:   [892.60 ┬╡s 978.73 ┬╡s 1.0805 ms]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+

@@ -1,2 +1,0 @@
-astraweave-core/src/schema.rs:89:9: replace IVec2::zero -> Self with Default::default()
-astraweave-core/src/schema.rs:350:9: replace PlanIntent::first_step -> Option<&ActionStep> with Some(Box::leak(Box::new(Default::default())))

@@ -1,0 +1,11 @@
+﻿/// Iterate mutably over all entities with component T
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
+        let world = unsafe { &mut *self.world_ptr };
+        let entities = std::mem::take(&mut self.entities);
+
+        entities
+            .into_iter()
+            .filter_map(move |entity| world.get_mut::<T>(entity).map(move |comp| (entity, comp)))
+    }
+
+    /// Get mutable component

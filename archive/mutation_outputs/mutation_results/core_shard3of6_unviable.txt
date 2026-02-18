@@ -1,0 +1,5 @@
+astraweave-core/src/tool_sandbox.rs:22:5: replace map_engine_error -> ToolBlock with Default::default()
+astraweave-core/src/tool_vocabulary.rs:32:5: replace get_all_tools -> Vec<ToolMetadata> with vec![Default::default()]
+astraweave-core/src/tool_vocabulary.rs:694:5: replace get_tools_by_category -> Vec<ToolMetadata> with vec![Default::default()]
+astraweave-core/src/tools.rs:151:13: replace astar_path::<impl Ord for Node>::cmp -> Ordering with Default::default()
+astraweave-core/src/tools.rs:156:13: replace astar_path::<impl PartialOrd for Node>::partial_cmp -> Option<Ordering> with Some(Default::default())

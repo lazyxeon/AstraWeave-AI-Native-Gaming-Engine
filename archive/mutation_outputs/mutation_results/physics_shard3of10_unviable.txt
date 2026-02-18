@@ -1,0 +1,11 @@
+astraweave-physics/src/spatial_hash.rs:75:9: replace AABB::from_center_extents -> Self with Default::default()
+astraweave-physics/src/spatial_hash.rs:83:9: replace AABB::from_sphere -> Self with Default::default()
+astraweave-physics/src/spatial_hash.rs:226:9: replace SpatialHash<T>::query -> Vec<T> with vec![Default::default()]
+astraweave-physics/src/spatial_hash.rs:248:9: replace SpatialHash<T>::query_unique -> Vec<T> with vec![Default::default()]
+astraweave-physics/src/spatial_hash.rs:288:9: replace SpatialHash<T>::stats -> SpatialHashStats with Default::default()
+astraweave-physics/src/projectile.rs:269:9: replace ProjectileManager::get -> Option<&Projectile> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/projectile.rs:274:9: replace ProjectileManager::get_mut -> Option<&mut Projectile> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/projectile.rs:279:9: replace ProjectileManager::iter -> impl Iterator<Item =&Projectile> with ::std::iter::once(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/projectile.rs:289:9: replace ProjectileManager::drain_hits -> Vec<ProjectileHit> with vec![Default::default()]
+astraweave-physics/src/projectile.rs:406:9: replace ProjectileManager::hitscan -> Option<ProjectileHit> with Some(Default::default())
+astraweave-physics/src/projectile.rs:435:9: replace ProjectileManager::calculate_explosion -> Vec<ExplosionResult> with vec![Default::default()]

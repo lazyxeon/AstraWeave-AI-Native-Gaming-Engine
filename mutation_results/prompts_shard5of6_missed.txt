@@ -1,9 +1,0 @@
-astraweave-prompts/src/optimization.rs:110:59: replace > with >= in OptimizationEngine::optimize_prompt
-astraweave-prompts/src/optimization.rs:141:56: replace / with % in OptimizationEngine::update_metrics
-astraweave-prompts/src/optimization.rs:141:56: replace / with * in OptimizationEngine::update_metrics
-astraweave-prompts/src/optimization.rs:168:54: replace > with == in TemplateCache::get
-astraweave-prompts/src/optimization.rs:168:54: replace > with >= in TemplateCache::get
-astraweave-prompts/src/sanitize.rs:164:9: replace SanitizationConfig::escapes_html -> bool with true
-astraweave-prompts/src/sanitize.rs:169:9: replace SanitizationConfig::blocks_injection -> bool with true
-astraweave-prompts/src/sanitize.rs:174:9: replace SanitizationConfig::allows_control_chars -> bool with false
-astraweave-prompts/src/sanitize.rs:179:9: replace SanitizationConfig::allows_unicode -> bool with true

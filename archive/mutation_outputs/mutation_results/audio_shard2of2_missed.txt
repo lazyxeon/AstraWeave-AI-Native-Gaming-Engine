@@ -1,0 +1,46 @@
+astraweave-audio/src/engine.rs:334:9: replace AudioEngine::play_sfx_beep with ()
+astraweave-audio/src/engine.rs:399:9: replace AudioEngine::test_voice_base_volume -> f32 with 1.0
+astraweave-audio/src/engine.rs:402:9: replace AudioEngine::test_sfx_base_volume -> f32 with 1.0
+astraweave-audio/src/engine.rs:414:9: replace AudioEngine::test_music_using_a -> bool with true
+astraweave-audio/src/engine.rs:417:9: replace AudioEngine::test_music_crossfade_left -> f32 with 0.0
+astraweave-audio/src/engine.rs:420:9: replace AudioEngine::test_music_crossfade_time -> f32 with 0.0
+astraweave-audio/src/engine.rs:426:9: replace AudioEngine::test_ambient_base_volume -> f32 with 0.0
+astraweave-audio/src/engine.rs:426:9: replace AudioEngine::test_ambient_base_volume -> f32 with 1.0
+astraweave-audio/src/engine.rs:426:9: replace AudioEngine::test_ambient_base_volume -> f32 with -1.0
+astraweave-audio/src/engine.rs:429:9: replace AudioEngine::test_ambient_crossfade_left -> f32 with 0.0
+astraweave-audio/src/engine.rs:429:9: replace AudioEngine::test_ambient_crossfade_left -> f32 with 1.0
+astraweave-audio/src/engine.rs:429:9: replace AudioEngine::test_ambient_crossfade_left -> f32 with -1.0
+astraweave-audio/src/engine.rs:432:9: replace AudioEngine::test_ambient_using_a -> bool with true
+astraweave-audio/src/engine.rs:432:9: replace AudioEngine::test_ambient_using_a -> bool with false
+astraweave-audio/src/voice.rs:63:9: replace <impl TtsAdapter for SimpleSineTts>::synth_to_path -> Result<()> with Ok(())
+astraweave-audio/src/voice.rs:63:39: replace / with % in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:63:39: replace / with * in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:64:35: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:64:35: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:67:16: delete ! in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:79:25: replace / with % in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:79:25: replace / with * in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:83:30: replace / with % in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:83:30: replace / with * in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:42: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:42: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:35: replace / with % in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:35: replace / with * in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:50: replace - with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:84:50: replace - with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:52: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:52: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:46: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:46: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:34: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:34: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:28: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:85:28: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:86:29: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:86:29: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:39: replace % with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:39: replace % with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:28: replace + with - in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:28: replace + with * in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:33: replace * with + in <impl TtsAdapter for SimpleSineTts>::synth_to_path
+astraweave-audio/src/voice.rs:88:33: replace * with / in <impl TtsAdapter for SimpleSineTts>::synth_to_path

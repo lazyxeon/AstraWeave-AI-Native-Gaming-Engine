@@ -1,1 +1,0 @@
-astraweave-gameplay/src/items.rs:81:5: replace load_echo_defs -> anyhow::Result<Vec<EchoModDef>> with Ok(vec![Default::default()])

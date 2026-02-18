@@ -1,0 +1,134 @@
+    Checking astraweave-dialogue v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-dialogue)
+    Checking orchestrator_async_tick v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\orchestrator_async_tick)
+    Checking astraweave-asset-pipeline v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset-pipeline)
+    Checking astraweave-optimization v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-optimization)
+    Checking astraweave-sdk v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-sdk)
+    Checking astraweave-quests v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-quests)
+    Checking aw_headless v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_headless)
+error: manual `RangeInclusive::contains` implementation
+  --> tools\aw_headless\tests\mutation_resistant_comprehensive_tests.rs:86:13
+   |
+86 |     assert!(v >= 180 && v <= 200, "srgb(0.5) = {v}, expected ~188");
+   |             ^^^^^^^^^^^^^^^^^^^^ help: use: `(180..=200).contains(&v)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+   = note: `-D clippy::manual-range-contains` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::manual_range_contains)]`
+
+error: manual `RangeInclusive::contains` implementation
+   --> tools\aw_headless\tests\mutation_resistant_comprehensive_tests.rs:104:13
+    |
+104 |     assert!(v >= 120 && v <= 150, "srgb(0.25) = {v}");
+    |             ^^^^^^^^^^^^^^^^^^^^ help: use: `(120..=150).contains(&v)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains
+
+error: could not compile `aw_headless` (test "mutation_resistant_comprehensive_tests") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: fields `id` and `temperature` are never read
+  --> astraweave-optimization\benches\optimization_adversarial.rs:15:5
+   |
+14 | struct InferenceRequest {
+   |        ---------------- fields in this struct
+15 |     id: u64,
+   |     ^^
+...
+18 |     temperature: f32,
+   |     ^^^^^^^^^^^
+   |
+   = note: `InferenceRequest` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `-D dead-code` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(dead_code)]`
+
+error: fields `requests`, `combined_tokens`, and `max_batch_size` are never read
+  --> astraweave-optimization\benches\optimization_adversarial.rs:32:5
+   |
+31 | struct BatchedRequest {
+   |        -------------- fields in this struct
+32 |     requests: Vec<InferenceRequest>,
+   |     ^^^^^^^^
+33 |     combined_tokens: usize,
+   |     ^^^^^^^^^^^^^^^
+34 |     max_batch_size: usize,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `BatchedRequest` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+error: field `key` is never read
+  --> astraweave-optimization\benches\optimization_adversarial.rs:39:5
+   |
+38 | struct CacheEntry {
+   |        ---------- field in this struct
+39 |     key: String,
+   |     ^^^
+   |
+   = note: `CacheEntry` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+error: field `queue_length` is never read
+   --> astraweave-optimization\benches\optimization_adversarial.rs:113:5
+    |
+109 | struct WorkerState {
+    |        ----------- field in this struct
+...
+113 |     queue_length: usize,
+    |     ^^^^^^^^^^^^
+    |
+    = note: `WorkerState` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+error: field `merges` is never read
+   --> astraweave-optimization\benches\optimization_adversarial.rs:164:5
+    |
+162 | struct TokenOptimizer {
+    |        -------------- field in this struct
+163 |     vocab_size: usize,
+164 |     merges: Vec<(String, String, String)>, // (a, b, merged)
+    |     ^^^^^^
+    |
+    = note: `TokenOptimizer` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+error: this `if` statement can be collapsed
+   --> astraweave-optimization\benches\optimization_adversarial.rs:224:25
+    |
+224 | /                         if current_batch.len() >= batch_size
+225 | |                             || current_tokens + req_tokens > max_tokens_per_batch
+226 | |                         {
+227 | |                             if !current_batch.is_empty() {
+...   |
+235 | |                         }
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+224 ~                         if (current_batch.len() >= batch_size
+225 ~                             || current_tokens + req_tokens > max_tokens_per_batch
+226 ~                             || current_tokens + req_tokens > max_tokens_per_batch)
+227 |                         {
+228 ~                             && !current_batch.is_empty() {
+229 |                                 batches.push(BatchedRequest {
+...
+234 |                                 current_tokens = 0;
+235 ~                             }
+    |
+
+error: casting to the same type is unnecessary (`i32` -> `i32`)
+   --> astraweave-optimization\benches\optimization_adversarial.rs:598:37
+    |
+598 | ...                   if (j as i32 - k as i32).abs() < 5 || (i + j + k) % 10 == 0 {
+    |                           ^^^^^^^^ help: try: `j`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+    = note: `-D clippy::unnecessary-cast` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_cast)]`
+
+error: casting to the same type is unnecessary (`i32` -> `i32`)
+   --> astraweave-optimization\benches\optimization_adversarial.rs:598:48
+    |
+598 | ...                   if (j as i32 - k as i32).abs() < 5 || (i + j + k) % 10 == 0 {
+    |                                      ^^^^^^^^ help: try: `k`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast
+
+error: could not compile `astraweave-optimization` (bench "optimization_adversarial") due to 8 previous errors

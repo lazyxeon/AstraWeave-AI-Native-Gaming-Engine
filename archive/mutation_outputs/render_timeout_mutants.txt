@@ -1,0 +1,51 @@
+astraweave-render/src/camera.rs:34:35: replace * with + in Camera::dir
+astraweave-render/src/camera.rs:34:22: replace * with + in Camera::dir
+astraweave-render/src/camera.rs:29:9: replace Camera::dir -> Vec3 with Default::default()
+astraweave-render/src/camera.rs:34:35: replace * with / in Camera::dir
+astraweave-render/src/camera.rs:107:9: replace CameraController::is_dragging -> bool with false
+astraweave-render/src/camera.rs:150:20: delete ! in CameraController::process_mouse_move
+astraweave-render/src/camera.rs:206:53: replace + with - in CameraController::toggle_mode
+astraweave-render/src/camera.rs:273:28: replace += with -= in CameraController::update_camera
+astraweave-render/src/camera.rs:273:28: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:274:28: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:275:34: replace * with / in CameraController::update_camera
+astraweave-render/src/camera.rs:275:34: replace * with + in CameraController::update_camera
+astraweave-render/src/camera.rs:277:48: replace > with < in CameraController::update_camera
+astraweave-render/src/camera.rs:277:48: replace > with == in CameraController::update_camera
+astraweave-render/src/camera.rs:278:39: replace += with *= in CameraController::update_camera
+astraweave-render/src/camera.rs:278:77: replace * with + in CameraController::update_camera
+astraweave-render/src/clustered.rs:24:5: replace cluster_index -> usize with 0
+astraweave-render/src/clustered.rs:20:5: replace clamp_u32 -> u32 with 1
+astraweave-render/src/clustered.rs:24:14: replace * with + in cluster_index
+astraweave-render/src/clustered.rs:24:9: replace + with * in cluster_index
+astraweave-render/src/clustered.rs:42:5: replace bin_lights_cpu -> (Vec<u32>, Vec<u32>, Vec<u32>) with (vec![], vec![], vec![1])
+astraweave-render/src/renderer.rs:669:13: delete field label from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:664:59: replace | with ^ in Renderer::new_from_device
+astraweave-render/src/renderer.rs:671:13: delete field address_mode_v from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:673:13: delete field mag_filter from struct wgpu::SamplerDescriptor expression in Renderer::new_from_device
+astraweave-render/src/renderer.rs:2553:20: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2553:20: replace - with / in Renderer::update_camera
+astraweave-render/src/renderer.rs:2554:20: replace + with - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2558:31: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2563:20: replace - with + in Renderer::update_camera
+astraweave-render/src/renderer.rs:2565:22: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2565:14: delete - in Renderer::update_camera
+astraweave-render/src/renderer.rs:2566:22: replace + with * in Renderer::update_camera
+astraweave-render/src/renderer.rs:2586:46: replace + with * in Renderer::set_cascade_splits
+astraweave-render/src/renderer.rs:2918:40: replace * with + in Renderer::render
+astraweave-render/src/texture.rs:483:23: replace > with < in Texture::from_image_with_usage
+astraweave-render/src/types.rs:250:83: replace - with / in cluster_index
+astraweave-render/src/types.rs:254:39: replace * with + in cluster_index
+astraweave-render/src/types.rs:254:39: replace * with / in cluster_index
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (0, 0, 0.0)
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (0, 0, 1.0)
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (0, 0, -1.0)
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (0, 1, 0.0)
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (1, 1, 1.0)
+astraweave-render/src/animation.rs:168:9: replace AnimationClip::find_keyframes -> (usize, usize, f32) with (1, 1, 0.0)
+astraweave-render/src/animation.rs:172:37: replace <= with > in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:186:41: replace < with > in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:187:43: replace / with % in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:187:54: replace + with - in AnimationClip::find_keyframes
+astraweave-render/src/animation.rs:225:12: delete ! in AnimationState::update
+astraweave-render/src/animation.rs:237:43: replace + with - in AnimationState::update

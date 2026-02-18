@@ -1,0 +1,8 @@
+astraweave-ecs/src/command_buffer.rs:96:9: replace CommandBuffer::spawn -> SpawnBuilder<'_> with Default::default()
+astraweave-ecs/src/command_buffer.rs:209:9: replace SpawnBuilder<'a>::with -> Self with Default::default()
+astraweave-ecs/src/component_meta.rs:62:9: replace ComponentMeta::of -> Self with Default::default()
+astraweave-ecs/src/component_meta.rs:95:9: replace ComponentMeta::create_blob_vec -> BlobVec with Default::default()
+astraweave-ecs/src/component_meta.rs:100:9: replace ComponentMeta::create_blob_vec_with_capacity -> BlobVec with Default::default()
+astraweave-ecs/src/component_meta.rs:135:9: replace ComponentMetaRegistry::get -> Option<&ComponentMeta> with Some(Box::leak(Box::new(Default::default())))
+astraweave-ecs/src/entity_allocator.rs:126:9: replace Entity::null -> Self with Default::default()
+astraweave-ecs/src/entity_allocator.rs:238:9: replace EntityAllocator::spawn -> Entity with Default::default()

@@ -1,0 +1,606 @@
+astraweave-ui/src/accessibility.rs:144:23: replace * with + in deuteranopia_transform
+astraweave-ui/src/accessibility.rs:152:19: replace * with / in protanopia_transform
+astraweave-ui/src/accessibility.rs:153:19: replace * with + in protanopia_transform
+astraweave-ui/src/accessibility.rs:150:5: replace protanopia_transform -> Color with Default::default()
+astraweave-ui/src/accessibility.rs:153:19: replace * with / in protanopia_transform
+astraweave-ui/src/accessibility.rs:152:19: replace * with + in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:29: replace + with - in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:29: replace + with * in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:19: replace + with - in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:19: replace + with * in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:23: replace * with + in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:23: replace * with / in protanopia_transform
+astraweave-ui/src/accessibility.rs:154:33: replace * with / in protanopia_transform
+astraweave-ui/src/accessibility.rs:160:5: replace tritanopia_transform -> Color with Default::default()
+astraweave-ui/src/accessibility.rs:154:33: replace * with + in protanopia_transform
+astraweave-ui/src/accessibility.rs:162:19: replace + with - in tritanopia_transform
+astraweave-ui/src/accessibility.rs:162:23: replace * with / in tritanopia_transform
+astraweave-ui/src/accessibility.rs:162:19: replace + with * in tritanopia_transform
+astraweave-ui/src/accessibility.rs:163:19: replace * with + in tritanopia_transform
+astraweave-ui/src/accessibility.rs:163:19: replace * with / in tritanopia_transform
+astraweave-ui/src/accessibility.rs:164:19: replace * with + in tritanopia_transform
+astraweave-ui/src/accessibility.rs:164:19: replace * with / in tritanopia_transform
+astraweave-ui/src/accessibility.rs:173:37: replace + with - in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:25: replace + with - in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:25: replace + with * in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:21: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:37: replace + with * in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:21: replace * with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:33: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:33: replace * with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:173:45: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:178:12: replace < with <= in high_contrast_transform
+astraweave-ui/src/accessibility.rs:181:19: replace > with >= in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:32: replace + with * in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:32: replace + with - in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:24: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:24: replace * with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:17: replace - with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:188:17: replace - with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:189:24: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:189:17: replace - with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:189:17: replace - with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:32: replace + with - in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:32: replace + with * in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:24: replace * with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:24: replace * with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:17: replace - with + in high_contrast_transform
+astraweave-ui/src/accessibility.rs:190:17: replace - with / in high_contrast_transform
+astraweave-ui/src/accessibility.rs:208:18: replace * with + in to_egui_color
+astraweave-ui/src/accessibility.rs:210:18: replace * with / in to_egui_color
+astraweave-ui/src/gamepad.rs:121:27: replace += with -= in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:121:27: replace += with *= in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:125:17: delete match arm EventType::ButtonPressed(button, _) in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:128:17: delete match arm EventType::ButtonRepeated(button, _) in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:134:17: delete match arm EventType::AxisChanged(axis, value, _) in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:129:42: replace >= with < in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:135:36: replace > with == in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:135:36: replace > with < in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:135:36: replace > with >= in GamepadManager::poll
+astraweave-ui/src/gamepad.rs:166:33: replace match guard value > self.deadzone with true in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:166:33: replace match guard value > self.deadzone with false in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:33: replace match guard value < -self.deadzone with true in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:33: replace match guard value < -self.deadzone with false in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:33: replace match guard value < -self.deadzone with true in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:169:33: replace match guard value > self.deadzone with false in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:169:33: replace match guard value > self.deadzone with true in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:33: replace match guard value < -self.deadzone with false in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:166:39: replace > with == in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:166:39: replace > with < in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:39: replace < with == in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:166:39: replace > with >= in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:39: replace < with > in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:39: replace < with <= in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:167:41: delete - in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:39: replace < with == in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:39: replace < with > in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:39: replace < with <= in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:168:41: delete - in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:169:39: replace > with == in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:169:39: replace > with < in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:169:39: replace > with >= in GamepadManager::map_axis
+astraweave-ui/src/gamepad.rs:202:9: replace GamepadManager::is_connected -> bool with true
+astraweave-ui/src/gamepad.rs:202:9: replace GamepadManager::is_connected -> bool with false
+astraweave-ui/src/gamepad.rs:202:39: replace > with == in GamepadManager::is_connected
+astraweave-ui/src/gamepad.rs:202:39: replace > with < in GamepadManager::is_connected
+astraweave-ui/src/gamepad.rs:202:39: replace > with >= in GamepadManager::is_connected
+astraweave-ui/src/gamepad.rs:207:9: replace GamepadManager::gamepad_count -> usize with 0
+astraweave-ui/src/gamepad.rs:207:9: replace GamepadManager::gamepad_count -> usize with 1
+astraweave-ui/src/hud.rs:25:14: replace < with <= in easing::ease_in_out_quad
+astraweave-ui/src/hud.rs:69:23: replace < with <= in HealthAnimation::set_target
+astraweave-ui/src/hud.rs:77:29: replace > with >= in HealthAnimation::update
+astraweave-ui/src/hud.rs:82:54: replace > with >= in HealthAnimation::update
+astraweave-ui/src/hud.rs:82:33: replace - with + in HealthAnimation::update
+astraweave-ui/src/hud.rs:82:33: replace - with / in HealthAnimation::update
+astraweave-ui/src/hud.rs:87:42: replace > with == in HealthAnimation::update
+astraweave-ui/src/hud.rs:87:42: replace > with >= in HealthAnimation::update
+astraweave-ui/src/hud.rs:87:42: replace > with < in HealthAnimation::update
+astraweave-ui/src/hud.rs:113:29: replace > with >= in HealthAnimation::flash_alpha
+astraweave-ui/src/hud.rs:114:31: replace / with * in HealthAnimation::flash_alpha
+astraweave-ui/src/hud.rs:122:9: replace HealthAnimation::is_healing -> bool with true
+astraweave-ui/src/hud.rs:122:43: replace && with || in HealthAnimation::is_healing
+astraweave-ui/src/hud.rs:122:21: replace > with >= in HealthAnimation::is_healing
+astraweave-ui/src/hud.rs:122:88: replace > with >= in HealthAnimation::is_healing
+astraweave-ui/src/hud.rs:122:59: replace - with + in HealthAnimation::is_healing
+astraweave-ui/src/hud.rs:122:59: replace - with / in HealthAnimation::is_healing
+astraweave-ui/src/hud.rs:506:9: replace ComboTracker::cleanup with ()
+astraweave-ui/src/hud.rs:594:13: delete match arm NotificationType::QuestComplete{..} in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:599:32: replace < with <= in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:601:41: replace / with % in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:601:41: replace / with * in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:603:39: replace < with <= in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:608:70: replace / with % in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:608:70: replace / with * in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:609:20: replace * with + in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:609:20: replace * with / in QuestNotification::calculate_slide_offset
+astraweave-ui/src/hud.rs:619:32: replace < with <= in QuestNotification::calculate_alpha
+astraweave-ui/src/hud.rs:621:41: replace / with % in QuestNotification::calculate_alpha
+astraweave-ui/src/hud.rs:621:41: replace / with * in QuestNotification::calculate_alpha
+astraweave-ui/src/hud.rs:623:39: replace > with >= in QuestNotification::calculate_alpha
+astraweave-ui/src/hud.rs:921:38: replace - with + in HudManager::update
+astraweave-ui/src/hud.rs:922:17: replace < with <= in HudManager::update
+astraweave-ui/src/hud.rs:1014:9: replace HudManager::render with ()
+astraweave-ui/src/hud.rs:1014:12: delete ! in HudManager::render
+astraweave-ui/src/hud.rs:1086:37: replace && with || in HudManager::render
+astraweave-ui/src/hud.rs:1100:9: replace HudManager::render_health_bars with ()
+astraweave-ui/src/hud.rs:1116:9: replace HudManager::render_player_health with ()
+astraweave-ui/src/hud.rs:1126:49: replace / with % in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1126:49: replace / with * in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1129:50: replace > with == in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1129:50: replace > with < in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1129:50: replace > with >= in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1131:48: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1131:48: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1131:34: replace - with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1131:34: replace - with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1132:46: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1132:46: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1135:40: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1135:40: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1136:51: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1136:51: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1150:46: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1150:46: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1151:33: replace > with == in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1151:33: replace > with < in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1151:33: replace > with >= in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1165:83: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1165:83: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1171:32: replace > with == in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1171:32: replace > with < in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1171:32: replace > with >= in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1175:84: replace * with + in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1175:84: replace * with / in HudManager::render_player_health
+astraweave-ui/src/hud.rs:1203:9: replace HudManager::render_player_resources with ()
+astraweave-ui/src/hud.rs:1212:45: replace / with % in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1212:45: replace / with * in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1225:46: replace * with + in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1225:46: replace * with / in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1226:33: replace > with == in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1226:33: replace > with < in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1226:33: replace > with >= in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1263:48: replace / with % in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1263:48: replace / with * in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1276:46: replace * with + in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1276:46: replace * with / in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1277:33: replace > with == in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1277:33: replace > with < in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1277:33: replace > with >= in HudManager::render_player_resources
+astraweave-ui/src/hud.rs:1309:9: replace HudManager::render_enemy_health_bars with ()
+astraweave-ui/src/hud.rs:1317:29: replace >= with < in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1328:21: replace || with && in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1327:21: replace || with && in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1325:29: replace < with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1325:29: replace < with > in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1325:29: replace < with <= in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1326:33: replace > with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1326:33: replace > with < in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1326:33: replace > with >= in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1327:33: replace < with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1327:33: replace < with > in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1327:33: replace < with <= in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1328:33: replace > with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1328:33: replace > with < in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1328:33: replace > with >= in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1334:51: replace - with + in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1334:51: replace - with / in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1334:68: replace - with + in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1334:68: replace - with / in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1341:57: replace / with % in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1341:57: replace / with * in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1363:54: replace * with + in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1363:54: replace * with / in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1364:41: replace > with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1364:41: replace > with < in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1364:41: replace > with >= in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1374:40: replace > with == in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1374:40: replace > with < in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1382:58: replace * with + in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1382:58: replace * with / in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1382:51: replace * with + in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1382:51: replace * with / in HudManager::render_enemy_health_bars
+astraweave-ui/src/hud.rs:1400:9: replace HudManager::render_damage_numbers with ()
+astraweave-ui/src/hud.rs:1410:38: replace - with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1410:38: replace - with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1411:37: replace / with % in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1411:37: replace / with * in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1417:47: replace * with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1417:47: replace * with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1417:31: replace - with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1417:31: replace - with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1424:40: replace + with - in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1424:40: replace + with * in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1425:40: replace + with - in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1425:40: replace + with * in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1436:43: replace > with == in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1436:43: replace > with < in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1436:43: replace > with >= in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:38: replace * with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:38: replace * with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:45: replace + with - in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:45: replace + with * in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:74: replace * with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:74: replace * with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:67: replace - with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1444:67: replace - with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1457:44: replace == with != in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:44: replace && with || in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:40: replace > with == in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:40: replace > with < in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:40: replace > with >= in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:51: replace == with != in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:80: replace - with + in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1464:80: replace - with / in HudManager::render_damage_numbers
+astraweave-ui/src/hud.rs:1481:9: replace HudManager::render_objectives with ()
+astraweave-ui/src/hud.rs:1485:51: replace - with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1485:51: replace - with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1485:37: replace - with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1485:37: replace - with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1510:88: replace + with - in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1510:35: replace + with - in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1510:35: replace + with * in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1510:68: replace * with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1510:68: replace * with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1559:24: delete ! in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1606:36: replace < with == in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1606:36: replace < with > in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1606:36: replace < with <= in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1606:61: replace - with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1606:61: replace - with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1618:66: replace - with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1618:66: replace - with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1634:47: replace > with == in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1634:47: replace > with < in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1634:47: replace > with >= in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1635:69: replace * with + in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1635:69: replace * with / in HudManager::render_objectives
+astraweave-ui/src/hud.rs:1681:9: replace HudManager::render_minimap with ()
+astraweave-ui/src/hud.rs:1685:54: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1685:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1685:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1686:54: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1686:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1695:51: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1695:51: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1717:38: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1717:38: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1718:26: replace < with == in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1718:26: replace < with > in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1718:26: replace < with <= in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1728:38: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1728:38: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1729:26: replace < with == in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1729:26: replace < with > in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1729:26: replace < with <= in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1739:37: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1739:37: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1743:49: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1743:49: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1744:49: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1744:49: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1751:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1752:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1760:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1760:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1760:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1760:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1761:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1761:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1761:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1761:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1764:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1764:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1765:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1765:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:41: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:41: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:36: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:36: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:46: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1766:46: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1768:29: replace > with == in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1768:29: replace > with < in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1768:29: replace > with >= in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1768:46: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1768:46: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1787:51: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1787:51: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1788:51: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1788:51: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1794:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1795:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1802:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1802:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1802:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1802:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1803:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1803:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1803:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1803:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1806:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1806:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1807:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1807:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:41: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:41: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:36: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:36: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:46: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1808:46: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1810:29: replace > with == in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1810:29: replace > with < in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1810:29: replace > with >= in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1810:46: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1810:46: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1830:50: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1830:50: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1831:50: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1837:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:47: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:47: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:61: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1838:61: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1845:53: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1845:53: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1845:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1845:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1846:53: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1846:53: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1846:65: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1846:65: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1849:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1849:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1850:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1850:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:41: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:41: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:36: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:36: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:46: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1851:46: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1853:29: replace > with == in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1853:29: replace > with < in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1853:29: replace > with >= in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1853:46: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1853:46: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1861:38: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1861:38: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1861:44: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1861:44: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1862:46: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1862:46: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1862:39: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1862:39: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1870:83: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1877:32: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1877:32: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1888:21: delete - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1900:20: delete ! in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1902:57: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1906:70: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1906:70: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1915:70: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1915:70: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1924:52: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1924:52: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1933:52: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1948:52: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1948:52: replace - with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1951:57: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1951:57: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1951:46: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1951:46: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1951:68: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1952:33: replace <= with > in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1954:56: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1954:56: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1960:49: replace / with % in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1960:49: replace / with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1961:59: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1961:59: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1962:60: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1962:60: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1962:50: delete - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1969:58: replace - with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1969:52: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1969:52: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1969:75: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1969:75: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:58: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:58: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:52: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:52: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:75: replace * with + in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1970:75: replace * with / in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1978:56: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1978:56: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1979:56: replace + with - in HudManager::render_minimap
+astraweave-ui/src/hud.rs:1979:56: replace + with * in HudManager::render_minimap
+astraweave-ui/src/hud.rs:2004:9: replace HudManager::draw_star with ()
+astraweave-ui/src/hud.rs:2009:54: replace - with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:46: replace / with % in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:46: replace / with * in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:41: replace * with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:41: replace * with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:35: replace * with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:35: replace * with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:59: replace / with % in HudManager::draw_star
+astraweave-ui/src/hud.rs:2009:59: replace / with * in HudManager::draw_star
+astraweave-ui/src/hud.rs:2010:31: replace % with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2010:35: replace == with != in HudManager::draw_star
+astraweave-ui/src/hud.rs:2010:31: replace % with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2010:61: replace * with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2012:26: replace + with * in HudManager::draw_star
+astraweave-ui/src/hud.rs:2010:61: replace * with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2012:26: replace + with - in HudManager::draw_star
+astraweave-ui/src/hud.rs:2012:40: replace * with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2012:40: replace * with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2013:26: replace + with - in HudManager::draw_star
+astraweave-ui/src/hud.rs:2013:26: replace + with * in HudManager::draw_star
+astraweave-ui/src/hud.rs:2013:40: replace * with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2013:40: replace * with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2020:37: replace % with / in HudManager::draw_star
+astraweave-ui/src/hud.rs:2020:37: replace % with + in HudManager::draw_star
+astraweave-ui/src/hud.rs:2020:32: replace + with - in HudManager::draw_star
+astraweave-ui/src/hud.rs:2020:32: replace + with * in HudManager::draw_star
+astraweave-ui/src/hud.rs:2031:9: replace HudManager::draw_diamond with ()
+astraweave-ui/src/hud.rs:2053:9: replace HudManager::draw_triangle with ()
+astraweave-ui/src/hud.rs:2075:9: replace HudManager::draw_directional_triangle with ()
+astraweave-ui/src/hud.rs:2080:25: replace * with + in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2079:24: delete - in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2080:25: replace * with / in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2080:19: delete - in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2080:37: replace * with + in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2080:37: replace * with / in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2081:24: replace * with + in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2081:24: replace * with / in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2081:36: replace * with + in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2081:36: replace * with / in HudManager::draw_directional_triangle
+astraweave-ui/src/hud.rs:2109:9: replace HudManager::render_dialogue with ()
+astraweave-ui/src/hud.rs:2118:53: replace / with % in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2118:53: replace / with * in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2118:38: replace - with + in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2118:38: replace - with / in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2119:52: replace - with + in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2119:52: replace - with / in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2119:37: replace - with + in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2119:37: replace - with / in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2163:54: replace - with + in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2177:24: delete ! in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2198:40: replace < with == in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2198:40: replace < with > in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2198:40: replace < with <= in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2198:65: replace - with + in HudManager::render_dialogue
+astraweave-ui/src/hud.rs:2237:9: replace HudManager::render_tooltip with ()
+astraweave-ui/src/hud.rs:2252:42: replace * with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2252:42: replace * with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2253:24: replace += with -= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2253:24: replace += with *= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2253:39: replace * with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2253:39: replace * with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2254:24: replace += with -= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2254:24: replace += with *= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2254:39: replace * with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2254:39: replace * with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2255:24: replace += with -= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2255:24: replace += with *= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2255:39: replace * with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2255:39: replace * with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2257:28: replace += with -= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2257:28: replace += with *= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2257:43: replace * with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2257:43: replace * with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2259:24: replace += with -= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2259:24: replace += with *= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2262:53: replace + with - in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2262:53: replace + with * in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2263:53: replace + with - in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2263:53: replace + with * in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2266:38: replace > with == in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2266:38: replace > with < in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2266:38: replace > with >= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2266:22: replace + with - in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2266:22: replace + with * in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2267:65: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2267:65: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2267:49: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2267:49: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2269:39: replace > with == in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2269:39: replace > with < in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2269:39: replace > with >= in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2269:22: replace + with - in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2269:22: replace + with * in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2270:56: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2270:56: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2270:39: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2270:39: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2319:60: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2319:60: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2331:24: delete ! in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2367:64: replace - with + in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2367:64: replace - with / in HudManager::render_tooltip
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with None
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((0.0, 0.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((0.0, 1.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((0.0, -1.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((1.0, 0.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((1.0, 1.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((1.0, -1.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((-1.0, 0.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((-1.0, 1.0))
+astraweave-ui/src/hud.rs:2410:5: replace world_to_screen_simple -> Option<(f32, f32)> with Some((-1.0, -1.0))
+astraweave-ui/src/hud.rs:2417:40: replace + with - in world_to_screen_simple
+astraweave-ui/src/hud.rs:2417:40: replace + with * in world_to_screen_simple
+astraweave-ui/src/hud.rs:2417:34: replace / with % in world_to_screen_simple
+astraweave-ui/src/hud.rs:2417:34: replace / with * in world_to_screen_simple
+astraweave-ui/src/hud.rs:2417:45: replace * with + in world_to_screen_simple
+astraweave-ui/src/hud.rs:2417:45: replace * with / in world_to_screen_simple
+astraweave-ui/src/hud.rs:2418:40: replace - with / in world_to_screen_simple
+astraweave-ui/src/hud.rs:2418:34: replace / with % in world_to_screen_simple
+astraweave-ui/src/hud.rs:2418:34: replace / with * in world_to_screen_simple
+astraweave-ui/src/hud.rs:2418:45: replace * with + in world_to_screen_simple
+astraweave-ui/src/hud.rs:2418:45: replace * with / in world_to_screen_simple
+astraweave-ui/src/hud.rs:2421:8: delete ! in world_to_screen_simple
+astraweave-ui/src/hud.rs:2421:10: delete - in world_to_screen_simple
+astraweave-ui/src/hud.rs:2434:9: replace HudManager::render_notifications with ()
+astraweave-ui/src/hud.rs:2445:53: replace / with % in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2445:53: replace / with * in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2445:38: replace - with + in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2445:38: replace - with / in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2446:28: replace + with - in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2446:28: replace + with * in HudManager::render_notifications
+astraweave-ui/src/hud.rs:2495:9: replace HudManager::render_new_quest_notification with ()
+astraweave-ui/src/hud.rs:2555:9: replace HudManager::render_objective_complete_notification with ()
+astraweave-ui/src/hud.rs:2615:9: replace HudManager::render_quest_complete_notification with ()
+astraweave-ui/src/hud.rs:2618:34: replace + with - in HudManager::render_quest_complete_notification
+astraweave-ui/src/hud.rs:2618:34: replace + with * in HudManager::render_quest_complete_notification
+astraweave-ui/src/hud.rs:2618:58: replace * with + in HudManager::render_quest_complete_notification
+astraweave-ui/src/hud.rs:2618:58: replace * with / in HudManager::render_quest_complete_notification
+astraweave-ui/src/hud.rs:2664:24: delete ! in HudManager::render_quest_complete_notification
+astraweave-ui/src/layer.rs:70:9: replace UiLayer::on_event -> bool with false
+astraweave-ui/src/layer.rs:70:9: replace UiLayer::on_event -> bool with true
+astraweave-ui/src/layer.rs:76:9: replace UiLayer::begin with ()
+astraweave-ui/src/layer.rs:112:9: replace UiLayer::paint with ()
+astraweave-ui/src/layer.rs:164:9: replace UiLayer::end_and_paint with ()
+astraweave-ui/src/layer.rs:178:9: replace UiLayer::ctx -> &egui::Context with Box::leak(Box::new(Default::default()))
+astraweave-ui/src/layer.rs:181:9: replace UiLayer::ctx_mut -> &mut egui::Context with Box::leak(Box::new(Default::default()))
+astraweave-ui/src/menu.rs:264:13: delete match arm MenuAction::ApplySettings in MenuManager::handle_action
+astraweave-ui/src/menu.rs:268:13: delete match arm MenuAction::CancelSettings in MenuManager::handle_action
+astraweave-ui/src/menu.rs:308:9: replace MenuManager::is_main_menu -> bool with true
+astraweave-ui/src/menus.rs:438:71: replace == with != in show_settings_menu
+astraweave-ui/src/panels.rs:39:57: delete ! in apply_top_bar_action
+astraweave-ui/src/panels.rs:40:47: delete ! in apply_top_bar_action
+astraweave-ui/src/panels.rs:42:57: delete ! in apply_top_bar_action
+astraweave-ui/src/panels.rs:41:53: delete ! in apply_top_bar_action
+astraweave-ui/src/panels.rs:86:5: replace draw_ui -> UiResult with Default::default()
+astraweave-ui/src/panels.rs:220:17: delete match arm 2 in draw_ui
+astraweave-ui/src/panels.rs:221:17: delete match arm 3 in draw_ui
+astraweave-ui/src/persistence.rs:30:8: delete ! in get_config_path
+astraweave-ui/src/persistence.rs:83:30: replace != with == in try_load_settings

@@ -1,0 +1,12 @@
+astraweave-physics/src/lib.rs:224:9: replace ActorKind::all -> [ActorKind; 4] with [Default::default(); 4]
+astraweave-physics/src/lib.rs:251:9: replace DebugLine::from_vec3 -> Self with Default::default()
+astraweave-physics/src/lib.rs:302:9: replace DebugLine::red -> Self with Default::default()
+astraweave-physics/src/lib.rs:308:9: replace DebugLine::green -> Self with Default::default()
+astraweave-physics/src/lib.rs:314:9: replace DebugLine::blue -> Self with Default::default()
+astraweave-physics/src/lib.rs:320:9: replace DebugLine::white -> Self with Default::default()
+astraweave-physics/src/lib.rs:399:9: replace CharState::all -> [CharState; 1] with [Default::default(); 1]
+astraweave-physics/src/lib.rs:722:9: replace JointType::revolute_y -> Self with Default::default()
+astraweave-physics/src/lib.rs:730:9: replace JointType::revolute_x -> Self with Default::default()
+astraweave-physics/src/lib.rs:738:9: replace JointType::revolute_z -> Self with Default::default()
+astraweave-physics/src/lib.rs:746:9: replace JointType::prismatic_y -> Self with Default::default()
+astraweave-physics/src/lib.rs:817:9: replace JointId::invalid -> Self with Default::default()

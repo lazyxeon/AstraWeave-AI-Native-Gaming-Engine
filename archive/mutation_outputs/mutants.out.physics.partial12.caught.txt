@@ -1,0 +1,13 @@
+astraweave-physics/src/lib.rs:164:9: replace ActorKind::name -> &'static str with ""
+astraweave-physics/src/lib.rs:164:9: replace ActorKind::name -> &'static str with "xyzzy"
+astraweave-physics/src/lib.rs:175:9: replace ActorKind::is_static -> bool with true
+astraweave-physics/src/lib.rs:175:9: replace ActorKind::is_static -> bool with false
+astraweave-physics/src/lib.rs:181:9: replace ActorKind::is_dynamic -> bool with true
+astraweave-physics/src/lib.rs:181:9: replace ActorKind::is_dynamic -> bool with false
+astraweave-physics/src/lib.rs:187:9: replace ActorKind::is_character -> bool with true
+astraweave-physics/src/lib.rs:187:9: replace ActorKind::is_character -> bool with false
+astraweave-physics/src/lib.rs:193:9: replace ActorKind::is_other -> bool with true
+astraweave-physics/src/lib.rs:193:9: replace ActorKind::is_other -> bool with false
+astraweave-physics/src/lib.rs:199:9: replace ActorKind::is_movable -> bool with true
+astraweave-physics/src/lib.rs:199:9: replace ActorKind::is_movable -> bool with false
+astraweave-physics/src/lib.rs:210:9: replace <impl std::fmt::Display for ActorKind>::fmt -> std::fmt::Result with Ok(Default::default())

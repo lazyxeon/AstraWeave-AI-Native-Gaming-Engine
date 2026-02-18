@@ -1,0 +1,237 @@
+# Veilweaver Workspace Configuration
+# Optimized build settings for the Astraweave game engine workspace
+
+[workspace]
+# Keep existing members - don't modify the workspace structure
+members = [
+  "astraweave-core",
+  "astraweave-ai",
+  "astraweave-sdk", 
+  "astraweave-director",
+  "astraweave-memory",
+  "astraweave-ipc",
+  "astraweave-llm",       
+  "astraweave-persona",   
+  "astraweave-author",    
+  "astraweave-net",       
+  "examples/hello_companion",
+  "examples/adaptive_boss",
+  "examples/companion_profile",
+  "examples/ipc_loopback",
+  "examples/debug_overlay",
+  "examples/llm_toolcall",    
+  "examples/phase_director",  
+  "examples/persona_loader",  
+  "examples/rhai_authoring",  
+  "examples/coop_server",     
+  "examples/coop_client",    
+  "astraweave-render",
+  "examples/visual_3d",
+  "astraweave-physics",
+  "astraweave-nav",
+  "examples/physics_demo3d",
+  "examples/navmesh_demo",
+  "astraweave-gameplay",
+  "examples/weaving_playground",
+  "examples/crafting_combat_demo",
+  "examples/quest_dialogue_demo",
+  "examples/combat_physics_demo",
+  "examples/cutscene_render_demo",
+  "astraweave-audio",
+  "examples/audio_spatial_demo",
+  "examples/dialogue_voice_demo",
+  "astraweave-npc",
+  "examples/npc_town_demo",
+  "astraweave-input",
+  "astraweave-ui",
+  "examples/ui_controls_demo",
+  "examples/veilweaver_quest_demo",
+]
+
+# Define default members for core operations
+default-members = [
+  "astraweave-core",
+  "astraweave-ai", 
+  "astraweave-render",
+  "astraweave-physics",
+  "astraweave-nav",
+  "astraweave-gameplay",
+  "astraweave-audio",
+  "astraweave-input",
+  "astraweave-ui",
+  "examples/hello_companion",
+]
+
+resolver = "2"
+
+[workspace.package]
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+publish = false
+rust-version = "1.89.0"  # Minimum supported Rust version
+authors = ["Veilweaver Team"]
+homepage = "https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity"
+repository = "https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity"
+documentation = "https://docs.rs/veilweaver"
+keywords = ["game-engine", "ai", "rust", "3d", "physics"]
+categories = ["game-engines", "graphics", "simulation"]
+
+[workspace.dependencies]
+# Core utilities
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+zip = "0.6"
+rand = "0.9"
+sha2 = "0.10"
+hex = "0.4"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+
+# Scripting
+rhai = "1.17"
+
+# Networking  
+tungstenite = "0.21"
+tokio-tungstenite = "0.21"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Graphics and UI
+egui = "0.28"
+eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
+bytemuck = { version = "1", features = ["derive"] }
+glam = { version = "0.30", features = ["serde"] }
+wgpu = "25.0.2"
+winit = { version = "0.29", features = ["serde"] }
+pollster = "0.3"
+egui-winit = "0.28"
+egui-wgpu = "0.28"
+
+# Physics and math
+rapier3d = "0.22"
+bitflags = "2.4"
+
+# Audio
+rodio = "0.17"
+
+# Input
+gilrs = "0.10"
+
+# Benchmarking (dev-dependencies)
+criterion = "0.5"
+
+[workspace.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+# Workspace-level build optimizations
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = "unwind"
+incremental = true
+codegen-units = 256
+rpath = false
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = "packed"
+debug-assertions = false
+overflow-checks = false
+lto = "thin"
+panic = "abort"
+incremental = false
+codegen-units = 1
+rpath = false
+strip = "symbols"
+
+# Fast builds for development
+[profile.dev-fast]
+inherits = "dev"
+opt-level = 1
+debug-assertions = false
+overflow-checks = false
+
+# Optimized development profile for testing
+[profile.dev-opt]
+inherits = "dev"
+opt-level = 2
+debug = "line-tables-only"
+
+# Profile for benchmarking
+[profile.bench]
+inherits = "release"
+debug = true
+strip = "none"
+
+# Profile for testing
+[profile.test]
+inherits = "dev"
+opt-level = 1
+
+# Optimize dependencies even in debug mode for faster builds
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev.package.wgpu]
+opt-level = 3
+
+[profile.dev.package.wgpu-core]
+opt-level = 3
+
+[profile.dev.package.wgpu-hal]
+opt-level = 3
+
+[profile.dev.package.naga]
+opt-level = 3
+
+[profile.dev.package.rapier3d]
+opt-level = 3
+
+# Workspace-specific configurations
+[workspace.metadata.release]
+sign-commit = false
+sign-tag = false
+pre-release-replacements = [
+  { file = "docs/supplemental-docs/CHANGELOG.md", search = "Unreleased", replace = "{{version}}" },
+  { file = "docs/supplemental-docs/CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}" },
+]
+
+# CI-specific optimizations
+[workspace.metadata.ci]
+# Crates to exclude from CI builds due to known issues
+exclude-from-build = [
+  "astraweave-author",
+  "visual_3d", 
+  "ui_controls_demo",
+  "npc_town_demo",
+  "rhai_authoring"
+]
+
+# Core crates that must always work
+core-crates = [
+  "astraweave-core",
+  "astraweave-ai",
+  "astraweave-render", 
+  "astraweave-physics",
+  "astraweave-nav",
+  "hello_companion"
+]
+
+# Example crates for demonstration
+example-crates = [
+  "hello_companion",
+  "physics_demo3d",
+  "navmesh_demo",
+  "debug_overlay"
+]

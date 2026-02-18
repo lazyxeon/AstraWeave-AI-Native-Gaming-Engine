@@ -1,0 +1,121 @@
+astraweave-physics/src/lib.rs:782:9: replace <impl From<JointId> for u64>::from -> Self with Default::default()
+astraweave-physics/src/lib.rs:808:9: replace BuoyancyData::is_valid -> bool with true
+astraweave-physics/src/lib.rs:808:9: replace BuoyancyData::is_valid -> bool with false
+astraweave-physics/src/lib.rs:808:21: replace > with == in BuoyancyData::is_valid
+astraweave-physics/src/lib.rs:808:21: replace > with < in BuoyancyData::is_valid
+astraweave-physics/src/lib.rs:808:21: replace > with >= in BuoyancyData::is_valid
+astraweave-physics/src/lib.rs:814:9: replace BuoyancyData::buoyancy_force -> f32 with 0.0
+astraweave-physics/src/lib.rs:814:9: replace BuoyancyData::buoyancy_force -> f32 with 1.0
+astraweave-physics/src/lib.rs:814:9: replace BuoyancyData::buoyancy_force -> f32 with -1.0
+astraweave-physics/src/lib.rs:814:37: replace * with + in BuoyancyData::buoyancy_force
+astraweave-physics/src/lib.rs:814:37: replace * with / in BuoyancyData::buoyancy_force
+astraweave-physics/src/lib.rs:814:21: replace * with + in BuoyancyData::buoyancy_force
+astraweave-physics/src/lib.rs:814:21: replace * with / in BuoyancyData::buoyancy_force
+astraweave-physics/src/lib.rs:820:9: replace BuoyancyData::drag_force -> f32 with 0.0
+astraweave-physics/src/lib.rs:820:9: replace BuoyancyData::drag_force -> f32 with 1.0
+astraweave-physics/src/lib.rs:820:9: replace BuoyancyData::drag_force -> f32 with -1.0
+astraweave-physics/src/lib.rs:820:36: replace * with + in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:820:36: replace * with / in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:820:25: replace * with + in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:820:25: replace * with / in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:820:13: replace * with + in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:820:13: replace * with / in BuoyancyData::drag_force
+astraweave-physics/src/lib.rs:826:9: replace <impl std::fmt::Display for BuoyancyData>::fmt -> std::fmt::Result with Ok(Default::default())
+astraweave-physics/src/lib.rs:905:13: delete field dt from struct IntegrationParameters expression in PhysicsWorld::from_config
+astraweave-physics/src/lib.rs:966:9: replace PhysicsWorld::alloc_id -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:967:27: replace += with -= in PhysicsWorld::alloc_id
+astraweave-physics/src/lib.rs:967:27: replace += with *= in PhysicsWorld::alloc_id
+astraweave-physics/src/lib.rs:972:9: replace PhysicsWorld::step with ()
+astraweave-physics/src/lib.rs:1003:9: replace PhysicsWorld::step_internal with ()
+astraweave-physics/src/lib.rs:1035:9: replace PhysicsWorld::apply_force with ()
+astraweave-physics/src/lib.rs:1043:9: replace PhysicsWorld::apply_impulse with ()
+astraweave-physics/src/lib.rs:1051:9: replace PhysicsWorld::get_velocity -> Option<Vec3> with None
+astraweave-physics/src/lib.rs:1051:9: replace PhysicsWorld::get_velocity -> Option<Vec3> with Some(Default::default())
+astraweave-physics/src/lib.rs:1058:9: replace PhysicsWorld::set_velocity with ()
+astraweave-physics/src/lib.rs:1066:9: replace PhysicsWorld::create_ground_plane -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1086:9: replace PhysicsWorld::add_static_trimesh -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1102:9: replace PhysicsWorld::add_dynamic_box -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1126:9: replace PhysicsWorld::add_character -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1151:32: replace * with + in PhysicsWorld::add_character
+astraweave-physics/src/lib.rs:1151:32: replace * with / in PhysicsWorld::add_character
+astraweave-physics/src/lib.rs:1166:9: replace PhysicsWorld::jump with ()
+astraweave-physics/src/lib.rs:1168:26: replace * with + in PhysicsWorld::jump
+astraweave-physics/src/lib.rs:1169:51: replace * with + in PhysicsWorld::jump
+astraweave-physics/src/lib.rs:1169:51: replace * with / in PhysicsWorld::jump
+astraweave-physics/src/lib.rs:1169:47: replace * with + in PhysicsWorld::jump
+astraweave-physics/src/lib.rs:1169:47: replace * with / in PhysicsWorld::jump
+astraweave-physics/src/lib.rs:1174:9: replace PhysicsWorld::control_character with ()
+astraweave-physics/src/lib.rs:1192:12: delete ! in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1193:36: replace -= with += in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1193:36: replace -= with /= in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1202:35: replace && with || in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1208:34: replace * with + in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1208:34: replace * with / in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1210:69: replace || with && in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1210:62: replace > with == in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1210:62: replace > with < in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1212:33: replace && with || in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1212:36: delete ! in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1220:36: replace + with - in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1220:36: replace + with * in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1243:33: replace + with - in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1243:33: replace + with * in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1247:33: replace + with - in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1247:33: replace + with * in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1251:33: replace + with * in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1254:39: replace <= with > in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1255:43: replace + with - in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1273:30: replace <= with > in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1275:38: replace <= with > in PhysicsWorld::control_character
+astraweave-physics/src/lib.rs:1307:9: replace PhysicsWorld::handle_of -> Option<RigidBodyHandle> with None
+astraweave-physics/src/lib.rs:1307:9: replace PhysicsWorld::handle_of -> Option<RigidBodyHandle> with Some(Default::default())
+astraweave-physics/src/lib.rs:1309:42: replace == with != in PhysicsWorld::handle_of
+astraweave-physics/src/lib.rs:1313:9: replace PhysicsWorld::id_of -> Option<BodyId> with None
+astraweave-physics/src/lib.rs:1313:9: replace PhysicsWorld::id_of -> Option<BodyId> with Some(Default::default())
+astraweave-physics/src/lib.rs:1317:9: replace PhysicsWorld::body_transform -> Option<Mat4> with None
+astraweave-physics/src/lib.rs:1317:9: replace PhysicsWorld::body_transform -> Option<Mat4> with Some(Default::default())
+astraweave-physics/src/lib.rs:1333:9: replace PhysicsWorld::tag_body -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1340:9: replace PhysicsWorld::add_buoyancy with ()
+astraweave-physics/src/lib.rs:1345:9: replace PhysicsWorld::apply_buoyancy_forces with ()
+astraweave-physics/src/lib.rs:1352:31: replace < with == in PhysicsWorld::apply_buoyancy_forces
+astraweave-physics/src/lib.rs:1352:31: replace < with > in PhysicsWorld::apply_buoyancy_forces
+astraweave-physics/src/lib.rs:1354:67: replace * with / in PhysicsWorld::apply_buoyancy_forces
+astraweave-physics/src/lib.rs:1378:9: replace PhysicsWorld::set_wind with ()
+astraweave-physics/src/lib.rs:1378:45: replace * with + in PhysicsWorld::set_wind
+astraweave-physics/src/lib.rs:1378:45: replace * with / in PhysicsWorld::set_wind
+astraweave-physics/src/lib.rs:1401:9: replace PhysicsWorld::apply_radial_impulse -> usize with 0
+astraweave-physics/src/lib.rs:1401:9: replace PhysicsWorld::apply_radial_impulse -> usize with 1
+astraweave-physics/src/lib.rs:1405:20: delete ! in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1410:40: replace - with / in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1413:29: replace < with == in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1413:29: replace < with > in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1425:42: replace > with == in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1425:42: replace > with < in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:51: replace + with - in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:51: replace + with * in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:29: replace * with + in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:29: replace * with / in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:36: replace - with + in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:36: replace - with / in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:61: replace * with + in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1432:61: replace * with / in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1433:38: replace * with + in PhysicsWorld::apply_radial_impulse
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with None
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), None, 0.0))
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), None, 1.0))
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), None, -1.0))
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), Some(Default::default()), 0.0))
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), Some(Default::default()), 1.0))
+astraweave-physics/src/lib.rs:1453:9: replace PhysicsWorld::raycast -> Option<(Vec3, Vec3, Option<BodyId>, f32)> with Some((Default::default(), Default::default(), Some(Default::default()), -1.0))
+astraweave-physics/src/lib.rs:1468:38: replace + with - in PhysicsWorld::raycast
+astraweave-physics/src/lib.rs:1468:38: replace + with * in PhysicsWorld::raycast
+astraweave-physics/src/lib.rs:1468:50: replace * with + in PhysicsWorld::raycast
+astraweave-physics/src/lib.rs:1468:50: replace * with / in PhysicsWorld::raycast
+astraweave-physics/src/lib.rs:1490:9: replace PhysicsWorld::add_destructible_box -> BodyId with Default::default()
+astraweave-physics/src/lib.rs:1493:9: replace PhysicsWorld::break_destructible with ()
+astraweave-physics/src/lib.rs:1516:9: replace PhysicsWorld::set_body_position with ()
+astraweave-physics/src/lib.rs:1524:9: replace PhysicsWorld::enable_ccd with ()
+astraweave-physics/src/lib.rs:1532:9: replace PhysicsWorld::add_joint -> JointId with Default::default()
+astraweave-physics/src/lib.rs:1563:28: replace += with -= in PhysicsWorld::add_joint
+astraweave-physics/src/lib.rs:1563:28: replace += with *= in PhysicsWorld::add_joint
+astraweave-physics/src/lib.rs:1568:9: replace PhysicsWorld::get_debug_lines -> Vec<DebugLine> with vec![]

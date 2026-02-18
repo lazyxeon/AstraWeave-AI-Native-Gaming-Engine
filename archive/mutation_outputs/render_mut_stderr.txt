@@ -1,0 +1,5 @@
+ INFO Waiting for lock on C:/Users/pv2br/AstraWeave-AI-Native-Gaming-Engine/mutants.out/lock.json ...: The process cannot access the file because another process has locked a portion of the file. (os error 33)
+Error: move "C:\\Users\\pv2br\\AstraWeave-AI-Native-Gaming-Engine\\mutants.out" to "C:\\Users\\pv2br\\AstraWeave-AI-Native-Gaming-Engine\\mutants.out.old"
+
+Caused by:
+    Access is denied. (os error 5)

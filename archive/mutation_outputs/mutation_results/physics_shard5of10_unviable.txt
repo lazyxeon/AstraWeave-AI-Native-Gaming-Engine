@@ -1,0 +1,10 @@
+astraweave-physics/src/ragdoll.rs:515:9: replace RagdollPresets::humanoid -> RagdollBuilder with Default::default()
+astraweave-physics/src/ragdoll.rs:635:9: replace RagdollPresets::quadruped -> RagdollBuilder with Default::default()
+astraweave-physics/src/vehicle.rs:532:33: replace * with + in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:532:33: replace * with / in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:533:31: replace * with + in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:533:31: replace * with / in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:534:28: replace * with + in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:534:28: replace * with / in Vehicle::update_orientation
+astraweave-physics/src/vehicle.rs:648:9: replace VehicleManager::get -> Option<&Vehicle> with Some(Box::leak(Box::new(Default::default())))
+astraweave-physics/src/vehicle.rs:653:9: replace VehicleManager::get_mut -> Option<&mut Vehicle> with Some(Box::leak(Box::new(Default::default())))

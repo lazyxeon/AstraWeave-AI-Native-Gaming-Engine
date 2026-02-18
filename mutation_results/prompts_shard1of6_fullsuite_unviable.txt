@@ -1,3 +1,0 @@
-astraweave-prompts/src/context.rs:42:9: replace PromptContext::get -> Option<&ContextValue> with Some(Box::leak(Box::new(Default::default())))
-astraweave-prompts/src/context.rs:83:9: replace PromptContext::pop_scope -> Option<HashMap<String, ContextValue>> with Some(HashMap::from_iter([(String::new(), Default::default())]))
-astraweave-prompts/src/context.rs:83:9: replace PromptContext::pop_scope -> Option<HashMap<String, ContextValue>> with Some(HashMap::from_iter([("xyzzy".into(), Default::default())]))

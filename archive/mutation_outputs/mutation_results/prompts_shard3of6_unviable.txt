@@ -1,0 +1,3 @@
+astraweave-prompts/src/context.rs:262:9: replace <impl From<Vec<String>> for ContextValue>::from -> Self with Default::default()
+astraweave-prompts/src/context.rs:268:9: replace <impl From<Vec<&str>> for ContextValue>::from -> Self with Default::default()
+astraweave-prompts/src/helpers.rs:361:9: replace PromptAnalyzer::analyze -> AnalysisResult with Default::default()

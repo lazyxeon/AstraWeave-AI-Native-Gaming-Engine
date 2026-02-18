@@ -1,0 +1,662 @@
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-embeddings v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-embeddings)
+warning: unexpected `cfg` condition value: `small_rng`
+  --> astraweave-embeddings\src\client.rs:98:7
+   |
+98 | #[cfg(feature = "small_rng")]
+   |       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `candle`, `candle-core`, `candle-nn`, `candle-transformers`, `default`, `hnsw`, `hnsw_rs`, `http`, `onnx`, `ort`, and `reqwest`
+   = help: consider adding `small_rng` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `anyhow`
+ --> astraweave-embeddings\src\client.rs:8:14
+  |
+8 | use anyhow::{anyhow, Result};
+  |              ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `StoredVector`
+ --> astraweave-embeddings\src\utils.rs:7:37
+  |
+7 | use crate::{Memory, MemoryCategory, StoredVector};
+  |                                     ^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-embeddings\src\lib.rs:48:5
+   |
+48 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+  --> astraweave-embeddings\src\client.rs:77:29
+   |
+77 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen_range`: Renamed to `random_range`
+  --> astraweave-embeddings\src\client.rs:81:32
+   |
+81 |             embedding.push(rng.gen_range(-1.0..1.0));
+   |                                ^^^^^^^^^
+
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `astraweave-embeddings` (lib) generated 6 warnings (run `cargo fix --lib -p astraweave-embeddings` to apply 3 suggestions)
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling astraweave-prompts v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+   Compiling astraweave-context v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\src\context.rs:5:5
+  |
+5 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-prompts\src\lib.rs:62:5
+   |
+62 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `path`
+   --> astraweave-prompts\src\library.rs:111:32
+    |
+111 |     pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: fields `name` and `metadata` are never read
+  --> astraweave-prompts\src\library.rs:14:5
+   |
+12 | pub struct TemplateLibrary {
+   |            --------------- fields in this struct
+13 |     /// Library name
+14 |     name: String,
+   |     ^^^^
+...
+18 |     metadata: LibraryMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateLibrary` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `metadata` is never read
+  --> astraweave-prompts\src\library.rs:58:5
+   |
+52 | pub struct TemplateCollection {
+   |            ------------------ field in this struct
+...
+58 |     metadata: CollectionMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateCollection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `config` is never read
+  --> astraweave-prompts\src\template.rs:78:5
+   |
+76 | pub struct TemplateProcessor {
+   |            ----------------- field in this struct
+77 |     /// Processing configuration
+78 |     config: ProcessorConfig,
+   |     ^^^^^^
+   |
+   = note: `TemplateProcessor` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused `Result` that must be used
+  --> astraweave-prompts\src\engine.rs:88:9
+   |
+88 | /         self.inner
+89 | |             .register_template(name.to_string(), template.template);
+   | |___________________________________________________________________^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+88 |         let _ = self.inner
+   |         +++++++
+
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+   Compiling astraweave-rag v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+warning: unused import: `MemoryCategory`
+ --> astraweave-rag\src\consolidation.rs:6:37
+  |
+6 | use astraweave_embeddings::{Memory, MemoryCategory};
+  |                                     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-rag\src\consolidation.rs:8:5
+  |
+8 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ConversationHistory`
+  --> astraweave-rag\src\pipeline.rs:12:26
+   |
+12 | use astraweave_context::{ConversationHistory, TokenCounter};
+   |                          ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-rag\src\lib.rs:66:5
+   |
+66 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-rag\src\pipeline.rs:623:37
+    |
+623 |                 let mut rng = rand::thread_rng();
+    |                                     ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: `astraweave-prompts` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-prompts` to apply 2 suggestions)
+warning: unused variable: `duration`
+   --> astraweave-rag\src\pipeline.rs:198:17
+    |
+198 |             let duration = start_time.elapsed().as_millis() as f32;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_duration`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: method `should_forget` is never used
+   --> astraweave-rag\src\forgetting.rs:152:8
+    |
+86  | impl ForgettingEngine {
+    | --------------------- method in this implementation
+...
+152 |     fn should_forget(&self, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: field `query_hash` is never read
+   --> astraweave-rag\src\pipeline.rs:122:5
+    |
+119 | struct CachedResult {
+    |        ------------ field in this struct
+...
+122 |     query_hash: u64,
+    |     ^^^^^^^^^^
+    |
+    = note: `CachedResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+   Compiling astraweave-memory v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-memory)
+warning: `astraweave-context` (lib) generated 13 warnings (run `cargo fix --lib -p astraweave-context` to apply 6 suggestions)
+warning: unused imports: `MemoryContent`, `MemoryMetadata`, and `MemorySource`
+  --> astraweave-memory\src\memory_manager.rs:12:28
+   |
+12 |     Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+   |                            ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\consolidation.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> astraweave-memory\src\consolidation.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\forgetting.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\compression.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\retrieval.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\sharing.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `detector` is never read
+   --> astraweave-memory\src\dynamic_weighting.rs:110:5
+    |
+106 | pub struct AdaptiveWeightManager {
+    |            --------------------- field in this struct
+...
+110 |     detector: PatternDetector,
+    |     ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+   Compiling astraweave-persona v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-persona)
+warning: unused import: `Persona`
+ --> astraweave-persona\src\lib.rs:3:58
+  |
+3 | use astraweave_memory::persona::{CompanionProfile, Fact, Persona, Skill};
+  |                                                          ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `async_trait::async_trait`
+ --> astraweave-persona\src\llm_persona.rs:9:5
+  |
+9 | use async_trait::async_trait;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Memory`
+  --> astraweave-persona\src\llm_persona.rs:17:46
+   |
+17 | use astraweave_embeddings::{EmbeddingClient, Memory, MemoryCategory};
+   |                                              ^^^^^^
+
+warning: unused import: `CompanionProfile`
+  --> astraweave-persona\src\llm_persona.rs:26:25
+   |
+26 | use astraweave_memory::{CompanionProfile, Persona as BasePersona};
+   |                         ^^^^^^^^^^^^^^^^
+
+warning: unused variable: `embedding_client`
+   --> astraweave-persona\src\llm_persona.rs:462:9
+    |
+462 |         embedding_client: Arc<dyn EmbeddingClient>,
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_embedding_client`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-persona\src\llm_persona.rs:509:17
+    |
+509 |             let mut history = self.conversation_history.write().await;
+    |                 ----^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-persona\src\llm_persona.rs:529:17
+    |
+529 |             let mut history = self.conversation_history.write().await;
+    |                 ----^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: unused variable: `response`
+   --> astraweave-persona\src\llm_persona.rs:686:59
+    |
+686 |     async fn update_personality_state(&self, input: &str, response: &str) -> Result<()> {
+    |                                                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_response`
+
+warning: `astraweave-rag` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-rag` to apply 4 suggestions)
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: `astraweave-persona` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-persona` to apply 6 suggestions)
+warning: `astraweave-memory` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-memory` to apply 7 suggestions)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1m 39s
+     Running benches\persona_benchmarks.rs (target\release\deps\persona_benchmarks-c80304eb22465019.exe)
+Gnuplot not found, using plotters backend
+Benchmarking persona_creation
+Benchmarking persona_creation: Warming up for 3.0000 s
+Benchmarking persona_creation: Collecting 100 samples in estimated 5.0022 s (5.6M iterations)
+Benchmarking persona_creation: Analyzing
+persona_creation        time:   [1.1659 ┬╡s 1.1761 ┬╡s 1.1885 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  3 (3.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking persona_default
+Benchmarking persona_default: Warming up for 3.0000 s
+Benchmarking persona_default: Collecting 100 samples in estimated 5.0001 s (222M iterations)
+Benchmarking persona_default: Analyzing
+persona_default         time:   [22.571 ns 22.927 ns 23.296 ns]
+Found 8 outliers among 100 measurements (8.00%)
+  5 (5.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking fact_creation
+Benchmarking fact_creation: Warming up for 3.0000 s
+Benchmarking fact_creation: Collecting 100 samples in estimated 5.0008 s (19M iterations)
+Benchmarking fact_creation: Analyzing
+fact_creation           time:   [256.81 ns 258.45 ns 260.32 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking skill_creation
+Benchmarking skill_creation: Warming up for 3.0000 s
+Benchmarking skill_creation: Collecting 100 samples in estimated 5.0015 s (12M iterations)
+Benchmarking skill_creation: Analyzing
+skill_creation          time:   [376.57 ns 391.06 ns 406.75 ns]
+Found 12 outliers among 100 measurements (12.00%)
+  9 (9.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking episode_creation
+Benchmarking episode_creation: Warming up for 3.0000 s
+Benchmarking episode_creation: Collecting 100 samples in estimated 5.0007 s (6.9M iterations)
+Benchmarking episode_creation: Analyzing
+episode_creation        time:   [699.82 ns 705.46 ns 712.72 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking profile_creation_default
+Benchmarking profile_creation_default: Warming up for 3.0000 s
+Benchmarking profile_creation_default: Collecting 100 samples in estimated 5.0002 s (37M iterations)
+Benchmarking profile_creation_default: Analyzing
+profile_creation_default
+                        time:   [132.74 ns 135.53 ns 138.85 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking profile_creation_comprehensive/profile/f10_s5_e5
+Benchmarking profile_creation_comprehensive/profile/f10_s5_e5: Warming up for 3.0000 s
+Benchmarking profile_creation_comprehensive/profile/f10_s5_e5: Collecting 100 samples in estimated 5.0007 s (293k iterations)
+Benchmarking profile_creation_comprehensive/profile/f10_s5_e5: Analyzing
+profile_creation_comprehensive/profile/f10_s5_e5
+                        time:   [16.534 ┬╡s 17.088 ┬╡s 17.565 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  1 (1.00%) low severe
+  8 (8.00%) low mild
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking profile_creation_comprehensive/profile/f50_s10_e10
+Benchmarking profile_creation_comprehensive/profile/f50_s10_e10: Warming up for 3.0000 s
+Benchmarking profile_creation_comprehensive/profile/f50_s10_e10: Collecting 100 samples in estimated 5.0942 s (106k iterations)
+Benchmarking profile_creation_comprehensive/profile/f50_s10_e10: Analyzing
+profile_creation_comprehensive/profile/f50_s10_e10
+                        time:   [47.201 ┬╡s 47.545 ┬╡s 47.962 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+Benchmarking profile_creation_comprehensive/profile/f100_s20_e20
+Benchmarking profile_creation_comprehensive/profile/f100_s20_e20: Warming up for 3.0000 s
+Benchmarking profile_creation_comprehensive/profile/f100_s20_e20: Collecting 100 samples in estimated 5.4377 s (56k iterations)
+Benchmarking profile_creation_comprehensive/profile/f100_s20_e20: Analyzing
+profile_creation_comprehensive/profile/f100_s20_e20
+                        time:   [103.26 ┬╡s 106.61 ┬╡s 110.37 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  4 (4.00%) low mild
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking profile_clone
+Benchmarking profile_clone: Warming up for 3.0000 s
+Benchmarking profile_clone: Collecting 100 samples in estimated 5.1079 s (172k iterations)
+Benchmarking profile_clone: Analyzing
+profile_clone           time:   [25.857 ┬╡s 26.064 ┬╡s 26.279 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking profile_sign
+Benchmarking profile_sign: Warming up for 3.0000 s
+Benchmarking profile_sign: Collecting 100 samples in estimated 5.1020 s (232k iterations)
+Benchmarking profile_sign: Analyzing
+profile_sign            time:   [74.505 ns 89.353 ns 114.80 ns]
+Found 15 outliers among 100 measurements (15.00%)
+  9 (9.00%) low mild
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking profile_verify
+Benchmarking profile_verify: Warming up for 3.0000 s
+Benchmarking profile_verify: Collecting 100 samples in estimated 5.0000 s (5.5B iterations)
+Benchmarking profile_verify: Analyzing
+profile_verify          time:   [862.68 ps 882.83 ps 902.32 ps]
+Found 19 outliers among 100 measurements (19.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  3 (3.00%) high mild
+  13 (13.00%) high severe
+
+Benchmarking profile_distill/10
+Benchmarking profile_distill/10: Warming up for 3.0000 s
+Benchmarking profile_distill/10: Collecting 100 samples in estimated 5.0554 s (343k iterations)
+Benchmarking profile_distill/10: Analyzing
+profile_distill/10      time:   [1.9674 ┬╡s 1.9866 ┬╡s 2.0090 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking profile_distill/50
+Benchmarking profile_distill/50: Warming up for 3.0000 s
+Benchmarking profile_distill/50: Collecting 100 samples in estimated 5.0573 s (81k iterations)
+Benchmarking profile_distill/50: Analyzing
+profile_distill/50      time:   [10.164 ┬╡s 10.293 ┬╡s 10.430 ┬╡s]
+Found 9 outliers among 100 measurements (9.00%)
+  6 (6.00%) low mild
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+Benchmarking profile_distill/100
+Benchmarking profile_distill/100: Warming up for 3.0000 s
+Benchmarking profile_distill/100: Collecting 100 samples in estimated 5.2561 s (40k iterations)
+Benchmarking profile_distill/100: Analyzing
+profile_distill/100     time:   [18.190 ┬╡s 19.598 ┬╡s 21.308 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) low mild
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking profile_serialize_json
+Benchmarking profile_serialize_json: Warming up for 3.0000 s
+Benchmarking profile_serialize_json: Collecting 100 samples in estimated 5.0160 s (460k iterations)
+Benchmarking profile_serialize_json: Analyzing
+profile_serialize_json  time:   [10.207 ┬╡s 10.357 ┬╡s 10.565 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking profile_deserialize_json
+Benchmarking profile_deserialize_json: Warming up for 3.0000 s
+Benchmarking profile_deserialize_json: Collecting 100 samples in estimated 5.0522 s (101k iterations)
+Benchmarking profile_deserialize_json: Analyzing
+profile_deserialize_json
+                        time:   [50.360 ┬╡s 52.307 ┬╡s 54.546 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking profile_add_facts/10
+Benchmarking profile_add_facts/10: Warming up for 3.0000 s
+Benchmarking profile_add_facts/10: Collecting 100 samples in estimated 5.0110 s (702k iterations)
+Benchmarking profile_add_facts/10: Analyzing
+profile_add_facts/10    time:   [6.0373 ┬╡s 6.1569 ┬╡s 6.2858 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+Benchmarking profile_add_facts/50
+Benchmarking profile_add_facts/50: Warming up for 3.0000 s
+Benchmarking profile_add_facts/50: Collecting 100 samples in estimated 5.0521 s (157k iterations)
+Benchmarking profile_add_facts/50: Analyzing
+profile_add_facts/50    time:   [27.199 ┬╡s 28.318 ┬╡s 29.245 ┬╡s]
+Found 15 outliers among 100 measurements (15.00%)
+  14 (14.00%) low mild
+  1 (1.00%) high severe
+Benchmarking profile_add_facts/100
+Benchmarking profile_add_facts/100: Warming up for 3.0000 s
+Benchmarking profile_add_facts/100: Collecting 100 samples in estimated 5.1451 s (76k iterations)
+Benchmarking profile_add_facts/100: Analyzing
+profile_add_facts/100   time:   [57.980 ┬╡s 60.743 ┬╡s 63.709 ┬╡s]
+Found 16 outliers among 100 measurements (16.00%)
+  9 (9.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking profile_add_skills/10
+Benchmarking profile_add_skills/10: Warming up for 3.0000 s
+Benchmarking profile_add_skills/10: Collecting 100 samples in estimated 5.0066 s (1.1M iterations)
+Benchmarking profile_add_skills/10: Analyzing
+profile_add_skills/10   time:   [3.6993 ┬╡s 3.8028 ┬╡s 3.9255 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+Benchmarking profile_add_skills/50
+Benchmarking profile_add_skills/50: Warming up for 3.0000 s
+Benchmarking profile_add_skills/50: Collecting 100 samples in estimated 5.0959 s (252k iterations)
+Benchmarking profile_add_skills/50: Analyzing
+profile_add_skills/50   time:   [18.087 ┬╡s 18.443 ┬╡s 18.811 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking profile_add_skills/100
+Benchmarking profile_add_skills/100: Warming up for 3.0000 s
+Benchmarking profile_add_skills/100: Collecting 100 samples in estimated 5.1329 s (116k iterations)
+Benchmarking profile_add_skills/100: Analyzing
+profile_add_skills/100  time:   [35.363 ┬╡s 36.929 ┬╡s 38.225 ┬╡s]
+Found 15 outliers among 100 measurements (15.00%)
+  14 (14.00%) low mild
+  1 (1.00%) high mild
+

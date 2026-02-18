@@ -1,0 +1,2 @@
+astraweave-gameplay/src/weaving.rs:19:5: replace apply_weave_op -> Result<WeaveConsequence> with Ok(Default::default())
+astraweave-gameplay/src/weave_portals.rs:19:5: replace build_portals -> PortalGraph with Default::default()

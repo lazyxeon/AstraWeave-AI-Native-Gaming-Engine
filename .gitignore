@@ -98,6 +98,74 @@ warnings.txt
 *_error*.txt
 *_errors*.txt
 
+# Clippy/lint outputs (root level)
+clippy_*.txt
+ai_clippy.txt
+
+# Test/debug outputs (root level)
+*_test.txt
+*_test_out.txt
+*_test_output.txt
+*_test_err.txt
+*_test_report.txt
+*_missed_mutants.txt
+*_timeout_mutants.txt
+*_mutants*.txt
+*_mutation_log*.txt
+*_mut_stderr.txt
+*_mut_stdout.txt
+*_mutants_stderr.txt
+*_mutants_stdout.txt
+fluids_*.txt
+miri_*.txt
+render_*.txt
+terrain_*.txt
+scene_*.txt
+core_*.txt
+ecs_*.txt
+gameplay_*.txt
+ui_*.txt
+asset_*.txt
+
+# Compilation/check outputs (root level)
+compile_*.txt
+demo_check.txt
+ne_check*.txt
+emb_out.txt
+fresh_*.txt
+full_*.txt
+*_out.txt
+*_out2.txt
+
+# Benchmark outputs (root level)
+bench_*.txt
+parallel_bench_output.txt
+
+# Audit outputs (root level)
+audit_*.txt
+unwrap_audit*.txt
+
+# Workspace/workspace-level debug artifacts (root level)
+workspace_*.txt
+planner_*.txt
+pub_enum_list.txt
+engine_test_report.txt
+editor_test.txt
+find_pub_enums.ps1
+
+# Mutant testing output directories
+mutants.out*/
+mutants_*/
+
+# Debug/temp artifact directories
+/debug/
+/debug_paths/
+/temp/
+/temp_outputs/
+/test_output/
+/test_baked/
+/cov_html/
+
 # Temporary trace/metadata files
 astraweave_demo_trace.json
 metadata.json
@@ -111,7 +179,7 @@ benchmark_validation_report.json
 lcov.info
 tarpaulin-report.html
 
-# Benchmark results
+# Benchmark results (generated)
 criterion/
 bench-results/
 

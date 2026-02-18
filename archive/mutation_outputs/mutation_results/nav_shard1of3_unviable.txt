@@ -1,0 +1,4 @@
+astraweave-nav/src/lib.rs:119:9: replace Triangle::from_vertices -> Self with Default::default()
+astraweave-nav/src/lib.rs:265:9: replace Aabb::zero -> Self with Default::default()
+astraweave-nav/src/lib.rs:274:9: replace Aabb::unit -> Self with Default::default()
+astraweave-nav/src/lib.rs:283:9: replace Aabb::from_center_half_extents -> Self with Default::default()

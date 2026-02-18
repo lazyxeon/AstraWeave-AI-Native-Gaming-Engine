@@ -1,6 +1,0 @@
-astraweave-behavior/src/goap.rs:182:9: replace <impl Ord for PlanNode>::cmp -> Ordering with Default::default()
-astraweave-behavior/src/goap.rs:223:9: replace GoapPlanner::plan -> Option<Vec<GoapAction>> with Some(vec![Default::default()])
-astraweave-behavior/src/goap_cache.rs:78:9: replace PlanCacheKey::with_action_validation -> (Self, u64) with (Default::default(), 0)
-astraweave-behavior/src/goap_cache.rs:78:9: replace PlanCacheKey::with_action_validation -> (Self, u64) with (Default::default(), 1)
-astraweave-behavior/src/goap_cache.rs:165:9: replace PlanCache::get -> Option<Vec<GoapAction>> with Some(vec![Default::default()])
-astraweave-behavior/src/goap_cache.rs:298:9: replace CachedGoapPlanner::plan -> Option<Vec<GoapAction>> with Some(vec![Default::default()])

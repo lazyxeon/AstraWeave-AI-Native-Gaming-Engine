@@ -1,0 +1,75 @@
+   Compiling astraweave-math v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-math)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.77s
+     Running tests\mutation_resistant_comprehensive_tests.rs (target\debug\deps\mutation_resistant_comprehensive_tests-cf59256bae4dd127.exe)
+
+running 67 tests
+test cross_basis_vectors ... ok
+test cross_orthogonal_to_inputs ... ok
+test dot_anti_parallel_is_negative_one ... ok
+test dot_commutative ... ok
+test cross_anticommutative ... ok
+test cross_product_magnitude ... ok
+test cross_self_is_zero ... ok
+test dot_known_value ... ok
+test dot_parallel_unit_vectors ... ok
+test dot_orthogonal_is_zero ... ok
+test dot_zero_vector ... ok
+test length_3_4_5_triangle ... ok
+test length_always_non_negative ... ok
+test inverse_identity ... ok
+test inverse_of_scale ... ok
+test length_squared_no_sqrt ... ok
+test length_unit_axes ... ok
+test length_squared_is_dot_self ... ok
+test length_of_normalized_is_one ... ok
+test mat_mul_identity_right ... ok
+test mat_mul_not_commutative ... ok
+test normalize_above_threshold ... ok
+test length_zero ... ok
+test mat_mul_identity_left ... ok
+test mat_mul_scale_composes ... ok
+test mul_inverse_is_identity ... ok
+test normalize_idempotent ... ok
+test normalize_near_zero_boundary ... ok
+test normalize_preserves_direction ... ok
+test normalize_produces_unit_length ... ok
+test normalize_negative_components ... ok
+test pythagorean_identity_dot ... ok
+test quat_dot_identity_self ... ok
+test normalize_unit_vector_unchanged ... ok
+test normalize_zero_returns_zero ... ok
+test quat_mul_identity_right ... ok
+test quat_dot_self_is_length_sq ... ok
+test quat_mul_identity_left ... ok
+test quat_mul_not_commutative ... ok
+test quat_normalize_batch_count ... ok
+test quat_normalize_produces_unit ... ok
+test quat_normalize_already_unit ... ok
+test quat_normalize_batch_all_unit ... ok
+test slerp_halfway_interpolation ... ok
+test slerp_t0_returns_first ... ok
+test slerp_batch_count ... ok
+test slerp_batch_empty ... ok
+test slerp_t1_returns_second ... ok
+test transform_point_scale ... ok
+test transform_point_translation ... ok
+test transform_point_identity ... ok
+test transform_points_batch_preserves_count ... ok
+test transform_points_batch_correctness ... ok
+test transform_points_batch_empty ... ok
+test transpose_identity_unchanged ... ok
+test update_positions_batch_exact_4 ... ok
+test update_positions_batch_plus_remainder ... ok
+test update_positions_large_batch ... ok
+test transpose_involution ... ok
+test update_positions_basic ... ok
+test update_positions_dt_scaling ... ok
+test update_positions_empty ... ok
+test update_positions_mismatched_panics - should panic ... ok
+test update_positions_naive_matches_simd ... ok
+test update_positions_remainder_only ... ok
+test update_positions_zero_dt ... ok
+test update_positions_negative_velocity ... ok
+
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+

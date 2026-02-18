@@ -1,0 +1,331 @@
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling astraweave-context v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+warning: `astraweave-context` (lib) generated 13 warnings (run `cargo fix --lib -p astraweave-context` to apply 6 suggestions)
+warning: `astraweave-llm` (lib) generated 2 warnings
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1m 31s
+     Running benches\context_benchmarks.rs (target\release\deps\context_benchmarks-18759354f8002ae4.exe)
+Gnuplot not found, using plotters backend
+Benchmarking message_creation
+Benchmarking message_creation: Warming up for 3.0000 s
+Benchmarking message_creation: Collecting 100 samples in estimated 5.0003 s (13M iterations)
+Benchmarking message_creation: Analyzing
+message_creation        time:   [430.23 ns 452.62 ns 475.76 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking message_format_for_prompt
+Benchmarking message_format_for_prompt: Warming up for 3.0000 s
+Benchmarking message_format_for_prompt: Collecting 100 samples in estimated 5.0009 s (17M iterations)
+Benchmarking message_format_for_prompt: Analyzing
+message_format_for_prompt
+                        time:   [282.10 ns 291.11 ns 301.90 ns]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking context_window_creation
+Benchmarking context_window_creation: Warming up for 3.0000 s
+Benchmarking context_window_creation: Collecting 100 samples in estimated 5.0586 s (429k iterations)
+Benchmarking context_window_creation: Analyzing
+context_window_creation time:   [10.509 ┬╡s 11.109 ┬╡s 11.853 ┬╡s]
+Found 13 outliers among 100 measurements (13.00%)
+  3 (3.00%) high mild
+  10 (10.00%) high severe
+
+Benchmarking context_window_add_message/10
+Benchmarking context_window_add_message/10: Warming up for 3.0000 s
+Benchmarking context_window_add_message/10: Collecting 100 samples in estimated 5.0854 s (152k iterations)
+Benchmarking context_window_add_message/10: Analyzing
+context_window_add_message/10
+                        time:   [16.762 ┬╡s 17.389 ┬╡s 18.032 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  9 (9.00%) high mild
+  1 (1.00%) high severe
+Benchmarking context_window_add_message/50
+Benchmarking context_window_add_message/50: Warming up for 3.0000 s
+Benchmarking context_window_add_message/50: Collecting 100 samples in estimated 5.1761 s (50k iterations)
+Benchmarking context_window_add_message/50: Analyzing
+context_window_add_message/50
+                        time:   [72.433 ┬╡s 73.731 ┬╡s 75.356 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+Benchmarking context_window_add_message/100
+Benchmarking context_window_add_message/100: Warming up for 3.0000 s
+Benchmarking context_window_add_message/100: Collecting 100 samples in estimated 5.7863 s (30k iterations)
+Benchmarking context_window_add_message/100: Analyzing
+context_window_add_message/100
+                        time:   [155.92 ┬╡s 161.04 ┬╡s 167.45 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking window_types/add_50_messages/Sliding
+Benchmarking window_types/add_50_messages/Sliding: Warming up for 3.0000 s
+Benchmarking window_types/add_50_messages/Sliding: Collecting 100 samples in estimated 5.4197 s (50k iterations)
+Benchmarking window_types/add_50_messages/Sliding: Analyzing
+window_types/add_50_messages/Sliding
+                        time:   [74.097 ┬╡s 76.115 ┬╡s 78.702 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+Benchmarking window_types/add_50_messages/Fixed
+Benchmarking window_types/add_50_messages/Fixed: Warming up for 3.0000 s
+Benchmarking window_types/add_50_messages/Fixed: Collecting 100 samples in estimated 5.1406 s (56k iterations)
+Benchmarking window_types/add_50_messages/Fixed: Analyzing
+window_types/add_50_messages/Fixed
+                        time:   [69.164 ┬╡s 69.758 ┬╡s 70.560 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking conversation_history_creation
+Benchmarking conversation_history_creation: Warming up for 3.0000 s
+Benchmarking conversation_history_creation: Collecting 100 samples in estimated 5.0082 s (470k iterations)
+Benchmarking conversation_history_creation: Analyzing
+conversation_history_creation
+                        time:   [10.441 ┬╡s 10.762 ┬╡s 11.174 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking get_recent_messages/50
+Benchmarking get_recent_messages/50: Warming up for 3.0000 s
+Benchmarking get_recent_messages/50: Collecting 100 samples in estimated 5.0283 s (485k iterations)
+Benchmarking get_recent_messages/50: Analyzing
+get_recent_messages/50  time:   [340.44 ns 359.89 ns 391.83 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking get_recent_messages/100
+Benchmarking get_recent_messages/100: Warming up for 3.0000 s
+Benchmarking get_recent_messages/100: Collecting 100 samples in estimated 5.0295 s (429k iterations)
+Benchmarking get_recent_messages/100: Analyzing
+get_recent_messages/100 time:   [306.34 ns 310.92 ns 316.55 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking get_recent_messages/200
+Benchmarking get_recent_messages/200: Warming up for 3.0000 s
+Benchmarking get_recent_messages/200: Collecting 100 samples in estimated 5.0548 s (434k iterations)
+Benchmarking get_recent_messages/200: Analyzing
+get_recent_messages/200 time:   [312.79 ns 320.44 ns 328.91 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking message_batch_creation/10
+Benchmarking message_batch_creation/10: Warming up for 3.0000 s
+Benchmarking message_batch_creation/10: Collecting 100 samples in estimated 5.0268 s (768k iterations)
+Benchmarking message_batch_creation/10: Analyzing
+message_batch_creation/10
+                        time:   [6.3455 ┬╡s 6.5616 ┬╡s 6.8125 ┬╡s]
+Found 13 outliers among 100 measurements (13.00%)
+  1 (1.00%) low mild
+  4 (4.00%) high mild
+  8 (8.00%) high severe
+Benchmarking message_batch_creation/50
+Benchmarking message_batch_creation/50: Warming up for 3.0000 s
+Benchmarking message_batch_creation/50: Collecting 100 samples in estimated 5.0892 s (172k iterations)
+Benchmarking message_batch_creation/50: Analyzing
+message_batch_creation/50
+                        time:   [30.519 ┬╡s 31.744 ┬╡s 33.022 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  1 (1.00%) high mild
+  13 (13.00%) high severe
+Benchmarking message_batch_creation/100
+Benchmarking message_batch_creation/100: Warming up for 3.0000 s
+Benchmarking message_batch_creation/100: Collecting 100 samples in estimated 5.1163 s (86k iterations)
+Benchmarking message_batch_creation/100: Analyzing
+message_batch_creation/100
+                        time:   [64.129 ┬╡s 66.271 ┬╡s 68.571 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+Benchmarking message_batch_creation/500
+Benchmarking message_batch_creation/500: Warming up for 3.0000 s
+Benchmarking message_batch_creation/500: Collecting 100 samples in estimated 6.5316 s (20k iterations)
+Benchmarking message_batch_creation/500: Analyzing
+message_batch_creation/500
+                        time:   [252.26 ┬╡s 268.63 ┬╡s 286.58 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  8 (8.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking message_batch_formatting/10
+Benchmarking message_batch_formatting/10: Warming up for 3.0000 s
+Benchmarking message_batch_formatting/10: Collecting 100 samples in estimated 5.0044 s (470k iterations)
+Benchmarking message_batch_formatting/10: Analyzing
+message_batch_formatting/10
+                        time:   [4.3728 ┬╡s 4.6979 ┬╡s 5.0592 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  7 (7.00%) high mild
+  4 (4.00%) high severe
+Benchmarking message_batch_formatting/50
+Benchmarking message_batch_formatting/50: Warming up for 3.0000 s
+Benchmarking message_batch_formatting/50: Collecting 100 samples in estimated 5.1414 s (91k iterations)
+Benchmarking message_batch_formatting/50: Analyzing
+message_batch_formatting/50
+                        time:   [18.614 ┬╡s 19.574 ┬╡s 20.760 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  1 (1.00%) low mild
+  5 (5.00%) high mild
+  6 (6.00%) high severe
+Benchmarking message_batch_formatting/100
+Benchmarking message_batch_formatting/100: Warming up for 3.0000 s
+Benchmarking message_batch_formatting/100: Collecting 100 samples in estimated 5.2845 s (50k iterations)
+Benchmarking message_batch_formatting/100: Analyzing
+message_batch_formatting/100
+                        time:   [36.542 ┬╡s 37.530 ┬╡s 39.167 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) high mild
+  5 (5.00%) high severe
+
+Benchmarking context_window_with_stats
+Benchmarking context_window_with_stats: Warming up for 3.0000 s
+Benchmarking context_window_with_stats: Collecting 100 samples in estimated 5.1609 s (101k iterations)
+Benchmarking context_window_with_stats: Analyzing
+context_window_with_stats
+                        time:   [101.91 ns 105.93 ns 110.29 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  1 (1.00%) low mild
+  6 (6.00%) high mild
+  4 (4.00%) high severe
+

@@ -1,0 +1,948 @@
+//! hello_companion - Advanced AI Showcase with Real Phi-3
+//!
+//! Demonstrates 6 AI modes:
+//! 1. Classical (RuleOrchestrator - baseline)
+//! 2. BehaviorTree (Hierarchical reasoning)
+//! 3. Utility (Score-based selection)
+//! 4. LLM (Real Phi-3 via Ollama)
+//! 5. Hybrid (LLM with Classical fallback)
+//! 6. Ensemble (Voting across all modes)
+//!
+//! Usage:
+//!   cargo run -p hello_companion --release                           # Classical (default)
+//!   cargo run -p hello_companion --release --features llm,ollama    # Real Phi-3
+//!   cargo run -p hello_companion --release --features llm,ollama -- --bt          # BehaviorTree
+//!   cargo run -p hello_companion --release --features llm,ollama -- --utility     # Utility AI
+//!   cargo run -p hello_companion --release --features llm,ollama -- --hybrid      # LLM + fallback
+//!   cargo run -p hello_companion --release --features llm,ollama -- --ensemble    # All modes voting
+//!   cargo run -p hello_companion --release --features llm,ollama,metrics -- --demo-all --metrics --export-metrics
+
+use astraweave_ai::{Orchestrator, RuleOrchestrator};
+use astraweave_core::{
+    build_snapshot, step, validate_and_execute, IVec2, PerceptionConfig, PlanIntent, SimConfig,
+    Team, ValidateCfg, World, WorldSnapshot,
+};
+
+#[cfg(feature = "llm")]
+use astraweave_core::ToolRegistry;
+
+#[cfg(feature = "llm")]
+use astraweave_llm::{plan_from_llm, PlanSource};
+
+#[cfg(feature = "ollama")]
+use astraweave_llm::OllamaClient;
+
+use anyhow::{Context, Result};
+
+// ============================================================================
+// AI MODE SELECTION
+// ============================================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AIMode {
+    Classical,      // RuleOrchestrator (always available)
+    #[cfg(feature = "llm")]
+    BehaviorTree,   // Hierarchical reasoning
+    #[cfg(feature = "llm")]
+    Utility,        // Score-based selection
+    #[cfg(feature = "ollama")]
+    LLM,            // Real Phi-3 via Ollama
+    #[cfg(feature = "ollama")]
+    Hybrid,         // LLM + Classical fallback
+    #[cfg(feature = "llm")]
+    Ensemble,       // Voting across all modes
+}
+
+impl std::fmt::Display for AIMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AIMode::Classical => write!(f, "Classical (RuleOrchestrator)"),
+            #[cfg(feature = "llm")]
+            AIMode::BehaviorTree => write!(f, "BehaviorTree (Hierarchical)"),
+            #[cfg(feature = "llm")]
+            AIMode::Utility => write!(f, "Utility (Score-based)"),
+            #[cfg(feature = "ollama")]
+            AIMode::LLM => write!(f, "LLM (Phi-3 via Ollama)"),
+            #[cfg(feature = "ollama")]
+            AIMode::Hybrid => write!(f, "Hybrid (LLM + Fallback)"),
+            #[cfg(feature = "llm")]
+            AIMode::Ensemble => write!(f, "Ensemble (Voting)"),
+        }
+    }
+}
+
+// ============================================================================
+// METRICS TRACKING
+// ============================================================================
+
+#[cfg(feature = "metrics")]
+use chrono::Utc;
+#[cfg(feature = "metrics")]
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "metrics")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AIMetrics {
+    mode: String,
+    plan_steps: usize,
+    latency_ms: f64,
+    timestamp: String,
+    success: bool,
+    error: Option<String>,
+}
+
+#[cfg(feature = "metrics")]
+impl AIMetrics {
+    fn new(mode: &str, plan_steps: usize, latency_ms: f64, success: bool, error: Option<String>) -> Self {
+        Self {
+            mode: mode.to_string(),
+            plan_steps,
+            latency_ms,
+            timestamp: Utc::now().to_rfc3339(),
+            success,
+            error,
+        }
+    }
+}
+
+// ============================================================================
+// MAIN ENTRY POINT
+// ============================================================================
+
+fn main() -> Result<()> {
+    println!("╔════════════════════════════════════════════════════════════╗");
+    println!("║   AstraWeave AI Companion Demo - Advanced Showcase        ║");
+    println!("╚════════════════════════════════════════════════════════════╝\n");
+
+    // Parse command-line arguments
+    let args: Vec<String> = std::env::args().collect();
+    let demo_all = args.contains(&"--demo-all".to_string());
+    let show_metrics = args.contains(&"--metrics".to_string());
+    let export_metrics = args.contains(&"--export-metrics".to_string());
+
+    #[cfg(feature = "metrics")]
+    let mut all_metrics: Vec<AIMetrics> = Vec::new();
+
+    if demo_all {
+        #[cfg(feature = "llm")]
+        {
+            println!("🎯 Demo Mode: Running ALL AI systems for comparison\n");
+            
+            let modes = vec![
+                AIMode::Classical,
+                AIMode::BehaviorTree,
+                AIMode::Utility,
+                #[cfg(feature = "ollama")]
+                AIMode::LLM,
+                #[cfg(feature = "ollama")]
+                AIMode::Hybrid,
+                AIMode::Ensemble,
+            ];
+
+            for mode in &modes {
+                println!("─────────────────────────────────────────────────────────────");
+                println!("Running: {}", mode);
+                println!("─────────────────────────────────────────────────────────────");
+                
+                #[cfg(feature = "metrics")]
+                let metrics = run_single_demo(*mode)?;
+                
+                #[cfg(not(feature = "metrics"))]
+                run_single_demo(*mode)?;
+
+                #[cfg(feature = "metrics")]
+                all_metrics.push(metrics);
+                
+                println!();
+            }
+
+            #[cfg(feature = "metrics")]
+            if show_metrics {
+                print_metrics_table(&all_metrics);
+            }
+
+            #[cfg(feature = "metrics")]
+            if export_metrics {
+                export_metrics_to_files(&all_metrics)?;
+            }
+
+            return Ok(());
+        }
+
+        #[cfg(not(feature = "llm"))]
+        {
+            println!("⚠️  --demo-all requires the 'llm' feature flag");
+            println!("    Run: cargo run --release -p hello_companion --features llm,ollama -- --demo-all\n");
+            return Ok(());
+        }
+    }
+
+    // Single mode
+    let mode = select_ai_mode(&args);
+    println!("🤖 AI Mode: {}\n", mode);
+
+    #[cfg(feature = "metrics")]
+    let metrics = run_single_demo(mode)?;
+
+    #[cfg(not(feature = "metrics"))]
+    run_single_demo(mode)?;
+
+    #[cfg(feature = "metrics")]
+    {
+        if show_metrics {
+            print_metrics_table(&[metrics.clone()]);
+        }
+        if export_metrics {
+            export_metrics_to_files(&[metrics])?;
+        }
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// SINGLE DEMO RUN
+// ============================================================================
+
+#[cfg(feature = "metrics")]
+fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
+    use std::time::Instant;
+    
+    // Setup world
+    let (mut w, player, comp, enemy, snap) = setup_world()?;
+
+    // Generate plan with timing
+    let start = Instant::now();
+    let plan_result = generate_plan(&snap, mode);
+    let elapsed = start.elapsed();
+    let latency_ms = elapsed.as_secs_f64() * 1000.0;
+
+    let (plan, success, error) = match plan_result {
+        Ok(p) => (p, true, None),
+        Err(e) => {
+            println!("❌ Plan generation failed: {}", e);
+            return Ok(AIMetrics::new(
+                &mode.to_string(),
+                0,
+                latency_ms,
+                false,
+                Some(e.to_string()),
+            ));
+        }
+    };
+
+    println!("✅ Generated {} step plan in {:.3}ms", plan.steps.len(), latency_ms);
+
+    // Execute plan
+    let v_cfg = ValidateCfg {
+        world_bounds: (0, 0, 19, 9),
+    };
+
+    let mut log = |line: String| {
+        println!("   {}", line);
+    };
+
+    println!("\n--- Executing Plan @ t={:.2} ---", w.t);
+    if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+        println!("⚠️  Execution failed: {}. Continuing...", e);
+    }
+
+    // Simulate time passage
+    let s_cfg = SimConfig { dt: 0.25 };
+    for _ in 0..20 {
+        step(&mut w, &s_cfg);
+    }
+
+    println!("\n--- Post-execution State @ t={:.2} ---", w.t);
+    if let Some(comp_pos) = w.pos_of(comp) {
+        println!("Companion: {:?}", comp_pos);
+    }
+    if let Some(enemy_pos) = w.pos_of(enemy) {
+        println!("Enemy:     {:?}", enemy_pos);
+    }
+    if let Some(enemy_hp) = w.health(enemy) {
+        println!("Enemy HP:  {}", enemy_hp.hp);
+    }
+
+    Ok(AIMetrics::new(
+        &mode.to_string(),
+        plan.steps.len(),
+        latency_ms,
+        success,
+        error,
+    ))
+}
+
+#[cfg(not(feature = "metrics"))]
+fn run_single_demo(mode: AIMode) -> Result<()> {
+    use std::time::Instant;
+    
+    let (mut w, player, comp, enemy, snap) = setup_world()?;
+
+    let start = Instant::now();
+    let plan = generate_plan(&snap, mode)?;
+    let elapsed = start.elapsed();
+
+    println!("✅ Generated {} step plan in {:.3}ms", plan.steps.len(), elapsed.as_secs_f64() * 1000.0);
+
+    let v_cfg = ValidateCfg {
+        world_bounds: (0, 0, 19, 9),
+    };
+
+    let mut log = |line: String| {
+        println!("   {}", line);
+    };
+
+    println!("\n--- Executing Plan @ t={:.2} ---", w.t);
+    if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+        println!("⚠️  Execution failed: {}. Continuing...", e);
+    }
+
+    let s_cfg = SimConfig { dt: 0.25 };
+    for _ in 0..20 {
+        step(&mut w, &s_cfg);
+    }
+
+    println!("\n--- Post-execution State @ t={:.2} ---", w.t);
+    if let Some(comp_pos) = w.pos_of(comp) {
+        println!("Companion: {:?}", comp_pos);
+    }
+    if let Some(enemy_pos) = w.pos_of(enemy) {
+        println!("Enemy:     {:?}", enemy_pos);
+    }
+    if let Some(enemy_hp) = w.health(enemy) {
+        println!("Enemy HP:  {}", enemy_hp.hp);
+    }
+
+    Ok(())
+}
+
+// ============================================================================
+// WORLD SETUP
+// ============================================================================
+
+fn setup_world() -> Result<(World, u32, u32, u32, WorldSnapshot)> {
+    let mut w = World::new();
+    
+    // Create vertical wall obstacle
+    for x in 6..=6 {
+        for y in 1..=8 {
+            w.obstacles.insert((x, y));
+        }
+    }
+
+    // Spawn entities
+    let player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+    let comp = w.spawn("Companion", IVec2 { x: 2, y: 3 }, Team { id: 1 }, 80, 30);
+    let enemy = w.spawn("Rival", IVec2 { x: 12, y: 2 }, Team { id: 2 }, 60, 0);
+
+    // Prime companion cooldowns
+    if let Some(cd) = w.cooldowns_mut(comp) {
+        cd.map.insert("throw:smoke".into(), 0.0);
+    }
+
+    // Build snapshot
+    let p_cfg = PerceptionConfig { los_max: 12 };
+    let enemies = vec![enemy];
+    let snap = build_snapshot(&w, player, comp, &enemies, Some("extract".into()), &p_cfg);
+
+    Ok((w, player, comp, enemy, snap))
+}
+
+// ============================================================================
+// AI MODE SELECTION
+// ============================================================================
+
+fn select_ai_mode(args: &[String]) -> AIMode {
+    // Check for explicit mode flags
+    if args.contains(&"--bt".to_string()) {
+        #[cfg(feature = "llm")]
+        return AIMode::BehaviorTree;
+        
+        #[cfg(not(feature = "llm"))]
+        {
+            println!("⚠️  BehaviorTree mode requires --features llm");
+            return AIMode::Classical;
+        }
+    }
+
+    if args.contains(&"--utility".to_string()) {
+        #[cfg(feature = "llm")]
+        return AIMode::Utility;
+        
+        #[cfg(not(feature = "llm"))]
+        {
+            println!("⚠️  Utility mode requires --features llm");
+            return AIMode::Classical;
+        }
+    }
+
+    if args.contains(&"--llm".to_string()) {
+        #[cfg(feature = "ollama")]
+        return AIMode::LLM;
+        
+        #[cfg(not(feature = "ollama"))]
+        {
+            println!("⚠️  LLM mode requires --features llm,ollama");
+            return AIMode::Classical;
+        }
+    }
+
+    if args.contains(&"--hybrid".to_string()) {
+        #[cfg(feature = "ollama")]
+        return AIMode::Hybrid;
+        
+        #[cfg(not(feature = "ollama"))]
+        {
+            println!("⚠️  Hybrid mode requires --features llm,ollama");
+            return AIMode::Classical;
+        }
+    }
+
+    if args.contains(&"--ensemble".to_string()) {
+        #[cfg(feature = "llm")]
+        return AIMode::Ensemble;
+        
+        #[cfg(not(feature = "llm"))]
+        {
+            println!("⚠️  Ensemble mode requires --features llm");
+            return AIMode::Classical;
+        }
+    }
+
+    // Default behavior
+    #[cfg(feature = "ollama")]
+    {
+        println!("💡 Ollama features enabled. Using Hybrid mode (LLM + fallback).");
+        println!("   Use --llm for pure LLM, --bt for BehaviorTree, etc.\n");
+        return AIMode::Hybrid;
+    }
+
+    #[cfg(all(feature = "llm", not(feature = "ollama")))]
+    {
+        println!("💡 LLM features enabled. Using BehaviorTree mode.");
+        println!("   Enable Ollama with --features llm,ollama for real Phi-3\n");
+        return AIMode::BehaviorTree;
+    }
+
+    #[cfg(not(feature = "llm"))]
+    {
+        println!("💡 Using Classical AI (RuleOrchestrator).");
+        println!("   Enable advanced modes with --features llm,ollama\n");
+        AIMode::Classical
+    }
+}
+
+// ============================================================================
+// PLAN GENERATION ROUTER
+// ============================================================================
+
+fn generate_plan(snap: &WorldSnapshot, mode: AIMode) -> Result<PlanIntent> {
+    match mode {
+        AIMode::Classical => generate_classical_plan(snap),
+        
+        #[cfg(feature = "llm")]
+        AIMode::BehaviorTree => generate_bt_plan(snap),
+        
+        #[cfg(feature = "llm")]
+        AIMode::Utility => generate_utility_plan(snap),
+        
+        #[cfg(feature = "ollama")]
+        AIMode::LLM => generate_llm_plan(snap),
+        
+        #[cfg(feature = "ollama")]
+        AIMode::Hybrid => {
+            println!("🎯 Trying LLM with classical fallback...");
+            match generate_llm_plan(snap) {
+                Ok(plan) => {
+                    println!("   ✅ LLM succeeded");
+                    Ok(plan)
+                }
+                Err(e) => {
+                    println!("   ⚠️  LLM failed: {}. Falling back...", e);
+                    generate_classical_plan(snap)
+                }
+            }
+        }
+        
+        #[cfg(feature = "llm")]
+        AIMode::Ensemble => generate_ensemble_plan(snap),
+    }
+}
+
+// ============================================================================
+// CLASSICAL AI (Baseline)
+// ============================================================================
+
+fn generate_classical_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    println!("🤖 Classical AI (RuleOrchestrator)");
+    let orch = RuleOrchestrator;
+    let plan = orch.propose_plan(snap);
+    println!("   Generated {} steps", plan.steps.len());
+    Ok(plan)
+}
+
+// ============================================================================
+// BEHAVIORTREE AI
+// ============================================================================
+
+#[cfg(feature = "llm")]
+fn generate_bt_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    use astraweave_behavior::BehaviorGraph;
+    
+    println!("🌳 BehaviorTree AI (Hierarchical)");
+    
+    // Create behavior tree structure
+    let mut graph = BehaviorGraph::new();
+    
+    // Root selector: Try combat, else move to objective
+    let root = graph.add_selector();
+    
+    // Combat sequence: Check threat -> Throw smoke -> Cover fire
+    let combat_seq = graph.add_sequence();
+    let check_threat = graph.add_condition(Box::new(|_| snap.threats.len() > 0));
+    let throw_smoke = graph.add_action(Box::new(|_| {
+        println!("      Action: Throw smoke");
+    }));
+    let cover_fire = graph.add_action(Box::new(|_| {
+        println!("      Action: Cover fire");
+    }));
+    
+    graph.add_child(combat_seq, check_threat);
+    graph.add_child(combat_seq, throw_smoke);
+    graph.add_child(combat_seq, cover_fire);
+    
+    // Move sequence: Navigate to objective
+    let move_seq = graph.add_sequence();
+    let move_action = graph.add_action(Box::new(|_| {
+        println!("      Action: Move to objective");
+    }));
+    graph.add_child(move_seq, move_action);
+    
+    graph.add_child(root, combat_seq);
+    graph.add_child(root, move_seq);
+    
+    // Execute BT and convert to PlanIntent
+    graph.tick();
+    
+    // Build plan from BT execution
+    let plan = if snap.threats.len() > 0 {
+        // Combat path
+        use astraweave_core::ActionStep;
+        PlanIntent {
+            steps: vec![
+                ActionStep::Throw {
+                    item: "smoke".into(),
+                    x: snap.threats[0].pos.x,
+                    y: snap.threats[0].pos.y,
+                },
+                ActionStep::CoverFire {
+                    target_id: snap.threats[0].id,
+                    duration: 2.0,
+                },
+            ],
+        }
+    } else {
+        // Move path
+        use astraweave_core::ActionStep;
+        PlanIntent {
+            steps: vec![
+                ActionStep::MoveTo {
+                    x: snap.obj_pos.x,
+                    y: snap.obj_pos.y,
+                },
+            ],
+        }
+    };
+    
+    println!("   BT executed {} steps", plan.steps.len());
+    Ok(plan)
+}
+
+// ============================================================================
+// UTILITY AI
+// ============================================================================
+
+#[cfg(feature = "llm")]
+fn generate_utility_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    println!("📊 Utility AI (Score-based)");
+    
+    // Score possible actions
+    let mut scores = vec![
+        ("MoveTo", calculate_move_score(snap)),
+        ("ThrowSmoke", calculate_smoke_score(snap)),
+        ("CoverFire", calculate_coverfire_score(snap)),
+    ];
+    
+    scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    
+    println!("   Action scores:");
+    for (action, score) in &scores {
+        println!("      {} = {:.2}", action, score);
+    }
+    
+    let best_action = scores[0].0;
+    println!("   Selected: {}", best_action);
+    
+    // Convert to plan
+    use astraweave_core::ActionStep;
+    let plan = match best_action {
+        "MoveTo" => PlanIntent {
+            steps: vec![ActionStep::MoveTo {
+                x: snap.obj_pos.x,
+                y: snap.obj_pos.y,
+            }],
+        },
+        "ThrowSmoke" => PlanIntent {
+            steps: vec![ActionStep::Throw {
+                item: "smoke".into(),
+                x: snap.threats.get(0).map(|t| t.pos.x).unwrap_or(snap.obj_pos.x),
+                y: snap.threats.get(0).map(|t| t.pos.y).unwrap_or(snap.obj_pos.y),
+            }],
+        },
+        "CoverFire" => PlanIntent {
+            steps: vec![ActionStep::CoverFire {
+                target_id: snap.threats.get(0).map(|t| t.id).unwrap_or(0),
+                duration: 2.0,
+            }],
+        },
+        _ => PlanIntent { steps: vec![] },
+    };
+    
+    Ok(plan)
+}
+
+#[cfg(feature = "llm")]
+fn calculate_move_score(snap: &WorldSnapshot) -> f32 {
+    let dist_to_obj = ((snap.obj_pos.x - snap.my_pos.x).pow(2) + (snap.obj_pos.y - snap.my_pos.y).pow(2)) as f32;
+    let threat_penalty = snap.threats.len() as f32 * 0.3;
+    
+    (10.0 / (1.0 + dist_to_obj)) - threat_penalty
+}
+
+#[cfg(feature = "llm")]
+fn calculate_smoke_score(snap: &WorldSnapshot) -> f32 {
+    if snap.threats.is_empty() {
+        return 0.0;
+    }
+    
+    let threat_count = snap.threats.len() as f32;
+    let has_smoke_cd = snap.my_cds.get("throw:smoke").map(|cd| *cd == 0.0).unwrap_or(false);
+    
+    if has_smoke_cd {
+        threat_count * 2.0
+    } else {
+        0.0
+    }
+}
+
+#[cfg(feature = "llm")]
+fn calculate_coverfire_score(snap: &WorldSnapshot) -> f32 {
+    if snap.threats.is_empty() {
+        return 0.0;
+    }
+    
+    let has_ammo = snap.my_stats.ammo > 0;
+    if has_ammo {
+        snap.threats.len() as f32 * 1.5
+    } else {
+        0.0
+    }
+}
+
+// ============================================================================
+// LLM AI (Real Phi-3 via Ollama)
+// ============================================================================
+
+#[cfg(feature = "ollama")]
+fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    println!("🧠 LLM AI (Phi-3 via Ollama)");
+    
+    // Check Ollama availability first
+    check_ollama_available()?;
+    
+    // Create OllamaClient
+    let client = OllamaClient {
+        url: "http://localhost:11434".to_string(),
+        model: "phi:latest".to_string(),
+    };
+    
+    // Create tool registry
+    let registry = create_tool_registry();
+    
+    // Create async runtime
+    let rt = tokio::runtime::Runtime::new()
+        .context("Failed to create tokio runtime")?;
+    
+    // Call LLM
+    let result = rt.block_on(async {
+        plan_from_llm(&client, snap, &registry).await
+    });
+    
+    match result {
+        PlanSource::Llm(plan) => {
+            println!("   ✅ Phi-3 generated {} steps", plan.steps.len());
+            Ok(plan)
+        }
+        PlanSource::Fallback { plan, reason } => {
+            println!("   ⚠️  Phi-3 returned fallback: {}", reason);
+            Ok(plan)
+        }
+    }
+}
+
+#[cfg(feature = "ollama")]
+fn check_ollama_available() -> Result<()> {
+    use std::time::Duration;
+    
+    println!("   Checking Ollama availability...");
+    
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(2))
+        .build()
+        .context("Failed to create HTTP client")?;
+    
+    let response = client
+        .get("http://localhost:11434/api/tags")
+        .send()
+        .context("Ollama not running. Start with: ollama serve")?;
+    
+    if !response.status().is_success() {
+        anyhow::bail!("Ollama responded with error status: {}", response.status());
+    }
+    
+    let json: serde_json::Value = response.json()
+        .context("Failed to parse Ollama response")?;
+    
+    let models = json["models"].as_array()
+        .context("No models found in Ollama response")?;
+    
+    let has_phi3 = models.iter().any(|m| {
+        m["name"].as_str().map(|n| n.starts_with("phi")).unwrap_or(false)
+    });
+    
+    if !has_phi3 {
+        anyhow::bail!(
+            "phi3 model not found. Install with: ollama pull phi3\n   Available models: {:?}",
+            models.iter().filter_map(|m| m["name"].as_str()).collect::<Vec<_>>()
+        );
+    }
+    
+    println!("   ✅ Ollama + phi3 confirmed");
+    Ok(())
+}
+
+#[cfg(feature = "llm")]
+fn create_tool_registry() -> ToolRegistry {
+    use astraweave_core::{Constraints, ToolSpec};
+    use std::collections::BTreeMap;
+
+    ToolRegistry {
+        tools: vec![
+            ToolSpec {
+                name: "MoveTo".into(),
+                args: {
+                    let mut m = BTreeMap::new();
+                    m.insert("x".into(), "i32".into());
+                    m.insert("y".into(), "i32".into());
+                    m
+                },
+            },
+            ToolSpec {
+                name: "Throw".into(),
+                args: {
+                    let mut m = BTreeMap::new();
+                    m.insert("item".into(), "enum[smoke,grenade]".into());
+                    m.insert("x".into(), "i32".into());
+                    m.insert("y".into(), "i32".into());
+                    m
+                },
+            },
+            ToolSpec {
+                name: "CoverFire".into(),
+                args: {
+                    let mut m = BTreeMap::new();
+                    m.insert("target_id".into(), "u32".into());
+                    m.insert("duration".into(), "f32".into());
+                    m
+                },
+            },
+        ],
+        constraints: Constraints {
+            enforce_cooldowns: true,
+            enforce_los: true,
+            enforce_stamina: true,
+        },
+    }
+}
+
+// ============================================================================
+// ENSEMBLE AI (Voting)
+// ============================================================================
+
+#[cfg(feature = "llm")]
+fn generate_ensemble_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
+    println!("🎭 Ensemble AI (Voting across modes)");
+    
+    // Generate plans from all available modes
+    let mut plans = vec![];
+    
+    println!("   Collecting votes:");
+    
+    // Classical
+    if let Ok(plan) = generate_classical_plan(snap) {
+        plans.push(("Classical", plan));
+    }
+    
+    // BehaviorTree
+    if let Ok(plan) = generate_bt_plan(snap) {
+        plans.push(("BehaviorTree", plan));
+    }
+    
+    // Utility
+    if let Ok(plan) = generate_utility_plan(snap) {
+        plans.push(("Utility", plan));
+    }
+    
+    // LLM (if ollama enabled)
+    #[cfg(feature = "ollama")]
+    if let Ok(plan) = generate_llm_plan(snap) {
+        plans.push(("LLM", plan));
+    }
+    
+    if plans.is_empty() {
+        anyhow::bail!("No plans generated for ensemble");
+    }
+    
+    println!("\n   Voting results ({} votes):", plans.len());
+    
+    // Calculate similarity scores
+    let mut scores = vec![];
+    for (i, (name_i, plan_i)) in plans.iter().enumerate() {
+        let mut similarity_sum = 0.0;
+        for (j, (_, plan_j)) in plans.iter().enumerate() {
+            if i != j {
+                similarity_sum += calculate_plan_similarity(plan_i, plan_j);
+            }
+        }
+        let avg_similarity = if plans.len() > 1 {
+            similarity_sum / (plans.len() - 1) as f32
+        } else {
+            1.0
+        };
+        scores.push((name_i, avg_similarity, plan_i));
+        println!("      {} = {:.2} similarity", name_i, avg_similarity);
+    }
+    
+    // Select plan with highest average similarity (consensus)
+    scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    let winner = scores[0];
+    
+    println!("   🏆 Winner: {} (consensus: {:.2})", winner.0, winner.1);
+    
+    Ok(winner.2.clone())
+}
+
+#[cfg(feature = "llm")]
+fn calculate_plan_similarity(plan_a: &PlanIntent, plan_b: &PlanIntent) -> f32 {
+    use std::collections::HashSet;
+    
+    // Jaccard similarity on action types
+    let actions_a: HashSet<_> = plan_a.steps.iter().map(action_type_string).collect();
+    let actions_b: HashSet<_> = plan_b.steps.iter().map(action_type_string).collect();
+    
+    let intersection = actions_a.intersection(&actions_b).count();
+    let union = actions_a.union(&actions_b).count();
+    
+    if union == 0 {
+        1.0
+    } else {
+        intersection as f32 / union as f32
+    }
+}
+
+#[cfg(feature = "llm")]
+fn action_type_string(step: &astraweave_core::ActionStep) -> String {
+    match step {
+        astraweave_core::ActionStep::MoveTo { .. } => "MoveTo".to_string(),
+        astraweave_core::ActionStep::Throw { .. } => "Throw".to_string(),
+        astraweave_core::ActionStep::CoverFire { .. } => "CoverFire".to_string(),
+    }
+}
+
+// ============================================================================
+// METRICS DISPLAY & EXPORT
+// ============================================================================
+
+#[cfg(feature = "metrics")]
+fn print_metrics_table(metrics: &[AIMetrics]) {
+    println!("\n╔════════════════════════════════════════════════════════════╗");
+    println!("║                    AI METRICS SUMMARY                      ║");
+    println!("╠════════════════════════════════╦═══════╦═══════════╦═══════╣");
+    println!("║ Mode                           ║ Steps ║ Latency   ║ Status║");
+    println!("╠════════════════════════════════╬═══════╬═══════════╬═══════╣");
+    
+    for m in metrics {
+        let status = if m.success { "✅" } else { "❌" };
+        println!(
+            "║ {:30} ║ {:5} ║ {:7.2}ms ║  {}   ║",
+            m.mode,
+            m.plan_steps,
+            m.latency_ms,
+            status
+        );
+    }
+    
+    println!("╚════════════════════════════════╩═══════╩═══════════╩═══════╝");
+    
+    // Calculate summary stats
+    let total_runs = metrics.len();
+    let successful = metrics.iter().filter(|m| m.success).count();
+    let avg_latency = metrics.iter().map(|m| m.latency_ms).sum::<f64>() / total_runs as f64;
+    let avg_steps = metrics.iter().map(|m| m.plan_steps).sum::<usize>() as f64 / total_runs as f64;
+    
+    println!("\n📊 Summary:");
+    println!("   Total runs:    {}", total_runs);
+    println!("   Successful:    {} ({:.1}%)", successful, (successful as f64 / total_runs as f64) * 100.0);
+    println!("   Avg latency:   {:.2}ms", avg_latency);
+    println!("   Avg steps:     {:.1}", avg_steps);
+}
+
+#[cfg(feature = "metrics")]
+fn export_metrics_to_files(metrics: &[AIMetrics]) -> Result<()> {
+    use std::fs::File;
+    use std::io::Write;
+    
+    // Export JSON
+    let json = serde_json::to_string_pretty(metrics)
+        .context("Failed to serialize metrics to JSON")?;
+    
+    let mut json_file = File::create("hello_companion_metrics.json")
+        .context("Failed to create JSON file")?;
+    json_file.write_all(json.as_bytes())
+        .context("Failed to write JSON")?;
+    
+    println!("\n✅ Exported JSON: hello_companion_metrics.json");
+    
+    // Export CSV
+    let mut csv_file = File::create("hello_companion_metrics.csv")
+        .context("Failed to create CSV file")?;
+    
+    writeln!(csv_file, "Mode,Steps,Latency_ms,Timestamp,Success,Error")?;
+    for m in metrics {
+        writeln!(
+            csv_file,
+            "{},{},{:.3},{},{},{}",
+            m.mode,
+            m.plan_steps,
+            m.latency_ms,
+            m.timestamp,
+            m.success,
+            m.error.as_deref().unwrap_or("")
+        )?;
+    }
+    
+    println!("✅ Exported CSV:  hello_companion_metrics.csv");
+    
+    Ok(())
+}

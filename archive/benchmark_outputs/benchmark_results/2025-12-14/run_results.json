@@ -1,0 +1,126 @@
+﻿[
+    {
+        "package":  "astraweave-core",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-ecs",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-ai",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-physics",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-nav",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-render",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-ui",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-audio",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-gameplay",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-persistence-ecs",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-net-ecs",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-terrain",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-math",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-input",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-pcg",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-weaving",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-memory",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-context",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-persona",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-prompts",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-rag",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-scripting",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-sdk",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-stress-test",
+        "success":  false
+    },
+    {
+        "package":  "astract",
+        "success":  false
+    },
+    {
+        "package":  "aw_build",
+        "success":  false
+    },
+    {
+        "package":  "aw_editor",
+        "success":  false
+    },
+    {
+        "package":  "aw-save",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-behavior",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-llm",
+        "success":  false
+    },
+    {
+        "package":  "astraweave-llm-eval",
+        "success":  false
+    }
+]

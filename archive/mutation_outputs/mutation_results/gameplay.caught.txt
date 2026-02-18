@@ -1,0 +1,92 @@
+astraweave-gameplay/src/crafting.rs:129:21: replace + with - in CraftBench::success_chance
+astraweave-gameplay/src/crafting.rs:129:21: replace + with * in CraftBench::success_chance
+astraweave-gameplay/src/crafting.rs:129:15: replace + with - in CraftBench::success_chance
+astraweave-gameplay/src/crafting.rs:129:15: replace + with * in CraftBench::success_chance
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (None, Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 0.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, 1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 0.0, -1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 0.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, 1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), 1.0, -1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 0.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, 1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), None, true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), None, false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), Some(String::new()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), Some(String::new()), false)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), Some("xyzzy".into()), true)
+astraweave-gameplay/src/cutscenes.rs:49:9: replace CutsceneState::tick -> (Option<(Vec3, f32, f32)>, Option<String>, bool) with (Some((Default::default(), -1.0, -1.0)), Some("xyzzy".into()), false)
+astraweave-gameplay/src/cutscenes.rs:49:21: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:52:16: replace += with -= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:52:16: replace += with *= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:60:27: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:61:30: replace += with -= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:61:30: replace += with *= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:63:65: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:69:35: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:71:30: replace += with -= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:71:30: replace += with *= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:74:53: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:77:35: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:79:30: replace += with -= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:79:30: replace += with *= in CutsceneState::tick
+astraweave-gameplay/src/cutscenes.rs:82:39: replace >= with < in CutsceneState::tick
+astraweave-gameplay/src/dialogue.rs:70:9: replace DialogueState::choose -> bool with true
+astraweave-gameplay/src/dialogue.rs:70:9: replace DialogueState::choose -> bool with false
+astraweave-gameplay/src/dialogue.rs:72:16: delete ! in DialogueState::choose
+astraweave-gameplay/src/dialogue.rs:91:5: replace eval -> bool with true
+astraweave-gameplay/src/dialogue.rs:91:5: replace eval -> bool with false
+astraweave-gameplay/src/dialogue.rs:92:58: replace == with != in eval
+astraweave-gameplay/src/dialogue.rs:93:58: replace != with == in eval
+astraweave-gameplay/src/dialogue.rs:133:15: replace += with -= in compile_banter_to_nodes
+astraweave-gameplay/src/dialogue.rs:138:31: replace + with - in compile_banter_to_nodes
+astraweave-gameplay/src/dialogue.rs:138:31: replace + with * in compile_banter_to_nodes
+astraweave-gameplay/src/dialogue.rs:149:28: replace == with != in compile_banter_to_nodes
+astraweave-gameplay/src/ecs.rs:90:5: replace combat_system with ()
+astraweave-gameplay/src/ecs.rs:100:12: delete ! in combat_system

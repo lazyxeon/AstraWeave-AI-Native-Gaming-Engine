@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AstraWeave Benchmark Dashboard</title>
+    <meta name="description" content="AstraWeave game engine performance benchmarks — interactive D3.js dashboard with industry comparisons">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * {
@@ -18,6 +21,9 @@
             color: #e0e0e0;
             padding: 20px;
             min-height: 100vh;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         .container {
@@ -126,6 +132,15 @@
         .stat-card.ai { border-left-color: #00f2fe; }
         .stat-card.physics { border-left-color: #43e97b; }
         .stat-card.terrain { border-left-color: #fa709a; }
+        .stat-card.rendering { border-left-color: #feca57; }
+        .stat-card.math { border-left-color: #ff6b6b; }
+        .stat-card.animation { border-left-color: #e17055; }
+        .stat-card.audio { border-left-color: #54a0ff; }
+        .stat-card.ui { border-left-color: #5f27cd; }
+        .stat-card.tools { border-left-color: #00d2d3; }
+        .stat-card.networking { border-left-color: #48dbfb; }
+        .stat-card.persistence { border-left-color: #ff9ff3; }
+        .stat-card.input { border-left-color: #f093fb; }
         
         .stat-label {
             font-size: 0.9em;
@@ -311,12 +326,119 @@
             font-weight: 600;
             margin-left: 12px;
         }
+
+        /* Skeleton loading animation */
+        @keyframes shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.6s ease-in-out infinite;
+            border-radius: 8px;
+        }
+
+        /* Fade-in animation for cards */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stat-card, .chart-container {
+            animation: fadeInUp 0.4s ease-out both;
+        }
+
+        /* Keyboard focus styles */
+        select:focus-visible, input:focus-visible, button:focus-visible {
+            outline: 2px solid #00f2fe;
+            outline-offset: 2px;
+        }
+
+        /* Toolbar styles */
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .toolbar button {
+            padding: 8px 16px;
+            background: rgba(79,172,254,0.15);
+            color: #4facfe;
+            border: 1px solid rgba(79,172,254,0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .toolbar button:hover {
+            background: rgba(79,172,254,0.25);
+            border-color: #4facfe;
+            transform: translateY(-1px);
+        }
+        .toolbar button:active {
+            transform: translateY(0);
+        }
+
+        /* Confidence interval badge */
+        .ci-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+        }
+
+        /* Table hover */
+        tbody tr { transition: background 0.2s; }
+        tbody tr:hover { background: rgba(79,172,254,0.06); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(79,172,254,0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(79,172,254,0.5); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8em; }
+            .filters { flex-direction: column; gap: 12px; }
+            .filter-group { min-width: 100%; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .chart-container { padding: 16px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 8px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Print */
+        @media print {
+            body { background: #fff; color: #222; padding: 10px; }
+            .filters, .toolbar, footer { display: none !important; }
+            .chart-container { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+            .tooltip { display: none !important; }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 12px 24px; border-radius: 8px;
+            background: rgba(67,233,123,0.95); color: #0f0c29;
+            font-weight: 600; font-size: 0.9em;
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>⚡ AstraWeave Benchmark Dashboard <span class="version-badge">v5.54</span></h1>
+            <h1>⚡ AstraWeave Benchmark Dashboard <span class="version-badge">v7.0</span></h1>
             <div class="subtitle">Performance Telemetry & Regression Tracking | Production-Ready Benchmark Infrastructure</div>
         </header>
         
@@ -335,6 +457,7 @@
                     <option value="persistence">Persistence</option>
                     <option value="input">Input</option>
                     <option value="audio">Audio</option>
+                    <option value="animation">Animation</option>
                     <option value="ui">UI & Widgets</option>
                     <option value="tools">Tools & SDK</option>
                 </select>
@@ -347,6 +470,7 @@
                     <option value="14">Last 14 Days</option>
                     <option value="30" selected>Last 30 Days</option>
                     <option value="60">Last 60 Days</option>
+                    <option value="all">All Time</option>
                 </select>
             </div>
             
@@ -356,8 +480,34 @@
                     <option value="">Loading...</option>
                 </select>
             </div>
+
+            <div class="filter-group">
+                <label for="hardware-filter">Hardware</label>
+                <select id="hardware-filter">
+                    <option value="all">All Hardware</option>
+                </select>
+            </div>
+
+            <div class="filter-group" style="display:flex;align-items:flex-end;min-width:160px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="industry-toggle" checked style="width:auto;cursor:pointer;">
+                    <span style="color:#ff9500;">Industry Standards</span>
+                </label>
+            </div>
         </div>
         
+        <div class="toolbar" id="toolbar">
+            <button onclick="exportCSV()" title="Export all benchmark data as CSV">📥 Export CSV</button>
+            <button onclick="exportJSON()" title="Export filtered data as JSON">📋 Export JSON</button>
+            <button onclick="shareSnapshot()" title="Copy shareable URL for current filter state">🔗 Share</button>
+            <button onclick="window.print()" title="Print dashboard">🖨️ Print</button>
+        </div>
+
+        <div class="chart-container" id="hardware-info-container" style="margin-bottom: 20px;">
+            <div class="chart-title">🖥️ Hardware Profiles</div>
+            <div id="hardware-info"></div>
+        </div>
+
         <div class="chart-container" id="health-container" style="margin-bottom: 30px;">
             <div class="chart-title">🏥 Production Health Summary</div>
             <div id="production-health"></div>
@@ -394,6 +544,11 @@
             <div id="sparklines" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); grid-gap: 12px;"></div>
         </div>
         
+        <div class="chart-container" id="industry-comparison-container" style="margin-bottom: 30px;">
+            <div class="chart-title">🏭 Industry Standard Comparison</div>
+            <div id="industry-comparison"></div>
+        </div>
+
         <div class="chart-container">
             <div class="chart-title">Benchmark List</div>
             <div id="benchmark-table" style="overflow:auto; max-height: 360px; padding-right: 8px;">
@@ -403,10 +558,12 @@
         
         <footer>
             AstraWeave AI-Native Game Engine | Generated: <span id="generated-time"></span>
+            <div style="margin-top:6px;font-size:0.8em;color:#555;">Dashboard v7.0 &middot; D3.js v7 &middot; <span id="load-time"></span></div>
         </footer>
     </div>
     
-    <div class="tooltip"></div>
+    <div class="tooltip" role="tooltip" aria-hidden="true"></div>
+    <div class="toast" id="toast"></div>
     
     <script src="dashboard.js"></script>
 </body>

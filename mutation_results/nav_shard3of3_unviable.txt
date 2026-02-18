@@ -1,5 +1,0 @@
-astraweave-nav/src/lib.rs:556:9: replace NavMesh::dirty_regions -> &[Aabb] with Vec::leak(vec![Default::default()])
-astraweave-nav/src/lib.rs:676:9: replace NavMesh::bounds -> Option<Aabb> with Some(Default::default())
-astraweave-nav/src/lib.rs:696:9: replace NavMesh::get_triangle -> Option<&NavTri> with Some(Box::leak(Box::new(Default::default())))
-astraweave-nav/src/lib.rs:753:13: replace astar_tri::<impl Ord for Node>::cmp -> Ordering with Default::default()
-astraweave-nav/src/lib.rs:758:13: replace astar_tri::<impl PartialOrd for Node>::partial_cmp -> Option<Ordering> with Some(Default::default())

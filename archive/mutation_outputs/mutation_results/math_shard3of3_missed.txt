@@ -1,0 +1,57 @@
+astraweave-math/src/simd_vec_kani.rs:141:5: replace length_squared_is_length_squared with ()
+astraweave-math/src/simd_vec_kani.rs:154:28: replace * with + in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:154:28: replace * with / in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:155:28: replace - with + in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:155:28: replace - with / in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:157:27: replace < with == in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:157:27: replace < with > in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:157:27: replace < with <= in length_squared_is_length_squared
+astraweave-math/src/simd_vec_kani.rs:167:5: replace normalize_produces_unit_vector with ()
+astraweave-math/src/simd_vec_kani.rs:181:31: replace < with == in normalize_produces_unit_vector
+astraweave-math/src/simd_vec_kani.rs:181:31: replace < with > in normalize_produces_unit_vector
+astraweave-math/src/simd_vec_kani.rs:181:31: replace < with <= in normalize_produces_unit_vector
+astraweave-math/src/simd_vec_kani.rs:181:18: replace - with + in normalize_produces_unit_vector
+astraweave-math/src/simd_vec_kani.rs:181:18: replace - with / in normalize_produces_unit_vector
+astraweave-math/src/simd_vec_kani.rs:190:5: replace normalize_or_zero_handles_zero with ()
+astraweave-math/src/simd_vec_kani.rs:194:16: replace == with != in normalize_or_zero_handles_zero
+astraweave-math/src/simd_vec_kani.rs:205:5: replace normalize_preserves_direction with ()
+astraweave-math/src/simd_vec_kani.rs:219:25: replace - with + in normalize_preserves_direction
+astraweave-math/src/simd_vec_kani.rs:219:25: replace - with / in normalize_preserves_direction
+astraweave-math/src/simd_vec_kani.rs:222:18: replace < with == in normalize_preserves_direction
+astraweave-math/src/simd_vec_kani.rs:222:18: replace < with > in normalize_preserves_direction
+astraweave-math/src/simd_vec_kani.rs:222:18: replace < with <= in normalize_preserves_direction
+astraweave-math/src/simd_vec_kani.rs:231:5: replace zero_vector_has_zero_length with ()
+astraweave-math/src/simd_vec_kani.rs:232:32: replace == with != in zero_vector_has_zero_length
+astraweave-math/src/simd_vec_kani.rs:234:31: replace == with != in zero_vector_has_zero_length
+astraweave-math/src/simd_vec_kani.rs:242:5: replace unit_vectors_have_length_one with ()
+astraweave-math/src/simd_vec_kani.rs:247:34: replace < with == in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:247:34: replace < with > in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:247:34: replace < with <= in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:247:21: replace - with + in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:247:21: replace - with / in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:251:34: replace < with == in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:251:34: replace < with > in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:251:34: replace < with <= in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:251:21: replace - with + in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:251:21: replace - with / in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:255:34: replace < with == in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:255:34: replace < with > in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:255:34: replace < with <= in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:255:21: replace - with + in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:255:21: replace - with / in unit_vectors_have_length_one
+astraweave-math/src/simd_vec_kani.rs:263:5: replace standard_cross_products with ()
+astraweave-math/src/simd_vec_kani.rs:269:43: replace < with == in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:269:43: replace < with > in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:269:43: replace < with <= in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:269:29: replace - with + in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:269:29: replace - with / in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:273:43: replace < with == in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:273:43: replace < with > in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:273:43: replace < with <= in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:273:29: replace - with + in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:273:29: replace - with / in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:277:43: replace < with == in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:277:43: replace < with > in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:277:43: replace < with <= in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:277:29: replace - with + in standard_cross_products
+astraweave-math/src/simd_vec_kani.rs:277:29: replace - with / in standard_cross_products

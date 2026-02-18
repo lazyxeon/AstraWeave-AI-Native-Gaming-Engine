@@ -1,0 +1,13 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.87s
+     Running tests\planner_tests.rs (target\debug\deps\planner_tests-77f18ec75b9c9ad3.exe)
+
+running 6 tests
+test test_planner_mode_switching ... ok
+test test_rule_orchestrator_correctness ... ok
+test test_plan_consistency ... ok
+test test_multi_agent_planning_scalability ... ok
+test test_rule_orchestrator_performance ... ok
+test test_planning_under_load ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+

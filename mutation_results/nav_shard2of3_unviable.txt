@@ -1,4 +1,0 @@
-astraweave-nav/src/lib.rs:311:9: replace Aabb::merge -> Aabb with Default::default()
-astraweave-nav/src/lib.rs:327:9: replace Aabb::from_triangle -> Self with Default::default()
-astraweave-nav/src/lib.rs:395:9: replace Aabb::expand -> Self with Default::default()
-astraweave-nav/src/lib.rs:431:9: replace NavMesh::bake -> Self with Default::default()

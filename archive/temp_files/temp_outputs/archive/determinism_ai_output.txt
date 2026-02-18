@@ -1,0 +1,12 @@
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.88s
+     Running tests\determinism_tests.rs (target\debug\deps\determinism_tests-fa48cddca3c5e0c6.exe)
+
+running 5 tests
+test test_memory_stability_marathon ... ignored
+test test_error_recovery ... ok
+test test_deterministic_planning ... ok
+test test_concurrent_planning ... ok
+test test_planning_stability ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 10.00s
+

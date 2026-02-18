@@ -1,0 +1,213 @@
+warning: field `self_closing` is never read
+  --> crates\astract\astract-macro\src\parser.rs:14:9
+   |
+10 | pub struct RsxElement {
+   |            ---------- field in this struct
+...
+14 |     pub self_closing: bool,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `RsxElement` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `astract-macro` (lib) generated 1 warning
+warning: field `dragging_node` is never read
+   --> crates\astract\src\graph\node_graph.rs:226:5
+    |
+220 | pub struct NodeGraph {
+    |            --------- field in this struct
+...
+226 |     dragging_node: Option<NodeId>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astract` (lib) generated 1 warning
+   Compiling astract v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\crates\astract)
+error[E0432]: unresolved import `astract::graphs`
+ --> crates\astract\benches\widget_benchmarks.rs:6:14
+  |
+6 | use astract::graphs::{NodeGraph, GraphNode, Port, PortType};
+  |              ^^^^^^ could not find `graphs` in `astract`
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> crates\astract\benches\widget_benchmarks.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:61:54
+   |
+61 |                 chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);
+   |                                                      ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:62:17
+   |
+62 |                 black_box(chart);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:80:25
+   |
+80 |                         black_box(points.clone()),
+   |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:84:17
+   |
+84 |                 black_box(chart);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:99:28
+   |
+99 |                 for grp in black_box(groups.clone()) {
+   |                            ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:102:17
+    |
+102 |                 black_box(chart);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:117:32
+    |
+117 |                 for cluster in black_box(clusters.clone()) {
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:120:17
+    |
+120 |                 black_box(scatter);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:144:17
+    |
+144 |                 black_box(graph);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:174:17
+    |
+174 |                 black_box(graph);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:195:17
+    |
+195 |                 black_box(tree);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:220:17
+    |
+220 |                 black_box(tree);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:237:13
+    |
+237 |             black_box(picker);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:248:13
+    |
+248 |             black_box(slider);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:264:26
+    |
+264 |             tween.update(black_box(0.016)); // 60 FPS
+    |                          ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:265:13
+    |
+265 |             black_box(tween.value());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:286:34
+    |
+286 |                     tween.update(black_box(0.016));
+    |                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:287:21
+    |
+287 |                     black_box(tween.value());
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:301:27
+    |
+301 |             spring.update(black_box(0.016)); // 60 FPS
+    |                           ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:302:13
+    |
+302 |             black_box(spring.position());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:322:35
+    |
+322 |                     spring.update(black_box(0.016));
+    |                                   ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:323:21
+    |
+323 |                     black_box(spring.position());
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:349:35
+    |
+349 |                 controller.update(black_box(0.016));
+    |                                   ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:350:17
+    |
+350 |                 black_box(controller.active_count());
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:367:50
+    |
+367 |             chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);
+    |                                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:368:13
+    |
+368 |             black_box(chart);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:381:17
+    |
+381 |                 black_box(cloned);
+    |                 ^^^^^^^^^
+
+warning: unused variable: `i`
+   --> crates\astract\benches\widget_benchmarks.rs:276:23
+    |
+276 |                 .map(|i| {
+    |                       ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+For more information about this error, try `rustc --explain E0432`.
+warning: `astract` (bench "widget_benchmarks") generated 29 warnings
+error: could not compile `astract` (bench "widget_benchmarks") due to 1 previous error; 29 warnings emitted

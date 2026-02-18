@@ -1,0 +1,3 @@
+astraweave-core/src/perception.rs:53:35: replace - with + in build_snapshot
+astraweave-core/src/perception.rs:53:60: replace - with + in build_snapshot
+astraweave-core/src/schema.rs:329:9: replace PlanIntent::empty -> Self with Default::default()

@@ -1,6 +1,0 @@
-astraweave-physics/src/gravity.rs:244:9: replace GravityManager::zones -> impl Iterator<Item =&GravityZone> with ::std::iter::once(Box::leak(Box::new(Default::default())))
-astraweave-physics/src/ragdoll.rs:341:9: replace RagdollBuilder::add_bone -> &mut Self with Box::leak(Box::new(Default::default()))
-astraweave-physics/src/ragdoll.rs:354:9: replace RagdollBuilder::add_bone_full -> &mut Self with Box::leak(Box::new(Default::default()))
-astraweave-physics/src/ragdoll.rs:372:9: replace RagdollBuilder::add_hinge_bone -> &mut Self with Box::leak(Box::new(Default::default()))
-astraweave-physics/src/ragdoll.rs:394:9: replace RagdollBuilder::add_ball_bone -> &mut Self with Box::leak(Box::new(Default::default()))
-astraweave-physics/src/ragdoll.rs:411:9: replace RagdollBuilder::build -> Ragdoll with Default::default()

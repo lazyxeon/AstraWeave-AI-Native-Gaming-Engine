@@ -1,0 +1,70 @@
+astraweave-ecs/src/archetype.rs:153 - Archetype::uses_blob - false
+astraweave-ecs/src/archetype.rs:153 - Archetype::uses_blob - true
+astraweave-ecs/src/archetype.rs:276 - Archetype::remove_entity - None
+astraweave-ecs/src/archetype.rs:276 - Archetype::remove_entity - Some(0)
+astraweave-ecs/src/archetype.rs:276 - Archetype::remove_entity - Some(1)
+astraweave-ecs/src/archetype.rs:387 - Archetype::iter_components_blob - None
+astraweave-ecs/src/archetype.rs:387 - Archetype::iter_components_blob - Some((Vec::leak(Vec::new()), Vec::leak(Vec::new())))
+astraweave-ecs/src/archetype.rs:404 - Archetype::iter_components_blob_mut - 
+astraweave-ecs/src/archetype.rs:404 - Archetype::iter_components_blob_mut - None
+astraweave-ecs/src/archetype.rs:404 - Archetype::iter_components_blob_mut - Some((Vec::leak(Vec::new()), Vec::leak(Vec::new())))
+astraweave-ecs/src/archetype.rs:495 - ArchetypeStorage::get_or_create_archetype_with_blob - -=
+astraweave-ecs/src/archetype.rs:495 - ArchetypeStorage::get_or_create_archetype_with_blob - *=
+astraweave-ecs/src/archetype.rs:533 - ArchetypeStorage::remove_entity - <=
+astraweave-ecs/src/blob_vec.rs:116 - BlobVec::reserve - /
+astraweave-ecs/src/blob_vec.rs:130 - BlobVec::reserve - /
+astraweave-ecs/src/blob_vec.rs:188 - BlobVec::get_raw - <
+astraweave-ecs/src/blob_vec.rs:188 - BlobVec::get_raw - None
+astraweave-ecs/src/blob_vec.rs:188 - BlobVec::get_raw - Some(Default::default())
+astraweave-ecs/src/blob_vec.rs:191 - BlobVec::get_raw - /
+astraweave-ecs/src/blob_vec.rs:191 - BlobVec::get_raw - +
+astraweave-ecs/src/blob_vec.rs:202 - BlobVec::get_raw_mut - <
+astraweave-ecs/src/blob_vec.rs:202 - BlobVec::get_raw_mut - None
+astraweave-ecs/src/blob_vec.rs:202 - BlobVec::get_raw_mut - Some(Default::default())
+astraweave-ecs/src/blob_vec.rs:205 - BlobVec::get_raw_mut - /
+astraweave-ecs/src/blob_vec.rs:205 - BlobVec::get_raw_mut - +
+astraweave-ecs/src/blob_vec.rs:216 - BlobVec::swap_remove_raw - ()
+astraweave-ecs/src/blob_vec.rs:219 - BlobVec::swap_remove_raw - /
+astraweave-ecs/src/blob_vec.rs:219 - BlobVec::swap_remove_raw - +
+astraweave-ecs/src/blob_vec.rs:224 - BlobVec::swap_remove_raw - /
+astraweave-ecs/src/blob_vec.rs:224 - BlobVec::swap_remove_raw - +
+astraweave-ecs/src/blob_vec.rs:230 - BlobVec::swap_remove_raw - ==
+astraweave-ecs/src/blob_vec.rs:232 - BlobVec::swap_remove_raw - /
+astraweave-ecs/src/blob_vec.rs:232 - BlobVec::swap_remove_raw - +
+astraweave-ecs/src/blob_vec.rs:233 - BlobVec::swap_remove_raw - +
+astraweave-ecs/src/blob_vec.rs:238 - BlobVec::swap_remove_raw - /=
+astraweave-ecs/src/blob_vec.rs:238 - BlobVec::swap_remove_raw - +=
+astraweave-ecs/src/blob_vec.rs:400 - <impl Drop for BlobVec>::drop - <
+astraweave-ecs/src/blob_vec.rs:402 - <impl Drop for BlobVec>::drop - /
+astraweave-ecs/src/blob_vec.rs:62 - BlobVec::with_capacity - >=
+astraweave-ecs/src/blob_vec.rs:96 - BlobVec::from_layout_with_capacity - >=
+astraweave-ecs/src/command_buffer.rs:73 - CommandBuffer::with_capacity - Default::default()
+astraweave-ecs/src/counting_alloc.rs:65 - allocs - 0
+astraweave-ecs/src/counting_alloc.rs:65 - allocs - 1
+astraweave-ecs/src/counting_alloc.rs:71 - deallocs - 0
+astraweave-ecs/src/counting_alloc.rs:71 - deallocs - 1
+astraweave-ecs/src/counting_alloc.rs:77 - reset_allocs - ()
+astraweave-ecs/src/counting_alloc.rs:84 - net_allocs - -1
+astraweave-ecs/src/counting_alloc.rs:84 - net_allocs - /
+astraweave-ecs/src/counting_alloc.rs:84 - net_allocs - +
+astraweave-ecs/src/counting_alloc.rs:84 - net_allocs - 0
+astraweave-ecs/src/counting_alloc.rs:84 - net_allocs - 1
+astraweave-ecs/src/entity_allocator.rs:102 - Entity::to_raw - ^
+astraweave-ecs/src/entity_allocator.rs:135 - Entity::is_null - true
+astraweave-ecs/src/entity_allocator.rs:388 - EntityAllocator::reserve - ()
+astraweave-ecs/src/events.rs:153 - Events::is_empty - !=
+astraweave-ecs/src/events.rs:153 - Events::is_empty - false
+astraweave-ecs/src/events.rs:153 - Events::is_empty - true
+astraweave-ecs/src/events.rs:48 - EventQueue<E>::cleanup - ()
+astraweave-ecs/src/events.rs:49 - EventQueue<E>::cleanup - <
+astraweave-ecs/src/events.rs:49 - EventQueue<E>::cleanup - ==
+astraweave-ecs/src/events.rs:49 - EventQueue<E>::cleanup - >=
+astraweave-ecs/src/events.rs:88 - Events::with_keep_frames - Default::default()
+astraweave-ecs/src/lib.rs:174 - World::is_component_registered_blob - false
+astraweave-ecs/src/lib.rs:174 - World::is_component_registered_blob - true
+astraweave-ecs/src/lib.rs:589 - App::add_plugin - Default::default()
+astraweave-ecs/src/rng.rs:216 - Rng::shuffle - ()
+astraweave-ecs/src/rng.rs:237 - <impl RngCore for Rng>::next_u32 - 1
+astraweave-ecs/src/sparse_set.rs:118 - SparseSet::is_empty - true
+astraweave-ecs/src/sparse_set.rs:177 - SparseSetData<T>::with_capacity - Default::default()
+astraweave-ecs/src/sparse_set.rs:258 - SparseSetData<T>::is_empty - true

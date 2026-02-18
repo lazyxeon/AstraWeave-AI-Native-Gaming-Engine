@@ -1,0 +1,141 @@
+Found 3682 mutants to test
+ok       Unmutated baseline in 1s build + 81s test
+MISSED   astraweave-render/src/camera.rs:17:46: delete - in Camera::view_matrix in 52s build + 93s test
+MISSED   astraweave-render/src/camera.rs:34:35: replace * with / in Camera::dir in 49s build + 99s test
+MISSED   astraweave-render/src/camera.rs:118:13: delete match arm winit::keyboard::KeyCode::Space | winit::keyboard::KeyCode::KeyE in CameraController::process_keyboard in 52s build + 93s test
+MISSED   astraweave-render/src/camera.rs:120:13: delete match arm winit::keyboard::KeyCode::KeyQ | winit::keyboard::KeyCode::KeyC in CameraController::process_keyboard in 44s build + 99s test
+MISSED   astraweave-render/src/camera.rs:135:16: delete ! in CameraController::process_mouse_button in 48s build + 95s test
+MISSED   astraweave-render/src/camera.rs:142:9: replace CameraController::process_mouse_move with () in 52s build + 96s test
+MISSED   astraweave-render/src/camera.rs:148:42: replace * with + in CameraController::process_mouse_move in 52s build + 94s test
+MISSED   astraweave-render/src/camera.rs:148:42: replace * with / in CameraController::process_mouse_move in 54s build + 111s test
+MISSED   astraweave-render/src/camera.rs:148:34: replace - with + in CameraController::process_mouse_move in 43s build + 113s test
+TIMEOUT  astraweave-render/src/camera.rs:148:34: replace - with / in CameraController::process_mouse_move in 55s build + 120s test
+MISSED   astraweave-render/src/camera.rs:150:20: delete ! in CameraController::process_mouse_move in 79s build + 112s test
+MISSED   astraweave-render/src/camera.rs:155:33: replace -= with += in CameraController::process_mouse_move in 52s build + 111s test
+MISSED   astraweave-render/src/camera.rs:155:33: replace -= with /= in CameraController::process_mouse_move in 53s build + 110s test
+MISSED   astraweave-render/src/camera.rs:156:56: replace - with + in CameraController::process_mouse_move in 55s build + 112s test
+MISSED   astraweave-render/src/camera.rs:156:56: replace - with / in CameraController::process_mouse_move in 45s build + 116s test
+MISSED   astraweave-render/src/camera.rs:156:73: delete - in CameraController::process_mouse_move in 51s build + 110s test
+MISSED   astraweave-render/src/camera.rs:165:52: replace && with || in CameraController::process_mouse_delta in 51s build + 113s test
+MISSED   astraweave-render/src/camera.rs:165:30: replace < with == in CameraController::process_mouse_delta in 51s build + 111s test
+MISSED   astraweave-render/src/camera.rs:165:30: replace < with > in CameraController::process_mouse_delta in 51s build + 111s test
+MISSED   astraweave-render/src/camera.rs:165:30: replace < with <= in CameraController::process_mouse_delta in 53s build + 114s test
+MISSED   astraweave-render/src/camera.rs:165:69: replace < with == in CameraController::process_mouse_delta in 52s build + 110s test
+MISSED   astraweave-render/src/camera.rs:165:69: replace < with > in CameraController::process_mouse_delta in 52s build + 110s test
+MISSED   astraweave-render/src/camera.rs:165:69: replace < with <= in CameraController::process_mouse_delta in 44s build + 110s test
+MISSED   astraweave-render/src/camera.rs:168:38: replace * with + in CameraController::process_mouse_delta in 51s build + 108s test
+MISSED   astraweave-render/src/camera.rs:168:38: replace * with / in CameraController::process_mouse_delta in 48s build + 113s test
+MISSED   astraweave-render/src/camera.rs:169:16: delete ! in CameraController::process_mouse_delta in 44s build + 108s test
+MISSED   astraweave-render/src/camera.rs:182:9: replace CameraController::begin_frame with () in 49s build + 108s test
+MISSED   astraweave-render/src/camera.rs:189:39: replace * with + in CameraController::process_scroll in 61s build + 108s test
+MISSED   astraweave-render/src/camera.rs:189:39: replace * with / in CameraController::process_scroll in 53s build + 113s test
+MISSED   astraweave-render/src/camera.rs:194:60: replace - with / in CameraController::process_scroll in 44s build + 109s test
+MISSED   astraweave-render/src/camera.rs:194:68: replace * with + in CameraController::process_scroll in 54s build + 110s test
+MISSED   astraweave-render/src/camera.rs:194:68: replace * with / in CameraController::process_scroll in 47s build + 113s test
+MISSED   astraweave-render/src/camera.rs:206:53: replace + with - in CameraController::toggle_mode in 44s build + 111s test
+MISSED   astraweave-render/src/camera.rs:206:64: replace * with + in CameraController::toggle_mode in 54s build + 117s test
+MISSED   astraweave-render/src/camera.rs:206:64: replace * with / in CameraController::toggle_mode in 52s build + 106s test
+MISSED   astraweave-render/src/camera.rs:224:45: replace - with + in CameraController::update_orbit_position in 51s build + 102s test
+MISSED   astraweave-render/src/camera.rs:224:45: replace - with / in CameraController::update_orbit_position in 51s build + 113s test
+MISSED   astraweave-render/src/camera.rs:224:51: replace * with + in CameraController::update_orbit_position in 52s build + 111s test
+MISSED   astraweave-render/src/camera.rs:224:51: replace * with / in CameraController::update_orbit_position in 51s build + 97s test
+MISSED   astraweave-render/src/camera.rs:236:21: replace - with + in CameraController::update_camera in 56s build + 87s test
+MISSED   astraweave-render/src/camera.rs:236:21: replace - with / in CameraController::update_camera in 57s build + 87s test
+MISSED   astraweave-render/src/camera.rs:236:43: replace * with + in CameraController::update_camera in 62s build + 88s test
+MISSED   astraweave-render/src/camera.rs:236:43: replace * with / in CameraController::update_camera in 56s build + 83s test
+MISSED   astraweave-render/src/camera.rs:237:66: replace * with / in CameraController::update_camera in 51s build + 83s test
+MISSED   astraweave-render/src/camera.rs:237:52: replace - with + in CameraController::update_camera in 53s build + 82s test
+MISSED   astraweave-render/src/camera.rs:238:75: replace * with / in CameraController::update_camera in 50s build + 86s test
+TIMEOUT  astraweave-render/src/camera.rs:238:59: replace - with + in CameraController::update_camera in 50s build + 120s test
+TIMEOUT  astraweave-render/src/camera.rs:243:23: replace *= with += in CameraController::update_camera in 60s build + 120s test
+TIMEOUT  astraweave-render/src/camera.rs:253:39: delete - in CameraController::update_camera in 69s build + 120s test
+MISSED   astraweave-render/src/camera.rs:254:26: delete - in CameraController::update_camera in 62s build + 96s test
+TIMEOUT  astraweave-render/src/camera.rs:257:21: replace += with -= in CameraController::update_camera in 45s build + 120s test
+MISSED   astraweave-render/src/camera.rs:257:28: replace * with + in CameraController::update_camera in 60s build + 110s test
+MISSED   astraweave-render/src/camera.rs:257:40: replace - with + in CameraController::update_camera in 68s build + 117s test
+MISSED   astraweave-render/src/camera.rs:258:21: replace += with -= in CameraController::update_camera in 59s build + 93s test
+MISSED   astraweave-render/src/camera.rs:258:30: replace * with + in CameraController::update_camera in 60s build + 93s test
+MISSED   astraweave-render/src/camera.rs:258:44: replace - with + in CameraController::update_camera in 64s build + 94s test
+MISSED   astraweave-render/src/camera.rs:259:21: replace += with -= in CameraController::update_camera in 66s build + 88s test
+MISSED   astraweave-render/src/camera.rs:259:27: replace * with + in CameraController::update_camera in 62s build + 93s test
+MISSED   astraweave-render/src/camera.rs:259:40: replace - with + in CameraController::update_camera in 55s build + 103s test
+MISSED   astraweave-render/src/camera.rs:260:41: replace > with >= in CameraController::update_camera in 56s build + 107s test
+MISSED   astraweave-render/src/camera.rs:261:37: replace += with -= in CameraController::update_camera in 46s build + 104s test
+MISSED   astraweave-render/src/camera.rs:261:68: replace * with + in CameraController::update_camera in 55s build + 106s test
+MISSED   astraweave-render/src/camera.rs:261:68: replace * with / in CameraController::update_camera in 56s build + 99s test
+MISSED   astraweave-render/src/camera.rs:261:56: replace * with + in CameraController::update_camera in 49s build + 98s test
+MISSED   astraweave-render/src/camera.rs:268:39: delete - in CameraController::update_camera in 63s build + 96s test
+MISSED   astraweave-render/src/camera.rs:270:26: delete - in CameraController::update_camera in 54s build + 99s test
+MISSED   astraweave-render/src/camera.rs:273:28: replace += with -= in CameraController::update_camera in 50s build + 101s test
+MISSED   astraweave-render/src/camera.rs:273:39: replace * with + in CameraController::update_camera in 59s build + 102s test
+MISSED   astraweave-render/src/camera.rs:273:39: replace * with / in CameraController::update_camera in 53s build + 101s test
+MISSED   astraweave-render/src/camera.rs:273:51: replace - with + in CameraController::update_camera in 45s build + 105s test
+MISSED   astraweave-render/src/camera.rs:274:28: replace += with -= in CameraController::update_camera in 61s build + 100s test
+MISSED   astraweave-render/src/camera.rs:274:37: replace * with + in CameraController::update_camera in 58s build + 100s test
+MISSED   astraweave-render/src/camera.rs:274:51: replace - with + in CameraController::update_camera in 56s build + 96s test
+MISSED   astraweave-render/src/camera.rs:275:34: replace * with + in CameraController::update_camera in 60s build + 101s test
+MISSED   astraweave-render/src/camera.rs:275:47: replace - with + in CameraController::update_camera in 52s build + 100s test
+MISSED   astraweave-render/src/camera.rs:277:48: replace > with >= in CameraController::update_camera in 61s build + 101s test
+MISSED   astraweave-render/src/camera.rs:278:39: replace += with -= in CameraController::update_camera in 55s build + 101s test
+MISSED   astraweave-render/src/camera.rs:278:39: replace += with *= in CameraController::update_camera in 46s build + 101s test
+MISSED   astraweave-render/src/camera.rs:278:77: replace * with + in CameraController::update_camera in 63s build + 96s test
+MISSED   astraweave-render/src/camera.rs:278:77: replace * with / in CameraController::update_camera in 54s build + 101s test
+MISSED   astraweave-render/src/camera.rs:278:65: replace * with + in CameraController::update_camera in 55s build + 102s test
+MISSED   astraweave-render/src/camera.rs:278:65: replace * with / in CameraController::update_camera in 54s build + 100s test
+MISSED   astraweave-render/src/clustered.rs:20:5: replace clamp_u32 -> u32 with 0 in 45s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:20:5: replace clamp_u32 -> u32 with 1 in 56s build + 99s test
+MISSED   astraweave-render/src/clustered.rs:43:38: replace / with % in bin_lights_cpu in 61s build + 100s test
+MISSED   astraweave-render/src/clustered.rs:43:38: replace / with * in bin_lights_cpu in 55s build + 99s test
+MISSED   astraweave-render/src/clustered.rs:44:18: replace / with % in bin_lights_cpu in 50s build + 105s test
+MISSED   astraweave-render/src/clustered.rs:44:18: replace / with * in bin_lights_cpu in 44s build + 105s test
+MISSED   astraweave-render/src/clustered.rs:44:25: replace * with / in bin_lights_cpu in 46s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:45:17: replace / with % in bin_lights_cpu in 49s build + 105s test
+MISSED   astraweave-render/src/clustered.rs:45:17: replace / with * in bin_lights_cpu in 45s build + 107s test
+MISSED   astraweave-render/src/clustered.rs:46:32: replace / with % in bin_lights_cpu in 53s build + 98s test
+MISSED   astraweave-render/src/clustered.rs:46:32: replace / with * in bin_lights_cpu in 63s build + 100s test
+MISSED   astraweave-render/src/clustered.rs:47:33: replace / with % in bin_lights_cpu in 56s build + 99s test
+MISSED   astraweave-render/src/clustered.rs:47:33: replace / with * in bin_lights_cpu in 50s build + 103s test
+MISSED   astraweave-render/src/clustered.rs:54:34: replace + with - in bin_lights_cpu in 61s build + 101s test
+MISSED   astraweave-render/src/clustered.rs:54:34: replace + with * in bin_lights_cpu in 50s build + 103s test
+MISSED   astraweave-render/src/clustered.rs:55:25: replace > with == in bin_lights_cpu in 55s build + 100s test
+MISSED   astraweave-render/src/clustered.rs:55:25: replace > with >= in bin_lights_cpu in 61s build + 106s test
+MISSED   astraweave-render/src/clustered.rs:55:14: replace - with + in bin_lights_cpu in 52s build + 101s test
+MISSED   astraweave-render/src/clustered.rs:55:14: replace - with / in bin_lights_cpu in 45s build + 108s test
+MISSED   astraweave-render/src/clustered.rs:59:35: replace * with + in bin_lights_cpu in 50s build + 106s test
+MISSED   astraweave-render/src/clustered.rs:59:35: replace * with / in bin_lights_cpu in 43s build + 106s test
+MISSED   astraweave-render/src/clustered.rs:59:30: replace / with % in bin_lights_cpu in 51s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:60:35: replace * with + in bin_lights_cpu in 60s build + 100s test
+MISSED   astraweave-render/src/clustered.rs:62:38: replace * with + in bin_lights_cpu in 60s build + 97s test
+MISSED   astraweave-render/src/clustered.rs:62:25: replace * with + in bin_lights_cpu in 58s build + 101s test
+MISSED   astraweave-render/src/clustered.rs:63:38: replace * with + in bin_lights_cpu in 43s build + 107s test
+MISSED   astraweave-render/src/clustered.rs:63:25: replace * with + in bin_lights_cpu in 57s build + 106s test
+MISSED   astraweave-render/src/clustered.rs:65:41: replace * with + in bin_lights_cpu in 61s build + 97s test
+MISSED   astraweave-render/src/clustered.rs:65:36: replace * with + in bin_lights_cpu in 58s build + 111s test
+MISSED   astraweave-render/src/clustered.rs:65:31: replace / with * in bin_lights_cpu in 63s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:65:57: replace * with + in bin_lights_cpu in 52s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:65:57: replace * with / in bin_lights_cpu in 52s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:66:41: replace * with + in bin_lights_cpu in 50s build + 105s test
+MISSED   astraweave-render/src/clustered.rs:66:36: replace * with + in bin_lights_cpu in 56s build + 109s test
+MISSED   astraweave-render/src/clustered.rs:66:31: replace / with * in bin_lights_cpu in 60s build + 110s test
+MISSED   astraweave-render/src/clustered.rs:66:58: replace * with + in bin_lights_cpu in 52s build + 102s test
+MISSED   astraweave-render/src/clustered.rs:66:58: replace * with / in bin_lights_cpu in 55s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:67:26: replace - with + in bin_lights_cpu in 51s build + 105s test
+MISSED   astraweave-render/src/clustered.rs:67:26: replace - with / in bin_lights_cpu in 54s build + 99s test
+MISSED   astraweave-render/src/clustered.rs:68:26: replace + with * in bin_lights_cpu in 60s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:69:26: replace - with + in bin_lights_cpu in 58s build + 102s test
+MISSED   astraweave-render/src/clustered.rs:69:26: replace - with / in bin_lights_cpu in 48s build + 103s test
+MISSED   astraweave-render/src/clustered.rs:70:26: replace + with * in bin_lights_cpu in 57s build + 106s test
+MISSED   astraweave-render/src/clustered.rs:71:70: replace - with + in bin_lights_cpu in 60s build + 104s test
+MISSED   astraweave-render/src/clustered.rs:71:70: replace - with / in bin_lights_cpu in 57s build + 99s test
+MISSED   astraweave-render/src/clustered.rs:72:36: replace / with % in bin_lights_cpu in 52s build + 103s test
+MISSED   astraweave-render/src/clustered.rs:72:36: replace / with * in bin_lights_cpu in 50s build + 102s test
+MISSED   astraweave-render/src/clustered.rs:72:70: replace - with + in bin_lights_cpu in 52s build + 102s test
+MISSED   astraweave-render/src/clustered.rs:72:70: replace - with / in bin_lights_cpu in 52s build + 100s test
+ERROR Worker thread failed: failed to write code to "\\\\?\\C:\\Users\\pv2br\\AstraWeave-AI-Native-Gaming-Engine\\astraweave-render\\src\\clustered.rs"
+
+Caused by:
+    The requested operation cannot be performed on a file with a user-mapped section open. (os error 1224)
+Error: failed to write code to "\\\\?\\C:\\Users\\pv2br\\AstraWeave-AI-Native-Gaming-Engine\\astraweave-render\\src\\clustered.rs"
+
+Caused by:
+    The requested operation cannot be performed on a file with a user-mapped section open. (os error 1224)

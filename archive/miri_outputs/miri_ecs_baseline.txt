@@ -1,0 +1,134 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.99s
+     Running unittests src\lib.rs (target\miri\x86_64-pc-windows-msvc\debug\deps\astraweave_ecs-0c738e343e41511d.exe)
+warning: variable does not need to be mutable
+   --> astraweave-ecs\src\mutation_tests.rs:801:13
+    |
+801 |         let mut world = World::new();
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+
+running 271 tests
+test archetype::tests::test_archetype_entity_operations ... ok
+test archetype::tests::test_archetype_iter_components ... ok
+test archetype::tests::test_archetype_remove_entity ... ok
+test archetype::tests::test_archetype_storage ... ok
+test archetype::tests::test_archetype_storage_comprehensive ... ok
+test archetype::tests::test_signature_creation ... ok
+test archetype::tests::test_signature_methods ... ok
+test blob_vec::tests::test_as_slice ... ok
+test blob_vec::tests::test_as_slice_empty ... ok
+test blob_vec::tests::test_as_slice_mut ... ok
+test blob_vec::tests::test_as_slice_mut_empty ... ok
+test blob_vec::tests::test_capacity_method ... ok
+test blob_vec::tests::test_clear ... ok
+test blob_vec::tests::test_drop_handling ... ok
+test blob_vec::tests::test_get_mut_out_of_bounds ... ok
+test blob_vec::tests::test_get_out_of_bounds ... ok
+test blob_vec::tests::test_is_empty ... ok
+test blob_vec::tests::test_large_capacity_growth ... ok
+test blob_vec::tests::test_no_drop_type ... ok
+test blob_vec::tests::test_push_and_get ... ok
+test blob_vec::tests::test_reserve ... ok
+test blob_vec::tests::test_swap_remove ... ok
+test blob_vec::tests::test_swap_remove_last_element ... ok
+test blob_vec::tests::test_with_capacity ... ok
+test blob_vec::tests::test_with_capacity_zero ... ok
+test command_buffer::tests::test_clear ... ok
+test command_buffer::tests::test_command_buffer_creation ... ok
+test command_buffer::tests::test_command_buffer_with_capacity ... ok
+test command_buffer::tests::test_command_ordering ... ok
+test command_buffer::tests::test_command_ordering_preservation ... ok
+test command_buffer::tests::test_flush_despawn ... ok
+test command_buffer::tests::test_flush_insert_remove ... ok
+test command_buffer::tests::test_flush_spawn ... ok
+test command_buffer::tests::test_insert_during_iteration ... ok
+test command_buffer::tests::test_multiple_flushes ... ok
+test command_buffer::tests::test_queue_despawn ... ok
+test command_buffer::tests::test_queue_insert ... ok
+test command_buffer::tests::test_queue_remove ... ok
+test command_buffer::tests::test_queue_spawn ... ok
+test command_buffer::tests::test_spawn_builder_drop ... ok
+test command_buffer::tests::test_spawn_with_multiple_components ... ok
+test command_buffer::tests::test_stale_entity_ignored ... ok
+test component_meta::tests::test_component_meta_clone_fn ... ok
+test component_meta::tests::test_component_meta_drop_fn ... ok
+test component_meta::tests::test_component_meta_layout ... ok
+test component_meta::tests::test_create_blob_vec ... ok
+test component_meta::tests::test_create_blob_vec_with_capacity ... ok
+test component_meta::tests::test_registry_get ... ok
+test component_meta::tests::test_registry_register ... ok
+test determinism_tests::test_all_entities_despawned ... ok
+test determinism_tests::test_archetype_deterministic_assignment ... ok
+test determinism_tests::test_archetype_stable_across_operations ... ok
+test determinism_tests::test_component_add_preserves_spawn_order ... ok
+test determinism_tests::test_component_remove_preserves_spawn_order ... ok
+test determinism_tests::test_despawn_respawn_ordering ... ok
+test determinism_tests::test_empty_world_iteration ... ok
+test determinism_tests::test_mixed_component_operations_preserve_order ... ok
+test determinism_tests::test_multiple_despawn_respawn_cycles ... ok
+test determinism_tests::test_query_iteration_deterministic ... ok
+test determinism_tests::test_repeated_iteration_produces_same_order ... ok
+test determinism_tests::test_spawn_after_full_despawn ... ok
+test determinism_tests::test_spawn_order_after_component_modifications ... ok
+test determinism_tests::test_spawn_order_preserved ... ok
+test determinism_tests::test_spawn_order_with_components ... ok
+test entity_allocator::tests::test_capacity_tracking ... ok
+test entity_allocator::tests::test_clear ... ok
+test entity_allocator::tests::test_entity_display ... ok
+test entity_allocator::tests::test_entity_ordering ... ok
+test entity_allocator::tests::test_generation_overflow ... ok
+test entity_allocator::tests::test_multiple_entities ... ok
+test entity_allocator::tests::test_null_entity ... ok
+test entity_allocator::tests::test_raw_conversion ... ok
+test entity_allocator::tests::test_spawn_despawn_cycle ... ok
+test entity_allocator::tests::test_stale_entity_rejection ... ok
+test entity_allocator::tests::test_with_capacity ... ok
+test events::tests::test_clear_all_removes_all_event_types ... ok
+test events::tests::test_clear_events ... ok
+test events::tests::test_clear_one_type_preserves_others ... ok
+test events::tests::test_clear_removes_all_events ... ok
+test events::tests::test_drain_events ... ok
+test events::tests::test_drain_preserves_fifo_order ... ok
+test events::tests::test_event_reader ... ok
+test events::tests::test_events_delivered_in_fifo_order ... ok
+test events::tests::test_frame_boundaries_respected ... ok
+test events::tests::test_frame_tracking ... ok
+test events::tests::test_interleaved_send_and_read ... ok
+test events::tests::test_large_event_batch_maintains_order ... ok
+test events::tests::test_multiple_event_types_independent ... ok
+test events::tests::test_multiple_readers_independent ... ok
+test events::tests::test_repeated_drain_produces_empty_results ... ok
+test events::tests::test_send_and_read_events ... ok
+test mutation_tests::behavioral_correctness_tests::dead_entity_has_no_components ... ok
+test mutation_tests::behavioral_correctness_tests::events_len_equals_actual_count ... ok
+test mutation_tests::behavioral_correctness_tests::events_maintain_fifo_order ... ok
+test mutation_tests::behavioral_correctness_tests::frame_counter_monotonically_increases ... ok
+test mutation_tests::behavioral_correctness_tests::gen_range_exclusive_upper_bound ... ok
+test mutation_tests::behavioral_correctness_tests::is_empty_equals_len_zero ... ok
+test mutation_tests::behavioral_correctness_tests::rng_covers_full_u32_range ... ok
+test mutation_tests::behavioral_correctness_tests::spawned_entities_have_unique_ids ... ok
+test mutation_tests::boolean_return_path_tests::component_absent_after_remove ... ok
+test mutation_tests::boolean_return_path_tests::component_present_after_insert ... ok
+test mutation_tests::boolean_return_path_tests::events_is_empty_returns_false_for_non_empty ... ok
+test mutation_tests::boolean_return_path_tests::events_is_empty_returns_true_for_empty ... ok
+test mutation_tests::boolean_return_path_tests::gen_bool_can_return_false ... ok
+test mutation_tests::boolean_return_path_tests::gen_bool_can_return_true ... ok
+test mutation_tests::boolean_return_path_tests::get_returns_none_when_component_missing ... ok
+test mutation_tests::boolean_return_path_tests::get_returns_none_when_entity_dead ... ok
+test mutation_tests::boolean_return_path_tests::get_returns_some_when_component_exists ... ok
+test mutation_tests::boolean_return_path_tests::is_alive_returns_false_for_despawned ... ok
+test mutation_tests::boolean_return_path_tests::is_alive_returns_false_for_invalid_entity ... ok
+test mutation_tests::boolean_return_path_tests::is_alive_returns_true_for_spawned ... ok
+test mutation_tests::boundary_condition_tests::entity_ids_increment ... ok
+test mutation_tests::boundary_condition_tests::events_is_empty_at_boundary ... ok
+test mutation_tests::boundary_condition_tests::events_len_at_one ... ok
+test mutation_tests::boundary_condition_tests::events_len_at_zero ... ok
+test mutation_tests::boundary_condition_tests::first_entity_has_expected_id ... ok
+test mutation_tests::boundary_condition_tests::frame_counter_at_one_after_update ... ok
+test mutation_tests::boundary_condition_tests::frame_counter_starts_at_zero ... ok
+test mutation_tests::boundary_condition_tests::gen_bool_at_half_probability_has_variance ... ok
+test mutation_tests::boundary_condition_tests::gen_bool_at_near_one_mostly_true ... ok

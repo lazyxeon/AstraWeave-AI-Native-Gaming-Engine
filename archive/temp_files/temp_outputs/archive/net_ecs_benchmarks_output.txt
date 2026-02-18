@@ -1,0 +1,523 @@
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.71s
+     Running unittests src\lib.rs (target\release\deps\astraweave_net_ecs-32f5b29cd5be1307.exe)
+
+running 4 tests
+test tests::client_input_processing ... ignored
+test tests::client_reconciliation ... ignored
+test tests::network_integration ... ignored
+test tests::server_snapshot_generation ... ignored
+
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches\net_ecs_benchmarks.rs (target\release\deps\net_ecs_benchmarks-044f50695f765f42.exe)
+Gnuplot not found, using plotters backend
+Benchmarking serialization/entity_state/serialize_postcard
+Benchmarking serialization/entity_state/serialize_postcard: Warming up for 3.0000 s
+Benchmarking serialization/entity_state/serialize_postcard: Collecting 100 samples in estimated 5.0003 s (22M iterations)
+Benchmarking serialization/entity_state/serialize_postcard: Analyzing
+serialization/entity_state/serialize_postcard
+                        time:   [170.09 ns 182.96 ns 198.32 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking serialization/entity_state/deserialize_postcard
+Benchmarking serialization/entity_state/deserialize_postcard: Warming up for 3.0000 s
+Benchmarking serialization/entity_state/deserialize_postcard: Collecting 100 samples in estimated 5.0001 s (282M iterations)
+Benchmarking serialization/entity_state/deserialize_postcard: Analyzing
+serialization/entity_state/deserialize_postcard
+                        time:   [22.067 ns 24.008 ns 26.166 ns]
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking serialization/snapshot/postcard/10
+Benchmarking serialization/snapshot/postcard/10: Warming up for 3.0000 s
+Benchmarking serialization/snapshot/postcard/10: Collecting 100 samples in estimated 5.0034 s (6.2M iterations)
+Benchmarking serialization/snapshot/postcard/10: Analyzing
+serialization/snapshot/postcard/10
+                        time:   [625.55 ns 670.24 ns 727.30 ns]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+Benchmarking serialization/snapshot/postcard/50
+Benchmarking serialization/snapshot/postcard/50: Warming up for 3.0000 s
+Benchmarking serialization/snapshot/postcard/50: Collecting 100 samples in estimated 5.0077 s (2.9M iterations)
+Benchmarking serialization/snapshot/postcard/50: Analyzing
+serialization/snapshot/postcard/50
+                        time:   [1.3668 ┬╡s 1.4468 ┬╡s 1.5486 ┬╡s]
+Benchmarking serialization/snapshot/postcard/100
+Benchmarking serialization/snapshot/postcard/100: Warming up for 3.0000 s
+Benchmarking serialization/snapshot/postcard/100: Collecting 100 samples in estimated 5.0119 s (2.1M iterations)
+Benchmarking serialization/snapshot/postcard/100: Analyzing
+serialization/snapshot/postcard/100
+                        time:   [1.7537 ┬╡s 1.7788 ┬╡s 1.8087 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) high mild
+  6 (6.00%) high severe
+Benchmarking serialization/snapshot/postcard/500
+Benchmarking serialization/snapshot/postcard/500: Warming up for 3.0000 s
+Benchmarking serialization/snapshot/postcard/500: Collecting 100 samples in estimated 5.0503 s (500k iterations)
+Benchmarking serialization/snapshot/postcard/500: Analyzing
+serialization/snapshot/postcard/500
+                        time:   [8.0411 ┬╡s 8.3650 ┬╡s 8.7221 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  1 (1.00%) high mild
+  11 (11.00%) high severe
+
+Benchmarking compression/snapshot/lz4_compress/10
+Benchmarking compression/snapshot/lz4_compress/10: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_compress/10: Collecting 100 samples in estimated 5.0014 s (7.4M iterations)
+Benchmarking compression/snapshot/lz4_compress/10: Analyzing
+compression/snapshot/lz4_compress/10
+                        time:   [500.56 ns 508.54 ns 517.76 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+Benchmarking compression/snapshot/lz4_decompress/10
+Benchmarking compression/snapshot/lz4_decompress/10: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_decompress/10: Collecting 100 samples in estimated 5.0005 s (31M iterations)
+Benchmarking compression/snapshot/lz4_decompress/10: Analyzing
+compression/snapshot/lz4_decompress/10
+                        time:   [148.67 ns 167.78 ns 190.60 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high severe
+Benchmarking compression/snapshot/lz4_compress/50
+Benchmarking compression/snapshot/lz4_compress/50: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_compress/50: Collecting 100 samples in estimated 5.0069 s (2.4M iterations)
+Benchmarking compression/snapshot/lz4_compress/50: Analyzing
+compression/snapshot/lz4_compress/50
+                        time:   [1.7730 ┬╡s 1.9039 ┬╡s 2.0644 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking compression/snapshot/lz4_decompress/50
+Benchmarking compression/snapshot/lz4_decompress/50: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_decompress/50: Collecting 100 samples in estimated 5.0005 s (16M iterations)
+Benchmarking compression/snapshot/lz4_decompress/50: Analyzing
+compression/snapshot/lz4_decompress/50
+                        time:   [241.11 ns 248.40 ns 256.78 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking compression/snapshot/lz4_compress/100
+Benchmarking compression/snapshot/lz4_compress/100: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_compress/100: Collecting 100 samples in estimated 5.0017 s (1.4M iterations)
+Benchmarking compression/snapshot/lz4_compress/100: Analyzing
+compression/snapshot/lz4_compress/100
+                        time:   [2.7403 ┬╡s 2.9055 ┬╡s 3.1192 ┬╡s]
+Benchmarking compression/snapshot/lz4_decompress/100
+Benchmarking compression/snapshot/lz4_decompress/100: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_decompress/100: Collecting 100 samples in estimated 5.0017 s (10M iterations)
+Benchmarking compression/snapshot/lz4_decompress/100: Analyzing
+compression/snapshot/lz4_decompress/100
+                        time:   [332.82 ns 336.37 ns 340.58 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking compression/snapshot/lz4_compress/500
+Benchmarking compression/snapshot/lz4_compress/500: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_compress/500: Collecting 100 samples in estimated 5.0709 s (348k iterations)
+Benchmarking compression/snapshot/lz4_compress/500: Analyzing
+compression/snapshot/lz4_compress/500
+                        time:   [9.9130 ┬╡s 10.113 ┬╡s 10.349 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+Benchmarking compression/snapshot/lz4_decompress/500
+Benchmarking compression/snapshot/lz4_decompress/500: Warming up for 3.0000 s
+Benchmarking compression/snapshot/lz4_decompress/500: Collecting 100 samples in estimated 5.0045 s (2.8M iterations)
+Benchmarking compression/snapshot/lz4_decompress/500: Analyzing
+compression/snapshot/lz4_decompress/500
+                        time:   [1.7688 ┬╡s 1.8956 ┬╡s 2.0531 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+
+Benchmarking delta/encoding/compute_delta/10
+Benchmarking delta/encoding/compute_delta/10: Warming up for 3.0000 s
+Benchmarking delta/encoding/compute_delta/10: Collecting 100 samples in estimated 5.0009 s (13M iterations)
+Benchmarking delta/encoding/compute_delta/10: Analyzing
+delta/encoding/compute_delta/10
+                        time:   [325.23 ns 346.01 ns 371.02 ns]
+Benchmarking delta/encoding/apply_delta/10
+Benchmarking delta/encoding/apply_delta/10: Warming up for 3.0000 s
+Benchmarking delta/encoding/apply_delta/10: Collecting 100 samples in estimated 5.0005 s (51M iterations)
+Benchmarking delta/encoding/apply_delta/10: Analyzing
+delta/encoding/apply_delta/10
+                        time:   [76.449 ns 77.546 ns 78.852 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking delta/encoding/serialize_delta/10
+Benchmarking delta/encoding/serialize_delta/10: Warming up for 3.0000 s
+Benchmarking delta/encoding/serialize_delta/10: Collecting 100 samples in estimated 5.0016 s (16M iterations)
+Benchmarking delta/encoding/serialize_delta/10: Analyzing
+delta/encoding/serialize_delta/10
+                        time:   [213.80 ns 217.03 ns 220.52 ns]
+Found 13 outliers among 100 measurements (13.00%)
+  5 (5.00%) high mild
+  8 (8.00%) high severe
+Benchmarking delta/encoding/compute_delta/50
+Benchmarking delta/encoding/compute_delta/50: Warming up for 3.0000 s
+Benchmarking delta/encoding/compute_delta/50: Collecting 100 samples in estimated 5.0060 s (3.2M iterations)
+Benchmarking delta/encoding/compute_delta/50: Analyzing
+delta/encoding/compute_delta/50
+                        time:   [1.3673 ┬╡s 1.4564 ┬╡s 1.5626 ┬╡s]
+Benchmarking delta/encoding/apply_delta/50
+Benchmarking delta/encoding/apply_delta/50: Warming up for 3.0000 s
+Benchmarking delta/encoding/apply_delta/50: Collecting 100 samples in estimated 5.0006 s (24M iterations)
+Benchmarking delta/encoding/apply_delta/50: Analyzing
+delta/encoding/apply_delta/50
+                        time:   [208.86 ns 223.90 ns 242.29 ns]
+Benchmarking delta/encoding/serialize_delta/50
+Benchmarking delta/encoding/serialize_delta/50: Warming up for 3.0000 s
+Benchmarking delta/encoding/serialize_delta/50: Collecting 100 samples in estimated 5.0034 s (6.4M iterations)
+Benchmarking delta/encoding/serialize_delta/50: Analyzing
+delta/encoding/serialize_delta/50
+                        time:   [734.92 ns 804.28 ns 869.49 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  6 (6.00%) high mild
+Benchmarking delta/encoding/compute_delta/100
+Benchmarking delta/encoding/compute_delta/100: Warming up for 3.0000 s
+Benchmarking delta/encoding/compute_delta/100: Collecting 100 samples in estimated 5.0163 s (1.2M iterations)
+Benchmarking delta/encoding/compute_delta/100: Analyzing
+delta/encoding/compute_delta/100
+                        time:   [2.2892 ┬╡s 2.3259 ┬╡s 2.3672 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking delta/encoding/apply_delta/100
+Benchmarking delta/encoding/apply_delta/100: Warming up for 3.0000 s
+Benchmarking delta/encoding/apply_delta/100: Collecting 100 samples in estimated 5.0001 s (12M iterations)
+Benchmarking delta/encoding/apply_delta/100: Analyzing
+delta/encoding/apply_delta/100
+                        time:   [334.58 ns 354.34 ns 379.26 ns]
+Benchmarking delta/encoding/serialize_delta/100
+Benchmarking delta/encoding/serialize_delta/100: Warming up for 3.0000 s
+Benchmarking delta/encoding/serialize_delta/100: Collecting 100 samples in estimated 5.0023 s (6.2M iterations)
+Benchmarking delta/encoding/serialize_delta/100: Analyzing
+delta/encoding/serialize_delta/100
+                        time:   [629.21 ns 670.71 ns 723.36 ns]
+Benchmarking delta/encoding/compute_delta/500
+Benchmarking delta/encoding/compute_delta/500: Warming up for 3.0000 s
+Benchmarking delta/encoding/compute_delta/500: Collecting 100 samples in estimated 5.0756 s (318k iterations)
+Benchmarking delta/encoding/compute_delta/500: Analyzing
+delta/encoding/compute_delta/500
+                        time:   [11.252 ┬╡s 11.353 ┬╡s 11.489 ┬╡s]
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+Benchmarking delta/encoding/apply_delta/500
+Benchmarking delta/encoding/apply_delta/500: Warming up for 3.0000 s
+Benchmarking delta/encoding/apply_delta/500: Collecting 100 samples in estimated 5.0039 s (2.1M iterations)
+Benchmarking delta/encoding/apply_delta/500: Analyzing
+delta/encoding/apply_delta/500
+                        time:   [1.7650 ┬╡s 1.7854 ┬╡s 1.8084 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  6 (6.00%) high mild
+  4 (4.00%) high severe
+Benchmarking delta/encoding/serialize_delta/500
+Benchmarking delta/encoding/serialize_delta/500: Warming up for 3.0000 s
+Benchmarking delta/encoding/serialize_delta/500: Collecting 100 samples in estimated 5.0024 s (2.9M iterations)
+Benchmarking delta/encoding/serialize_delta/500: Analyzing
+delta/encoding/serialize_delta/500
+                        time:   [1.6539 ┬╡s 1.7699 ┬╡s 1.9078 ┬╡s]
+
+Benchmarking client_server/input_processing/1
+Benchmarking client_server/input_processing/1: Warming up for 3.0000 s
+Benchmarking client_server/input_processing/1: Collecting 100 samples in estimated 5.1183 s (86k iterations)
+Benchmarking client_server/input_processing/1: Analyzing
+client_server/input_processing/1
+                        time:   [367.76 ┬╡s 410.61 ┬╡s 449.90 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  12 (12.00%) high mild
+  2 (2.00%) high severe
+Benchmarking client_server/input_processing/10
+Benchmarking client_server/input_processing/10: Warming up for 3.0000 s
+Benchmarking client_server/input_processing/10: Collecting 100 samples in estimated 5.7719 s (20k iterations)
+Benchmarking client_server/input_processing/10: Analyzing
+client_server/input_processing/10
+                        time:   [789.71 ┬╡s 824.89 ┬╡s 865.54 ┬╡s]
+Benchmarking client_server/input_processing/50
+Benchmarking client_server/input_processing/50: Warming up for 3.0000 s
+Benchmarking client_server/input_processing/50: Collecting 100 samples in estimated 6.4978 s (10k iterations)
+Benchmarking client_server/input_processing/50: Analyzing
+client_server/input_processing/50
+                        time:   [1.6740 ms 1.7665 ms 1.8461 ms]
+Benchmarking client_server/input_processing/100
+Benchmarking client_server/input_processing/100: Warming up for 3.0000 s
+Benchmarking client_server/input_processing/100: Collecting 100 samples in estimated 8.2935 s (10k iterations)
+Benchmarking client_server/input_processing/100: Analyzing
+client_server/input_processing/100
+                        time:   [2.7625 ms 2.9698 ms 3.1643 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+Benchmarking client_server/reconciliation/1
+Benchmarking client_server/reconciliation/1: Warming up for 3.0000 s
+Benchmarking client_server/reconciliation/1: Collecting 100 samples in estimated 5.0064 s (2.3M iterations)
+Benchmarking client_server/reconciliation/1: Analyzing
+client_server/reconciliation/1
+                        time:   [1.6230 ┬╡s 1.7235 ┬╡s 1.8517 ┬╡s]
+Benchmarking client_server/reconciliation/10
+Benchmarking client_server/reconciliation/10: Warming up for 3.0000 s
+Benchmarking client_server/reconciliation/10: Collecting 100 samples in estimated 5.0229 s (273k iterations)
+Benchmarking client_server/reconciliation/10: Analyzing
+client_server/reconciliation/10
+                        time:   [12.967 ┬╡s 13.104 ┬╡s 13.265 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  6 (6.00%) high mild
+  6 (6.00%) high severe
+Benchmarking client_server/reconciliation/50
+Benchmarking client_server/reconciliation/50: Warming up for 3.0000 s
+Benchmarking client_server/reconciliation/50: Collecting 100 samples in estimated 5.2609 s (56k iterations)
+Benchmarking client_server/reconciliation/50: Analyzing
+client_server/reconciliation/50
+                        time:   [77.932 ┬╡s 83.158 ┬╡s 89.677 ┬╡s]
+Benchmarking client_server/reconciliation/100
+Benchmarking client_server/reconciliation/100: Warming up for 3.0000 s
+Benchmarking client_server/reconciliation/100: Collecting 100 samples in estimated 5.8038 s (30k iterations)
+Benchmarking client_server/reconciliation/100: Analyzing
+client_server/reconciliation/100
+                        time:   [152.91 ┬╡s 162.38 ┬╡s 174.47 ┬╡s]
+
+Benchmarking client_server/snapshot_generation/1
+Benchmarking client_server/snapshot_generation/1: Warming up for 3.0000 s
+Benchmarking client_server/snapshot_generation/1: Collecting 100 samples in estimated 5.0057 s (4.3M iterations)
+Benchmarking client_server/snapshot_generation/1: Analyzing
+client_server/snapshot_generation/1
+                        time:   [835.32 ns 849.12 ns 865.46 ns]
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking client_server/snapshot_generation/10
+Benchmarking client_server/snapshot_generation/10: Warming up for 3.0000 s
+Benchmarking client_server/snapshot_generation/10: Collecting 100 samples in estimated 5.0067 s (2.0M iterations)
+Benchmarking client_server/snapshot_generation/10: Analyzing
+client_server/snapshot_generation/10
+                        time:   [2.2367 ┬╡s 2.5331 ┬╡s 2.8828 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+Benchmarking client_server/snapshot_generation/50
+Benchmarking client_server/snapshot_generation/50: Warming up for 3.0000 s
+Benchmarking client_server/snapshot_generation/50: Collecting 100 samples in estimated 5.0382 s (379k iterations)
+Benchmarking client_server/snapshot_generation/50: Analyzing
+client_server/snapshot_generation/50
+                        time:   [7.0285 ┬╡s 7.2127 ┬╡s 7.4191 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking client_server/snapshot_generation/100
+Benchmarking client_server/snapshot_generation/100: Warming up for 3.0000 s
+Benchmarking client_server/snapshot_generation/100: Collecting 100 samples in estimated 5.1049 s (222k iterations)
+Benchmarking client_server/snapshot_generation/100: Analyzing
+client_server/snapshot_generation/100
+                        time:   [16.502 ┬╡s 18.425 ┬╡s 20.259 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  2 (2.00%) high mild
+  9 (9.00%) high severe
+
+Benchmarking full_pipeline/sync_cycle/10
+Benchmarking full_pipeline/sync_cycle/10: Warming up for 3.0000 s
+Benchmarking full_pipeline/sync_cycle/10: Collecting 100 samples in estimated 5.0048 s (1.7M iterations)
+Benchmarking full_pipeline/sync_cycle/10: Analyzing
+full_pipeline/sync_cycle/10
+                        time:   [1.6398 ┬╡s 1.7065 ┬╡s 1.7815 ┬╡s]
+Benchmarking full_pipeline/sync_cycle/50
+Benchmarking full_pipeline/sync_cycle/50: Warming up for 3.0000 s
+Benchmarking full_pipeline/sync_cycle/50: Collecting 100 samples in estimated 5.0213 s (747k iterations)
+Benchmarking full_pipeline/sync_cycle/50: Analyzing
+full_pipeline/sync_cycle/50
+                        time:   [5.9564 ┬╡s 6.2769 ┬╡s 6.6626 ┬╡s]
+Benchmarking full_pipeline/sync_cycle/100
+Benchmarking full_pipeline/sync_cycle/100: Warming up for 3.0000 s
+Benchmarking full_pipeline/sync_cycle/100: Collecting 100 samples in estimated 5.0293 s (510k iterations)
+Benchmarking full_pipeline/sync_cycle/100: Analyzing
+full_pipeline/sync_cycle/100
+                        time:   [7.3172 ┬╡s 7.4695 ┬╡s 7.6555 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+Benchmarking full_pipeline/sync_cycle/500
+Benchmarking full_pipeline/sync_cycle/500: Warming up for 3.0000 s
+Benchmarking full_pipeline/sync_cycle/500: Collecting 100 samples in estimated 5.0489 s (91k iterations)
+Benchmarking full_pipeline/sync_cycle/500: Analyzing
+full_pipeline/sync_cycle/500
+                        time:   [42.911 ┬╡s 45.437 ┬╡s 48.724 ┬╡s]
+
+Benchmarking full_pipeline/delta_cycle/10
+Benchmarking full_pipeline/delta_cycle/10: Warming up for 3.0000 s
+Benchmarking full_pipeline/delta_cycle/10: Collecting 100 samples in estimated 5.0011 s (3.5M iterations)
+Benchmarking full_pipeline/delta_cycle/10: Analyzing
+full_pipeline/delta_cycle/10
+                        time:   [1.6848 ┬╡s 1.8254 ┬╡s 1.9718 ┬╡s]
+Benchmarking full_pipeline/delta_cycle/50
+Benchmarking full_pipeline/delta_cycle/50: Warming up for 3.0000 s
+Benchmarking full_pipeline/delta_cycle/50: Collecting 100 samples in estimated 5.0150 s (1.3M iterations)
+Benchmarking full_pipeline/delta_cycle/50: Analyzing
+full_pipeline/delta_cycle/50
+                        time:   [2.5561 ┬╡s 2.6010 ┬╡s 2.6577 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+Benchmarking full_pipeline/delta_cycle/100
+Benchmarking full_pipeline/delta_cycle/100: Warming up for 3.0000 s
+Benchmarking full_pipeline/delta_cycle/100: Collecting 100 samples in estimated 5.0302 s (758k iterations)
+Benchmarking full_pipeline/delta_cycle/100: Analyzing
+full_pipeline/delta_cycle/100
+                        time:   [5.3066 ┬╡s 5.6635 ┬╡s 6.1147 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+Benchmarking full_pipeline/delta_cycle/500
+Benchmarking full_pipeline/delta_cycle/500: Warming up for 3.0000 s
+Benchmarking full_pipeline/delta_cycle/500: Collecting 100 samples in estimated 5.0287 s (182k iterations)
+Benchmarking full_pipeline/delta_cycle/500: Analyzing
+full_pipeline/delta_cycle/500
+                        time:   [22.394 ┬╡s 23.598 ┬╡s 25.112 ┬╡s]
+
+Benchmarking bandwidth/snapshot_size/uncompressed/10
+Benchmarking bandwidth/snapshot_size/uncompressed/10: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/uncompressed/10: Collecting 100 samples in estimated 5.0020 s (6.4M iterations)
+Benchmarking bandwidth/snapshot_size/uncompressed/10: Analyzing
+bandwidth/snapshot_size/uncompressed/10
+                        time:   [621.11 ns 661.77 ns 713.96 ns]
+Benchmarking bandwidth/snapshot_size/compressed/10
+Benchmarking bandwidth/snapshot_size/compressed/10: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/compressed/10: Collecting 100 samples in estimated 5.0007 s (3.3M iterations)
+Benchmarking bandwidth/snapshot_size/compressed/10: Analyzing
+bandwidth/snapshot_size/compressed/10
+                        time:   [1.2667 ┬╡s 1.3571 ┬╡s 1.4720 ┬╡s]
+Benchmarking bandwidth/snapshot_size/uncompressed/50
+Benchmarking bandwidth/snapshot_size/uncompressed/50: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/uncompressed/50: Collecting 100 samples in estimated 5.0064 s (3.0M iterations)
+Benchmarking bandwidth/snapshot_size/uncompressed/50: Analyzing
+bandwidth/snapshot_size/uncompressed/50
+                        time:   [1.5593 ┬╡s 1.6797 ┬╡s 1.8224 ┬╡s]
+Benchmarking bandwidth/snapshot_size/compressed/50
+Benchmarking bandwidth/snapshot_size/compressed/50: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/compressed/50: Collecting 100 samples in estimated 5.0229 s (1.0M iterations)
+Benchmarking bandwidth/snapshot_size/compressed/50: Analyzing
+bandwidth/snapshot_size/compressed/50
+                        time:   [2.9877 ┬╡s 3.0103 ┬╡s 3.0383 ┬╡s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking bandwidth/snapshot_size/uncompressed/100
+Benchmarking bandwidth/snapshot_size/uncompressed/100: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/uncompressed/100: Collecting 100 samples in estimated 5.0004 s (2.1M iterations)
+Benchmarking bandwidth/snapshot_size/uncompressed/100: Analyzing
+bandwidth/snapshot_size/uncompressed/100
+                        time:   [1.7488 ┬╡s 1.7683 ┬╡s 1.7908 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) high mild
+  3 (3.00%) high severe
+Benchmarking bandwidth/snapshot_size/compressed/100
+Benchmarking bandwidth/snapshot_size/compressed/100: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/compressed/100: Collecting 100 samples in estimated 5.0324 s (747k iterations)
+Benchmarking bandwidth/snapshot_size/compressed/100: Analyzing
+bandwidth/snapshot_size/compressed/100
+                        time:   [5.3072 ┬╡s 5.6382 ┬╡s 6.0646 ┬╡s]
+Benchmarking bandwidth/snapshot_size/uncompressed/500
+Benchmarking bandwidth/snapshot_size/uncompressed/500: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/uncompressed/500: Collecting 100 samples in estimated 5.0336 s (505k iterations)
+Benchmarking bandwidth/snapshot_size/uncompressed/500: Analyzing
+bandwidth/snapshot_size/uncompressed/500
+                        time:   [7.6904 ┬╡s 7.8039 ┬╡s 7.9365 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  6 (6.00%) high mild
+  1 (1.00%) high severe
+Benchmarking bandwidth/snapshot_size/compressed/500
+Benchmarking bandwidth/snapshot_size/compressed/500: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/compressed/500: Collecting 100 samples in estimated 5.1121 s (182k iterations)
+Benchmarking bandwidth/snapshot_size/compressed/500: Analyzing
+bandwidth/snapshot_size/compressed/500
+                        time:   [22.342 ┬╡s 23.547 ┬╡s 25.073 ┬╡s]
+Benchmarking bandwidth/snapshot_size/uncompressed/1000
+Benchmarking bandwidth/snapshot_size/uncompressed/1000: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/uncompressed/1000: Collecting 100 samples in estimated 5.0956 s (258k iterations)
+Benchmarking bandwidth/snapshot_size/uncompressed/1000: Analyzing
+bandwidth/snapshot_size/uncompressed/1000
+                        time:   [16.655 ┬╡s 17.713 ┬╡s 18.925 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  7 (7.00%) high mild
+  5 (5.00%) high severe
+Benchmarking bandwidth/snapshot_size/compressed/1000
+Benchmarking bandwidth/snapshot_size/compressed/1000: Warming up for 3.0000 s
+Benchmarking bandwidth/snapshot_size/compressed/1000: Collecting 100 samples in estimated 5.0707 s (71k iterations)
+Benchmarking bandwidth/snapshot_size/compressed/1000: Analyzing
+bandwidth/snapshot_size/compressed/1000
+                        time:   [49.922 ┬╡s 53.276 ┬╡s 57.243 ┬╡s]
+
+Benchmarking bandwidth/delta_size/uncompressed/10
+Benchmarking bandwidth/delta_size/uncompressed/10: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/uncompressed/10: Collecting 100 samples in estimated 5.0009 s (19M iterations)
+Benchmarking bandwidth/delta_size/uncompressed/10: Analyzing
+bandwidth/delta_size/uncompressed/10
+                        time:   [242.09 ns 257.40 ns 276.82 ns]
+Benchmarking bandwidth/delta_size/compressed/10
+Benchmarking bandwidth/delta_size/compressed/10: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/compressed/10: Collecting 100 samples in estimated 5.0023 s (7.7M iterations)
+Benchmarking bandwidth/delta_size/compressed/10: Analyzing
+bandwidth/delta_size/compressed/10
+                        time:   [484.18 ns 488.00 ns 492.54 ns]
+Found 15 outliers among 100 measurements (15.00%)
+  7 (7.00%) high mild
+  8 (8.00%) high severe
+Benchmarking bandwidth/delta_size/uncompressed/50
+Benchmarking bandwidth/delta_size/uncompressed/50: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/uncompressed/50: Collecting 100 samples in estimated 5.0007 s (9.0M iterations)
+Benchmarking bandwidth/delta_size/uncompressed/50: Analyzing
+bandwidth/delta_size/uncompressed/50
+                        time:   [392.26 ns 399.38 ns 407.94 ns]
+Found 14 outliers among 100 measurements (14.00%)
+  6 (6.00%) high mild
+  8 (8.00%) high severe
+Benchmarking bandwidth/delta_size/compressed/50
+Benchmarking bandwidth/delta_size/compressed/50: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/compressed/50: Collecting 100 samples in estimated 5.0044 s (4.6M iterations)
+Benchmarking bandwidth/delta_size/compressed/50: Analyzing
+bandwidth/delta_size/compressed/50
+                        time:   [763.67 ns 772.77 ns 783.35 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) high mild
+  3 (3.00%) high severe
+Benchmarking bandwidth/delta_size/uncompressed/100
+Benchmarking bandwidth/delta_size/uncompressed/100: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/uncompressed/100: Collecting 100 samples in estimated 5.0010 s (6.7M iterations)
+Benchmarking bandwidth/delta_size/uncompressed/100: Analyzing
+bandwidth/delta_size/uncompressed/100
+                        time:   [748.81 ns 809.06 ns 880.70 ns]
+Benchmarking bandwidth/delta_size/compressed/100
+Benchmarking bandwidth/delta_size/compressed/100: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/compressed/100: Collecting 100 samples in estimated 5.0063 s (2.2M iterations)
+Benchmarking bandwidth/delta_size/compressed/100: Analyzing
+bandwidth/delta_size/compressed/100
+                        time:   [1.6246 ┬╡s 1.7861 ┬╡s 1.9294 ┬╡s]
+Benchmarking bandwidth/delta_size/uncompressed/500
+Benchmarking bandwidth/delta_size/uncompressed/500: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/uncompressed/500: Collecting 100 samples in estimated 5.0089 s (2.3M iterations)
+Benchmarking bandwidth/delta_size/uncompressed/500: Analyzing
+bandwidth/delta_size/uncompressed/500
+                        time:   [1.1459 ┬╡s 1.1693 ┬╡s 1.1981 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking bandwidth/delta_size/compressed/500
+Benchmarking bandwidth/delta_size/compressed/500: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/compressed/500: Collecting 100 samples in estimated 5.0028 s (1.3M iterations)
+Benchmarking bandwidth/delta_size/compressed/500: Analyzing
+bandwidth/delta_size/compressed/500
+                        time:   [2.5783 ┬╡s 2.6021 ┬╡s 2.6311 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking bandwidth/delta_size/uncompressed/1000
+Benchmarking bandwidth/delta_size/uncompressed/1000: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/uncompressed/1000: Collecting 100 samples in estimated 5.0001 s (2.0M iterations)
+Benchmarking bandwidth/delta_size/uncompressed/1000: Analyzing
+bandwidth/delta_size/uncompressed/1000
+                        time:   [1.7237 ┬╡s 1.7539 ┬╡s 1.7926 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  8 (8.00%) high mild
+  6 (6.00%) high severe
+Benchmarking bandwidth/delta_size/compressed/1000
+Benchmarking bandwidth/delta_size/compressed/1000: Warming up for 3.0000 s
+Benchmarking bandwidth/delta_size/compressed/1000: Collecting 100 samples in estimated 5.0007 s (818k iterations)
+Benchmarking bandwidth/delta_size/compressed/1000: Analyzing
+bandwidth/delta_size/compressed/1000
+                        time:   [4.9799 ┬╡s 5.3367 ┬╡s 5.7952 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+

@@ -1,0 +1,42 @@
+Found 211 mutants to test
+ok       Unmutated baseline in 78s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:173:32: replace < with <= in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:184:53: replace - with + in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:191:25: replace < with <= in ClothCollider::resolve_collision in 6s build + 1s test
+MISSED   astraweave-physics/src/cloth.rs:198:48: replace - with + in ClothCollider::resolve_collision in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:200:43: replace - with + in ClothCollider::resolve_collision in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:200:57: replace + with - in ClothCollider::resolve_collision in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:200:57: replace + with * in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:207:25: replace < with <= in ClothCollider::resolve_collision in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:211:59: replace * with + in ClothCollider::resolve_collision in 6s build + 1s test
+MISSED   astraweave-physics/src/cloth.rs:212:48: replace - with + in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:214:43: replace - with + in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:214:57: replace + with - in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:214:57: replace + with * in ClothCollider::resolve_collision in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:419:21: replace * with + in Cloth::particle_normal in 24s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:419:21: replace * with / in Cloth::particle_normal in 10s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:428:16: replace + with * in Cloth::particle_normal in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:442:31: replace * with + in Cloth::particle_normal in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:442:31: replace * with / in Cloth::particle_normal in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:443:32: replace * with + in Cloth::particle_normal in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:443:32: replace * with / in Cloth::particle_normal in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:445:56: replace - with + in Cloth::particle_normal in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:446:56: replace - with + in Cloth::particle_normal in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:447:24: replace += with -= in Cloth::particle_normal in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:463:46: replace > with >= in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:478:57: replace * with + in Cloth::update in 6s build + 1s test
+MISSED   astraweave-physics/src/cloth.rs:478:57: replace * with / in Cloth::update in 30s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:478:64: replace / with % in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:478:64: replace / with * in Cloth::update in 7s build + 3s test
+MISSED   astraweave-physics/src/cloth.rs:485:69: replace * with + in Cloth::update in 6s build + 1s test
+MISSED   astraweave-physics/src/cloth.rs:485:69: replace * with / in Cloth::update in 6s build + 1s test
+MISSED   astraweave-physics/src/cloth.rs:485:55: replace * with + in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:485:76: replace / with % in Cloth::update in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:485:76: replace / with * in Cloth::update in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:491:67: replace * with + in Cloth::update in 6s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:491:67: replace * with / in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:491:38: replace * with + in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:491:74: replace / with % in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:491:74: replace / with * in Cloth::update in 7s build + 2s test
+MISSED   astraweave-physics/src/cloth.rs:597:9: replace ClothManager::update with () in 8s build + 1s test
+211 mutants tested in 39m: 39 missed, 168 caught, 4 unviable

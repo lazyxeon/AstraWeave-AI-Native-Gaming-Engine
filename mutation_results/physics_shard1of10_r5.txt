@@ -1,9 +1,0 @@
-Found 211 mutants to test
-ok       Unmutated baseline in 96s build + 2s test
-MISSED   astraweave-physics/src/lib.rs:296:31: replace < with <= in DebugLine::is_degenerate in 31s build + 2s test
-MISSED   astraweave-physics/src/lib.rs:394:9: replace CharState::is_grounded -> bool with true in 7s build + 2s test
-MISSED   astraweave-physics/src/lib.rs:454:9: replace CharacterController::is_grounded -> bool with true in 7s build + 2s test
-MISSED   astraweave-physics/src/lib.rs:472:9: replace CharacterController::can_jump -> bool with true in 7s build + 2s test
-MISSED   astraweave-physics/src/lib.rs:585:39: replace < with <= in PhysicsConfig::is_earth_gravity in 7s build + 1s test
-MISSED   astraweave-physics/src/lib.rs:593:39: replace < with <= in PhysicsConfig::is_zero_gravity in 7s build + 2s test
-211 mutants tested in 41m: 6 missed, 193 caught, 12 unviable

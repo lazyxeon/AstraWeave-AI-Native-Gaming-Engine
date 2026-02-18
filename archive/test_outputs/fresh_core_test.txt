@@ -1,0 +1,4 @@
+   Compiling parry3d v0.17.6
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling criterion v0.7.0
+   Compiling rapier3d v0.22.0

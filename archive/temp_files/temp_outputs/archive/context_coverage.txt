@@ -1,0 +1,234 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling regex-automata v0.4.12
+   Compiling tokio v1.48.0
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling uuid v1.18.1
+   Compiling async-stream-impl v0.3.6
+   Compiling futures-util v0.3.31
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling async-stream v0.3.6
+   Compiling matchers v0.2.0
+   Compiling tracing-subscriber v0.3.20
+   Compiling regex v1.12.2
+   Compiling bstr v1.12.0
+   Compiling fancy-regex v0.13.0
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling tokio-stream v0.1.17
+   Compiling tokio-test v0.4.4
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling tiktoken-rs v0.7.0
+   Compiling criterion v0.7.0
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: `astraweave-llm` (lib) generated 2 warnings
+   Compiling astraweave-context v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+warning: `astraweave-context` (lib test) generated 13 warnings (run `cargo fix --lib -p astraweave-context --tests` to apply 6 suggestions)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 38s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_context-50c26b9d79f0f140.exe)
+
+running 30 tests
+test history::tests::test_get_context ... ok
+test summarizer::tests::test_conversation_summarization ... ok
+test summarizer::tests::test_common_word_detection ... ok
+test history::tests::test_export_import ... ok
+test summarizer::tests::test_topic_extraction ... ok
+test tests::test_context_config ... ok
+test history::tests::test_conversation_history_creation ... ok
+test history::tests::test_preserved_messages ... ok
+test history::tests::test_sliding_window_pruning ... ok
+test summarizer::tests::test_importance_calculation ... ok
+test tests::test_message_formatting ... ok
+test summarizer::tests::test_summarizer_creation ... ok
+test tests::test_message_creation ... ok
+test history::tests::test_add_message ... ok
+test tests::test_preserved_message ... ok
+test tests::test_role_string_conversion ... ok
+test token_counter::tests::test_token_budget ... ok
+test token_counter::tests::test_text_truncation ... ok
+test token_counter::tests::test_token_counting ... ok
+test token_counter::tests::test_token_estimation ... ok
+test window::tests::test_context_window_creation ... ok
+test window::tests::test_context_formatting ... ok
+test token_counter::tests::test_token_counter_creation ... ok
+test window::tests::test_add_message ... ok
+test token_counter::tests::test_text_chunking ... ok
+test window::tests::test_attention_based_pruning ... ok
+test window::tests::test_multi_agent_context_manager ... ok
+test window::tests::test_sliding_window_pruning ... ok
+test token_counter::tests::test_token_cache ... ok
+test token_counter::tests::test_find_split_point ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+Filename                                    Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+astraweave-context\src\history.rs               666               288    56.76%          50                20    60.00%         431               194    54.99%           0                 0         -
+astraweave-context\src\lib.rs                   128                12    90.62%          14                 2    85.71%          99                 7    92.93%           0                 0         -
+astraweave-context\src\summarizer.rs            692               216    68.79%          38                13    65.79%         499               167    66.53%           0                 0         -
+astraweave-context\src\token_counter.rs         497               146    70.62%          34                 7    79.41%         274                79    71.17%           0                 0         -
+astraweave-context\src\window.rs                621               212    65.86%          47                17    63.83%         391               139    64.45%           0                 0         -
+astraweave-core\src\capture_replay.rs            62                62     0.00%           4                 4     0.00%          35                35     0.00%           0                 0         -
+astraweave-core\src\ecs_adapter.rs                4                 4     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-core\src\ecs_components.rs            21                21     0.00%           3                 3     0.00%          13                13     0.00%           0                 0         -
+astraweave-core\src\ecs_events.rs                20                20     0.00%           5                 5     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\perception.rs                26                26     0.00%           2                 2     0.00%          15                15     0.00%           0                 0         -
+astraweave-core\src\schema.rs                    23                23     0.00%           5                 5     0.00%          42                42     0.00%           0                 0         -
+astraweave-core\src\sim.rs                        5                 5     0.00%           1                 1     0.00%           3                 3     0.00%           0                 0         -
+astraweave-core\src\tool_vocabulary.rs            2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-core\src\validation.rs               363               363     0.00%          10                10     0.00%         285               285     0.00%           0                 0         -
+astraweave-core\src\world.rs                    138               138     0.00%          21                21     0.00%          83                83     0.00%           0                 0         -
+astraweave-ecs\src\archetype.rs                 239               239     0.00%          30                30     0.00%         150               150     0.00%           0                 0         -
+astraweave-ecs\src\blob_vec.rs                  207               207     0.00%          16                16     0.00%         125               125     0.00%           0                 0         -
+astraweave-ecs\src\command_buffer.rs             27                27     0.00%           4                 4     0.00%          23                23     0.00%           0                 0         -
+astraweave-ecs\src\entity_allocator.rs           34                34     0.00%          10                10     0.00%          36                36     0.00%           0                 0         -
+astraweave-ecs\src\events.rs                    119               119     0.00%          22                22     0.00%          91                91     0.00%           0                 0         -
+astraweave-ecs\src\lib.rs                       170               170     0.00%          17                17     0.00%          96                96     0.00%           0                 0         -
+astraweave-ecs\src\rng.rs                        35                35     0.00%           7                 7     0.00%          29                29     0.00%           0                 0         -
+astraweave-ecs\src\sparse_set.rs                240               240     0.00%          31                31     0.00%         154               154     0.00%           0                 0         -
+astraweave-ecs\src\system_param.rs              173               173     0.00%           8                 8     0.00%         116               116     0.00%           0                 0         -
+astraweave-ecs\src\type_registry.rs              33                33     0.00%           3                 3     0.00%          22                22     0.00%           0                 0         -
+astraweave-llm\src\ab_testing.rs                  2                 2     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-llm\src\backpressure.rs                8                 8     0.00%           2                 2     0.00%           6                 6     0.00%           0                 0         -
+astraweave-llm\src\cache\key.rs                 117               117     0.00%           6                 6     0.00%          75                75     0.00%           0                 0         -
+astraweave-llm\src\cache\lru.rs                  86                86     0.00%           8                 8     0.00%          65                65     0.00%           0                 0         -
+astraweave-llm\src\cache\mod.rs                 150               150     0.00%          10                10     0.00%          92                92     0.00%           0                 0         -
+astraweave-llm\src\cache\similarity.rs           98                98     0.00%          11                11     0.00%          53                53     0.00%           0                 0         -
+astraweave-llm\src\compression.rs                 7                 7     0.00%           2                 2     0.00%           7                 7     0.00%           0                 0         -
+astraweave-llm\src\fallback_system.rs             5                 5     0.00%           2                 2     0.00%           2                 2     0.00%           0                 0         -
+astraweave-llm\src\lib.rs                       511               509     0.39%          40                39     2.50%         351               349     0.57%           0                 0         -
+astraweave-llm\src\plan_parser.rs               514               514     0.00%          21                21     0.00%         320               320     0.00%           0                 0         -
+astraweave-llm\src\prompt_template.rs             1                 1     0.00%           1                 1     0.00%           1                 1     0.00%           0                 0         -
+astraweave-llm\src\prompts.rs                    10                10     0.00%           3                 3     0.00%           8                 8     0.00%           0                 0         -
+astraweave-llm\src\scheduler.rs                 169               169     0.00%          15                15     0.00%         119               119     0.00%           0                 0         -
+astraweave-llm\src\tool_guard.rs                  4                 4     0.00%           2                 2     0.00%           2                 2     0.00%           0                 0         -
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                          6227              4495    27.81%         508               383    24.61%        4131              3021    26.87%           0                 0         -

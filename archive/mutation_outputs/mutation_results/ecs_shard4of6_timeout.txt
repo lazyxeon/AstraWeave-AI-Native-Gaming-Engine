@@ -1,0 +1,6 @@
+astraweave-ecs/src/system_param.rs:133:31: replace += with *= in <impl Iterator for Query<'w, T>>::next
+astraweave-ecs/src/system_param.rs:139:29: replace += with *= in <impl Iterator for Query<'w, T>>::next
+astraweave-ecs/src/system_param.rs:198:31: replace += with *= in <impl Iterator for Query2<'w, A, B>>::next
+astraweave-ecs/src/system_param.rs:204:29: replace += with *= in <impl Iterator for Query2<'w, A, B>>::next
+astraweave-ecs/src/system_param.rs:278:31: replace += with *= in <impl Iterator for Query2Mut<'w, A, B>>::next
+astraweave-ecs/src/system_param.rs:284:29: replace += with *= in <impl Iterator for Query2Mut<'w, A, B>>::next

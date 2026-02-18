@@ -1,0 +1,43 @@
+astraweave-core/src/validation.rs:451:31: replace -= with /= in apply_director_plan
+astraweave-core/src/world.rs:58:9: replace World::spawn -> Entity with Default::default()
+astraweave-core/src/world.rs:59:22: replace += with -= in World::spawn
+astraweave-core/src/world.rs:59:22: replace += with *= in World::spawn
+astraweave-core/src/world.rs:73:9: replace World::spawn_with_id -> Entity with Default::default()
+astraweave-core/src/world.rs:73:15: replace >= with < in World::spawn_with_id
+astraweave-core/src/world.rs:74:31: replace + with - in World::spawn_with_id
+astraweave-core/src/world.rs:74:31: replace + with * in World::spawn_with_id
+astraweave-core/src/world.rs:88:9: replace World::insert_entity -> Entity with Default::default()
+astraweave-core/src/world.rs:113:9: replace World::tick with ()
+astraweave-core/src/world.rs:113:16: replace += with -= in World::tick
+astraweave-core/src/world.rs:113:16: replace += with *= in World::tick
+astraweave-core/src/world.rs:116:26: replace - with + in World::tick
+astraweave-core/src/world.rs:116:26: replace - with / in World::tick
+astraweave-core/src/world.rs:124:9: replace World::destroy_entity -> bool with true
+astraweave-core/src/world.rs:124:9: replace World::destroy_entity -> bool with false
+astraweave-core/src/world.rs:138:9: replace World::pose -> Option<Pose> with None
+astraweave-core/src/world.rs:141:9: replace World::pose_mut -> Option<&mut Pose> with None
+astraweave-core/src/world.rs:144:9: replace World::health -> Option<Health> with None
+astraweave-core/src/world.rs:147:9: replace World::health_mut -> Option<&mut Health> with None
+astraweave-core/src/world.rs:150:9: replace World::team -> Option<Team> with None
+astraweave-core/src/world.rs:156:9: replace World::ammo -> Option<Ammo> with None
+astraweave-core/src/world.rs:159:9: replace World::ammo_mut -> Option<&mut Ammo> with None
+astraweave-core/src/world.rs:162:9: replace World::cooldowns -> Option<&Cooldowns> with None
+astraweave-core/src/world.rs:165:9: replace World::cooldowns_mut -> Option<&mut Cooldowns> with None
+astraweave-core/src/world.rs:168:9: replace World::name -> Option<&str> with None
+astraweave-core/src/world.rs:168:9: replace World::name -> Option<&str> with Some("")
+astraweave-core/src/world.rs:168:9: replace World::name -> Option<&str> with Some("xyzzy")
+astraweave-core/src/world.rs:171:9: replace World::behavior_graph -> Option<&BehaviorGraph> with None
+astraweave-core/src/world.rs:177:9: replace World::set_behavior_graph with ()
+astraweave-core/src/world.rs:180:9: replace World::remove_behavior_graph -> Option<BehaviorGraph> with None
+astraweave-core/src/world.rs:184:9: replace World::all_of_team -> Vec<Entity> with vec![]
+astraweave-core/src/world.rs:184:9: replace World::all_of_team -> Vec<Entity> with vec![Default::default()]
+astraweave-core/src/world.rs:186:42: replace == with != in World::all_of_team
+astraweave-core/src/world.rs:190:9: replace World::enemies_of -> Vec<Entity> with vec![]
+astraweave-core/src/world.rs:190:9: replace World::enemies_of -> Vec<Entity> with vec![Default::default()]
+astraweave-core/src/world.rs:192:42: replace != with == in World::enemies_of
+astraweave-core/src/world.rs:196:9: replace World::pos_of -> Option<IVec2> with None
+astraweave-core/src/world.rs:196:9: replace World::pos_of -> Option<IVec2> with Some(Default::default())
+astraweave-core/src/world.rs:200:9: replace World::entities -> Vec<Entity> with vec![]
+astraweave-core/src/world.rs:200:9: replace World::entities -> Vec<Entity> with vec![Default::default()]
+astraweave-core/src/world.rs:203:9: replace World::obstacle -> bool with true
+astraweave-core/src/world.rs:203:9: replace World::obstacle -> bool with false

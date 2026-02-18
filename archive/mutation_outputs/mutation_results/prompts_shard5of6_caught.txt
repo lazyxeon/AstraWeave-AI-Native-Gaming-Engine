@@ -1,0 +1,119 @@
+astraweave-prompts/src/loader.rs:96:9: replace PromptLoader::parse_frontmatter -> Result<(Option<TemplateMetadata>, String)> with Ok((Some(Default::default()), String::new()))
+astraweave-prompts/src/loader.rs:96:9: replace PromptLoader::parse_frontmatter -> Result<(Option<TemplateMetadata>, String)> with Ok((Some(Default::default()), "xyzzy".into()))
+astraweave-prompts/src/loader.rs:99:42: replace + with - in PromptLoader::parse_frontmatter
+astraweave-prompts/src/loader.rs:99:42: replace + with * in PromptLoader::parse_frontmatter
+astraweave-prompts/src/optimization.rs:105:9: replace OptimizationEngine::optimize_prompt -> Result<String> with Ok(String::new())
+astraweave-prompts/src/optimization.rs:105:9: replace OptimizationEngine::optimize_prompt -> Result<String> with Ok("xyzzy".into())
+astraweave-prompts/src/optimization.rs:110:43: replace && with || in OptimizationEngine::optimize_prompt
+astraweave-prompts/src/optimization.rs:110:59: replace > with == in OptimizationEngine::optimize_prompt
+astraweave-prompts/src/optimization.rs:110:59: replace > with < in OptimizationEngine::optimize_prompt
+astraweave-prompts/src/optimization.rs:124:9: replace OptimizationEngine::compress_prompt -> Result<String> with Ok(String::new())
+astraweave-prompts/src/optimization.rs:124:9: replace OptimizationEngine::compress_prompt -> Result<String> with Ok("xyzzy".into())
+astraweave-prompts/src/optimization.rs:127:28: delete ! in OptimizationEngine::compress_prompt
+astraweave-prompts/src/optimization.rs:136:9: replace OptimizationEngine::update_metrics with ()
+astraweave-prompts/src/optimization.rs:136:42: replace += with -= in OptimizationEngine::update_metrics
+astraweave-prompts/src/optimization.rs:136:42: replace += with *= in OptimizationEngine::update_metrics
+astraweave-prompts/src/optimization.rs:137:44: replace += with -= in OptimizationEngine::update_metrics
+astraweave-prompts/src/optimization.rs:146:9: replace OptimizationEngine::get_metrics -> &PerformanceMetrics with Box::leak(Box::new(Default::default()))
+astraweave-prompts/src/optimization.rs:151:9: replace OptimizationEngine::reset_metrics with ()
+astraweave-prompts/src/optimization.rs:166:9: replace TemplateCache::get -> Option<String> with None
+astraweave-prompts/src/optimization.rs:166:9: replace TemplateCache::get -> Option<String> with Some(String::new())
+astraweave-prompts/src/optimization.rs:166:9: replace TemplateCache::get -> Option<String> with Some("xyzzy".into())
+astraweave-prompts/src/optimization.rs:168:54: replace > with < in TemplateCache::get
+astraweave-prompts/src/optimization.rs:173:33: replace += with -= in TemplateCache::get
+astraweave-prompts/src/optimization.rs:173:33: replace += with *= in TemplateCache::get
+astraweave-prompts/src/optimization.rs:183:9: replace TemplateCache::put with ()
+astraweave-prompts/src/optimization.rs:183:29: replace >= with < in TemplateCache::put
+astraweave-prompts/src/optimization.rs:198:9: replace TemplateCache::evict_lru with ()
+astraweave-prompts/src/optimization.rs:205:9: replace TemplateCache::find_lru_key -> Option<String> with None
+astraweave-prompts/src/optimization.rs:205:9: replace TemplateCache::find_lru_key -> Option<String> with Some(String::new())
+astraweave-prompts/src/optimization.rs:205:9: replace TemplateCache::find_lru_key -> Option<String> with Some("xyzzy".into())
+astraweave-prompts/src/optimization.rs:213:9: replace TemplateCache::clear with ()
+astraweave-prompts/src/optimization.rs:254:9: replace ABTestingEngine::register_variant with ()
+astraweave-prompts/src/optimization.rs:262:9: replace ABTestingEngine::select_variant -> Option<String> with None
+astraweave-prompts/src/optimization.rs:262:9: replace ABTestingEngine::select_variant -> Option<String> with Some(String::new())
+astraweave-prompts/src/optimization.rs:262:9: replace ABTestingEngine::select_variant -> Option<String> with Some("xyzzy".into())
+astraweave-prompts/src/optimization.rs:273:53: replace % with / in ABTestingEngine::select_variant
+astraweave-prompts/src/optimization.rs:273:53: replace % with + in ABTestingEngine::select_variant
+astraweave-prompts/src/optimization.rs:276:70: replace += with -= in ABTestingEngine::select_variant
+astraweave-prompts/src/optimization.rs:276:70: replace += with *= in ABTestingEngine::select_variant
+astraweave-prompts/src/optimization.rs:284:9: replace ABTestingEngine::record_success with ()
+astraweave-prompts/src/optimization.rs:288:31: replace += with -= in ABTestingEngine::record_success
+astraweave-prompts/src/optimization.rs:288:31: replace += with *= in ABTestingEngine::record_success
+astraweave-prompts/src/optimization.rs:293:9: replace ABTestingEngine::get_metrics -> Option<&ABMetrics> with None
+astraweave-prompts/src/optimization.rs:293:9: replace ABTestingEngine::get_metrics -> Option<&ABMetrics> with Some(Box::leak(Box::new(Default::default())))
+astraweave-prompts/src/sanitize.rs:26:9: replace TrustLevel::all -> &'static[TrustLevel] with Vec::leak(Vec::new())
+astraweave-prompts/src/sanitize.rs:31:9: replace TrustLevel::name -> &'static str with ""
+astraweave-prompts/src/sanitize.rs:31:9: replace TrustLevel::name -> &'static str with "xyzzy"
+astraweave-prompts/src/sanitize.rs:40:9: replace TrustLevel::icon -> &'static str with ""
+astraweave-prompts/src/sanitize.rs:40:9: replace TrustLevel::icon -> &'static str with "xyzzy"
+astraweave-prompts/src/sanitize.rs:49:9: replace TrustLevel::description -> &'static str with ""
+astraweave-prompts/src/sanitize.rs:49:9: replace TrustLevel::description -> &'static str with "xyzzy"
+astraweave-prompts/src/sanitize.rs:58:9: replace TrustLevel::is_user -> bool with true
+astraweave-prompts/src/sanitize.rs:58:9: replace TrustLevel::is_user -> bool with false
+astraweave-prompts/src/sanitize.rs:63:9: replace TrustLevel::is_developer -> bool with true
+astraweave-prompts/src/sanitize.rs:63:9: replace TrustLevel::is_developer -> bool with false
+astraweave-prompts/src/sanitize.rs:68:9: replace TrustLevel::is_system -> bool with true
+astraweave-prompts/src/sanitize.rs:68:9: replace TrustLevel::is_system -> bool with false
+astraweave-prompts/src/sanitize.rs:73:9: replace TrustLevel::is_trusted -> bool with true
+astraweave-prompts/src/sanitize.rs:73:9: replace TrustLevel::is_trusted -> bool with false
+astraweave-prompts/src/sanitize.rs:73:9: delete ! in TrustLevel::is_trusted
+astraweave-prompts/src/sanitize.rs:78:9: replace TrustLevel::requires_sanitization -> bool with true
+astraweave-prompts/src/sanitize.rs:78:9: replace TrustLevel::requires_sanitization -> bool with false
+astraweave-prompts/src/sanitize.rs:83:9: replace TrustLevel::level -> u8 with 0
+astraweave-prompts/src/sanitize.rs:83:9: replace TrustLevel::level -> u8 with 1
+astraweave-prompts/src/sanitize.rs:93:9: replace <impl std::fmt::Display for TrustLevel>::fmt -> std::fmt::Result with Ok(Default::default())
+astraweave-prompts/src/sanitize.rs:138:9: replace SanitizationConfig::strict -> Self with Default::default()
+astraweave-prompts/src/sanitize.rs:151:9: replace SanitizationConfig::permissive -> Self with Default::default()
+astraweave-prompts/src/sanitize.rs:164:9: replace SanitizationConfig::escapes_html -> bool with false
+astraweave-prompts/src/sanitize.rs:169:9: replace SanitizationConfig::blocks_injection -> bool with false
+astraweave-prompts/src/sanitize.rs:174:9: replace SanitizationConfig::allows_control_chars -> bool with true
+astraweave-prompts/src/sanitize.rs:179:9: replace SanitizationConfig::allows_unicode -> bool with false
+astraweave-prompts/src/sanitize.rs:184:9: replace SanitizationConfig::is_strict -> bool with true
+astraweave-prompts/src/sanitize.rs:184:9: replace SanitizationConfig::is_strict -> bool with false
+astraweave-prompts/src/sanitize.rs:187:13: replace && with || in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:186:13: replace && with || in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:185:13: replace && with || in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:184:36: replace <= with > in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:185:16: delete ! in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:186:16: delete ! in SanitizationConfig::is_strict
+astraweave-prompts/src/sanitize.rs:192:9: replace SanitizationConfig::is_permissive -> bool with true
+astraweave-prompts/src/sanitize.rs:192:9: replace SanitizationConfig::is_permissive -> bool with false
+astraweave-prompts/src/sanitize.rs:194:13: replace && with || in SanitizationConfig::is_permissive
+astraweave-prompts/src/sanitize.rs:193:13: replace && with || in SanitizationConfig::is_permissive
+astraweave-prompts/src/sanitize.rs:192:36: replace >= with < in SanitizationConfig::is_permissive
+astraweave-prompts/src/sanitize.rs:194:16: delete ! in SanitizationConfig::is_permissive
+astraweave-prompts/src/sanitize.rs:199:9: replace SanitizationConfig::summary -> String with String::new()
+astraweave-prompts/src/sanitize.rs:199:9: replace SanitizationConfig::summary -> String with "xyzzy".into()
+astraweave-prompts/src/sanitize.rs:222:9: replace SanitizationConfig::max_input_display -> String with String::new()
+astraweave-prompts/src/sanitize.rs:222:9: replace SanitizationConfig::max_input_display -> String with "xyzzy".into()
+astraweave-prompts/src/sanitize.rs:222:39: replace >= with < in SanitizationConfig::max_input_display
+astraweave-prompts/src/sanitize.rs:224:46: replace >= with < in SanitizationConfig::max_input_display
+astraweave-prompts/src/sanitize.rs:233:9: replace SanitizationConfig::security_feature_count -> usize with 0
+astraweave-prompts/src/sanitize.rs:233:9: replace SanitizationConfig::security_feature_count -> usize with 1
+astraweave-prompts/src/sanitize.rs:234:12: delete ! in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:235:19: replace += with -= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:235:19: replace += with *= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:238:19: replace += with -= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:238:19: replace += with *= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:241:19: replace += with -= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:241:19: replace += with *= in SanitizationConfig::security_feature_count
+astraweave-prompts/src/sanitize.rs:249:9: replace <impl std::fmt::Display for SanitizationConfig>::fmt -> std::fmt::Result with Ok(Default::default())
+astraweave-prompts/src/sanitize.rs:257:5: replace get_injection_patterns -> &'static Vec<Regex> with Box::leak(Box::new(vec![]))
+astraweave-prompts/src/sanitize.rs:312:5: replace sanitize_input -> Result<String> with Ok(String::new())
+astraweave-prompts/src/sanitize.rs:312:5: replace sanitize_input -> Result<String> with Ok("xyzzy".into())
+astraweave-prompts/src/sanitize.rs:312:20: replace >= with < in sanitize_input
+astraweave-prompts/src/sanitize.rs:317:20: replace > with == in sanitize_input
+astraweave-prompts/src/sanitize.rs:317:20: replace > with < in sanitize_input
+astraweave-prompts/src/sanitize.rs:317:20: replace > with >= in sanitize_input
+astraweave-prompts/src/sanitize.rs:340:8: delete ! in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:69: replace || with && in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:55: replace || with && in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:41: replace || with && in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:25: delete ! in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:47: replace == with != in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:61: replace == with != in sanitize_input
+astraweave-prompts/src/sanitize.rs:343:75: replace == with != in sanitize_input
+astraweave-prompts/src/sanitize.rs:348:8: delete ! in sanitize_input
+astraweave-prompts/src/sanitize.rs:365:5: replace escape_html -> String with String::new()
+astraweave-prompts/src/sanitize.rs:365:5: replace escape_html -> String with "xyzzy".into()

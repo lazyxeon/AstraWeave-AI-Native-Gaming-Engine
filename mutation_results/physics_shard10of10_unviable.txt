@@ -1,4 +1,0 @@
-astraweave-physics/src/cloth.rs:582:9: replace ClothManager::create -> ClothId with Default::default()
-astraweave-physics/src/cloth.rs:595:9: replace ClothManager::get -> Option<&Cloth> with Some(Box::leak(Box::new(Default::default())))
-astraweave-physics/src/cloth.rs:600:9: replace ClothManager::get_mut -> Option<&mut Cloth> with Some(Box::leak(Box::new(Default::default())))
-astraweave-physics/src/cloth.rs:617:9: replace ClothManager::iter -> impl Iterator<Item =&Cloth> with ::std::iter::once(Box::leak(Box::new(Default::default())))

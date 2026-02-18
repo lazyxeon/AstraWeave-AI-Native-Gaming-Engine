@@ -1,0 +1,49 @@
+astraweave-audio/src/dialogue_runtime.rs:34:9: replace DialoguePlayer<'a>::speak_current -> Result<bool> with Ok(true)
+astraweave-audio/src/dialogue_runtime.rs:34:9: replace DialoguePlayer<'a>::speak_current -> Result<bool> with Ok(false)
+astraweave-audio/src/dialogue_runtime.rs:75:36: replace == with != in DialoguePlayer<'a>::speak_current
+astraweave-audio/src/dialogue_runtime.rs:75:52: replace == with != in DialoguePlayer<'a>::speak_current
+astraweave-audio/src/dialogue_runtime.rs:80:24: delete ! in DialoguePlayer<'a>::speak_current
+astraweave-audio/src/engine.rs:64:9: replace MusicChannel::play -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:97:9: replace MusicChannel::set_volume with ()
+astraweave-audio/src/engine.rs:125:9: replace MusicChannel::duck with ()
+astraweave-audio/src/engine.rs:125:44: replace * with + in MusicChannel::duck
+astraweave-audio/src/engine.rs:125:44: replace * with / in MusicChannel::duck
+astraweave-audio/src/engine.rs:203:9: replace AudioEngine::set_master_volume with ()
+astraweave-audio/src/engine.rs:206:54: replace * with + in AudioEngine::set_master_volume
+astraweave-audio/src/engine.rs:206:54: replace * with / in AudioEngine::set_master_volume
+astraweave-audio/src/engine.rs:216:9: replace AudioEngine::set_pan_mode with ()
+astraweave-audio/src/engine.rs:220:9: replace AudioEngine::update_listener with ()
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([0.0; 3], [-1.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([1.0; 3], [-1.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [0.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [1.0; 3])
+astraweave-audio/src/engine.rs:229:9: replace AudioEngine::compute_ears -> ([f32; 3], [f32; 3]) with ([-1.0; 3], [-1.0; 3])
+astraweave-audio/src/engine.rs:234:47: replace - with + in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:234:47: replace - with / in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:234:55: replace * with + in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:234:55: replace * with / in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:234:71: replace * with + in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:234:71: replace * with / in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:48: replace + with - in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:48: replace + with * in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:56: replace * with + in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:56: replace * with / in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:72: replace * with + in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:235:72: replace * with / in AudioEngine::compute_ears
+astraweave-audio/src/engine.rs:241:9: replace AudioEngine::tick with ()
+astraweave-audio/src/engine.rs:243:28: replace > with == in AudioEngine::tick
+astraweave-audio/src/engine.rs:243:28: replace > with < in AudioEngine::tick
+astraweave-audio/src/engine.rs:243:28: replace > with >= in AudioEngine::tick
+astraweave-audio/src/engine.rs:244:29: replace -= with += in AudioEngine::tick
+astraweave-audio/src/engine.rs:244:29: replace -= with /= in AudioEngine::tick
+astraweave-audio/src/engine.rs:245:32: replace <= with > in AudioEngine::tick
+astraweave-audio/src/engine.rs:248:56: replace * with + in AudioEngine::tick
+astraweave-audio/src/engine.rs:248:56: replace * with / in AudioEngine::tick
+astraweave-audio/src/engine.rs:254:9: replace AudioEngine::play_music -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:296:9: replace AudioEngine::play_voice_file -> Result<()> with Ok(())
+astraweave-audio/src/engine.rs:315:9: replace AudioEngine::play_voice_beep with ()
+astraweave-audio/src/engine.rs:315:36: replace * with + in AudioEngine::play_voice_beep

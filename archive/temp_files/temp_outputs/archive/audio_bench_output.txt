@@ -1,0 +1,272 @@
+   Compiling windows-result v0.2.0
+   Compiling hash32 v0.3.1
+   Compiling windows-interface v0.58.0
+   Compiling windows-implement v0.58.0
+   Compiling nalgebra-macros v0.2.2
+   Compiling thiserror-impl v1.0.69
+   Compiling cfg_aliases v0.2.1
+   Compiling symphonia-core v0.5.5
+   Compiling windows-strings v0.1.0
+   Compiling heapless v0.8.0
+   Compiling winit v0.30.12
+   Compiling num-derive v0.4.2
+   Compiling rstar v0.12.2
+   Compiling windows-result v0.1.2
+   Compiling encoding_rs v0.8.35
+   Compiling uuid v1.18.1
+   Compiling gilrs v0.10.10
+   Compiling tracing-core v0.1.34
+   Compiling symphonia-metadata v0.5.5
+   Compiling tracing v0.1.41
+   Compiling windows-core v0.54.0
+   Compiling cursor-icon v1.2.0
+   Compiling smol_str v0.2.2
+   Compiling dpi v0.1.2
+   Compiling windows-sys v0.52.0
+   Compiling vec_map v0.8.2
+   Compiling cpal v0.15.3
+   Compiling unicode-segmentation v1.12.0
+   Compiling raw-window-handle v0.6.2
+   Compiling tinyvec_macros v0.1.1
+   Compiling tinyvec v1.10.0
+   Compiling nalgebra v0.33.2
+   Compiling windows v0.54.0
+   Compiling symphonia-bundle-mp3 v0.5.5
+   Compiling ogg v0.8.0
+   Compiling dasp_sample v0.11.0
+   Compiling windows-core v0.58.0
+   Compiling clap_builder v4.5.49
+   Compiling symphonia v0.5.5
+   Compiling lewton v0.10.2
+   Compiling windows v0.58.0
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling itertools v0.10.5
+   Compiling gilrs-core v0.5.15
+   Compiling windows-sys v0.59.0
+   Compiling thiserror v1.0.69
+   Compiling astraweave-input v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+   Compiling claxon v0.4.3
+   Compiling hound v3.5.1
+   Compiling parry3d v0.17.6
+   Compiling criterion-plot v0.5.0
+   Compiling is-terminal v0.4.16
+   Compiling clap v4.5.49
+   Compiling criterion v0.5.1
+   Compiling rapier3d v0.22.0
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+   Compiling rodio v0.17.3
+   Compiling astraweave-audio v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio)
+warning: unused import: `MusicTrack`
+ --> astraweave-audio\benches\audio_benchmarks.rs:2:59
+  |
+2 | use astraweave_audio::engine::{AudioEngine, ListenerPose, MusicTrack, PanMode};
+  |                                                           ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `Vec3`
+ --> astraweave-audio\benches\audio_benchmarks.rs:3:18
+  |
+3 | use glam::{vec3, Vec3};
+  |                  ^^^^
+
+error[E0308]: arguments to this method are incorrect
+   --> astraweave-audio\benches\audio_benchmarks.rs:58:16
+    |
+58  |         engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(10.0, 0.0, 0.0), 0.8);
+    |                ^^^^^^^^^^^^^^^^ -----  ---  -  -------------------- expected `f32`, found `Vec3`
+    |                                 |      |    |
+    |                                 |      |    expected `f32`, found `{integer}`
+    |                                 |      expected `Vec3`, found `{float}`
+    |                                 expected `u64`, found `{float}`
+    |
+note: method defined here
+   --> C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio\src\engine.rs:315:12
+    |
+315 |     pub fn play_sfx_3d_beep(
+    |            ^^^^^^^^^^^^^^^^
+help: did you mean
+    |
+58  -         engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(10.0, 0.0, 0.0), 0.8);
+58  +         engine.play_sfx_3d_beep(0, vec3(10.0, 0.0, 0.0), 440.0, 2.0, 0.8);
+    |
+
+error[E0560]: struct `ListenerPose` has no field named `pos`
+  --> astraweave-audio\benches\audio_benchmarks.rs:65:17
+   |
+65 |                 pos: black_box(vec3(angle.cos() * 5.0, 0.0, angle.sin() * 5.0)),
+   |                 ^^^ `ListenerPose` does not have this field
+   |
+   = note: available fields are: `position`, `forward`
+
+error[E0560]: struct `ListenerPose` has no field named `fwd`
+  --> astraweave-audio\benches\audio_benchmarks.rs:66:17
+   |
+66 |                 fwd: vec3(1.0, 0.0, 0.0),
+   |                 ^^^ `ListenerPose` does not have this field
+   |
+   = note: available fields are: `position`, `forward`
+
+error[E0308]: arguments to this method are incorrect
+   --> astraweave-audio\benches\audio_benchmarks.rs:82:20
+    |
+82  |             engine.play_sfx_3d_beep(440.0 + (i as f32 * 50.0), 5.0, i as u64, pos, 0.8);
+    |                    ^^^^^^^^^^^^^^^^ -------------------------  ---  --------  --- expected `f32`, found `Vec3`
+    |                                     |                          |    |
+    |                                     |                          |    expected `f32`, found `u64`
+    |                                     |                          expected `Vec3`, found `{float}`
+    |                                     expected `u64`, found `f32`
+    |
+note: method defined here
+   --> C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio\src\engine.rs:315:12
+    |
+315 |     pub fn play_sfx_3d_beep(
+    |            ^^^^^^^^^^^^^^^^
+help: did you mean
+    |
+82  -             engine.play_sfx_3d_beep(440.0 + (i as f32 * 50.0), 5.0, i as u64, pos, 0.8);
+82  +             engine.play_sfx_3d_beep(i as u64, pos, 440.0 + (i as f32 * 50.0), 5.0, 0.8);
+    |
+
+error[E0560]: struct `ListenerPose` has no field named `pos`
+  --> astraweave-audio\benches\audio_benchmarks.rs:90:17
+   |
+90 |                 pos: black_box(vec3(0.0, 0.0, 0.0)), // Listener at origin
+   |                 ^^^ `ListenerPose` does not have this field
+   |
+   = note: available fields are: `position`, `forward`
+
+error[E0560]: struct `ListenerPose` has no field named `fwd`
+  --> astraweave-audio\benches\audio_benchmarks.rs:91:17
+   |
+91 |                 fwd: vec3(angle.cos(), 0.0, angle.sin()), // Rotating
+   |                 ^^^ `ListenerPose` does not have this field
+   |
+   = note: available fields are: `position`, `forward`
+
+error[E0308]: arguments to this method are incorrect
+   --> astraweave-audio\benches\audio_benchmarks.rs:102:16
+    |
+102 |         engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(5.0, 0.0, 0.0), 0.8);
+    |                ^^^^^^^^^^^^^^^^ -----  ---  -  ------------------- expected `f32`, found `Vec3`
+    |                                 |      |    |
+    |                                 |      |    expected `f32`, found `{integer}`
+    |                                 |      expected `Vec3`, found `{float}`
+    |                                 expected `u64`, found `{float}`
+    |
+note: method defined here
+   --> C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio\src\engine.rs:315:12
+    |
+315 |     pub fn play_sfx_3d_beep(
+    |            ^^^^^^^^^^^^^^^^
+help: did you mean
+    |
+102 -         engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(5.0, 0.0, 0.0), 0.8);
+102 +         engine.play_sfx_3d_beep(0, vec3(5.0, 0.0, 0.0), 440.0, 2.0, 0.8);
+    |
+
+error[E0599]: no variant or associated item named `HRTF` found for enum `PanMode` in the current scope
+   --> astraweave-audio\benches\audio_benchmarks.rs:108:45
+    |
+108 |             let mode = if toggle { PanMode::HRTF } else { PanMode::Simple };
+    |                                             ^^^^ variant or associated item not found in `PanMode`
+
+error[E0599]: no variant or associated item named `Simple` found for enum `PanMode` in the current scope
+   --> astraweave-audio\benches\audio_benchmarks.rs:108:68
+    |
+108 |             let mode = if toggle { PanMode::HRTF } else { PanMode::Simple };
+    |                                                                    ^^^^^^ variant or associated item not found in `PanMode`
+
+error[E0308]: mismatched types
+   --> astraweave-audio\benches\audio_benchmarks.rs:178:27
+    |
+178 |                 black_box(440.0),
+    |                 --------- ^^^^^ expected `u64`, found floating-point number
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+help: the return type of this call is `{float}` due to the type of the argument passed
+   --> astraweave-audio\benches\audio_benchmarks.rs:178:17
+    |
+178 |                 black_box(440.0),
+    |                 ^^^^^^^^^^-----^
+    |                           |
+    |                           this argument influences the return type of `black_box`
+note: function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\criterion-0.5.1\src\lib.rs:167:8
+    |
+167 | pub fn black_box<T>(dummy: T) -> T {
+    |        ^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> astraweave-audio\benches\audio_benchmarks.rs:179:27
+    |
+179 |                 black_box(0.5),
+    |                 --------- ^^^ expected `Vec3`, found floating-point number
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+help: the return type of this call is `{float}` due to the type of the argument passed
+   --> astraweave-audio\benches\audio_benchmarks.rs:179:17
+    |
+179 |                 black_box(0.5),
+    |                 ^^^^^^^^^^---^
+    |                           |
+    |                           this argument influences the return type of `black_box`
+note: function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\criterion-0.5.1\src\lib.rs:167:8
+    |
+167 | pub fn black_box<T>(dummy: T) -> T {
+    |        ^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> astraweave-audio\benches\audio_benchmarks.rs:180:27
+    |
+180 |                 black_box(0),
+    |                 --------- ^ expected `f32`, found integer
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+help: the return type of this call is `{integer}` due to the type of the argument passed
+   --> astraweave-audio\benches\audio_benchmarks.rs:180:17
+    |
+180 |                 black_box(0),
+    |                 ^^^^^^^^^^-^
+    |                           |
+    |                           this argument influences the return type of `black_box`
+note: function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\criterion-0.5.1\src\lib.rs:167:8
+    |
+167 | pub fn black_box<T>(dummy: T) -> T {
+    |        ^^^^^^^^^
+help: use a float literal
+    |
+180 |                 black_box(0.0),
+    |                            ++
+
+error[E0308]: mismatched types
+   --> astraweave-audio\benches\audio_benchmarks.rs:181:27
+    |
+181 |                 black_box(vec3(5.0, 0.0, 0.0)),
+    |                 --------- ^^^^^^^^^^^^^^^^^^^ expected `f32`, found `Vec3`
+    |                 |
+    |                 arguments to this function are incorrect
+    |
+help: the return type of this call is `Vec3` due to the type of the argument passed
+   --> astraweave-audio\benches\audio_benchmarks.rs:181:17
+    |
+181 |                 black_box(vec3(5.0, 0.0, 0.0)),
+    |                 ^^^^^^^^^^-------------------^
+    |                           |
+    |                           this argument influences the return type of `black_box`
+note: function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\criterion-0.5.1\src\lib.rs:167:8
+    |
+167 | pub fn black_box<T>(dummy: T) -> T {
+    |        ^^^^^^^^^
+
+Some errors have detailed explanations: E0308, E0560, E0599.
+For more information about an error, try `rustc --explain E0308`.
+warning: `astraweave-audio` (bench "audio_benchmarks") generated 2 warnings
+error: could not compile `astraweave-audio` (bench "audio_benchmarks") due to 13 previous errors; 2 warnings emitted

@@ -1,0 +1,2 @@
+    Checking aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.95s

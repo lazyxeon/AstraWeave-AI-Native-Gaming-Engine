@@ -1,0 +1,183 @@
+    Blocking waiting for file lock on build directory
+    Checking astraweave-persona v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persona)
+    Checking astraweave-persistence-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-persistence-ecs)
+    Checking astraweave-npc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-npc)
+    Checking astraweave-steam v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-steam)
+    Checking astraweave-coordination v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-coordination)
+    Checking astraweave-asset-pipeline v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset-pipeline)
+    Checking fluids_demo v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\fluids_demo)
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:27:15
+   |
+27 |     let _mp = MockPlatform::new("TestPlayer");
+   |               ^^^^^^^^^^^^
+   |               |
+   |               use of undeclared type `MockPlatform`
+   |               help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:33:15
+   |
+33 |     let _mp = MockPlatform::new(name);
+   |               ^^^^^^^^^^^^
+   |               |
+   |               use of undeclared type `MockPlatform`
+   |               help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:38:15
+   |
+38 |     let _mp = MockPlatform::new("");
+   |               ^^^^^^^^^^^^
+   |               |
+   |               use of undeclared type `MockPlatform`
+   |               help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:47:14
+   |
+47 |     let mp = MockPlatform::new("Hero");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:53:14
+   |
+53 |     let mp = MockPlatform::new("πâùπâ¼πéñπâñπâ╝");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:59:14
+   |
+59 |     let mp = MockPlatform::new("");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:69:14
+   |
+69 |     let mp = MockPlatform::new("P");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:79:14
+   |
+79 |     let mp = MockPlatform::new("P");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:85:14
+   |
+85 |     let mp = MockPlatform::new("P");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+  --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:91:14
+   |
+91 |     let mp = MockPlatform::new("P");
+   |              ^^^^^^^^^^^^
+   |              |
+   |              use of undeclared type `MockPlatform`
+   |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:102:14
+    |
+102 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:108:14
+    |
+108 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:118:14
+    |
+118 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:124:14
+    |
+124 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:130:14
+    |
+130 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:137:14
+    |
+137 |     let mp = MockPlatform::new("P");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:147:14
+    |
+147 |     let mp = MockPlatform::new("Adventurer");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:169:14
+    |
+169 |     let p1 = MockPlatform::new("Player1");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+error[E0433]: failed to resolve: use of undeclared type `MockPlatform`
+   --> astraweave-steam\tests\mutation_resistant_comprehensive_tests.rs:170:14
+    |
+170 |     let p2 = MockPlatform::new("Player2");
+    |              ^^^^^^^^^^^^
+    |              |
+    |              use of undeclared type `MockPlatform`
+    |              help: a trait with a similar name exists: `Platform`
+
+    Checking astraweave-stress-test v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-stress-test)
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `astraweave-steam` (test "mutation_resistant_comprehensive_tests") due to 19 previous errors
+warning: build failed, waiting for other jobs to finish...

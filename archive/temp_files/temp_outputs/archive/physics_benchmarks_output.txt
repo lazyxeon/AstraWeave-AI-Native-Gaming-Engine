@@ -1,0 +1,328 @@
+   Compiling parry3d v0.17.6
+   Compiling criterion v0.7.0
+   Compiling rapier3d v0.22.0
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1m 43s
+     Running unittests src\lib.rs (target\release\deps\astraweave_physics-89c352ac6385bea3.exe)
+
+running 10 tests
+test spatial_hash::tests::test_aabb_intersection ... ignored
+test spatial_hash::tests::test_cell_size_calculation ... ignored
+test spatial_hash::tests::test_multi_cell_spanning ... ignored
+test spatial_hash::tests::test_query_unique_deduplication ... ignored
+test spatial_hash::tests::test_spatial_hash_clear ... ignored
+test spatial_hash::tests::test_spatial_hash_insertion ... ignored
+test spatial_hash::tests::test_spatial_hash_query ... ignored
+test spatial_hash::tests::test_stats ... ignored
+test tests::character_moves_forward ... ignored
+test tests::character_position_updates ... ignored
+
+test result: ok. 0 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches\character_controller.rs (target\release\deps\character_controller-ecd1c8a93320b18e.exe)
+Gnuplot not found, using plotters backend
+Benchmarking character_move_straight
+Benchmarking character_move_straight: Warming up for 3.0000 s
+Benchmarking character_move_straight: Collecting 100 samples in estimated 5.0005 s (42M iterations)
+Benchmarking character_move_straight: Analyzing
+character_move_straight time:   [99.266 ns 105.78 ns 112.50 ns]
+
+Benchmarking character_move_diagonal
+Benchmarking character_move_diagonal: Warming up for 3.0000 s
+Benchmarking character_move_diagonal: Collecting 100 samples in estimated 5.0002 s (56M iterations)
+Benchmarking character_move_diagonal: Analyzing
+character_move_diagonal time:   [58.238 ns 58.910 ns 59.639 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking character_move_batch/1
+Benchmarking character_move_batch/1: Warming up for 3.0000 s
+Benchmarking character_move_batch/1: Collecting 100 samples in estimated 5.0002 s (55M iterations)
+Benchmarking character_move_batch/1: Analyzing
+character_move_batch/1  time:   [60.770 ns 61.431 ns 62.149 ns]
+                        thrpt:  [16.090 Melem/s 16.279 Melem/s 16.456 Melem/s]
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+Benchmarking character_move_batch/10
+Benchmarking character_move_batch/10: Warming up for 3.0000 s
+Benchmarking character_move_batch/10: Collecting 100 samples in estimated 5.0021 s (5.4M iterations)
+Benchmarking character_move_batch/10: Analyzing
+character_move_batch/10 time:   [1.1020 ┬╡s 1.2047 ┬╡s 1.3138 ┬╡s]
+                        thrpt:  [7.6116 Melem/s 8.3007 Melem/s 9.0740 Melem/s]
+Benchmarking character_move_batch/50
+Benchmarking character_move_batch/50: Warming up for 3.0000 s
+Benchmarking character_move_batch/50: Collecting 100 samples in estimated 5.0008 s (813k iterations)
+Benchmarking character_move_batch/50: Analyzing
+character_move_batch/50 time:   [9.1029 ┬╡s 9.5930 ┬╡s 10.179 ┬╡s]
+                        thrpt:  [4.9121 Melem/s 5.2121 Melem/s 5.4928 Melem/s]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low mild
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+Benchmarking character_move_batch/100
+Benchmarking character_move_batch/100: Warming up for 3.0000 s
+Benchmarking character_move_batch/100: Collecting 100 samples in estimated 5.0070 s (222k iterations)
+Benchmarking character_move_batch/100: Analyzing
+character_move_batch/100
+                        time:   [22.952 ┬╡s 23.519 ┬╡s 24.214 ┬╡s]
+                        thrpt:  [4.1299 Melem/s 4.2519 Melem/s 4.3569 Melem/s]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking character_move_with_obstacles
+Benchmarking character_move_with_obstacles: Warming up for 3.0000 s
+Benchmarking character_move_with_obstacles: Collecting 100 samples in estimated 5.0001 s (39M iterations)
+Benchmarking character_move_with_obstacles: Analyzing
+character_move_with_obstacles
+                        time:   [127.84 ns 130.82 ns 133.85 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) low mild
+  1 (1.00%) high mild
+
+Benchmarking character_step_climbing
+Benchmarking character_step_climbing: Warming up for 3.0000 s
+Benchmarking character_step_climbing: Collecting 100 samples in estimated 5.0001 s (45M iterations)
+Benchmarking character_step_climbing: Analyzing
+character_step_climbing time:   [114.01 ns 116.43 ns 118.98 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+
+Benchmarking character_full_tick
+Benchmarking character_full_tick: Warming up for 3.0000 s
+Benchmarking character_full_tick: Collecting 100 samples in estimated 5.0033 s (848k iterations)
+Benchmarking character_full_tick: Analyzing
+character_full_tick     time:   [5.4370 ┬╡s 5.6282 ┬╡s 5.8337 ┬╡s]
+Found 14 outliers among 100 measurements (14.00%)
+  5 (5.00%) low mild
+  3 (3.00%) high mild
+  6 (6.00%) high severe
+
+Benchmarking character_transform_lookup
+Benchmarking character_transform_lookup: Warming up for 3.0000 s
+Benchmarking character_transform_lookup: Collecting 100 samples in estimated 5.0000 s (179M iterations)
+Benchmarking character_transform_lookup: Analyzing
+character_transform_lookup
+                        time:   [26.774 ns 27.692 ns 28.658 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+     Running benches\raycast.rs (target\release\deps\raycast-713e530e7d47efa5.exe)
+Gnuplot not found, using plotters backend
+Benchmarking raycast_empty_scene
+Benchmarking raycast_empty_scene: Warming up for 3.0000 s
+Benchmarking raycast_empty_scene: Collecting 100 samples in estimated 5.0000 s (144M iterations)
+Benchmarking raycast_empty_scene: Analyzing
+raycast_empty_scene     time:   [34.078 ns 35.199 ns 36.335 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking raycast_ground_plane
+Benchmarking raycast_ground_plane: Warming up for 3.0000 s
+Benchmarking raycast_ground_plane: Collecting 100 samples in estimated 5.0001 s (147M iterations)
+Benchmarking raycast_ground_plane: Analyzing
+raycast_ground_plane    time:   [34.516 ns 35.333 ns 36.132 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking raycast_obstacle_density/0
+Benchmarking raycast_obstacle_density/0: Warming up for 3.0000 s
+Benchmarking raycast_obstacle_density/0: Collecting 100 samples in estimated 5.0000 s (147M iterations)
+Benchmarking raycast_obstacle_density/0: Analyzing
+raycast_obstacle_density/0
+                        time:   [24.403 ns 24.749 ns 25.087 ns]
+                        thrpt:  [0.0000  elem/s 0.0000  elem/s 0.0000  elem/s]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) low mild
+  1 (1.00%) high mild
+Benchmarking raycast_obstacle_density/10
+Benchmarking raycast_obstacle_density/10: Warming up for 3.0000 s
+Benchmarking raycast_obstacle_density/10: Collecting 100 samples in estimated 5.0000 s (164M iterations)
+Benchmarking raycast_obstacle_density/10: Analyzing
+raycast_obstacle_density/10
+                        time:   [33.948 ns 35.848 ns 37.989 ns]
+                        thrpt:  [263.23 Melem/s 278.96 Melem/s 294.57 Melem/s]
+Found 13 outliers among 100 measurements (13.00%)
+  7 (7.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking raycast_obstacle_density/50
+Benchmarking raycast_obstacle_density/50: Warming up for 3.0000 s
+Benchmarking raycast_obstacle_density/50: Collecting 100 samples in estimated 5.0002 s (123M iterations)
+Benchmarking raycast_obstacle_density/50: Analyzing
+raycast_obstacle_density/50
+                        time:   [39.368 ns 41.843 ns 44.660 ns]
+                        thrpt:  [1.1196 Gelem/s 1.1949 Gelem/s 1.2701 Gelem/s]
+Found 7 outliers among 100 measurements (7.00%)
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+Benchmarking raycast_obstacle_density/100
+Benchmarking raycast_obstacle_density/100: Warming up for 3.0000 s
+Benchmarking raycast_obstacle_density/100: Collecting 100 samples in estimated 5.0001 s (145M iterations)
+Benchmarking raycast_obstacle_density/100: Analyzing
+raycast_obstacle_density/100
+                        time:   [32.881 ns 33.731 ns 34.624 ns]
+                        thrpt:  [2.8881 Gelem/s 2.9646 Gelem/s 3.0412 Gelem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  1 (1.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking raycast_batch_8_rays
+Benchmarking raycast_batch_8_rays: Warming up for 3.0000 s
+Benchmarking raycast_batch_8_rays: Collecting 100 samples in estimated 5.0004 s (21M iterations)
+Benchmarking raycast_batch_8_rays: Analyzing
+raycast_batch_8_rays    time:   [241.26 ns 247.43 ns 253.70 ns]
+Found 8 outliers among 100 measurements (8.00%)
+  3 (3.00%) low mild
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking raycast_normal_retrieval/with_normal
+Benchmarking raycast_normal_retrieval/with_normal: Warming up for 3.0000 s
+Benchmarking raycast_normal_retrieval/with_normal: Collecting 100 samples in estimated 5.0002 s (131M iterations)
+Benchmarking raycast_normal_retrieval/with_normal: Analyzing
+raycast_normal_retrieval/with_normal
+                        time:   [38.692 ns 39.663 ns 40.707 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking raycast_normal_retrieval/without_normal
+Benchmarking raycast_normal_retrieval/without_normal: Warming up for 3.0000 s
+Benchmarking raycast_normal_retrieval/without_normal: Collecting 100 samples in estimated 5.0000 s (123M iterations)
+Benchmarking raycast_normal_retrieval/without_normal: Analyzing
+raycast_normal_retrieval/without_normal
+                        time:   [36.431 ns 37.051 ns 37.781 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  1 (1.00%) high mild
+  6 (6.00%) high severe
+
+     Running benches\rigid_body.rs (target\release\deps\rigid_body-c51c516c9230da7b.exe)
+Gnuplot not found, using plotters backend
+Benchmarking rigid_body_single_step
+Benchmarking rigid_body_single_step: Warming up for 3.0000 s
+Benchmarking rigid_body_single_step: Collecting 100 samples in estimated 5.0043 s (2.8M iterations)
+Benchmarking rigid_body_single_step: Analyzing
+rigid_body_single_step  time:   [1.6917 ┬╡s 1.7354 ┬╡s 1.7795 ┬╡s]
+
+Benchmarking rigid_body_batch_step/1
+Benchmarking rigid_body_batch_step/1: Warming up for 3.0000 s
+Benchmarking rigid_body_batch_step/1: Collecting 100 samples in estimated 5.0070 s (3.2M iterations)
+Benchmarking rigid_body_batch_step/1: Analyzing
+rigid_body_batch_step/1 time:   [2.0958 ┬╡s 2.2110 ┬╡s 2.3276 ┬╡s]
+                        thrpt:  [429.63 Kelem/s 452.29 Kelem/s 477.14 Kelem/s]
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) low mild
+  1 (1.00%) high mild
+Benchmarking rigid_body_batch_step/10
+Benchmarking rigid_body_batch_step/10: Warming up for 3.0000 s
+Benchmarking rigid_body_batch_step/10: Collecting 100 samples in estimated 5.0134 s (1.0M iterations)
+Benchmarking rigid_body_batch_step/10: Analyzing
+rigid_body_batch_step/10
+                        time:   [6.0644 ┬╡s 6.2646 ┬╡s 6.4693 ┬╡s]
+                        thrpt:  [1.5458 Melem/s 1.5963 Melem/s 1.6490 Melem/s]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+Benchmarking rigid_body_batch_step/50
+Benchmarking rigid_body_batch_step/50: Warming up for 3.0000 s
+Benchmarking rigid_body_batch_step/50: Collecting 100 samples in estimated 5.0832 s (232k iterations)
+Benchmarking rigid_body_batch_step/50: Analyzing
+rigid_body_batch_step/50
+                        time:   [19.732 ┬╡s 20.652 ┬╡s 21.568 ┬╡s]
+                        thrpt:  [2.3183 Melem/s 2.4211 Melem/s 2.5340 Melem/s]
+Found 12 outliers among 100 measurements (12.00%)
+  8 (8.00%) low mild
+  4 (4.00%) high mild
+Benchmarking rigid_body_batch_step/100
+Benchmarking rigid_body_batch_step/100: Warming up for 3.0000 s
+Benchmarking rigid_body_batch_step/100: Collecting 100 samples in estimated 5.1699 s (106k iterations)
+Benchmarking rigid_body_batch_step/100: Analyzing
+rigid_body_batch_step/100
+                        time:   [43.154 ┬╡s 44.928 ┬╡s 46.641 ┬╡s]
+                        thrpt:  [2.1440 Melem/s 2.2258 Melem/s 2.3173 Melem/s]
+Found 13 outliers among 100 measurements (13.00%)
+  8 (8.00%) low mild
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking rigid_body_batch_step/200
+Benchmarking rigid_body_batch_step/200: Warming up for 3.0000 s
+Benchmarking rigid_body_batch_step/200: Collecting 100 samples in estimated 5.2547 s (71k iterations)
+Benchmarking rigid_body_batch_step/200: Analyzing
+rigid_body_batch_step/200
+                        time:   [65.070 ┬╡s 68.998 ┬╡s 72.722 ┬╡s]
+                        thrpt:  [2.7502 Melem/s 2.8986 Melem/s 3.0736 Melem/s]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) low mild
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking rigid_body_creation
+Benchmarking rigid_body_creation: Warming up for 3.0000 s
+Benchmarking rigid_body_creation: Collecting 100 samples in estimated 5.0069 s (1.6M iterations)
+Benchmarking rigid_body_creation: Analyzing
+rigid_body_creation     time:   [3.7081 ┬╡s 3.9002 ┬╡s 4.0948 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  6 (6.00%) low mild
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking rigid_body_trimesh_creation
+Benchmarking rigid_body_trimesh_creation: Warming up for 3.0000 s
+Benchmarking rigid_body_trimesh_creation: Collecting 100 samples in estimated 5.0204 s (980k iterations)
+Benchmarking rigid_body_trimesh_creation: Analyzing
+rigid_body_trimesh_creation
+                        time:   [4.7771 ┬╡s 5.0033 ┬╡s 5.2448 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  5 (5.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking rigid_body_transform_lookup
+Benchmarking rigid_body_transform_lookup: Warming up for 3.0000 s
+Benchmarking rigid_body_transform_lookup: Collecting 100 samples in estimated 5.0000 s (158M iterations)
+Benchmarking rigid_body_transform_lookup: Analyzing
+rigid_body_transform_lookup
+                        time:   [26.798 ns 28.387 ns 30.077 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  9 (9.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking rigid_body_stacked_simulation
+Benchmarking rigid_body_stacked_simulation: Warming up for 3.0000 s
+Benchmarking rigid_body_stacked_simulation: Collecting 100 samples in estimated 5.0172 s (732k iterations)
+Benchmarking rigid_body_stacked_simulation: Analyzing
+rigid_body_stacked_simulation
+                        time:   [4.4222 ┬╡s 4.4852 ┬╡s 4.5667 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking rigid_body_destructible_creation
+Benchmarking rigid_body_destructible_creation: Warming up for 3.0000 s
+Benchmarking rigid_body_destructible_creation: Collecting 100 samples in estimated 5.0122 s (2.0M iterations)
+Benchmarking rigid_body_destructible_creation: Analyzing
+rigid_body_destructible_creation
+                        time:   [2.3957 ┬╡s 2.5856 ┬╡s 2.8018 ┬╡s]
+
+Benchmarking rigid_body_mixed_simulation
+Benchmarking rigid_body_mixed_simulation: Warming up for 3.0000 s
+Benchmarking rigid_body_mixed_simulation: Collecting 100 samples in estimated 5.0592 s (419k iterations)
+Benchmarking rigid_body_mixed_simulation: Analyzing
+rigid_body_mixed_simulation
+                        time:   [15.792 ┬╡s 16.799 ┬╡s 17.813 ┬╡s]
+Found 16 outliers among 100 measurements (16.00%)
+  13 (13.00%) low mild
+  3 (3.00%) high mild
+
+Benchmarking rigid_body_ground_creation
+Benchmarking rigid_body_ground_creation: Warming up for 3.0000 s
+Benchmarking rigid_body_ground_creation: Collecting 100 samples in estimated 5.0107 s (1.9M iterations)
+Benchmarking rigid_body_ground_creation: Analyzing
+rigid_body_ground_creation
+                        time:   [2.7230 ┬╡s 2.9400 ┬╡s 3.1791 ┬╡s]
+

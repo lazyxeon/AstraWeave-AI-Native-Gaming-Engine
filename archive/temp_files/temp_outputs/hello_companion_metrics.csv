@@ -1,0 +1,7 @@
+Mode,Steps,Latency_ms,Timestamp,Success,Error
+Classical (RuleOrchestrator),3,0.197,2025-10-14T17:41:20.530684600+00:00,true,
+BehaviorTree (Hierarchical),2,0.168,2025-10-14T17:41:20.531995700+00:00,true,
+Utility (Score-based),1,0.462,2025-10-14T17:41:20.533693800+00:00,true,
+LLM (Phi-3 via Ollama),0,3462.464,2025-10-14T17:41:23.997278300+00:00,true,
+Hybrid (LLM + Fallback),0,2154.876,2025-10-14T17:41:26.152962+00:00,true,
+Ensemble (Voting),2,2354.688,2025-10-14T17:41:28.508480700+00:00,true,

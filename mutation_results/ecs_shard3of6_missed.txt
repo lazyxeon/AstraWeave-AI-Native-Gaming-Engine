@@ -1,9 +1,0 @@
-astraweave-ecs/src/entity_allocator.rs:388:9: replace EntityAllocator::reserve with ()
-astraweave-ecs/src/events.rs:84:9: replace Events::with_keep_frames -> Self with Default::default()
-astraweave-ecs/src/rng.rs:216:9: replace Rng::shuffle with ()
-astraweave-ecs/src/rng.rs:231:9: replace Rng::choose -> Option<&'a T> with None
-astraweave-ecs/src/rng.rs:237:9: replace <impl RngCore for Rng>::next_u32 -> u32 with 0
-astraweave-ecs/src/rng.rs:237:9: replace <impl RngCore for Rng>::next_u32 -> u32 with 1
-astraweave-ecs/src/sparse_set.rs:118:9: replace SparseSet::is_empty -> bool with true
-astraweave-ecs/src/sparse_set.rs:125:9: replace SparseSet::entities -> &[Entity] with Vec::leak(Vec::new())
-astraweave-ecs/src/sparse_set.rs:177:9: replace SparseSetData<T>::with_capacity -> Self with Default::default()

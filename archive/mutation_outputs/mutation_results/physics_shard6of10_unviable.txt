@@ -1,0 +1,14 @@
+astraweave-physics/src/vehicle.rs:710:42: replace + with * in VehicleManager::update_vehicle
+astraweave-physics/src/vehicle.rs:710:53: replace * with + in VehicleManager::update_vehicle
+astraweave-physics/src/vehicle.rs:710:53: replace * with / in VehicleManager::update_vehicle
+astraweave-physics/src/vehicle.rs:768:44: replace + with * in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:768:55: replace * with + in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:768:55: replace * with / in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:782:59: replace * with + in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:782:59: replace * with / in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:782:42: replace * with + in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:782:42: replace * with / in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:783:57: replace * with + in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:783:57: replace * with / in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:783:40: replace * with + in VehicleManager::apply_forces
+astraweave-physics/src/vehicle.rs:783:40: replace * with / in VehicleManager::apply_forces

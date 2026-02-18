@@ -1,6 +1,0 @@
-astraweave-gameplay/src/dialogue.rs:116:36: replace + with - in compile_banter_to_nodes
-astraweave-gameplay/src/dialogue.rs:116:36: replace + with * in compile_banter_to_nodes
-astraweave-gameplay/src/dialogue.rs:133:15: replace += with *= in compile_banter_to_nodes
-astraweave-gameplay/src/ecs.rs:44:9: replace CTarget::resolve -> Option<Entity> with None
-astraweave-gameplay/src/ecs.rs:111:51: replace + with - in combat_system
-astraweave-gameplay/src/ecs.rs:111:51: replace + with * in combat_system

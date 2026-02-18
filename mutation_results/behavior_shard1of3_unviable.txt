@@ -1,9 +1,0 @@
-astraweave-behavior/src/lib.rs:32:9: replace BehaviorNode::action -> Self with Default::default()
-astraweave-behavior/src/lib.rs:38:9: replace BehaviorNode::condition -> Self with Default::default()
-astraweave-behavior/src/lib.rs:44:9: replace BehaviorNode::sequence -> Self with Default::default()
-astraweave-behavior/src/lib.rs:50:9: replace BehaviorNode::selector -> Self with Default::default()
-astraweave-behavior/src/lib.rs:56:9: replace BehaviorNode::parallel -> Self with Default::default()
-astraweave-behavior/src/lib.rs:62:9: replace BehaviorNode::decorator -> Self with Default::default()
-astraweave-behavior/src/lib.rs:190:9: replace BehaviorNode::tick -> BehaviorStatus with Default::default()
-astraweave-behavior/src/lib.rs:337:9: replace DecoratorType::all -> Vec<DecoratorType> with vec![Default::default()]
-astraweave-behavior/src/lib.rs:371:9: replace BehaviorGraph::tick -> BehaviorStatus with Default::default()

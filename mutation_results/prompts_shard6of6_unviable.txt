@@ -1,8 +1,0 @@
-astraweave-prompts/src/template.rs:70:9: replace PromptTemplate::new_with_metadata -> Self with Default::default()
-astraweave-prompts/src/template.rs:88:9: replace PromptTemplate::with_metadata -> Self with Default::default()
-astraweave-prompts/src/terrain_prompts.rs:90:5: replace terrain_system_template -> PromptTemplate with Default::default()
-astraweave-prompts/src/terrain_prompts.rs:99:5: replace terrain_feature_template -> PromptTemplate with Default::default()
-astraweave-prompts/src/terrain_prompts.rs:121:5: replace terrain_modify_template -> PromptTemplate with Default::default()
-astraweave-prompts/src/terrain_prompts.rs:147:5: replace terrain_batch_template -> PromptTemplate with Default::default()
-astraweave-prompts/src/terrain_prompts.rs:189:5: replace terrain_template_collection -> Vec<(String, PromptTemplate)> with vec![(String::new(), Default::default())]
-astraweave-prompts/src/terrain_prompts.rs:189:5: replace terrain_template_collection -> Vec<(String, PromptTemplate)> with vec![("xyzzy".into(), Default::default())]

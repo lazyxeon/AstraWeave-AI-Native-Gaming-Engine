@@ -1,1 +1,0 @@
-astraweave-physics/src/vehicle.rs:931:9: replace VehicleManager::vehicles -> &[Vehicle] with Vec::leak(vec![Default::default()])

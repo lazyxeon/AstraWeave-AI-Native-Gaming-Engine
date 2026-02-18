@@ -1,4 +1,0 @@
-astraweave-prompts/src/optimization.rs:137:44: replace += with *= in OptimizationEngine::update_metrics
-astraweave-prompts/src/optimization.rs:218:9: replace TemplateCache::stats -> CacheStats with Default::default()
-astraweave-prompts/src/sanitize.rs:26:9: replace TrustLevel::all -> &'static[TrustLevel] with Vec::leak(vec![Default::default()])
-astraweave-prompts/src/sanitize.rs:257:5: replace get_injection_patterns -> &'static Vec<Regex> with Box::leak(Box::new(vec![Default::default()]))

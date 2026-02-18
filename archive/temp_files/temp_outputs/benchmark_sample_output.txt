@@ -1,0 +1,20 @@
+test ai_loop_snapshot_creation_simple ... bench:          63 ns/iter (+/- 10)
+
+test ai_loop_snapshot_creation_moderate ... bench:       1,273 ns/iter (+/- 50)
+
+test ai_loop_snapshot_creation_complex ... bench:       3,778 ns/iter (+/- 216)
+
+test ai_loop_rule_planner_simple ... bench:         172 ns/iter (+/- 40)
+
+test ai_loop_rule_planner_moderate ... bench:         410 ns/iter (+/- 232)
+
+test ai_loop_rule_planner_complex ... bench:         419 ns/iter (+/- 109)
+
+test ai_loop_full_end_to_end_simple ... bench:         295 ns/iter (+/- 52)
+
+test ai_loop_full_end_to_end_moderate ... bench:       1,811 ns/iter (+/- 566)
+
+test ai_loop_full_end_to_end_complex ... bench:       4,536 ns/iter (+/- 830)
+
+test ai_loop_plan_validation ... bench:         385 ns/iter (+/- 31)
+

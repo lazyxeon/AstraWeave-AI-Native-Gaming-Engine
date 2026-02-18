@@ -1,5 +1,0 @@
-astraweave-nav/src/lib.rs:59:17: replace - with + in Triangle::normal
-astraweave-nav/src/lib.rs:59:40: replace - with + in Triangle::normal
-astraweave-nav/src/lib.rs:77:21: replace < with <= in Triangle::is_degenerate
-astraweave-nav/src/lib.rs:197:12: replace - with + in NavTri::area
-astraweave-nav/src/lib.rs:197:25: replace - with + in NavTri::area

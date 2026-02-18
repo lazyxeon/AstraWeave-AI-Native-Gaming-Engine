@@ -1,0 +1,1 @@
+astraweave-gameplay/src/weave_portals.rs:125:11: replace += with *= in string_pull
