@@ -3947,4 +3947,382 @@ mod tests {
             normal
         );
     }
+
+    // ============================================================================
+    // R11 — Targeted mutation tests for cloth collision, update, and particle_normal
+    // ============================================================================
+
+    #[test]
+    fn r11_capsule_collision_nonorigin_closest_point() {
+        // Capsule NOT at origin so `position - closest` vs `position + closest` differs
+        let collider = ClothCollider::Capsule {
+            start: Vec3::new(5.0, 0.0, 0.0),
+            end: Vec3::new(5.0, 4.0, 0.0),
+            radius: 1.0,
+        };
+        // Particle at (5.5, 2.0, 0.0) — inside capsule at midpoint
+        let mut particle = ClothParticle {
+            position: Vec3::new(5.5, 2.0, 0.0),
+            prev_position: Vec3::new(5.5, 2.0, 0.0),
+            acceleration: Vec3::ZERO,
+            inv_mass: 1.0,
+            pinned: false,
+        };
+        collider.resolve_collision(&mut particle, 0.0);
+
+        // Should be pushed OUT from axis (X direction away from x=5.0)
+        assert!(
+            particle.position.x > 5.9,
+            "Should be pushed to capsule surface on +X side: x={}",
+            particle.position.x
+        );
+        // Y should stay near 2.0 (no displacement along axis)
+        assert!(
+            (particle.position.y - 2.0).abs() < 0.5,
+            "Y should remain near 2.0: y={}",
+            particle.position.y
+        );
+    }
+
+    #[test]
+    fn r11_capsule_collision_penetration_sign() {
+        // Test that penetration = radius - dist (not radius + dist)
+        let collider = ClothCollider::Capsule {
+            start: Vec3::new(3.0, 0.0, 0.0),
+            end: Vec3::new(3.0, 2.0, 0.0),
+            radius: 2.0,
+        };
+        // Particle at (4.0, 1.0, 0.0): dist from axis = 1.0, penetration = 2.0 - 1.0 = 1.0
+        let mut particle = ClothParticle {
+            position: Vec3::new(4.0, 1.0, 0.0),
+            prev_position: Vec3::new(4.0, 1.0, 0.0),
+            acceleration: Vec3::ZERO,
+            inv_mass: 1.0,
+            pinned: false,
+        };
+        collider.resolve_collision(&mut particle, 0.0);
+
+        // Should be pushed to (5.0, 1.0, 0.0) = center_x + radius
+        assert!(
+            (particle.position.x - 5.0).abs() < 0.1,
+            "Should be pushed to capsule surface x=5.0: x={}",
+            particle.position.x
+        );
+    }
+
+    #[test]
+    fn r11_capsule_friction_tangent_exact() {
+        let collider = ClothCollider::Capsule {
+            start: Vec3::new(0.0, 0.0, 0.0),
+            end: Vec3::new(0.0, 4.0, 0.0),
+            radius: 2.0,
+        };
+        // Particle inside, moving along Y (tangent) and X (normal-ish)
+        let mut particle = ClothParticle {
+            position: Vec3::new(1.0, 2.0, 0.0),
+            prev_position: Vec3::new(0.5, 1.0, 0.0), // velocity = (0.5, 1.0, 0.0)
+            acceleration: Vec3::ZERO,
+            inv_mass: 1.0,
+            pinned: false,
+        };
+        collider.resolve_collision(&mut particle, 0.5);
+
+        // After collision: particle pushed to radius=2 on X axis
+        // Normal is roughly (1,0,0)
+        // Friction reduces tangent velocity component
+        // prev_position should reflect friction
+        let vel_after = particle.position - particle.prev_position;
+        // With friction=0.5, tangent velocity should be halved
+        assert!(
+            vel_after.y.abs() < 0.8,
+            "Friction should reduce tangent velocity: vy={}",
+            vel_after.y
+        );
+    }
+
+    #[test]
+    fn r11_plane_collision_direction() {
+        // Plane at y=0, normal up. Particle below plane.
+        let collider = ClothCollider::Plane {
+            point: Vec3::ZERO,
+            normal: Vec3::Y,
+        };
+        let mut particle = ClothParticle {
+            position: Vec3::new(1.0, -0.5, 0.0),
+            prev_position: Vec3::new(1.0, -0.3, 0.0),
+            acceleration: Vec3::ZERO,
+            inv_mass: 1.0,
+            pinned: false,
+        };
+        collider.resolve_collision(&mut particle, 0.0);
+
+        // Should push particle to y=0 (above plane)
+        assert!(
+            particle.position.y >= -0.01,
+            "Plane should push particle above surface: y={}",
+            particle.position.y
+        );
+        // X should be unchanged
+        assert!(
+            (particle.position.x - 1.0).abs() < 0.01,
+            "X should be unchanged: x={}",
+            particle.position.x
+        );
+    }
+
+    #[test]
+    fn r11_plane_friction_reduces_tangent() {
+        let collider = ClothCollider::Plane {
+            point: Vec3::ZERO,
+            normal: Vec3::Y,
+        };
+        // Particle below plane with horizontal velocity
+        let mut particle = ClothParticle {
+            position: Vec3::new(2.0, -0.1, 0.0),
+            prev_position: Vec3::new(0.0, -0.1, 0.0), // velocity = (2, 0, 0)
+            acceleration: Vec3::ZERO,
+            inv_mass: 1.0,
+            pinned: false,
+        };
+        collider.resolve_collision(&mut particle, 0.8);
+
+        let vel_after = particle.position - particle.prev_position;
+        // Tangent velocity (X) should be reduced by friction
+        // tangent_vel * (1 - friction) = 2.0 * 0.2 = 0.4
+        assert!(
+            vel_after.x < 1.0,
+            "Friction 0.8 should heavily reduce tangent velocity: vx={}",
+            vel_after.x
+        );
+    }
+
+    #[test]
+    fn r11_cloth_update_wind_force_uses_dot_abs() {
+        // Wind force = wind * dot(wind, normal).abs() * (1 / inv_mass)
+        // Need curvature for normals to be non-zero, so pin top row + gravity
+        let config = ClothConfig {
+            width: 5,
+            height: 5,
+            spacing: 1.0,
+            particle_mass: 1.0,
+            gravity: Vec3::new(0.0, -9.81, 0.0),
+            wind: Vec3::ZERO,
+            air_resistance: 0.0,
+            stiffness: 0.5,
+            damping: 0.0,
+            solver_iterations: 4,
+        };
+        let mut cloth = Cloth::new(ClothId(200), config, Vec3::ZERO);
+
+        // Pin top row
+        for x in 0..5 {
+            cloth.particles[x].pinned = true;
+            cloth.particles[x].inv_mass = 0.0;
+        }
+
+        // Let gravity create droop
+        for _ in 0..20 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        // Now enable wind
+        cloth.config.wind = Vec3::new(10.0, 0.0, 0.0);
+        cloth.config.gravity = Vec3::ZERO; // stop gravity
+
+        let pos_before: Vec<Vec3> = cloth.particles.iter().map(|p| p.position).collect();
+        for _ in 0..10 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        // Some non-pinned particles should have moved due to wind
+        let total_moved: f32 = cloth.particles.iter().enumerate()
+            .filter(|(i, p)| !p.pinned)
+            .map(|(i, p)| (p.position - pos_before[i]).length())
+            .sum();
+        assert!(
+            total_moved > 0.1,
+            "Wind should move particles with curvature: total_moved={}",
+            total_moved
+        );
+    }
+
+    #[test]
+    fn r11_cloth_update_drag_opposes_velocity() {
+        let config = ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            particle_mass: 1.0,
+            gravity: Vec3::ZERO,
+            wind: Vec3::ZERO,
+            air_resistance: 5.0, // high drag
+            stiffness: 0.0,
+            damping: 0.0,
+            solver_iterations: 0,
+        };
+        let mut cloth = Cloth::new(ClothId(200), config, Vec3::ZERO);
+
+        // Give center particle velocity by offsetting prev_position
+        cloth.particles[4].prev_position = cloth.particles[4].position - Vec3::new(1.0, 0.0, 0.0);
+
+        let vel_before = cloth.particles[4].velocity();
+        cloth.update(0.1);
+        let vel_after = cloth.particles[4].velocity();
+
+        // Drag should reduce velocity
+        assert!(
+            vel_after.x < vel_before.x,
+            "Drag should reduce velocity: before={}, after={}",
+            vel_before.x, vel_after.x
+        );
+    }
+
+    #[test]
+    fn r11_particle_normal_subtraction_direction() {
+        // Test that v1 = neighbors.position - center (not + center)
+        // Push a NEIGHBOR of (1,1) to break symmetry
+        let config = ClothConfig {
+            width: 3,
+            height: 3,
+            spacing: 1.0,
+            particle_mass: 1.0,
+            gravity: Vec3::ZERO,
+            wind: Vec3::ZERO,
+            air_resistance: 0.0,
+            stiffness: 0.0,
+            damping: 0.0,
+            solver_iterations: 0,
+        };
+        let mut cloth = Cloth::new(ClothId(200), config, Vec3::ZERO);
+
+        // Push particle at (0,1) = index 3 (a neighbor of (1,1)) upward
+        // This breaks symmetry for particle_normal at (1,1)
+        cloth.particles[3].position.y += 5.0;
+        // Also push (1,0) = index 1 sideways
+        cloth.particles[1].position.z += 3.0;
+
+        let normal = cloth.particle_normal(1, 1);
+        assert!(
+            normal.length() > 0.3,
+            "Normal with perturbed neighbors should be non-zero: {:?}",
+            normal
+        );
+    }
+
+    #[test]
+    fn r11_particle_normal_accumulation_adds() {
+        // += vs -= changes normal direction completely
+        // particle_normal simplifies to (v_left - v_up) × (v_right - v_down)
+        // Need h_left + h_right != h_up + h_down for non-zero result
+        let config = ClothConfig {
+            width: 5,
+            height: 5,
+            spacing: 1.0,
+            particle_mass: 1.0,
+            gravity: Vec3::ZERO,
+            wind: Vec3::ZERO,
+            air_resistance: 0.0,
+            stiffness: 0.0,
+            damping: 0.0,
+            solver_iterations: 0,
+        };
+        let mut cloth = Cloth::new(ClothId(200), config, Vec3::ZERO);
+
+        // For particle_normal(2, 2), neighbors are:
+        // left=(1,2)=idx 11, right=(3,2)=idx 13, up=(2,1)=idx 7, down=(2,3)=idx 17
+        // Only raise the LEFT neighbor — breaks h_L+h_R vs h_U+h_D symmetry
+        cloth.particles[11].position.y += 5.0;
+
+        let normal = cloth.particle_normal(2, 2);
+        assert!(
+            normal.length() > 0.3,
+            "Asymmetric height perturbation should produce non-zero normal: {:?}",
+            normal
+        );
+    }
+
+    #[test]
+    fn r11_constraint_solve_stiffness_multiplied() {
+        // Mutation: * with / in stiffness would change correction magnitude
+        let constraint = DistanceConstraint {
+            p1: 0,
+            p2: 1,
+            rest_length: 1.0,
+            stiffness: 0.5,
+        };
+        let constraint_full = DistanceConstraint {
+            p1: 0,
+            p2: 1,
+            rest_length: 1.0,
+            stiffness: 1.0,
+        };
+
+        let mut particles_half = vec![
+            ClothParticle { position: Vec3::ZERO, prev_position: Vec3::ZERO, acceleration: Vec3::ZERO, inv_mass: 1.0, pinned: false },
+            ClothParticle { position: Vec3::new(3.0, 0.0, 0.0), prev_position: Vec3::new(3.0, 0.0, 0.0), acceleration: Vec3::ZERO, inv_mass: 1.0, pinned: false },
+        ];
+        let mut particles_full = particles_half.clone();
+
+        constraint.solve(&mut particles_half);
+        constraint_full.solve(&mut particles_full);
+
+        // With half stiffness, correction should be roughly half
+        let correction_half = (particles_half[1].position.x - 3.0).abs();
+        let correction_full = (particles_full[1].position.x - 3.0).abs();
+
+        assert!(
+            correction_full > correction_half * 1.5,
+            "Full stiffness should give larger correction: half={}, full={}",
+            correction_half, correction_full
+        );
+    }
+
+    #[test]
+    fn r11_cloth_update_inv_mass_in_wind() {
+        // Wind force = wind * effect * (1.0 / inv_mass.max(0.001))
+        // Need curvature first for wind to work
+        let config = ClothConfig {
+            width: 5,
+            height: 5,
+            spacing: 1.0,
+            particle_mass: 0.5, // inv_mass = 2.0
+            gravity: Vec3::new(0.0, -9.81, 0.0),
+            wind: Vec3::ZERO,
+            air_resistance: 0.0,
+            stiffness: 0.5,
+            damping: 0.0,
+            solver_iterations: 4,
+        };
+        let mut cloth = Cloth::new(ClothId(201), config, Vec3::ZERO);
+
+        // Pin top row
+        for x in 0..5 {
+            cloth.particles[x].pinned = true;
+            cloth.particles[x].inv_mass = 0.0;
+        }
+
+        // Let gravity create droop
+        for _ in 0..20 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        // Enable wind, disable gravity
+        cloth.config.wind = Vec3::new(5.0, 0.0, 0.0);
+        cloth.config.gravity = Vec3::ZERO;
+
+        let pos_before: Vec<Vec3> = cloth.particles.iter().map(|p| p.position).collect();
+        for _ in 0..10 {
+            cloth.update(1.0 / 60.0);
+        }
+
+        let total_moved: f32 = cloth.particles.iter().enumerate()
+            .filter(|(_, p)| !p.pinned)
+            .map(|(i, p)| (p.position - pos_before[i]).length())
+            .sum();
+        assert!(
+            total_moved > 0.01,
+            "Wind with non-unit mass should produce movement: d={}",
+            total_moved
+        );
+    }
 }
