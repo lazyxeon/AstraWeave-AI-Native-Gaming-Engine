@@ -30,9 +30,9 @@
 **The world's first AI-native game engine with deterministic ECS architecture where AI agents are first‑class citizens.**  
 Built in Rust, designed for massive-scale intelligent worlds with production-grade performance.
 
-📚 [Documentation](docs/) • 📊 [Benchmarks](docs/masters/MASTER_BENCHMARK_REPORT.md) • 🗺️ [Roadmap](docs/masters/MASTER_ROADMAP.md) • 🧪 [Coverage](docs/masters/MASTER_COVERAGE_REPORT.md)
+📚 [Documentation](docs/) • 📊 [Benchmarks](docs/masters/MASTER_BENCHMARK_REPORT.md) • 🗺️ [Roadmap](docs/masters/MASTER_ROADMAP.md)• 🧪 [Coverage](docs/masters/MASTER_COVERAGE_REPORT.md) • ⚡ [Interactive Dashboard](tools/benchmark-dashboard/index.html) •  🌐  [Github Pages](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)  
 
-**[Github Pages](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Interactive Benchmark Dashboard Local: `.\scripts\run_benchmark_dashboard.ps1`
+
 
 ---
 
