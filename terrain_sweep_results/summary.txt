@@ -1,0 +1,32 @@
+Terrain Mutation Testing Sweep - 2026-02-19 20:54
+============================================================
+Shards completed: 6/22
+Total tested: 844
+Caught: 180
+Missed: 631
+Unviable: 33
+Timeout: 0
+Raw Kill Rate: 22.2%
+
+Per-shard results:
+ Shard   Caught   Missed Unviable  Time(m)
+     0       63      140        8    117.5
+     1       40      171        0    172.5
+     2       48      157        6    189.0
+     3       29      163       19    130.4
+     4        0        0        0     16.7
+     5        0        0        0      4.6
+
+Misses by file:
+  advanced_erosion.rs: 372
+  background_loader.rs: 95
+  biome_blending.rs: 82
+  biome.rs: 61
+  lib.rs: 21
+
+Caught by file:
+  advanced_erosion.rs: 116
+  background_loader.rs: 33
+  biome_blending.rs: 19
+  biome.rs: 10
+  lib.rs: 2
