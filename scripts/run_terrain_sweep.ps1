@@ -39,8 +39,9 @@ for ($shard = $StartShard; $shard -le $EndShard; $shard++) {
     # Clean previous output
     Remove-Item "C:\temp\mutants.out" -Recurse -Force -ErrorAction SilentlyContinue
     
-    # Run the shard
-    & cargo mutants -p astraweave-terrain --shard "$shard/$TotalShards" --timeout 300 -j 1 -o "C:\temp" -- --lib 2>&1 | Tee-Object -Variable shardOutput
+    # Run the shard (--tests includes both lib and integration tests for maximum kill rate)
+    # --gitignore true: skip target/ copies (reduces 16GB → ~50MB), enables viable -j 4
+    & cargo mutants -p astraweave-terrain --shard "$shard/$TotalShards" --timeout 300 -j 4 --gitignore true -o "C:\temp" -- --tests 2>&1 | Tee-Object -Variable shardOutput
     
     $shardEnd = Get-Date
     $elapsed = $shardEnd - $shardStart
