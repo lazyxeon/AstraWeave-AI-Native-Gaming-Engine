@@ -39,7 +39,7 @@ for ($shard = $StartShard; $shard -le $EndShard; $shard++) {
 
     Remove-Item "C:\temp\mutants.out" -Recurse -Force -ErrorAction SilentlyContinue
 
-    & cargo mutants -p astraweave-render --shard "$shard/$TotalShards" --timeout 300 -j 1 -o "C:\temp" --features $features -- --lib 2>&1 | Tee-Object -Variable shardOutput
+    & cargo mutants -p astraweave-render --shard "$shard/$TotalShards" --timeout 300 -j 4 --gitignore true -o "C:\temp" --features $features -- --tests 2>&1 | Tee-Object -Variable shardOutput
 
     $shardEnd = Get-Date
     $elapsed = $shardEnd - $shardStart
