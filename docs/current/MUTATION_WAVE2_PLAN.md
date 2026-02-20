@@ -1,8 +1,8 @@
 # Mutation Testing Wave 2 — Visual Crate Campaign Plan
 
-**Version**: 1.0  
-**Date**: February 16, 2026  
-**Status**: RESEARCH COMPLETE — READY FOR EXECUTION  
+**Version**: 1.1  
+**Date**: February 20, 2026  
+**Status**: IN PROGRESS — TERRAIN SWEEP RUNNING  
 **Crates**: `astraweave-terrain`, `astraweave-render`, `aw_editor`
 
 ---
@@ -294,3 +294,29 @@ Update `MUTATION_TESTING_VERIFICATION_REPORT.md` to v4.0:
 ---
 
 *Plan generated from pilot shard analysis: Terrain S0/22, Render S0/20, Editor S0/121, Editor S4/121.*
+
+---
+
+## 8. Execution Progress Log
+
+### Remediation Test Writing (Pre-Sweep)
+
+| Date | Commit | Tests Added | Files | Crates |
+|------|--------|:-----------:|:-----:|--------|
+| Feb 16 | `685fa4e0` | 570 terrain + 549 render + ~3,592 editor (pre-existing) | 7+7+18 | terrain, render, aw_editor |
+| Feb 20 | `e2666954` | 533 editor panel tests | 9 new files | aw_editor |
+
+**Current editor test total**: 8,793 tests (0 failures, 5 ignored)
+
+### Sweep Status
+
+| Crate | Shards | Status | Kill Rate | Notes |
+|-------|:------:|--------|:---------:|-------|
+| astraweave-terrain | 0/22 | 🟡 Running S0 | TBD | ~211 mutants/shard, ~39min/shard |
+| astraweave-render | 0/20 | ⬜ Not started | TBD | Waiting on terrain completion |
+| aw_editor | 0/121 | ⬜ Not started | TBD | Tiered approach planned |
+
+### Sweep Scripts
+
+- `scripts/run_terrain_sweep.ps1` — Automated 22-shard sequential sweep
+- `scripts/run_render_sweep.ps1` — Automated 20-shard sequential sweep
