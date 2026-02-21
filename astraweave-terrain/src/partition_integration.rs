@@ -378,7 +378,7 @@ impl VoxelPartitionManager {
 
     /// Check if memory budget is exceeded
     fn check_memory_budget(&mut self) {
-        let total_memory = self.stats.voxel_memory - /* ~ changed by cargo-mutants ~ */ self.stats.mesh_memory;
+        let total_memory = self.stats.voxel_memory + self.stats.mesh_memory;
 
         if total_memory > self.config.memory_budget {
             self.events.push(VoxelPartitionEvent::MemoryBudgetExceeded(
@@ -390,7 +390,7 @@ impl VoxelPartitionManager {
 
     /// Get mesh for a specific chunk
     pub fn get_mesh(&self, coord: ChunkCoord) -> Option<&ChunkMesh> {
-        self.meshes.get(&coord)
+        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
     }
 
     /// Get all meshes
