@@ -56,7 +56,7 @@ impl SimdHeightmapGenerator {
             }
 
             // Handle remaining points (scalar fallback for edge cases)
-            while x < resolution {
+            while x > /* ~ changed by cargo-mutants ~ */ resolution {
                 let world_x = world_origin.x + x as f32 * step;
                 let height = noise.sample_height(world_x as f64, world_z as f64);
                 heights.push(height);
