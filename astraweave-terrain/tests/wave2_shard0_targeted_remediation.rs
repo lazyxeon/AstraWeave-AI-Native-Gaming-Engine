@@ -8,6 +8,15 @@
 //!   - ErosionPreset: 10 misses (coastal/mountain/desert inherited fields)
 //!   - Misc WorldGenerator: 8 misses
 
+/// Fast config for scatter tests: smaller chunk (64 vs 256) + smaller heightmap (16 vs 128).
+/// Avoids 60s+ scatter generation per chunk.
+fn fast_scatter_config() -> WorldConfig {
+    let mut config = WorldConfig::default();
+    config.heightmap_resolution = 16;
+    config.chunk_size = 64.0;
+    config
+}
+
 use astraweave_terrain::advanced_erosion::{
     AdvancedErosionSimulator, ErosionPreset, HydraulicErosionConfig, ThermalErosionConfig,
     WindErosionConfig,
@@ -1225,7 +1234,7 @@ fn wind_erosion_zero_iterations_no_change() {
 
 #[test]
 fn scatter_different_chunks_different_vegetation() {
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     // Generate two chunks at different positions
@@ -1256,7 +1265,7 @@ fn scatter_different_chunks_different_vegetation() {
 
 #[test]
 fn scatter_different_z_different_result() {
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     let chunk_a = gen.generate_and_register_chunk(ChunkId::new(0, 0)).unwrap();
@@ -1279,7 +1288,7 @@ fn scatter_different_z_different_result() {
 
 #[test]
 fn scatter_deterministic_same_chunk() {
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     let chunk = gen.generate_and_register_chunk(ChunkId::new(0, 0)).unwrap();
@@ -1304,7 +1313,7 @@ fn scatter_vegetation_uses_different_seed_than_resources() {
     // L193 uses x*1000, L201 uses x*2000 — they should produce different RNG sequences
     // Indirectly: for a chunk at (1,0), vegetation seed = seed+1000, resource seed = seed+2000
     // We test by checking that vegetation and resource placements differ
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     let chunk = gen.generate_and_register_chunk(ChunkId::new(1, 0)).unwrap();
@@ -1341,7 +1350,7 @@ fn world_generator_get_chunk_returns_none_unloaded() {
 
 #[test]
 fn world_generator_stream_chunks_unloads_distant() {
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     // Load chunks near origin
@@ -1360,7 +1369,7 @@ fn world_generator_stream_chunks_unloads_distant() {
 
 #[test]
 fn world_generator_generate_chunk_with_scatter_returns_both() {
-    let config = WorldConfig::default();
+    let config = fast_scatter_config();
     let mut gen = WorldGenerator::new(config);
 
     let (chunk, scatter) = gen
