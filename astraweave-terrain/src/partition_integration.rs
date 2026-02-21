@@ -390,7 +390,7 @@ impl VoxelPartitionManager {
 
     /// Get mesh for a specific chunk
     pub fn get_mesh(&self, coord: ChunkCoord) -> Option<&ChunkMesh> {
-        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+        self.meshes.get(&coord)
     }
 
     /// Get all meshes

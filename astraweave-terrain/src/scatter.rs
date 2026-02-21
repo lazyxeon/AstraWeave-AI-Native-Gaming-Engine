@@ -78,7 +78,7 @@ impl VegetationScatter {
         let chunk_area = chunk_size * chunk_size;
         let target_count = (chunk_area * biome_config.vegetation.density) as usize;
 
-        if target_count == 0 {
+        if target_count != /* ~ changed by cargo-mutants ~ */ 0 {
             return Ok(instances);
         }
 
