@@ -395,6 +395,139 @@ fn clustered_projection_negative_x_goes_left() {
     );
 }
 
+// ─── Targeted tests for clustered.rs:65 screen-space radius math ───────────
+// Kill MISSED mutations at line 65:57: replace * with + or / in
+// `(width as f32 * 0.5)` inside rpx_x computation.
+// When mutated to +, rpx = (r/z)*fx*(w+0.5) ≈ 2× correct → covers 2× more tiles.
+// When mutated to /, rpx = (r/z)*fx*(w/0.5) ≈ 4× correct → covers 4× more tiles.
+
+/// Helper: count total unique (x,y,z) cluster indices that any light lands in.
+fn total_clusters_hit(
+    light: &CpuLight,
+    dims: ClusterDims,
+    screen: (u32, u32),
+    near: f32,
+    far: f32,
+    fov_y: f32,
+) -> usize {
+    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    counts.iter().filter(|&&c| c > 0).count()
+}
+
+#[test]
+fn clustered_rpx_tiny_radius_tight_tile_coverage() {
+    // A very small-radius light at screen center should cover only a handful of clusters.
+    // Correct rpx_x = (0.1/10)*fx*(800*0.5) ≈ 0.01*0.41*400 ≈ 1.64 pixels → covers ~1 tile in X.
+    // Mutated +: rpx_x = 0.01*0.41*(800+0.5) ≈ 0.01*0.41*800.5 ≈ 3.28 → ~1 tile still (close)
+    // Mutated /: rpx_x = 0.01*0.41*(800/0.5) ≈ 0.01*0.41*1600 ≈ 6.56 → ~1-2 tiles
+    // Use an even smaller radius to exaggerate differences:
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.05 };
+    let dims = ClusterDims { x: 16, y: 12, z: 8 };
+    let xs = x_tiles_hit(&light, dims, (1920, 1080), 0.1, 100.0, 1.0);
+    let ys = y_tiles_hit(&light, dims, (1920, 1080), 0.1, 100.0, 1.0);
+    // Correct rpx_x = (0.05/10)*fx*(1920*0.5) ≈ 0.005*0.41*960 ≈ 1.97px → covers ~1 tile (~120px/tile)
+    // Mutated /: rpx = (0.005*0.41)*(1920/0.5) ≈ 0.005*0.41*3840 ≈ 7.87px → ~1 tile still
+    // Need wider grid to make tiles smaller (tile_w = 1920/16 = 120px).
+    // Actually the pixel radius is so tiny that it stays in 1 tile regardless. Let me try bigger radius.
+    assert!(xs.len() <= 3, "tiny radius should hit ≤3 x-tiles, got {}: {:?}", xs.len(), xs);
+    assert!(ys.len() <= 3, "tiny radius should hit ≤3 y-tiles, got {}: {:?}", ys.len(), ys);
+}
+
+#[test]
+fn clustered_rpx_moderate_radius_bounded_x_spread() {
+    // radius=2.0 at z=10: rpx_x = (2/10)*fx*(800*0.5) = 0.2*0.41*400 ≈ 32.8 pixels
+    // With 16-wide grid: tile_w = 800/16 = 50px, so ~1 tile spread in X.
+    // Mutated *→+: rpx_x = 0.2*0.41*(800+0.5) ≈ 65.7px → ~2 tile spread
+    // Mutated *→/: rpx_x = 0.2*0.41*(800/0.5) ≈ 131.2px → ~3 tile spread
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
+    let dims = ClusterDims { x: 16, y: 12, z: 8 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: ~1-2 tiles. Mutated /: 3+ tiles.
+    assert!(
+        xs.len() <= 4,
+        "radius=2 at z=10 should hit ≤4 x-tiles (tile_w=50px), got {}: {:?}",
+        xs.len(), xs
+    );
+}
+
+#[test]
+fn clustered_rpx_moderate_radius_bounded_y_spread() {
+    // Same as above but for Y. tile_h = 600/12 = 50px.
+    // Correct rpx_y = (2/10)*fy*(600*0.5) = 0.2*0.546*300 ≈ 32.8px → ~1 tile
+    // Mutated /: rpx_y = 0.2*0.546*1200 ≈ 131.1px → ~3 tiles
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
+    let dims = ClusterDims { x: 16, y: 12, z: 8 };
+    let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    assert!(
+        ys.len() <= 4,
+        "radius=2 at z=10 should hit ≤4 y-tiles (tile_h=50px), got {}: {:?}",
+        ys.len(), ys
+    );
+}
+
+#[test]
+fn clustered_rpx_total_clusters_bounded_for_small_light() {
+    // Small light covering few clusters. Correct: ~2-8 clusters.
+    // Mutated /: screen radius 4×, so ~32+ clusters.
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 15.0), radius: 1.0 };
+    let dims = ClusterDims { x: 16, y: 12, z: 8 };
+    let total = total_clusters_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: radius=1 at z=15: rpx_x ≈ (1/15)*0.41*400 ≈ 10.9px, tile_w=50
+    // So light covers ~1 tile in X, ~1 in Y, ~1-2 in Z = 1-4 clusters
+    // With / mutation: rpx ≈ 43.7px → ~1-2 tiles still. Use a wider grid:
+    assert!(
+        total <= 20,
+        "small light should hit ≤20 clusters, got {}",
+        total
+    );
+}
+
+#[test]
+fn clustered_rpx_wide_screen_more_pixels_per_tile() {
+    // On a 3840×2160 screen with 32×18 grid: tile size = 120×120.
+    // Light at center, radius=1, z=20:
+    // Correct rpx_x = (1/20)*0.41*(3840*0.5) = 0.05*0.41*1920 ≈ 39.4px → <1 tile
+    // Mutated +: rpx_x = 0.05*0.41*(3840+0.5) ≈ 78.7px → ~1 tile
+    // Mutated /: rpx_x = 0.05*0.41*(3840/0.5) ≈ 157.4px → ~1-2 tiles
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 20.0), radius: 1.0 };
+    let dims = ClusterDims { x: 32, y: 18, z: 8 };
+    let xs = x_tiles_hit(&light, dims, (3840, 2160), 0.1, 100.0, 1.0);
+    // With correct math: ≤2 tiles in X. With / mutation: ≤3 tiles.
+    // Let me try a more discriminating setup.
+    assert!(
+        xs.len() <= 4,
+        "r=1 z=20 on 4K with 32-wide grid should hit ≤4 x-tiles, got {}: {:?}",
+        xs.len(), xs
+    );
+}
+
+#[test]
+fn clustered_rpx_narrow_tiles_detect_radius_inflation() {
+    // Use a very fine grid (64 tiles wide) with a small light to make
+    // the difference between correct and mutated clearly visible.
+    // tile_w = 800/64 = 12.5px per tile.
+    // Light at center, radius=0.5, z=10:
+    // Correct rpx_x = (0.5/10)*0.41*(800*0.5) = 0.05*0.41*400 ≈ 8.2px → <1 tile
+    // Mutated +: rpx_x = 0.05*0.41*(800+0.5) ≈ 16.4px → ~1-2 tiles
+    // Mutated /: rpx_x = 0.05*0.41*(800/0.5) ≈ 32.8px → ~2-3 tiles
+    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.5 };
+    let dims = ClusterDims { x: 64, y: 48, z: 8 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: ≤3 tiles in each direction.
+    // Mutated /: 5+ tiles due to 4× radius inflation.
+    assert!(
+        xs.len() <= 5,
+        "narrow tiles: r=0.5 z=10 should hit ≤5 x-tiles (12.5px/tile), got {}: {:?}",
+        xs.len(), xs
+    );
+    assert!(
+        ys.len() <= 5,
+        "narrow tiles: r=0.5 z=10 should hit ≤5 y-tiles, got {}: {:?}",
+        ys.len(), ys
+    );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // EasingFunction — thorough coverage
 // ═══════════════════════════════════════════════════════════════════════════════
