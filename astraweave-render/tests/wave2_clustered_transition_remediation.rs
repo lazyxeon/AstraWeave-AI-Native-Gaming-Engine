@@ -267,6 +267,134 @@ fn clustered_identity_cluster_count_matches_total() {
     assert_eq!(offsets.last().copied(), Some(total));
 }
 
+// ─── Targeted tests for clustered.rs:59-60 projection math ─────────────────
+// These kill MISSED mutations: replace * with / or + in ndc_x/ndc_y projection
+
+/// Helper: given 1D cluster grid, return the set of cluster X indices hit by the light
+fn x_tiles_hit(
+    light: &CpuLight,
+    dims: ClusterDims,
+    screen: (u32, u32),
+    near: f32,
+    far: f32,
+    fov_y: f32,
+) -> Vec<u32> {
+    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    let mut xs = std::collections::BTreeSet::new();
+    for z in 0..dims.z {
+        for y in 0..dims.y {
+            for x in 0..dims.x {
+                let idx = (z * dims.y * dims.x + y * dims.x + x) as usize;
+                if counts[idx] > 0 {
+                    xs.insert(x);
+                }
+            }
+        }
+    }
+    xs.into_iter().collect()
+}
+
+/// Helper: return set of cluster Y indices hit
+fn y_tiles_hit(
+    light: &CpuLight,
+    dims: ClusterDims,
+    screen: (u32, u32),
+    near: f32,
+    far: f32,
+    fov_y: f32,
+) -> Vec<u32> {
+    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    let mut ys = std::collections::BTreeSet::new();
+    for z in 0..dims.z {
+        for y in 0..dims.y {
+            for x in 0..dims.x {
+                let idx = (z * dims.y * dims.x + y * dims.x + x) as usize;
+                if counts[idx] > 0 {
+                    ys.insert(y);
+                }
+            }
+        }
+    }
+    ys.into_iter().collect()
+}
+
+#[test]
+fn clustered_projection_x_mul_not_add() {
+    // Kill mutation: (l.pos.x / z) * fx → (l.pos.x / z) + fx
+    // Place a light at x=2, z=10 with tiny radius. Correct projection
+    // places it near center-right (tile 4 for 8-wide grid).
+    // The + mutation shifts it much further right (tile 6+) because ndc_x = 0.2+fx ≈ 0.61
+    // instead of 0.2*fx ≈ 0.08.
+    let light = CpuLight { pos: Vec3::new(2.0, 0.0, 10.0), radius: 1.0 };
+    let dims = ClusterDims { x: 8, y: 6, z: 4 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: ndc_x ≈ 0.2 * tan(0.5)/aspect ≈ 0.08, px ≈ 432, tile ~4
+    assert!(xs.contains(&4), "Light at x=2 z=10 should be in tile x=4, tiles hit: {:?}", xs);
+    // The + mutation would put it at tile 6+ which shouldn't overlap 4 (tiny radius)
+}
+
+#[test]
+fn clustered_projection_x_mul_not_div() {
+    // Kill mutation: (l.pos.x / z) * fx → (l.pos.x / z) / fx
+    // At x=5, z=10: correct ndc_x = 0.5*fx ≈ 0.205, px ≈ 482, tile ~4
+    // Mutated ndc_x = 0.5/fx ≈ 1.22, px > 800 → clamped to tile 7
+    let light = CpuLight { pos: Vec3::new(5.0, 0.0, 10.0), radius: 1.0 };
+    let dims = ClusterDims { x: 8, y: 6, z: 4 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: tile ~4-5
+    assert!(
+        xs.iter().any(|&x| x <= 5),
+        "Light at x=5 z=10 should project to tile ≤5, got tiles: {:?}", xs
+    );
+    // The / mutation would put it at tile 7 (clamped), far from correct
+    assert!(
+        !xs.iter().all(|&x| x >= 7),
+        "Light should NOT only be in tile 7+ (that's the / mutation result)"
+    );
+}
+
+#[test]
+fn clustered_projection_y_mul_not_add() {
+    // Kill mutation: (l.pos.y / z) * fy → (l.pos.y / z) + fy
+    // Light at y=1, z=10: correct ndc_y = 0.1*fy ≈ 0.055, py ≈ 316, tile ~3
+    // Mutated: ndc_y = 0.1+fy ≈ 0.646, py ≈ 494, tile ~4
+    let light = CpuLight { pos: Vec3::new(0.0, 1.0, 10.0), radius: 1.0 };
+    let dims = ClusterDims { x: 8, y: 6, z: 4 };
+    let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Correct: tile 3 (near center)
+    assert!(ys.contains(&3), "Light at y=1 z=10 should hit tile y=3, tiles hit: {:?}", ys);
+}
+
+#[test]
+fn clustered_projection_small_x_stays_near_center() {
+    // Additional precision test: x=0.5, z=20, radius=0.5 → very tight cluster
+    // Correct: ndc_x = (0.5/20)*fx ≈ 0.025*0.41 ≈ 0.01, px ≈ 404, tile 4
+    // + mutation: ndc_x = 0.025 + 0.41 ≈ 0.435, px ≈ 574, tile 5-6
+    let light = CpuLight { pos: Vec3::new(0.5, 0.0, 20.0), radius: 0.5 };
+    let dims = ClusterDims { x: 8, y: 8, z: 4 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    assert!(xs.contains(&4), "Tiny x offset should still be in center tile, got: {:?}", xs);
+    // Should NOT be only in tiles 5+ (that's the + mutation result)
+    assert!(
+        !xs.iter().all(|&x| x >= 6),
+        "Should not all be in tile 6+ ({:?})", xs
+    );
+}
+
+#[test]
+fn clustered_projection_negative_x_goes_left() {
+    // x=-3, z=10: correct ndc_x = -0.3*fx ≈ -0.123, px ≈ (−0.123*0.5+0.5)*800 ≈ 350, tile 3
+    // + mutation: ndc_x = -0.3+fx ≈ 0.11, px ≈ (0.11*0.5+0.5)*800 ≈ 444, tile 4-5
+    let light = CpuLight { pos: Vec3::new(-3.0, 0.0, 10.0), radius: 1.0 };
+    let dims = ClusterDims { x: 8, y: 6, z: 4 };
+    let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
+    // Should be in left half (tile ≤ 3)
+    assert!(
+        xs.iter().any(|&x| x <= 3),
+        "Negative x light should be in left tiles (≤3), got: {:?}", xs
+    );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // EasingFunction — thorough coverage
 // ═══════════════════════════════════════════════════════════════════════════════
