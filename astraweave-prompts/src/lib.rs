@@ -1721,4 +1721,25 @@ mod tests {
         let ts = current_timestamp();
         assert!(ts > 86400, "current_timestamp must be well past Unix epoch, got {}", ts);
     }
+
+    #[test]
+    fn update_avg_time_zero_count_guard() {
+        // Mutant: `> 0.0` → `>= 0.0` in update_avg_time (lib.rs:922)
+        // When successful_renders == 0, new_count == 0.0:
+        //   With `>`:  0.0 > 0.0 = false → skip block → avg stays 0.0 ✓
+        //   With `>=`: 0.0 >= 0.0 = true → (0.0*(-1.0)+42.0)/0.0 → NaN/Inf ✗
+        let mut metrics = RenderMetrics::new();
+        assert_eq!(metrics.successful_renders, 0, "precondition: zero successes");
+        metrics.update_avg_time(42.0);
+        assert!(
+            metrics.avg_render_time_ms.is_finite(),
+            "avg_render_time_ms must be finite when called with zero successes, got {}",
+            metrics.avg_render_time_ms
+        );
+        assert!(
+            (metrics.avg_render_time_ms - 0.0).abs() < f32::EPSILON,
+            "avg_render_time_ms must remain 0.0 when called with zero successes, got {}",
+            metrics.avg_render_time_ms
+        );
+    }
 }
