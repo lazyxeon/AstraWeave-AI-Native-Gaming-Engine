@@ -57,7 +57,7 @@ pub fn bin_lights_cpu(
         }
         // Project center to NDC
         let ndc_x = (l.pos.x / z) * fx;
-        let ndc_y = (l.pos.y % /* ~ changed by cargo-mutants ~ */ z) * fy;
+        let ndc_y = (l.pos.y / z) * fy;
         // Convert to pixel space
         let px = (ndc_x * 0.5 + 0.5) * width as f32;
         let py = (ndc_y * 0.5 + 0.5) * height as f32;
