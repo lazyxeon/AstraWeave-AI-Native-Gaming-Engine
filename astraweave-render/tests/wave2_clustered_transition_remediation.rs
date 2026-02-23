@@ -336,20 +336,22 @@ fn clustered_projection_x_mul_not_add() {
 #[test]
 fn clustered_projection_x_mul_not_div() {
     // Kill mutation: (l.pos.x / z) * fx → (l.pos.x / z) / fx
-    // At x=5, z=10: correct ndc_x = 0.5*fx ≈ 0.205, px ≈ 482, tile ~4
-    // Mutated ndc_x = 0.5/fx ≈ 1.22, px > 800 → clamped to tile 7
+    // fov_y=1.0 → fy=1/tan(0.5)=1.83, fx=fy/aspect=1.83/1.333=1.373
+    // At x=5, z=10: correct ndc_x = 0.5*1.373 = 0.687, px = 674, tile 6
+    // Mutated: ndc_x = 0.5/1.373 = 0.364, px = 545, tile 5
     let light = CpuLight { pos: Vec3::new(5.0, 0.0, 10.0), radius: 1.0 };
     let dims = ClusterDims { x: 8, y: 6, z: 4 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
-    // Correct: tile ~4-5
+    // Correct: tile 6-7 (fx=1.373 makes projection wider than center)
     assert!(
-        xs.iter().any(|&x| x <= 5),
-        "Light at x=5 z=10 should project to tile ≤5, got tiles: {:?}", xs
+        xs.contains(&6),
+        "Light at x=5 z=10 should project to tile 6, got tiles: {:?}", xs
     );
-    // The / mutation would put it at tile 7 (clamped), far from correct
+    // The / mutation shifts projection LEFT (ndc_x smaller: 0.364 vs 0.687)
+    // so tile 5 would be hit instead. Verify we don't ONLY hit tile 5.
     assert!(
-        !xs.iter().all(|&x| x >= 7),
-        "Light should NOT only be in tile 7+ (that's the / mutation result)"
+        !xs.iter().all(|&x| x <= 5),
+        "Light should NOT only be in tile ≤5 (that's the / mutation result), got {:?}", xs
     );
 }
 
@@ -435,32 +437,34 @@ fn clustered_rpx_tiny_radius_tight_tile_coverage() {
 
 #[test]
 fn clustered_rpx_moderate_radius_bounded_x_spread() {
-    // radius=2.0 at z=10: rpx_x = (2/10)*fx*(800*0.5) = 0.2*0.41*400 ≈ 32.8 pixels
-    // With 16-wide grid: tile_w = 800/16 = 50px, so ~1 tile spread in X.
-    // Mutated *→+: rpx_x = 0.2*0.41*(800+0.5) ≈ 65.7px → ~2 tile spread
-    // Mutated *→/: rpx_x = 0.2*0.41*(800/0.5) ≈ 131.2px → ~3 tile spread
+    // fov_y=1.0 → fx=1.373. radius=2.0 at z=10:
+    // rpx_x = (2/10)*1.373*(800*0.5) = 0.2*1.373*400 = 109.8 pixels
+    // tile_w = 800/16 = 50px → ~4.4 tiles radius, ~6 total x-tiles
+    // Mutated *→+: rpx_x = 0.2*1.373*(800+0.5) = 219.8px → ~10 tiles
+    // Mutated *→/: rpx_x = 0.2*1.373*(800/0.5) = 439.7px → ~16 tiles
     let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
-    // Correct: ~1-2 tiles. Mutated /: 3+ tiles.
+    // Correct: ~6 tiles. Mutated+: ~10, Mutated/: ~16.
     assert!(
-        xs.len() <= 4,
-        "radius=2 at z=10 should hit ≤4 x-tiles (tile_w=50px), got {}: {:?}",
+        xs.len() <= 8,
+        "radius=2 at z=10 should hit ≤8 x-tiles (tile_w=50px), got {}: {:?}",
         xs.len(), xs
     );
 }
 
 #[test]
 fn clustered_rpx_moderate_radius_bounded_y_spread() {
-    // Same as above but for Y. tile_h = 600/12 = 50px.
-    // Correct rpx_y = (2/10)*fy*(600*0.5) = 0.2*0.546*300 ≈ 32.8px → ~1 tile
-    // Mutated /: rpx_y = 0.2*0.546*1200 ≈ 131.1px → ~3 tiles
+    // fov_y=1.0 → fy=1.8305. tile_h = 600/12 = 50px.
+    // Correct rpx_y = (2/10)*1.8305*(600*0.5) = 0.2*1.8305*300 = 109.8px → ~6 tiles
+    // Mutated+: rpx_y = 0.2*1.8305*(600+0.5) = 219.7px → ~10 tiles
+    // Mutated/: rpx_y = 0.2*1.8305*(600/0.5) = 439.3px → ~16 tiles
     let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     assert!(
-        ys.len() <= 4,
-        "radius=2 at z=10 should hit ≤4 y-tiles (tile_h=50px), got {}: {:?}",
+        ys.len() <= 8,
+        "radius=2 at z=10 should hit ≤8 y-tiles (tile_h=50px), got {}: {:?}",
         ys.len(), ys
     );
 }
@@ -505,25 +509,25 @@ fn clustered_rpx_wide_screen_more_pixels_per_tile() {
 fn clustered_rpx_narrow_tiles_detect_radius_inflation() {
     // Use a very fine grid (64 tiles wide) with a small light to make
     // the difference between correct and mutated clearly visible.
+    // fov_y=1.0 → fx=1.373, fy=1.8305
     // tile_w = 800/64 = 12.5px per tile.
     // Light at center, radius=0.5, z=10:
-    // Correct rpx_x = (0.5/10)*0.41*(800*0.5) = 0.05*0.41*400 ≈ 8.2px → <1 tile
-    // Mutated +: rpx_x = 0.05*0.41*(800+0.5) ≈ 16.4px → ~1-2 tiles
-    // Mutated /: rpx_x = 0.05*0.41*(800/0.5) ≈ 32.8px → ~2-3 tiles
+    // Correct rpx_x = (0.5/10)*1.373*(800*0.5) = 0.05*1.373*400 = 27.5px → ~2 tiles radius, ~6 total
+    // Mutated +: rpx_x = 0.05*1.373*(800+0.5) = 54.95px → ~10 tiles
+    // Mutated /: rpx_x = 0.05*1.373*(800/0.5) = 109.8px → ~16 tiles
     let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.5 };
     let dims = ClusterDims { x: 64, y: 48, z: 8 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
-    // Correct: ≤3 tiles in each direction.
-    // Mutated /: 5+ tiles due to 4× radius inflation.
+    // Correct: ~6 tiles. Mutated+: ~10, Mutated/: ~16.
     assert!(
-        xs.len() <= 5,
-        "narrow tiles: r=0.5 z=10 should hit ≤5 x-tiles (12.5px/tile), got {}: {:?}",
+        xs.len() <= 8,
+        "narrow tiles: r=0.5 z=10 should hit ≤8 x-tiles (12.5px/tile), got {}: {:?}",
         xs.len(), xs
     );
     assert!(
-        ys.len() <= 5,
-        "narrow tiles: r=0.5 z=10 should hit ≤5 y-tiles, got {}: {:?}",
+        ys.len() <= 8,
+        "narrow tiles: r=0.5 z=10 should hit ≤8 y-tiles, got {}: {:?}",
         ys.len(), ys
     );
 }
