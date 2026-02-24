@@ -260,6 +260,15 @@ impl TemplateEngine {
         engine
     }
 
+    /// Creates a new `TemplateEngine` with the given configuration.
+    pub fn with_config(config: EngineConfig) -> Self {
+        let mut engine = Self {
+            inner: PromptEngine::new(config),
+        };
+        register_default_helpers(&mut engine);
+        engine
+    }
+
     pub fn register_template(&mut self, name: &str, template: PromptTemplate) -> Result<()> {
         self.inner
             .register_template(name.to_string(), template.template)
@@ -908,5 +917,36 @@ mod tests {
         let engine = TemplateEngine::new();
         let display = format!("{}", engine);
         assert!(display.contains("TemplateEngine"));
+    }
+
+    #[test]
+    fn template_engine_caching_enabled_delegates_correctly() {
+        // Mutant: replace TemplateEngine::caching_enabled -> bool with true (engine.rs:335)
+        // TemplateEngine::new() uses default config (caching=true), so we need
+        // a with_config path where caching is false to distinguish.
+        let engine = TemplateEngine::with_config(EngineConfig::development());
+        assert!(
+            !engine.caching_enabled(),
+            "TemplateEngine::caching_enabled must delegate to inner engine; \
+             development config has caching=false, got true"
+        );
+    }
+
+    #[test]
+    fn template_engine_sanitizer_delegates_to_inner() {
+        // Mutant: replace TemplateEngine::sanitizer -> &PromptSanitizer
+        //         with Box::leak(Box::new(Default::default())) (engine.rs:315)
+        // Create engine with strict sanitization config, then verify the sanitizer
+        // reports strict mode (default sanitizer would NOT be strict).
+        let config = EngineConfig {
+            sanitization: SanitizationConfig::strict(),
+            ..Default::default()
+        };
+        let engine = TemplateEngine::with_config(config);
+        assert!(
+            engine.sanitizer().is_strict(),
+            "TemplateEngine::sanitizer must delegate to inner engine's strict sanitizer; \
+             got non-strict (likely a default-constructed sanitizer)"
+        );
     }
 }
