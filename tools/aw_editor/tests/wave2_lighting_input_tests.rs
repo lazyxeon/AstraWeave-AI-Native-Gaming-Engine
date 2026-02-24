@@ -3,13 +3,13 @@
 //! Targets: lighting_panel.rs (2,865 lines) + input_bindings_panel.rs (2,320 lines)
 //! Focus: enum Display/name/icon, Default values, is_* helpers, numeric returns
 
-use aw_editor_lib::panels::lighting_panel::{
-    AmbientMode, EnvironmentSettings, FogMode, GiMode, GiSettings, Light, LightProbe, LightType,
-    LightUnit, ReflectionProbe, RefreshMode, ShadowQuality, ShadowType,
-};
 use aw_editor_lib::panels::input_bindings_panel::{
     ActionBinding, ActionCategory, AxisBinding, BindingPreset, GamepadButton, InputDevice,
     InputTab, KeyboardKey, MouseButton,
+};
+use aw_editor_lib::panels::lighting_panel::{
+    AmbientMode, EnvironmentSettings, FogMode, GiMode, GiSettings, Light, LightProbe, LightType,
+    LightUnit, ReflectionProbe, RefreshMode, ShadowQuality, ShadowType,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -695,7 +695,11 @@ fn keyboard_key_is_arrow() {
 #[test]
 fn keyboard_key_display_names_nonempty() {
     for v in KeyboardKey::all() {
-        assert!(!v.display_name().is_empty(), "display_name empty for {:?}", v);
+        assert!(
+            !v.display_name().is_empty(),
+            "display_name empty for {:?}",
+            v
+        );
     }
 }
 
@@ -703,14 +707,24 @@ fn keyboard_key_display_names_nonempty() {
 fn keyboard_key_display_has_keyboard_prefix() {
     for v in KeyboardKey::all() {
         let d = format!("{v}");
-        assert!(d.contains("⌨️"), "display '{}' missing keyboard icon for {:?}", d, v);
+        assert!(
+            d.contains("⌨️"),
+            "display '{}' missing keyboard icon for {:?}",
+            d,
+            v
+        );
     }
 }
 
 #[test]
 fn keyboard_key_name_equals_display_name() {
     for v in KeyboardKey::all() {
-        assert_eq!(v.name(), v.display_name(), "name != display_name for {:?}", v);
+        assert_eq!(
+            v.name(),
+            v.display_name(),
+            "name != display_name for {:?}",
+            v
+        );
     }
 }
 
@@ -836,14 +850,20 @@ fn action_category_names_unique() {
 
 #[test]
 fn gamepad_button_display_names_unique() {
-    let names: Vec<&str> = GamepadButton::all().iter().map(|v| v.display_name()).collect();
+    let names: Vec<&str> = GamepadButton::all()
+        .iter()
+        .map(|v| v.display_name())
+        .collect();
     let set: std::collections::HashSet<&&str> = names.iter().collect();
     assert_eq!(names.len(), set.len());
 }
 
 #[test]
 fn keyboard_key_all_names_unique() {
-    let names: Vec<&str> = KeyboardKey::all().iter().map(|v| v.display_name()).collect();
+    let names: Vec<&str> = KeyboardKey::all()
+        .iter()
+        .map(|v| v.display_name())
+        .collect();
     let set: std::collections::HashSet<&&str> = names.iter().collect();
     assert_eq!(names.len(), set.len());
 }
@@ -856,6 +876,9 @@ fn shadow_quality_resolution_increasing() {
         .map(|q| q.resolution())
         .collect();
     for window in resolutions.windows(2) {
-        assert!(window[0] < window[1], "resolutions not monotonically increasing");
+        assert!(
+            window[0] < window[1],
+            "resolutions not monotonically increasing"
+        );
     }
 }

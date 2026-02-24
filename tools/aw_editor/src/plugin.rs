@@ -138,7 +138,10 @@ impl PluginEvent {
 
     /// Returns true if this is an entity event.
     pub fn is_entity_event(&self) -> bool {
-        matches!(self, PluginEvent::EntitySelected | PluginEvent::EntityCreated)
+        matches!(
+            self,
+            PluginEvent::EntitySelected | PluginEvent::EntityCreated
+        )
     }
 
     /// Returns true if this is a play mode event.
@@ -621,17 +624,26 @@ impl PluginManager {
 
     /// Returns the number of active plugins.
     pub fn active_count(&self) -> usize {
-        self.plugins.values().filter(|e| e.state == PluginState::Active).count()
+        self.plugins
+            .values()
+            .filter(|e| e.state == PluginState::Active)
+            .count()
     }
 
     /// Returns the number of plugins with errors.
     pub fn error_count(&self) -> usize {
-        self.plugins.values().filter(|e| e.state == PluginState::Error).count()
+        self.plugins
+            .values()
+            .filter(|e| e.state == PluginState::Error)
+            .count()
     }
 
     /// Returns the number of disabled plugins.
     pub fn disabled_count(&self) -> usize {
-        self.plugins.values().filter(|e| e.state == PluginState::Disabled).count()
+        self.plugins
+            .values()
+            .filter(|e| e.state == PluginState::Disabled)
+            .count()
     }
 
     /// Returns true if there are any plugins with errors.
@@ -646,7 +658,10 @@ impl PluginManager {
 
     /// Returns the number of plugins with panels.
     pub fn panels_count(&self) -> usize {
-        self.plugins.values().filter(|e| e.plugin.has_panel()).count()
+        self.plugins
+            .values()
+            .filter(|e| e.plugin.has_panel())
+            .count()
     }
 
     /// Returns plugin IDs by state.
@@ -705,7 +720,11 @@ impl PluginManager {
             active: self.active_count(),
             errors: self.error_count(),
             disabled: self.disabled_count(),
-            loaded: self.plugins.values().filter(|e| e.state == PluginState::Loaded).count(),
+            loaded: self
+                .plugins
+                .values()
+                .filter(|e| e.state == PluginState::Loaded)
+                .count(),
             with_panels: self.panels_count(),
         }
     }
@@ -1137,7 +1156,8 @@ mod tests {
         assert!(PluginError::IncompatibleVersion {
             required: "2.0".into(),
             actual: "1.0".into(),
-        }.is_fatal());
+        }
+        .is_fatal());
         assert!(!PluginError::ConfigError("cfg".into()).is_fatal());
         assert!(!PluginError::Other("other".into()).is_fatal());
     }
@@ -1148,7 +1168,10 @@ mod tests {
             PluginError::InitFailed("test".into()),
             PluginError::ConfigError("cfg".into()),
             PluginError::MissingDependency("dep".into()),
-            PluginError::IncompatibleVersion { required: "2.0".into(), actual: "1.0".into() },
+            PluginError::IncompatibleVersion {
+                required: "2.0".into(),
+                actual: "1.0".into(),
+            },
             PluginError::Other("other".into()),
         ];
         for err in &errors {
@@ -1158,9 +1181,18 @@ mod tests {
 
     #[test]
     fn test_plugin_error_category() {
-        assert_eq!(PluginError::InitFailed("test".into()).category(), "Initialization");
-        assert_eq!(PluginError::ConfigError("cfg".into()).category(), "Configuration");
-        assert_eq!(PluginError::MissingDependency("dep".into()).category(), "Dependency");
+        assert_eq!(
+            PluginError::InitFailed("test".into()).category(),
+            "Initialization"
+        );
+        assert_eq!(
+            PluginError::ConfigError("cfg".into()).category(),
+            "Configuration"
+        );
+        assert_eq!(
+            PluginError::MissingDependency("dep".into()).category(),
+            "Dependency"
+        );
     }
 
     // ====================================================================
@@ -1273,17 +1305,17 @@ mod tests {
         assert!(PluginEvent::Loaded.is_lifecycle());
         assert!(PluginEvent::Unloading.is_lifecycle());
         assert!(!PluginEvent::Update.is_lifecycle());
-        
+
         assert!(PluginEvent::SceneLoaded.is_scene_event());
         assert!(PluginEvent::SceneSaved.is_scene_event());
         assert!(!PluginEvent::Loaded.is_scene_event());
-        
+
         assert!(PluginEvent::EntitySelected.is_entity_event());
         assert!(PluginEvent::EntityCreated.is_entity_event());
-        
+
         assert!(PluginEvent::PlayModeEnter.is_play_mode_event());
         assert!(PluginEvent::PlayModeExit.is_play_mode_event());
-        
+
         assert!(PluginEvent::Update.is_frequent());
         assert!(!PluginEvent::Loaded.is_frequent());
     }

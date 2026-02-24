@@ -63,7 +63,10 @@ impl TargetPlatform {
     }
 
     pub fn is_desktop(&self) -> bool {
-        matches!(self, TargetPlatform::Windows | TargetPlatform::Linux | TargetPlatform::MacOS)
+        matches!(
+            self,
+            TargetPlatform::Windows | TargetPlatform::Linux | TargetPlatform::MacOS
+        )
     }
 
     pub fn is_mobile(&self) -> bool {
@@ -71,7 +74,10 @@ impl TargetPlatform {
     }
 
     pub fn is_console(&self) -> bool {
-        matches!(self, TargetPlatform::PlayStation | TargetPlatform::Xbox | TargetPlatform::NintendoSwitch)
+        matches!(
+            self,
+            TargetPlatform::PlayStation | TargetPlatform::Xbox | TargetPlatform::NintendoSwitch
+        )
     }
 
     pub fn icon(&self) -> &'static str {
@@ -184,7 +190,10 @@ impl AntialiasingMode {
     }
 
     pub fn is_msaa(&self) -> bool {
-        matches!(self, AntialiasingMode::Msaa2x | AntialiasingMode::Msaa4x | AntialiasingMode::Msaa8x)
+        matches!(
+            self,
+            AntialiasingMode::Msaa2x | AntialiasingMode::Msaa4x | AntialiasingMode::Msaa8x
+        )
     }
 }
 
@@ -454,12 +463,7 @@ impl AoMode {
     }
 
     pub fn all() -> &'static [AoMode] {
-        &[
-            AoMode::None,
-            AoMode::Ssao,
-            AoMode::Hbao,
-            AoMode::Gtao,
-        ]
+        &[AoMode::None, AoMode::Ssao, AoMode::Hbao, AoMode::Gtao]
     }
 }
 
@@ -714,7 +718,7 @@ pub enum ProjectSettingsAction {
     SetProjectVersion(String),
     SetCompanyName(String),
     SetDefaultScene(String),
-    
+
     // Rendering settings
     SetRendererBackend(RendererBackend),
     ToggleHDR(bool),
@@ -725,13 +729,13 @@ pub enum ProjectSettingsAction {
     SetGlobalIllumination(GiMode),
     SetReflectionMode(ReflectionMode),
     SetShadowMode(ShadowMode),
-    
+
     // Physics settings
     SetGravity([f32; 3]),
     SetFixedTimestep(f32),
     SetDefaultFriction(f32),
     SetDefaultRestitution(f32),
-    
+
     // Audio settings
     SetMasterVolume(f32),
     SetMusicVolume(f32),
@@ -740,35 +744,50 @@ pub enum ProjectSettingsAction {
     SetAmbientVolume(f32),
     SetMaxSimultaneousSounds(u32),
     SetAudioBackend(AudioBackend),
-    
+
     // Quality levels
     AddQualityLevel,
     RemoveQualityLevel(usize),
     SelectQualityLevel(usize),
-    SetQualityLevelName { index: usize, name: String },
+    SetQualityLevelName {
+        index: usize,
+        name: String,
+    },
     ApplyQualityLevel(usize),
-    
+
     // Input actions
     AddInputAction,
     RemoveInputAction(usize),
     SelectInputAction(usize),
-    SetInputActionName { index: usize, name: String },
-    SetInputActionKey { index: usize, key: String },
-    
+    SetInputActionName {
+        index: usize,
+        name: String,
+    },
+    SetInputActionKey {
+        index: usize,
+        key: String,
+    },
+
     // Tags and layers
     AddTag(String),
     RemoveTag(u32),
     AddLayer(String),
     RemoveLayer(u32),
-    
+
     // Build
     AddBuildConfig,
     RemoveBuildConfig(usize),
     SelectBuildConfig(usize),
-    SetBuildPlatform { index: usize, platform: TargetPlatform },
-    ToggleBuildDevelopment { index: usize, development: bool },
+    SetBuildPlatform {
+        index: usize,
+        platform: TargetPlatform,
+    },
+    ToggleBuildDevelopment {
+        index: usize,
+        development: bool,
+    },
     StartBuild(usize),
-    
+
     // General
     SaveSettings,
     LoadSettings,
@@ -793,7 +812,9 @@ impl std::fmt::Display for ProjectSettingsAction {
             Self::SetGlobalIllumination(m) => write!(f, "Set GI to {}", m),
             Self::SetReflectionMode(m) => write!(f, "Set reflections to {}", m),
             Self::SetShadowMode(m) => write!(f, "Set shadows to {}", m),
-            Self::SetGravity(g) => write!(f, "Set gravity to ({:.1}, {:.1}, {:.1})", g[0], g[1], g[2]),
+            Self::SetGravity(g) => {
+                write!(f, "Set gravity to ({:.1}, {:.1}, {:.1})", g[0], g[1], g[2])
+            }
             Self::SetFixedTimestep(t) => write!(f, "Set fixed timestep to {:.4}s", t),
             Self::SetDefaultFriction(fr) => write!(f, "Set friction to {:.2}", fr),
             Self::SetDefaultRestitution(r) => write!(f, "Set restitution to {:.2}", r),
@@ -807,13 +828,19 @@ impl std::fmt::Display for ProjectSettingsAction {
             Self::AddQualityLevel => write!(f, "Add quality level"),
             Self::RemoveQualityLevel(i) => write!(f, "Remove quality level {}", i),
             Self::SelectQualityLevel(i) => write!(f, "Select quality level {}", i),
-            Self::SetQualityLevelName { index, name } => write!(f, "Rename quality {} to '{}'", index, name),
+            Self::SetQualityLevelName { index, name } => {
+                write!(f, "Rename quality {} to '{}'", index, name)
+            }
             Self::ApplyQualityLevel(i) => write!(f, "Apply quality level {}", i),
             Self::AddInputAction => write!(f, "Add input action"),
             Self::RemoveInputAction(i) => write!(f, "Remove input action {}", i),
             Self::SelectInputAction(i) => write!(f, "Select input action {}", i),
-            Self::SetInputActionName { index, name } => write!(f, "Rename action {} to '{}'", index, name),
-            Self::SetInputActionKey { index, key } => write!(f, "Set action {} key to '{}'", index, key),
+            Self::SetInputActionName { index, name } => {
+                write!(f, "Rename action {} to '{}'", index, name)
+            }
+            Self::SetInputActionKey { index, key } => {
+                write!(f, "Set action {} key to '{}'", index, key)
+            }
             Self::AddTag(name) => write!(f, "Add tag '{}'", name),
             Self::RemoveTag(id) => write!(f, "Remove tag {}", id),
             Self::AddLayer(name) => write!(f, "Add layer '{}'", name),
@@ -823,7 +850,11 @@ impl std::fmt::Display for ProjectSettingsAction {
             Self::SelectBuildConfig(i) => write!(f, "Select build config {}", i),
             Self::SetBuildPlatform { platform, .. } => write!(f, "Set platform to {}", platform),
             Self::ToggleBuildDevelopment { development, .. } => {
-                write!(f, "Set development mode {}", if *development { "on" } else { "off" })
+                write!(
+                    f,
+                    "Set development mode {}",
+                    if *development { "on" } else { "off" }
+                )
             }
             Self::StartBuild(i) => write!(f, "Start build {}", i),
             Self::SaveSettings => write!(f, "Save settings"),
@@ -914,7 +945,7 @@ pub struct ProjectSettingsPanel {
     // Build
     build_configs: Vec<BuildConfig>,
     selected_build: usize,
-    
+
     // Action queue for external processing
     pending_actions: Vec<ProjectSettingsAction>,
 }
@@ -946,7 +977,7 @@ impl Default for ProjectSettingsPanel {
 
             build_configs: Vec::new(),
             selected_build: 0,
-            
+
             pending_actions: Vec::new(),
         };
 
@@ -959,24 +990,24 @@ impl ProjectSettingsPanel {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     // ==================== Action Queue Methods ====================
-    
+
     /// Takes all pending actions, leaving the internal queue empty
     pub fn take_actions(&mut self) -> Vec<ProjectSettingsAction> {
         std::mem::take(&mut self.pending_actions)
     }
-    
+
     /// Returns true if there are pending actions
     pub fn has_pending_actions(&self) -> bool {
         !self.pending_actions.is_empty()
     }
-    
+
     /// Queue an action for external processing
     pub fn queue_action(&mut self, action: ProjectSettingsAction) {
         self.pending_actions.push(action);
     }
-    
+
     /// Returns a reference to pending actions
     pub fn pending_actions(&self) -> &[ProjectSettingsAction] {
         &self.pending_actions
@@ -1033,39 +1064,140 @@ impl ProjectSettingsPanel {
 
         // Input actions
         self.input_actions = vec![
-            InputAction { name: "MoveForward".to_string(), primary_key: "W".to_string(), secondary_key: "Up".to_string(), gamepad_button: "LeftStick-Y+".to_string(), dead_zone: 0.1 },
-            InputAction { name: "MoveBackward".to_string(), primary_key: "S".to_string(), secondary_key: "Down".to_string(), gamepad_button: "LeftStick-Y-".to_string(), dead_zone: 0.1 },
-            InputAction { name: "MoveLeft".to_string(), primary_key: "A".to_string(), secondary_key: "Left".to_string(), gamepad_button: "LeftStick-X-".to_string(), dead_zone: 0.1 },
-            InputAction { name: "MoveRight".to_string(), primary_key: "D".to_string(), secondary_key: "Right".to_string(), gamepad_button: "LeftStick-X+".to_string(), dead_zone: 0.1 },
-            InputAction { name: "Jump".to_string(), primary_key: "Space".to_string(), secondary_key: "".to_string(), gamepad_button: "A".to_string(), dead_zone: 0.0 },
-            InputAction { name: "Attack".to_string(), primary_key: "Mouse1".to_string(), secondary_key: "".to_string(), gamepad_button: "RightTrigger".to_string(), dead_zone: 0.2 },
-            InputAction { name: "Interact".to_string(), primary_key: "E".to_string(), secondary_key: "".to_string(), gamepad_button: "X".to_string(), dead_zone: 0.0 },
+            InputAction {
+                name: "MoveForward".to_string(),
+                primary_key: "W".to_string(),
+                secondary_key: "Up".to_string(),
+                gamepad_button: "LeftStick-Y+".to_string(),
+                dead_zone: 0.1,
+            },
+            InputAction {
+                name: "MoveBackward".to_string(),
+                primary_key: "S".to_string(),
+                secondary_key: "Down".to_string(),
+                gamepad_button: "LeftStick-Y-".to_string(),
+                dead_zone: 0.1,
+            },
+            InputAction {
+                name: "MoveLeft".to_string(),
+                primary_key: "A".to_string(),
+                secondary_key: "Left".to_string(),
+                gamepad_button: "LeftStick-X-".to_string(),
+                dead_zone: 0.1,
+            },
+            InputAction {
+                name: "MoveRight".to_string(),
+                primary_key: "D".to_string(),
+                secondary_key: "Right".to_string(),
+                gamepad_button: "LeftStick-X+".to_string(),
+                dead_zone: 0.1,
+            },
+            InputAction {
+                name: "Jump".to_string(),
+                primary_key: "Space".to_string(),
+                secondary_key: "".to_string(),
+                gamepad_button: "A".to_string(),
+                dead_zone: 0.0,
+            },
+            InputAction {
+                name: "Attack".to_string(),
+                primary_key: "Mouse1".to_string(),
+                secondary_key: "".to_string(),
+                gamepad_button: "RightTrigger".to_string(),
+                dead_zone: 0.2,
+            },
+            InputAction {
+                name: "Interact".to_string(),
+                primary_key: "E".to_string(),
+                secondary_key: "".to_string(),
+                gamepad_button: "X".to_string(),
+                dead_zone: 0.0,
+            },
         ];
 
         // Tags
         self.tags = vec![
-            Tag { id: self.next_tag_id(), name: "Player".to_string(), color: Color32::from_rgb(50, 200, 50) },
-            Tag { id: self.next_tag_id(), name: "Enemy".to_string(), color: Color32::from_rgb(200, 50, 50) },
-            Tag { id: self.next_tag_id(), name: "NPC".to_string(), color: Color32::from_rgb(50, 100, 200) },
-            Tag { id: self.next_tag_id(), name: "Collectible".to_string(), color: Color32::from_rgb(200, 200, 50) },
-            Tag { id: self.next_tag_id(), name: "Interactable".to_string(), color: Color32::from_rgb(150, 100, 200) },
+            Tag {
+                id: self.next_tag_id(),
+                name: "Player".to_string(),
+                color: Color32::from_rgb(50, 200, 50),
+            },
+            Tag {
+                id: self.next_tag_id(),
+                name: "Enemy".to_string(),
+                color: Color32::from_rgb(200, 50, 50),
+            },
+            Tag {
+                id: self.next_tag_id(),
+                name: "NPC".to_string(),
+                color: Color32::from_rgb(50, 100, 200),
+            },
+            Tag {
+                id: self.next_tag_id(),
+                name: "Collectible".to_string(),
+                color: Color32::from_rgb(200, 200, 50),
+            },
+            Tag {
+                id: self.next_tag_id(),
+                name: "Interactable".to_string(),
+                color: Color32::from_rgb(150, 100, 200),
+            },
         ];
 
         // Layers
         self.layers = vec![
-            Layer { id: self.next_layer_id(), name: "Default".to_string(), collides_with: vec![1, 2, 3, 4, 5] },
-            Layer { id: self.next_layer_id(), name: "Player".to_string(), collides_with: vec![1, 2, 3, 5] },
-            Layer { id: self.next_layer_id(), name: "Enemy".to_string(), collides_with: vec![1, 2, 3, 5] },
-            Layer { id: self.next_layer_id(), name: "Trigger".to_string(), collides_with: vec![2, 3] },
-            Layer { id: self.next_layer_id(), name: "Projectile".to_string(), collides_with: vec![1, 2, 3] },
+            Layer {
+                id: self.next_layer_id(),
+                name: "Default".to_string(),
+                collides_with: vec![1, 2, 3, 4, 5],
+            },
+            Layer {
+                id: self.next_layer_id(),
+                name: "Player".to_string(),
+                collides_with: vec![1, 2, 3, 5],
+            },
+            Layer {
+                id: self.next_layer_id(),
+                name: "Enemy".to_string(),
+                collides_with: vec![1, 2, 3, 5],
+            },
+            Layer {
+                id: self.next_layer_id(),
+                name: "Trigger".to_string(),
+                collides_with: vec![2, 3],
+            },
+            Layer {
+                id: self.next_layer_id(),
+                name: "Projectile".to_string(),
+                collides_with: vec![1, 2, 3],
+            },
         ];
 
         // Build configs
         self.build_configs = vec![
-            BuildConfig { platform: TargetPlatform::Windows, enabled: true, development_build: true, ..Default::default() },
-            BuildConfig { platform: TargetPlatform::Linux, enabled: true, development_build: true, ..Default::default() },
-            BuildConfig { platform: TargetPlatform::MacOS, enabled: false, ..Default::default() },
-            BuildConfig { platform: TargetPlatform::WebAssembly, enabled: true, development_build: false, ..Default::default() },
+            BuildConfig {
+                platform: TargetPlatform::Windows,
+                enabled: true,
+                development_build: true,
+                ..Default::default()
+            },
+            BuildConfig {
+                platform: TargetPlatform::Linux,
+                enabled: true,
+                development_build: true,
+                ..Default::default()
+            },
+            BuildConfig {
+                platform: TargetPlatform::MacOS,
+                enabled: false,
+                ..Default::default()
+            },
+            BuildConfig {
+                platform: TargetPlatform::WebAssembly,
+                enabled: true,
+                development_build: false,
+                ..Default::default()
+            },
         ];
     }
 
@@ -1156,12 +1288,36 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("renderer_backend")
                         .selected_text(format!("{:?}", self.rendering_settings.renderer_backend))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Auto, "Auto");
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Vulkan, "Vulkan");
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::DirectX12, "DirectX 12");
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::Metal, "Metal");
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::OpenGL, "OpenGL");
-                            ui.selectable_value(&mut self.rendering_settings.renderer_backend, RendererBackend::WebGpu, "WebGPU");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::Auto,
+                                "Auto",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::Vulkan,
+                                "Vulkan",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::DirectX12,
+                                "DirectX 12",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::Metal,
+                                "Metal",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::OpenGL,
+                                "OpenGL",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.renderer_backend,
+                                RendererBackend::WebGpu,
+                                "WebGPU",
+                            );
                         });
                     ui.end_row();
 
@@ -1169,11 +1325,31 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("audio_backend")
                         .selected_text(format!("{:?}", self.audio_settings.audio_backend))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Auto, "Auto");
-                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Wasapi, "WASAPI");
-                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::CoreAudio, "Core Audio");
-                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::Alsa, "ALSA");
-                            ui.selectable_value(&mut self.audio_settings.audio_backend, AudioBackend::PulseAudio, "PulseAudio");
+                            ui.selectable_value(
+                                &mut self.audio_settings.audio_backend,
+                                AudioBackend::Auto,
+                                "Auto",
+                            );
+                            ui.selectable_value(
+                                &mut self.audio_settings.audio_backend,
+                                AudioBackend::Wasapi,
+                                "WASAPI",
+                            );
+                            ui.selectable_value(
+                                &mut self.audio_settings.audio_backend,
+                                AudioBackend::CoreAudio,
+                                "Core Audio",
+                            );
+                            ui.selectable_value(
+                                &mut self.audio_settings.audio_backend,
+                                AudioBackend::Alsa,
+                                "ALSA",
+                            );
+                            ui.selectable_value(
+                                &mut self.audio_settings.audio_backend,
+                                AudioBackend::PulseAudio,
+                                "PulseAudio",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1201,7 +1377,10 @@ impl ProjectSettingsPanel {
 
                     if self.rendering_settings.bloom_enabled {
                         ui.label("Bloom Intensity:");
-                        ui.add(egui::Slider::new(&mut self.rendering_settings.bloom_intensity, 0.0..=2.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.rendering_settings.bloom_intensity,
+                            0.0..=2.0,
+                        ));
                         ui.end_row();
                     }
 
@@ -1209,11 +1388,31 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("tonemapping")
                         .selected_text(format!("{:?}", self.rendering_settings.tonemapping))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::None, "None");
-                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Reinhard, "Reinhard");
-                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Aces, "ACES");
-                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::AgX, "AgX");
-                            ui.selectable_value(&mut self.rendering_settings.tonemapping, TonemappingMode::Filmic, "Filmic");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.tonemapping,
+                                TonemappingMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.tonemapping,
+                                TonemappingMode::Reinhard,
+                                "Reinhard",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.tonemapping,
+                                TonemappingMode::Aces,
+                                "ACES",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.tonemapping,
+                                TonemappingMode::AgX,
+                                "AgX",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.tonemapping,
+                                TonemappingMode::Filmic,
+                                "Filmic",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1232,10 +1431,26 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("ao_mode")
                         .selected_text(format!("{:?}", self.rendering_settings.ambient_occlusion))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::None, "None");
-                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Ssao, "SSAO");
-                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Hbao, "HBAO+");
-                            ui.selectable_value(&mut self.rendering_settings.ambient_occlusion, AoMode::Gtao, "GTAO");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.ambient_occlusion,
+                                AoMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.ambient_occlusion,
+                                AoMode::Ssao,
+                                "SSAO",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.ambient_occlusion,
+                                AoMode::Hbao,
+                                "HBAO+",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.ambient_occlusion,
+                                AoMode::Gtao,
+                                "GTAO",
+                            );
                         });
                     ui.end_row();
 
@@ -1243,10 +1458,26 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("gi_mode")
                         .selected_text(format!("{:?}", self.rendering_settings.global_illumination))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::None, "None");
-                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::ScreenSpace, "Screen Space");
-                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::Lumen, "Lumen");
-                            ui.selectable_value(&mut self.rendering_settings.global_illumination, GiMode::PathTraced, "Path Traced");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.global_illumination,
+                                GiMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.global_illumination,
+                                GiMode::ScreenSpace,
+                                "Screen Space",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.global_illumination,
+                                GiMode::Lumen,
+                                "Lumen",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.global_illumination,
+                                GiMode::PathTraced,
+                                "Path Traced",
+                            );
                         });
                     ui.end_row();
 
@@ -1254,10 +1485,26 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("reflection_mode")
                         .selected_text(format!("{:?}", self.rendering_settings.reflection_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::None, "None");
-                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::ScreenSpace, "Screen Space");
-                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::Raytraced, "Ray Traced");
-                            ui.selectable_value(&mut self.rendering_settings.reflection_mode, ReflectionMode::Hybrid, "Hybrid");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.reflection_mode,
+                                ReflectionMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.reflection_mode,
+                                ReflectionMode::ScreenSpace,
+                                "Screen Space",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.reflection_mode,
+                                ReflectionMode::Raytraced,
+                                "Ray Traced",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.reflection_mode,
+                                ReflectionMode::Hybrid,
+                                "Hybrid",
+                            );
                         });
                     ui.end_row();
 
@@ -1265,10 +1512,26 @@ impl ProjectSettingsPanel {
                     egui::ComboBox::from_id_salt("shadow_mode")
                         .selected_text(format!("{:?}", self.rendering_settings.shadow_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::None, "None");
-                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::HardShadows, "Hard");
-                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::SoftShadows, "Soft");
-                            ui.selectable_value(&mut self.rendering_settings.shadow_mode, ShadowMode::Raytraced, "Ray Traced");
+                            ui.selectable_value(
+                                &mut self.rendering_settings.shadow_mode,
+                                ShadowMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.shadow_mode,
+                                ShadowMode::HardShadows,
+                                "Hard",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.shadow_mode,
+                                ShadowMode::SoftShadows,
+                                "Soft",
+                            );
+                            ui.selectable_value(
+                                &mut self.rendering_settings.shadow_mode,
+                                ShadowMode::Raytraced,
+                                "Ray Traced",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1299,20 +1562,39 @@ impl ProjectSettingsPanel {
                     ui.end_row();
 
                     ui.label("Fixed Timestep:");
-                    ui.add(egui::DragValue::new(&mut self.physics_settings.fixed_timestep).speed(0.001).suffix("s"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.physics_settings.fixed_timestep)
+                            .speed(0.001)
+                            .suffix("s"),
+                    );
                     ui.end_row();
 
                     ui.label("Max Substeps:");
-                    ui.add(egui::Slider::new(&mut self.physics_settings.max_substeps, 1..=16));
+                    ui.add(egui::Slider::new(
+                        &mut self.physics_settings.max_substeps,
+                        1..=16,
+                    ));
                     ui.end_row();
 
                     ui.label("Broadphase:");
                     egui::ComboBox::from_id_salt("broadphase")
                         .selected_text(format!("{:?}", self.physics_settings.broadphase))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::Sap, "SAP");
-                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::DynamicAabb, "Dynamic AABB");
-                            ui.selectable_value(&mut self.physics_settings.broadphase, BroadphaseType::Quadtree, "Quadtree");
+                            ui.selectable_value(
+                                &mut self.physics_settings.broadphase,
+                                BroadphaseType::Sap,
+                                "SAP",
+                            );
+                            ui.selectable_value(
+                                &mut self.physics_settings.broadphase,
+                                BroadphaseType::DynamicAabb,
+                                "Dynamic AABB",
+                            );
+                            ui.selectable_value(
+                                &mut self.physics_settings.broadphase,
+                                BroadphaseType::Quadtree,
+                                "Quadtree",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1328,19 +1610,31 @@ impl ProjectSettingsPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Default Friction:");
-                    ui.add(egui::Slider::new(&mut self.physics_settings.default_friction, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.physics_settings.default_friction,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Default Restitution:");
-                    ui.add(egui::Slider::new(&mut self.physics_settings.default_restitution, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.physics_settings.default_restitution,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Sleep Threshold:");
-                    ui.add(egui::DragValue::new(&mut self.physics_settings.sleep_threshold).speed(0.01));
+                    ui.add(
+                        egui::DragValue::new(&mut self.physics_settings.sleep_threshold)
+                            .speed(0.01),
+                    );
                     ui.end_row();
 
                     ui.label("CCD:");
-                    ui.checkbox(&mut self.physics_settings.enable_ccd, "Enable Continuous Collision Detection");
+                    ui.checkbox(
+                        &mut self.physics_settings.enable_ccd,
+                        "Enable Continuous Collision Detection",
+                    );
                     ui.end_row();
                 });
         });
@@ -1358,23 +1652,38 @@ impl ProjectSettingsPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Master Volume:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.master_volume, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.master_volume,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Music Volume:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.music_volume, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.music_volume,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("SFX Volume:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.sfx_volume, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.sfx_volume,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Voice Volume:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.voice_volume, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.voice_volume,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Ambient Volume:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.ambient_volume, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.ambient_volume,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
                 });
         });
@@ -1389,11 +1698,17 @@ impl ProjectSettingsPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Max Simultaneous:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.max_simultaneous_sounds, 16..=256));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.max_simultaneous_sounds,
+                        16..=256,
+                    ));
                     ui.end_row();
 
                     ui.label("Doppler Factor:");
-                    ui.add(egui::Slider::new(&mut self.audio_settings.doppler_factor, 0.0..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.audio_settings.doppler_factor,
+                        0.0..=2.0,
+                    ));
                     ui.end_row();
                 });
         });
@@ -1435,7 +1750,11 @@ impl ProjectSettingsPanel {
                                 ui.text_edit_singleline(&mut action.primary_key);
                                 ui.text_edit_singleline(&mut action.secondary_key);
                                 ui.text_edit_singleline(&mut action.gamepad_button);
-                                ui.add(egui::DragValue::new(&mut action.dead_zone).speed(0.01).range(0.0..=1.0));
+                                ui.add(
+                                    egui::DragValue::new(&mut action.dead_zone)
+                                        .speed(0.01)
+                                        .range(0.0..=1.0),
+                                );
                                 ui.end_row();
                             }
                         });
@@ -1487,7 +1806,11 @@ impl ProjectSettingsPanel {
                             .selected_text(format!("{}", level.shadow_resolution))
                             .show_ui(ui, |ui| {
                                 for res in [256, 512, 1024, 2048, 4096, 8192] {
-                                    ui.selectable_value(&mut level.shadow_resolution, res, format!("{}", res));
+                                    ui.selectable_value(
+                                        &mut level.shadow_resolution,
+                                        res,
+                                        format!("{}", res),
+                                    );
                                 }
                             });
                         ui.end_row();
@@ -1500,10 +1823,26 @@ impl ProjectSettingsPanel {
                         egui::ComboBox::from_id_salt("tex_quality")
                             .selected_text(format!("{:?}", level.texture_quality))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Low, "Low");
-                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Medium, "Medium");
-                                ui.selectable_value(&mut level.texture_quality, TextureQuality::High, "High");
-                                ui.selectable_value(&mut level.texture_quality, TextureQuality::Ultra, "Ultra");
+                                ui.selectable_value(
+                                    &mut level.texture_quality,
+                                    TextureQuality::Low,
+                                    "Low",
+                                );
+                                ui.selectable_value(
+                                    &mut level.texture_quality,
+                                    TextureQuality::Medium,
+                                    "Medium",
+                                );
+                                ui.selectable_value(
+                                    &mut level.texture_quality,
+                                    TextureQuality::High,
+                                    "High",
+                                );
+                                ui.selectable_value(
+                                    &mut level.texture_quality,
+                                    TextureQuality::Ultra,
+                                    "Ultra",
+                                );
                             });
                         ui.end_row();
 
@@ -1511,13 +1850,41 @@ impl ProjectSettingsPanel {
                         egui::ComboBox::from_id_salt("aa_mode")
                             .selected_text(format!("{:?}", level.antialiasing))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::None, "None");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Fxaa, "FXAA");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Smaa, "SMAA");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Taa, "TAA");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa2x, "MSAA 2x");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa4x, "MSAA 4x");
-                                ui.selectable_value(&mut level.antialiasing, AntialiasingMode::Msaa8x, "MSAA 8x");
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::None,
+                                    "None",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Fxaa,
+                                    "FXAA",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Smaa,
+                                    "SMAA",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Taa,
+                                    "TAA",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Msaa2x,
+                                    "MSAA 2x",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Msaa4x,
+                                    "MSAA 4x",
+                                );
+                                ui.selectable_value(
+                                    &mut level.antialiasing,
+                                    AntialiasingMode::Msaa8x,
+                                    "MSAA 8x",
+                                );
                             });
                         ui.end_row();
 
@@ -1526,7 +1893,11 @@ impl ProjectSettingsPanel {
                         ui.end_row();
 
                         ui.label("Max FPS:");
-                        ui.add(egui::DragValue::new(&mut level.max_fps).speed(1).suffix(" (0=unlimited)"));
+                        ui.add(
+                            egui::DragValue::new(&mut level.max_fps)
+                                .speed(1)
+                                .suffix(" (0=unlimited)"),
+                        );
                         ui.end_row();
 
                         ui.label("LOD Bias:");
@@ -1655,9 +2026,21 @@ impl ProjectSettingsPanel {
                         egui::ComboBox::from_id_salt("compression")
                             .selected_text(format!("{:?}", config.compression))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut config.compression, CompressionMode::None, "None");
-                                ui.selectable_value(&mut config.compression, CompressionMode::Fast, "Fast");
-                                ui.selectable_value(&mut config.compression, CompressionMode::Best, "Best");
+                                ui.selectable_value(
+                                    &mut config.compression,
+                                    CompressionMode::None,
+                                    "None",
+                                );
+                                ui.selectable_value(
+                                    &mut config.compression,
+                                    CompressionMode::Fast,
+                                    "Fast",
+                                );
+                                ui.selectable_value(
+                                    &mut config.compression,
+                                    CompressionMode::Best,
+                                    "Best",
+                                );
                             });
                         ui.end_row();
                     });
@@ -2060,12 +2443,7 @@ mod tests {
 
     #[test]
     fn test_ao_mode_all_variants() {
-        let variants = [
-            AoMode::None,
-            AoMode::Ssao,
-            AoMode::Hbao,
-            AoMode::Gtao,
-        ];
+        let variants = [AoMode::None, AoMode::Ssao, AoMode::Hbao, AoMode::Gtao];
         assert_eq!(variants.len(), 4);
     }
 
@@ -2451,7 +2829,10 @@ mod tests {
     fn test_target_platform_display() {
         for platform in TargetPlatform::all() {
             let display = format!("{}", platform);
-            assert!(display.contains(platform.name()), "Display should contain name");
+            assert!(
+                display.contains(platform.name()),
+                "Display should contain name"
+            );
         }
     }
 
@@ -2830,7 +3211,7 @@ mod tests {
     fn test_project_settings_action_display_project() {
         let action = ProjectSettingsAction::SetProjectName("MyGame".to_string());
         assert!(format!("{}", action).contains("MyGame"));
-        
+
         let action = ProjectSettingsAction::SetProjectVersion("1.0.0".to_string());
         assert!(format!("{}", action).contains("1.0.0"));
     }
@@ -2839,10 +3220,10 @@ mod tests {
     fn test_project_settings_action_display_rendering() {
         let action = ProjectSettingsAction::ToggleHDR(true);
         assert!(format!("{}", action).contains("on"));
-        
+
         let action = ProjectSettingsAction::ToggleBloom(false);
         assert!(format!("{}", action).contains("off"));
-        
+
         let action = ProjectSettingsAction::SetBloomIntensity(0.75);
         assert!(format!("{}", action).contains("0.75"));
     }
@@ -2851,7 +3232,7 @@ mod tests {
     fn test_project_settings_action_display_audio() {
         let action = ProjectSettingsAction::SetMasterVolume(0.8);
         assert!(format!("{}", action).contains("80"));
-        
+
         let action = ProjectSettingsAction::SetMaxSimultaneousSounds(64);
         assert!(format!("{}", action).contains("64"));
     }
@@ -2860,7 +3241,7 @@ mod tests {
     fn test_project_settings_action_display_quality() {
         let action = ProjectSettingsAction::AddQualityLevel;
         assert!(format!("{}", action).contains("quality"));
-        
+
         let action = ProjectSettingsAction::SelectQualityLevel(2);
         assert!(format!("{}", action).contains("2"));
     }
@@ -2869,8 +3250,11 @@ mod tests {
     fn test_project_settings_action_display_input() {
         let action = ProjectSettingsAction::AddInputAction;
         assert!(format!("{}", action).contains("input"));
-        
-        let action = ProjectSettingsAction::SetInputActionKey { index: 0, key: "Space".to_string() };
+
+        let action = ProjectSettingsAction::SetInputActionKey {
+            index: 0,
+            key: "Space".to_string(),
+        };
         assert!(format!("{}", action).contains("Space"));
     }
 
@@ -2878,7 +3262,7 @@ mod tests {
     fn test_project_settings_action_display_tags_layers() {
         let action = ProjectSettingsAction::AddTag("Player".to_string());
         assert!(format!("{}", action).contains("Player"));
-        
+
         let action = ProjectSettingsAction::AddLayer("Ground".to_string());
         assert!(format!("{}", action).contains("Ground"));
     }
@@ -2887,10 +3271,10 @@ mod tests {
     fn test_project_settings_action_display_build() {
         let action = ProjectSettingsAction::StartBuild(0);
         assert!(format!("{}", action).contains("build"));
-        
-        let action = ProjectSettingsAction::SetBuildPlatform { 
-            index: 0, 
-            platform: TargetPlatform::Windows 
+
+        let action = ProjectSettingsAction::SetBuildPlatform {
+            index: 0,
+            platform: TargetPlatform::Windows,
         };
         assert!(format!("{}", action).contains("Windows"));
     }
@@ -2899,10 +3283,10 @@ mod tests {
     fn test_project_settings_action_display_general() {
         let action = ProjectSettingsAction::SaveSettings;
         assert!(format!("{}", action).contains("Save"));
-        
+
         let action = ProjectSettingsAction::LoadSettings;
         assert!(format!("{}", action).contains("Load"));
-        
+
         let action = ProjectSettingsAction::ResetToDefaults;
         assert!(format!("{}", action).contains("Reset"));
     }
@@ -2912,7 +3296,7 @@ mod tests {
         let mut panel = ProjectSettingsPanel::new();
         assert!(!panel.has_pending_actions());
         assert!(panel.pending_actions().is_empty());
-        
+
         panel.queue_action(ProjectSettingsAction::SaveSettings);
         assert!(panel.has_pending_actions());
         assert_eq!(panel.pending_actions().len(), 1);
@@ -2923,7 +3307,7 @@ mod tests {
         let mut panel = ProjectSettingsPanel::new();
         panel.queue_action(ProjectSettingsAction::SetProjectName("Test".to_string()));
         panel.queue_action(ProjectSettingsAction::ToggleHDR(true));
-        
+
         let actions = panel.take_actions();
         assert_eq!(actions.len(), 2);
         assert!(!panel.has_pending_actions());
@@ -2935,10 +3319,16 @@ mod tests {
         panel.queue_action(ProjectSettingsAction::SetMasterVolume(0.5));
         panel.queue_action(ProjectSettingsAction::SetMusicVolume(0.7));
         panel.queue_action(ProjectSettingsAction::SetSfxVolume(1.0));
-        
+
         let actions = panel.take_actions();
-        assert!(matches!(actions[0], ProjectSettingsAction::SetMasterVolume(_)));
-        assert!(matches!(actions[1], ProjectSettingsAction::SetMusicVolume(_)));
+        assert!(matches!(
+            actions[0],
+            ProjectSettingsAction::SetMasterVolume(_)
+        ));
+        assert!(matches!(
+            actions[1],
+            ProjectSettingsAction::SetMusicVolume(_)
+        ));
         assert!(matches!(actions[2], ProjectSettingsAction::SetSfxVolume(_)));
     }
 
@@ -2947,7 +3337,7 @@ mod tests {
         let action = ProjectSettingsAction::SetGravity([0.0, -9.81, 0.0]);
         let display = format!("{}", action);
         assert!(display.contains("-9.8"));
-        
+
         let action = ProjectSettingsAction::SetFixedTimestep(0.0166);
         assert!(format!("{}", action).contains("0.016"));
     }
@@ -2957,7 +3347,7 @@ mod tests {
         let a1 = ProjectSettingsAction::SetProjectName("A".to_string());
         let a2 = ProjectSettingsAction::SetProjectName("A".to_string());
         let a3 = ProjectSettingsAction::SetProjectName("B".to_string());
-        
+
         assert_eq!(a1, a2);
         assert_ne!(a1, a3);
     }

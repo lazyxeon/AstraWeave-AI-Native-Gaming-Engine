@@ -3,12 +3,12 @@
 //!         EnvironmentPreset, WorldEventType, WeatherSettings,
 //!         LogLevel, LogEntry, ConsolePanel, SceneStatsPanel
 
+use aw_editor_lib::panels::console_panel::{ConsolePanel, LogEntry, LogLevel};
+use aw_editor_lib::panels::scene_stats_panel::{SceneStats, SceneStatsPanel};
 use aw_editor_lib::panels::world_panel::{
     EnvironmentPreset, LightingSettings, TimePreset, TimeSettings, WeatherSettings, WeatherType,
     WorldBounds, WorldEvent, WorldEventType,
 };
-use aw_editor_lib::panels::console_panel::{ConsolePanel, LogEntry, LogLevel};
-use aw_editor_lib::panels::scene_stats_panel::{SceneStats, SceneStatsPanel};
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // WEATHER TYPE
@@ -52,7 +52,12 @@ fn weather_type_description_non_empty() {
 fn weather_type_ambient_modifier_range() {
     for w in WeatherType::all() {
         let m = w.ambient_modifier();
-        assert!(m > 0.0 && m <= 1.0, "{:?} ambient_modifier {} out of range", w, m);
+        assert!(
+            m > 0.0 && m <= 1.0,
+            "{:?} ambient_modifier {} out of range",
+            w,
+            m
+        );
     }
 }
 

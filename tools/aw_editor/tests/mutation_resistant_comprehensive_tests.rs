@@ -139,7 +139,11 @@ fn editor_mode_action_verb_exact() {
 #[test]
 fn editor_mode_description_not_empty() {
     for m in EditorMode::all() {
-        assert!(!m.description().is_empty(), "mode {:?} has empty description", m);
+        assert!(
+            !m.description().is_empty(),
+            "mode {:?} has empty description",
+            m
+        );
     }
 }
 
@@ -153,7 +157,12 @@ fn editor_mode_display_matches_status_text() {
 #[test]
 fn editor_mode_self_transition_allowed() {
     for m in EditorMode::all() {
-        assert!(m.can_transition_to(m), "{:?} → {:?} should be allowed", m, m);
+        assert!(
+            m.can_transition_to(m),
+            "{:?} → {:?} should be allowed",
+            m,
+            m
+        );
     }
 }
 
@@ -275,7 +284,10 @@ fn runtime_issue_corrupted_is_critical() {
 
 #[test]
 fn runtime_issue_frame_time_is_performance() {
-    let issue = RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 };
+    let issue = RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33,
+    };
     assert!(issue.is_performance_issue());
     assert!(!issue.is_critical());
     assert!(issue.is_recoverable());
@@ -283,14 +295,20 @@ fn runtime_issue_frame_time_is_performance() {
 
 #[test]
 fn runtime_issue_low_fps_is_performance() {
-    let issue = RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 };
+    let issue = RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30,
+    };
     assert!(issue.is_performance_issue());
     assert!(issue.is_recoverable());
 }
 
 #[test]
 fn runtime_issue_entity_mismatch_is_data() {
-    let issue = RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 };
+    let issue = RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95,
+    };
     assert!(issue.is_data_issue());
     assert!(issue.is_recoverable());
     assert!(!issue.is_critical());
@@ -326,7 +344,9 @@ fn gizmo_mode_inactive_not_active() {
 
 #[test]
 fn gizmo_mode_translate_is_active() {
-    let m = GizmoMode::Translate { constraint: AxisConstraint::None };
+    let m = GizmoMode::Translate {
+        constraint: AxisConstraint::None,
+    };
     assert!(m.is_active());
     assert!(m.is_translate());
     assert!(!m.is_rotate());
@@ -335,14 +355,19 @@ fn gizmo_mode_translate_is_active() {
 
 #[test]
 fn gizmo_mode_rotate_is_active() {
-    let m = GizmoMode::Rotate { constraint: AxisConstraint::None };
+    let m = GizmoMode::Rotate {
+        constraint: AxisConstraint::None,
+    };
     assert!(m.is_active());
     assert!(m.is_rotate());
 }
 
 #[test]
 fn gizmo_mode_scale_is_active() {
-    let m = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+    let m = GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: false,
+    };
     assert!(m.is_active());
     assert!(m.is_scale());
 }
@@ -350,25 +375,82 @@ fn gizmo_mode_scale_is_active() {
 #[test]
 fn gizmo_mode_name_exact() {
     assert_eq!(GizmoMode::Inactive.name(), "Inactive");
-    assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::X }.name(), "Translate");
-    assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.name(), "Rotate");
-    assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: true }.name(), "Scale");
+    assert_eq!(
+        GizmoMode::Translate {
+            constraint: AxisConstraint::X
+        }
+        .name(),
+        "Translate"
+    );
+    assert_eq!(
+        GizmoMode::Rotate {
+            constraint: AxisConstraint::Y
+        }
+        .name(),
+        "Rotate"
+    );
+    assert_eq!(
+        GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: true
+        }
+        .name(),
+        "Scale"
+    );
 }
 
 #[test]
 fn gizmo_mode_icon_exact() {
     assert_eq!(GizmoMode::Inactive.icon(), "⏸");
-    assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::None }.icon(), "↔");
-    assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::None }.icon(), "↻");
-    assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.icon(), "⇲");
+    assert_eq!(
+        GizmoMode::Translate {
+            constraint: AxisConstraint::None
+        }
+        .icon(),
+        "↔"
+    );
+    assert_eq!(
+        GizmoMode::Rotate {
+            constraint: AxisConstraint::None
+        }
+        .icon(),
+        "↻"
+    );
+    assert_eq!(
+        GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false
+        }
+        .icon(),
+        "⇲"
+    );
 }
 
 #[test]
 fn gizmo_mode_shortcut() {
     assert_eq!(GizmoMode::Inactive.shortcut(), None);
-    assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::None }.shortcut(), Some("G"));
-    assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::None }.shortcut(), Some("R"));
-    assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.shortcut(), Some("S"));
+    assert_eq!(
+        GizmoMode::Translate {
+            constraint: AxisConstraint::None
+        }
+        .shortcut(),
+        Some("G")
+    );
+    assert_eq!(
+        GizmoMode::Rotate {
+            constraint: AxisConstraint::None
+        }
+        .shortcut(),
+        Some("R")
+    );
+    assert_eq!(
+        GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false
+        }
+        .shortcut(),
+        Some("S")
+    );
 }
 
 #[test]
@@ -378,7 +460,9 @@ fn gizmo_mode_constraint_inactive_none() {
 
 #[test]
 fn gizmo_mode_constraint_translate_x() {
-    let m = GizmoMode::Translate { constraint: AxisConstraint::X };
+    let m = GizmoMode::Translate {
+        constraint: AxisConstraint::X,
+    };
     assert_eq!(m.constraint(), Some(AxisConstraint::X));
 }
 
@@ -394,7 +478,12 @@ fn gizmo_mode_display_inactive() {
 
 #[test]
 fn gizmo_mode_display_translate_free() {
-    let s = format!("{}", GizmoMode::Translate { constraint: AxisConstraint::None });
+    let s = format!(
+        "{}",
+        GizmoMode::Translate {
+            constraint: AxisConstraint::None
+        }
+    );
     assert!(s.contains("Translate"), "display={}", s);
     assert!(s.contains("Free"), "display={}", s);
 }
@@ -488,27 +577,42 @@ fn axis_constraint_is_single_axis() {
 
 #[test]
 fn axis_constraint_cycle_none_to_x() {
-    assert_eq!(AxisConstraint::None.cycle(AxisConstraint::X), AxisConstraint::X);
+    assert_eq!(
+        AxisConstraint::None.cycle(AxisConstraint::X),
+        AxisConstraint::X
+    );
 }
 
 #[test]
 fn axis_constraint_cycle_x_to_yz_plane() {
-    assert_eq!(AxisConstraint::X.cycle(AxisConstraint::X), AxisConstraint::YZ);
+    assert_eq!(
+        AxisConstraint::X.cycle(AxisConstraint::X),
+        AxisConstraint::YZ
+    );
 }
 
 #[test]
 fn axis_constraint_cycle_y_to_xz_plane() {
-    assert_eq!(AxisConstraint::Y.cycle(AxisConstraint::Y), AxisConstraint::XZ);
+    assert_eq!(
+        AxisConstraint::Y.cycle(AxisConstraint::Y),
+        AxisConstraint::XZ
+    );
 }
 
 #[test]
 fn axis_constraint_cycle_z_to_xy_plane() {
-    assert_eq!(AxisConstraint::Z.cycle(AxisConstraint::Z), AxisConstraint::XY);
+    assert_eq!(
+        AxisConstraint::Z.cycle(AxisConstraint::Z),
+        AxisConstraint::XY
+    );
 }
 
 #[test]
 fn axis_constraint_cycle_yz_back_to_none() {
-    assert_eq!(AxisConstraint::YZ.cycle(AxisConstraint::X), AxisConstraint::None);
+    assert_eq!(
+        AxisConstraint::YZ.cycle(AxisConstraint::X),
+        AxisConstraint::None
+    );
 }
 
 #[test]
@@ -590,7 +694,10 @@ fn snapping_snap_position_half_grid() {
 
 #[test]
 fn snapping_snap_position_disabled_no_change() {
-    let c = SnappingConfig { grid_enabled: false, ..Default::default() };
+    let c = SnappingConfig {
+        grid_enabled: false,
+        ..Default::default()
+    };
     let pos = Vec3::new(1.7, 2.3, -0.4);
     assert_eq!(c.snap_position(pos), pos);
 }
@@ -606,7 +713,10 @@ fn snapping_snap_angle_rounds_to_15_deg() {
 
 #[test]
 fn snapping_snap_angle_disabled_no_change() {
-    let c = SnappingConfig { angle_enabled: false, ..Default::default() };
+    let c = SnappingConfig {
+        angle_enabled: false,
+        ..Default::default()
+    };
     let angle = 23.0_f32.to_radians();
     assert_eq!(c.snap_angle(angle), angle);
 }

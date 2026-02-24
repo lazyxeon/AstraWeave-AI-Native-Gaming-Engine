@@ -686,21 +686,15 @@ mod tests {
     fn test_custom_colors_to_visuals() {
         let colors = CustomColors::default();
         let visuals = colors.to_visuals();
-        
-        assert_eq!(
-            visuals.extreme_bg_color,
-            Color32::from_rgb(30, 30, 30)
-        );
-        assert_eq!(
-            visuals.panel_fill,
-            Color32::from_rgb(40, 40, 40)
-        );
+
+        assert_eq!(visuals.extreme_bg_color, Color32::from_rgb(30, 30, 30));
+        assert_eq!(visuals.panel_fill, Color32::from_rgb(40, 40, 40));
     }
 
     #[test]
     fn test_custom_colors_color32_fields() {
         let colors = CustomColors::default();
-        
+
         assert_eq!(colors.color32("background"), Color32::from_rgb(30, 30, 30));
         assert_eq!(colors.color32("panel_fill"), Color32::from_rgb(40, 40, 40));
         assert_eq!(colors.color32("text"), Color32::from_rgb(220, 220, 220));
@@ -754,12 +748,30 @@ mod tests {
 
     #[test]
     fn test_layout_preset_descriptions() {
-        assert_eq!(LayoutPreset::Default.description(), "Balanced layout for general editing");
-        assert_eq!(LayoutPreset::Modeling.description(), "Maximized viewport, minimal panels");
-        assert_eq!(LayoutPreset::Animation.description(), "Timeline visible, animation panels open");
-        assert_eq!(LayoutPreset::Scripting.description(), "Behavior graph editor prominent");
-        assert_eq!(LayoutPreset::Debugging.description(), "Console, profiler, and inspector expanded");
-        assert_eq!(LayoutPreset::Compact.description(), "Minimal UI for small screens");
+        assert_eq!(
+            LayoutPreset::Default.description(),
+            "Balanced layout for general editing"
+        );
+        assert_eq!(
+            LayoutPreset::Modeling.description(),
+            "Maximized viewport, minimal panels"
+        );
+        assert_eq!(
+            LayoutPreset::Animation.description(),
+            "Timeline visible, animation panels open"
+        );
+        assert_eq!(
+            LayoutPreset::Scripting.description(),
+            "Behavior graph editor prominent"
+        );
+        assert_eq!(
+            LayoutPreset::Debugging.description(),
+            "Console, profiler, and inspector expanded"
+        );
+        assert_eq!(
+            LayoutPreset::Compact.description(),
+            "Minimal UI for small screens"
+        );
     }
 
     #[test]
@@ -805,25 +817,53 @@ mod tests {
         let state = LayoutState::for_preset(LayoutPreset::Animation);
         assert_eq!(state.bottom_panel_height, 300.0);
         assert!(state.bottom_panel_visible);
-        assert!(state.expanded_sections.get("Animation").copied().unwrap_or(false));
-        assert!(state.expanded_sections.get("Timeline").copied().unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Animation")
+            .copied()
+            .unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Timeline")
+            .copied()
+            .unwrap_or(false));
     }
 
     #[test]
     fn test_layout_state_for_preset_scripting() {
         let state = LayoutState::for_preset(LayoutPreset::Scripting);
         assert_eq!(state.left_panel_width, 350.0);
-        assert!(state.expanded_sections.get("Behavior Graph").copied().unwrap_or(false));
-        assert!(state.expanded_sections.get("Console").copied().unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Behavior Graph")
+            .copied()
+            .unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Console")
+            .copied()
+            .unwrap_or(false));
     }
 
     #[test]
     fn test_layout_state_for_preset_debugging() {
         let state = LayoutState::for_preset(LayoutPreset::Debugging);
         assert_eq!(state.right_panel_width, 400.0);
-        assert!(state.expanded_sections.get("Console").copied().unwrap_or(false));
-        assert!(state.expanded_sections.get("Profiler").copied().unwrap_or(false));
-        assert!(state.expanded_sections.get("Inspector").copied().unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Console")
+            .copied()
+            .unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Profiler")
+            .copied()
+            .unwrap_or(false));
+        assert!(state
+            .expanded_sections
+            .get("Inspector")
+            .copied()
+            .unwrap_or(false));
     }
 
     #[test]
@@ -892,7 +932,10 @@ mod tests {
     #[test]
     fn test_editor_preferences_config_path() {
         let path = EditorPreferences::config_path();
-        assert_eq!(path.file_name().unwrap().to_str().unwrap(), "editor_preferences.toml");
+        assert_eq!(
+            path.file_name().unwrap().to_str().unwrap(),
+            "editor_preferences.toml"
+        );
     }
 
     // === ThemeManagerPanel Tests ===
@@ -921,28 +964,32 @@ mod tests {
     fn test_theme_manager_preferences_mut_marks_unsaved() {
         let mut panel = ThemeManagerPanel::new();
         assert!(!panel.unsaved_changes);
-        
+
         let _ = panel.preferences_mut();
-        
+
         assert!(panel.unsaved_changes);
     }
 
     #[test]
     fn test_theme_manager_set_layout_preset() {
         let mut panel = ThemeManagerPanel::new();
-        
+
         panel.set_layout_preset(LayoutPreset::Animation);
-        
+
         assert_eq!(panel.preferences.layout_preset, LayoutPreset::Animation);
         assert!(panel.unsaved_changes);
         // Layout state should be updated to match preset
-        assert!(panel.preferences.layout_state.expanded_sections.contains_key("Animation"));
+        assert!(panel
+            .preferences
+            .layout_state
+            .expanded_sections
+            .contains_key("Animation"));
     }
 
     #[test]
     fn test_theme_manager_set_all_layout_presets() {
         let mut panel = ThemeManagerPanel::new();
-        
+
         for preset in LayoutPreset::ALL {
             panel.set_layout_preset(preset);
             assert_eq!(panel.preferences.layout_preset, preset);
@@ -1016,19 +1063,19 @@ mod tests {
     #[test]
     fn test_full_workflow() {
         let mut panel = ThemeManagerPanel::new();
-        
+
         // Change theme
         panel.preferences_mut().theme = EditorTheme::Light;
         assert!(panel.unsaved_changes);
-        
+
         // Change layout
         panel.set_layout_preset(LayoutPreset::Scripting);
         assert_eq!(panel.preferences.layout_preset, LayoutPreset::Scripting);
-        
+
         // Change font size
         panel.preferences_mut().font_size = 18.0;
         assert_eq!(panel.preferences.font_size, 18.0);
-        
+
         // Toggle animations
         panel.preferences_mut().animations_enabled = false;
         assert!(!panel.preferences.animations_enabled);
@@ -1037,14 +1084,14 @@ mod tests {
     #[test]
     fn test_custom_theme_workflow() {
         let mut panel = ThemeManagerPanel::new();
-        
+
         // Switch to custom theme
         panel.preferences_mut().theme = EditorTheme::Custom;
-        
+
         // Modify custom colors
         panel.preferences_mut().custom_colors.background = [50, 50, 50];
         panel.preferences_mut().custom_colors.accent = [255, 100, 100];
-        
+
         assert_eq!(panel.preferences.custom_colors.background, [50, 50, 50]);
         assert_eq!(panel.preferences.custom_colors.accent, [255, 100, 100]);
     }
@@ -1157,4 +1204,3 @@ mod tests {
         assert!(LayoutPreset::Compact.is_minimal());
     }
 }
-

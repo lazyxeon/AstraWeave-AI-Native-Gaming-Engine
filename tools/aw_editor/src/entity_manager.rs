@@ -115,14 +115,21 @@ impl EntityMaterial {
     pub fn summary(&self) -> String {
         format!(
             "{}: M={:.1} R={:.1} {} textures",
-            self.name, self.metallic, self.roughness, self.texture_slots.len()
+            self.name,
+            self.metallic,
+            self.roughness,
+            self.texture_slots.len()
         )
     }
 }
 
 impl std::fmt::Display for EntityMaterial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} (M:{:.1}, R:{:.1})", self.name, self.metallic, self.roughness)
+        write!(
+            f,
+            "{} (M:{:.1}, R:{:.1})",
+            self.name, self.metallic, self.roughness
+        )
     }
 }
 
@@ -459,12 +466,17 @@ impl EntityManager {
             }
             result.error_count += validation.errors.len();
             result.warning_count += validation.warnings.len();
-            
+
             for error in validation.errors {
-                result.issues.push(format!("Entity {} '{}': {}", id, entity.name, error));
+                result
+                    .issues
+                    .push(format!("Entity {} '{}': {}", id, entity.name, error));
             }
             for warning in validation.warnings {
-                result.issues.push(format!("Entity {} '{}' [warn]: {}", id, entity.name, warning));
+                result.issues.push(format!(
+                    "Entity {} '{}' [warn]: {}",
+                    id, entity.name, warning
+                ));
             }
         }
 
@@ -486,9 +498,12 @@ impl EntityManager {
         self.entities
             .iter()
             .filter(|(_, e)| {
-                e.position.x >= min.x && e.position.x <= max.x
-                    && e.position.y >= min.y && e.position.y <= max.y
-                    && e.position.z >= min.z && e.position.z <= max.z
+                e.position.x >= min.x
+                    && e.position.x <= max.x
+                    && e.position.y >= min.y
+                    && e.position.y <= max.y
+                    && e.position.z >= min.z
+                    && e.position.z <= max.z
             })
             .map(|(id, _)| *id)
             .collect()
@@ -499,8 +514,16 @@ impl EntityManager {
         EntityManagerStats {
             total_entities: self.entities.len(),
             with_mesh: self.entities.values().filter(|e| e.mesh.is_some()).count(),
-            with_textures: self.entities.values().filter(|e| e.material.has_textures()).count(),
-            with_components: self.entities.values().filter(|e| !e.components.is_empty()).count(),
+            with_textures: self
+                .entities
+                .values()
+                .filter(|e| e.material.has_textures())
+                .count(),
+            with_components: self
+                .entities
+                .values()
+                .filter(|e| !e.components.is_empty())
+                .count(),
             next_id: self.next_id,
         }
     }
@@ -534,7 +557,8 @@ impl EntityManagerValidation {
 
     /// Get count of valid entities
     pub fn valid_count(&self) -> usize {
-        self.total_entities.saturating_sub(self.invalid_entities.len())
+        self.total_entities
+            .saturating_sub(self.invalid_entities.len())
     }
 
     /// Get validation success rate as percentage
@@ -937,7 +961,7 @@ mod tests {
     fn test_material_texture_management() {
         let mut entity = EditorEntity::new(1, "Test".to_string());
         let path = PathBuf::from("path/to/texture.png");
-        
+
         // Initial state
         assert!(!entity.material.has_textures());
         assert!(entity.material.get_texture(MaterialSlot::Albedo).is_none());
@@ -945,7 +969,10 @@ mod tests {
         // Set texture
         entity.set_texture(MaterialSlot::Albedo, path.clone());
         assert!(entity.material.has_textures());
-        assert_eq!(entity.material.get_texture(MaterialSlot::Albedo), Some(&path));
+        assert_eq!(
+            entity.material.get_texture(MaterialSlot::Albedo),
+            Some(&path)
+        );
 
         // Clear texture
         entity.material.clear_texture(MaterialSlot::Albedo);
@@ -956,13 +983,13 @@ mod tests {
     #[test]
     fn test_entity_transform_getters_setters() {
         let mut entity = EditorEntity::new(1, "Test".to_string());
-        
+
         let pos = Vec3::new(1.0, 2.0, 3.0);
         let rot = Quat::IDENTITY;
         let scale = Vec3::splat(2.0);
 
         entity.set_transform(pos, rot, scale);
-        
+
         let (p, r, s) = entity.transform();
         assert_eq!(p, pos);
         assert_eq!(r, rot);
@@ -972,7 +999,7 @@ mod tests {
     #[test]
     fn test_entity_manager_crud() {
         let mut manager = EntityManager::new();
-        
+
         // Create
         let id1 = manager.create("E1".to_string());
         let id2 = manager.create("E2".to_string());
@@ -1000,21 +1027,21 @@ mod tests {
         let mut manager = EntityManager::new();
         let id1 = manager.create("E1".to_string());
         assert_eq!(id1, 1);
-        
+
         manager.clear();
         assert_eq!(manager.count(), 0);
         assert!(manager.entities.is_empty());
-        
+
         // Next ID should be reset to 1
         let id2 = manager.create("E2".to_string());
-        assert_eq!(id2, 1); 
+        assert_eq!(id2, 1);
     }
 
     #[test]
     fn test_selection_range_invalid() {
         let mut selection = SelectionSet::new();
         let all_ids = vec![1, 2, 3];
-        
+
         // Try to select range with invalid IDs
         selection.select_range(1, 99, &all_ids);
         assert!(selection.is_empty()); // Should do nothing
@@ -1033,7 +1060,7 @@ mod tests {
 
         assert_eq!(entity.components.len(), 1);
         assert!(entity.components.contains_key("Stats"));
-        
+
         let stats = entity.components.get("Stats").unwrap();
         assert_eq!(stats["health"], 100);
     }
@@ -1066,7 +1093,7 @@ mod tests {
     fn test_entity_validation_invalid_scale() {
         let mut entity = EditorEntity::new(1, "BadScale".to_string());
         entity.scale = Vec3::new(0.0, 1.0, 1.0); // X is invalid
-        
+
         let validation = entity.validate();
         assert!(!validation.is_valid);
         assert!(!validation.errors.is_empty());
@@ -1078,10 +1105,13 @@ mod tests {
     fn test_entity_validation_nan_position() {
         let mut entity = EditorEntity::new(1, "NaNPosition".to_string());
         entity.position = Vec3::new(f32::NAN, 0.0, 0.0);
-        
+
         let validation = entity.validate();
         assert!(!validation.is_valid);
-        assert!(validation.errors.iter().any(|e| e.contains("Position") && e.contains("NaN")));
+        assert!(validation
+            .errors
+            .iter()
+            .any(|e| e.contains("Position") && e.contains("NaN")));
     }
 
     #[test]
@@ -1089,21 +1119,24 @@ mod tests {
         let mut entity = EditorEntity::new(1, "BadRotation".to_string());
         // Create unnormalized quaternion (length != 1)
         entity.rotation = Quat::from_xyzw(1.0, 1.0, 1.0, 1.0); // Length = 2
-        
+
         let validation = entity.validate();
         assert!(validation.is_valid); // Unnormalized is a warning
-        assert!(validation.warnings.iter().any(|w| w.contains("not normalized")));
+        assert!(validation
+            .warnings
+            .iter()
+            .any(|w| w.contains("not normalized")));
     }
 
     // ====================================================================
-    // EntityManagerValidation Tests  
+    // EntityManagerValidation Tests
     // ====================================================================
 
     #[test]
     fn test_manager_validate_all_empty() {
         let manager = EntityManager::new();
         let validation = manager.validate_all();
-        
+
         assert_eq!(validation.total_entities, 0);
         assert!(validation.all_valid());
         assert_eq!(validation.error_count, 0);
@@ -1116,9 +1149,9 @@ mod tests {
         manager.create("E1".to_string());
         manager.create("E2".to_string());
         manager.create("E3".to_string());
-        
+
         let validation = manager.validate_all();
-        
+
         assert_eq!(validation.total_entities, 3);
         assert!(validation.all_valid());
         assert!(validation.invalid_entities.is_empty());
@@ -1129,14 +1162,14 @@ mod tests {
         let mut manager = EntityManager::new();
         let good_id = manager.create("GoodEntity".to_string());
         let bad_id = manager.create("BadEntity".to_string());
-        
+
         // Make one entity invalid
         if let Some(bad_entity) = manager.get_mut(bad_id) {
             bad_entity.scale = Vec3::ZERO;
         }
-        
+
         let validation = manager.validate_all();
-        
+
         assert_eq!(validation.total_entities, 2);
         assert!(!validation.all_valid());
         assert_eq!(validation.invalid_entities.len(), 1);
@@ -1154,7 +1187,7 @@ mod tests {
         let id1 = manager.create("Player".to_string());
         let _id2 = manager.create("Enemy".to_string());
         let _id3 = manager.create("Wall".to_string());
-        
+
         let results = manager.find_by_name("Player");
         assert_eq!(results.len(), 1);
         assert!(results.contains(&id1));
@@ -1164,11 +1197,11 @@ mod tests {
     fn test_find_by_name_case_insensitive() {
         let mut manager = EntityManager::new();
         let id1 = manager.create("PlayerCharacter".to_string());
-        
+
         let results = manager.find_by_name("player");
         assert_eq!(results.len(), 1);
         assert!(results.contains(&id1));
-        
+
         let results = manager.find_by_name("PLAYER");
         assert_eq!(results.len(), 1);
         assert!(results.contains(&id1));
@@ -1180,7 +1213,7 @@ mod tests {
         let id1 = manager.create("Enemy_Soldier".to_string());
         let id2 = manager.create("Enemy_Tank".to_string());
         let _id3 = manager.create("Player".to_string());
-        
+
         let results = manager.find_by_name("Enemy");
         assert_eq!(results.len(), 2);
         assert!(results.contains(&id1));
@@ -1192,7 +1225,7 @@ mod tests {
         let mut manager = EntityManager::new();
         manager.create("Entity1".to_string());
         manager.create("Entity2".to_string());
-        
+
         let results = manager.find_by_name("NotFound");
         assert!(results.is_empty());
     }
@@ -1206,17 +1239,14 @@ mod tests {
         let mut manager = EntityManager::new();
         let id1 = manager.create("InRegion".to_string());
         let id2 = manager.create("OutRegion".to_string());
-        
+
         // Place id1 inside region
         manager.update_position(id1, Vec3::new(5.0, 5.0, 5.0));
         // Place id2 outside region
         manager.update_position(id2, Vec3::new(100.0, 100.0, 100.0));
-        
-        let results = manager.find_in_region(
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(10.0, 10.0, 10.0),
-        );
-        
+
+        let results = manager.find_in_region(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
+
         assert_eq!(results.len(), 1);
         assert!(results.contains(&id1));
     }
@@ -1225,15 +1255,12 @@ mod tests {
     fn test_find_in_region_boundary() {
         let mut manager = EntityManager::new();
         let id1 = manager.create("OnBoundary".to_string());
-        
+
         // Place exactly on boundary
         manager.update_position(id1, Vec3::new(10.0, 10.0, 10.0));
-        
-        let results = manager.find_in_region(
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(10.0, 10.0, 10.0),
-        );
-        
+
+        let results = manager.find_in_region(Vec3::new(0.0, 0.0, 0.0), Vec3::new(10.0, 10.0, 10.0));
+
         assert_eq!(results.len(), 1); // Should include boundary
     }
 
@@ -1242,12 +1269,12 @@ mod tests {
         let mut manager = EntityManager::new();
         manager.create("Entity".to_string());
         // Entity is at origin by default
-        
+
         let results = manager.find_in_region(
             Vec3::new(100.0, 100.0, 100.0),
             Vec3::new(200.0, 200.0, 200.0),
         );
-        
+
         assert!(results.is_empty());
     }
 
@@ -1259,7 +1286,7 @@ mod tests {
     fn test_manager_stats_empty() {
         let manager = EntityManager::new();
         let stats = manager.stats();
-        
+
         assert_eq!(stats.total_entities, 0);
         assert_eq!(stats.with_mesh, 0);
         assert_eq!(stats.with_textures, 0);
@@ -1274,24 +1301,25 @@ mod tests {
         let id2 = manager.create("WithTexture".to_string());
         let id3 = manager.create("WithComponent".to_string());
         let _id4 = manager.create("Plain".to_string());
-        
+
         // Add mesh to id1
         if let Some(e) = manager.get_mut(id1) {
             e.mesh = Some("mesh.obj".to_string());
         }
-        
+
         // Add texture to id2
         if let Some(e) = manager.get_mut(id2) {
             e.set_texture(MaterialSlot::Albedo, PathBuf::from("texture.png"));
         }
-        
+
         // Add component to id3
         if let Some(e) = manager.get_mut(id3) {
-            e.components.insert("Health".to_string(), serde_json::json!({"value": 100}));
+            e.components
+                .insert("Health".to_string(), serde_json::json!({"value": 100}));
         }
-        
+
         let stats = manager.stats();
-        
+
         assert_eq!(stats.total_entities, 4);
         assert_eq!(stats.with_mesh, 1);
         assert_eq!(stats.with_textures, 1);
@@ -1354,10 +1382,12 @@ mod tests {
         let _id4 = manager.create("NoComp2".to_string());
 
         if let Some(e) = manager.get_mut(id1) {
-            e.components.insert("Test".to_string(), serde_json::json!(1));
+            e.components
+                .insert("Test".to_string(), serde_json::json!(1));
         }
         if let Some(e) = manager.get_mut(id2) {
-            e.components.insert("Test".to_string(), serde_json::json!(2));
+            e.components
+                .insert("Test".to_string(), serde_json::json!(2));
         }
 
         let stats = manager.stats();
@@ -1439,8 +1469,8 @@ mod tests {
         let id = manager.create("Bad".to_string());
 
         if let Some(e) = manager.get_mut(id) {
-            e.scale = Vec3::ZERO;  // Error
-            e.name = "".to_string();  // Warning
+            e.scale = Vec3::ZERO; // Error
+            e.name = "".to_string(); // Warning
         }
 
         let validation = manager.validate_all();
@@ -1523,7 +1553,7 @@ mod tests {
     fn test_entity_material_is_rough() {
         let mat = EntityMaterial::new();
         assert!(!mat.is_rough()); // Default roughness is 0.5
-        
+
         let mut rough_mat = EntityMaterial::new();
         rough_mat.roughness = 0.9;
         assert!(rough_mat.is_rough());
@@ -1533,7 +1563,7 @@ mod tests {
     fn test_entity_material_is_emissive() {
         let mat = EntityMaterial::new();
         assert!(!mat.is_emissive());
-        
+
         let mut emissive_mat = EntityMaterial::new();
         emissive_mat.emissive = Vec3::new(1.0, 0.5, 0.0);
         assert!(emissive_mat.is_emissive());
@@ -1610,7 +1640,7 @@ mod tests {
     fn test_entity_validation_summary() {
         let valid = EntityValidation::valid();
         assert_eq!(valid.summary(), "Valid");
-        
+
         let mut with_warn = EntityValidation::valid();
         with_warn.add_warning("w");
         assert!(with_warn.summary().contains("warning"));
@@ -1620,7 +1650,7 @@ mod tests {
     fn test_entity_validation_display() {
         let valid = EntityValidation::valid();
         assert!(format!("{}", valid).contains("Valid"));
-        
+
         let mut invalid = EntityValidation::valid();
         invalid.add_error("e");
         assert!(format!("{}", invalid).contains("error"));

@@ -4,9 +4,7 @@
 //!         ReadinessLevel, ChecklistItem, AssetChecklist, AssetStoreCategory, ReadyAsset,
 //!         GraphType, NodeTemplate, GraphStats, TransformPanel
 
-use aw_editor_lib::panels::theme_manager::{
-    CustomColors, EditorPreferences, EditorTheme, LayoutPreset, LayoutState,
-};
+use aw_editor_lib::panels::graph_panel::{GraphType, NodeTemplate};
 use aw_editor_lib::panels::polish_panel::{
     Achievement, AchievementSettings, CreditsConfig, GameFeelSettings, TransitionStyle,
     UiPolishSettings,
@@ -14,7 +12,9 @@ use aw_editor_lib::panels::polish_panel::{
 use aw_editor_lib::panels::ready_asset_store_panel::{
     AssetChecklist, AssetStoreCategory, ChecklistItem, ReadinessLevel,
 };
-use aw_editor_lib::panels::graph_panel::{GraphType, NodeTemplate};
+use aw_editor_lib::panels::theme_manager::{
+    CustomColors, EditorPreferences, EditorTheme, LayoutPreset, LayoutState,
+};
 use aw_editor_lib::panels::transform_panel::TransformPanel;
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -81,7 +81,16 @@ fn custom_colors_defaults() {
 #[test]
 fn custom_colors_color32_known_fields() {
     let c = CustomColors::default();
-    let fields = ["background", "panel_fill", "text", "accent", "selection", "warning", "error", "success"];
+    let fields = [
+        "background",
+        "panel_fill",
+        "text",
+        "accent",
+        "selection",
+        "warning",
+        "error",
+        "success",
+    ];
     for field in &fields {
         let color = c.color32(field);
         // Just verify it doesn't panic and returns non-transparent
@@ -381,7 +390,10 @@ fn readiness_level_description_non_empty() {
 
 #[test]
 fn readiness_level_min_requirements_monotonic() {
-    let reqs: Vec<u32> = ReadinessLevel::all().iter().map(|r| r.min_requirements()).collect();
+    let reqs: Vec<u32> = ReadinessLevel::all()
+        .iter()
+        .map(|r| r.min_requirements())
+        .collect();
     for w in reqs.windows(2) {
         assert!(w[0] <= w[1], "Requirements not monotonic: {:?}", reqs);
     }
@@ -582,7 +594,9 @@ fn asset_store_category_related_tags() {
     assert!(AssetStoreCategory::All.related_tags().is_empty());
     assert!(!AssetStoreCategory::Nature.related_tags().is_empty());
     assert!(AssetStoreCategory::Nature.related_tags().contains(&"tree"));
-    assert!(AssetStoreCategory::Weapons.related_tags().contains(&"sword"));
+    assert!(AssetStoreCategory::Weapons
+        .related_tags()
+        .contains(&"sword"));
 }
 
 #[test]

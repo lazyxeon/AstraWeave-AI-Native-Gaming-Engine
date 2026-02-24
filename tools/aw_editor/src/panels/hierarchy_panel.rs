@@ -57,7 +57,10 @@ impl HierarchyAction {
 
     /// Returns true if this action modifies the entity
     pub fn is_destructive(&self) -> bool {
-        matches!(self, HierarchyAction::DeleteEntity(_) | HierarchyAction::BreakPrefabConnection(_))
+        matches!(
+            self,
+            HierarchyAction::DeleteEntity(_) | HierarchyAction::BreakPrefabConnection(_)
+        )
     }
 
     /// Returns true if this action is prefab-related
@@ -88,7 +91,7 @@ pub struct HierarchyPanel {
 
     pending_actions: Vec<HierarchyAction>,
     search_filter: String,
-    
+
     /// Week 5 Day 3-4: Track which entities are prefab instances
     prefab_instances: HashSet<Entity>,
 }
@@ -110,22 +113,22 @@ impl HierarchyPanel {
             prefab_instances: HashSet::new(),
         }
     }
-    
+
     /// Week 5 Day 3-4: Mark an entity as a prefab instance
     pub fn mark_as_prefab_instance(&mut self, entity: Entity) {
         self.prefab_instances.insert(entity);
     }
-    
+
     /// Week 5 Day 3-4: Unmark an entity as a prefab instance (after breaking connection)
     pub fn unmark_as_prefab_instance(&mut self, entity: Entity) {
         self.prefab_instances.remove(&entity);
     }
-    
+
     /// Week 5 Day 3-4: Check if entity is a prefab instance
     pub fn is_prefab_instance(&self, entity: Entity) -> bool {
         self.prefab_instances.contains(&entity)
     }
-    
+
     /// Week 5 Day 3-4: Sync prefab instances from prefab manager
     pub fn sync_prefab_instances(&mut self, prefab_entities: impl Iterator<Item = Entity>) {
         self.prefab_instances.clear();
@@ -429,25 +432,25 @@ impl HierarchyPanel {
                         .push(HierarchyAction::CreatePrefab(entity));
                     ui.close();
                 }
-                
+
                 // Week 5 Day 3-4: Prefab instance actions (only shown for prefab instances)
                 let is_prefab = self.prefab_instances.contains(&entity);
                 if is_prefab {
                     ui.separator();
                     ui.label("📦 Prefab Instance");
-                    
+
                     if ui.button("⬆️ Apply Overrides to Prefab").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::ApplyOverridesToPrefab(entity));
                         ui.close();
                     }
-                    
+
                     if ui.button("⬇️ Revert to Original").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::RevertToOriginalPrefab(entity));
                         ui.close();
                     }
-                    
+
                     if ui.button("🔗 Break Prefab Connection").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::BreakPrefabConnection(entity));
@@ -776,7 +779,7 @@ mod tests {
     #[test]
     fn test_selection_helpers() {
         let mut panel = HierarchyPanel::new();
-        
+
         // Single selection
         panel.set_selected(Some(1));
         assert_eq!(panel.get_selected(), Some(1));
@@ -812,9 +815,21 @@ mod tests {
     fn test_get_parent() {
         let mut panel = HierarchyPanel::new();
         // 1 -> 2
-        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
-        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: vec![] });
-        
+        panel.hierarchy.insert(
+            1,
+            HierarchyNode {
+                entity: 1,
+                children: vec![2],
+            },
+        );
+        panel.hierarchy.insert(
+            2,
+            HierarchyNode {
+                entity: 2,
+                children: vec![],
+            },
+        );
+
         assert_eq!(panel.get_parent(2), Some(1));
         assert_eq!(panel.get_parent(1), None);
     }
@@ -823,9 +838,27 @@ mod tests {
     fn test_is_ancestor_recursion() {
         let mut panel = HierarchyPanel::new();
         // 1 -> 2 -> 3
-        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
-        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: vec![3] });
-        panel.hierarchy.insert(3, HierarchyNode { entity: 3, children: vec![] });
+        panel.hierarchy.insert(
+            1,
+            HierarchyNode {
+                entity: 1,
+                children: vec![2],
+            },
+        );
+        panel.hierarchy.insert(
+            2,
+            HierarchyNode {
+                entity: 2,
+                children: vec![3],
+            },
+        );
+        panel.hierarchy.insert(
+            3,
+            HierarchyNode {
+                entity: 3,
+                children: vec![],
+            },
+        );
 
         assert!(panel.is_ancestor_of(1, 3));
         assert!(panel.is_ancestor_of(1, 2));
@@ -839,14 +872,20 @@ mod tests {
     fn test_hierarchy_action_display() {
         let action = HierarchyAction::CreatePrefab(1);
         let display = format!("{}", action);
-        assert!(display.contains(action.name()), "Display should contain name");
+        assert!(
+            display.contains(action.name()),
+            "Display should contain name"
+        );
     }
 
     #[test]
     fn test_hierarchy_action_name() {
         assert_eq!(HierarchyAction::CreatePrefab(1).name(), "Create Prefab");
         assert_eq!(HierarchyAction::DeleteEntity(1).name(), "Delete Entity");
-        assert_eq!(HierarchyAction::DuplicateEntity(1).name(), "Duplicate Entity");
+        assert_eq!(
+            HierarchyAction::DuplicateEntity(1).name(),
+            "Duplicate Entity"
+        );
         assert_eq!(HierarchyAction::FocusEntity(1).name(), "Focus Entity");
     }
 

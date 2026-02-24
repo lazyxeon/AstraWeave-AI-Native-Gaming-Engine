@@ -3,8 +3,8 @@
 //! These tests target boundary conditions, comparison operators, and boolean return paths
 //! to achieve high mutation testing kill rates (90%+).
 
-use aw_editor_lib::panels::{AssetAction, TextureType};
 use aw_editor_lib::panels::asset_browser::{AssetCategory, AssetType};
+use aw_editor_lib::panels::{AssetAction, TextureType};
 use std::path::PathBuf;
 
 // ============================================================================
@@ -110,122 +110,194 @@ mod texture_type_tests {
     // Test from_filename detection
     #[test]
     fn test_from_filename_normal_suffix_n() {
-        assert_eq!(TextureType::from_filename("texture_n.png"), TextureType::Normal);
+        assert_eq!(
+            TextureType::from_filename("texture_n.png"),
+            TextureType::Normal
+        );
     }
 
     #[test]
     fn test_from_filename_normal_suffix_normal() {
-        assert_eq!(TextureType::from_filename("texture_normal.png"), TextureType::Normal);
+        assert_eq!(
+            TextureType::from_filename("texture_normal.png"),
+            TextureType::Normal
+        );
     }
 
     #[test]
     fn test_from_filename_normal_suffix_nrm() {
-        assert_eq!(TextureType::from_filename("texture_nrm.png"), TextureType::Normal);
+        assert_eq!(
+            TextureType::from_filename("texture_nrm.png"),
+            TextureType::Normal
+        );
     }
 
     #[test]
     fn test_from_filename_orm() {
-        assert_eq!(TextureType::from_filename("texture_orm.png"), TextureType::ORM);
+        assert_eq!(
+            TextureType::from_filename("texture_orm.png"),
+            TextureType::ORM
+        );
     }
 
     #[test]
     fn test_from_filename_mra() {
-        assert_eq!(TextureType::from_filename("texture_mra.png"), TextureType::MRA);
+        assert_eq!(
+            TextureType::from_filename("texture_mra.png"),
+            TextureType::MRA
+        );
     }
 
     #[test]
     fn test_from_filename_roughness_r() {
-        assert_eq!(TextureType::from_filename("texture_r.png"), TextureType::Roughness);
+        assert_eq!(
+            TextureType::from_filename("texture_r.png"),
+            TextureType::Roughness
+        );
     }
 
     #[test]
     fn test_from_filename_roughness_rough() {
-        assert_eq!(TextureType::from_filename("texture_rough.png"), TextureType::Roughness);
+        assert_eq!(
+            TextureType::from_filename("texture_rough.png"),
+            TextureType::Roughness
+        );
     }
 
     #[test]
     fn test_from_filename_roughness_full() {
-        assert_eq!(TextureType::from_filename("texture_roughness.png"), TextureType::Roughness);
+        assert_eq!(
+            TextureType::from_filename("texture_roughness.png"),
+            TextureType::Roughness
+        );
     }
 
     #[test]
     fn test_from_filename_metallic_m() {
-        assert_eq!(TextureType::from_filename("texture_m.png"), TextureType::Metallic);
+        assert_eq!(
+            TextureType::from_filename("texture_m.png"),
+            TextureType::Metallic
+        );
     }
 
     #[test]
     fn test_from_filename_metallic_metal() {
-        assert_eq!(TextureType::from_filename("texture_metal.png"), TextureType::Metallic);
+        assert_eq!(
+            TextureType::from_filename("texture_metal.png"),
+            TextureType::Metallic
+        );
     }
 
     #[test]
     fn test_from_filename_metallic_full() {
-        assert_eq!(TextureType::from_filename("texture_metallic.png"), TextureType::Metallic);
+        assert_eq!(
+            TextureType::from_filename("texture_metallic.png"),
+            TextureType::Metallic
+        );
     }
 
     #[test]
     fn test_from_filename_ao() {
-        assert_eq!(TextureType::from_filename("texture_ao.png"), TextureType::AO);
+        assert_eq!(
+            TextureType::from_filename("texture_ao.png"),
+            TextureType::AO
+        );
     }
 
     #[test]
     fn test_from_filename_occlusion() {
-        assert_eq!(TextureType::from_filename("texture_occlusion.png"), TextureType::AO);
+        assert_eq!(
+            TextureType::from_filename("texture_occlusion.png"),
+            TextureType::AO
+        );
     }
 
     #[test]
     fn test_from_filename_emission_e() {
-        assert_eq!(TextureType::from_filename("texture_e.png"), TextureType::Emission);
+        assert_eq!(
+            TextureType::from_filename("texture_e.png"),
+            TextureType::Emission
+        );
     }
 
     #[test]
     fn test_from_filename_emission_emit() {
-        assert_eq!(TextureType::from_filename("texture_emit.png"), TextureType::Emission);
+        assert_eq!(
+            TextureType::from_filename("texture_emit.png"),
+            TextureType::Emission
+        );
     }
 
     #[test]
     fn test_from_filename_emission_glow() {
-        assert_eq!(TextureType::from_filename("texture_glow.png"), TextureType::Emission);
+        assert_eq!(
+            TextureType::from_filename("texture_glow.png"),
+            TextureType::Emission
+        );
     }
 
     #[test]
     fn test_from_filename_height_h() {
-        assert_eq!(TextureType::from_filename("texture_h.png"), TextureType::Height);
+        assert_eq!(
+            TextureType::from_filename("texture_h.png"),
+            TextureType::Height
+        );
     }
 
     #[test]
     fn test_from_filename_height_full() {
-        assert_eq!(TextureType::from_filename("texture_height.png"), TextureType::Height);
+        assert_eq!(
+            TextureType::from_filename("texture_height.png"),
+            TextureType::Height
+        );
     }
 
     #[test]
     fn test_from_filename_height_disp() {
-        assert_eq!(TextureType::from_filename("texture_disp.png"), TextureType::Height);
+        assert_eq!(
+            TextureType::from_filename("texture_disp.png"),
+            TextureType::Height
+        );
     }
 
     #[test]
     fn test_from_filename_albedo() {
-        assert_eq!(TextureType::from_filename("texture_albedo.png"), TextureType::Albedo);
+        assert_eq!(
+            TextureType::from_filename("texture_albedo.png"),
+            TextureType::Albedo
+        );
     }
 
     #[test]
     fn test_from_filename_diffuse() {
-        assert_eq!(TextureType::from_filename("texture_diffuse.png"), TextureType::Albedo);
+        assert_eq!(
+            TextureType::from_filename("texture_diffuse.png"),
+            TextureType::Albedo
+        );
     }
 
     #[test]
     fn test_from_filename_basecolor() {
-        assert_eq!(TextureType::from_filename("texture_basecolor.png"), TextureType::Albedo);
+        assert_eq!(
+            TextureType::from_filename("texture_basecolor.png"),
+            TextureType::Albedo
+        );
     }
 
     #[test]
     fn test_from_filename_unknown() {
-        assert_eq!(TextureType::from_filename("texture.png"), TextureType::Unknown);
+        assert_eq!(
+            TextureType::from_filename("texture.png"),
+            TextureType::Unknown
+        );
     }
 
     #[test]
     fn test_from_filename_case_insensitive() {
-        assert_eq!(TextureType::from_filename("Texture_NORMAL.png"), TextureType::Normal);
+        assert_eq!(
+            TextureType::from_filename("Texture_NORMAL.png"),
+            TextureType::Normal
+        );
     }
 
     // Test name() uniqueness
@@ -411,92 +483,143 @@ mod asset_type_tests {
     // Test from_path for model extensions
     #[test]
     fn test_from_path_glb() {
-        assert_eq!(AssetType::from_path(Path::new("model.glb")), AssetType::Model);
+        assert_eq!(
+            AssetType::from_path(Path::new("model.glb")),
+            AssetType::Model
+        );
     }
 
     #[test]
     fn test_from_path_gltf() {
-        assert_eq!(AssetType::from_path(Path::new("model.gltf")), AssetType::Model);
+        assert_eq!(
+            AssetType::from_path(Path::new("model.gltf")),
+            AssetType::Model
+        );
     }
 
     #[test]
     fn test_from_path_obj() {
-        assert_eq!(AssetType::from_path(Path::new("model.obj")), AssetType::Model);
+        assert_eq!(
+            AssetType::from_path(Path::new("model.obj")),
+            AssetType::Model
+        );
     }
 
     #[test]
     fn test_from_path_fbx() {
-        assert_eq!(AssetType::from_path(Path::new("model.fbx")), AssetType::Model);
+        assert_eq!(
+            AssetType::from_path(Path::new("model.fbx")),
+            AssetType::Model
+        );
     }
 
     // Test from_path for texture extensions
     #[test]
     fn test_from_path_png() {
-        assert_eq!(AssetType::from_path(Path::new("texture.png")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.png")),
+            AssetType::Texture
+        );
     }
 
     #[test]
     fn test_from_path_jpg() {
-        assert_eq!(AssetType::from_path(Path::new("texture.jpg")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.jpg")),
+            AssetType::Texture
+        );
     }
 
     #[test]
     fn test_from_path_jpeg() {
-        assert_eq!(AssetType::from_path(Path::new("texture.jpeg")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.jpeg")),
+            AssetType::Texture
+        );
     }
 
     #[test]
     fn test_from_path_ktx2() {
-        assert_eq!(AssetType::from_path(Path::new("texture.ktx2")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.ktx2")),
+            AssetType::Texture
+        );
     }
 
     #[test]
     fn test_from_path_dds() {
-        assert_eq!(AssetType::from_path(Path::new("texture.dds")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.dds")),
+            AssetType::Texture
+        );
     }
 
     // Test from_path for audio extensions
     #[test]
     fn test_from_path_wav() {
-        assert_eq!(AssetType::from_path(Path::new("sound.wav")), AssetType::Audio);
+        assert_eq!(
+            AssetType::from_path(Path::new("sound.wav")),
+            AssetType::Audio
+        );
     }
 
     #[test]
     fn test_from_path_ogg() {
-        assert_eq!(AssetType::from_path(Path::new("sound.ogg")), AssetType::Audio);
+        assert_eq!(
+            AssetType::from_path(Path::new("sound.ogg")),
+            AssetType::Audio
+        );
     }
 
     #[test]
     fn test_from_path_mp3() {
-        assert_eq!(AssetType::from_path(Path::new("sound.mp3")), AssetType::Audio);
+        assert_eq!(
+            AssetType::from_path(Path::new("sound.mp3")),
+            AssetType::Audio
+        );
     }
 
     // Test from_path for config extensions
     #[test]
     fn test_from_path_toml() {
-        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
+        assert_eq!(
+            AssetType::from_path(Path::new("config.toml")),
+            AssetType::Config
+        );
     }
 
     #[test]
     fn test_from_path_json() {
-        assert_eq!(AssetType::from_path(Path::new("config.json")), AssetType::Config);
+        assert_eq!(
+            AssetType::from_path(Path::new("config.json")),
+            AssetType::Config
+        );
     }
 
     // Test from_path for scene and prefab
     #[test]
     fn test_from_path_ron() {
-        assert_eq!(AssetType::from_path(Path::new("scene.ron")), AssetType::Scene);
+        assert_eq!(
+            AssetType::from_path(Path::new("scene.ron")),
+            AssetType::Scene
+        );
     }
 
     #[test]
     fn test_from_path_prefab_ron() {
-        assert_eq!(AssetType::from_path(Path::new("entity.prefab.ron")), AssetType::Prefab);
+        assert_eq!(
+            AssetType::from_path(Path::new("entity.prefab.ron")),
+            AssetType::Prefab
+        );
     }
 
     // Test from_path for unknown
     #[test]
     fn test_from_path_unknown() {
-        assert_eq!(AssetType::from_path(Path::new("file.xyz")), AssetType::Unknown);
+        assert_eq!(
+            AssetType::from_path(Path::new("file.xyz")),
+            AssetType::Unknown
+        );
     }
 
     #[test]
@@ -540,7 +663,9 @@ mod asset_action_tests {
     // Test is_modifying()
     #[test]
     fn test_import_model_is_modifying() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         assert!(action.is_modifying());
     }
 
@@ -555,100 +680,132 @@ mod asset_action_tests {
 
     #[test]
     fn test_apply_material_is_modifying() {
-        let action = AssetAction::ApplyMaterial { path: make_path("material.ron") };
+        let action = AssetAction::ApplyMaterial {
+            path: make_path("material.ron"),
+        };
         assert!(action.is_modifying());
     }
 
     #[test]
     fn test_spawn_prefab_is_modifying() {
-        let action = AssetAction::SpawnPrefab { path: make_path("prefab.ron") };
+        let action = AssetAction::SpawnPrefab {
+            path: make_path("prefab.ron"),
+        };
         assert!(action.is_modifying());
     }
 
     #[test]
     fn test_load_to_viewport_not_modifying() {
-        let action = AssetAction::LoadToViewport { path: make_path("model.glb") };
+        let action = AssetAction::LoadToViewport {
+            path: make_path("model.glb"),
+        };
         assert!(!action.is_modifying());
     }
 
     #[test]
     fn test_load_scene_not_modifying() {
-        let action = AssetAction::LoadScene { path: make_path("scene.ron") };
+        let action = AssetAction::LoadScene {
+            path: make_path("scene.ron"),
+        };
         assert!(!action.is_modifying());
     }
 
     #[test]
     fn test_open_external_not_modifying() {
-        let action = AssetAction::OpenExternal { path: make_path("file.txt") };
+        let action = AssetAction::OpenExternal {
+            path: make_path("file.txt"),
+        };
         assert!(!action.is_modifying());
     }
 
     #[test]
     fn test_inspect_asset_not_modifying() {
-        let action = AssetAction::InspectAsset { path: make_path("asset.ron") };
+        let action = AssetAction::InspectAsset {
+            path: make_path("asset.ron"),
+        };
         assert!(!action.is_modifying());
     }
 
     // Test is_viewing()
     #[test]
     fn test_load_to_viewport_is_viewing() {
-        let action = AssetAction::LoadToViewport { path: make_path("model.glb") };
+        let action = AssetAction::LoadToViewport {
+            path: make_path("model.glb"),
+        };
         assert!(action.is_viewing());
     }
 
     #[test]
     fn test_open_external_is_viewing() {
-        let action = AssetAction::OpenExternal { path: make_path("file.txt") };
+        let action = AssetAction::OpenExternal {
+            path: make_path("file.txt"),
+        };
         assert!(action.is_viewing());
     }
 
     #[test]
     fn test_inspect_asset_is_viewing() {
-        let action = AssetAction::InspectAsset { path: make_path("asset.ron") };
+        let action = AssetAction::InspectAsset {
+            path: make_path("asset.ron"),
+        };
         assert!(action.is_viewing());
     }
 
     #[test]
     fn test_import_model_not_viewing() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         assert!(!action.is_viewing());
     }
 
     #[test]
     fn test_load_scene_not_viewing() {
-        let action = AssetAction::LoadScene { path: make_path("scene.ron") };
+        let action = AssetAction::LoadScene {
+            path: make_path("scene.ron"),
+        };
         assert!(!action.is_viewing());
     }
 
     #[test]
     fn test_spawn_prefab_not_viewing() {
-        let action = AssetAction::SpawnPrefab { path: make_path("prefab.ron") };
+        let action = AssetAction::SpawnPrefab {
+            path: make_path("prefab.ron"),
+        };
         assert!(!action.is_viewing());
     }
 
     // Test is_scene_action()
     #[test]
     fn test_load_scene_is_scene_action() {
-        let action = AssetAction::LoadScene { path: make_path("scene.ron") };
+        let action = AssetAction::LoadScene {
+            path: make_path("scene.ron"),
+        };
         assert!(action.is_scene_action());
     }
 
     #[test]
     fn test_import_model_not_scene_action() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         assert!(!action.is_scene_action());
     }
 
     #[test]
     fn test_spawn_prefab_not_scene_action() {
-        let action = AssetAction::SpawnPrefab { path: make_path("prefab.ron") };
+        let action = AssetAction::SpawnPrefab {
+            path: make_path("prefab.ron"),
+        };
         assert!(!action.is_scene_action());
     }
 
     // Test path()
     #[test]
     fn test_import_model_path() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         assert_eq!(action.path(), &make_path("model.glb"));
     }
 
@@ -663,7 +820,9 @@ mod asset_action_tests {
 
     #[test]
     fn test_load_scene_path() {
-        let action = AssetAction::LoadScene { path: make_path("scene.ron") };
+        let action = AssetAction::LoadScene {
+            path: make_path("scene.ron"),
+        };
         assert_eq!(action.path(), &make_path("scene.ron"));
     }
 
@@ -671,14 +830,31 @@ mod asset_action_tests {
     #[test]
     fn test_all_action_names_unique() {
         let actions = vec![
-            AssetAction::ImportModel { path: make_path("a") },
-            AssetAction::LoadToViewport { path: make_path("b") },
-            AssetAction::ApplyTexture { path: make_path("c"), texture_type: TextureType::Albedo },
-            AssetAction::ApplyMaterial { path: make_path("d") },
-            AssetAction::LoadScene { path: make_path("e") },
-            AssetAction::SpawnPrefab { path: make_path("f") },
-            AssetAction::OpenExternal { path: make_path("g") },
-            AssetAction::InspectAsset { path: make_path("h") },
+            AssetAction::ImportModel {
+                path: make_path("a"),
+            },
+            AssetAction::LoadToViewport {
+                path: make_path("b"),
+            },
+            AssetAction::ApplyTexture {
+                path: make_path("c"),
+                texture_type: TextureType::Albedo,
+            },
+            AssetAction::ApplyMaterial {
+                path: make_path("d"),
+            },
+            AssetAction::LoadScene {
+                path: make_path("e"),
+            },
+            AssetAction::SpawnPrefab {
+                path: make_path("f"),
+            },
+            AssetAction::OpenExternal {
+                path: make_path("g"),
+            },
+            AssetAction::InspectAsset {
+                path: make_path("h"),
+            },
         ];
         let names: Vec<&str> = actions.iter().map(|a| a.name()).collect();
         let unique: std::collections::HashSet<_> = names.iter().collect();
@@ -689,14 +865,31 @@ mod asset_action_tests {
     #[test]
     fn test_all_action_icons_unique() {
         let actions = vec![
-            AssetAction::ImportModel { path: make_path("a") },
-            AssetAction::LoadToViewport { path: make_path("b") },
-            AssetAction::ApplyTexture { path: make_path("c"), texture_type: TextureType::Albedo },
-            AssetAction::ApplyMaterial { path: make_path("d") },
-            AssetAction::LoadScene { path: make_path("e") },
-            AssetAction::SpawnPrefab { path: make_path("f") },
-            AssetAction::OpenExternal { path: make_path("g") },
-            AssetAction::InspectAsset { path: make_path("h") },
+            AssetAction::ImportModel {
+                path: make_path("a"),
+            },
+            AssetAction::LoadToViewport {
+                path: make_path("b"),
+            },
+            AssetAction::ApplyTexture {
+                path: make_path("c"),
+                texture_type: TextureType::Albedo,
+            },
+            AssetAction::ApplyMaterial {
+                path: make_path("d"),
+            },
+            AssetAction::LoadScene {
+                path: make_path("e"),
+            },
+            AssetAction::SpawnPrefab {
+                path: make_path("f"),
+            },
+            AssetAction::OpenExternal {
+                path: make_path("g"),
+            },
+            AssetAction::InspectAsset {
+                path: make_path("h"),
+            },
         ];
         let icons: Vec<&str> = actions.iter().map(|a| a.icon()).collect();
         let unique: std::collections::HashSet<_> = icons.iter().collect();
@@ -706,14 +899,18 @@ mod asset_action_tests {
     // Test Display trait
     #[test]
     fn test_display_contains_icon() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         let display = format!("{}", action);
         assert!(display.contains("📥"));
     }
 
     #[test]
     fn test_display_contains_name() {
-        let action = AssetAction::ImportModel { path: make_path("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: make_path("model.glb"),
+        };
         let display = format!("{}", action);
         assert!(display.contains("Import Model"));
     }

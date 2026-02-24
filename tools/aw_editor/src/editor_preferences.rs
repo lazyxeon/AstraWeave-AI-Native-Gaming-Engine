@@ -107,10 +107,10 @@ mod tests {
             camera: None,
             snapping: None,
         };
-        
+
         let json = serde_json::to_string(&prefs).expect("serialize");
         let restored: EditorPreferences = serde_json::from_str(&json).expect("deserialize");
-        
+
         assert!(!restored.show_grid);
         assert!(restored.auto_save_enabled);
         assert_eq!(restored.auto_save_interval_secs, 120.0);
@@ -131,9 +131,9 @@ mod tests {
             "camera": null,
             "snapping": null
         }"#;
-        
+
         let prefs: EditorPreferences = serde_json::from_str(old_json).expect("deserialize");
-        
+
         // Should use defaults for missing Week 7 fields
         assert_eq!(prefs.auto_save_keep_count, 3);
         assert!(!prefs.auto_save_to_separate_dir); // default is false when missing

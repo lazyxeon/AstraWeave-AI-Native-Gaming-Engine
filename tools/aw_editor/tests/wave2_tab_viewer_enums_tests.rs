@@ -9,8 +9,7 @@
 
 use aw_editor_lib::panel_type::PanelType;
 use aw_editor_lib::tab_viewer::{
-    AnimationState, BehaviorNodeType,
-    EditorTheme, MaterialInfo, PanelEvent,
+    AnimationState, BehaviorNodeType, EditorTheme, MaterialInfo, PanelEvent,
 };
 
 // ============================================================================
@@ -90,7 +89,10 @@ fn panel_event_display_create_entity() {
 
 #[test]
 fn panel_event_display_delete_entity() {
-    assert_eq!(PanelEvent::DeleteEntity(55).to_string(), "Delete Entity: 55");
+    assert_eq!(
+        PanelEvent::DeleteEntity(55).to_string(),
+        "Delete Entity: 55"
+    );
 }
 
 #[test]
@@ -411,18 +413,12 @@ fn panel_event_category_console_variants() {
 
 #[test]
 fn panel_event_category_asset() {
-    assert_eq!(
-        PanelEvent::AssetSelected("x".into()).category(),
-        "Asset"
-    );
+    assert_eq!(PanelEvent::AssetSelected("x".into()).category(), "Asset");
 }
 
 #[test]
 fn panel_event_category_graph_variants() {
-    assert_eq!(
-        PanelEvent::BehaviorNodeSelected(0).category(),
-        "Graph"
-    );
+    assert_eq!(PanelEvent::BehaviorNodeSelected(0).category(), "Graph");
     assert_eq!(PanelEvent::GraphNodeSelected(0).category(), "Graph");
 }
 
@@ -491,10 +487,7 @@ fn panel_event_category_viewport_variants() {
         .category(),
         "Viewport"
     );
-    assert_eq!(
-        PanelEvent::ViewportFocusOnSelection.category(),
-        "Viewport"
-    );
+    assert_eq!(PanelEvent::ViewportFocusOnSelection.category(), "Viewport");
     assert_eq!(PanelEvent::ViewportResetCamera.category(), "Viewport");
     assert_eq!(
         PanelEvent::ViewportCameraPreset("f".into()).category(),
@@ -539,7 +532,12 @@ fn panel_event_is_entity_event_positive() {
 #[test]
 fn panel_event_is_entity_event_negative() {
     assert!(!PanelEvent::PanelClosed(PanelType::Viewport).is_entity_event());
-    assert!(!PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 }.is_entity_event());
+    assert!(!PanelEvent::TransformPositionChanged {
+        entity_id: 1,
+        x: 0.0,
+        y: 0.0
+    }
+    .is_entity_event());
     assert!(!PanelEvent::ConsoleCleared.is_entity_event());
 }
 
@@ -549,9 +547,23 @@ fn panel_event_is_entity_event_negative() {
 
 #[test]
 fn panel_event_is_transform_event_positive() {
-    assert!(PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 }.is_transform_event());
-    assert!(PanelEvent::TransformRotationChanged { entity_id: 1, rotation: 0.0 }.is_transform_event());
-    assert!(PanelEvent::TransformScaleChanged { entity_id: 1, scale_x: 1.0, scale_y: 1.0 }.is_transform_event());
+    assert!(PanelEvent::TransformPositionChanged {
+        entity_id: 1,
+        x: 0.0,
+        y: 0.0
+    }
+    .is_transform_event());
+    assert!(PanelEvent::TransformRotationChanged {
+        entity_id: 1,
+        rotation: 0.0
+    }
+    .is_transform_event());
+    assert!(PanelEvent::TransformScaleChanged {
+        entity_id: 1,
+        scale_x: 1.0,
+        scale_y: 1.0
+    }
+    .is_transform_event());
 }
 
 #[test]
@@ -570,8 +582,18 @@ fn panel_event_is_viewport_event_positive() {
     assert!(PanelEvent::ViewportViewModeChanged(0).is_viewport_event());
     assert!(PanelEvent::ViewportGizmoModeChanged(0).is_viewport_event());
     assert!(PanelEvent::ViewportGizmoSpaceChanged(0).is_viewport_event());
-    assert!(PanelEvent::ViewportOverlayToggled { overlay: "g".into(), enabled: true }.is_viewport_event());
-    assert!(PanelEvent::ViewportCameraChanged { fov: 60.0, near: 0.1, far: 1000.0, speed: 10.0 }.is_viewport_event());
+    assert!(PanelEvent::ViewportOverlayToggled {
+        overlay: "g".into(),
+        enabled: true
+    }
+    .is_viewport_event());
+    assert!(PanelEvent::ViewportCameraChanged {
+        fov: 60.0,
+        near: 0.1,
+        far: 1000.0,
+        speed: 10.0
+    }
+    .is_viewport_event());
     assert!(PanelEvent::ViewportFocusOnSelection.is_viewport_event());
     assert!(PanelEvent::ViewportResetCamera.is_viewport_event());
     assert!(PanelEvent::ViewportCameraPreset("front".into()).is_viewport_event());
@@ -580,7 +602,12 @@ fn panel_event_is_viewport_event_positive() {
 #[test]
 fn panel_event_is_viewport_event_negative() {
     assert!(!PanelEvent::EntitySelected(1).is_viewport_event());
-    assert!(!PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 }.is_viewport_event());
+    assert!(!PanelEvent::TransformPositionChanged {
+        entity_id: 1,
+        x: 0.0,
+        y: 0.0
+    }
+    .is_viewport_event());
     assert!(!PanelEvent::ResetLayout.is_viewport_event());
     assert!(!PanelEvent::ConsoleCleared.is_viewport_event());
 }
@@ -595,23 +622,45 @@ fn panel_event_entity_id_some() {
     assert_eq!(PanelEvent::DeleteEntity(55).entity_id(), Some(55));
     assert_eq!(PanelEvent::DuplicateEntity(66).entity_id(), Some(66));
     assert_eq!(
-        PanelEvent::TransformPositionChanged { entity_id: 77, x: 0.0, y: 0.0 }.entity_id(),
+        PanelEvent::TransformPositionChanged {
+            entity_id: 77,
+            x: 0.0,
+            y: 0.0
+        }
+        .entity_id(),
         Some(77)
     );
     assert_eq!(
-        PanelEvent::TransformRotationChanged { entity_id: 88, rotation: 0.0 }.entity_id(),
+        PanelEvent::TransformRotationChanged {
+            entity_id: 88,
+            rotation: 0.0
+        }
+        .entity_id(),
         Some(88)
     );
     assert_eq!(
-        PanelEvent::TransformScaleChanged { entity_id: 99, scale_x: 1.0, scale_y: 1.0 }.entity_id(),
+        PanelEvent::TransformScaleChanged {
+            entity_id: 99,
+            scale_x: 1.0,
+            scale_y: 1.0
+        }
+        .entity_id(),
         Some(99)
     );
     assert_eq!(
-        PanelEvent::AddComponent { entity_id: 11, component_type: "c".into() }.entity_id(),
+        PanelEvent::AddComponent {
+            entity_id: 11,
+            component_type: "c".into()
+        }
+        .entity_id(),
         Some(11)
     );
     assert_eq!(
-        PanelEvent::RemoveComponent { entity_id: 22, component_type: "c".into() }.entity_id(),
+        PanelEvent::RemoveComponent {
+            entity_id: 22,
+            component_type: "c".into()
+        }
+        .entity_id(),
         Some(22)
     );
 }
@@ -620,29 +669,89 @@ fn panel_event_entity_id_some() {
 fn panel_event_entity_id_none() {
     assert_eq!(PanelEvent::EntityDeselected.entity_id(), None);
     assert_eq!(PanelEvent::CreateEntity.entity_id(), None);
-    assert_eq!(PanelEvent::PanelClosed(PanelType::Viewport).entity_id(), None);
+    assert_eq!(
+        PanelEvent::PanelClosed(PanelType::Viewport).entity_id(),
+        None
+    );
     assert_eq!(PanelEvent::ConsoleCleared.entity_id(), None);
-    assert_eq!(PanelEvent::ThemeChanged(EditorTheme::Dark).entity_id(), None);
+    assert_eq!(
+        PanelEvent::ThemeChanged(EditorTheme::Dark).entity_id(),
+        None
+    );
     assert_eq!(PanelEvent::ResetLayout.entity_id(), None);
     assert_eq!(PanelEvent::ViewportResetCamera.entity_id(), None);
     assert_eq!(PanelEvent::RefreshSceneStats.entity_id(), None);
     assert_eq!(PanelEvent::AssetSelected("x".into()).entity_id(), None);
     assert_eq!(PanelEvent::BehaviorNodeSelected(1).entity_id(), None);
     assert_eq!(PanelEvent::GraphNodeSelected(1).entity_id(), None);
-    assert_eq!(PanelEvent::AnimationPlayStateChanged { is_playing: true }.entity_id(), None);
-    assert_eq!(PanelEvent::AnimationFrameChanged { frame: 0 }.entity_id(), None);
-    assert_eq!(PanelEvent::AnimationKeyframeAdded { track_index: 0, frame: 0, value: 0.0 }.entity_id(), None);
-    assert_eq!(PanelEvent::MaterialChanged { name: "a".into(), property: "b".into(), value: 0.0 }.entity_id(), None);
-    assert_eq!(PanelEvent::BuildRequested { target: "w".into(), profile: "r".into() }.entity_id(), None);
-    assert_eq!(PanelEvent::HierarchySearchChanged("x".into()).entity_id(), None);
-    assert_eq!(PanelEvent::ConsoleSearchChanged("x".into()).entity_id(), None);
+    assert_eq!(
+        PanelEvent::AnimationPlayStateChanged { is_playing: true }.entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::AnimationFrameChanged { frame: 0 }.entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::AnimationKeyframeAdded {
+            track_index: 0,
+            frame: 0,
+            value: 0.0
+        }
+        .entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::MaterialChanged {
+            name: "a".into(),
+            property: "b".into(),
+            value: 0.0
+        }
+        .entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::BuildRequested {
+            target: "w".into(),
+            profile: "r".into()
+        }
+        .entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::HierarchySearchChanged("x".into()).entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::ConsoleSearchChanged("x".into()).entity_id(),
+        None
+    );
     assert_eq!(PanelEvent::ViewportViewModeChanged(0).entity_id(), None);
     assert_eq!(PanelEvent::ViewportGizmoModeChanged(0).entity_id(), None);
     assert_eq!(PanelEvent::ViewportGizmoSpaceChanged(0).entity_id(), None);
-    assert_eq!(PanelEvent::ViewportOverlayToggled { overlay: "g".into(), enabled: true }.entity_id(), None);
-    assert_eq!(PanelEvent::ViewportCameraChanged { fov: 60.0, near: 0.1, far: 1000.0, speed: 10.0 }.entity_id(), None);
+    assert_eq!(
+        PanelEvent::ViewportOverlayToggled {
+            overlay: "g".into(),
+            enabled: true
+        }
+        .entity_id(),
+        None
+    );
+    assert_eq!(
+        PanelEvent::ViewportCameraChanged {
+            fov: 60.0,
+            near: 0.1,
+            far: 1000.0,
+            speed: 10.0
+        }
+        .entity_id(),
+        None
+    );
     assert_eq!(PanelEvent::ViewportFocusOnSelection.entity_id(), None);
-    assert_eq!(PanelEvent::ViewportCameraPreset("f".into()).entity_id(), None);
+    assert_eq!(
+        PanelEvent::ViewportCameraPreset("f".into()).entity_id(),
+        None
+    );
 }
 
 // ============================================================================
@@ -870,7 +979,11 @@ fn behavior_node_type_default_is_action() {
 fn behavior_node_type_composite_and_leaf_disjoint() {
     for nt in BehaviorNodeType::all() {
         // No type should be both composite and leaf
-        assert!(!(nt.is_composite() && nt.is_leaf()), "{} is both composite and leaf", nt);
+        assert!(
+            !(nt.is_composite() && nt.is_leaf()),
+            "{} is both composite and leaf",
+            nt
+        );
     }
 }
 

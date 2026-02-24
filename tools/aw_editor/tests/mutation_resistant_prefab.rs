@@ -3,9 +3,7 @@
 //! These tests target boundary conditions, comparison operators, and boolean return paths
 //! to achieve high mutation testing kill rates (90%+).
 
-use aw_editor_lib::prefab::{
-    EntityOverrides, PrefabIssue, PrefabStats, PrefabHierarchySnapshot,
-};
+use aw_editor_lib::prefab::{EntityOverrides, PrefabHierarchySnapshot, PrefabIssue, PrefabStats};
 use std::path::PathBuf;
 
 // ============================================================================
@@ -415,205 +413,285 @@ mod prefab_issue_tests {
     // Test name()
     #[test]
     fn test_missing_file_name() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.name(), "Missing File");
     }
 
     #[test]
     fn test_orphaned_entity_name() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.name(), "Orphaned Entity");
     }
 
     #[test]
     fn test_empty_prefab_name() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.name(), "Empty Prefab");
     }
 
     #[test]
     fn test_empty_mapping_name() {
-        let issue = PrefabIssue::EmptyMapping { prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyMapping {
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.name(), "Empty Mapping");
     }
 
     #[test]
     fn test_cyclic_reference_name() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.name(), "Cyclic Reference");
     }
 
     #[test]
     fn test_invalid_root_index_name() {
-        let issue = PrefabIssue::InvalidRootIndex { path: make_path("test.prefab"), index: 5, entity_count: 3 };
+        let issue = PrefabIssue::InvalidRootIndex {
+            path: make_path("test.prefab"),
+            index: 5,
+            entity_count: 3,
+        };
         assert_eq!(issue.name(), "Invalid Root Index");
     }
 
     // Test icon() - all unique
     #[test]
     fn test_missing_file_icon() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.icon(), "❓");
     }
 
     #[test]
     fn test_orphaned_entity_icon() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.icon(), "👻");
     }
 
     #[test]
     fn test_empty_prefab_icon() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.icon(), "📦");
     }
 
     #[test]
     fn test_empty_mapping_icon() {
-        let issue = PrefabIssue::EmptyMapping { prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyMapping {
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.icon(), "🗺️");
     }
 
     #[test]
     fn test_cyclic_reference_icon() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.icon(), "🔄");
     }
 
     #[test]
     fn test_invalid_root_index_icon() {
-        let issue = PrefabIssue::InvalidRootIndex { path: make_path("test.prefab"), index: 5, entity_count: 3 };
+        let issue = PrefabIssue::InvalidRootIndex {
+            path: make_path("test.prefab"),
+            index: 5,
+            entity_count: 3,
+        };
         assert_eq!(issue.icon(), "#️⃣");
     }
 
     // Test is_critical - only MissingFile, CyclicReference, InvalidRootIndex
     #[test]
     fn test_missing_file_is_critical() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert!(issue.is_critical());
     }
 
     #[test]
     fn test_orphaned_entity_is_not_critical() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert!(!issue.is_critical());
     }
 
     #[test]
     fn test_empty_prefab_is_not_critical() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_critical());
     }
 
     #[test]
     fn test_empty_mapping_is_not_critical() {
-        let issue = PrefabIssue::EmptyMapping { prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyMapping {
+            prefab: make_path("test.prefab"),
+        };
         assert!(!issue.is_critical());
     }
 
     #[test]
     fn test_cyclic_reference_is_critical() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert!(issue.is_critical());
     }
 
     #[test]
     fn test_invalid_root_index_is_critical() {
-        let issue = PrefabIssue::InvalidRootIndex { path: make_path("test.prefab"), index: 5, entity_count: 3 };
+        let issue = PrefabIssue::InvalidRootIndex {
+            path: make_path("test.prefab"),
+            index: 5,
+            entity_count: 3,
+        };
         assert!(issue.is_critical());
     }
 
     // Test is_file_issue - only MissingFile
     #[test]
     fn test_missing_file_is_file_issue() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert!(issue.is_file_issue());
     }
 
     #[test]
     fn test_orphaned_entity_is_not_file_issue() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert!(!issue.is_file_issue());
     }
 
     #[test]
     fn test_empty_prefab_is_not_file_issue() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_file_issue());
     }
 
     #[test]
     fn test_cyclic_reference_is_not_file_issue() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_file_issue());
     }
 
     // Test is_entity_issue - only OrphanedEntity
     #[test]
     fn test_missing_file_is_not_entity_issue() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_entity_issue());
     }
 
     #[test]
     fn test_orphaned_entity_is_entity_issue() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert!(issue.is_entity_issue());
     }
 
     #[test]
     fn test_empty_prefab_is_not_entity_issue() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_entity_issue());
     }
 
     #[test]
     fn test_cyclic_reference_is_not_entity_issue() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert!(!issue.is_entity_issue());
     }
 
     // Test path() - all variants have paths
     #[test]
     fn test_missing_file_path() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     #[test]
     fn test_orphaned_entity_path() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 1, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     #[test]
     fn test_empty_prefab_path() {
-        let issue = PrefabIssue::EmptyPrefab { path: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyPrefab {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     #[test]
     fn test_empty_mapping_path() {
-        let issue = PrefabIssue::EmptyMapping { prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::EmptyMapping {
+            prefab: make_path("test.prefab"),
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     #[test]
     fn test_cyclic_reference_path() {
-        let issue = PrefabIssue::CyclicReference { path: make_path("test.prefab") };
+        let issue = PrefabIssue::CyclicReference {
+            path: make_path("test.prefab"),
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     #[test]
     fn test_invalid_root_index_path() {
-        let issue = PrefabIssue::InvalidRootIndex { path: make_path("test.prefab"), index: 5, entity_count: 3 };
+        let issue = PrefabIssue::InvalidRootIndex {
+            path: make_path("test.prefab"),
+            index: 5,
+            entity_count: 3,
+        };
         assert_eq!(issue.path(), Some(&make_path("test.prefab")));
     }
 
     // Test Display trait
     #[test]
     fn test_display_missing_file() {
-        let issue = PrefabIssue::MissingFile { path: make_path("test.prefab") };
+        let issue = PrefabIssue::MissingFile {
+            path: make_path("test.prefab"),
+        };
         let display = format!("{}", issue);
         assert!(display.contains("Missing File"));
         assert!(display.contains("test.prefab"));
@@ -621,7 +699,10 @@ mod prefab_issue_tests {
 
     #[test]
     fn test_display_orphaned_entity() {
-        let issue = PrefabIssue::OrphanedEntity { entity: 42, prefab: make_path("test.prefab") };
+        let issue = PrefabIssue::OrphanedEntity {
+            entity: 42,
+            prefab: make_path("test.prefab"),
+        };
         let display = format!("{}", issue);
         assert!(display.contains("42"));
         assert!(display.contains("Orphaned"));
@@ -629,7 +710,11 @@ mod prefab_issue_tests {
 
     #[test]
     fn test_display_invalid_root_index() {
-        let issue = PrefabIssue::InvalidRootIndex { path: make_path("test.prefab"), index: 5, entity_count: 3 };
+        let issue = PrefabIssue::InvalidRootIndex {
+            path: make_path("test.prefab"),
+            index: 5,
+            entity_count: 3,
+        };
         let display = format!("{}", issue);
         assert!(display.contains("5"));
         assert!(display.contains("3"));
@@ -697,10 +782,7 @@ mod prefab_hierarchy_snapshot_tests {
 
     #[test]
     fn test_from_iterator() {
-        let data = vec![
-            (1_u32, vec![2_u32, 3_u32]),
-            (4_u32, vec![5_u32]),
-        ];
+        let data = vec![(1_u32, vec![2_u32, 3_u32]), (4_u32, vec![5_u32])];
         let snapshot: PrefabHierarchySnapshot = data.into_iter().collect();
         assert_eq!(snapshot.children_of(1_u32).len(), 2);
         assert_eq!(snapshot.children_of(4_u32).len(), 1);
@@ -712,7 +794,7 @@ mod prefab_hierarchy_snapshot_tests {
         snapshot.insert_children(1_u32, vec![2_u32, 3_u32]);
         snapshot.insert_children(4_u32, vec![5_u32, 6_u32, 7_u32]);
         snapshot.insert_children(8_u32, vec![9_u32]);
-        
+
         assert_eq!(snapshot.children_of(1_u32).len(), 2);
         assert_eq!(snapshot.children_of(4_u32).len(), 3);
         assert_eq!(snapshot.children_of(8_u32).len(), 1);

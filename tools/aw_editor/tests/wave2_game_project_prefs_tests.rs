@@ -10,9 +10,7 @@
 //!   • EditorPreferences — default field values, auto_save_keep_count
 
 use aw_editor_lib::editor_preferences::EditorPreferences;
-use aw_editor_lib::game_project::{
-    AssetSettings, GameProject, GameProjectError, PlatformConfig,
-};
+use aw_editor_lib::game_project::{AssetSettings, GameProject, GameProjectError, PlatformConfig};
 
 // ============================================================================
 // GameProjectError — Display

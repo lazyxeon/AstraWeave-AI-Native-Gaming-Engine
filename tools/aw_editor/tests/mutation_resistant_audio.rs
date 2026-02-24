@@ -249,7 +249,10 @@ mod spatial_preset_tests {
 
     #[test]
     fn test_all_descriptions_unique() {
-        let descs: Vec<&str> = SpatialPreset::all().iter().map(|c| c.description()).collect();
+        let descs: Vec<&str> = SpatialPreset::all()
+            .iter()
+            .map(|c| c.description())
+            .collect();
         let unique: HashSet<_> = descs.iter().collect();
         assert_eq!(descs.len(), unique.len());
     }

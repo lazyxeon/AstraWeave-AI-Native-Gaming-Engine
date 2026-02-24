@@ -716,10 +716,11 @@ impl CompanionApp {
         println!("✓ Forest floor texture loaded");
 
         // Create water renderer for ocean and pass to Renderer
+        // Use Rgba16Float to match the HDR render pass (bloom feature is enabled)
         println!("Initializing ocean...");
         let water_renderer = WaterRenderer::new(
             renderer.device(),
-            renderer.surface_format(),
+            wgpu::TextureFormat::Rgba16Float,
             wgpu::TextureFormat::Depth32Float,
         );
         renderer.set_water_renderer(water_renderer);

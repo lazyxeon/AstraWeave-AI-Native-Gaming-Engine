@@ -442,8 +442,11 @@ impl StatusBar {
             };
 
             ui.add_space(4.0);
-            ui.colored_label(gpu_util_color, format!("GPU: {:.0}%", usage.gpu_utilization))
-                .on_hover_text("GPU utilization percentage");
+            ui.colored_label(
+                gpu_util_color,
+                format!("GPU: {:.0}%", usage.gpu_utilization),
+            )
+            .on_hover_text("GPU utilization percentage");
         }
     }
 
@@ -492,7 +495,7 @@ mod tests {
     }
 
     // Week 6 Day 5 Tests: Resource Usage
-    
+
     #[test]
     fn test_resource_usage_new() {
         let usage = ResourceUsage::new();
@@ -502,58 +505,64 @@ mod tests {
         assert_eq!(usage.gpu_memory_total, 0);
         assert_eq!(usage.gpu_utilization, 0.0);
     }
-    
+
     #[test]
     fn test_resource_usage_memory_percent() {
         let mut usage = ResourceUsage::new();
         usage.memory_used = 500;
         usage.memory_total = 1000;
         assert!((usage.memory_percent() - 50.0).abs() < 0.001);
-        
+
         // Test zero total (avoid divide by zero)
         usage.memory_total = 0;
         assert_eq!(usage.memory_percent(), 0.0);
     }
-    
+
     #[test]
     fn test_resource_usage_gpu_memory_percent() {
         let mut usage = ResourceUsage::new();
         usage.gpu_memory_used = 2 * 1024 * 1024 * 1024; // 2 GB
         usage.gpu_memory_total = 8 * 1024 * 1024 * 1024; // 8 GB
         assert!((usage.gpu_memory_percent() - 25.0).abs() < 0.001);
-        
+
         // Test zero total
         usage.gpu_memory_total = 0;
         assert_eq!(usage.gpu_memory_percent(), 0.0);
     }
-    
+
     #[test]
     fn test_format_bytes_bytes() {
         assert_eq!(ResourceUsage::format_bytes(0), "0 B");
         assert_eq!(ResourceUsage::format_bytes(512), "512 B");
         assert_eq!(ResourceUsage::format_bytes(1023), "1023 B");
     }
-    
+
     #[test]
     fn test_format_bytes_kilobytes() {
         assert_eq!(ResourceUsage::format_bytes(1024), "1.0 KB");
         assert_eq!(ResourceUsage::format_bytes(1536), "1.5 KB");
         assert_eq!(ResourceUsage::format_bytes(10 * 1024), "10.0 KB");
     }
-    
+
     #[test]
     fn test_format_bytes_megabytes() {
         assert_eq!(ResourceUsage::format_bytes(1024 * 1024), "1.0 MB");
         assert_eq!(ResourceUsage::format_bytes(256 * 1024 * 1024), "256.0 MB");
     }
-    
+
     #[test]
     fn test_format_bytes_gigabytes() {
         assert_eq!(ResourceUsage::format_bytes(1024 * 1024 * 1024), "1.0 GB");
-        assert_eq!(ResourceUsage::format_bytes(4 * 1024 * 1024 * 1024), "4.0 GB");
-        assert_eq!(ResourceUsage::format_bytes(16 * 1024 * 1024 * 1024), "16.0 GB");
+        assert_eq!(
+            ResourceUsage::format_bytes(4 * 1024 * 1024 * 1024),
+            "4.0 GB"
+        );
+        assert_eq!(
+            ResourceUsage::format_bytes(16 * 1024 * 1024 * 1024),
+            "16.0 GB"
+        );
     }
-    
+
     #[test]
     fn test_background_task_summary_empty() {
         let summary = BackgroundTaskSummary::empty();
@@ -563,7 +572,7 @@ mod tests {
         assert!(summary.started_at.is_none());
         assert!(!summary.is_active());
     }
-    
+
     #[test]
     fn test_background_task_summary_active() {
         let summary = BackgroundTaskSummary {

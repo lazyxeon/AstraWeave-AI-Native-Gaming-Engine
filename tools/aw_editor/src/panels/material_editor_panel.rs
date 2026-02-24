@@ -131,7 +131,10 @@ impl BlendMode {
     }
 
     pub fn is_transparent(&self) -> bool {
-        matches!(self, BlendMode::Translucent | BlendMode::Additive | BlendMode::Modulate)
+        matches!(
+            self,
+            BlendMode::Translucent | BlendMode::Additive | BlendMode::Modulate
+        )
     }
 }
 
@@ -562,35 +565,83 @@ impl std::fmt::Display for MaterialEditorAction {
             MaterialEditorAction::RemoveMaterial(id) => write!(f, "Remove material {}", id),
             MaterialEditorAction::SelectMaterial(id) => write!(f, "Select material {}", id),
             MaterialEditorAction::DuplicateMaterial(id) => write!(f, "Duplicate material {}", id),
-            MaterialEditorAction::SetMaterialName(id, name) => write!(f, "Set material {} name: {}", id, name),
-            MaterialEditorAction::SetMaterialType(id, t) => write!(f, "Set material {} type: {}", id, t),
-            MaterialEditorAction::SetBaseColor(id, _) => write!(f, "Set material {} base color", id),
-            MaterialEditorAction::SetMetallic(id, v) => write!(f, "Set material {} metallic: {:.2}", id, v),
-            MaterialEditorAction::SetRoughness(id, v) => write!(f, "Set material {} roughness: {:.2}", id, v),
-            MaterialEditorAction::SetNormalStrength(id, v) => write!(f, "Set material {} normal: {:.2}", id, v),
-            MaterialEditorAction::SetAoStrength(id, v) => write!(f, "Set material {} AO: {:.2}", id, v),
-            MaterialEditorAction::SetBlendMode(id, m) => write!(f, "Set material {} blend: {}", id, m),
-            MaterialEditorAction::SetEmissiveColor(id, _) => write!(f, "Set material {} emissive color", id),
-            MaterialEditorAction::SetEmissiveIntensity(id, v) => write!(f, "Set material {} emissive: {:.2}", id, v),
-            MaterialEditorAction::ToggleEmissive(id, b) => write!(f, "Toggle material {} emissive: {}", id, b),
-            MaterialEditorAction::SetTexture(id, ch, _) => write!(f, "Set material {} texture {:?}", id, ch),
-            MaterialEditorAction::RemoveTexture(id, ch) => write!(f, "Remove material {} texture {:?}", id, ch),
-            MaterialEditorAction::SetTextureScale(id, u, v) => write!(f, "Set material {} tex scale: ({:.2}, {:.2})", id, u, v),
-            MaterialEditorAction::SetTextureOffset(id, u, v) => write!(f, "Set material {} tex offset: ({:.2}, {:.2})", id, u, v),
-            MaterialEditorAction::ToggleTwoSided(id, b) => write!(f, "Toggle material {} two-sided: {}", id, b),
-            MaterialEditorAction::ToggleCastShadow(id, b) => write!(f, "Toggle material {} cast shadow: {}", id, b),
-            MaterialEditorAction::ToggleReceiveShadow(id, b) => write!(f, "Toggle material {} receive shadow: {}", id, b),
-            MaterialEditorAction::SetRenderQueue(id, q) => write!(f, "Set material {} queue: {}", id, q),
+            MaterialEditorAction::SetMaterialName(id, name) => {
+                write!(f, "Set material {} name: {}", id, name)
+            }
+            MaterialEditorAction::SetMaterialType(id, t) => {
+                write!(f, "Set material {} type: {}", id, t)
+            }
+            MaterialEditorAction::SetBaseColor(id, _) => {
+                write!(f, "Set material {} base color", id)
+            }
+            MaterialEditorAction::SetMetallic(id, v) => {
+                write!(f, "Set material {} metallic: {:.2}", id, v)
+            }
+            MaterialEditorAction::SetRoughness(id, v) => {
+                write!(f, "Set material {} roughness: {:.2}", id, v)
+            }
+            MaterialEditorAction::SetNormalStrength(id, v) => {
+                write!(f, "Set material {} normal: {:.2}", id, v)
+            }
+            MaterialEditorAction::SetAoStrength(id, v) => {
+                write!(f, "Set material {} AO: {:.2}", id, v)
+            }
+            MaterialEditorAction::SetBlendMode(id, m) => {
+                write!(f, "Set material {} blend: {}", id, m)
+            }
+            MaterialEditorAction::SetEmissiveColor(id, _) => {
+                write!(f, "Set material {} emissive color", id)
+            }
+            MaterialEditorAction::SetEmissiveIntensity(id, v) => {
+                write!(f, "Set material {} emissive: {:.2}", id, v)
+            }
+            MaterialEditorAction::ToggleEmissive(id, b) => {
+                write!(f, "Toggle material {} emissive: {}", id, b)
+            }
+            MaterialEditorAction::SetTexture(id, ch, _) => {
+                write!(f, "Set material {} texture {:?}", id, ch)
+            }
+            MaterialEditorAction::RemoveTexture(id, ch) => {
+                write!(f, "Remove material {} texture {:?}", id, ch)
+            }
+            MaterialEditorAction::SetTextureScale(id, u, v) => {
+                write!(f, "Set material {} tex scale: ({:.2}, {:.2})", id, u, v)
+            }
+            MaterialEditorAction::SetTextureOffset(id, u, v) => {
+                write!(f, "Set material {} tex offset: ({:.2}, {:.2})", id, u, v)
+            }
+            MaterialEditorAction::ToggleTwoSided(id, b) => {
+                write!(f, "Toggle material {} two-sided: {}", id, b)
+            }
+            MaterialEditorAction::ToggleCastShadow(id, b) => {
+                write!(f, "Toggle material {} cast shadow: {}", id, b)
+            }
+            MaterialEditorAction::ToggleReceiveShadow(id, b) => {
+                write!(f, "Toggle material {} receive shadow: {}", id, b)
+            }
+            MaterialEditorAction::SetRenderQueue(id, q) => {
+                write!(f, "Set material {} queue: {}", id, q)
+            }
             MaterialEditorAction::ApplyPreset(name) => write!(f, "Apply preset: {}", name),
-            MaterialEditorAction::SaveAsPreset(id, name) => write!(f, "Save material {} as preset: {}", id, name),
-            MaterialEditorAction::SetPresetFilter(filter) => write!(f, "Filter presets: {}", filter),
-            MaterialEditorAction::SetPreviewLighting(l) => write!(f, "Set preview lighting: {:?}", l),
-            MaterialEditorAction::SetPreviewRotation(r) => write!(f, "Set preview rotation: {:.1}", r),
+            MaterialEditorAction::SaveAsPreset(id, name) => {
+                write!(f, "Save material {} as preset: {}", id, name)
+            }
+            MaterialEditorAction::SetPresetFilter(filter) => {
+                write!(f, "Filter presets: {}", filter)
+            }
+            MaterialEditorAction::SetPreviewLighting(l) => {
+                write!(f, "Set preview lighting: {:?}", l)
+            }
+            MaterialEditorAction::SetPreviewRotation(r) => {
+                write!(f, "Set preview rotation: {:.1}", r)
+            }
             MaterialEditorAction::SetPreviewZoom(z) => write!(f, "Set preview zoom: {:.2}", z),
             MaterialEditorAction::SetLibraryPath(path) => write!(f, "Set library path: {}", path),
             MaterialEditorAction::RefreshLibrary => write!(f, "Refresh library"),
             MaterialEditorAction::ImportMaterial(path) => write!(f, "Import material: {}", path),
-            MaterialEditorAction::ExportMaterial(id, path) => write!(f, "Export material {} to: {}", id, path),
+            MaterialEditorAction::ExportMaterial(id, path) => {
+                write!(f, "Export material {} to: {}", id, path)
+            }
         }
     }
 }
@@ -694,8 +745,16 @@ impl MaterialEditorPanel {
             metallic: 0.0,
             roughness: 0.9,
             texture_slots: vec![
-                TextureSlot { channel: TextureChannel::Albedo, texture_path: "textures/dirt_albedo.png".to_string(), ..Default::default() },
-                TextureSlot { channel: TextureChannel::Normal, texture_path: "textures/dirt_normal.png".to_string(), ..Default::default() },
+                TextureSlot {
+                    channel: TextureChannel::Albedo,
+                    texture_path: "textures/dirt_albedo.png".to_string(),
+                    ..Default::default()
+                },
+                TextureSlot {
+                    channel: TextureChannel::Normal,
+                    texture_path: "textures/dirt_normal.png".to_string(),
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         });
@@ -778,7 +837,11 @@ impl MaterialEditorPanel {
 
         // Material info
         ui.horizontal(|ui| {
-            ui.label(format!("{} {}", self.current_material.material_type.icon(), self.current_material.name));
+            ui.label(format!(
+                "{} {}",
+                self.current_material.material_type.icon(),
+                self.current_material.name
+            ));
             ui.separator();
             ui.label(format!("Type: {:?}", self.current_material.material_type));
             ui.label(format!("| Blend: {:?}", self.current_material.blend_mode));
@@ -797,7 +860,10 @@ impl MaterialEditorPanel {
                 .selected_text(&self.current_material.name)
                 .show_ui(ui, |ui| {
                     for mat in &self.materials.clone() {
-                        if ui.selectable_value(&mut self.selected_material, Some(mat.id), &mat.name).clicked() {
+                        if ui
+                            .selectable_value(&mut self.selected_material, Some(mat.id), &mat.name)
+                            .clicked()
+                        {
                             self.current_material = mat.clone();
                         }
                     }
@@ -835,10 +901,18 @@ impl MaterialEditorPanel {
 
                             ui.label("Type:");
                             egui::ComboBox::from_id_salt("mat_type")
-                                .selected_text(format!("{} {:?}", self.current_material.material_type.icon(), self.current_material.material_type))
+                                .selected_text(format!(
+                                    "{} {:?}",
+                                    self.current_material.material_type.icon(),
+                                    self.current_material.material_type
+                                ))
                                 .show_ui(ui, |ui| {
                                     for t in MaterialType::all() {
-                                        ui.selectable_value(&mut self.current_material.material_type, *t, format!("{} {:?}", t.icon(), t));
+                                        ui.selectable_value(
+                                            &mut self.current_material.material_type,
+                                            *t,
+                                            format!("{} {:?}", t.icon(), t),
+                                        );
                                     }
                                 });
                             ui.end_row();
@@ -847,10 +921,26 @@ impl MaterialEditorPanel {
                             egui::ComboBox::from_id_salt("blend_mode")
                                 .selected_text(format!("{:?}", self.current_material.blend_mode))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_material.blend_mode, BlendMode::Opaque, "Opaque");
-                                    ui.selectable_value(&mut self.current_material.blend_mode, BlendMode::Masked, "Masked");
-                                    ui.selectable_value(&mut self.current_material.blend_mode, BlendMode::Translucent, "Translucent");
-                                    ui.selectable_value(&mut self.current_material.blend_mode, BlendMode::Additive, "Additive");
+                                    ui.selectable_value(
+                                        &mut self.current_material.blend_mode,
+                                        BlendMode::Opaque,
+                                        "Opaque",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_material.blend_mode,
+                                        BlendMode::Masked,
+                                        "Masked",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_material.blend_mode,
+                                        BlendMode::Translucent,
+                                        "Translucent",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_material.blend_mode,
+                                        BlendMode::Additive,
+                                        "Additive",
+                                    );
                                 });
                             ui.end_row();
                         });
@@ -884,11 +974,17 @@ impl MaterialEditorPanel {
                             ui.end_row();
 
                             ui.label("Metallic:");
-                            ui.add(egui::Slider::new(&mut self.current_material.metallic, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_material.metallic,
+                                0.0..=1.0,
+                            ));
                             ui.end_row();
 
                             ui.label("Roughness:");
-                            ui.add(egui::Slider::new(&mut self.current_material.roughness, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_material.roughness,
+                                0.0..=1.0,
+                            ));
                             ui.end_row();
                         });
                 });
@@ -919,7 +1015,10 @@ impl MaterialEditorPanel {
                             ui.end_row();
 
                             ui.label("Intensity:");
-                            ui.add(egui::Slider::new(&mut self.current_material.emissive_intensity, 0.0..=10.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_material.emissive_intensity,
+                                0.0..=10.0,
+                            ));
                             ui.end_row();
                         });
                 });
@@ -933,7 +1032,9 @@ impl MaterialEditorPanel {
         // Add texture slot
         ui.horizontal(|ui| {
             if ui.button("+ Add Texture Slot").clicked() {
-                self.current_material.texture_slots.push(TextureSlot::default());
+                self.current_material
+                    .texture_slots
+                    .push(TextureSlot::default());
             }
         });
 
@@ -967,14 +1068,46 @@ impl MaterialEditorPanel {
                                         egui::ComboBox::from_id_salt(format!("channel_{}", idx))
                                             .selected_text(slot.channel.name())
                                             .show_ui(ui, |ui| {
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Albedo, "Albedo");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Normal, "Normal");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Metallic, "Metallic");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Roughness, "Roughness");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::AO, "Ambient Occlusion");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Emissive, "Emissive");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Height, "Height");
-                                                ui.selectable_value(&mut slot.channel, TextureChannel::Opacity, "Opacity");
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Albedo,
+                                                    "Albedo",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Normal,
+                                                    "Normal",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Metallic,
+                                                    "Metallic",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Roughness,
+                                                    "Roughness",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::AO,
+                                                    "Ambient Occlusion",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Emissive,
+                                                    "Emissive",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Height,
+                                                    "Height",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut slot.channel,
+                                                    TextureChannel::Opacity,
+                                                    "Opacity",
+                                                );
                                             });
                                         ui.end_row();
 
@@ -989,15 +1122,31 @@ impl MaterialEditorPanel {
 
                                         ui.label("Tiling:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut slot.tiling.0).prefix("U:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut slot.tiling.1).prefix("V:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut slot.tiling.0)
+                                                    .prefix("U:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut slot.tiling.1)
+                                                    .prefix("V:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.end_row();
 
                                         ui.label("Offset:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut slot.offset.0).prefix("U:").speed(0.01));
-                                            ui.add(egui::DragValue::new(&mut slot.offset.1).prefix("V:").speed(0.01));
+                                            ui.add(
+                                                egui::DragValue::new(&mut slot.offset.0)
+                                                    .prefix("U:")
+                                                    .speed(0.01),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut slot.offset.1)
+                                                    .prefix("V:")
+                                                    .speed(0.01),
+                                            );
                                         });
                                         ui.end_row();
 
@@ -1029,12 +1178,18 @@ impl MaterialEditorPanel {
 
                     ui.checkbox(&mut self.current_material.two_sided, "Two Sided");
                     ui.checkbox(&mut self.current_material.cast_shadows, "Cast Shadows");
-                    ui.checkbox(&mut self.current_material.receive_shadows, "Receive Shadows");
+                    ui.checkbox(
+                        &mut self.current_material.receive_shadows,
+                        "Receive Shadows",
+                    );
 
                     if self.current_material.blend_mode == BlendMode::Masked {
                         ui.horizontal(|ui| {
                             ui.label("Alpha Cutoff:");
-                            ui.add(egui::Slider::new(&mut self.current_material.alpha_cutoff, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_material.alpha_cutoff,
+                                0.0..=1.0,
+                            ));
                         });
                     }
                 });
@@ -1066,7 +1221,10 @@ impl MaterialEditorPanel {
                                 ui.end_row();
 
                                 ui.label("Radius:");
-                                ui.add(egui::Slider::new(&mut self.current_material.subsurface_radius, 0.0..=5.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_material.subsurface_radius,
+                                    0.0..=5.0,
+                                ));
                                 ui.end_row();
                             });
                     });
@@ -1075,8 +1233,9 @@ impl MaterialEditorPanel {
                 }
 
                 // Glass/Translucent properties
-                if self.current_material.material_type == MaterialType::Glass || 
-                   self.current_material.blend_mode == BlendMode::Translucent {
+                if self.current_material.material_type == MaterialType::Glass
+                    || self.current_material.blend_mode == BlendMode::Translucent
+                {
                     ui.group(|ui| {
                         ui.label(RichText::new("🔮 Transmission").strong());
 
@@ -1085,11 +1244,17 @@ impl MaterialEditorPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("IOR:");
-                                ui.add(egui::Slider::new(&mut self.current_material.ior, 1.0..=3.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_material.ior,
+                                    1.0..=3.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Transmission:");
-                                ui.add(egui::Slider::new(&mut self.current_material.transmission, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_material.transmission,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     });
@@ -1116,8 +1281,12 @@ impl MaterialEditorPanel {
 
                 for preset in &self.presets {
                     // Filter
-                    if !self.preset_filter.is_empty() && 
-                       !preset.name.to_lowercase().contains(&self.preset_filter.to_lowercase()) {
+                    if !self.preset_filter.is_empty()
+                        && !preset
+                            .name
+                            .to_lowercase()
+                            .contains(&self.preset_filter.to_lowercase())
+                    {
                         continue;
                     }
 
@@ -1125,7 +1294,11 @@ impl MaterialEditorPanel {
                     if preset.category != current_category {
                         current_category = preset.category.clone();
                         ui.add_space(5.0);
-                        ui.label(RichText::new(&current_category).strong().color(Color32::from_rgb(150, 150, 200)));
+                        ui.label(
+                            RichText::new(&current_category)
+                                .strong()
+                                .color(Color32::from_rgb(150, 150, 200)),
+                        );
                     }
 
                     ui.horizontal(|ui| {
@@ -1136,7 +1309,9 @@ impl MaterialEditorPanel {
                             (preset.base_color[2] * 255.0) as u8,
                             255,
                         );
-                        let color_rect = ui.allocate_exact_size(Vec2::new(16.0, 16.0), egui::Sense::hover()).0;
+                        let color_rect = ui
+                            .allocate_exact_size(Vec2::new(16.0, 16.0), egui::Sense::hover())
+                            .0;
                         ui.painter().rect_filled(color_rect, 3.0, color);
 
                         ui.label(format!("{} {}", preset.material_type.icon(), preset.name));
@@ -1162,10 +1337,26 @@ impl MaterialEditorPanel {
             egui::ComboBox::from_id_salt("preview_lighting")
                 .selected_text(format!("{:?}", self.preview_lighting))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.preview_lighting, PreviewLighting::Studio, "Studio");
-                    ui.selectable_value(&mut self.preview_lighting, PreviewLighting::Outdoor, "Outdoor");
-                    ui.selectable_value(&mut self.preview_lighting, PreviewLighting::Indoor, "Indoor");
-                    ui.selectable_value(&mut self.preview_lighting, PreviewLighting::Dramatic, "Dramatic");
+                    ui.selectable_value(
+                        &mut self.preview_lighting,
+                        PreviewLighting::Studio,
+                        "Studio",
+                    );
+                    ui.selectable_value(
+                        &mut self.preview_lighting,
+                        PreviewLighting::Outdoor,
+                        "Outdoor",
+                    );
+                    ui.selectable_value(
+                        &mut self.preview_lighting,
+                        PreviewLighting::Indoor,
+                        "Indoor",
+                    );
+                    ui.selectable_value(
+                        &mut self.preview_lighting,
+                        PreviewLighting::Dramatic,
+                        "Dramatic",
+                    );
                 });
         });
 
@@ -1203,12 +1394,8 @@ impl MaterialEditorPanel {
 
         // Highlight (simulating metallic/roughness)
         let highlight_intensity = (1.0 - self.current_material.roughness) * 0.7;
-        let highlight_color = Color32::from_rgba_unmultiplied(
-            255,
-            255,
-            255,
-            (highlight_intensity * 200.0) as u8,
-        );
+        let highlight_color =
+            Color32::from_rgba_unmultiplied(255, 255, 255, (highlight_intensity * 200.0) as u8);
         painter.circle_filled(
             egui::Pos2::new(center.x - radius * 0.3, center.y - radius * 0.3),
             radius * 0.3,
@@ -1219,7 +1406,10 @@ impl MaterialEditorPanel {
         painter.text(
             egui::Pos2::new(rect.min.x + 10.0, rect.max.y - 20.0),
             egui::Align2::LEFT_BOTTOM,
-            format!("M: {:.2}  R: {:.2}", self.current_material.metallic, self.current_material.roughness),
+            format!(
+                "M: {:.2}  R: {:.2}",
+                self.current_material.metallic, self.current_material.roughness
+            ),
             egui::FontId::proportional(12.0),
             Color32::WHITE,
         );
@@ -1758,7 +1948,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -1815,8 +2009,14 @@ mod tests {
 
         let actions = panel.take_actions();
         assert!(matches!(actions[0], MaterialEditorAction::AddMaterial));
-        assert!(matches!(actions[1], MaterialEditorAction::SelectMaterial(_)));
-        assert!(matches!(actions[2], MaterialEditorAction::RemoveMaterial(_)));
+        assert!(matches!(
+            actions[1],
+            MaterialEditorAction::SelectMaterial(_)
+        ));
+        assert!(matches!(
+            actions[2],
+            MaterialEditorAction::RemoveMaterial(_)
+        ));
     }
 
     #[test]

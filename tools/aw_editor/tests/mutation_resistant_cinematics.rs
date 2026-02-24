@@ -13,10 +13,8 @@
 //! 3. Boundary conditions - test edge cases
 //! 4. Comparison operator tests - verify comparisons work correctly
 
-use aw_editor_lib::panels::{
-    CameraInterpolation, CinematicsTab, PlaybackSpeed, TrackType,
-};
 use aw_editor_lib::panels::cinematics_panel::PlaybackState;
+use aw_editor_lib::panels::{CameraInterpolation, CinematicsTab, PlaybackSpeed, TrackType};
 
 // ============================================================================
 // TrackType Tests - 6 variants
@@ -529,7 +527,7 @@ mod playback_speed_tests {
         let normal = PlaybackSpeed::Normal.multiplier();
         let double = PlaybackSpeed::Double.multiplier();
         let quadruple = PlaybackSpeed::Quadruple.multiplier();
-        
+
         assert!(quarter < half);
         assert!(half < normal);
         assert!(normal < double);
@@ -949,9 +947,12 @@ mod boolean_path_tests {
         for interp in smooth_true {
             assert!(interp.is_smooth(), "{:?} should be smooth", interp);
         }
-        
+
         // 1 false path
-        assert!(!CameraInterpolation::Step.is_smooth(), "Step should not be smooth");
+        assert!(
+            !CameraInterpolation::Step.is_smooth(),
+            "Step should not be smooth"
+        );
     }
 
     // Verify all is_running paths are tested
@@ -962,7 +963,7 @@ mod boolean_path_tests {
         for state in running_true {
             assert!(state.is_running(), "{:?} should be running", state);
         }
-        
+
         // 2 false paths
         let running_false = [PlaybackState::Stopped, PlaybackState::Paused];
         for state in running_false {
@@ -981,7 +982,11 @@ mod multiplier_boundary_tests {
     #[test]
     fn multiplier_positive_for_all() {
         for speed in PlaybackSpeed::all() {
-            assert!(speed.multiplier() > 0.0, "{:?} should have positive multiplier", speed);
+            assert!(
+                speed.multiplier() > 0.0,
+                "{:?} should have positive multiplier",
+                speed
+            );
         }
     }
 

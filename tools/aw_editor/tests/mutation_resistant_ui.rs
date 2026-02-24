@@ -3,7 +3,7 @@
 //! Comprehensive tests for ToastLevel, ToastAction, Toast
 //! to achieve ≥92% mutation kill rate.
 
-use aw_editor_lib::ui::toast::{ToastLevel, ToastAction, Toast};
+use aw_editor_lib::ui::toast::{Toast, ToastAction, ToastLevel};
 
 // =============================================================================
 // TOAST LEVEL - IS_PROBLEM() TESTS
@@ -102,7 +102,10 @@ mod toast_level_severity_tests {
             ToastLevel::Success.severity(),
             ToastLevel::Warning.severity(),
             ToastLevel::Error.severity(),
-        ].into_iter().max().unwrap();
+        ]
+        .into_iter()
+        .max()
+        .unwrap();
         assert_eq!(max_sev, 3);
     }
 
@@ -113,7 +116,10 @@ mod toast_level_severity_tests {
             ToastLevel::Success.severity(),
             ToastLevel::Warning.severity(),
             ToastLevel::Error.severity(),
-        ].into_iter().min().unwrap();
+        ]
+        .into_iter()
+        .min()
+        .unwrap();
         assert_eq!(min_sev, 0);
     }
 }

@@ -28,8 +28,8 @@ use glam::Vec3;
 
 #[test]
 fn ubo_size_80_bytes() {
-    assert_eq!(SceneEnvironmentUBO::size(), 80);
-    assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 80);
+    assert_eq!(SceneEnvironmentUBO::size(), 96);
+    assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 96);
 }
 
 #[test]

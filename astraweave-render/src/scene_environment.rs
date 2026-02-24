@@ -8,13 +8,18 @@
 //! # GPU Layout
 //!
 //! ```text
-//! SceneEnvironmentUBO (80 bytes, 16-byte aligned):
-//!   fog_color:        vec3<f32> + fog_density: f32   (16 bytes)
-//!   fog_start:        f32 + fog_end: f32 + pad       (16 bytes)
-//!   ambient_color:    vec3<f32> + ambient_intensity   (16 bytes)
-//!   tint_color:       vec3<f32> + tint_alpha: f32     (16 bytes)
-//!   blend_factor:     f32 + _pad: vec3<f32>           (16 bytes)
+//! SceneEnvironmentUBO (96 bytes, 16-byte aligned):
+//!   fog_color:        vec3<f32> + fog_density: f32   (16 bytes)  offset  0
+//!   fog_start:        f32 + fog_end: f32 + pad       (16 bytes)  offset 16
+//!   ambient_color:    vec3<f32> + ambient_intensity   (16 bytes)  offset 32
+//!   tint_color:       vec3<f32> + tint_alpha: f32     (16 bytes)  offset 48
+//!   blend_factor:     f32 + _pad_align: vec3<f32>     (16 bytes)  offset 64
+//!   _pad1:            vec3<f32> + _pad_struct: f32    (16 bytes)  offset 80
 //! ```
+//!
+//! **Note:** The WGSL `SceneEnv` struct has `_pad1: vec3<f32>` which
+//! requires 16-byte alignment in WGSL, inserting implicit padding after
+//! `blend_factor`. The total struct size rounds up to 96 bytes.
 //!
 //! Bind as `@group(4) @binding(0) var<uniform> uScene: SceneEnvironment;`
 //! in WGSL (once the pipeline is extended to support it).
@@ -24,7 +29,10 @@ use bytemuck::{Pod, Zeroable};
 
 // ─── GPU Uniform ─────────────────────────────────────────────────────────
 
-/// GPU-ready scene environment uniform buffer (80 bytes, 16-byte aligned).
+/// GPU-ready scene environment uniform buffer (96 bytes, 16-byte aligned).
+///
+/// Matches WGSL `SceneEnv` layout where `vec3<f32>` fields have 16-byte
+/// alignment, producing a total struct size of 96 bytes (not 80).
 ///
 /// Upload this to a `wgpu::Buffer` with `wgpu::BufferUsages::UNIFORM`
 /// and update it each frame via `queue.write_buffer()`.
@@ -56,8 +64,13 @@ pub struct SceneEnvironmentUBO {
     /// Current transition blend factor (0.0 = source biome, 1.0 = target biome).
     /// Useful for shader effects that want to know about the transition.
     pub blend_factor: f32,
-    /// Padding to maintain 16-byte alignment.
+    /// Padding to align `_pad1` to 16-byte boundary (WGSL vec3 alignment).
+    pub _pad_align: [f32; 3],
+
+    /// Matches `_pad1: vec3<f32>` in WGSL shader.
     pub _pad1: [f32; 3],
+    /// Padding to round struct size to 96 bytes (multiple of 16).
+    pub _pad_struct: f32,
 }
 
 impl Default for SceneEnvironmentUBO {
@@ -85,7 +98,9 @@ impl SceneEnvironmentUBO {
             tint_color,
             tint_alpha,
             blend_factor,
+            _pad_align: [0.0; 3],
             _pad1: [0.0; 3],
+            _pad_struct: 0.0,
         }
     }
 
@@ -292,8 +307,8 @@ mod tests {
 
     #[test]
     fn test_ubo_size_is_80_bytes() {
-        assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 80);
-        assert_eq!(SceneEnvironmentUBO::size(), 80);
+        assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 96);
+        assert_eq!(SceneEnvironmentUBO::size(), 96);
     }
 
     #[test]
@@ -450,7 +465,7 @@ mod tests {
         let ubo = env.to_ubo();
 
         let bytes = bytemuck::bytes_of(&ubo);
-        assert_eq!(bytes.len(), 80);
+        assert_eq!(bytes.len(), 96);
 
         let deserialized: &SceneEnvironmentUBO = bytemuck::from_bytes(bytes);
         assert_eq!(deserialized.fog_density, ubo.fog_density);
@@ -575,8 +590,8 @@ mod tests {
                 biome,
                 ubo.ambient_intensity
             );
-            // Size is always 80 bytes
-            assert_eq!(bytemuck::bytes_of(&ubo).len(), 80);
+            // Size is always 96 bytes (matches WGSL SceneEnv layout)
+            assert_eq!(bytemuck::bytes_of(&ubo).len(), 96);
         }
     }
 
@@ -619,7 +634,7 @@ mod tests {
                     dst,
                     ubo.blend_factor
                 );
-                assert_eq!(bytemuck::bytes_of(&ubo).len(), 80);
+                assert_eq!(bytemuck::bytes_of(&ubo).len(), 96);
             }
         }
     }

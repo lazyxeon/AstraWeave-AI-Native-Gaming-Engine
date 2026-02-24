@@ -50,7 +50,10 @@ impl LogEntry {
     /// Format timestamp for display
     pub fn format_timestamp(&self) -> String {
         use std::time::UNIX_EPOCH;
-        let duration = self.timestamp.duration_since(UNIX_EPOCH).unwrap_or_default();
+        let duration = self
+            .timestamp
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default();
         let secs = duration.as_secs();
         let hours = (secs / 3600) % 24;
         let minutes = (secs / 60) % 60;
@@ -79,7 +82,13 @@ impl std::fmt::Display for LogLevel {
 
 impl LogLevel {
     pub fn all_levels() -> &'static [LogLevel] {
-        &[LogLevel::All, LogLevel::Debug, LogLevel::Info, LogLevel::Warning, LogLevel::Error]
+        &[
+            LogLevel::All,
+            LogLevel::Debug,
+            LogLevel::Info,
+            LogLevel::Warning,
+            LogLevel::Error,
+        ]
     }
 
     pub fn matches(&self, log: &str) -> bool {
@@ -138,23 +147,23 @@ pub struct ConsolePanel {
     show_timestamps: bool,
     show_categories: bool,
     show_source_location: bool,
-    
+
     // Enhanced log storage
     log_entries: VecDeque<LogEntry>,
     max_entries: usize,
-    
+
     // Category filtering
     enabled_categories: std::collections::HashSet<String>,
     all_categories: Vec<String>,
-    
+
     // Expanded stacktraces (by index)
     expanded_stacktraces: std::collections::HashSet<usize>,
-    
+
     // Console command input
     command_input: String,
     command_history: VecDeque<String>,
     command_history_index: Option<usize>,
-    
+
     // Pause/resume
     is_paused: bool,
     paused_entry_count: usize,
@@ -188,7 +197,7 @@ impl ConsolePanel {
             self.paused_entry_count += 1;
             return;
         }
-        
+
         // Track category
         if let Some(cat) = &entry.category {
             if !self.all_categories.contains(cat) {
@@ -199,7 +208,7 @@ impl ConsolePanel {
                 self.enabled_categories.insert(cat.clone());
             }
         }
-        
+
         // Enforce max entries
         if self.log_entries.len() >= self.max_entries {
             self.log_entries.pop_front();
@@ -226,7 +235,7 @@ impl ConsolePanel {
         let mut info = 0;
         let mut warnings = 0;
         let mut errors = 0;
-        
+
         for entry in &self.log_entries {
             match entry.level {
                 LogLevel::Debug => debug += 1,
@@ -270,14 +279,15 @@ impl ConsolePanel {
                 if !self.filter_level.matches_entry(entry) {
                     return false;
                 }
-                
+
                 // Category filter
                 if let Some(cat) = &entry.category {
-                    if !self.enabled_categories.is_empty() && !self.enabled_categories.contains(cat) {
+                    if !self.enabled_categories.is_empty() && !self.enabled_categories.contains(cat)
+                    {
                         return false;
                     }
                 }
-                
+
                 // Text search
                 if !self.search_text.is_empty() {
                     let search_lower = self.search_text.to_lowercase();
@@ -285,7 +295,7 @@ impl ConsolePanel {
                         return false;
                     }
                 }
-                
+
                 true
             })
             .collect()
@@ -310,21 +320,32 @@ impl ConsolePanel {
         match parts.first() {
             Some(&"clear") => self.clear(),
             Some(&"help") => {
-                self.push_entry(LogEntry::new(
-                    "Available commands: clear, help, pause, resume, filter <level>",
-                    LogLevel::Info,
-                ).with_category("Console"));
+                self.push_entry(
+                    LogEntry::new(
+                        "Available commands: clear, help, pause, resume, filter <level>",
+                        LogLevel::Info,
+                    )
+                    .with_category("Console"),
+                );
             }
             Some(&"pause") => {
                 self.is_paused = true;
-                self.push_entry(LogEntry::new("Logging paused", LogLevel::Info).with_category("Console"));
+                self.push_entry(
+                    LogEntry::new("Logging paused", LogLevel::Info).with_category("Console"),
+                );
             }
             Some(&"resume") => {
                 self.is_paused = false;
-                self.push_entry(LogEntry::new(
-                    format!("Logging resumed ({} entries skipped)", self.paused_entry_count),
-                    LogLevel::Info,
-                ).with_category("Console"));
+                self.push_entry(
+                    LogEntry::new(
+                        format!(
+                            "Logging resumed ({} entries skipped)",
+                            self.paused_entry_count
+                        ),
+                        LogLevel::Info,
+                    )
+                    .with_category("Console"),
+                );
                 self.paused_entry_count = 0;
             }
             Some(&"filter") => {
@@ -336,19 +357,28 @@ impl ConsolePanel {
                         "warning" | "warn" => self.filter_level = LogLevel::Warning,
                         "error" => self.filter_level = LogLevel::Error,
                         _ => {
-                            self.push_entry(LogEntry::new(
-                                format!("Unknown filter level: {}", level),
-                                LogLevel::Warning,
-                            ).with_category("Console"));
+                            self.push_entry(
+                                LogEntry::new(
+                                    format!("Unknown filter level: {}", level),
+                                    LogLevel::Warning,
+                                )
+                                .with_category("Console"),
+                            );
                         }
                     }
                 }
             }
             Some(unknown) => {
-                self.push_entry(LogEntry::new(
-                    format!("Unknown command: {}. Type 'help' for available commands.", unknown),
-                    LogLevel::Warning,
-                ).with_category("Console"));
+                self.push_entry(
+                    LogEntry::new(
+                        format!(
+                            "Unknown command: {}. Type 'help' for available commands.",
+                            unknown
+                        ),
+                        LogLevel::Warning,
+                    )
+                    .with_category("Console"),
+                );
             }
             None => {}
         }
@@ -361,7 +391,10 @@ impl ConsolePanel {
             let timestamp = entry.format_timestamp();
             let level = entry.level.name();
             let category = entry.category.as_deref().unwrap_or("-");
-            output.push_str(&format!("[{}] [{}] [{}] {}\n", timestamp, level, category, entry.message));
+            output.push_str(&format!(
+                "[{}] [{}] [{}] {}\n",
+                timestamp, level, category, entry.message
+            ));
             if let Some(trace) = &entry.stacktrace {
                 output.push_str(&format!("  Stacktrace:\n{}\n", trace));
             }
@@ -581,7 +614,7 @@ mod tests {
         let entry = LogEntry::new("Test", LogLevel::Warning)
             .with_category("AI")
             .with_source("main.rs", 42);
-        
+
         assert_eq!(entry.category, Some("AI".to_string()));
         assert_eq!(entry.source_file, Some("main.rs".to_string()));
         assert_eq!(entry.source_line, Some(42));
@@ -593,7 +626,7 @@ mod tests {
         panel.push_entry(LogEntry::new("Test 1", LogLevel::Info));
         panel.push_entry(LogEntry::new("Test 2", LogLevel::Warning));
         panel.push_entry(LogEntry::new("Test 3", LogLevel::Error));
-        
+
         let (total, debug, info, warnings, errors) = panel.get_counts();
         assert_eq!(total, 3);
         assert_eq!(debug, 0);
@@ -606,16 +639,16 @@ mod tests {
     fn test_pause_logging() {
         let mut panel = ConsolePanel::new();
         panel.push_entry(LogEntry::new("Before pause", LogLevel::Info));
-        
+
         panel.is_paused = true;
         panel.push_entry(LogEntry::new("During pause", LogLevel::Info));
-        
+
         assert_eq!(panel.log_entries.len(), 1);
         assert_eq!(panel.paused_entry_count, 1);
-        
+
         panel.is_paused = false;
         panel.push_entry(LogEntry::new("After resume", LogLevel::Info));
-        
+
         assert_eq!(panel.log_entries.len(), 2);
     }
 
@@ -623,11 +656,11 @@ mod tests {
     fn test_max_entries_limit() {
         let mut panel = ConsolePanel::new();
         panel.max_entries = 10;
-        
+
         for i in 0..20 {
             panel.push_entry(LogEntry::new(format!("Log {}", i), LogLevel::Info));
         }
-        
+
         assert_eq!(panel.log_entries.len(), 10);
         // Should have logs 10-19 (first 10 were evicted)
         assert_eq!(panel.log_entries.front().unwrap().message, "Log 10");
@@ -640,9 +673,9 @@ mod tests {
         panel.push_entry(LogEntry::new("Test", LogLevel::Info));
         panel.push_entry(LogEntry::new("Test 2", LogLevel::Warning));
         panel.expanded_stacktraces.insert(0);
-        
+
         panel.clear();
-        
+
         assert!(panel.log_entries.is_empty());
         assert!(panel.expanded_stacktraces.is_empty());
     }
@@ -652,7 +685,7 @@ mod tests {
         let mut panel = ConsolePanel::new();
         panel.push_entry(LogEntry::new("First log", LogLevel::Info).with_category("Test"));
         panel.push_entry(LogEntry::new("Second log", LogLevel::Warning));
-        
+
         let export = panel.export_logs();
         assert!(export.contains("First log"));
         assert!(export.contains("Second log"));
@@ -729,7 +762,7 @@ mod tests {
         ];
 
         let mut panel = ConsolePanel::new();
-        
+
         // Filter Info + Search "Apple"
         panel.filter_level = LogLevel::Info;
         panel.search_text = "Apple".to_string();
@@ -753,7 +786,7 @@ mod tests {
         let mut panel = ConsolePanel::new();
         panel.execute_command("help");
         panel.execute_command("clear");
-        
+
         assert_eq!(panel.command_history.len(), 2);
         assert_eq!(panel.command_history[0], "clear");
         assert_eq!(panel.command_history[1], "help");
@@ -762,13 +795,13 @@ mod tests {
     #[test]
     fn test_filter_command() {
         let mut panel = ConsolePanel::new();
-        
+
         panel.execute_command("filter warning");
         assert_eq!(panel.filter_level, LogLevel::Warning);
-        
+
         panel.execute_command("filter error");
         assert_eq!(panel.filter_level, LogLevel::Error);
-        
+
         panel.execute_command("filter all");
         assert_eq!(panel.filter_level, LogLevel::All);
     }
@@ -776,11 +809,11 @@ mod tests {
     #[test]
     fn test_category_tracking() {
         let mut panel = ConsolePanel::new();
-        
+
         panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("AI"));
         panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("Physics"));
         panel.push_entry(LogEntry::new("Test", LogLevel::Info).with_category("AI"));
-        
+
         assert_eq!(panel.all_categories.len(), 2);
         assert!(panel.all_categories.contains(&"AI".to_string()));
         assert!(panel.all_categories.contains(&"Physics".to_string()));

@@ -148,7 +148,9 @@ impl BrushConfig {
         match self.shape {
             BrushShape::Sphere => (4.0 / 3.0) * std::f32::consts::PI * self.radius.powi(3),
             BrushShape::Cube => (2.0 * self.radius).powi(3),
-            BrushShape::Cylinder => std::f32::consts::PI * self.radius.powi(2) * (2.0 * self.radius),
+            BrushShape::Cylinder => {
+                std::f32::consts::PI * self.radius.powi(2) * (2.0 * self.radius)
+            }
         }
     }
 
@@ -446,8 +448,15 @@ impl VoxelEditor {
 
     /// Get total number of voxel edits in history
     pub fn total_edits_in_history(&self) -> usize {
-        self.undo_stack.iter().map(|op| op.after.len()).sum::<usize>()
-            + self.redo_stack.iter().map(|op| op.after.len()).sum::<usize>()
+        self.undo_stack
+            .iter()
+            .map(|op| op.after.len())
+            .sum::<usize>()
+            + self
+                .redo_stack
+                .iter()
+                .map(|op| op.after.len())
+                .sum::<usize>()
     }
 
     /// Get editor statistics

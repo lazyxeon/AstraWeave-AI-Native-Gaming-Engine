@@ -294,7 +294,13 @@ impl ConditionType {
     }
 
     pub fn is_comparison(&self) -> bool {
-        matches!(self, ConditionType::Greater | ConditionType::Less | ConditionType::Equals | ConditionType::NotEquals)
+        matches!(
+            self,
+            ConditionType::Greater
+                | ConditionType::Less
+                | ConditionType::Equals
+                | ConditionType::NotEquals
+        )
     }
 
     pub fn is_boolean(&self) -> bool {
@@ -503,12 +509,17 @@ impl BlendTreeType {
     pub fn dimensions(&self) -> u8 {
         match self {
             BlendTreeType::Simple1D | BlendTreeType::Direct => 1,
-            BlendTreeType::Simple2D | BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian => 2,
+            BlendTreeType::Simple2D
+            | BlendTreeType::FreeformDirectional
+            | BlendTreeType::FreeformCartesian => 2,
         }
     }
 
     pub fn is_freeform(&self) -> bool {
-        matches!(self, BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian)
+        matches!(
+            self,
+            BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian
+        )
     }
 }
 
@@ -585,10 +596,7 @@ impl std::fmt::Display for BlendingMode {
 
 impl BlendingMode {
     pub fn all() -> &'static [BlendingMode] {
-        &[
-            BlendingMode::Override,
-            BlendingMode::Additive,
-        ]
+        &[BlendingMode::Override, BlendingMode::Additive]
     }
 
     pub fn name(&self) -> &'static str {
@@ -877,7 +885,7 @@ pub struct AnimationPanel {
     next_state_id: u32,
     next_transition_id: u32,
     next_parameter_id: u32,
-    
+
     // Pending actions for external event handling
     pending_actions: Vec<AnimationAction>,
 }
@@ -910,7 +918,7 @@ impl Default for AnimationPanel {
             next_state_id: 1,
             next_transition_id: 1,
             next_parameter_id: 1,
-            
+
             pending_actions: Vec::new(),
         };
 
@@ -1137,9 +1145,15 @@ impl AnimationPanel {
         ui.horizontal(|ui| {
             ui.label(format!("🎬 {} clips", self.clips.len()));
             ui.separator();
-            ui.label(format!("📊 {} states", self.current_controller.states.len()));
+            ui.label(format!(
+                "📊 {} states",
+                self.current_controller.states.len()
+            ));
             ui.separator();
-            ui.label(format!("🔧 {} params", self.current_controller.parameters.len()));
+            ui.label(format!(
+                "🔧 {} params",
+                self.current_controller.parameters.len()
+            ));
         });
 
         ui.separator();
@@ -1155,7 +1169,10 @@ impl AnimationPanel {
                 .selected_text(&self.current_clip.name)
                 .show_ui(ui, |ui| {
                     for clip in &self.clips.clone() {
-                        if ui.selectable_value(&mut self.selected_clip, Some(clip.id), &clip.name).clicked() {
+                        if ui
+                            .selectable_value(&mut self.selected_clip, Some(clip.id), &clip.name)
+                            .clicked()
+                        {
                             self.current_clip = clip.clone();
                         }
                     }
@@ -1197,21 +1214,45 @@ impl AnimationPanel {
                     ui.end_row();
 
                     ui.label("Duration:");
-                    ui.add(egui::DragValue::new(&mut self.current_clip.duration).speed(0.1).suffix("s"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_clip.duration)
+                            .speed(0.1)
+                            .suffix("s"),
+                    );
                     ui.end_row();
 
                     ui.label("FPS:");
-                    ui.add(egui::DragValue::new(&mut self.current_clip.fps).speed(1.0).range(1.0..=120.0));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_clip.fps)
+                            .speed(1.0)
+                            .range(1.0..=120.0),
+                    );
                     ui.end_row();
 
                     ui.label("Loop Mode:");
                     egui::ComboBox::from_id_salt("loop_mode")
                         .selected_text(format!("{:?}", self.current_clip.loop_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.current_clip.loop_mode, LoopMode::Once, "Once");
-                            ui.selectable_value(&mut self.current_clip.loop_mode, LoopMode::Loop, "Loop");
-                            ui.selectable_value(&mut self.current_clip.loop_mode, LoopMode::PingPong, "Ping Pong");
-                            ui.selectable_value(&mut self.current_clip.loop_mode, LoopMode::ClampForever, "Clamp Forever");
+                            ui.selectable_value(
+                                &mut self.current_clip.loop_mode,
+                                LoopMode::Once,
+                                "Once",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_clip.loop_mode,
+                                LoopMode::Loop,
+                                "Loop",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_clip.loop_mode,
+                                LoopMode::PingPong,
+                                "Ping Pong",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_clip.loop_mode,
+                                LoopMode::ClampForever,
+                                "Clamp Forever",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1225,7 +1266,14 @@ impl AnimationPanel {
 
             // Playback controls
             ui.horizontal(|ui| {
-                if ui.button(if self.preview_playing { "⏸️" } else { "▶️" }).clicked() {
+                if ui
+                    .button(if self.preview_playing {
+                        "⏸️"
+                    } else {
+                        "▶️"
+                    })
+                    .clicked()
+                {
                     self.preview_playing = !self.preview_playing;
                 }
                 if ui.button("⏹️").clicked() {
@@ -1239,16 +1287,26 @@ impl AnimationPanel {
                     self.preview_time = self.current_clip.duration;
                 }
 
-                ui.add(egui::Slider::new(&mut self.preview_time, 0.0..=self.current_clip.duration).suffix("s"));
+                ui.add(
+                    egui::Slider::new(&mut self.preview_time, 0.0..=self.current_clip.duration)
+                        .suffix("s"),
+                );
 
                 ui.label(format!("Speed: {:.1}x", self.preview_speed));
-                ui.add(egui::DragValue::new(&mut self.preview_speed).speed(0.1).range(0.1..=3.0));
+                ui.add(
+                    egui::DragValue::new(&mut self.preview_speed)
+                        .speed(0.1)
+                        .range(0.1..=3.0),
+                );
             });
 
             // Timeline visualization
             let timeline_height = 60.0;
             let timeline_width = ui.available_width();
-            let (rect, _) = ui.allocate_exact_size(Vec2::new(timeline_width, timeline_height), egui::Sense::click_and_drag());
+            let (rect, _) = ui.allocate_exact_size(
+                Vec2::new(timeline_width, timeline_height),
+                egui::Sense::click_and_drag(),
+            );
 
             let painter = ui.painter();
             painter.rect_filled(rect, 4.0, Color32::from_rgb(40, 40, 45));
@@ -1261,7 +1319,10 @@ impl AnimationPanel {
                     let t = i as f32 / steps as f32;
                     let x = rect.min.x + t * timeline_width;
                     painter.line_segment(
-                        [egui::Pos2::new(x, rect.min.y), egui::Pos2::new(x, rect.min.y + 10.0)],
+                        [
+                            egui::Pos2::new(x, rect.min.y),
+                            egui::Pos2::new(x, rect.min.y + 10.0),
+                        ],
                         egui::Stroke::new(1.0, Color32::GRAY),
                     );
                 }
@@ -1269,10 +1330,17 @@ impl AnimationPanel {
                 // Playhead
                 let playhead_x = rect.min.x + (self.preview_time / duration) * timeline_width;
                 painter.line_segment(
-                    [egui::Pos2::new(playhead_x, rect.min.y), egui::Pos2::new(playhead_x, rect.max.y)],
+                    [
+                        egui::Pos2::new(playhead_x, rect.min.y),
+                        egui::Pos2::new(playhead_x, rect.max.y),
+                    ],
                     egui::Stroke::new(2.0, Color32::RED),
                 );
-                painter.circle_filled(egui::Pos2::new(playhead_x, rect.min.y + 5.0), 5.0, Color32::RED);
+                painter.circle_filled(
+                    egui::Pos2::new(playhead_x, rect.min.y + 5.0),
+                    5.0,
+                    Color32::RED,
+                );
             }
         });
 
@@ -1317,7 +1385,14 @@ impl AnimationPanel {
                 .selected_text(&self.current_controller.name)
                 .show_ui(ui, |ui| {
                     for ctrl in &self.controllers.clone() {
-                        if ui.selectable_value(&mut self.selected_controller, Some(ctrl.id), &ctrl.name).clicked() {
+                        if ui
+                            .selectable_value(
+                                &mut self.selected_controller,
+                                Some(ctrl.id),
+                                &ctrl.name,
+                            )
+                            .clicked()
+                        {
                             self.current_controller = ctrl.clone();
                         }
                     }
@@ -1347,7 +1422,10 @@ impl AnimationPanel {
                     self.current_controller.states.push(AnimationState {
                         id,
                         name: format!("State {}", id),
-                        position: [200.0, 100.0 + (self.current_controller.states.len() as f32) * 50.0],
+                        position: [
+                            200.0,
+                            100.0 + (self.current_controller.states.len() as f32) * 50.0,
+                        ],
                         ..Default::default()
                     });
                 }
@@ -1372,13 +1450,21 @@ impl AnimationPanel {
                             // Clip assignment
                             egui::ComboBox::from_id_salt(format!("state_clip_{}", state.id))
                                 .selected_text(state.clip_id.map_or("(None)".to_string(), |id| {
-                                    self.clips.iter().find(|c| c.id == id).map_or("(None)".to_string(), |c| c.name.clone())
+                                    self.clips
+                                        .iter()
+                                        .find(|c| c.id == id)
+                                        .map_or("(None)".to_string(), |c| c.name.clone())
                                 }))
                                 .width(100.0)
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut state.clip_id, None, "(None)").clicked();
+                                    ui.selectable_value(&mut state.clip_id, None, "(None)")
+                                        .clicked();
                                     for clip in &self.clips {
-                                        ui.selectable_value(&mut state.clip_id, Some(clip.id), &clip.name);
+                                        ui.selectable_value(
+                                            &mut state.clip_id,
+                                            Some(clip.id),
+                                            &clip.name,
+                                        );
                                     }
                                 });
                         });
@@ -1406,19 +1492,32 @@ impl AnimationPanel {
             });
 
             for trans in &self.current_controller.transitions {
-                let from_name = self.current_controller.states.iter()
+                let from_name = self
+                    .current_controller
+                    .states
+                    .iter()
                     .find(|s| s.id == trans.from_state)
                     .map_or("?", |s| &s.name);
-                let to_name = self.current_controller.states.iter()
+                let to_name = self
+                    .current_controller
+                    .states
+                    .iter()
                     .find(|s| s.id == trans.to_state)
                     .map_or("?", |s| &s.name);
 
                 ui.horizontal(|ui| {
                     ui.label(format!("{} → {}", from_name, to_name));
-                    ui.label(RichText::new(format!("{:.2}s", trans.duration)).small().color(Color32::GRAY));
+                    ui.label(
+                        RichText::new(format!("{:.2}s", trans.duration))
+                            .small()
+                            .color(Color32::GRAY),
+                    );
 
                     if !trans.conditions.is_empty() {
-                        ui.label(RichText::new(format!("({} conditions)", trans.conditions.len())).small());
+                        ui.label(
+                            RichText::new(format!("({} conditions)", trans.conditions.len()))
+                                .small(),
+                        );
                     }
                 });
             }
@@ -1458,11 +1557,31 @@ impl AnimationPanel {
                             egui::ComboBox::from_id_salt(format!("blend_type_{}", tree.id))
                                 .selected_text(format!("{:?}", tree.blend_type))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut tree.blend_type, BlendTreeType::Simple1D, "Simple 1D");
-                                    ui.selectable_value(&mut tree.blend_type, BlendTreeType::Simple2D, "Simple 2D");
-                                    ui.selectable_value(&mut tree.blend_type, BlendTreeType::FreeformDirectional, "Freeform Directional");
-                                    ui.selectable_value(&mut tree.blend_type, BlendTreeType::FreeformCartesian, "Freeform Cartesian");
-                                    ui.selectable_value(&mut tree.blend_type, BlendTreeType::Direct, "Direct");
+                                    ui.selectable_value(
+                                        &mut tree.blend_type,
+                                        BlendTreeType::Simple1D,
+                                        "Simple 1D",
+                                    );
+                                    ui.selectable_value(
+                                        &mut tree.blend_type,
+                                        BlendTreeType::Simple2D,
+                                        "Simple 2D",
+                                    );
+                                    ui.selectable_value(
+                                        &mut tree.blend_type,
+                                        BlendTreeType::FreeformDirectional,
+                                        "Freeform Directional",
+                                    );
+                                    ui.selectable_value(
+                                        &mut tree.blend_type,
+                                        BlendTreeType::FreeformCartesian,
+                                        "Freeform Cartesian",
+                                    );
+                                    ui.selectable_value(
+                                        &mut tree.blend_type,
+                                        BlendTreeType::Direct,
+                                        "Direct",
+                                    );
                                 });
                             ui.end_row();
 
@@ -1470,7 +1589,12 @@ impl AnimationPanel {
                             ui.text_edit_singleline(&mut tree.blend_parameter_x);
                             ui.end_row();
 
-                            if matches!(tree.blend_type, BlendTreeType::Simple2D | BlendTreeType::FreeformDirectional | BlendTreeType::FreeformCartesian) {
+                            if matches!(
+                                tree.blend_type,
+                                BlendTreeType::Simple2D
+                                    | BlendTreeType::FreeformDirectional
+                                    | BlendTreeType::FreeformCartesian
+                            ) {
                                 ui.label("Parameter Y:");
                                 ui.text_edit_singleline(&mut tree.blend_parameter_y);
                                 ui.end_row();
@@ -1526,8 +1650,16 @@ impl AnimationPanel {
                         egui::ComboBox::from_id_salt(format!("layer_blend_{}", layer.id))
                             .selected_text(format!("{:?}", layer.blending_mode))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut layer.blending_mode, BlendingMode::Override, "Override");
-                                ui.selectable_value(&mut layer.blending_mode, BlendingMode::Additive, "Additive");
+                                ui.selectable_value(
+                                    &mut layer.blending_mode,
+                                    BlendingMode::Override,
+                                    "Override",
+                                );
+                                ui.selectable_value(
+                                    &mut layer.blending_mode,
+                                    BlendingMode::Additive,
+                                    "Additive",
+                                );
                             });
                         ui.end_row();
 
@@ -1626,7 +1758,10 @@ impl AnimationPanel {
         ui.heading("🦴 Inverse Kinematics");
         ui.add_space(10.0);
 
-        ui.checkbox(&mut self.current_controller.ik_settings.enabled, RichText::new("Enable IK").strong());
+        ui.checkbox(
+            &mut self.current_controller.ik_settings.enabled,
+            RichText::new("Enable IK").strong(),
+        );
 
         if !self.current_controller.ik_settings.enabled {
             return;
@@ -1639,7 +1774,10 @@ impl AnimationPanel {
             .show(ui, |ui| {
                 // Foot IK
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_controller.ik_settings.foot_ik_enabled, RichText::new("🦶 Foot IK").strong());
+                    ui.checkbox(
+                        &mut self.current_controller.ik_settings.foot_ik_enabled,
+                        RichText::new("🦶 Foot IK").strong(),
+                    );
 
                     if self.current_controller.ik_settings.foot_ik_enabled {
                         egui::Grid::new("foot_ik")
@@ -1647,11 +1785,17 @@ impl AnimationPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Height Offset:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.foot_height_offset, -0.5..=0.5));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.foot_height_offset,
+                                    -0.5..=0.5,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.foot_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.foot_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1661,7 +1805,10 @@ impl AnimationPanel {
 
                 // Look At IK
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_controller.ik_settings.look_at_enabled, RichText::new("👀 Look At IK").strong());
+                    ui.checkbox(
+                        &mut self.current_controller.ik_settings.look_at_enabled,
+                        RichText::new("👀 Look At IK").strong(),
+                    );
 
                     if self.current_controller.ik_settings.look_at_enabled {
                         egui::Grid::new("look_at_ik")
@@ -1669,23 +1816,38 @@ impl AnimationPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.look_at_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.look_at_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Head Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.head_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.head_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Body Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.body_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.body_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Eyes Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.eyes_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.eyes_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Clamp Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.clamp_weight, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_controller.ik_settings.clamp_weight,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1697,13 +1859,24 @@ impl AnimationPanel {
                 ui.group(|ui| {
                     ui.label(RichText::new("✋ Hand IK").strong());
 
-                    ui.checkbox(&mut self.current_controller.ik_settings.left_hand_ik_enabled, "Left Hand");
-                    ui.checkbox(&mut self.current_controller.ik_settings.right_hand_ik_enabled, "Right Hand");
+                    ui.checkbox(
+                        &mut self.current_controller.ik_settings.left_hand_ik_enabled,
+                        "Left Hand",
+                    );
+                    ui.checkbox(
+                        &mut self.current_controller.ik_settings.right_hand_ik_enabled,
+                        "Right Hand",
+                    );
 
-                    if self.current_controller.ik_settings.left_hand_ik_enabled || self.current_controller.ik_settings.right_hand_ik_enabled {
+                    if self.current_controller.ik_settings.left_hand_ik_enabled
+                        || self.current_controller.ik_settings.right_hand_ik_enabled
+                    {
                         ui.horizontal(|ui| {
                             ui.label("Weight:");
-                            ui.add(egui::Slider::new(&mut self.current_controller.ik_settings.hand_ik_weight, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_controller.ik_settings.hand_ik_weight,
+                                0.0..=1.0,
+                            ));
                         });
                     }
                 });
@@ -1719,7 +1892,14 @@ impl AnimationPanel {
             ui.label(RichText::new("🎮 Playback").strong());
 
             ui.horizontal(|ui| {
-                if ui.button(if self.preview_playing { "⏸️ Pause" } else { "▶️ Play" }).clicked() {
+                if ui
+                    .button(if self.preview_playing {
+                        "⏸️ Pause"
+                    } else {
+                        "▶️ Play"
+                    })
+                    .clicked()
+                {
                     self.preview_playing = !self.preview_playing;
                 }
                 if ui.button("⏹️ Stop").clicked() {
@@ -1738,7 +1918,11 @@ impl AnimationPanel {
 
             ui.horizontal(|ui| {
                 ui.label("Time:");
-                ui.add(egui::DragValue::new(&mut self.preview_time).speed(0.01).suffix("s"));
+                ui.add(
+                    egui::DragValue::new(&mut self.preview_time)
+                        .speed(0.01)
+                        .suffix("s"),
+                );
             });
         });
 
@@ -1748,14 +1932,20 @@ impl AnimationPanel {
         ui.group(|ui| {
             ui.label(RichText::new("📊 Current State").strong());
 
-            let default_state = self.current_controller.states.iter()
+            let default_state = self
+                .current_controller
+                .states
+                .iter()
                 .find(|s| s.is_default)
                 .map_or("(none)", |s| &s.name);
 
             ui.label(format!("Active State: {}", default_state));
             ui.label(format!("Time: {:.2}s", self.preview_time));
 
-            if let Some(clip) = self.selected_clip.and_then(|id| self.clips.iter().find(|c| c.id == id)) {
+            if let Some(clip) = self
+                .selected_clip
+                .and_then(|id| self.clips.iter().find(|c| c.id == id))
+            {
                 ui.label(format!("Clip: {} ({:.2}s)", clip.name, clip.duration));
                 let progress = if clip.duration > 0.0 {
                     (self.preview_time % clip.duration) / clip.duration
@@ -1776,10 +1966,18 @@ impl AnimationPanel {
                 ui.horizontal(|ui| {
                     ui.label(&param.name);
                     match &param.default_value {
-                        ParameterValue::Float(v) => { ui.label(format!("{:.2}", v)); }
-                        ParameterValue::Int(v) => { ui.label(format!("{}", v)); }
-                        ParameterValue::Bool(v) => { ui.label(if *v { "true" } else { "false" }); }
-                        ParameterValue::Trigger => { ui.label("(trigger)"); }
+                        ParameterValue::Float(v) => {
+                            ui.label(format!("{:.2}", v));
+                        }
+                        ParameterValue::Int(v) => {
+                            ui.label(format!("{}", v));
+                        }
+                        ParameterValue::Bool(v) => {
+                            ui.label(if *v { "true" } else { "false" });
+                        }
+                        ParameterValue::Trigger => {
+                            ui.label("(trigger)");
+                        }
                     }
                 });
             }
@@ -2876,14 +3074,48 @@ mod tests {
             (AnimationAction::StopClip, "Stop Clip"),
             (AnimationAction::SetSpeed { speed: 2.0 }, "Set Speed"),
             (AnimationAction::SeekTo { time: 0.5 }, "Seek To"),
-            (AnimationAction::CreateClip { name: "new".to_string() }, "Create Clip"),
+            (
+                AnimationAction::CreateClip {
+                    name: "new".to_string(),
+                },
+                "Create Clip",
+            ),
             (AnimationAction::DeleteClip { clip_id: 1 }, "Delete Clip"),
             (AnimationAction::SaveClip { clip_id: 1 }, "Save Clip"),
-            (AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 }, "Add Keyframe"),
-            (AnimationAction::DeleteKeyframe { clip_id: 1, keyframe_index: 0 }, "Delete Keyframe"),
-            (AnimationAction::CreateController { name: "ctrl".to_string() }, "Create Controller"),
-            (AnimationAction::SetLoopMode { clip_id: 1, loop_mode: LoopMode::Loop }, "Set Loop Mode"),
-            (AnimationAction::TriggerTransition { from_state: 0, to_state: 1 }, "Trigger Transition"),
+            (
+                AnimationAction::AddKeyframe {
+                    clip_id: 1,
+                    time: 0.0,
+                },
+                "Add Keyframe",
+            ),
+            (
+                AnimationAction::DeleteKeyframe {
+                    clip_id: 1,
+                    keyframe_index: 0,
+                },
+                "Delete Keyframe",
+            ),
+            (
+                AnimationAction::CreateController {
+                    name: "ctrl".to_string(),
+                },
+                "Create Controller",
+            ),
+            (
+                AnimationAction::SetLoopMode {
+                    clip_id: 1,
+                    loop_mode: LoopMode::Loop,
+                },
+                "Set Loop Mode",
+            ),
+            (
+                AnimationAction::TriggerTransition {
+                    from_state: 0,
+                    to_state: 1,
+                },
+                "Trigger Transition",
+            ),
         ];
 
         for (action, expected_name) in actions {
@@ -2899,19 +3131,37 @@ mod tests {
         assert!(AnimationAction::SetSpeed { speed: 1.0 }.is_playback());
         assert!(AnimationAction::SeekTo { time: 0.0 }.is_playback());
 
-        assert!(!AnimationAction::SetLoopMode { clip_id: 1, loop_mode: LoopMode::Once }.is_playback());
-        assert!(!AnimationAction::CreateClip { name: "test".to_string() }.is_playback());
+        assert!(!AnimationAction::SetLoopMode {
+            clip_id: 1,
+            loop_mode: LoopMode::Once
+        }
+        .is_playback());
+        assert!(!AnimationAction::CreateClip {
+            name: "test".to_string()
+        }
+        .is_playback());
         assert!(!AnimationAction::DeleteClip { clip_id: 1 }.is_playback());
         assert!(!AnimationAction::SaveClip { clip_id: 1 }.is_playback());
     }
 
     #[test]
     fn test_action_is_clip_edit() {
-        assert!(AnimationAction::CreateClip { name: "test".to_string() }.is_clip_edit());
+        assert!(AnimationAction::CreateClip {
+            name: "test".to_string()
+        }
+        .is_clip_edit());
         assert!(AnimationAction::DeleteClip { clip_id: 1 }.is_clip_edit());
         assert!(AnimationAction::SaveClip { clip_id: 1 }.is_clip_edit());
-        assert!(AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 }.is_clip_edit());
-        assert!(AnimationAction::DeleteKeyframe { clip_id: 1, keyframe_index: 0 }.is_clip_edit());
+        assert!(AnimationAction::AddKeyframe {
+            clip_id: 1,
+            time: 0.0
+        }
+        .is_clip_edit());
+        assert!(AnimationAction::DeleteKeyframe {
+            clip_id: 1,
+            keyframe_index: 0
+        }
+        .is_clip_edit());
 
         assert!(!AnimationAction::PlayClip { clip_id: 1 }.is_clip_edit());
         assert!(!AnimationAction::PauseClip.is_clip_edit());
@@ -2962,9 +3212,17 @@ mod tests {
     #[test]
     fn test_multiple_clip_edit_actions() {
         let mut panel = AnimationPanel::default();
-        panel.queue_action(AnimationAction::CreateClip { name: "new_clip".to_string() });
-        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 1, time: 0.0 });
-        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 1, time: 1.0 });
+        panel.queue_action(AnimationAction::CreateClip {
+            name: "new_clip".to_string(),
+        });
+        panel.queue_action(AnimationAction::AddKeyframe {
+            clip_id: 1,
+            time: 0.0,
+        });
+        panel.queue_action(AnimationAction::AddKeyframe {
+            clip_id: 1,
+            time: 1.0,
+        });
         panel.queue_action(AnimationAction::SaveClip { clip_id: 1 });
 
         let actions = panel.take_actions();
@@ -2976,9 +3234,17 @@ mod tests {
     fn test_mixed_action_types() {
         let mut panel = AnimationPanel::default();
         panel.queue_action(AnimationAction::PlayClip { clip_id: 1 });
-        panel.queue_action(AnimationAction::AddKeyframe { clip_id: 2, time: 0.5 });
-        panel.queue_action(AnimationAction::CreateController { name: "character".to_string() });
-        panel.queue_action(AnimationAction::TriggerTransition { from_state: 0, to_state: 1 });
+        panel.queue_action(AnimationAction::AddKeyframe {
+            clip_id: 2,
+            time: 0.5,
+        });
+        panel.queue_action(AnimationAction::CreateController {
+            name: "character".to_string(),
+        });
+        panel.queue_action(AnimationAction::TriggerTransition {
+            from_state: 0,
+            to_state: 1,
+        });
 
         let actions = panel.take_actions();
         assert_eq!(actions.len(), 4);

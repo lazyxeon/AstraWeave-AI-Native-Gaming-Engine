@@ -13,12 +13,11 @@
 //! - RuntimeIssue severity levels and icon mapping
 //! - RuntimeStats performance grades, budget percentages, headroom, validation
 
+use astraweave_core::{IVec2, World};
 use aw_editor_lib::clipboard::{
-    ClipboardData, ClipboardEntityData, ClipboardValidation,
-    CLIPBOARD_SCHEMA_VERSION,
+    ClipboardData, ClipboardEntityData, ClipboardValidation, CLIPBOARD_SCHEMA_VERSION,
 };
 use aw_editor_lib::runtime::{RuntimeIssue, RuntimeState, RuntimeStats};
-use astraweave_core::{IVec2, World};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -67,7 +66,10 @@ fn entity_data_empty_name_warning() {
     let v = data.validate();
     assert!(v.is_valid); // Warning only
     assert!(v.has_warnings());
-    assert!(v.warnings.iter().any(|w| w.to_lowercase().contains("empty")));
+    assert!(v
+        .warnings
+        .iter()
+        .any(|w| w.to_lowercase().contains("empty")));
 }
 
 #[test]
@@ -112,7 +114,10 @@ fn entity_data_scale_exactly_1000_no_warning() {
     data.scale = 1000.0;
     let v = data.validate();
     // 1000.0 is NOT > 1000.0, so no warning
-    assert!(!v.warnings.iter().any(|w| w.to_lowercase().contains("large scale")));
+    assert!(!v
+        .warnings
+        .iter()
+        .any(|w| w.to_lowercase().contains("large scale")));
 }
 
 #[test]
@@ -120,7 +125,10 @@ fn entity_data_negative_hp_warning() {
     let data = make_entity_data("E", -5, 30, 0);
     let v = data.validate();
     assert!(v.is_valid); // Warning
-    assert!(v.warnings.iter().any(|w| w.to_lowercase().contains("health") || w.to_lowercase().contains("negative")));
+    assert!(v
+        .warnings
+        .iter()
+        .any(|w| w.to_lowercase().contains("health") || w.to_lowercase().contains("negative")));
 }
 
 #[test]
@@ -128,7 +136,10 @@ fn entity_data_negative_ammo_warning() {
     let data = make_entity_data("E", 100, -1, 0);
     let v = data.validate();
     assert!(v.is_valid); // Warning
-    assert!(v.warnings.iter().any(|w| w.to_lowercase().contains("ammo") || w.to_lowercase().contains("negative")));
+    assert!(v
+        .warnings
+        .iter()
+        .any(|w| w.to_lowercase().contains("ammo") || w.to_lowercase().contains("negative")));
 }
 
 // ============================================================================
@@ -378,7 +389,10 @@ fn clipboard_data_validate_empty_has_warning() {
     let v = cb.validate();
     assert!(v.is_valid);
     assert!(v.has_warnings());
-    assert!(v.warnings.iter().any(|w| w.to_lowercase().contains("no entities") || w.to_lowercase().contains("empty")));
+    assert!(v
+        .warnings
+        .iter()
+        .any(|w| w.to_lowercase().contains("no entities") || w.to_lowercase().contains("empty")));
 }
 
 #[test]
@@ -600,7 +614,10 @@ fn runtime_state_all_has_four() {
 
 #[test]
 fn runtime_state_display_unique_per_state() {
-    let displays: Vec<String> = RuntimeState::all().iter().map(|s| format!("{}", s)).collect();
+    let displays: Vec<String> = RuntimeState::all()
+        .iter()
+        .map(|s| format!("{}", s))
+        .collect();
     let unique: std::collections::HashSet<&String> = displays.iter().collect();
     assert_eq!(displays.len(), unique.len());
 }
@@ -633,41 +650,101 @@ fn runtime_state_descriptions_nonempty() {
 #[test]
 fn issue_is_critical_only_for_sim_and_corruption() {
     assert!(RuntimeIssue::MissingSimulation.is_critical());
-    assert!(RuntimeIssue::CorruptedSimulation { reason: "test".into() }.is_critical());
+    assert!(RuntimeIssue::CorruptedSimulation {
+        reason: "test".into()
+    }
+    .is_critical());
     assert!(!RuntimeIssue::MissingEditSnapshot.is_critical());
-    assert!(!RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.is_critical());
-    assert!(!RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.is_critical());
-    assert!(!RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 }.is_critical());
+    assert!(!RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33
+    }
+    .is_critical());
+    assert!(!RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30
+    }
+    .is_critical());
+    assert!(!RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95
+    }
+    .is_critical());
 }
 
 #[test]
 fn issue_is_performance_only_for_frame_time_and_fps() {
     assert!(!RuntimeIssue::MissingSimulation.is_performance_issue());
     assert!(!RuntimeIssue::MissingEditSnapshot.is_performance_issue());
-    assert!(!RuntimeIssue::CorruptedSimulation { reason: "test".into() }.is_performance_issue());
-    assert!(RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.is_performance_issue());
-    assert!(RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.is_performance_issue());
-    assert!(!RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 }.is_performance_issue());
+    assert!(!RuntimeIssue::CorruptedSimulation {
+        reason: "test".into()
+    }
+    .is_performance_issue());
+    assert!(RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33
+    }
+    .is_performance_issue());
+    assert!(RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30
+    }
+    .is_performance_issue());
+    assert!(!RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95
+    }
+    .is_performance_issue());
 }
 
 #[test]
 fn issue_is_data_for_relevant_variants() {
     assert!(!RuntimeIssue::MissingSimulation.is_data_issue());
     assert!(RuntimeIssue::MissingEditSnapshot.is_data_issue());
-    assert!(RuntimeIssue::CorruptedSimulation { reason: "test".into() }.is_data_issue());
-    assert!(!RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.is_data_issue());
-    assert!(!RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.is_data_issue());
-    assert!(RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 }.is_data_issue());
+    assert!(RuntimeIssue::CorruptedSimulation {
+        reason: "test".into()
+    }
+    .is_data_issue());
+    assert!(!RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33
+    }
+    .is_data_issue());
+    assert!(!RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30
+    }
+    .is_data_issue());
+    assert!(RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95
+    }
+    .is_data_issue());
 }
 
 #[test]
 fn issue_is_recoverable_only_for_performance_and_mismatch() {
     assert!(!RuntimeIssue::MissingSimulation.is_recoverable());
     assert!(!RuntimeIssue::MissingEditSnapshot.is_recoverable());
-    assert!(!RuntimeIssue::CorruptedSimulation { reason: "test".into() }.is_recoverable());
-    assert!(RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.is_recoverable());
-    assert!(RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.is_recoverable());
-    assert!(RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 }.is_recoverable());
+    assert!(!RuntimeIssue::CorruptedSimulation {
+        reason: "test".into()
+    }
+    .is_recoverable());
+    assert!(RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33
+    }
+    .is_recoverable());
+    assert!(RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30
+    }
+    .is_recoverable());
+    assert!(RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95
+    }
+    .is_recoverable());
 }
 
 // ============================================================================
@@ -677,26 +754,74 @@ fn issue_is_recoverable_only_for_performance_and_mismatch() {
 #[test]
 fn issue_severity_levels() {
     assert_eq!(RuntimeIssue::MissingSimulation.severity(), 5);
-    assert_eq!(RuntimeIssue::CorruptedSimulation { reason: "t".into() }.severity(), 5);
+    assert_eq!(
+        RuntimeIssue::CorruptedSimulation { reason: "t".into() }.severity(),
+        5
+    );
     assert_eq!(RuntimeIssue::MissingEditSnapshot.severity(), 4);
-    assert_eq!(RuntimeIssue::EntityCountMismatch { expected: 10, actual: 5 }.severity(), 3);
-    assert_eq!(RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.severity(), 2);
-    assert_eq!(RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.severity(), 1);
+    assert_eq!(
+        RuntimeIssue::EntityCountMismatch {
+            expected: 10,
+            actual: 5
+        }
+        .severity(),
+        3
+    );
+    assert_eq!(
+        RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .severity(),
+        2
+    );
+    assert_eq!(
+        RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30
+        }
+        .severity(),
+        1
+    );
 }
 
 #[test]
 fn issue_icon_maps_to_severity() {
     // Severity 5 → 🔴
     assert_eq!(RuntimeIssue::MissingSimulation.icon(), "🔴");
-    assert_eq!(RuntimeIssue::CorruptedSimulation { reason: "x".into() }.icon(), "🔴");
+    assert_eq!(
+        RuntimeIssue::CorruptedSimulation { reason: "x".into() }.icon(),
+        "🔴"
+    );
     // Severity 4 → 🟠
     assert_eq!(RuntimeIssue::MissingEditSnapshot.icon(), "🟠");
     // Severity 3 → 🟡
-    assert_eq!(RuntimeIssue::EntityCountMismatch { expected: 10, actual: 5 }.icon(), "🟡");
+    assert_eq!(
+        RuntimeIssue::EntityCountMismatch {
+            expected: 10,
+            actual: 5
+        }
+        .icon(),
+        "🟡"
+    );
     // Severity 2 → 🟢
-    assert_eq!(RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 }.icon(), "🟢");
+    assert_eq!(
+        RuntimeIssue::FrameTimeExceeded {
+            frame_time_ms: 50,
+            threshold_ms: 33
+        }
+        .icon(),
+        "🟢"
+    );
     // Severity 1 → ℹ️
-    assert_eq!(RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 }.icon(), "ℹ️");
+    assert_eq!(
+        RuntimeIssue::LowFps {
+            fps: 15,
+            minimum_fps: 30
+        }
+        .icon(),
+        "ℹ️"
+    );
 }
 
 #[test]
@@ -710,7 +835,10 @@ fn issue_titles_nonempty_and_unique() {
 
 #[test]
 fn issue_display_frame_time_contains_values() {
-    let issue = RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 };
+    let issue = RuntimeIssue::FrameTimeExceeded {
+        frame_time_ms: 50,
+        threshold_ms: 33,
+    };
     let d = format!("{}", issue);
     assert!(d.contains("50"));
     assert!(d.contains("33"));
@@ -718,7 +846,10 @@ fn issue_display_frame_time_contains_values() {
 
 #[test]
 fn issue_display_low_fps_contains_values() {
-    let issue = RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 };
+    let issue = RuntimeIssue::LowFps {
+        fps: 15,
+        minimum_fps: 30,
+    };
     let d = format!("{}", issue);
     assert!(d.contains("15"));
     assert!(d.contains("30"));
@@ -726,7 +857,10 @@ fn issue_display_low_fps_contains_values() {
 
 #[test]
 fn issue_display_entity_mismatch_contains_values() {
-    let issue = RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 };
+    let issue = RuntimeIssue::EntityCountMismatch {
+        expected: 100,
+        actual: 95,
+    };
     let d = format!("{}", issue);
     assert!(d.contains("100"));
     assert!(d.contains("95"));
@@ -734,7 +868,9 @@ fn issue_display_entity_mismatch_contains_values() {
 
 #[test]
 fn issue_display_corrupted_contains_reason() {
-    let issue = RuntimeIssue::CorruptedSimulation { reason: "bad data".to_string() };
+    let issue = RuntimeIssue::CorruptedSimulation {
+        reason: "bad data".to_string(),
+    };
     let d = format!("{}", issue);
     assert!(d.contains("bad data"));
 }
@@ -745,81 +881,123 @@ fn issue_display_corrupted_contains_reason() {
 
 #[test]
 fn stats_performance_grade_critical() {
-    let s = RuntimeStats { fps: 10.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 10.0,
+        ..Default::default()
+    };
     assert_eq!(s.performance_grade(), "Critical");
 }
 
 #[test]
 fn stats_performance_grade_poor() {
-    let s = RuntimeStats { fps: 20.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 20.0,
+        ..Default::default()
+    };
     assert_eq!(s.performance_grade(), "Poor");
 }
 
 #[test]
 fn stats_performance_grade_fair() {
-    let s = RuntimeStats { fps: 35.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 35.0,
+        ..Default::default()
+    };
     assert_eq!(s.performance_grade(), "Fair");
 }
 
 #[test]
 fn stats_performance_grade_good() {
-    let s = RuntimeStats { fps: 50.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 50.0,
+        ..Default::default()
+    };
     assert_eq!(s.performance_grade(), "Good");
 }
 
 #[test]
 fn stats_performance_grade_excellent() {
-    let s = RuntimeStats { fps: 120.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 120.0,
+        ..Default::default()
+    };
     assert_eq!(s.performance_grade(), "Excellent");
 }
 
 #[test]
 fn stats_frame_budget_percentage() {
-    let s = RuntimeStats { frame_time_ms: 8.33, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 8.33,
+        ..Default::default()
+    };
     // 8.33 / 16.667 * 100 ≈ 50%
     assert!((s.frame_budget_percentage() - 50.0).abs() < 1.0);
 }
 
 #[test]
 fn stats_frame_time_headroom_positive() {
-    let s = RuntimeStats { frame_time_ms: 10.0, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 10.0,
+        ..Default::default()
+    };
     assert!((s.frame_time_headroom() - 6.667).abs() < 0.01);
 }
 
 #[test]
 fn stats_frame_time_headroom_negative_overbudget() {
-    let s = RuntimeStats { frame_time_ms: 20.0, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 20.0,
+        ..Default::default()
+    };
     assert!(s.frame_time_headroom() < 0.0); // Over budget
 }
 
 #[test]
 fn stats_is_running_smoothly_true() {
-    let s = RuntimeStats { fps: 61.0, frame_time_ms: 16.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 61.0,
+        frame_time_ms: 16.0,
+        ..Default::default()
+    };
     assert!(s.is_running_smoothly());
 }
 
 #[test]
 fn stats_is_running_smoothly_false_low_fps() {
-    let s = RuntimeStats { fps: 59.0, frame_time_ms: 16.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 59.0,
+        frame_time_ms: 16.0,
+        ..Default::default()
+    };
     assert!(!s.is_running_smoothly());
 }
 
 #[test]
 fn stats_is_running_smoothly_false_high_frame_time() {
-    let s = RuntimeStats { fps: 65.0, frame_time_ms: 17.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 65.0,
+        frame_time_ms: 17.0,
+        ..Default::default()
+    };
     assert!(!s.is_running_smoothly());
 }
 
 #[test]
 fn stats_is_frame_time_healthy() {
-    let s = RuntimeStats { frame_time_ms: 10.0, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 10.0,
+        ..Default::default()
+    };
     assert!(s.is_frame_time_healthy(16.67));
     assert!(!s.is_frame_time_healthy(5.0));
 }
 
 #[test]
 fn stats_is_fps_healthy() {
-    let s = RuntimeStats { fps: 60.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 60.0,
+        ..Default::default()
+    };
     assert!(s.is_fps_healthy(30.0));
     assert!(s.is_fps_healthy(60.0));
     assert!(!s.is_fps_healthy(61.0));
@@ -827,31 +1005,51 @@ fn stats_is_fps_healthy() {
 
 #[test]
 fn stats_is_frame_time_critical_threshold() {
-    let s = RuntimeStats { frame_time_ms: 33.33, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 33.33,
+        ..Default::default()
+    };
     assert!(!s.is_frame_time_critical()); // Exactly at threshold, not >
 
-    let s2 = RuntimeStats { frame_time_ms: 33.34, ..Default::default() };
+    let s2 = RuntimeStats {
+        frame_time_ms: 33.34,
+        ..Default::default()
+    };
     assert!(s2.is_frame_time_critical());
 }
 
 #[test]
 fn stats_simulation_duration_secs() {
-    let s = RuntimeStats { tick_count: 120, ..Default::default() };
+    let s = RuntimeStats {
+        tick_count: 120,
+        ..Default::default()
+    };
     assert!((s.simulation_duration_secs() - 2.0).abs() < 0.001);
 
-    let s2 = RuntimeStats { tick_count: 0, ..Default::default() };
+    let s2 = RuntimeStats {
+        tick_count: 0,
+        ..Default::default()
+    };
     assert_eq!(s2.simulation_duration_secs(), 0.0);
 }
 
 #[test]
 fn stats_estimated_entity_capacity_zero_when_no_entities() {
-    let s = RuntimeStats { entity_count: 0, frame_time_ms: 10.0, ..Default::default() };
+    let s = RuntimeStats {
+        entity_count: 0,
+        frame_time_ms: 10.0,
+        ..Default::default()
+    };
     assert_eq!(s.estimated_entity_capacity(), 0);
 }
 
 #[test]
 fn stats_estimated_entity_capacity_zero_when_no_frame_time() {
-    let s = RuntimeStats { entity_count: 100, frame_time_ms: 0.0, ..Default::default() };
+    let s = RuntimeStats {
+        entity_count: 100,
+        frame_time_ms: 0.0,
+        ..Default::default()
+    };
     assert_eq!(s.estimated_entity_capacity(), 0);
 }
 
@@ -869,16 +1067,26 @@ fn stats_estimated_entity_capacity_calculation() {
 
 #[test]
 fn stats_validate_detects_high_frame_time() {
-    let s = RuntimeStats { frame_time_ms: 40.0, ..Default::default() };
+    let s = RuntimeStats {
+        frame_time_ms: 40.0,
+        ..Default::default()
+    };
     let issues = s.validate();
-    assert!(issues.iter().any(|i| matches!(i, RuntimeIssue::FrameTimeExceeded { .. })));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, RuntimeIssue::FrameTimeExceeded { .. })));
 }
 
 #[test]
 fn stats_validate_detects_low_fps() {
-    let s = RuntimeStats { fps: 20.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 20.0,
+        ..Default::default()
+    };
     let issues = s.validate();
-    assert!(issues.iter().any(|i| matches!(i, RuntimeIssue::LowFps { .. })));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, RuntimeIssue::LowFps { .. })));
 }
 
 #[test]
@@ -894,52 +1102,89 @@ fn stats_validate_no_issues_when_healthy() {
 #[test]
 fn stats_validate_zero_fps_no_low_fps_issue() {
     // fps=0 → condition is fps > 0.0 && fps < 30.0, so 0.0 doesn't trigger
-    let s = RuntimeStats { fps: 0.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 0.0,
+        ..Default::default()
+    };
     let issues = s.validate();
-    assert!(!issues.iter().any(|i| matches!(i, RuntimeIssue::LowFps { .. })));
+    assert!(!issues
+        .iter()
+        .any(|i| matches!(i, RuntimeIssue::LowFps { .. })));
 }
 
 #[test]
 fn stats_fps_stability_capped_at_one() {
-    let s = RuntimeStats { fps: 120.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 120.0,
+        ..Default::default()
+    };
     assert!((s.fps_stability() - 1.0).abs() < 0.001);
 }
 
 #[test]
 fn stats_fps_stability_zero_when_no_fps() {
-    let s = RuntimeStats { fps: 0.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 0.0,
+        ..Default::default()
+    };
     assert_eq!(s.fps_stability(), 0.0);
 }
 
 #[test]
 fn stats_fps_stability_half() {
-    let s = RuntimeStats { fps: 30.0, ..Default::default() };
+    let s = RuntimeStats {
+        fps: 30.0,
+        ..Default::default()
+    };
     assert!((s.fps_stability() - 0.5).abs() < 0.001);
 }
 
 #[test]
 fn stats_status_color_maps_grade() {
-    let excellent = RuntimeStats { fps: 65.0, ..Default::default() };
+    let excellent = RuntimeStats {
+        fps: 65.0,
+        ..Default::default()
+    };
     assert_eq!(excellent.status_color(), "green");
 
-    let good = RuntimeStats { fps: 50.0, ..Default::default() };
+    let good = RuntimeStats {
+        fps: 50.0,
+        ..Default::default()
+    };
     assert_eq!(good.status_color(), "lightgreen");
 
-    let fair = RuntimeStats { fps: 35.0, ..Default::default() };
+    let fair = RuntimeStats {
+        fps: 35.0,
+        ..Default::default()
+    };
     assert_eq!(fair.status_color(), "yellow");
 
-    let poor = RuntimeStats { fps: 20.0, ..Default::default() };
+    let poor = RuntimeStats {
+        fps: 20.0,
+        ..Default::default()
+    };
     assert_eq!(poor.status_color(), "orange");
 
-    let critical = RuntimeStats { fps: 10.0, ..Default::default() };
+    let critical = RuntimeStats {
+        fps: 10.0,
+        ..Default::default()
+    };
     assert_eq!(critical.status_color(), "red");
 }
 
 #[test]
 fn stats_is_healthy_alias_for_is_running_smoothly() {
-    let healthy = RuntimeStats { fps: 61.0, frame_time_ms: 16.0, ..Default::default() };
+    let healthy = RuntimeStats {
+        fps: 61.0,
+        frame_time_ms: 16.0,
+        ..Default::default()
+    };
     assert_eq!(healthy.is_healthy(), healthy.is_running_smoothly());
 
-    let unhealthy = RuntimeStats { fps: 20.0, frame_time_ms: 50.0, ..Default::default() };
+    let unhealthy = RuntimeStats {
+        fps: 20.0,
+        frame_time_ms: 50.0,
+        ..Default::default()
+    };
     assert_eq!(unhealthy.is_healthy(), unhealthy.is_running_smoothly());
 }

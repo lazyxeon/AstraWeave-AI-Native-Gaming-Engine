@@ -382,13 +382,13 @@ impl ToastManager {
         for (_i, toast) in self.toasts[start_index..].iter().enumerate().rev() {
             let toast_id = toast.id;
             let progress = toast.animation_progress();
-            
+
             // Calculate toast height
             let toast_height = if toast.actions.is_empty() { 50.0 } else { 85.0 };
-            
+
             // Slide animation offset
             let slide_offset = (1.0 - progress) * 50.0;
-            
+
             let toast_pos = Pos2::new(
                 screen_rect.max.x - self.toast_width - self.padding + slide_offset,
                 y_offset - toast_height,
@@ -414,34 +414,51 @@ impl ToastManager {
                         .shadow(egui::epaint::Shadow {
                             spread: 2,
                             blur: 8,
-                            color: Color32::from_rgba_unmultiplied(0, 0, 0, (60.0 * progress) as u8),
+                            color: Color32::from_rgba_unmultiplied(
+                                0,
+                                0,
+                                0,
+                                (60.0 * progress) as u8,
+                            ),
                             offset: [2, 2],
                         })
                         .show(ui, |ui| {
                             ui.set_width(self.toast_width - 24.0);
-                            
+
                             let text_alpha = (255.0 * progress) as u8;
-                            let text_color = Color32::from_rgba_unmultiplied(255, 255, 255, text_alpha);
-                            
+                            let text_color =
+                                Color32::from_rgba_unmultiplied(255, 255, 255, text_alpha);
+
                             // Header row with icon, message, and close button
                             ui.horizontal(|ui| {
                                 ui.label(RichText::new(toast.level.icon()).size(16.0));
                                 ui.add_space(4.0);
-                                
+
                                 // Message (takes remaining space)
-                                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center).with_main_wrap(true), |ui| {
-                                    ui.set_width(self.toast_width - 80.0);
-                                    ui.label(RichText::new(&toast.message).color(text_color).size(14.0));
-                                });
-                                
+                                ui.with_layout(
+                                    egui::Layout::left_to_right(egui::Align::Center)
+                                        .with_main_wrap(true),
+                                    |ui| {
+                                        ui.set_width(self.toast_width - 80.0);
+                                        ui.label(
+                                            RichText::new(&toast.message)
+                                                .color(text_color)
+                                                .size(14.0),
+                                        );
+                                    },
+                                );
+
                                 // Close button
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    if ui.small_button("✕").clicked() {
-                                        toasts_to_dismiss.push(toast_id);
-                                    }
-                                });
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        if ui.small_button("✕").clicked() {
+                                            toasts_to_dismiss.push(toast_id);
+                                        }
+                                    },
+                                );
                             });
-                            
+
                             // Action buttons row
                             if !toast.actions.is_empty() {
                                 ui.add_space(8.0);
@@ -453,16 +470,26 @@ impl ToastManager {
                                         }
                                         ui.add_space(4.0);
                                     }
-                                    
+
                                     // Progress bar showing remaining time
-                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                        let progress_frac = 1.0 - (toast.age() / toast.duration.as_secs_f32()).min(1.0);
-                                        ui.add(
-                                            egui::ProgressBar::new(progress_frac)
-                                                .desired_width(60.0)
-                                                .fill(Color32::from_rgba_unmultiplied(255, 255, 255, (100.0 * progress) as u8))
-                                        );
-                                    });
+                                    ui.with_layout(
+                                        egui::Layout::right_to_left(egui::Align::Center),
+                                        |ui| {
+                                            let progress_frac = 1.0
+                                                - (toast.age() / toast.duration.as_secs_f32())
+                                                    .min(1.0);
+                                            ui.add(
+                                                egui::ProgressBar::new(progress_frac)
+                                                    .desired_width(60.0)
+                                                    .fill(Color32::from_rgba_unmultiplied(
+                                                        255,
+                                                        255,
+                                                        255,
+                                                        (100.0 * progress) as u8,
+                                                    )),
+                                            );
+                                        },
+                                    );
                                 });
                             }
                         });
@@ -471,7 +498,7 @@ impl ToastManager {
 
             // Track hover state
             hover_updates.push((toast_id, response.hovered()));
-            
+
             // Click to dismiss (anywhere on toast)
             if response.clicked() {
                 toasts_to_dismiss.push(toast_id);
@@ -511,22 +538,19 @@ mod tests {
 
     #[test]
     fn test_toast_with_action() {
-        let toast = Toast::new("Deleted", ToastLevel::Success)
-            .with_action(ToastAction::Undo);
+        let toast = Toast::new("Deleted", ToastLevel::Success).with_action(ToastAction::Undo);
         assert_eq!(toast.actions.len(), 1);
     }
 
     #[test]
     fn test_toast_with_duration() {
-        let toast = Toast::new("Test", ToastLevel::Info)
-            .with_duration(Duration::from_secs(10));
+        let toast = Toast::new("Test", ToastLevel::Info).with_duration(Duration::from_secs(10));
         assert_eq!(toast.duration, Duration::from_secs(10));
     }
 
     #[test]
     fn test_toast_with_group() {
-        let toast = Toast::new("Test", ToastLevel::Info)
-            .with_group("save-status");
+        let toast = Toast::new("Test", ToastLevel::Info).with_group("save-status");
         assert_eq!(toast.group_key, Some("save-status".to_string()));
     }
 
@@ -629,13 +653,13 @@ mod tests {
         manager.info("Info");
         manager.warning("Warning");
         manager.error("Error");
-        
+
         assert_eq!(manager.count(), 3);
         assert_eq!(manager.toasts[0].level, ToastLevel::Info);
         assert_eq!(manager.toasts[1].level, ToastLevel::Warning);
         assert_eq!(manager.toasts[2].level, ToastLevel::Error);
     }
-    
+
     #[test]
     fn test_take_pending_actions() {
         let mut manager = ToastManager::new();
@@ -658,11 +682,11 @@ mod tests {
         let t = Toast::new("Msg", ToastLevel::Info)
             .with_duration(Duration::from_secs(10))
             .with_group("g1");
-            
+
         assert_eq!(t.duration, Duration::from_secs(10));
         assert_eq!(t.group_key, Some("g1".to_string()));
     }
-    
+
     #[test]
     fn test_toast_display_helpers() {
         let mut manager = ToastManager::new();

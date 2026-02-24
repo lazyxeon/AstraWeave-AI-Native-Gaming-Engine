@@ -25,7 +25,7 @@ use std::f32::consts::PI;
 
 #[test]
 fn scene_env_ubo_size_is_80() {
-    assert_eq!(SceneEnvironmentUBO::size(), 80);
+    assert_eq!(SceneEnvironmentUBO::size(), 96);
 }
 
 #[test]

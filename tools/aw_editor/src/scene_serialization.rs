@@ -260,11 +260,7 @@ impl SceneData {
             entity_count: self.entities.len(),
             obstacle_count: self.obstacles.len(),
             has_behavior_graphs: self.entities.iter().any(|e| e.behavior_graph.is_some()),
-            total_cooldowns: self
-                .entities
-                .iter()
-                .map(|e| e.cooldowns.len())
-                .sum(),
+            total_cooldowns: self.entities.iter().map(|e| e.cooldowns.len()).sum(),
         }
     }
 }
@@ -678,8 +674,14 @@ mod tests {
     #[test]
     fn test_scene_serialization_cooldowns() {
         let mut world = World::new();
-        let entity = world.spawn("CooldownEntity", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        
+        let entity = world.spawn(
+            "CooldownEntity",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+
         if let Some(cd) = world.cooldowns_mut(entity) {
             cd.map.insert("fire".to_string(), 1.5);
             cd.map.insert("jump".to_string(), 0.5);
@@ -687,25 +689,34 @@ mod tests {
 
         let scene = SceneData::from_world(&world);
         let restored = scene.to_world();
-        
+
         // Access restricted in world, but we can verify SceneData
         assert_eq!(scene.entities[0].cooldowns.len(), 2);
         assert!((scene.entities[0].cooldowns["fire"] - 1.5).abs() < 0.001);
-        
+
         // If we want to check restored world, we need public accessors or helper
         // Assuming implementation is correct if SceneData is correct, as to_world copies it back
         let restored_cd = restored.cooldowns(entity).unwrap();
         assert!((restored_cd.map["fire"] - 1.5).abs() < 0.001);
     }
-    
+
     #[test]
     fn test_scene_serialization_large_coordinates() {
         let mut world = World::new();
-        let entity = world.spawn("FarEntity", IVec2 { x: 1000000, y: -1000000 }, astraweave_core::Team { id: 0 }, 100, 30);
-        
+        let entity = world.spawn(
+            "FarEntity",
+            IVec2 {
+                x: 1000000,
+                y: -1000000,
+            },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+
         let scene = SceneData::from_world(&world);
         let restored = scene.to_world();
-        
+
         let pose = restored.pose(entity).unwrap();
         assert_eq!(pose.pos.x, 1000000);
         assert_eq!(pose.pos.y, -1000000);
@@ -714,11 +725,17 @@ mod tests {
     #[test]
     fn test_scene_serialization_json_format() {
         let mut world = World::new();
-        world.spawn("Entity", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        
+        world.spawn(
+            "Entity",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+
         let scene = SceneData::from_world(&world);
         let json = serde_json::to_string(&scene).unwrap();
-        
+
         let deserialized: SceneData = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.entities.len(), 1);
         assert_eq!(deserialized.entities[0].name, "Entity");
@@ -729,13 +746,13 @@ mod tests {
         use std::path::Path;
         let world = World::new();
         let scene = SceneData::from_world(&world);
-        
+
         // Try to save outside content directory
         // We can't easily mock env::current_dir(), but we can try a relative path that goes up
         // This relies on content directory existing which save_to_file ensures
         let result = scene.save_to_file(Path::new("../outside.ron"));
         assert!(result.is_err());
-        
+
         let err = result.unwrap_err();
         assert!(err.to_string().contains("Invalid scene path"));
     }
@@ -818,7 +835,9 @@ mod tests {
 
         let issues = scene.validate();
         assert!(!issues.is_empty());
-        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("Duplicate")));
+        assert!(issues
+            .iter()
+            .any(|i| i.is_error() && i.message().contains("Duplicate")));
         assert!(!scene.is_valid());
     }
 
@@ -846,7 +865,9 @@ mod tests {
         };
 
         let issues = scene.validate();
-        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("scale")));
+        assert!(issues
+            .iter()
+            .any(|i| i.is_error() && i.message().contains("scale")));
         assert!(!scene.is_valid());
     }
 
@@ -874,7 +895,9 @@ mod tests {
         };
 
         let issues = scene.validate();
-        assert!(issues.iter().any(|i| !i.is_error() && i.message().contains("HP")));
+        assert!(issues
+            .iter()
+            .any(|i| !i.is_error() && i.message().contains("HP")));
         assert!(scene.is_valid()); // Warnings don't invalidate
     }
 
@@ -902,7 +925,9 @@ mod tests {
         };
 
         let issues = scene.validate();
-        assert!(issues.iter().any(|i| i.is_error() && i.message().contains("next_entity_id")));
+        assert!(issues
+            .iter()
+            .any(|i| i.is_error() && i.message().contains("next_entity_id")));
         assert!(!scene.is_valid());
     }
 
@@ -985,7 +1010,7 @@ mod tests {
     fn test_scene_validation_issue_display() {
         let error = SceneValidationIssue::Error("Something went wrong".to_string());
         let warning = SceneValidationIssue::Warning("Consider this".to_string());
-        
+
         assert!(format!("{}", error).contains("Error"));
         assert!(format!("{}", error).contains("Something went wrong"));
         assert!(format!("{}", warning).contains("Warning"));
@@ -1004,12 +1029,12 @@ mod tests {
     fn test_scene_validation_issue_helpers() {
         let error = SceneValidationIssue::error("Test error");
         let warning = SceneValidationIssue::warning("Test warning");
-        
+
         assert!(error.is_error());
         assert!(!error.is_warning());
         assert_eq!(error.name(), "Error");
         assert_eq!(error.icon(), "❌");
-        
+
         assert!(!warning.is_error());
         assert!(warning.is_warning());
         assert_eq!(warning.name(), "Warning");
@@ -1020,7 +1045,7 @@ mod tests {
     fn test_scene_validation_issue_message() {
         let error = SceneValidationIssue::Error("Error message".to_string());
         let warning = SceneValidationIssue::Warning("Warning message".to_string());
-        
+
         assert_eq!(error.message(), "Error message");
         assert_eq!(warning.message(), "Warning message");
     }

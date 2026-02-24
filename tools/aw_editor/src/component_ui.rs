@@ -58,7 +58,11 @@ impl ComponentEdit {
             ComponentEdit::Team { old_id, new_id, .. } => {
                 format!("Team: {} → {}", old_id, new_id)
             }
-            ComponentEdit::Ammo { old_rounds, new_rounds, .. } => {
+            ComponentEdit::Ammo {
+                old_rounds,
+                new_rounds,
+                ..
+            } => {
                 format!("Ammo: {} → {}", old_rounds, new_rounds)
             }
         }
@@ -340,7 +344,10 @@ impl ComponentType {
 
     /// Check if this is a gameplay component
     pub fn is_gameplay(&self) -> bool {
-        matches!(self, ComponentType::Health | ComponentType::Team | ComponentType::Ammo)
+        matches!(
+            self,
+            ComponentType::Health | ComponentType::Team | ComponentType::Ammo
+        )
     }
 
     pub fn has_component(&self, world: &World, entity: Entity) -> bool {
@@ -685,9 +692,21 @@ mod tests {
 
     #[test]
     fn test_component_edit_component_type() {
-        let health = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
-        let team = ComponentEdit::Team { entity: 1, old_id: 0, new_id: 1 };
-        let ammo = ComponentEdit::Ammo { entity: 1, old_rounds: 30, new_rounds: 15 };
+        let health = ComponentEdit::Health {
+            entity: 1,
+            old_hp: 100,
+            new_hp: 50,
+        };
+        let team = ComponentEdit::Team {
+            entity: 1,
+            old_id: 0,
+            new_id: 1,
+        };
+        let ammo = ComponentEdit::Ammo {
+            entity: 1,
+            old_rounds: 30,
+            new_rounds: 15,
+        };
 
         assert!(matches!(health.component_type(), ComponentType::Health));
         assert!(matches!(team.component_type(), ComponentType::Team));
@@ -696,13 +715,21 @@ mod tests {
 
     #[test]
     fn test_component_edit_name() {
-        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let edit = ComponentEdit::Health {
+            entity: 1,
+            old_hp: 100,
+            new_hp: 50,
+        };
         assert_eq!(edit.name(), "Health Edit");
     }
 
     #[test]
     fn test_component_edit_description() {
-        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let edit = ComponentEdit::Health {
+            entity: 1,
+            old_hp: 100,
+            new_hp: 50,
+        };
         let desc = edit.description();
         assert!(desc.contains("100"));
         assert!(desc.contains("50"));
@@ -710,7 +737,11 @@ mod tests {
 
     #[test]
     fn test_component_edit_is_health() {
-        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let edit = ComponentEdit::Health {
+            entity: 1,
+            old_hp: 100,
+            new_hp: 50,
+        };
         assert!(edit.is_health());
         assert!(!edit.is_team());
         assert!(!edit.is_ammo());
@@ -718,7 +749,11 @@ mod tests {
 
     #[test]
     fn test_component_edit_is_team() {
-        let edit = ComponentEdit::Team { entity: 1, old_id: 0, new_id: 1 };
+        let edit = ComponentEdit::Team {
+            entity: 1,
+            old_id: 0,
+            new_id: 1,
+        };
         assert!(edit.is_team());
         assert!(!edit.is_health());
         assert!(!edit.is_ammo());
@@ -726,7 +761,11 @@ mod tests {
 
     #[test]
     fn test_component_edit_is_ammo() {
-        let edit = ComponentEdit::Ammo { entity: 1, old_rounds: 30, new_rounds: 15 };
+        let edit = ComponentEdit::Ammo {
+            entity: 1,
+            old_rounds: 30,
+            new_rounds: 15,
+        };
         assert!(edit.is_ammo());
         assert!(!edit.is_health());
         assert!(!edit.is_team());
@@ -734,7 +773,11 @@ mod tests {
 
     #[test]
     fn test_component_edit_display() {
-        let edit = ComponentEdit::Health { entity: 1, old_hp: 100, new_hp: 50 };
+        let edit = ComponentEdit::Health {
+            entity: 1,
+            old_hp: 100,
+            new_hp: 50,
+        };
         let display = format!("{}", edit);
         assert!(display.contains("Health Edit"));
         assert!(display.contains("100"));

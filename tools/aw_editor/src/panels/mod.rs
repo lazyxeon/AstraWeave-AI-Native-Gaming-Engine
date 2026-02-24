@@ -72,11 +72,13 @@ pub use animation_panel::{
 pub use asset_browser::{AssetAction, AssetBrowser, TextureType};
 pub use build_manager::BuildManagerPanel;
 #[allow(unused_imports)]
-pub use charts_panel::{ChartsAction, ChartsPanel, ChartType, DataSource};
+pub use charts_panel::{ChartType, ChartsAction, ChartsPanel, DataSource};
 pub use console_panel::ConsolePanel;
 pub use entity_panel::EntityPanel;
 #[allow(unused_imports)]
-pub use entity_panel::{EntityAction, EntityArchetype, EntityFilter, PrefabAction, ValidationIssue, ValidationSeverity};
+pub use entity_panel::{
+    EntityAction, EntityArchetype, EntityFilter, PrefabAction, ValidationIssue, ValidationSeverity,
+};
 pub use graph_panel::GraphPanel;
 pub use hierarchy_panel::HierarchyPanel;
 pub use performance_panel::PerformancePanel;
@@ -106,17 +108,17 @@ pub use cinematics_panel::{
 pub use dialogue_editor_panel::{
     DialogueEditorAction, DialogueEditorPanel, DialogueNodeType, ExportFormat, LayoutAlgorithm,
 };
-pub use foliage_panel::FoliagePanel;
-#[allow(unused_imports)]
-pub use foliage_panel::{
-    BrushSettings, BrushTool, DistributionType, FoliageAction, FoliageCategory, FoliageLayer,
-    FoliageTab, FoliageType, ProceduralRule,
-};
 #[allow(unused_imports)]
 pub use distribution_panel::{
     AssetOptions, AudioFormat, BuildHistoryEntry, BuildOptions, BuildProfile, BuildProgress,
     BuildStep, DistributionAction, DistributionPanel, TargetPlatform as DistTargetPlatform,
     TextureFormat, ValidationError, ValidationResult, ValidationWarning,
+};
+pub use foliage_panel::FoliagePanel;
+#[allow(unused_imports)]
+pub use foliage_panel::{
+    BrushSettings, BrushTool, DistributionType, FoliageAction, FoliageCategory, FoliageLayer,
+    FoliageTab, FoliageType, ProceduralRule,
 };
 #[allow(unused_imports)]
 pub use input_bindings_panel::{
@@ -126,7 +128,7 @@ pub use input_bindings_panel::{
 pub use lighting_panel::LightingPanel;
 #[allow(unused_imports)]
 pub use lighting_panel::{
-    GiMode, Light, LightingAction, LightingTab, LightProbe, LightType, LightUnit, ReflectionProbe,
+    GiMode, Light, LightProbe, LightType, LightUnit, LightingAction, LightingTab, ReflectionProbe,
     ShadowQuality, ShadowType,
 };
 pub use localization_panel::LocalizationPanel;
@@ -155,8 +157,8 @@ pub use navigation_panel::{
 };
 #[allow(unused_imports)]
 pub use networking_panel::{
-    CompressionLevel, ConnectionState, InterestPolicy, NetworkAction, NetworkingPanel, NetworkTab,
-    NetworkRole,
+    CompressionLevel, ConnectionState, InterestPolicy, NetworkAction, NetworkRole, NetworkTab,
+    NetworkingPanel,
 };
 #[allow(unused_imports)]
 pub use particle_system_panel::{
@@ -174,9 +176,10 @@ pub use post_process_panel::PostProcessPanel;
 pub use project_settings_panel::ProjectSettingsPanel;
 #[allow(unused_imports)]
 pub use project_settings_panel::{
-    AntialiasingMode, AudioBackend, AoMode, GiMode as RenderGiMode, InputAction, Layer,
+    AntialiasingMode, AoMode, AudioBackend, GiMode as RenderGiMode, InputAction, Layer,
     PhysicsSettings, ProjectSettingsAction, QualityLevel, ReflectionMode, RendererBackend,
-    RenderingSettings, SettingsTab, ShadowMode, Tag, TargetPlatform, TextureQuality, TonemappingMode,
+    RenderingSettings, SettingsTab, ShadowMode, Tag, TargetPlatform, TextureQuality,
+    TonemappingMode,
 };
 pub use spline_editor_panel::SplineEditorPanel;
 #[allow(unused_imports)]
@@ -195,8 +198,8 @@ pub use ui_editor_panel::{
 // These are re-exports for the public API - they may be unused internally
 #[allow(unused_imports)]
 pub use environment_preset_panel::{
-    EnvironmentAction, EnvironmentPresetPanel, EnvironmentSettings, FogType, MoodPreset,
-    SkyType, TimeOfDay, Tonemapper, WeatherCondition,
+    EnvironmentAction, EnvironmentPresetPanel, EnvironmentSettings, FogType, MoodPreset, SkyType,
+    TimeOfDay, Tonemapper, WeatherCondition,
 };
 #[allow(unused_imports)]
 pub use import_doctor_panel::{
@@ -205,8 +208,8 @@ pub use import_doctor_panel::{
 };
 #[allow(unused_imports)]
 pub use procedural_filler_panel::{
-    BiomePreset, EnvironmentPreset, FillerAction, FillerMode, ProceduralFillerPanel,
-    RoadPreset, ScatterCategory, ScatterSettings,
+    BiomePreset, EnvironmentPreset, FillerAction, FillerMode, ProceduralFillerPanel, RoadPreset,
+    ScatterCategory, ScatterSettings,
 };
 #[allow(unused_imports)]
 pub use ready_asset_store_panel::{

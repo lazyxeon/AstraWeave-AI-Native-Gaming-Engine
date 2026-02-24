@@ -95,7 +95,10 @@ impl DecoratorKind {
 
     /// Returns true if this decorator modifies the result.
     pub fn modifies_result(&self) -> bool {
-        matches!(self, DecoratorKind::Inverter | DecoratorKind::Succeeder | DecoratorKind::Failer)
+        matches!(
+            self,
+            DecoratorKind::Inverter | DecoratorKind::Succeeder | DecoratorKind::Failer
+        )
     }
 
     /// Returns true if this decorator loops execution.
@@ -160,10 +163,22 @@ impl std::fmt::Display for BehaviorGraphNodeKind {
         match self {
             BehaviorGraphNodeKind::Action { name } => write!(f, "Action: {}", name),
             BehaviorGraphNodeKind::Condition { name } => write!(f, "Condition: {}", name),
-            BehaviorGraphNodeKind::Sequence { children } => write!(f, "Sequence ({} children)", children.len()),
-            BehaviorGraphNodeKind::Selector { children } => write!(f, "Selector ({} children)", children.len()),
-            BehaviorGraphNodeKind::Parallel { children, success_threshold } => {
-                write!(f, "Parallel ({} children, {} threshold)", children.len(), success_threshold)
+            BehaviorGraphNodeKind::Sequence { children } => {
+                write!(f, "Sequence ({} children)", children.len())
+            }
+            BehaviorGraphNodeKind::Selector { children } => {
+                write!(f, "Selector ({} children)", children.len())
+            }
+            BehaviorGraphNodeKind::Parallel {
+                children,
+                success_threshold,
+            } => {
+                write!(
+                    f,
+                    "Parallel ({} children, {} threshold)",
+                    children.len(),
+                    success_threshold
+                )
             }
             BehaviorGraphNodeKind::Decorator(node) => write!(f, "Decorator: {}", node.decorator),
         }
@@ -173,7 +188,14 @@ impl std::fmt::Display for BehaviorGraphNodeKind {
 impl BehaviorGraphNodeKind {
     /// Returns all node kind variant names.
     pub fn all_variants() -> &'static [&'static str] {
-        &["Action", "Condition", "Sequence", "Selector", "Parallel", "Decorator"]
+        &[
+            "Action",
+            "Condition",
+            "Sequence",
+            "Selector",
+            "Parallel",
+            "Decorator",
+        ]
     }
 
     pub fn display_name(&self) -> &str {
@@ -201,16 +223,20 @@ impl BehaviorGraphNodeKind {
 
     /// Returns true if this is a composite node (can have multiple children).
     pub fn is_composite(&self) -> bool {
-        matches!(self, 
-            BehaviorGraphNodeKind::Sequence { .. } | 
-            BehaviorGraphNodeKind::Selector { .. } | 
-            BehaviorGraphNodeKind::Parallel { .. }
+        matches!(
+            self,
+            BehaviorGraphNodeKind::Sequence { .. }
+                | BehaviorGraphNodeKind::Selector { .. }
+                | BehaviorGraphNodeKind::Parallel { .. }
         )
     }
 
     /// Returns true if this is a leaf node (Action or Condition).
     pub fn is_leaf(&self) -> bool {
-        matches!(self, BehaviorGraphNodeKind::Action { .. } | BehaviorGraphNodeKind::Condition { .. })
+        matches!(
+            self,
+            BehaviorGraphNodeKind::Action { .. } | BehaviorGraphNodeKind::Condition { .. }
+        )
     }
 
     /// Returns true if this is a decorator node.
@@ -221,10 +247,16 @@ impl BehaviorGraphNodeKind {
     /// Returns the child count for this node.
     pub fn child_count(&self) -> usize {
         match self {
-            BehaviorGraphNodeKind::Sequence { children } |
-            BehaviorGraphNodeKind::Selector { children } |
-            BehaviorGraphNodeKind::Parallel { children, .. } => children.len(),
-            BehaviorGraphNodeKind::Decorator(node) => if node.child.is_some() { 1 } else { 0 },
+            BehaviorGraphNodeKind::Sequence { children }
+            | BehaviorGraphNodeKind::Selector { children }
+            | BehaviorGraphNodeKind::Parallel { children, .. } => children.len(),
+            BehaviorGraphNodeKind::Decorator(node) => {
+                if node.child.is_some() {
+                    1
+                } else {
+                    0
+                }
+            }
             _ => 0,
         }
     }
@@ -622,7 +654,9 @@ impl BehaviorGraphDocument {
                 // Future node types: create a placeholder action node
                 self.add_node(
                     "Unknown".to_string(),
-                    BehaviorGraphNodeKind::Action { name: "unknown".to_string() },
+                    BehaviorGraphNodeKind::Action {
+                        name: "unknown".to_string(),
+                    },
                 )
             }
         }
@@ -748,13 +782,20 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_node_kind_display() {
-        let action = BehaviorGraphNodeKind::Action { name: "Attack".to_string() };
+        let action = BehaviorGraphNodeKind::Action {
+            name: "Attack".to_string(),
+        };
         assert!(action.to_string().contains("Attack"));
 
-        let sequence = BehaviorGraphNodeKind::Sequence { children: vec![1, 2, 3] };
+        let sequence = BehaviorGraphNodeKind::Sequence {
+            children: vec![1, 2, 3],
+        };
         assert!(sequence.to_string().contains("3 children"));
 
-        let parallel = BehaviorGraphNodeKind::Parallel { children: vec![1, 2], success_threshold: 1 };
+        let parallel = BehaviorGraphNodeKind::Parallel {
+            children: vec![1, 2],
+            success_threshold: 1,
+        };
         assert!(parallel.to_string().contains("2 children"));
     }
 
@@ -769,7 +810,9 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_node_kind_icon() {
-        let action = BehaviorGraphNodeKind::Action { name: "Test".to_string() };
+        let action = BehaviorGraphNodeKind::Action {
+            name: "Test".to_string(),
+        };
         assert!(!action.icon().is_empty());
 
         let sequence = BehaviorGraphNodeKind::Sequence { children: vec![] };
@@ -778,11 +821,15 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_node_kind_composite_leaf() {
-        let action = BehaviorGraphNodeKind::Action { name: "Test".to_string() };
+        let action = BehaviorGraphNodeKind::Action {
+            name: "Test".to_string(),
+        };
         assert!(action.is_leaf());
         assert!(!action.is_composite());
 
-        let condition = BehaviorGraphNodeKind::Condition { name: "Check".to_string() };
+        let condition = BehaviorGraphNodeKind::Condition {
+            name: "Check".to_string(),
+        };
         assert!(condition.is_leaf());
 
         let sequence = BehaviorGraphNodeKind::Sequence { children: vec![] };
@@ -792,13 +839,17 @@ mod tests {
         let selector = BehaviorGraphNodeKind::Selector { children: vec![] };
         assert!(selector.is_composite());
 
-        let parallel = BehaviorGraphNodeKind::Parallel { children: vec![], success_threshold: 1 };
+        let parallel = BehaviorGraphNodeKind::Parallel {
+            children: vec![],
+            success_threshold: 1,
+        };
         assert!(parallel.is_composite());
     }
 
     #[test]
     fn test_behavior_graph_node_kind_decorator() {
-        let decorator = BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
+        let decorator =
+            BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
         assert!(decorator.is_decorator());
         assert!(!decorator.is_composite());
         assert!(!decorator.is_leaf());
@@ -806,10 +857,14 @@ mod tests {
 
     #[test]
     fn test_behavior_graph_node_kind_child_count() {
-        let action = BehaviorGraphNodeKind::Action { name: "Test".to_string() };
+        let action = BehaviorGraphNodeKind::Action {
+            name: "Test".to_string(),
+        };
         assert_eq!(action.child_count(), 0);
 
-        let sequence = BehaviorGraphNodeKind::Sequence { children: vec![1, 2, 3] };
+        let sequence = BehaviorGraphNodeKind::Sequence {
+            children: vec![1, 2, 3],
+        };
         assert_eq!(sequence.child_count(), 3);
 
         let mut decorator_node = DecoratorNode::new(DecoratorKind::Inverter);
@@ -817,7 +872,8 @@ mod tests {
         let decorator = BehaviorGraphNodeKind::Decorator(decorator_node);
         assert_eq!(decorator.child_count(), 1);
 
-        let empty_decorator = BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
+        let empty_decorator =
+            BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
         assert_eq!(empty_decorator.child_count(), 0);
     }
 }

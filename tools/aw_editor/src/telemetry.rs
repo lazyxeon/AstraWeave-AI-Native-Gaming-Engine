@@ -39,13 +39,23 @@ impl std::fmt::Display for EditorTelemetryEvent {
             EditorTelemetryEvent::SelectionChanged { primary, count } => {
                 write!(f, "Selection Changed: {:?} ({} items)", primary, count)
             }
-            EditorTelemetryEvent::GridSettingsChanged { grid_enabled, snap_size, .. } => {
-                write!(f, "Grid Settings: enabled={}, snap={:.2}", grid_enabled, snap_size)
+            EditorTelemetryEvent::GridSettingsChanged {
+                grid_enabled,
+                snap_size,
+                ..
+            } => {
+                write!(
+                    f,
+                    "Grid Settings: enabled={}, snap={:.2}",
+                    grid_enabled, snap_size
+                )
             }
             EditorTelemetryEvent::GizmoStarted { entity, operation } => {
                 write!(f, "Gizmo Started: {} on entity {}", operation, entity)
             }
-            EditorTelemetryEvent::GizmoCommitted { entity, operation, .. } => {
+            EditorTelemetryEvent::GizmoCommitted {
+                entity, operation, ..
+            } => {
                 write!(f, "Gizmo Committed: {} on entity {}", operation, entity)
             }
             EditorTelemetryEvent::GizmoCancelled { entity, operation } => {
@@ -90,19 +100,20 @@ impl EditorTelemetryEvent {
 
     /// Returns true if this is a gizmo event.
     pub fn is_gizmo_event(&self) -> bool {
-        matches!(self,
-            EditorTelemetryEvent::GizmoStarted { .. } |
-            EditorTelemetryEvent::GizmoCommitted { .. } |
-            EditorTelemetryEvent::GizmoCancelled { .. }
+        matches!(
+            self,
+            EditorTelemetryEvent::GizmoStarted { .. }
+                | EditorTelemetryEvent::GizmoCommitted { .. }
+                | EditorTelemetryEvent::GizmoCancelled { .. }
         )
     }
 
     /// Returns the entity ID if this event references one.
     pub fn entity_id(&self) -> Option<u32> {
         match self {
-            EditorTelemetryEvent::GizmoStarted { entity, .. } |
-            EditorTelemetryEvent::GizmoCommitted { entity, .. } |
-            EditorTelemetryEvent::GizmoCancelled { entity, .. } => Some(*entity),
+            EditorTelemetryEvent::GizmoStarted { entity, .. }
+            | EditorTelemetryEvent::GizmoCommitted { entity, .. }
+            | EditorTelemetryEvent::GizmoCancelled { entity, .. } => Some(*entity),
             _ => None,
         }
     }
@@ -440,7 +451,7 @@ mod tests {
     #[test]
     fn test_capture_and_drain() {
         let _guard = enable_capture();
-        
+
         record(EditorTelemetryEvent::SelectionChanged {
             primary: Some(1),
             count: 1,
@@ -452,7 +463,7 @@ mod tests {
 
         let events = drain_captured_events();
         assert_eq!(events.len(), 2);
-        
+
         // After drain, should be empty
         let empty = drain_captured_events();
         assert!(empty.is_empty());
@@ -461,7 +472,7 @@ mod tests {
     #[test]
     fn test_peek_captured_events() {
         let _guard = enable_capture();
-        
+
         record(EditorTelemetryEvent::GridSettingsChanged {
             grid_enabled: true,
             snap_size: 1.0,
@@ -471,7 +482,7 @@ mod tests {
 
         let peeked1 = peek_captured_events();
         let peeked2 = peek_captured_events();
-        
+
         // Peek should not drain
         assert_eq!(peeked1.len(), 1);
         assert_eq!(peeked2.len(), 1);
@@ -480,14 +491,26 @@ mod tests {
     #[test]
     fn test_count_by_type() {
         let _guard = enable_capture();
-        
-        record(EditorTelemetryEvent::SelectionChanged { primary: None, count: 0 });
-        record(EditorTelemetryEvent::SelectionChanged { primary: None, count: 0 });
-        record(EditorTelemetryEvent::GizmoStarted { entity: 1, operation: GizmoOperationKind::Translate });
-        record(EditorTelemetryEvent::GizmoCommitted { 
-            entity: 1, 
+
+        record(EditorTelemetryEvent::SelectionChanged {
+            primary: None,
+            count: 0,
+        });
+        record(EditorTelemetryEvent::SelectionChanged {
+            primary: None,
+            count: 0,
+        });
+        record(EditorTelemetryEvent::GizmoStarted {
+            entity: 1,
             operation: GizmoOperationKind::Translate,
-            measurement: GizmoMeasurement::Translate { from: IVec2::new(0, 0), to: IVec2::new(1, 1) },
+        });
+        record(EditorTelemetryEvent::GizmoCommitted {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+            measurement: GizmoMeasurement::Translate {
+                from: IVec2::new(0, 0),
+                to: IVec2::new(1, 1),
+            },
             constraint: None,
         });
 
@@ -501,18 +524,30 @@ mod tests {
     #[test]
     fn test_filter_gizmo_events() {
         let _guard = enable_capture();
-        
-        record(EditorTelemetryEvent::GizmoStarted { entity: 1, operation: GizmoOperationKind::Translate });
-        record(EditorTelemetryEvent::GizmoStarted { entity: 2, operation: GizmoOperationKind::Rotate });
-        record(EditorTelemetryEvent::GizmoStarted { entity: 3, operation: GizmoOperationKind::Translate });
-        record(EditorTelemetryEvent::SelectionChanged { primary: None, count: 0 });
+
+        record(EditorTelemetryEvent::GizmoStarted {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+        });
+        record(EditorTelemetryEvent::GizmoStarted {
+            entity: 2,
+            operation: GizmoOperationKind::Rotate,
+        });
+        record(EditorTelemetryEvent::GizmoStarted {
+            entity: 3,
+            operation: GizmoOperationKind::Translate,
+        });
+        record(EditorTelemetryEvent::SelectionChanged {
+            primary: None,
+            count: 0,
+        });
 
         let translate_events = filter_gizmo_events(GizmoOperationKind::Translate);
         assert_eq!(translate_events.len(), 2);
-        
+
         let rotate_events = filter_gizmo_events(GizmoOperationKind::Rotate);
         assert_eq!(rotate_events.len(), 1);
-        
+
         let scale_events = filter_gizmo_events(GizmoOperationKind::Scale);
         assert!(scale_events.is_empty());
     }
@@ -521,18 +556,21 @@ mod tests {
 
     #[test]
     fn test_telemetry_event_display() {
-        let selection = EditorTelemetryEvent::SelectionChanged { primary: Some(5), count: 3 };
-        let grid = EditorTelemetryEvent::GridSettingsChanged { 
-            grid_enabled: true, 
-            snap_size: 0.5, 
-            angle_enabled: false, 
-            angle_increment: 0.0 
+        let selection = EditorTelemetryEvent::SelectionChanged {
+            primary: Some(5),
+            count: 3,
         };
-        let started = EditorTelemetryEvent::GizmoStarted { 
-            entity: 1, 
-            operation: GizmoOperationKind::Translate 
+        let grid = EditorTelemetryEvent::GridSettingsChanged {
+            grid_enabled: true,
+            snap_size: 0.5,
+            angle_enabled: false,
+            angle_increment: 0.0,
         };
-        
+        let started = EditorTelemetryEvent::GizmoStarted {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+        };
+
         assert!(format!("{}", selection).contains("Selection Changed"));
         assert!(format!("{}", grid).contains("Grid Settings"));
         assert!(format!("{}", started).contains("Gizmo Started"));
@@ -548,19 +586,28 @@ mod tests {
 
     #[test]
     fn test_telemetry_event_helpers() {
-        let selection = EditorTelemetryEvent::SelectionChanged { primary: Some(5), count: 3 };
-        let grid = EditorTelemetryEvent::GridSettingsChanged { 
-            grid_enabled: true, snap_size: 0.5, angle_enabled: false, angle_increment: 0.0 
+        let selection = EditorTelemetryEvent::SelectionChanged {
+            primary: Some(5),
+            count: 3,
         };
-        let gizmo = EditorTelemetryEvent::GizmoStarted { entity: 1, operation: GizmoOperationKind::Translate };
-        
+        let grid = EditorTelemetryEvent::GridSettingsChanged {
+            grid_enabled: true,
+            snap_size: 0.5,
+            angle_enabled: false,
+            angle_increment: 0.0,
+        };
+        let gizmo = EditorTelemetryEvent::GizmoStarted {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+        };
+
         assert!(selection.is_selection_event());
         assert!(!selection.is_gizmo_event());
         assert_eq!(selection.entity_id(), None);
-        
+
         assert!(grid.is_grid_event());
         assert!(!grid.is_selection_event());
-        
+
         assert!(gizmo.is_gizmo_event());
         assert_eq!(gizmo.entity_id(), Some(1));
         assert_eq!(gizmo.name(), "Gizmo Started");

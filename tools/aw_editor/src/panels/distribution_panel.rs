@@ -9,10 +9,10 @@ use egui::{Color32, RichText, Ui};
 use std::collections::VecDeque;
 use std::path::PathBuf;
 
+use crate::panels::Panel;
 use aw_editor_lib::distribution::{
     DistributionBuilder, DistributionConfig, DistributionFormat, DistributionResult,
 };
-use crate::panels::Panel;
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // BUILD PROFILE
@@ -168,7 +168,11 @@ impl std::fmt::Display for DistributionAction {
         match self {
             DistributionAction::SetGameName(name) => write!(f, "Set game name: {}", name),
             DistributionAction::SetVersion(v) => write!(f, "Set version: {}", v),
-            DistributionAction::SetDescription(d) => write!(f, "Set description: {}...", d.chars().take(30).collect::<String>()),
+            DistributionAction::SetDescription(d) => write!(
+                f,
+                "Set description: {}...",
+                d.chars().take(30).collect::<String>()
+            ),
             DistributionAction::SetAuthor(a) => write!(f, "Set author: {}", a),
             DistributionAction::SetExecutableName(n) => write!(f, "Set executable: {}", n),
             DistributionAction::SetIconPath(p) => write!(f, "Set icon: {}", p),
@@ -179,21 +183,39 @@ impl std::fmt::Display for DistributionAction {
             DistributionAction::SetBuildDirectory(d) => write!(f, "Set build dir: {}", d),
             DistributionAction::SetOutputDirectory(d) => write!(f, "Set output dir: {}", d),
             DistributionAction::ToggleStripSymbols(b) => write!(f, "Toggle strip symbols: {}", b),
-            DistributionAction::ToggleCompressAssets(b) => write!(f, "Toggle compress assets: {}", b),
+            DistributionAction::ToggleCompressAssets(b) => {
+                write!(f, "Toggle compress assets: {}", b)
+            }
             DistributionAction::ToggleEmbedRuntime(b) => write!(f, "Toggle embed runtime: {}", b),
             DistributionAction::ToggleSignBinary(b) => write!(f, "Toggle sign binary: {}", b),
             DistributionAction::ToggleNotarizeMacOS(b) => write!(f, "Toggle notarize macOS: {}", b),
-            DistributionAction::ToggleCreateInstaller(b) => write!(f, "Toggle create installer: {}", b),
-            DistributionAction::ToggleGenerateChecksums(b) => write!(f, "Toggle generate checksums: {}", b),
-            DistributionAction::ToggleIncludeDebugSymbols(b) => write!(f, "Toggle debug symbols: {}", b),
-            DistributionAction::ToggleRunTestsBeforeBuild(b) => write!(f, "Toggle run tests: {}", b),
+            DistributionAction::ToggleCreateInstaller(b) => {
+                write!(f, "Toggle create installer: {}", b)
+            }
+            DistributionAction::ToggleGenerateChecksums(b) => {
+                write!(f, "Toggle generate checksums: {}", b)
+            }
+            DistributionAction::ToggleIncludeDebugSymbols(b) => {
+                write!(f, "Toggle debug symbols: {}", b)
+            }
+            DistributionAction::ToggleRunTestsBeforeBuild(b) => {
+                write!(f, "Toggle run tests: {}", b)
+            }
             DistributionAction::ToggleCleanBeforeBuild(b) => write!(f, "Toggle clean build: {}", b),
-            DistributionAction::ToggleCompressTextures(b) => write!(f, "Toggle compress textures: {}", b),
+            DistributionAction::ToggleCompressTextures(b) => {
+                write!(f, "Toggle compress textures: {}", b)
+            }
             DistributionAction::ToggleCompressAudio(b) => write!(f, "Toggle compress audio: {}", b),
-            DistributionAction::ToggleCompressMeshes(b) => write!(f, "Toggle compress meshes: {}", b),
-            DistributionAction::TogglePackIntoArchives(b) => write!(f, "Toggle pack archives: {}", b),
+            DistributionAction::ToggleCompressMeshes(b) => {
+                write!(f, "Toggle compress meshes: {}", b)
+            }
+            DistributionAction::TogglePackIntoArchives(b) => {
+                write!(f, "Toggle pack archives: {}", b)
+            }
             DistributionAction::ToggleEncryptAssets(b) => write!(f, "Toggle encrypt assets: {}", b),
-            DistributionAction::ToggleGenerateManifests(b) => write!(f, "Toggle generate manifests: {}", b),
+            DistributionAction::ToggleGenerateManifests(b) => {
+                write!(f, "Toggle generate manifests: {}", b)
+            }
             DistributionAction::SetTextureFormat(fmt) => write!(f, "Set texture format: {}", fmt),
             DistributionAction::SetAudioFormat(fmt) => write!(f, "Set audio format: {}", fmt),
             DistributionAction::SetMaxTextureSize(s) => write!(f, "Set max texture size: {}", s),
@@ -261,7 +283,9 @@ impl TargetPlatform {
         match self {
             TargetPlatform::Native => "🖥️",
             TargetPlatform::Windows64 | TargetPlatform::Windows32 => "🪟",
-            TargetPlatform::MacOSArm64 | TargetPlatform::MacOSx64 | TargetPlatform::MacOSUniversal => "🍎",
+            TargetPlatform::MacOSArm64
+            | TargetPlatform::MacOSx64
+            | TargetPlatform::MacOSUniversal => "🍎",
             TargetPlatform::LinuxX64 | TargetPlatform::LinuxArm64 => "🐧",
         }
     }
@@ -595,7 +619,9 @@ impl Default for BuildProgress {
 
 impl BuildProgress {
     pub fn elapsed_secs(&self) -> f32 {
-        self.start_time.map(|t| t.elapsed().as_secs_f32()).unwrap_or(0.0)
+        self.start_time
+            .map(|t| t.elapsed().as_secs_f32())
+            .unwrap_or(0.0)
     }
 
     pub fn start(&mut self) {
@@ -644,7 +670,7 @@ impl BuildHistoryEntry {
     pub fn age_string(&self) -> String {
         let elapsed = self.timestamp.elapsed().unwrap_or_default();
         let secs = elapsed.as_secs();
-        
+
         if secs < 60 {
             format!("{}s ago", secs)
         } else if secs < 3600 {
@@ -727,33 +753,33 @@ pub struct DistributionPanel {
     selected_format: DistributionFormat,
     build_dir: String,
     output_dir: String,
-    
+
     // Build settings
     profile: BuildProfile,
     platform: TargetPlatform,
     build_options: BuildOptions,
     asset_options: AssetOptions,
-    
+
     // Build state
     is_building: bool,
     progress: BuildProgress,
     last_result: Option<Result<DistributionResult, String>>,
-    
+
     // Validation
     validation: ValidationResult,
     auto_validate: bool,
-    
+
     // History
     build_history: VecDeque<BuildHistoryEntry>,
     max_history: usize,
-    
+
     // UI state
     show_build_options: bool,
     show_asset_options: bool,
     show_validation: bool,
     show_history: bool,
     show_progress: bool,
-    
+
     // File dialog state
     pending_build_dir: Option<PathBuf>,
     pending_output_dir: Option<PathBuf>,
@@ -819,7 +845,7 @@ impl DistributionPanel {
 
     fn validate(&mut self) {
         self.validation = ValidationResult::default();
-        
+
         // Check game name
         if self.config.game_name.is_empty() {
             self.validation.add_error(ValidationError {
@@ -828,7 +854,7 @@ impl DistributionPanel {
                 fix_suggestion: Some("Enter a game name".to_string()),
             });
         }
-        
+
         // Check version
         if self.config.version.is_empty() {
             self.validation.add_error(ValidationError {
@@ -837,7 +863,7 @@ impl DistributionPanel {
                 fix_suggestion: Some("Enter a version like '1.0.0'".to_string()),
             });
         }
-        
+
         // Check build directory
         if self.build_dir.is_empty() {
             self.validation.add_error(ValidationError {
@@ -846,7 +872,7 @@ impl DistributionPanel {
                 fix_suggestion: Some("Set build directory to 'target/release'".to_string()),
             });
         }
-        
+
         // Check Steam settings
         if self.selected_format == DistributionFormat::SteamDepot
             && self.config.steam_app_id.is_none()
@@ -857,7 +883,7 @@ impl DistributionPanel {
                 fix_suggestion: Some("Enter your Steam App ID".to_string()),
             });
         }
-        
+
         // Warnings
         if !self.build_options.run_tests_before_build {
             self.validation.add_warning(ValidationWarning {
@@ -865,7 +891,7 @@ impl DistributionPanel {
                 message: "Tests disabled - build may include bugs".to_string(),
             });
         }
-        
+
         if self.profile == BuildProfile::Debug {
             self.validation.add_warning(ValidationWarning {
                 category: "Build",
@@ -886,7 +912,7 @@ impl DistributionPanel {
             output_path: result.output_path.display().to_string(),
             version: self.config.version.clone(),
         };
-        
+
         self.build_history.push_front(entry);
         if self.build_history.len() > self.max_history {
             self.build_history.pop_back();
@@ -895,20 +921,23 @@ impl DistributionPanel {
 
     fn show_summary_bar(&self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("{} {}", 
-                self.platform.icon(), 
-                self.platform.name())).strong());
+            ui.label(
+                RichText::new(format!("{} {}", self.platform.icon(), self.platform.name()))
+                    .strong(),
+            );
             ui.separator();
             ui.label(format!("{} {}", self.profile.icon(), self.profile.name()));
             ui.separator();
             ui.label(format!("📦 {}", self.selected_format.name()));
-            
+
             if self.is_building {
                 ui.separator();
                 ui.spinner();
-                ui.label(format!("{} {}", 
-                    self.progress.current_step.icon(), 
-                    self.progress.current_step.name()));
+                ui.label(format!(
+                    "{} {}",
+                    self.progress.current_step.icon(),
+                    self.progress.current_step.name()
+                ));
             }
         });
     }
@@ -996,9 +1025,10 @@ impl DistributionPanel {
             for profile in BuildProfile::all() {
                 let selected = self.profile == *profile;
                 let text = format!("{} {}", profile.icon(), profile.name());
-                if ui.selectable_label(selected, text)
+                if ui
+                    .selectable_label(selected, text)
                     .on_hover_text(profile.description())
-                    .clicked() 
+                    .clicked()
                 {
                     self.profile = *profile;
                 }
@@ -1013,13 +1043,41 @@ impl DistributionPanel {
 
         ui.horizontal_wrapped(|ui| {
             let formats = [
-                (DistributionFormat::WindowsPortable, "📁 Windows ZIP", "Portable ZIP archive"),
-                (DistributionFormat::WindowsInstaller, "💿 Windows Installer", "NSIS installer (.exe)"),
-                (DistributionFormat::MacOSBundle, "🍎 macOS Bundle", "Application bundle (.app)"),
-                (DistributionFormat::MacOSDmg, "💿 macOS DMG", "Disk image (.dmg)"),
-                (DistributionFormat::LinuxTarball, "🐧 Linux Tarball", "Compressed archive"),
-                (DistributionFormat::LinuxAppImage, "📦 Linux AppImage", "Portable executable"),
-                (DistributionFormat::SteamDepot, "🎮 Steam Depot", "Steam content depot"),
+                (
+                    DistributionFormat::WindowsPortable,
+                    "📁 Windows ZIP",
+                    "Portable ZIP archive",
+                ),
+                (
+                    DistributionFormat::WindowsInstaller,
+                    "💿 Windows Installer",
+                    "NSIS installer (.exe)",
+                ),
+                (
+                    DistributionFormat::MacOSBundle,
+                    "🍎 macOS Bundle",
+                    "Application bundle (.app)",
+                ),
+                (
+                    DistributionFormat::MacOSDmg,
+                    "💿 macOS DMG",
+                    "Disk image (.dmg)",
+                ),
+                (
+                    DistributionFormat::LinuxTarball,
+                    "🐧 Linux Tarball",
+                    "Compressed archive",
+                ),
+                (
+                    DistributionFormat::LinuxAppImage,
+                    "📦 Linux AppImage",
+                    "Portable executable",
+                ),
+                (
+                    DistributionFormat::SteamDepot,
+                    "🎮 Steam Depot",
+                    "Steam content depot",
+                ),
             ];
 
             for (format, label, description) in formats {
@@ -1057,7 +1115,11 @@ impl DistributionPanel {
                 ui.label("Build Directory:");
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut self.build_dir);
-                    if ui.button("📁").on_hover_text("Browse for build directory").clicked() {
+                    if ui
+                        .button("📁")
+                        .on_hover_text("Browse for build directory")
+                        .clicked()
+                    {
                         if let Some(path) = rfd::FileDialog::new()
                             .set_title("Select Build Directory")
                             .set_directory(&self.build_dir)
@@ -1072,7 +1134,11 @@ impl DistributionPanel {
                 ui.label("Output Directory:");
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut self.output_dir);
-                    if ui.button("📁").on_hover_text("Browse for output directory").clicked() {
+                    if ui
+                        .button("📁")
+                        .on_hover_text("Browse for output directory")
+                        .clicked()
+                    {
                         if let Some(path) = rfd::FileDialog::new()
                             .set_title("Select Output Directory")
                             .set_directory(&self.output_dir)
@@ -1097,17 +1163,30 @@ impl DistributionPanel {
                 ui.checkbox(&mut self.build_options.sign_binary, "Sign binary");
             });
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.build_options.generate_checksums, "Generate checksums");
-                ui.checkbox(&mut self.build_options.include_debug_symbols, "Include debug symbols");
+                ui.checkbox(
+                    &mut self.build_options.generate_checksums,
+                    "Generate checksums",
+                );
+                ui.checkbox(
+                    &mut self.build_options.include_debug_symbols,
+                    "Include debug symbols",
+                );
             });
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.build_options.run_tests_before_build, "Run tests first");
-                ui.checkbox(&mut self.build_options.clean_before_build, "Clean before build");
+                ui.checkbox(
+                    &mut self.build_options.run_tests_before_build,
+                    "Run tests first",
+                );
+                ui.checkbox(
+                    &mut self.build_options.clean_before_build,
+                    "Clean before build",
+                );
             });
-            
-            if self.platform == TargetPlatform::MacOSArm64 || 
-               self.platform == TargetPlatform::MacOSx64 ||
-               self.platform == TargetPlatform::MacOSUniversal {
+
+            if self.platform == TargetPlatform::MacOSArm64
+                || self.platform == TargetPlatform::MacOSx64
+                || self.platform == TargetPlatform::MacOSUniversal
+            {
                 ui.checkbox(&mut self.build_options.notarize_macos, "Notarize for macOS");
             }
         });
@@ -1116,16 +1195,25 @@ impl DistributionPanel {
     fn show_asset_options_section(&mut self, ui: &mut Ui) {
         ui.collapsing("🎨 Asset Options", |ui| {
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.asset_options.compress_textures, "Compress textures");
+                ui.checkbox(
+                    &mut self.asset_options.compress_textures,
+                    "Compress textures",
+                );
                 ui.checkbox(&mut self.asset_options.compress_audio, "Compress audio");
             });
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.asset_options.compress_meshes, "Compress meshes");
-                ui.checkbox(&mut self.asset_options.pack_into_archives, "Pack into archives");
+                ui.checkbox(
+                    &mut self.asset_options.pack_into_archives,
+                    "Pack into archives",
+                );
             });
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.asset_options.encrypt_assets, "Encrypt assets");
-                ui.checkbox(&mut self.asset_options.generate_manifests, "Generate manifests");
+                ui.checkbox(
+                    &mut self.asset_options.generate_manifests,
+                    "Generate manifests",
+                );
             });
 
             ui.add_space(5.0);
@@ -1136,7 +1224,13 @@ impl DistributionPanel {
                     .selected_text(self.asset_options.texture_format.name())
                     .show_ui(ui, |ui| {
                         for fmt in TextureFormat::all() {
-                            if ui.selectable_label(self.asset_options.texture_format == *fmt, fmt.name()).clicked() {
+                            if ui
+                                .selectable_label(
+                                    self.asset_options.texture_format == *fmt,
+                                    fmt.name(),
+                                )
+                                .clicked()
+                            {
                                 self.asset_options.texture_format = *fmt;
                             }
                         }
@@ -1149,7 +1243,13 @@ impl DistributionPanel {
                     .selected_text(self.asset_options.audio_format.name())
                     .show_ui(ui, |ui| {
                         for fmt in AudioFormat::all() {
-                            if ui.selectable_label(self.asset_options.audio_format == *fmt, fmt.name()).clicked() {
+                            if ui
+                                .selectable_label(
+                                    self.asset_options.audio_format == *fmt,
+                                    fmt.name(),
+                                )
+                                .clicked()
+                            {
                                 self.asset_options.audio_format = *fmt;
                             }
                         }
@@ -1158,8 +1258,10 @@ impl DistributionPanel {
 
             ui.horizontal(|ui| {
                 ui.label("Max Texture Size:");
-                ui.add(egui::Slider::new(&mut self.asset_options.max_texture_size, 512..=8192)
-                    .suffix(" px"));
+                ui.add(
+                    egui::Slider::new(&mut self.asset_options.max_texture_size, 512..=8192)
+                        .suffix(" px"),
+                );
             });
         });
     }
@@ -1170,29 +1272,40 @@ impl DistributionPanel {
         }
 
         if !self.validation.errors.is_empty() || !self.validation.warnings.is_empty() {
-            ui.collapsing(format!("⚠️ Validation ({} errors, {} warnings)", 
-                self.validation.errors.len(), 
-                self.validation.warnings.len()), |ui| {
-                
-                for error in &self.validation.errors {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("❌").color(Color32::RED));
-                        ui.label(RichText::new(format!("[{}] {}", error.category, error.message))
-                            .color(Color32::RED));
-                    });
-                    if let Some(fix) = &error.fix_suggestion {
-                        ui.label(RichText::new(format!("   💡 {}", fix)).weak().small());
+            ui.collapsing(
+                format!(
+                    "⚠️ Validation ({} errors, {} warnings)",
+                    self.validation.errors.len(),
+                    self.validation.warnings.len()
+                ),
+                |ui| {
+                    for error in &self.validation.errors {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new("❌").color(Color32::RED));
+                            ui.label(
+                                RichText::new(format!("[{}] {}", error.category, error.message))
+                                    .color(Color32::RED),
+                            );
+                        });
+                        if let Some(fix) = &error.fix_suggestion {
+                            ui.label(RichText::new(format!("   💡 {}", fix)).weak().small());
+                        }
                     }
-                }
-                
-                for warning in &self.validation.warnings {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("⚠️").color(Color32::YELLOW));
-                        ui.label(RichText::new(format!("[{}] {}", warning.category, warning.message))
-                            .color(Color32::YELLOW));
-                    });
-                }
-            });
+
+                    for warning in &self.validation.warnings {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new("⚠️").color(Color32::YELLOW));
+                            ui.label(
+                                RichText::new(format!(
+                                    "[{}] {}",
+                                    warning.category, warning.message
+                                ))
+                                .color(Color32::YELLOW),
+                            );
+                        });
+                    }
+                },
+            );
         }
     }
 
@@ -1200,25 +1313,32 @@ impl DistributionPanel {
         if self.is_building {
             ui.add_space(10.0);
             ui.group(|ui| {
-                ui.heading(format!("{} Build Progress", self.progress.current_step.icon()));
-                
+                ui.heading(format!(
+                    "{} Build Progress",
+                    self.progress.current_step.icon()
+                ));
+
                 // Overall progress bar
-                ui.add(egui::ProgressBar::new(self.progress.overall_progress)
-                    .text(format!("{:.0}%", self.progress.overall_progress * 100.0)));
-                
+                ui.add(
+                    egui::ProgressBar::new(self.progress.overall_progress)
+                        .text(format!("{:.0}%", self.progress.overall_progress * 100.0)),
+                );
+
                 // Current step
                 ui.horizontal(|ui| {
                     ui.spinner();
                     ui.label(&self.progress.status_message);
                 });
-                
+
                 // Elapsed time
                 ui.label(format!("⏱️ Elapsed: {:.1}s", self.progress.elapsed_secs()));
-                
+
                 // Step progress
                 if !self.progress.current_step.is_terminal() {
-                    ui.add(egui::ProgressBar::new(self.progress.step_progress)
-                        .text(self.progress.current_step.name()));
+                    ui.add(
+                        egui::ProgressBar::new(self.progress.step_progress)
+                            .text(self.progress.current_step.name()),
+                    );
                 }
             });
         }
@@ -1230,9 +1350,13 @@ impl DistributionPanel {
 
         ui.horizontal(|ui| {
             let can_build = !self.is_building && self.validation.valid;
-            
+
             let build_button = egui::Button::new(RichText::new("🚀 Build Distribution").size(16.0))
-                .fill(if can_build { Color32::from_rgb(40, 120, 80) } else { Color32::from_rgb(80, 80, 80) })
+                .fill(if can_build {
+                    Color32::from_rgb(40, 120, 80)
+                } else {
+                    Color32::from_rgb(80, 80, 80)
+                })
                 .min_size(egui::vec2(200.0, 40.0));
 
             if ui.add_enabled(can_build, build_button).clicked() {
@@ -1241,7 +1365,8 @@ impl DistributionPanel {
 
             if self.is_building && ui.button("❌ Cancel").clicked() {
                 self.is_building = false;
-                self.progress.set_step(BuildStep::Failed, "Build cancelled by user");
+                self.progress
+                    .set_step(BuildStep::Failed, "Build cancelled by user");
             }
 
             if ui.button("🔄 Validate").clicked() {
@@ -1278,38 +1403,44 @@ impl DistributionPanel {
 
     fn show_history_section(&mut self, ui: &mut Ui) {
         if !self.build_history.is_empty() {
-            ui.collapsing(format!("📋 Build History ({})", self.build_history.len()), |ui| {
-                egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                    for entry in self.build_history.iter().take(10) {
-                        let status_icon = if entry.success { "✅" } else { "❌" };
-                        let text = format!(
-                            "{} v{} {} {} - {} ({:.1}s)",
-                            status_icon,
-                            entry.version,
-                            entry.platform.icon(),
-                            entry.format.name(),
-                            entry.size_string(),
-                            entry.duration_secs
-                        );
-                        
-                        ui.horizontal(|ui| {
-                            ui.label(text);
-                            ui.label(RichText::new(entry.age_string()).weak().small());
+            ui.collapsing(
+                format!("📋 Build History ({})", self.build_history.len()),
+                |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(150.0)
+                        .show(ui, |ui| {
+                            for entry in self.build_history.iter().take(10) {
+                                let status_icon = if entry.success { "✅" } else { "❌" };
+                                let text = format!(
+                                    "{} v{} {} {} - {} ({:.1}s)",
+                                    status_icon,
+                                    entry.version,
+                                    entry.platform.icon(),
+                                    entry.format.name(),
+                                    entry.size_string(),
+                                    entry.duration_secs
+                                );
+
+                                ui.horizontal(|ui| {
+                                    ui.label(text);
+                                    ui.label(RichText::new(entry.age_string()).weak().small());
+                                });
+                            }
                         });
+
+                    if ui.button("🗑️ Clear History").clicked() {
+                        self.build_history.clear();
                     }
-                });
-                
-                if ui.button("🗑️ Clear History").clicked() {
-                    self.build_history.clear();
-                }
-            });
+                },
+            );
         }
     }
 
     fn start_build(&mut self) {
         self.is_building = true;
         self.progress.start();
-        self.progress.set_step(BuildStep::CompilingCode, "Building distribution...");
+        self.progress
+            .set_step(BuildStep::CompilingCode, "Building distribution...");
 
         let builder = DistributionBuilder::new(self.config.clone(), self.selected_format)
             .build_dir(&self.build_dir)
@@ -1319,14 +1450,16 @@ impl DistributionPanel {
             Ok(result) => {
                 self.add_history_entry(&result);
                 self.last_result = Some(Ok(result));
-                self.progress.set_step(BuildStep::Complete, "Build successful!");
+                self.progress
+                    .set_step(BuildStep::Complete, "Build successful!");
             }
             Err(e) => {
-                self.progress.set_step(BuildStep::Failed, format!("Build failed: {}", e));
+                self.progress
+                    .set_step(BuildStep::Failed, format!("Build failed: {}", e));
                 self.last_result = Some(Err(e.to_string()));
             }
         }
-        
+
         self.is_building = false;
     }
 
@@ -1365,7 +1498,7 @@ impl Panel for DistributionPanel {
         egui::ScrollArea::vertical().show(ui, |ui| {
             self.show_summary_bar(ui);
             ui.separator();
-            
+
             self.show_config_section(ui);
             self.show_platform_section(ui);
             self.show_profile_section(ui);
@@ -1373,13 +1506,13 @@ impl Panel for DistributionPanel {
             self.show_paths_section(ui);
             self.show_build_options_section(ui);
             self.show_asset_options_section(ui);
-            
+
             if self.show_validation {
                 self.show_validation_section(ui);
             }
-            
+
             self.show_build_section(ui);
-            
+
             if self.show_history {
                 self.show_history_section(ui);
             }
@@ -1457,8 +1590,14 @@ mod tests {
     #[test]
     fn test_target_platform_rust_target() {
         assert!(TargetPlatform::Native.rust_target().is_none());
-        assert_eq!(TargetPlatform::Windows64.rust_target(), Some("x86_64-pc-windows-msvc"));
-        assert_eq!(TargetPlatform::LinuxX64.rust_target(), Some("x86_64-unknown-linux-gnu"));
+        assert_eq!(
+            TargetPlatform::Windows64.rust_target(),
+            Some("x86_64-pc-windows-msvc")
+        );
+        assert_eq!(
+            TargetPlatform::LinuxX64.rust_target(),
+            Some("x86_64-unknown-linux-gnu")
+        );
     }
 
     #[test]
@@ -1778,7 +1917,11 @@ mod tests {
         panel.config.game_name = String::new();
         panel.validate();
         assert!(!panel.validation.valid);
-        assert!(panel.validation.errors.iter().any(|e| e.message.contains("Game name")));
+        assert!(panel
+            .validation
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Game name")));
     }
 
     #[test]
@@ -1787,7 +1930,11 @@ mod tests {
         panel.config.version = String::new();
         panel.validate();
         assert!(!panel.validation.valid);
-        assert!(panel.validation.errors.iter().any(|e| e.message.contains("Version")));
+        assert!(panel
+            .validation
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Version")));
     }
 
     #[test]
@@ -1797,7 +1944,11 @@ mod tests {
         panel.config.steam_app_id = None;
         panel.validate();
         assert!(!panel.validation.valid);
-        assert!(panel.validation.errors.iter().any(|e| e.message.contains("Steam App ID")));
+        assert!(panel
+            .validation
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Steam App ID")));
     }
 
     #[test]
@@ -1805,7 +1956,11 @@ mod tests {
         let mut panel = DistributionPanel::new();
         panel.profile = BuildProfile::Debug;
         panel.validate();
-        assert!(panel.validation.warnings.iter().any(|w| w.message.contains("Debug")));
+        assert!(panel
+            .validation
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("Debug")));
     }
 
     #[test]
@@ -1813,7 +1968,11 @@ mod tests {
         let mut panel = DistributionPanel::new();
         panel.build_options.run_tests_before_build = false;
         panel.validate();
-        assert!(panel.validation.warnings.iter().any(|w| w.message.contains("Tests disabled")));
+        assert!(panel
+            .validation
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("Tests disabled")));
     }
 
     // ============================================================
@@ -2004,7 +2163,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -2080,7 +2243,11 @@ mod tests {
 
         for action in &actions {
             let display = format!("{}", action);
-            assert!(display.contains("Toggle"), "Expected 'Toggle' in: {}", display);
+            assert!(
+                display.contains("Toggle"),
+                "Expected 'Toggle' in: {}",
+                display
+            );
         }
     }
 
@@ -2114,7 +2281,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+            assert!(
+                display.contains("true"),
+                "Display should contain 'true': {}",
+                display
+            );
         }
     }
 
@@ -2146,7 +2317,10 @@ mod tests {
             assert!(!display.is_empty());
         }
 
-        let load_display = format!("{}", DistributionAction::LoadConfiguration("test.toml".to_string()));
+        let load_display = format!(
+            "{}",
+            DistributionAction::LoadConfiguration("test.toml".to_string())
+        );
         assert!(load_display.contains("test.toml"));
     }
 }

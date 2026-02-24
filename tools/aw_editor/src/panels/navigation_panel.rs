@@ -470,20 +470,36 @@ impl std::fmt::Display for NavigationAction {
             NavigationAction::SetAgentName(i, n) => write!(f, "Set agent {} name: {}", i, n),
             NavigationAction::SetAgentRadius(i, r) => write!(f, "Set agent {} radius: {:.2}", i, r),
             NavigationAction::SetAgentHeight(i, h) => write!(f, "Set agent {} height: {:.2}", i, h),
-            NavigationAction::SetAgentMaxSlope(i, s) => write!(f, "Set agent {} max slope: {:.1}°", i, s),
-            NavigationAction::SetAgentStepHeight(i, h) => write!(f, "Set agent {} step height: {:.2}", i, h),
-            NavigationAction::SetAgentJumpDistance(i, d) => write!(f, "Set agent {} jump dist: {:.2}", i, d),
-            NavigationAction::SetAgentFallDistance(i, d) => write!(f, "Set agent {} fall dist: {:.2}", i, d),
+            NavigationAction::SetAgentMaxSlope(i, s) => {
+                write!(f, "Set agent {} max slope: {:.1}°", i, s)
+            }
+            NavigationAction::SetAgentStepHeight(i, h) => {
+                write!(f, "Set agent {} step height: {:.2}", i, h)
+            }
+            NavigationAction::SetAgentJumpDistance(i, d) => {
+                write!(f, "Set agent {} jump dist: {:.2}", i, d)
+            }
+            NavigationAction::SetAgentFallDistance(i, d) => {
+                write!(f, "Set agent {} fall dist: {:.2}", i, d)
+            }
             NavigationAction::DuplicateAgent(i) => write!(f, "Duplicate agent {}", i),
             NavigationAction::AddObstacle => write!(f, "Add obstacle"),
             NavigationAction::RemoveObstacle(id) => write!(f, "Remove obstacle {}", id),
             NavigationAction::SelectObstacle(id) => write!(f, "Select obstacle {}", id),
             NavigationAction::DeselectObstacle => write!(f, "Deselect obstacle"),
-            NavigationAction::SetObstacleName(id, n) => write!(f, "Set obstacle {} name: {}", id, n),
-            NavigationAction::SetObstaclePosition(id, _) => write!(f, "Set obstacle {} position", id),
+            NavigationAction::SetObstacleName(id, n) => {
+                write!(f, "Set obstacle {} name: {}", id, n)
+            }
+            NavigationAction::SetObstaclePosition(id, _) => {
+                write!(f, "Set obstacle {} position", id)
+            }
             NavigationAction::SetObstacleSize(id, _) => write!(f, "Set obstacle {} size", id),
-            NavigationAction::ToggleObstacleDynamic(id, b) => write!(f, "Toggle obstacle {} dynamic: {}", id, b),
-            NavigationAction::ToggleObstacleCarve(id, b) => write!(f, "Toggle obstacle {} carve: {}", id, b),
+            NavigationAction::ToggleObstacleDynamic(id, b) => {
+                write!(f, "Toggle obstacle {} dynamic: {}", id, b)
+            }
+            NavigationAction::ToggleObstacleCarve(id, b) => {
+                write!(f, "Toggle obstacle {} carve: {}", id, b)
+            }
             NavigationAction::AddNavLink => write!(f, "Add nav link"),
             NavigationAction::RemoveNavLink(id) => write!(f, "Remove nav link {}", id),
             NavigationAction::SelectNavLink(id) => write!(f, "Select nav link {}", id),
@@ -491,14 +507,20 @@ impl std::fmt::Display for NavigationAction {
             NavigationAction::SetNavLinkName(id, n) => write!(f, "Set nav link {} name: {}", id, n),
             NavigationAction::SetNavLinkStart(id, _) => write!(f, "Set nav link {} start", id),
             NavigationAction::SetNavLinkEnd(id, _) => write!(f, "Set nav link {} end", id),
-            NavigationAction::ToggleNavLinkBidirectional(id, b) => write!(f, "Toggle nav link {} bidirectional: {}", id, b),
-            NavigationAction::SetNavLinkCost(id, c) => write!(f, "Set nav link {} cost: {:?}", id, c),
+            NavigationAction::ToggleNavLinkBidirectional(id, b) => {
+                write!(f, "Toggle nav link {} bidirectional: {}", id, b)
+            }
+            NavigationAction::SetNavLinkCost(id, c) => {
+                write!(f, "Set nav link {} cost: {:?}", id, c)
+            }
             NavigationAction::SetNavLinkType(id, t) => write!(f, "Set nav link {} type: {}", id, t),
             NavigationAction::SetPathStart(_) => write!(f, "Set path start"),
             NavigationAction::SetPathEnd(_) => write!(f, "Set path end"),
             NavigationAction::TestPath => write!(f, "Test path"),
             NavigationAction::ClearPathResult => write!(f, "Clear path result"),
-            NavigationAction::ToggleAutoUpdatePath(b) => write!(f, "Toggle auto update path: {}", b),
+            NavigationAction::ToggleAutoUpdatePath(b) => {
+                write!(f, "Toggle auto update path: {}", b)
+            }
             NavigationAction::SetCellSize(v) => write!(f, "Set cell size: {:.2}", v),
             NavigationAction::SetCellHeight(v) => write!(f, "Set cell height: {:.2}", v),
             NavigationAction::SetAgentMaxClimb(v) => write!(f, "Set agent max climb: {:.2}", v),
@@ -507,19 +529,29 @@ impl std::fmt::Display for NavigationAction {
             NavigationAction::SetEdgeMaxLen(v) => write!(f, "Set edge max len: {:.1}", v),
             NavigationAction::SetEdgeMaxError(v) => write!(f, "Set edge max error: {:.2}", v),
             NavigationAction::SetVertsPerPoly(v) => write!(f, "Set verts per poly: {}", v),
-            NavigationAction::SetDetailSampleDist(v) => write!(f, "Set detail sample dist: {:.1}", v),
-            NavigationAction::SetDetailSampleMaxError(v) => write!(f, "Set detail sample max error: {:.2}", v),
+            NavigationAction::SetDetailSampleDist(v) => {
+                write!(f, "Set detail sample dist: {:.1}", v)
+            }
+            NavigationAction::SetDetailSampleMaxError(v) => {
+                write!(f, "Set detail sample max error: {:.2}", v)
+            }
             NavigationAction::ResetBakeSettings => write!(f, "Reset bake settings"),
             NavigationAction::ToggleShowTriangles(b) => write!(f, "Toggle show triangles: {}", b),
             NavigationAction::ToggleShowEdges(b) => write!(f, "Toggle show edges: {}", b),
             NavigationAction::ToggleShowVertices(b) => write!(f, "Toggle show vertices: {}", b),
             NavigationAction::ToggleShowRegions(b) => write!(f, "Toggle show regions: {}", b),
-            NavigationAction::ToggleShowConnections(b) => write!(f, "Toggle show connections: {}", b),
-            NavigationAction::ToggleShowOffMeshLinks(b) => write!(f, "Toggle show off-mesh links: {}", b),
+            NavigationAction::ToggleShowConnections(b) => {
+                write!(f, "Toggle show connections: {}", b)
+            }
+            NavigationAction::ToggleShowOffMeshLinks(b) => {
+                write!(f, "Toggle show off-mesh links: {}", b)
+            }
             NavigationAction::ToggleShowObstacles(b) => write!(f, "Toggle show obstacles: {}", b),
             NavigationAction::ToggleShowPath(b) => write!(f, "Toggle show path: {}", b),
             NavigationAction::ToggleWireframeMode(b) => write!(f, "Toggle wireframe: {}", b),
-            NavigationAction::SetRegionAreaType(id, t) => write!(f, "Set region {} area type: {}", id, t),
+            NavigationAction::SetRegionAreaType(id, t) => {
+                write!(f, "Set region {} area type: {}", id, t)
+            }
             NavigationAction::InvalidateRegion(id) => write!(f, "Invalidate region {}", id),
             NavigationAction::RefreshStats => write!(f, "Refresh stats"),
             NavigationAction::ExportNavMesh => write!(f, "Export NavMesh"),
@@ -742,8 +774,16 @@ impl NavigationPanel {
 
         // NavMesh status
         ui.horizontal(|ui| {
-            let status_color = if self.is_baked { Color32::GREEN } else { Color32::YELLOW };
-            let status_text = if self.is_baked { "✓ Baked" } else { "⚠ Not Baked" };
+            let status_color = if self.is_baked {
+                Color32::GREEN
+            } else {
+                Color32::YELLOW
+            };
+            let status_text = if self.is_baked {
+                "✓ Baked"
+            } else {
+                "⚠ Not Baked"
+            };
             ui.label(RichText::new(status_text).color(status_color));
             ui.separator();
             ui.label(format!("△ {} triangles", self.total_triangles));
@@ -815,12 +855,22 @@ impl NavigationPanel {
                     for region in &self.regions {
                         ui.horizontal(|ui| {
                             // Area type color
-                            let color_rect = ui.allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover()).0;
-                            ui.painter().rect_filled(color_rect, 3.0, region.area_type.color());
+                            let color_rect = ui
+                                .allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover())
+                                .0;
+                            ui.painter()
+                                .rect_filled(color_rect, 3.0, region.area_type.color());
 
                             let valid_icon = if region.is_valid { "✓" } else { "⚠" };
-                            ui.label(format!("{} Region #{} - {:?}", valid_icon, region.id, region.area_type));
-                            ui.label(RichText::new(format!("△ {}", region.triangle_count)).small().color(Color32::GRAY));
+                            ui.label(format!(
+                                "{} Region #{} - {:?}",
+                                valid_icon, region.id, region.area_type
+                            ));
+                            ui.label(
+                                RichText::new(format!("△ {}", region.triangle_count))
+                                    .small()
+                                    .color(Color32::GRAY),
+                            );
                         });
                     }
                 });
@@ -868,11 +918,21 @@ impl NavigationPanel {
 
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
-                            if ui.selectable_label(is_selected, RichText::new(&agent.name).strong()).clicked() {
+                            if ui
+                                .selectable_label(is_selected, RichText::new(&agent.name).strong())
+                                .clicked()
+                            {
                                 self.selected_agent = Some(idx);
                             }
 
-                            ui.label(RichText::new(format!("r={:.1} h={:.1}", agent.radius, agent.height)).small().color(Color32::GRAY));
+                            ui.label(
+                                RichText::new(format!(
+                                    "r={:.1} h={:.1}",
+                                    agent.radius, agent.height
+                                ))
+                                .small()
+                                .color(Color32::GRAY),
+                            );
                         });
 
                         if is_selected {
@@ -885,27 +945,51 @@ impl NavigationPanel {
                                     ui.end_row();
 
                                     ui.label("Radius:");
-                                    ui.add(egui::DragValue::new(&mut agent.radius).speed(0.1).range(0.1..=5.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.radius)
+                                            .speed(0.1)
+                                            .range(0.1..=5.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Height:");
-                                    ui.add(egui::DragValue::new(&mut agent.height).speed(0.1).range(0.5..=10.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.height)
+                                            .speed(0.1)
+                                            .range(0.5..=10.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Max Slope (°):");
-                                    ui.add(egui::DragValue::new(&mut agent.max_slope).speed(1.0).range(0.0..=90.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.max_slope)
+                                            .speed(1.0)
+                                            .range(0.0..=90.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Step Height:");
-                                    ui.add(egui::DragValue::new(&mut agent.step_height).speed(0.1).range(0.0..=2.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.step_height)
+                                            .speed(0.1)
+                                            .range(0.0..=2.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Max Jump Dist:");
-                                    ui.add(egui::DragValue::new(&mut agent.max_jump_distance).speed(0.1).range(0.0..=10.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.max_jump_distance)
+                                            .speed(0.1)
+                                            .range(0.0..=10.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Max Fall Dist:");
-                                    ui.add(egui::DragValue::new(&mut agent.max_fall_distance).speed(0.1).range(0.0..=20.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut agent.max_fall_distance)
+                                            .speed(0.1)
+                                            .range(0.0..=20.0),
+                                    );
                                     ui.end_row();
                                 });
                         }
@@ -942,7 +1026,13 @@ impl NavigationPanel {
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
                                 let icon = if obstacle.is_dynamic { "🔄" } else { "🧱" };
-                                if ui.selectable_label(is_selected, format!("{} {}", icon, obstacle.name)).clicked() {
+                                if ui
+                                    .selectable_label(
+                                        is_selected,
+                                        format!("{} {}", icon, obstacle.name),
+                                    )
+                                    .clicked()
+                                {
                                     self.selected_obstacle = Some(obstacle.id);
                                 }
                             });
@@ -958,17 +1048,41 @@ impl NavigationPanel {
 
                                         ui.label("Position:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut obstacle.position.0).prefix("X:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut obstacle.position.1).prefix("Y:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut obstacle.position.2).prefix("Z:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.position.0)
+                                                    .prefix("X:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.position.1)
+                                                    .prefix("Y:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.position.2)
+                                                    .prefix("Z:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.end_row();
 
                                         ui.label("Size:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut obstacle.size.0).prefix("W:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut obstacle.size.1).prefix("H:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut obstacle.size.2).prefix("D:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.size.0)
+                                                    .prefix("W:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.size.1)
+                                                    .prefix("H:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut obstacle.size.2)
+                                                    .prefix("D:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.end_row();
 
@@ -1025,8 +1139,18 @@ impl NavigationPanel {
                                     NavLinkType::Ladder => "🪜",
                                     NavLinkType::Teleport => "✨",
                                 };
-                                let direction = if link.bidirectional { "↔️" } else { "➡️" };
-                                if ui.selectable_label(is_selected, format!("{} {} {}", icon, link.name, direction)).clicked() {
+                                let direction = if link.bidirectional {
+                                    "↔️"
+                                } else {
+                                    "➡️"
+                                };
+                                if ui
+                                    .selectable_label(
+                                        is_selected,
+                                        format!("{} {} {}", icon, link.name, direction),
+                                    )
+                                    .clicked()
+                                {
                                     self.selected_link = Some(link.id);
                                 }
                             });
@@ -1041,30 +1165,80 @@ impl NavigationPanel {
                                         ui.end_row();
 
                                         ui.label("Type:");
-                                        egui::ComboBox::from_id_salt(format!("link_type_{}", link.id))
-                                            .selected_text(format!("{:?}", link.link_type))
-                                            .show_ui(ui, |ui| {
-                                                ui.selectable_value(&mut link.link_type, NavLinkType::Walk, "Walk");
-                                                ui.selectable_value(&mut link.link_type, NavLinkType::Jump, "Jump");
-                                                ui.selectable_value(&mut link.link_type, NavLinkType::Drop, "Drop");
-                                                ui.selectable_value(&mut link.link_type, NavLinkType::Ladder, "Ladder");
-                                                ui.selectable_value(&mut link.link_type, NavLinkType::Teleport, "Teleport");
-                                            });
+                                        egui::ComboBox::from_id_salt(format!(
+                                            "link_type_{}",
+                                            link.id
+                                        ))
+                                        .selected_text(format!("{:?}", link.link_type))
+                                        .show_ui(
+                                            ui,
+                                            |ui| {
+                                                ui.selectable_value(
+                                                    &mut link.link_type,
+                                                    NavLinkType::Walk,
+                                                    "Walk",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut link.link_type,
+                                                    NavLinkType::Jump,
+                                                    "Jump",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut link.link_type,
+                                                    NavLinkType::Drop,
+                                                    "Drop",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut link.link_type,
+                                                    NavLinkType::Ladder,
+                                                    "Ladder",
+                                                );
+                                                ui.selectable_value(
+                                                    &mut link.link_type,
+                                                    NavLinkType::Teleport,
+                                                    "Teleport",
+                                                );
+                                            },
+                                        );
                                         ui.end_row();
 
                                         ui.label("Start:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut link.start.0).prefix("X:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut link.start.1).prefix("Y:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut link.start.2).prefix("Z:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.start.0)
+                                                    .prefix("X:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.start.1)
+                                                    .prefix("Y:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.start.2)
+                                                    .prefix("Z:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.end_row();
 
                                         ui.label("End:");
                                         ui.horizontal(|ui| {
-                                            ui.add(egui::DragValue::new(&mut link.end.0).prefix("X:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut link.end.1).prefix("Y:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut link.end.2).prefix("Z:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.end.0)
+                                                    .prefix("X:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.end.1)
+                                                    .prefix("Y:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut link.end.2)
+                                                    .prefix("Z:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.end_row();
 
@@ -1093,17 +1267,41 @@ impl NavigationPanel {
                 .show(ui, |ui| {
                     ui.label("Start:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.path_start.0).prefix("X:").speed(0.5));
-                        ui.add(egui::DragValue::new(&mut self.path_start.1).prefix("Y:").speed(0.5));
-                        ui.add(egui::DragValue::new(&mut self.path_start.2).prefix("Z:").speed(0.5));
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_start.0)
+                                .prefix("X:")
+                                .speed(0.5),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_start.1)
+                                .prefix("Y:")
+                                .speed(0.5),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_start.2)
+                                .prefix("Z:")
+                                .speed(0.5),
+                        );
                     });
                     ui.end_row();
 
                     ui.label("End:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.path_end.0).prefix("X:").speed(0.5));
-                        ui.add(egui::DragValue::new(&mut self.path_end.1).prefix("Y:").speed(0.5));
-                        ui.add(egui::DragValue::new(&mut self.path_end.2).prefix("Z:").speed(0.5));
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_end.0)
+                                .prefix("X:")
+                                .speed(0.5),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_end.1)
+                                .prefix("Y:")
+                                .speed(0.5),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.path_end.2)
+                                .prefix("Z:")
+                                .speed(0.5),
+                        );
                     });
                     ui.end_row();
                 });
@@ -1124,8 +1322,16 @@ impl NavigationPanel {
         // Results
         if let Some(ref result) = self.path_result {
             ui.group(|ui| {
-                let status_color = if result.success { Color32::GREEN } else { Color32::RED };
-                let status_text = if result.success { "✓ Path Found" } else { "✗ No Path" };
+                let status_color = if result.success {
+                    Color32::GREEN
+                } else {
+                    Color32::RED
+                };
+                let status_text = if result.success {
+                    "✓ Path Found"
+                } else {
+                    "✗ No Path"
+                };
                 ui.label(RichText::new(status_text).color(status_color).strong());
 
                 if result.success {
@@ -1157,7 +1363,13 @@ impl NavigationPanel {
                             .max_height(100.0)
                             .show(ui, |ui| {
                                 for (i, point) in result.path.iter().enumerate() {
-                                    ui.label(format!("{}. ({:.1}, {:.1}, {:.1})", i + 1, point.0, point.1, point.2));
+                                    ui.label(format!(
+                                        "{}. ({:.1}, {:.1}, {:.1})",
+                                        i + 1,
+                                        point.0,
+                                        point.1,
+                                        point.2
+                                    ));
                                 }
                             });
                     });
@@ -1220,11 +1432,19 @@ impl NavigationPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Cell Size:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.cell_size).speed(0.01).range(0.1..=2.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.cell_size)
+                                    .speed(0.01)
+                                    .range(0.1..=2.0),
+                            );
                             ui.end_row();
 
                             ui.label("Cell Height:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.cell_height).speed(0.01).range(0.1..=1.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.cell_height)
+                                    .speed(0.01)
+                                    .range(0.1..=1.0),
+                            );
                             ui.end_row();
                         });
                 });
@@ -1239,19 +1459,35 @@ impl NavigationPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Height:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.agent_height).speed(0.1).range(0.5..=10.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.agent_height)
+                                    .speed(0.1)
+                                    .range(0.5..=10.0),
+                            );
                             ui.end_row();
 
                             ui.label("Radius:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.agent_radius).speed(0.1).range(0.1..=5.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.agent_radius)
+                                    .speed(0.1)
+                                    .range(0.1..=5.0),
+                            );
                             ui.end_row();
 
                             ui.label("Max Climb:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.agent_max_climb).speed(0.1).range(0.0..=2.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.agent_max_climb)
+                                    .speed(0.1)
+                                    .range(0.0..=2.0),
+                            );
                             ui.end_row();
 
                             ui.label("Max Slope (°):");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.agent_max_slope).speed(1.0).range(0.0..=90.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.agent_max_slope)
+                                    .speed(1.0)
+                                    .range(0.0..=90.0),
+                            );
                             ui.end_row();
                         });
                 });
@@ -1266,11 +1502,17 @@ impl NavigationPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Min Region Size:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.region_min_size).speed(1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.region_min_size)
+                                    .speed(1),
+                            );
                             ui.end_row();
 
                             ui.label("Merge Size:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.region_merge_size).speed(1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.region_merge_size)
+                                    .speed(1),
+                            );
                             ui.end_row();
                         });
                 });
@@ -1285,15 +1527,27 @@ impl NavigationPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Max Edge Length:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.edge_max_len).speed(0.5).range(0.0..=50.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.edge_max_len)
+                                    .speed(0.5)
+                                    .range(0.0..=50.0),
+                            );
                             ui.end_row();
 
                             ui.label("Max Edge Error:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.edge_max_error).speed(0.1).range(0.1..=5.0));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.edge_max_error)
+                                    .speed(0.1)
+                                    .range(0.1..=5.0),
+                            );
                             ui.end_row();
 
                             ui.label("Verts Per Poly:");
-                            ui.add(egui::DragValue::new(&mut self.bake_settings.verts_per_poly).speed(1).range(3..=12));
+                            ui.add(
+                                egui::DragValue::new(&mut self.bake_settings.verts_per_poly)
+                                    .speed(1)
+                                    .range(3..=12),
+                            );
                             ui.end_row();
                         });
                 });
@@ -1437,7 +1691,10 @@ mod tests {
 
     #[test]
     fn test_nav_area_type_color_walkable() {
-        assert_eq!(NavAreaType::Walkable.color(), Color32::from_rgb(100, 200, 100));
+        assert_eq!(
+            NavAreaType::Walkable.color(),
+            Color32::from_rgb(100, 200, 100)
+        );
     }
 
     #[test]
@@ -2000,7 +2257,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -2170,7 +2431,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+            assert!(
+                display.contains("true"),
+                "Display should contain 'true': {}",
+                display
+            );
         }
     }
 

@@ -200,7 +200,11 @@ pub enum PrefabIssue {
     /// Cycle detected in prefab hierarchy
     CyclicReference { path: PathBuf },
     /// Invalid root entity index
-    InvalidRootIndex { path: PathBuf, index: usize, entity_count: usize },
+    InvalidRootIndex {
+        path: PathBuf,
+        index: usize,
+        entity_count: usize,
+    },
 }
 
 impl std::fmt::Display for PrefabIssue {
@@ -221,8 +225,18 @@ impl std::fmt::Display for PrefabIssue {
             PrefabIssue::CyclicReference { path } => {
                 write!(f, "Cyclic Reference: {}", path.display())
             }
-            PrefabIssue::InvalidRootIndex { path, index, entity_count } => {
-                write!(f, "Invalid Root Index {} (max {}) in {}", index, entity_count, path.display())
+            PrefabIssue::InvalidRootIndex {
+                path,
+                index,
+                entity_count,
+            } => {
+                write!(
+                    f,
+                    "Invalid Root Index {} (max {}) in {}",
+                    index,
+                    entity_count,
+                    path.display()
+                )
             }
         }
     }
@@ -267,10 +281,11 @@ impl PrefabIssue {
 
     /// Returns true if this is a critical issue.
     pub fn is_critical(&self) -> bool {
-        matches!(self, 
-            PrefabIssue::MissingFile { .. } | 
-            PrefabIssue::CyclicReference { .. } | 
-            PrefabIssue::InvalidRootIndex { .. }
+        matches!(
+            self,
+            PrefabIssue::MissingFile { .. }
+                | PrefabIssue::CyclicReference { .. }
+                | PrefabIssue::InvalidRootIndex { .. }
         )
     }
 
@@ -959,35 +974,35 @@ impl PrefabManager {
         if !had_instance {
             anyhow::bail!("Entity {} is not a prefab instance", entity);
         }
-        
+
         // Remove from tracking
         self.instances.retain(|inst| {
             inst.root_entity != entity && !inst.entity_mapping.values().any(|&e| e == entity)
         });
-        
+
         debug!("Broke prefab connection for entity {}", entity);
         Ok(())
     }
-    
+
     /// Week 5 Day 3-4: Get all entities that are part of prefab instances
     pub fn get_all_prefab_entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.instances.iter().flat_map(|inst| {
-            std::iter::once(inst.root_entity)
-                .chain(inst.entity_mapping.values().copied())
+            std::iter::once(inst.root_entity).chain(inst.entity_mapping.values().copied())
         })
     }
-    
+
     /// Week 5 Day 3-4: Check if entity has any overrides from its prefab
     pub fn has_overrides(&self, entity: Entity) -> bool {
         self.find_instance(entity)
             .map(|inst| {
-                inst.overrides.get(&entity)
+                inst.overrides
+                    .get(&entity)
                     .map(|o| o.has_any_override())
                     .unwrap_or(false)
             })
             .unwrap_or(false)
     }
-    
+
     /// Week 5 Day 3-4: Get specific overrides for an entity
     pub fn get_entity_overrides(&self, entity: Entity) -> Option<&EntityOverrides> {
         self.find_instance(entity)
@@ -1008,25 +1023,34 @@ impl PrefabManager {
     /// Get comprehensive statistics about the prefab system
     pub fn stats(&self) -> PrefabStats {
         let instance_count = self.instances.len();
-        let total_prefab_entities: usize = self.instances.iter()
-            .map(|inst| inst.entity_mapping.len() + 1)  // +1 for root entity
+        let total_prefab_entities: usize = self
+            .instances
+            .iter()
+            .map(|inst| inst.entity_mapping.len() + 1) // +1 for root entity
             .sum();
-        
-        let instances_with_overrides = self.instances.iter()
+
+        let instances_with_overrides = self
+            .instances
+            .iter()
             .filter(|inst| inst.overrides.values().any(|o| o.has_any_override()))
             .count();
-        
-        let overridden_entity_count: usize = self.instances.iter()
+
+        let overridden_entity_count: usize = self
+            .instances
+            .iter()
             .flat_map(|inst| inst.overrides.values())
             .filter(|o| o.has_any_override())
             .count();
-        
-        let total_override_count: usize = self.instances.iter()
+
+        let total_override_count: usize = self
+            .instances
+            .iter()
             .flat_map(|inst| inst.overrides.values())
             .map(|o| o.override_count())
             .sum();
-        
-        let prefab_file_count = self.get_all_prefab_files()
+
+        let prefab_file_count = self
+            .get_all_prefab_files()
             .map(|files| files.len())
             .unwrap_or(0);
 
@@ -1088,21 +1112,25 @@ impl PrefabManager {
 
     /// Find all instances of a specific prefab file
     pub fn find_instances_by_source(&self, source: &Path) -> Vec<&PrefabInstance> {
-        self.instances.iter()
+        self.instances
+            .iter()
             .filter(|inst| inst.source == source)
             .collect()
     }
 
     /// Count instances of a specific prefab file
     pub fn count_instances_of(&self, source: &Path) -> usize {
-        self.instances.iter()
+        self.instances
+            .iter()
             .filter(|inst| inst.source == source)
             .count()
     }
 
     /// Get all unique prefab sources currently in use
     pub fn active_prefab_sources(&self) -> Vec<&Path> {
-        let mut sources: Vec<&Path> = self.instances.iter()
+        let mut sources: Vec<&Path> = self
+            .instances
+            .iter()
             .map(|inst| inst.source.as_path())
             .collect();
         sources.sort();
@@ -1112,7 +1140,8 @@ impl PrefabManager {
 
     /// Get total override count across all instances
     pub fn total_override_count(&self) -> usize {
-        self.instances.iter()
+        self.instances
+            .iter()
             .flat_map(|inst| inst.overrides.values())
             .map(|o| o.override_count())
             .sum()
@@ -1226,10 +1255,10 @@ mod tests {
     fn test_entity_overrides_has_pose_override() {
         let mut overrides = EntityOverrides::default();
         assert!(!overrides.has_pose_override());
-        
+
         overrides.pos_x = Some(10);
         assert!(overrides.has_pose_override());
-        
+
         overrides.pos_x = None;
         overrides.pos_y = Some(20);
         assert!(overrides.has_pose_override());
@@ -1239,10 +1268,10 @@ mod tests {
     fn test_entity_overrides_has_health_override() {
         let mut overrides = EntityOverrides::default();
         assert!(!overrides.has_health_override());
-        
+
         overrides.health = Some(50);
         assert!(overrides.has_health_override());
-        
+
         overrides.health = None;
         overrides.max_health = Some(100);
         assert!(overrides.has_health_override());
@@ -1252,7 +1281,7 @@ mod tests {
     fn test_entity_overrides_has_any_override() {
         let mut overrides = EntityOverrides::default();
         assert!(!overrides.has_any_override());
-        
+
         overrides.pos_x = Some(5);
         assert!(overrides.has_any_override());
     }
@@ -1261,14 +1290,14 @@ mod tests {
     fn test_entity_overrides_override_count() {
         let mut overrides = EntityOverrides::default();
         assert_eq!(overrides.override_count(), 0);
-        
+
         overrides.pos_x = Some(10);
         assert_eq!(overrides.override_count(), 1);
-        
+
         overrides.pos_y = Some(20);
         overrides.health = Some(50);
         assert_eq!(overrides.override_count(), 3);
-        
+
         overrides.max_health = Some(100);
         assert_eq!(overrides.override_count(), 4);
     }
@@ -1287,7 +1316,7 @@ mod tests {
     fn test_prefab_stats_has_overrides() {
         let mut stats = PrefabStats::default();
         assert!(!stats.has_overrides());
-        
+
         stats.overridden_entity_count = 1;
         assert!(stats.has_overrides());
     }
@@ -1296,7 +1325,7 @@ mod tests {
     fn test_prefab_stats_avg_entities_per_instance() {
         let mut stats = PrefabStats::default();
         assert_eq!(stats.avg_entities_per_instance(), 0.0);
-        
+
         stats.instance_count = 4;
         stats.total_prefab_entities = 12;
         assert_eq!(stats.avg_entities_per_instance(), 3.0);
@@ -1306,7 +1335,7 @@ mod tests {
     fn test_prefab_stats_override_percentage() {
         let mut stats = PrefabStats::default();
         assert_eq!(stats.override_percentage(), 0.0);
-        
+
         stats.total_prefab_entities = 10;
         stats.overridden_entity_count = 3;
         assert!((stats.override_percentage() - 30.0).abs() < 0.1);
@@ -1318,7 +1347,7 @@ mod tests {
     fn test_prefab_manager_empty_stats() {
         let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
         let stats = manager.stats();
-        
+
         assert_eq!(stats.instance_count, 0);
         assert_eq!(stats.total_prefab_entities, 0);
     }
@@ -1327,7 +1356,7 @@ mod tests {
     fn test_prefab_manager_is_valid_empty() {
         let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
         let world = World::new();
-        
+
         assert!(manager.is_valid(&world));
         assert!(manager.validate(&world).is_empty());
     }
@@ -1336,7 +1365,7 @@ mod tests {
     fn test_prefab_manager_find_instances_by_source() {
         let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
         let path = PathBuf::from("nonexistent.prefab.ron");
-        
+
         let found = manager.find_instances_by_source(&path);
         assert!(found.is_empty());
     }
@@ -1345,7 +1374,7 @@ mod tests {
     fn test_prefab_manager_count_instances_of() {
         let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
         let path = PathBuf::from("test.prefab.ron");
-        
+
         assert_eq!(manager.count_instances_of(&path), 0);
     }
 
@@ -1371,7 +1400,7 @@ mod tests {
     fn test_prefab_manager_is_prefab_in_use() {
         let manager = PrefabManager::new(std::env::temp_dir().join("test_prefabs"));
         let path = PathBuf::from("test.prefab.ron");
-        
+
         assert!(!manager.is_prefab_in_use(&path));
     }
 
@@ -1387,7 +1416,7 @@ mod tests {
     fn test_hierarchy_snapshot_insert_children() {
         let mut snapshot = PrefabHierarchySnapshot::new();
         snapshot.insert_children(1, vec![2, 3, 4]);
-        
+
         let children = snapshot.children_of(1);
         assert_eq!(children.len(), 3);
         assert!(children.contains(&2));
@@ -1400,7 +1429,7 @@ mod tests {
         let mut snapshot = PrefabHierarchySnapshot::new();
         snapshot.add_child(1, 2);
         snapshot.add_child(1, 3);
-        
+
         let children = snapshot.children_of(1);
         assert_eq!(children.len(), 2);
     }
@@ -1413,11 +1442,9 @@ mod tests {
 
     #[test]
     fn test_hierarchy_snapshot_from_iterator() {
-        let snapshot: PrefabHierarchySnapshot = vec![
-            (1, vec![2, 3]),
-            (2, vec![4]),
-        ].into_iter().collect();
-        
+        let snapshot: PrefabHierarchySnapshot =
+            vec![(1, vec![2, 3]), (2, vec![4])].into_iter().collect();
+
         assert_eq!(snapshot.children_of(1).len(), 2);
         assert_eq!(snapshot.children_of(2).len(), 1);
     }
@@ -1426,14 +1453,18 @@ mod tests {
 
     #[test]
     fn test_prefab_issue_display() {
-        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
-        let cyclic = PrefabIssue::CyclicReference { path: PathBuf::from("loop.prefab") };
-        let invalid = PrefabIssue::InvalidRootIndex { 
-            path: PathBuf::from("bad.prefab"), 
-            index: 10, 
-            entity_count: 5 
+        let missing = PrefabIssue::MissingFile {
+            path: PathBuf::from("test.prefab"),
         };
-        
+        let cyclic = PrefabIssue::CyclicReference {
+            path: PathBuf::from("loop.prefab"),
+        };
+        let invalid = PrefabIssue::InvalidRootIndex {
+            path: PathBuf::from("bad.prefab"),
+            index: 10,
+            entity_count: 5,
+        };
+
         assert!(format!("{}", missing).contains("Missing File"));
         assert!(format!("{}", cyclic).contains("Cyclic Reference"));
         assert!(format!("{}", invalid).contains("Invalid Root Index"));
@@ -1450,10 +1481,16 @@ mod tests {
 
     #[test]
     fn test_prefab_issue_is_critical() {
-        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
-        let cyclic = PrefabIssue::CyclicReference { path: PathBuf::from("loop.prefab") };
-        let empty = PrefabIssue::EmptyPrefab { path: PathBuf::from("empty.prefab") };
-        
+        let missing = PrefabIssue::MissingFile {
+            path: PathBuf::from("test.prefab"),
+        };
+        let cyclic = PrefabIssue::CyclicReference {
+            path: PathBuf::from("loop.prefab"),
+        };
+        let empty = PrefabIssue::EmptyPrefab {
+            path: PathBuf::from("empty.prefab"),
+        };
+
         assert!(missing.is_critical());
         assert!(cyclic.is_critical());
         assert!(!empty.is_critical());
@@ -1461,32 +1498,47 @@ mod tests {
 
     #[test]
     fn test_prefab_issue_helpers() {
-        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
-        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
-        
+        let missing = PrefabIssue::MissingFile {
+            path: PathBuf::from("test.prefab"),
+        };
+        let orphaned = PrefabIssue::OrphanedEntity {
+            entity: 5,
+            prefab: PathBuf::from("a.prefab"),
+        };
+
         assert!(missing.is_file_issue());
         assert!(!missing.is_entity_issue());
-        
+
         assert!(!orphaned.is_file_issue());
         assert!(orphaned.is_entity_issue());
     }
 
     #[test]
     fn test_prefab_issue_path() {
-        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
-        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
-        
+        let missing = PrefabIssue::MissingFile {
+            path: PathBuf::from("test.prefab"),
+        };
+        let orphaned = PrefabIssue::OrphanedEntity {
+            entity: 5,
+            prefab: PathBuf::from("a.prefab"),
+        };
+
         assert_eq!(missing.path(), Some(&PathBuf::from("test.prefab")));
         assert_eq!(orphaned.path(), Some(&PathBuf::from("a.prefab")));
     }
 
     #[test]
     fn test_prefab_issue_name_and_icon() {
-        let missing = PrefabIssue::MissingFile { path: PathBuf::from("test.prefab") };
+        let missing = PrefabIssue::MissingFile {
+            path: PathBuf::from("test.prefab"),
+        };
         assert_eq!(missing.name(), "Missing File");
         assert_eq!(missing.icon(), "❓");
-        
-        let orphaned = PrefabIssue::OrphanedEntity { entity: 5, prefab: PathBuf::from("a.prefab") };
+
+        let orphaned = PrefabIssue::OrphanedEntity {
+            entity: 5,
+            prefab: PathBuf::from("a.prefab"),
+        };
         assert_eq!(orphaned.icon(), "👻");
     }
 }

@@ -212,12 +212,21 @@ impl MetricUnit {
 
     /// Returns true if this is a time unit
     pub fn is_time_unit(&self) -> bool {
-        matches!(self, MetricUnit::Milliseconds | MetricUnit::Microseconds | MetricUnit::Nanoseconds)
+        matches!(
+            self,
+            MetricUnit::Milliseconds | MetricUnit::Microseconds | MetricUnit::Nanoseconds
+        )
     }
 
     /// Returns true if this is a memory unit
     pub fn is_memory_unit(&self) -> bool {
-        matches!(self, MetricUnit::Bytes | MetricUnit::Kilobytes | MetricUnit::Megabytes | MetricUnit::Gigabytes)
+        matches!(
+            self,
+            MetricUnit::Bytes
+                | MetricUnit::Kilobytes
+                | MetricUnit::Megabytes
+                | MetricUnit::Gigabytes
+        )
     }
 
     pub fn suffix(&self) -> &'static str {
@@ -240,7 +249,10 @@ impl MetricUnit {
         match self {
             MetricUnit::Fps | MetricUnit::Count => format!("{:.0}{}", value, self.suffix()),
             MetricUnit::Percent => format!("{:.1}{}", value, self.suffix()),
-            MetricUnit::Bytes | MetricUnit::Kilobytes | MetricUnit::Megabytes | MetricUnit::Gigabytes => {
+            MetricUnit::Bytes
+            | MetricUnit::Kilobytes
+            | MetricUnit::Megabytes
+            | MetricUnit::Gigabytes => {
                 format!("{:.1} {}", value, self.suffix())
             }
             _ => format!("{:.2} {}", value, self.suffix()),
@@ -377,7 +389,11 @@ impl std::fmt::Display for AlertSeverity {
 
 impl AlertSeverity {
     pub fn all() -> &'static [AlertSeverity] {
-        &[AlertSeverity::Info, AlertSeverity::Warning, AlertSeverity::Critical]
+        &[
+            AlertSeverity::Info,
+            AlertSeverity::Warning,
+            AlertSeverity::Critical,
+        ]
     }
 
     pub fn name(&self) -> &'static str {
@@ -420,7 +436,11 @@ pub struct PerfAlert {
 }
 
 impl PerfAlert {
-    pub fn new(severity: AlertSeverity, category: PerfCategory, message: impl Into<String>) -> Self {
+    pub fn new(
+        severity: AlertSeverity,
+        category: PerfCategory,
+        message: impl Into<String>,
+    ) -> Self {
         Self {
             severity,
             category,
@@ -489,8 +509,12 @@ impl std::fmt::Display for PerformanceAction {
             PerformanceAction::ResetStatistics => write!(f, "Reset statistics"),
             PerformanceAction::ClearAlerts => write!(f, "Clear alerts"),
             PerformanceAction::ExportReport => write!(f, "Export report"),
-            PerformanceAction::ToggleSubsystemProfiling(name, b) => write!(f, "Toggle {} profiling: {}", name, b),
-            PerformanceAction::SetSubsystemBudget(name, budget) => write!(f, "Set {} budget: {:.2}ms", name, budget),
+            PerformanceAction::ToggleSubsystemProfiling(name, b) => {
+                write!(f, "Toggle {} profiling: {}", name, b)
+            }
+            PerformanceAction::SetSubsystemBudget(name, budget) => {
+                write!(f, "Set {} budget: {:.2}ms", name, budget)
+            }
             PerformanceAction::TriggerGarbageCollection => write!(f, "Trigger GC"),
             PerformanceAction::SnapshotMemory => write!(f, "Snapshot memory"),
             PerformanceAction::StartRecording => write!(f, "Start recording"),
@@ -511,23 +535,23 @@ pub struct PerformancePanel {
     last_update: std::time::Instant,
     frame_count: u64,
     runtime_stats: Option<RuntimeStats>,
-    
+
     // Metrics
     metrics: HashMap<String, PerfMetric>,
-    
+
     // Subsystem timings
     subsystems: Vec<SubsystemTiming>,
-    
+
     // Memory stats
     memory_stats: MemoryStats,
-    
+
     // GPU stats
     gpu_stats: GpuStats,
-    
+
     // Alerts
     alerts: VecDeque<PerfAlert>,
     max_alerts: usize,
-    
+
     // Display options
     show_subsystems: bool,
     show_memory: bool,
@@ -536,11 +560,11 @@ pub struct PerformancePanel {
     show_alerts: bool,
     show_history_graphs: bool,
     selected_category: Option<PerfCategory>,
-    
+
     // Target frame rate
     target_fps: f64,
     target_frame_time_ms: f64,
-    
+
     // Statistics
     total_frames: u64,
     frames_over_budget: u64,
@@ -612,54 +636,91 @@ impl PerformancePanel {
 
     fn init_default_metrics(&mut self) {
         // Frame metrics
-        self.metrics.insert("frame_time".into(), 
+        self.metrics.insert(
+            "frame_time".into(),
             PerfMetric::new("Frame Time", PerfCategory::Frame, MetricUnit::Milliseconds)
-                .with_budget(16.67));
-        self.metrics.insert("fps".into(), 
-            PerfMetric::new("FPS", PerfCategory::Frame, MetricUnit::Fps)
-                .with_budget(60.0));
-        
+                .with_budget(16.67),
+        );
+        self.metrics.insert(
+            "fps".into(),
+            PerfMetric::new("FPS", PerfCategory::Frame, MetricUnit::Fps).with_budget(60.0),
+        );
+
         // CPU metrics
-        self.metrics.insert("cpu_usage".into(), 
-            PerfMetric::new("CPU Usage", PerfCategory::Cpu, MetricUnit::Percent)
-                .with_budget(80.0));
-        self.metrics.insert("thread_count".into(), 
-            PerfMetric::new("Active Threads", PerfCategory::Cpu, MetricUnit::Count));
-        
+        self.metrics.insert(
+            "cpu_usage".into(),
+            PerfMetric::new("CPU Usage", PerfCategory::Cpu, MetricUnit::Percent).with_budget(80.0),
+        );
+        self.metrics.insert(
+            "thread_count".into(),
+            PerfMetric::new("Active Threads", PerfCategory::Cpu, MetricUnit::Count),
+        );
+
         // GPU metrics
-        self.metrics.insert("gpu_frame_time".into(), 
-            PerfMetric::new("GPU Frame Time", PerfCategory::Gpu, MetricUnit::Milliseconds)
-                .with_budget(10.0));
-        self.metrics.insert("draw_calls".into(), 
-            PerfMetric::new("Draw Calls", PerfCategory::Gpu, MetricUnit::Count)
-                .with_budget(2000.0));
-        
+        self.metrics.insert(
+            "gpu_frame_time".into(),
+            PerfMetric::new(
+                "GPU Frame Time",
+                PerfCategory::Gpu,
+                MetricUnit::Milliseconds,
+            )
+            .with_budget(10.0),
+        );
+        self.metrics.insert(
+            "draw_calls".into(),
+            PerfMetric::new("Draw Calls", PerfCategory::Gpu, MetricUnit::Count).with_budget(2000.0),
+        );
+
         // Memory metrics
-        self.metrics.insert("heap_used".into(), 
-            PerfMetric::new("Heap Used", PerfCategory::Memory, MetricUnit::Megabytes));
-        self.metrics.insert("gpu_memory".into(), 
-            PerfMetric::new("GPU Memory", PerfCategory::Memory, MetricUnit::Megabytes));
-        
+        self.metrics.insert(
+            "heap_used".into(),
+            PerfMetric::new("Heap Used", PerfCategory::Memory, MetricUnit::Megabytes),
+        );
+        self.metrics.insert(
+            "gpu_memory".into(),
+            PerfMetric::new("GPU Memory", PerfCategory::Memory, MetricUnit::Megabytes),
+        );
+
         // Physics metrics
-        self.metrics.insert("physics_step".into(), 
-            PerfMetric::new("Physics Step", PerfCategory::Physics, MetricUnit::Milliseconds)
-                .with_budget(4.0));
-        self.metrics.insert("collision_pairs".into(), 
-            PerfMetric::new("Collision Pairs", PerfCategory::Physics, MetricUnit::Count));
-        
+        self.metrics.insert(
+            "physics_step".into(),
+            PerfMetric::new(
+                "Physics Step",
+                PerfCategory::Physics,
+                MetricUnit::Milliseconds,
+            )
+            .with_budget(4.0),
+        );
+        self.metrics.insert(
+            "collision_pairs".into(),
+            PerfMetric::new("Collision Pairs", PerfCategory::Physics, MetricUnit::Count),
+        );
+
         // AI metrics
-        self.metrics.insert("ai_update".into(), 
+        self.metrics.insert(
+            "ai_update".into(),
             PerfMetric::new("AI Update", PerfCategory::Ai, MetricUnit::Milliseconds)
-                .with_budget(2.0));
-        self.metrics.insert("active_agents".into(), 
-            PerfMetric::new("Active Agents", PerfCategory::Ai, MetricUnit::Count));
-        
+                .with_budget(2.0),
+        );
+        self.metrics.insert(
+            "active_agents".into(),
+            PerfMetric::new("Active Agents", PerfCategory::Ai, MetricUnit::Count),
+        );
+
         // Rendering metrics
-        self.metrics.insert("render_time".into(), 
-            PerfMetric::new("Render Time", PerfCategory::Rendering, MetricUnit::Milliseconds)
-                .with_budget(8.0));
-        self.metrics.insert("triangles".into(), 
-            PerfMetric::new("Triangles", PerfCategory::Rendering, MetricUnit::Count));
+        self.metrics.insert(
+            "render_time".into(),
+            PerfMetric::new(
+                "Render Time",
+                PerfCategory::Rendering,
+                MetricUnit::Milliseconds,
+            )
+            .with_budget(8.0),
+        );
+        self.metrics.insert(
+            "triangles".into(),
+            PerfMetric::new("Triangles", PerfCategory::Rendering, MetricUnit::Count),
+        );
     }
 
     fn init_default_subsystems(&mut self) {
@@ -694,13 +755,17 @@ impl PerformancePanel {
             metric.push(frame_time_ms);
         }
         if let Some(metric) = self.metrics.get_mut("fps") {
-            let fps = if frame_time_ms > 0.0 { 1000.0 / frame_time_ms } else { 0.0 };
+            let fps = if frame_time_ms > 0.0 {
+                1000.0 / frame_time_ms
+            } else {
+                0.0
+            };
             metric.push(fps);
         }
-        
+
         // Simulate other metrics
         let variance = (self.frame_count as f64 * 0.1).sin();
-        
+
         if let Some(metric) = self.metrics.get_mut("cpu_usage") {
             metric.push(25.0 + variance * 10.0);
         }
@@ -713,7 +778,7 @@ impl PerformancePanel {
         if let Some(metric) = self.metrics.get_mut("triangles") {
             metric.push(150000.0 + variance * 20000.0);
         }
-        
+
         // Update statistics
         self.total_frames += 1;
         if frame_time_ms > self.target_frame_time_ms {
@@ -725,7 +790,7 @@ impl PerformancePanel {
         if frame_time_ms < self.best_frame_time_ms {
             self.best_frame_time_ms = frame_time_ms;
         }
-        
+
         // Check for alerts
         self.check_alerts(frame_time_ms);
     }
@@ -733,7 +798,7 @@ impl PerformancePanel {
     fn simulate_subsystems(&mut self, total_ms: f64) {
         // Distribute frame time across subsystems
         let distribution = [0.03, 0.25, 0.12, 0.10, 0.05, 0.35, 0.05, 0.05];
-        
+
         for (i, subsystem) in self.subsystems.iter_mut().enumerate() {
             let ratio = distribution.get(i).copied().unwrap_or(0.1);
             let time = total_ms * ratio * (1.0 + (self.frame_count as f64 * 0.05).sin() * 0.2);
@@ -756,17 +821,24 @@ impl PerformancePanel {
                 format!("Frame time {:.1}ms (< 50 FPS)", frame_time_ms),
             ));
         }
-        
+
         // Check subsystem budgets - collect alerts first to avoid borrow issues
-        let subsystem_alerts: Vec<PerfAlert> = self.subsystems.iter()
+        let subsystem_alerts: Vec<PerfAlert> = self
+            .subsystems
+            .iter()
             .filter(|s| s.is_over_budget())
-            .map(|s| PerfAlert::new(
-                AlertSeverity::Warning,
-                PerfCategory::Cpu,
-                format!("{} over budget: {:.1}ms / {:.1}ms", s.name, s.time_ms, s.budget_ms),
-            ))
+            .map(|s| {
+                PerfAlert::new(
+                    AlertSeverity::Warning,
+                    PerfCategory::Cpu,
+                    format!(
+                        "{} over budget: {:.1}ms / {:.1}ms",
+                        s.name, s.time_ms, s.budget_ms
+                    ),
+                )
+            })
             .collect();
-        
+
         for alert in subsystem_alerts {
             self.add_alert(alert);
         }
@@ -774,11 +846,10 @@ impl PerformancePanel {
 
     fn add_alert(&mut self, alert: PerfAlert) {
         // Deduplicate recent alerts
-        let dominated = self.alerts.iter()
-            .any(|a| a.category == alert.category && 
-                     a.message == alert.message && 
-                     a.age_secs() < 2.0);
-        
+        let dominated = self.alerts.iter().any(|a| {
+            a.category == alert.category && a.message == alert.message && a.age_secs() < 2.0
+        });
+
         if !dominated {
             self.alerts.push_front(alert);
             if self.alerts.len() > self.max_alerts {
@@ -839,11 +910,15 @@ impl PerformancePanel {
                 } else {
                     Color32::RED
                 };
-                ui.label(RichText::new(format!("🎮 {:.0} FPS", fps)).color(color).strong());
+                ui.label(
+                    RichText::new(format!("🎮 {:.0} FPS", fps))
+                        .color(color)
+                        .strong(),
+                );
             }
-            
+
             ui.separator();
-            
+
             // Frame time
             if let Some(metric) = self.metrics.get("frame_time") {
                 let ft = metric.value;
@@ -856,9 +931,9 @@ impl PerformancePanel {
                 };
                 ui.label(RichText::new(format!("⏱️ {:.2} ms", ft)).color(color));
             }
-            
+
             ui.separator();
-            
+
             // Budget hit rate
             let rate = self.budget_hit_rate();
             let color = if rate >= 99.0 {
@@ -875,14 +950,14 @@ impl PerformancePanel {
     fn show_subsystems_section(&mut self, ui: &mut Ui) {
         ui.collapsing("📊 Subsystem Breakdown", |ui| {
             let total_time: f64 = self.subsystems.iter().map(|s| s.time_ms).sum();
-            
+
             for subsystem in &self.subsystems {
                 let percent = if total_time > 0.0 {
                     (subsystem.time_ms / total_time) * 100.0
                 } else {
                     0.0
                 };
-                
+
                 let budget_pct = subsystem.budget_percent();
                 let color = if budget_pct > 100.0 {
                     Color32::RED
@@ -891,29 +966,28 @@ impl PerformancePanel {
                 } else {
                     Color32::from_rgb(100, 200, 100)
                 };
-                
+
                 ui.horizontal(|ui| {
                     ui.label(format!("{:12}", subsystem.name));
-                    
+
                     // Progress bar
                     let bar_width = 100.0;
                     let filled = (budget_pct / 100.0).min(1.0) as f32 * bar_width;
-                    
-                    let (rect, _) = ui.allocate_exact_size(egui::vec2(bar_width, 14.0), egui::Sense::hover());
+
+                    let (rect, _) =
+                        ui.allocate_exact_size(egui::vec2(bar_width, 14.0), egui::Sense::hover());
                     let painter = ui.painter();
-                    
+
                     painter.rect_filled(rect, 2.0, Color32::from_gray(60));
-                    let filled_rect = egui::Rect::from_min_size(
-                        rect.min,
-                        egui::vec2(filled, rect.height()),
-                    );
+                    let filled_rect =
+                        egui::Rect::from_min_size(rect.min, egui::vec2(filled, rect.height()));
                     painter.rect_filled(filled_rect, 2.0, color);
-                    
+
                     ui.label(RichText::new(format!("{:.2} ms", subsystem.time_ms)).color(color));
                     ui.label(RichText::new(format!("({:.0}%)", percent)).weak());
                 });
             }
-            
+
             ui.separator();
             ui.label(format!("Total: {:.2} ms", total_time));
         });
@@ -923,25 +997,29 @@ impl PerformancePanel {
         ui.collapsing("💾 Memory", |ui| {
             ui.horizontal(|ui| {
                 ui.label("Heap:");
-                ui.label(format!("{:.1} MB / {:.1} MB ({:.0}%)", 
+                ui.label(format!(
+                    "{:.1} MB / {:.1} MB ({:.0}%)",
                     self.memory_stats.heap_used_mb,
                     self.memory_stats.heap_committed_mb,
-                    self.memory_stats.heap_usage_percent()));
+                    self.memory_stats.heap_usage_percent()
+                ));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("GPU:");
-                ui.label(format!("{:.1} MB / {:.1} MB ({:.0}%)", 
+                ui.label(format!(
+                    "{:.1} MB / {:.1} MB ({:.0}%)",
                     self.memory_stats.gpu_used_mb,
                     self.memory_stats.gpu_available_mb,
-                    self.memory_stats.gpu_usage_percent()));
+                    self.memory_stats.gpu_usage_percent()
+                ));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Peak:");
                 ui.label(format!("{:.1} MB", self.memory_stats.peak_usage_mb));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Allocs/frame:");
                 ui.label(format!("{}", self.memory_stats.allocations_per_frame));
@@ -951,15 +1029,30 @@ impl PerformancePanel {
 
     fn show_gpu_section(&self, ui: &mut Ui) {
         ui.collapsing("🎮 GPU Stats", |ui| {
-            ui.label(format!("Frame Time: {:.2} ms", self.gpu_stats.frame_time_ms));
+            ui.label(format!(
+                "Frame Time: {:.2} ms",
+                self.gpu_stats.frame_time_ms
+            ));
             ui.label(format!("Draw Calls: {}", self.gpu_stats.draw_calls));
             ui.label(format!("Triangles: {}", self.gpu_stats.triangle_count));
             ui.label(format!("Vertices: {}", self.gpu_stats.vertex_count));
-            ui.label(format!("Shader Switches: {}", self.gpu_stats.shader_switches));
-            ui.label(format!("Texture Bindings: {}", self.gpu_stats.texture_bindings));
-            ui.label(format!("Buffer Uploads: {:.1} KB", self.gpu_stats.buffer_uploads_kb));
+            ui.label(format!(
+                "Shader Switches: {}",
+                self.gpu_stats.shader_switches
+            ));
+            ui.label(format!(
+                "Texture Bindings: {}",
+                self.gpu_stats.texture_bindings
+            ));
+            ui.label(format!(
+                "Buffer Uploads: {:.1} KB",
+                self.gpu_stats.buffer_uploads_kb
+            ));
             ui.label(format!("Render Targets: {}", self.gpu_stats.render_targets));
-            ui.label(format!("Compute Dispatches: {}", self.gpu_stats.compute_dispatches));
+            ui.label(format!(
+                "Compute Dispatches: {}",
+                self.gpu_stats.compute_dispatches
+            ));
         });
     }
 
@@ -967,47 +1060,65 @@ impl PerformancePanel {
         if self.alerts.is_empty() {
             return;
         }
-        
+
         ui.collapsing(format!("🔔 Alerts ({})", self.alerts.len()), |ui| {
-            egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                for alert in self.alerts.iter().take(20) {
-                    let age = alert.age_secs();
-                    let alpha = if age < 5.0 { 255 } else { (255.0 * (1.0 - (age - 5.0) / 10.0).max(0.0)) as u8 };
-                    
-                    let color = Color32::from_rgba_unmultiplied(
-                        alert.severity.color().r(),
-                        alert.severity.color().g(),
-                        alert.severity.color().b(),
-                        alpha,
-                    );
-                    
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(alert.severity.icon()).color(color));
-                        ui.label(RichText::new(&alert.message).color(color).small());
-                        ui.label(RichText::new(format!("{:.0}s ago", age)).weak().small());
-                    });
-                }
-            });
+            egui::ScrollArea::vertical()
+                .max_height(150.0)
+                .show(ui, |ui| {
+                    for alert in self.alerts.iter().take(20) {
+                        let age = alert.age_secs();
+                        let alpha = if age < 5.0 {
+                            255
+                        } else {
+                            (255.0 * (1.0 - (age - 5.0) / 10.0).max(0.0)) as u8
+                        };
+
+                        let color = Color32::from_rgba_unmultiplied(
+                            alert.severity.color().r(),
+                            alert.severity.color().g(),
+                            alert.severity.color().b(),
+                            alpha,
+                        );
+
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new(alert.severity.icon()).color(color));
+                            ui.label(RichText::new(&alert.message).color(color).small());
+                            ui.label(RichText::new(format!("{:.0}s ago", age)).weak().small());
+                        });
+                    }
+                });
         });
     }
 
     fn show_session_stats(&self, ui: &mut Ui) {
         ui.collapsing("📈 Session Statistics", |ui| {
             let uptime = self.session_uptime();
-            ui.label(format!("Session: {:02}:{:02}:{:02}", 
+            ui.label(format!(
+                "Session: {:02}:{:02}:{:02}",
                 uptime.as_secs() / 3600,
                 (uptime.as_secs() % 3600) / 60,
-                uptime.as_secs() % 60));
+                uptime.as_secs() % 60
+            ));
             ui.label(format!("Total Frames: {}", self.total_frames));
-            ui.label(format!("Over Budget: {} ({:.1}%)", 
+            ui.label(format!(
+                "Over Budget: {} ({:.1}%)",
                 self.frames_over_budget,
-                if self.total_frames > 0 { 
-                    (self.frames_over_budget as f64 / self.total_frames as f64) * 100.0 
-                } else { 0.0 }));
-            ui.label(format!("Best Frame: {:.2} ms", 
-                if self.best_frame_time_ms < f64::MAX { self.best_frame_time_ms } else { 0.0 }));
+                if self.total_frames > 0 {
+                    (self.frames_over_budget as f64 / self.total_frames as f64) * 100.0
+                } else {
+                    0.0
+                }
+            ));
+            ui.label(format!(
+                "Best Frame: {:.2} ms",
+                if self.best_frame_time_ms < f64::MAX {
+                    self.best_frame_time_ms
+                } else {
+                    0.0
+                }
+            ));
             ui.label(format!("Worst Frame: {:.2} ms", self.worst_frame_time_ms));
-            
+
             if let Some(metric) = self.metrics.get("frame_time") {
                 ui.label(format!("Avg Frame: {:.2} ms", metric.average()));
             }
@@ -1044,7 +1155,7 @@ impl Panel for PerformancePanel {
 
         // Summary bar
         self.show_summary(ui);
-        
+
         ui.separator();
 
         // Display options toolbar
@@ -1079,7 +1190,7 @@ impl Panel for PerformancePanel {
                 } else {
                     Color32::from_rgb(120, 220, 150)
                 };
-                
+
                 let msg = if stats.frame_time_ms > 20.0 {
                     "⚠️ Over budget (>20ms)"
                 } else if stats.frame_time_ms > 16.7 {
@@ -1087,7 +1198,7 @@ impl Panel for PerformancePanel {
                 } else {
                     "✅ Within 60 FPS budget"
                 };
-                
+
                 ui.colored_label(color, msg);
             });
         }
@@ -1134,7 +1245,7 @@ impl Panel for PerformancePanel {
                 self.init_default_metrics();
                 self.init_default_subsystems();
             }
-            
+
             if ui.button("🧹 Clear Alerts").clicked() {
                 self.alerts.clear();
             }
@@ -1209,7 +1320,7 @@ mod tests {
         metric.push(10.0);
         metric.push(20.0);
         metric.push(15.0);
-        
+
         assert_eq!(metric.value, 15.0);
         assert_eq!(metric.history.len(), 3);
     }
@@ -1220,7 +1331,7 @@ mod tests {
         metric.push(10.0);
         metric.push(20.0);
         metric.push(30.0);
-        
+
         assert_eq!(metric.average(), 20.0);
     }
 
@@ -1230,7 +1341,7 @@ mod tests {
         metric.push(10.0);
         metric.push(30.0);
         metric.push(20.0);
-        
+
         assert_eq!(metric.min(), 10.0);
         assert_eq!(metric.max(), 30.0);
     }
@@ -1239,10 +1350,10 @@ mod tests {
     fn test_perf_metric_over_budget() {
         let mut metric = PerfMetric::new("Test", PerfCategory::Frame, MetricUnit::Milliseconds)
             .with_budget(16.67);
-        
+
         metric.push(10.0);
         assert!(!metric.is_over_budget());
-        
+
         metric.push(20.0);
         assert!(metric.is_over_budget());
     }
@@ -1252,18 +1363,18 @@ mod tests {
         let mut metric = PerfMetric::new("Test", PerfCategory::Frame, MetricUnit::Milliseconds)
             .with_budget(20.0);
         metric.push(10.0);
-        
+
         assert_eq!(metric.budget_percent(), Some(50.0));
     }
 
     #[test]
     fn test_perf_metric_history_limit() {
         let mut metric = PerfMetric::new("Test", PerfCategory::Frame, MetricUnit::Milliseconds);
-        
+
         for i in 0..150 {
             metric.push(i as f64);
         }
-        
+
         assert_eq!(metric.history.len(), 120);
     }
 
@@ -1303,7 +1414,7 @@ mod tests {
     fn test_subsystem_timing_push() {
         let mut timing = SubsystemTiming::new("Physics", 4.0);
         timing.push(3.5, 1);
-        
+
         assert_eq!(timing.time_ms, 3.5);
         assert_eq!(timing.call_count, 1);
         assert_eq!(timing.history.len(), 1);
@@ -1315,17 +1426,17 @@ mod tests {
         timing.push(2.0, 1);
         timing.push(4.0, 1);
         timing.push(6.0, 1);
-        
+
         assert_eq!(timing.average(), 4.0);
     }
 
     #[test]
     fn test_subsystem_timing_over_budget() {
         let mut timing = SubsystemTiming::new("Physics", 4.0);
-        
+
         timing.push(3.0, 1);
         assert!(!timing.is_over_budget());
-        
+
         timing.push(5.0, 1);
         assert!(timing.is_over_budget());
     }
@@ -1334,7 +1445,7 @@ mod tests {
     fn test_subsystem_timing_budget_percent() {
         let mut timing = SubsystemTiming::new("Physics", 4.0);
         timing.push(2.0, 1);
-        
+
         assert_eq!(timing.budget_percent(), 50.0);
     }
 
@@ -1443,7 +1554,7 @@ mod tests {
     fn test_performance_panel_subsystems_initialized() {
         let panel = PerformancePanel::new();
         assert!(!panel.subsystems.is_empty());
-        
+
         let names: Vec<&str> = panel.subsystems.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"Physics"));
         assert!(names.contains(&"Rendering"));
@@ -1454,26 +1565,26 @@ mod tests {
     fn test_performance_panel_set_frame_time() {
         let mut panel = PerformancePanel::new();
         panel.set_frame_time(16.67);
-        
+
         assert_eq!(panel.frame_count, 1);
     }
 
     #[test]
     fn test_performance_panel_budget_hit_rate() {
         let mut panel = PerformancePanel::new();
-        
+
         // All frames within budget
         for _ in 0..10 {
             panel.set_frame_time(10.0);
         }
-        
+
         assert_eq!(panel.budget_hit_rate(), 100.0);
     }
 
     #[test]
     fn test_performance_panel_budget_hit_rate_with_misses() {
         let mut panel = PerformancePanel::new();
-        
+
         // 5 good frames
         for _ in 0..5 {
             panel.set_frame_time(10.0);
@@ -1482,7 +1593,7 @@ mod tests {
         for _ in 0..5 {
             panel.set_frame_time(20.0);
         }
-        
+
         assert_eq!(panel.budget_hit_rate(), 50.0);
     }
 
@@ -1490,7 +1601,7 @@ mod tests {
     fn test_performance_panel_session_uptime() {
         let panel = PerformancePanel::new();
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
         let uptime = panel.session_uptime();
         assert!(uptime.as_millis() >= 10);
     }
@@ -1499,7 +1610,7 @@ mod tests {
     fn test_performance_panel_clear_runtime_stats() {
         let mut panel = PerformancePanel::new();
         panel.runtime_stats = Some(RuntimeStats::default());
-        
+
         panel.clear_runtime_stats();
         assert!(panel.runtime_stats.is_none());
     }
@@ -1507,11 +1618,11 @@ mod tests {
     #[test]
     fn test_performance_panel_worst_best_frame() {
         let mut panel = PerformancePanel::new();
-        
+
         panel.set_frame_time(10.0);
         panel.set_frame_time(20.0);
         panel.set_frame_time(5.0);
-        
+
         assert_eq!(panel.best_frame_time_ms, 5.0);
         assert_eq!(panel.worst_frame_time_ms, 20.0);
     }
@@ -1525,10 +1636,10 @@ mod tests {
     #[test]
     fn test_performance_panel_alerts() {
         let mut panel = PerformancePanel::new();
-        
+
         // Trigger a critical alert by simulating a very slow frame
         panel.set_frame_time(50.0);
-        
+
         // Should have at least one alert
         assert!(!panel.alerts.is_empty());
     }
@@ -1536,11 +1647,19 @@ mod tests {
     #[test]
     fn test_performance_panel_alert_deduplication() {
         let mut panel = PerformancePanel::new();
-        
+
         // Same alert shouldn't be added twice within 2 seconds
-        panel.add_alert(PerfAlert::new(AlertSeverity::Warning, PerfCategory::Frame, "Test"));
-        panel.add_alert(PerfAlert::new(AlertSeverity::Warning, PerfCategory::Frame, "Test"));
-        
+        panel.add_alert(PerfAlert::new(
+            AlertSeverity::Warning,
+            PerfCategory::Frame,
+            "Test",
+        ));
+        panel.add_alert(PerfAlert::new(
+            AlertSeverity::Warning,
+            PerfCategory::Frame,
+            "Test",
+        ));
+
         assert_eq!(panel.alerts.len(), 1);
     }
 
@@ -1677,7 +1796,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -1729,7 +1852,9 @@ mod tests {
     fn test_performance_panel_action_order_preserved() {
         let mut panel = PerformancePanel::new();
         panel.queue_action(PerformanceAction::StartRecording);
-        panel.queue_action(PerformanceAction::SelectCategory(Some(PerfCategory::Network)));
+        panel.queue_action(PerformanceAction::SelectCategory(Some(
+            PerfCategory::Network,
+        )));
         panel.queue_action(PerformanceAction::StopRecording);
 
         let actions = panel.take_actions();

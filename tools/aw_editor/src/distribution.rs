@@ -178,7 +178,9 @@ impl DistributionConfig {
 
     /// Get sanitized game name for filenames
     pub fn sanitized_name(&self) -> String {
-        self.game_name.replace(' ', "_").replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "")
+        self.game_name
+            .replace(' ', "_")
+            .replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "")
     }
 
     /// Generate a summary of the configuration
@@ -654,7 +656,10 @@ mod tests {
 
     #[test]
     fn test_distribution_format_display() {
-        assert_eq!(format!("{}", DistributionFormat::WindowsPortable), "Windows Portable");
+        assert_eq!(
+            format!("{}", DistributionFormat::WindowsPortable),
+            "Windows Portable"
+        );
     }
 
     // ====================================================================

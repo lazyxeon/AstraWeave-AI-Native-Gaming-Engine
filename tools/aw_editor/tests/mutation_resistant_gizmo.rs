@@ -3,7 +3,7 @@
 //! Comprehensive tests for GizmoMode, AxisConstraint
 //! to achieve ≥92% mutation kill rate.
 
-use aw_editor_lib::gizmo::{GizmoMode, AxisConstraint, GizmoState};
+use aw_editor_lib::gizmo::{AxisConstraint, GizmoMode, GizmoState};
 use glam::Vec3;
 
 // =============================================================================
@@ -20,25 +20,35 @@ mod gizmo_mode_is_active_tests {
 
     #[test]
     fn translate_is_active() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(mode.is_active());
     }
 
     #[test]
     fn rotate_is_active() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert!(mode.is_active());
     }
 
     #[test]
     fn scale_is_active() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert!(mode.is_active());
     }
 
     #[test]
     fn scale_uniform_is_active() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: true,
+        };
         assert!(mode.is_active());
     }
 }
@@ -52,13 +62,17 @@ mod gizmo_mode_is_translate_tests {
 
     #[test]
     fn translate_is_translate_true() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(mode.is_translate());
     }
 
     #[test]
     fn translate_with_x_constraint_is_translate_true() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
         assert!(mode.is_translate());
     }
 
@@ -69,13 +83,18 @@ mod gizmo_mode_is_translate_tests {
 
     #[test]
     fn rotate_is_translate_false() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.is_translate());
     }
 
     #[test]
     fn scale_is_translate_false() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert!(!mode.is_translate());
     }
 }
@@ -89,13 +108,17 @@ mod gizmo_mode_is_rotate_tests {
 
     #[test]
     fn rotate_is_rotate_true() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert!(mode.is_rotate());
     }
 
     #[test]
     fn rotate_with_constraint_is_rotate_true() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::Y };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::Y,
+        };
         assert!(mode.is_rotate());
     }
 
@@ -106,13 +129,18 @@ mod gizmo_mode_is_rotate_tests {
 
     #[test]
     fn translate_is_rotate_false() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.is_rotate());
     }
 
     #[test]
     fn scale_is_rotate_false() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert!(!mode.is_rotate());
     }
 }
@@ -126,19 +154,28 @@ mod gizmo_mode_is_scale_tests {
 
     #[test]
     fn scale_is_scale_true() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert!(mode.is_scale());
     }
 
     #[test]
     fn scale_uniform_is_scale_true() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: true,
+        };
         assert!(mode.is_scale());
     }
 
     #[test]
     fn scale_with_constraint_is_scale_true() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: false,
+        };
         assert!(mode.is_scale());
     }
 
@@ -149,13 +186,17 @@ mod gizmo_mode_is_scale_tests {
 
     #[test]
     fn translate_is_scale_false() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.is_scale());
     }
 
     #[test]
     fn rotate_is_scale_false() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.is_scale());
     }
 }
@@ -174,25 +215,34 @@ mod gizmo_mode_constraint_tests {
 
     #[test]
     fn translate_with_none_returns_none_constraint() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert_eq!(mode.constraint(), Some(AxisConstraint::None));
     }
 
     #[test]
     fn translate_with_x_returns_x_constraint() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
         assert_eq!(mode.constraint(), Some(AxisConstraint::X));
     }
 
     #[test]
     fn rotate_with_y_returns_y_constraint() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::Y };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::Y,
+        };
         assert_eq!(mode.constraint(), Some(AxisConstraint::Y));
     }
 
     #[test]
     fn scale_with_z_returns_z_constraint() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: false,
+        };
         assert_eq!(mode.constraint(), Some(AxisConstraint::Z));
     }
 }
@@ -211,19 +261,26 @@ mod gizmo_mode_name_tests {
 
     #[test]
     fn translate_name_is_translate() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert_eq!(mode.name(), "Translate");
     }
 
     #[test]
     fn rotate_name_is_rotate() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert_eq!(mode.name(), "Rotate");
     }
 
     #[test]
     fn scale_name_is_scale() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert_eq!(mode.name(), "Scale");
     }
 }
@@ -242,19 +299,26 @@ mod gizmo_mode_icon_tests {
 
     #[test]
     fn translate_icon_is_not_empty() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.icon().is_empty());
     }
 
     #[test]
     fn rotate_icon_is_not_empty() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert!(!mode.icon().is_empty());
     }
 
     #[test]
     fn scale_icon_is_not_empty() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert!(!mode.icon().is_empty());
     }
 }
@@ -273,19 +337,26 @@ mod gizmo_mode_shortcut_tests {
 
     #[test]
     fn translate_shortcut_is_g() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert_eq!(mode.shortcut(), Some("G"));
     }
 
     #[test]
     fn rotate_shortcut_is_r() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::None,
+        };
         assert_eq!(mode.shortcut(), Some("R"));
     }
 
     #[test]
     fn scale_shortcut_is_s() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false,
+        };
         assert_eq!(mode.shortcut(), Some("S"));
     }
 }

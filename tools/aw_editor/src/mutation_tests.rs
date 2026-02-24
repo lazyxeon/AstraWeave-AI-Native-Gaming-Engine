@@ -26,25 +26,37 @@ mod editor_mode_tests {
     #[test]
     fn test_default_mode_is_edit() {
         let mode = EditorMode::default();
-        assert!(matches!(mode, EditorMode::Edit), "Default mode should be Edit");
+        assert!(
+            matches!(mode, EditorMode::Edit),
+            "Default mode should be Edit"
+        );
     }
 
     #[test]
     fn test_is_playing_returns_true_for_play() {
         let mode = EditorMode::Play;
-        assert!(mode.is_playing(), "is_playing should return true for Play mode");
+        assert!(
+            mode.is_playing(),
+            "is_playing should return true for Play mode"
+        );
     }
 
     #[test]
     fn test_is_playing_returns_false_for_edit() {
         let mode = EditorMode::Edit;
-        assert!(!mode.is_playing(), "is_playing should return false for Edit mode");
+        assert!(
+            !mode.is_playing(),
+            "is_playing should return false for Edit mode"
+        );
     }
 
     #[test]
     fn test_is_paused_returns_true_for_paused() {
         let mode = EditorMode::Paused;
-        assert!(mode.is_paused(), "is_paused should return true for Paused mode");
+        assert!(
+            mode.is_paused(),
+            "is_paused should return true for Paused mode"
+        );
     }
 
     #[test]
@@ -56,27 +68,42 @@ mod editor_mode_tests {
     #[test]
     fn test_can_edit_returns_false_for_play() {
         let mode = EditorMode::Play;
-        assert!(!mode.can_edit(), "can_edit should return false for Play mode");
+        assert!(
+            !mode.can_edit(),
+            "can_edit should return false for Play mode"
+        );
     }
 
     #[test]
     fn test_valid_transition_edit_to_play() {
         let mode = EditorMode::Edit;
-        assert!(mode.can_transition_to(EditorMode::Play), "Edit should transition to Play");
+        assert!(
+            mode.can_transition_to(EditorMode::Play),
+            "Edit should transition to Play"
+        );
     }
 
     #[test]
     fn test_invalid_transition_edit_to_paused() {
         let mode = EditorMode::Edit;
-        assert!(!mode.can_transition_to(EditorMode::Paused), "Edit should NOT transition to Paused");
+        assert!(
+            !mode.can_transition_to(EditorMode::Paused),
+            "Edit should NOT transition to Paused"
+        );
     }
 
     #[test]
     fn test_valid_transitions_from_play() {
         let mode = EditorMode::Play;
         let transitions = mode.valid_transitions();
-        assert!(transitions.contains(&EditorMode::Edit), "Play should transition to Edit");
-        assert!(transitions.contains(&EditorMode::Paused), "Play should transition to Paused");
+        assert!(
+            transitions.contains(&EditorMode::Edit),
+            "Play should transition to Edit"
+        );
+        assert!(
+            transitions.contains(&EditorMode::Paused),
+            "Play should transition to Paused"
+        );
     }
 }
 
@@ -90,44 +117,65 @@ mod layout_preset_tests {
     #[test]
     fn test_default_preset_is_default() {
         let preset = LayoutPreset::default();
-        assert!(matches!(preset, LayoutPreset::Default), "Default preset should be Default");
+        assert!(
+            matches!(preset, LayoutPreset::Default),
+            "Default preset should be Default"
+        );
     }
 
     #[test]
     fn test_is_debug_layout_true_for_debug() {
         let preset = LayoutPreset::Debug;
-        assert!(preset.is_debug_layout(), "is_debug_layout should return true for Debug");
+        assert!(
+            preset.is_debug_layout(),
+            "is_debug_layout should return true for Debug"
+        );
     }
 
     #[test]
     fn test_is_debug_layout_false_for_default() {
         let preset = LayoutPreset::Default;
-        assert!(!preset.is_debug_layout(), "is_debug_layout should return false for Default");
+        assert!(
+            !preset.is_debug_layout(),
+            "is_debug_layout should return false for Default"
+        );
     }
 
     #[test]
     fn test_is_content_creation_true_for_modeling() {
         let preset = LayoutPreset::Modeling;
-        assert!(preset.is_content_creation_layout(), "is_content_creation_layout should be true for Modeling");
+        assert!(
+            preset.is_content_creation_layout(),
+            "is_content_creation_layout should be true for Modeling"
+        );
     }
 
     #[test]
     fn test_is_content_creation_true_for_animation() {
         let preset = LayoutPreset::Animation;
-        assert!(preset.is_content_creation_layout(), "is_content_creation_layout should be true for Animation");
+        assert!(
+            preset.is_content_creation_layout(),
+            "is_content_creation_layout should be true for Animation"
+        );
     }
 
     #[test]
     fn test_is_content_creation_false_for_debug() {
         let preset = LayoutPreset::Debug;
-        assert!(!preset.is_content_creation_layout(), "is_content_creation_layout should be false for Debug");
+        assert!(
+            !preset.is_content_creation_layout(),
+            "is_content_creation_layout should be false for Debug"
+        );
     }
 
     #[test]
     fn test_expected_panel_count_varies_by_preset() {
         let default_count = LayoutPreset::Default.expected_panel_count();
         let wide_count = LayoutPreset::Wide.expected_panel_count();
-        assert_ne!(default_count, wide_count, "Different presets should have different panel counts");
+        assert_ne!(
+            default_count, wide_count,
+            "Different presets should have different panel counts"
+        );
     }
 }
 
@@ -141,55 +189,91 @@ mod gizmo_mode_tests {
     #[test]
     fn test_default_mode_is_inactive() {
         let mode = GizmoMode::default();
-        assert!(matches!(mode, GizmoMode::Inactive), "Default gizmo mode should be Inactive");
+        assert!(
+            matches!(mode, GizmoMode::Inactive),
+            "Default gizmo mode should be Inactive"
+        );
     }
 
     #[test]
     fn test_is_active_false_for_inactive() {
         let mode = GizmoMode::Inactive;
-        assert!(!mode.is_active(), "is_active should return false for Inactive");
+        assert!(
+            !mode.is_active(),
+            "is_active should return false for Inactive"
+        );
     }
 
     #[test]
     fn test_is_active_true_for_translate() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
-        assert!(mode.is_active(), "is_active should return true for Translate");
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
+        assert!(
+            mode.is_active(),
+            "is_active should return true for Translate"
+        );
     }
 
     #[test]
     fn test_is_translate_true_for_translate() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::X };
-        assert!(mode.is_translate(), "is_translate should return true for Translate");
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
+        assert!(
+            mode.is_translate(),
+            "is_translate should return true for Translate"
+        );
     }
 
     #[test]
     fn test_is_translate_false_for_rotate() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::X };
-        assert!(!mode.is_translate(), "is_translate should return false for Rotate");
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::X,
+        };
+        assert!(
+            !mode.is_translate(),
+            "is_translate should return false for Rotate"
+        );
     }
 
     #[test]
     fn test_is_rotate_true_for_rotate() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::Y };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::Y,
+        };
         assert!(mode.is_rotate(), "is_rotate should return true for Rotate");
     }
 
     #[test]
     fn test_is_scale_true_for_scale() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: false,
+        };
         assert!(mode.is_scale(), "is_scale should return true for Scale");
     }
 
     #[test]
     fn test_constraint_returns_some_for_active_modes() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::XY };
-        assert_eq!(mode.constraint(), Some(AxisConstraint::XY), "constraint should return Some for Translate");
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::XY,
+        };
+        assert_eq!(
+            mode.constraint(),
+            Some(AxisConstraint::XY),
+            "constraint should return Some for Translate"
+        );
     }
 
     #[test]
     fn test_constraint_returns_none_for_inactive() {
         let mode = GizmoMode::Inactive;
-        assert_eq!(mode.constraint(), None, "constraint should return None for Inactive");
+        assert_eq!(
+            mode.constraint(),
+            None,
+            "constraint should return None for Inactive"
+        );
     }
 }
 
@@ -203,7 +287,10 @@ mod axis_constraint_tests {
     #[test]
     fn test_default_constraint_is_none() {
         let constraint = AxisConstraint::default();
-        assert!(matches!(constraint, AxisConstraint::None), "Default constraint should be None");
+        assert!(
+            matches!(constraint, AxisConstraint::None),
+            "Default constraint should be None"
+        );
     }
 
     #[test]
@@ -239,7 +326,10 @@ mod entity_material_tests {
         let mat = EntityMaterial::default();
         assert_eq!(mat.metallic, 0.0, "Default metallic should be 0.0");
         assert_eq!(mat.roughness, 0.5, "Default roughness should be 0.5");
-        assert!(mat.emissive.length_squared() < 0.001, "Default should not be emissive");
+        assert!(
+            mat.emissive.length_squared() < 0.001,
+            "Default should not be emissive"
+        );
     }
 
     #[test]
@@ -252,7 +342,10 @@ mod entity_material_tests {
     fn test_has_textures_true_after_set() {
         let mut mat = EntityMaterial::new();
         mat.set_texture(MaterialSlot::Albedo, PathBuf::from("texture.png"));
-        assert!(mat.has_textures(), "Material should have textures after set");
+        assert!(
+            mat.has_textures(),
+            "Material should have textures after set"
+        );
     }
 
     #[test]
@@ -260,9 +353,17 @@ mod entity_material_tests {
         let mut mat = EntityMaterial::new();
         assert_eq!(mat.texture_count(), 0, "Initial count should be 0");
         mat.set_texture(MaterialSlot::Albedo, PathBuf::from("a.png"));
-        assert_eq!(mat.texture_count(), 1, "Count should be 1 after first texture");
+        assert_eq!(
+            mat.texture_count(),
+            1,
+            "Count should be 1 after first texture"
+        );
         mat.set_texture(MaterialSlot::Normal, PathBuf::from("n.png"));
-        assert_eq!(mat.texture_count(), 2, "Count should be 2 after second texture");
+        assert_eq!(
+            mat.texture_count(),
+            2,
+            "Count should be 2 after second texture"
+        );
     }
 
     #[test]
@@ -271,14 +372,20 @@ mod entity_material_tests {
         mat.set_texture(MaterialSlot::Albedo, PathBuf::from("a.png"));
         assert!(mat.get_texture(MaterialSlot::Albedo).is_some());
         mat.clear_texture(MaterialSlot::Albedo);
-        assert!(mat.get_texture(MaterialSlot::Albedo).is_none(), "Texture should be removed");
+        assert!(
+            mat.get_texture(MaterialSlot::Albedo).is_none(),
+            "Texture should be removed"
+        );
     }
 
     #[test]
     fn test_is_metallic_threshold() {
         let mut mat = EntityMaterial::new();
         mat.metallic = 0.5;
-        assert!(!mat.is_metallic(), "0.5 should NOT be metallic (> 0.5 required)");
+        assert!(
+            !mat.is_metallic(),
+            "0.5 should NOT be metallic (> 0.5 required)"
+        );
         mat.metallic = 0.51;
         assert!(mat.is_metallic(), "0.51 should be metallic");
     }
@@ -314,13 +421,19 @@ mod boundary_condition_tests {
     #[test]
     fn test_wide_layout_minimum_panels() {
         let preset = LayoutPreset::Wide;
-        assert!(preset.expected_panel_count() >= 2, "Wide should have at least 2 panels");
+        assert!(
+            preset.expected_panel_count() >= 2,
+            "Wide should have at least 2 panels"
+        );
     }
 
     #[test]
     fn test_compact_layout_maximum_panels() {
         let preset = LayoutPreset::Compact;
-        assert!(preset.expected_panel_count() >= 6, "Compact should have many panels");
+        assert!(
+            preset.expected_panel_count() >= 6,
+            "Compact should have many panels"
+        );
     }
 
     // --- Metallic/Roughness Boundaries ---
@@ -329,7 +442,10 @@ mod boundary_condition_tests {
     fn test_metallic_exactly_half() {
         let mut mat = EntityMaterial::new();
         mat.metallic = 0.5;
-        assert!(!mat.is_metallic(), "Exactly 0.5 should NOT be metallic (boundary)");
+        assert!(
+            !mat.is_metallic(),
+            "Exactly 0.5 should NOT be metallic (boundary)"
+        );
     }
 
     #[test]
@@ -350,7 +466,10 @@ mod boundary_condition_tests {
     fn test_roughness_exactly_half() {
         let mut mat = EntityMaterial::new();
         mat.roughness = 0.5;
-        assert!(!mat.is_rough(), "Exactly 0.5 should NOT be rough (boundary)");
+        assert!(
+            !mat.is_rough(),
+            "Exactly 0.5 should NOT be rough (boundary)"
+        );
     }
 
     #[test]
@@ -385,7 +504,10 @@ mod boundary_condition_tests {
         // sqrt(0.001) ≈ 0.031622...
         mat.emissive = Vec3::new(0.031622, 0.0, 0.0);
         // 0.031622^2 ≈ 0.000999, which is < 0.001, so NOT emissive
-        assert!(!mat.is_emissive(), "At threshold should not be emissive (exclusive)");
+        assert!(
+            !mat.is_emissive(),
+            "At threshold should not be emissive (exclusive)"
+        );
     }
 
     // --- Normal Strength Boundaries ---
@@ -393,14 +515,20 @@ mod boundary_condition_tests {
     #[test]
     fn test_normal_strength_default() {
         let mat = EntityMaterial::default();
-        assert!((mat.normal_strength - 1.0).abs() < f32::EPSILON, "Default normal strength should be 1.0");
+        assert!(
+            (mat.normal_strength - 1.0).abs() < f32::EPSILON,
+            "Default normal strength should be 1.0"
+        );
     }
 
     #[test]
     fn test_normal_strength_zero() {
         let mut mat = EntityMaterial::new();
         mat.normal_strength = 0.0;
-        assert!((mat.normal_strength).abs() < f32::EPSILON, "Zero normal strength");
+        assert!(
+            (mat.normal_strength).abs() < f32::EPSILON,
+            "Zero normal strength"
+        );
     }
 
     // --- Texture Count Boundaries ---
@@ -424,7 +552,11 @@ mod boundary_condition_tests {
         for (i, slot) in MaterialSlot::all().iter().enumerate() {
             mat.set_texture(*slot, PathBuf::from(format!("{}.png", i)));
         }
-        assert_eq!(mat.texture_count(), MaterialSlot::all().len(), "All slots should be filled");
+        assert_eq!(
+            mat.texture_count(),
+            MaterialSlot::all().len(),
+            "All slots should be filled"
+        );
     }
 
     // --- Valid Transitions Count Boundaries ---
@@ -432,19 +564,31 @@ mod boundary_condition_tests {
     #[test]
     fn test_edit_mode_has_one_transition() {
         let mode = EditorMode::Edit;
-        assert_eq!(mode.valid_transitions().len(), 1, "Edit should have exactly 1 valid transition");
+        assert_eq!(
+            mode.valid_transitions().len(),
+            1,
+            "Edit should have exactly 1 valid transition"
+        );
     }
 
     #[test]
     fn test_play_mode_has_two_transitions() {
         let mode = EditorMode::Play;
-        assert_eq!(mode.valid_transitions().len(), 2, "Play should have exactly 2 valid transitions");
+        assert_eq!(
+            mode.valid_transitions().len(),
+            2,
+            "Play should have exactly 2 valid transitions"
+        );
     }
 
     #[test]
     fn test_paused_mode_has_two_transitions() {
         let mode = EditorMode::Paused;
-        assert_eq!(mode.valid_transitions().len(), 2, "Paused should have exactly 2 valid transitions");
+        assert_eq!(
+            mode.valid_transitions().len(),
+            2,
+            "Paused should have exactly 2 valid transitions"
+        );
     }
 }
 
@@ -487,7 +631,10 @@ mod comparison_operator_tests {
         for i in 0..presets.len() {
             for j in 0..presets.len() {
                 if i != j {
-                    assert_ne!(presets[i], presets[j], "Different presets should be distinct");
+                    assert_ne!(
+                        presets[i], presets[j],
+                        "Different presets should be distinct"
+                    );
                 }
             }
         }
@@ -502,15 +649,26 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_gizmo_mode_translate_not_equals_rotate() {
-        let translate = GizmoMode::Translate { constraint: AxisConstraint::X };
-        let rotate = GizmoMode::Rotate { constraint: AxisConstraint::X };
-        assert_ne!(translate, rotate, "Translate and Rotate should be different");
+        let translate = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
+        let rotate = GizmoMode::Rotate {
+            constraint: AxisConstraint::X,
+        };
+        assert_ne!(
+            translate, rotate,
+            "Translate and Rotate should be different"
+        );
     }
 
     #[test]
     fn test_gizmo_mode_same_type_different_constraint() {
-        let tx = GizmoMode::Translate { constraint: AxisConstraint::X };
-        let ty = GizmoMode::Translate { constraint: AxisConstraint::Y };
+        let tx = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
+        let ty = GizmoMode::Translate {
+            constraint: AxisConstraint::Y,
+        };
         assert_ne!(tx, ty, "Same mode with different constraints should differ");
     }
 
@@ -525,8 +683,16 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_axis_constraint_single_vs_planar() {
-        assert_ne!(AxisConstraint::X, AxisConstraint::XY, "Single axis != planar");
-        assert_ne!(AxisConstraint::Y, AxisConstraint::XY, "Single axis != planar");
+        assert_ne!(
+            AxisConstraint::X,
+            AxisConstraint::XY,
+            "Single axis != planar"
+        );
+        assert_ne!(
+            AxisConstraint::Y,
+            AxisConstraint::XY,
+            "Single axis != planar"
+        );
     }
 
     // --- MaterialSlot Equality ---
@@ -563,15 +729,27 @@ mod comparison_operator_tests {
 
     #[test]
     fn test_can_transition_to_same_mode() {
-        assert!(EditorMode::Edit.can_transition_to(EditorMode::Edit), "Same mode transition should be valid");
-        assert!(EditorMode::Play.can_transition_to(EditorMode::Play), "Same mode transition should be valid");
+        assert!(
+            EditorMode::Edit.can_transition_to(EditorMode::Edit),
+            "Same mode transition should be valid"
+        );
+        assert!(
+            EditorMode::Play.can_transition_to(EditorMode::Play),
+            "Same mode transition should be valid"
+        );
     }
 
     #[test]
     fn test_asymmetric_transitions() {
         // Edit -> Paused is invalid, but Paused -> Edit is valid
-        assert!(!EditorMode::Edit.can_transition_to(EditorMode::Paused), "Edit -> Paused invalid");
-        assert!(EditorMode::Paused.can_transition_to(EditorMode::Edit), "Paused -> Edit valid");
+        assert!(
+            !EditorMode::Edit.can_transition_to(EditorMode::Paused),
+            "Edit -> Paused invalid"
+        );
+        assert!(
+            EditorMode::Paused.can_transition_to(EditorMode::Edit),
+            "Paused -> Edit valid"
+        );
     }
 }
 
@@ -643,9 +821,19 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_gizmo_is_active_true_paths() {
-        assert!(GizmoMode::Translate { constraint: AxisConstraint::None }.is_active());
-        assert!(GizmoMode::Rotate { constraint: AxisConstraint::None }.is_active());
-        assert!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.is_active());
+        assert!(GizmoMode::Translate {
+            constraint: AxisConstraint::None
+        }
+        .is_active());
+        assert!(GizmoMode::Rotate {
+            constraint: AxisConstraint::None
+        }
+        .is_active());
+        assert!(GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false
+        }
+        .is_active());
     }
 
     #[test]
@@ -656,7 +844,9 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_gizmo_is_translate_true_path() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::X };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::X,
+        };
         assert!(mode.is_translate());
         assert_eq!(mode.is_translate(), true);
     }
@@ -664,13 +854,28 @@ mod boolean_return_path_tests {
     #[test]
     fn test_gizmo_is_translate_false_paths() {
         assert_eq!(GizmoMode::Inactive.is_translate(), false);
-        assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::X }.is_translate(), false);
-        assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::X, uniform: false }.is_translate(), false);
+        assert_eq!(
+            GizmoMode::Rotate {
+                constraint: AxisConstraint::X
+            }
+            .is_translate(),
+            false
+        );
+        assert_eq!(
+            GizmoMode::Scale {
+                constraint: AxisConstraint::X,
+                uniform: false
+            }
+            .is_translate(),
+            false
+        );
     }
 
     #[test]
     fn test_gizmo_is_rotate_true_path() {
-        let mode = GizmoMode::Rotate { constraint: AxisConstraint::Y };
+        let mode = GizmoMode::Rotate {
+            constraint: AxisConstraint::Y,
+        };
         assert!(mode.is_rotate());
         assert_eq!(mode.is_rotate(), true);
     }
@@ -678,12 +883,21 @@ mod boolean_return_path_tests {
     #[test]
     fn test_gizmo_is_rotate_false_paths() {
         assert_eq!(GizmoMode::Inactive.is_rotate(), false);
-        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::Y }.is_rotate(), false);
+        assert_eq!(
+            GizmoMode::Translate {
+                constraint: AxisConstraint::Y
+            }
+            .is_rotate(),
+            false
+        );
     }
 
     #[test]
     fn test_gizmo_is_scale_true_path() {
-        let mode = GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: true };
+        let mode = GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: true,
+        };
         assert!(mode.is_scale());
         assert_eq!(mode.is_scale(), true);
     }
@@ -691,7 +905,13 @@ mod boolean_return_path_tests {
     #[test]
     fn test_gizmo_is_scale_false_paths() {
         assert_eq!(GizmoMode::Inactive.is_scale(), false);
-        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::Z }.is_scale(), false);
+        assert_eq!(
+            GizmoMode::Translate {
+                constraint: AxisConstraint::Z
+            }
+            .is_scale(),
+            false
+        );
     }
 
     // --- LayoutPreset Boolean Methods ---
@@ -810,7 +1030,9 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_constraint_some_path() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::XZ };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::XZ,
+        };
         assert!(mode.constraint().is_some());
         assert_eq!(mode.constraint(), Some(AxisConstraint::XZ));
     }
@@ -824,7 +1046,9 @@ mod boolean_return_path_tests {
 
     #[test]
     fn test_shortcut_some_path() {
-        let mode = GizmoMode::Translate { constraint: AxisConstraint::None };
+        let mode = GizmoMode::Translate {
+            constraint: AxisConstraint::None,
+        };
         assert!(mode.shortcut().is_some());
         assert_eq!(mode.shortcut(), Some("G"));
     }

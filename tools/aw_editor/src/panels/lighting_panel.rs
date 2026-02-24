@@ -532,7 +532,11 @@ impl RefreshMode {
 
     /// Returns all available refresh modes
     pub fn all() -> &'static [RefreshMode] {
-        &[RefreshMode::OnAwake, RefreshMode::EveryFrame, RefreshMode::ViaScript]
+        &[
+            RefreshMode::OnAwake,
+            RefreshMode::EveryFrame,
+            RefreshMode::ViaScript,
+        ]
     }
 
     /// Returns true if this mode is automatic (not script-controlled)
@@ -625,7 +629,11 @@ impl AmbientMode {
 
     /// Returns all available ambient modes
     pub fn all() -> &'static [AmbientMode] {
-        &[AmbientMode::Skybox, AmbientMode::Color, AmbientMode::Gradient]
+        &[
+            AmbientMode::Skybox,
+            AmbientMode::Color,
+            AmbientMode::Gradient,
+        ]
     }
 }
 
@@ -668,7 +676,12 @@ impl FogMode {
 
     /// Returns all available fog modes
     pub fn all() -> &'static [FogMode] {
-        &[FogMode::Linear, FogMode::Exponential, FogMode::ExponentialSquared, FogMode::Height]
+        &[
+            FogMode::Linear,
+            FogMode::Exponential,
+            FogMode::ExponentialSquared,
+            FogMode::Height,
+        ]
     }
 
     /// Returns true if this mode uses exponential falloff
@@ -727,7 +740,7 @@ pub enum LightingAction {
     RemoveLight(u32),
     SelectLight(u32),
     DuplicateLight(u32),
-    
+
     // Light properties
     SetLightEnabled { id: u32, enabled: bool },
     SetLightColor { id: u32, color: [f32; 3] },
@@ -740,12 +753,12 @@ pub enum LightingAction {
     ToggleShadows { id: u32, enabled: bool },
     SetShadowResolution { id: u32, resolution: u32 },
     SetShadowBias { id: u32, bias: f32 },
-    
+
     // Global shadow settings
     SetShadowQuality(ShadowQuality),
     SetShadowDistance(f32),
     SetShadowCascades(u32),
-    
+
     // GI settings
     SetGiMode(GiMode),
     SetIndirectIntensity(f32),
@@ -753,7 +766,7 @@ pub enum LightingAction {
     SetAoIntensity(f32),
     BakeLightmaps,
     ClearLightmaps,
-    
+
     // Probes
     AddLightProbe([f32; 3]),
     AddReflectionProbe([f32; 3]),
@@ -762,7 +775,7 @@ pub enum LightingAction {
     SelectProbe(u32),
     BakeProbes,
     BakeSelectedProbe(u32),
-    
+
     // Environment
     SetSkyboxPath(String),
     SetSkyboxRotation(f32),
@@ -773,7 +786,7 @@ pub enum LightingAction {
     SetFogDensity(f32),
     SetFogStart(f32),
     SetFogEnd(f32),
-    
+
     // Debug
     ToggleDebugShadows(bool),
     ToggleDebugLightmaps(bool),
@@ -788,31 +801,61 @@ impl std::fmt::Display for LightingAction {
             Self::SelectLight(id) => write!(f, "Select light {}", id),
             Self::DuplicateLight(id) => write!(f, "Duplicate light {}", id),
             Self::SetLightEnabled { id, enabled } => {
-                write!(f, "{} light {}", if *enabled { "Enable" } else { "Disable" }, id)
+                write!(
+                    f,
+                    "{} light {}",
+                    if *enabled { "Enable" } else { "Disable" },
+                    id
+                )
             }
             Self::SetLightColor { id, .. } => write!(f, "Set light {} color", id),
-            Self::SetLightIntensity { id, intensity } => write!(f, "Set light {} intensity to {:.1}", id, intensity),
-            Self::SetLightRange { id, range } => write!(f, "Set light {} range to {:.1}", id, range),
+            Self::SetLightIntensity { id, intensity } => {
+                write!(f, "Set light {} intensity to {:.1}", id, intensity)
+            }
+            Self::SetLightRange { id, range } => {
+                write!(f, "Set light {} range to {:.1}", id, range)
+            }
             Self::SetLightPosition { id, .. } => write!(f, "Move light {}", id),
             Self::SetLightRotation { id, .. } => write!(f, "Rotate light {}", id),
             Self::SetSpotAngle { id, angle } => write!(f, "Set spot {} angle to {:.1}°", id, angle),
-            Self::SetAreaSize { id, width, height } => write!(f, "Set area {} size to {:.1}x{:.1}", id, width, height),
-            Self::ToggleShadows { id, enabled } => {
-                write!(f, "{} shadows for light {}", if *enabled { "Enable" } else { "Disable" }, id)
+            Self::SetAreaSize { id, width, height } => {
+                write!(f, "Set area {} size to {:.1}x{:.1}", id, width, height)
             }
-            Self::SetShadowResolution { id, resolution } => write!(f, "Set light {} shadow res to {}", id, resolution),
-            Self::SetShadowBias { id, bias } => write!(f, "Set light {} shadow bias to {:.3}", id, bias),
+            Self::ToggleShadows { id, enabled } => {
+                write!(
+                    f,
+                    "{} shadows for light {}",
+                    if *enabled { "Enable" } else { "Disable" },
+                    id
+                )
+            }
+            Self::SetShadowResolution { id, resolution } => {
+                write!(f, "Set light {} shadow res to {}", id, resolution)
+            }
+            Self::SetShadowBias { id, bias } => {
+                write!(f, "Set light {} shadow bias to {:.3}", id, bias)
+            }
             Self::SetShadowQuality(q) => write!(f, "Set shadow quality to {}", q),
             Self::SetShadowDistance(d) => write!(f, "Set shadow distance to {:.1}", d),
             Self::SetShadowCascades(n) => write!(f, "Set shadow cascades to {}", n),
             Self::SetGiMode(mode) => write!(f, "Set GI mode to {}", mode),
             Self::SetIndirectIntensity(i) => write!(f, "Set indirect intensity to {:.2}", i),
-            Self::ToggleAmbientOcclusion(on) => write!(f, "Turn AO {}", if *on { "on" } else { "off" }),
+            Self::ToggleAmbientOcclusion(on) => {
+                write!(f, "Turn AO {}", if *on { "on" } else { "off" })
+            }
             Self::SetAoIntensity(i) => write!(f, "Set AO intensity to {:.2}", i),
             Self::BakeLightmaps => write!(f, "Bake lightmaps"),
             Self::ClearLightmaps => write!(f, "Clear lightmaps"),
-            Self::AddLightProbe(pos) => write!(f, "Add light probe at ({:.1}, {:.1}, {:.1})", pos[0], pos[1], pos[2]),
-            Self::AddReflectionProbe(pos) => write!(f, "Add reflection probe at ({:.1}, {:.1}, {:.1})", pos[0], pos[1], pos[2]),
+            Self::AddLightProbe(pos) => write!(
+                f,
+                "Add light probe at ({:.1}, {:.1}, {:.1})",
+                pos[0], pos[1], pos[2]
+            ),
+            Self::AddReflectionProbe(pos) => write!(
+                f,
+                "Add reflection probe at ({:.1}, {:.1}, {:.1})",
+                pos[0], pos[1], pos[2]
+            ),
             Self::RemoveLightProbe(id) => write!(f, "Remove light probe {}", id),
             Self::RemoveReflectionProbe(id) => write!(f, "Remove reflection probe {}", id),
             Self::SelectProbe(id) => write!(f, "Select probe {}", id),
@@ -827,9 +870,15 @@ impl std::fmt::Display for LightingAction {
             Self::SetFogDensity(d) => write!(f, "Set fog density to {:.3}", d),
             Self::SetFogStart(s) => write!(f, "Set fog start to {:.1}", s),
             Self::SetFogEnd(e) => write!(f, "Set fog end to {:.1}", e),
-            Self::ToggleDebugShadows(on) => write!(f, "Turn shadow debug {}", if *on { "on" } else { "off" }),
-            Self::ToggleDebugLightmaps(on) => write!(f, "Turn lightmap debug {}", if *on { "on" } else { "off" }),
-            Self::ToggleDebugProbes(on) => write!(f, "Turn probe debug {}", if *on { "on" } else { "off" }),
+            Self::ToggleDebugShadows(on) => {
+                write!(f, "Turn shadow debug {}", if *on { "on" } else { "off" })
+            }
+            Self::ToggleDebugLightmaps(on) => {
+                write!(f, "Turn lightmap debug {}", if *on { "on" } else { "off" })
+            }
+            Self::ToggleDebugProbes(on) => {
+                write!(f, "Turn probe debug {}", if *on { "on" } else { "off" })
+            }
         }
     }
 }
@@ -906,7 +955,7 @@ pub struct LightingPanel {
     // ID counters
     next_light_id: u32,
     next_probe_id: u32,
-    
+
     // Action queue for external processing
     pending_actions: Vec<LightingAction>,
 }
@@ -934,7 +983,7 @@ impl Default for LightingPanel {
 
             next_light_id: 1,
             next_probe_id: 1,
-            
+
             pending_actions: Vec::new(),
         };
 
@@ -947,24 +996,24 @@ impl LightingPanel {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     // ==================== Action Queue Methods ====================
-    
+
     /// Takes all pending actions, leaving the internal queue empty
     pub fn take_actions(&mut self) -> Vec<LightingAction> {
         std::mem::take(&mut self.pending_actions)
     }
-    
+
     /// Returns true if there are pending actions
     pub fn has_pending_actions(&self) -> bool {
         !self.pending_actions.is_empty()
     }
-    
+
     /// Queue an action for external processing
     pub fn queue_action(&mut self, action: LightingAction) {
         self.pending_actions.push(action);
     }
-    
+
     /// Returns a reference to pending actions
     pub fn pending_actions(&self) -> &[LightingAction] {
         &self.pending_actions
@@ -1089,7 +1138,10 @@ impl LightingPanel {
         ui.horizontal(|ui| {
             ui.label(format!("💡 {} lights", self.lights.len()));
             ui.separator();
-            ui.label(format!("🔮 {} probes", self.light_probes.len() + self.reflection_probes.len()));
+            ui.label(format!(
+                "🔮 {} probes",
+                self.light_probes.len() + self.reflection_probes.len()
+            ));
         });
 
         ui.separator();
@@ -1102,11 +1154,18 @@ impl LightingPanel {
         // Light list and add button
         ui.horizontal(|ui| {
             egui::ComboBox::from_id_salt("light_select")
-                .selected_text(format!("{} {}", self.current_light.light_type.icon(), &self.current_light.name))
+                .selected_text(format!(
+                    "{} {}",
+                    self.current_light.light_type.icon(),
+                    &self.current_light.name
+                ))
                 .show_ui(ui, |ui| {
                     for light in &self.lights.clone() {
                         let label = format!("{} {}", light.light_type.icon(), &light.name);
-                        if ui.selectable_value(&mut self.selected_light, Some(light.id), label).clicked() {
+                        if ui
+                            .selectable_value(&mut self.selected_light, Some(light.id), label)
+                            .clicked()
+                        {
                             self.current_light = light.clone();
                         }
                     }
@@ -1158,10 +1217,18 @@ impl LightingPanel {
 
                             ui.label("Type:");
                             egui::ComboBox::from_id_salt("light_type")
-                                .selected_text(format!("{} {:?}", self.current_light.light_type.icon(), self.current_light.light_type))
+                                .selected_text(format!(
+                                    "{} {:?}",
+                                    self.current_light.light_type.icon(),
+                                    self.current_light.light_type
+                                ))
                                 .show_ui(ui, |ui| {
                                     for lt in LightType::all() {
-                                        ui.selectable_value(&mut self.current_light.light_type, *lt, format!("{} {:?}", lt.icon(), lt));
+                                        ui.selectable_value(
+                                            &mut self.current_light.light_type,
+                                            *lt,
+                                            format!("{} {:?}", lt.icon(), lt),
+                                        );
                                     }
                                 });
                             ui.end_row();
@@ -1194,7 +1261,10 @@ impl LightingPanel {
                             ui.end_row();
 
                             ui.label("Intensity:");
-                            ui.add(egui::Slider::new(&mut self.current_light.intensity, 0.0..=10.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_light.intensity,
+                                0.0..=10.0,
+                            ));
                             ui.end_row();
 
                             ui.label("Use Temperature:");
@@ -1203,7 +1273,10 @@ impl LightingPanel {
 
                             if self.current_light.use_temperature {
                                 ui.label("Temperature (K):");
-                                ui.add(egui::Slider::new(&mut self.current_light.temperature, 1000.0..=20000.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_light.temperature,
+                                    1000.0..=20000.0,
+                                ));
                                 ui.end_row();
                             }
                         });
@@ -1212,59 +1285,83 @@ impl LightingPanel {
                 ui.add_space(10.0);
 
                 // Type-specific settings
-                ui.group(|ui| {
-                    match self.current_light.light_type {
-                        LightType::Point => {
-                            ui.label(RichText::new("💡 Point Light").strong());
-                            ui.horizontal(|ui| {
+                ui.group(|ui| match self.current_light.light_type {
+                    LightType::Point => {
+                        ui.label(RichText::new("💡 Point Light").strong());
+                        ui.horizontal(|ui| {
+                            ui.label("Range:");
+                            ui.add(egui::Slider::new(
+                                &mut self.current_light.range,
+                                0.1..=100.0,
+                            ));
+                        });
+                    }
+                    LightType::Spot => {
+                        ui.label(RichText::new("🔦 Spot Light").strong());
+
+                        egui::Grid::new("spot_settings")
+                            .num_columns(2)
+                            .spacing([10.0, 4.0])
+                            .show(ui, |ui| {
                                 ui.label("Range:");
-                                ui.add(egui::Slider::new(&mut self.current_light.range, 0.1..=100.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_light.range,
+                                    0.1..=100.0,
+                                ));
+                                ui.end_row();
+
+                                ui.label("Spot Angle:");
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.current_light.spot_angle,
+                                        1.0..=179.0,
+                                    )
+                                    .suffix("°"),
+                                );
+                                ui.end_row();
+
+                                ui.label("Inner Angle:");
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.current_light.inner_spot_angle,
+                                        0.0..=self.current_light.spot_angle,
+                                    )
+                                    .suffix("°"),
+                                );
+                                ui.end_row();
                             });
-                        }
-                        LightType::Spot => {
-                            ui.label(RichText::new("🔦 Spot Light").strong());
+                    }
+                    LightType::Area => {
+                        ui.label(RichText::new("⬜ Area Light").strong());
 
-                            egui::Grid::new("spot_settings")
-                                .num_columns(2)
-                                .spacing([10.0, 4.0])
-                                .show(ui, |ui| {
-                                    ui.label("Range:");
-                                    ui.add(egui::Slider::new(&mut self.current_light.range, 0.1..=100.0));
-                                    ui.end_row();
+                        egui::Grid::new("area_settings")
+                            .num_columns(2)
+                            .spacing([10.0, 4.0])
+                            .show(ui, |ui| {
+                                ui.label("Width:");
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_light.area_width)
+                                        .speed(0.1)
+                                        .range(0.1..=100.0),
+                                );
+                                ui.end_row();
 
-                                    ui.label("Spot Angle:");
-                                    ui.add(egui::Slider::new(&mut self.current_light.spot_angle, 1.0..=179.0).suffix("°"));
-                                    ui.end_row();
-
-                                    ui.label("Inner Angle:");
-                                    ui.add(egui::Slider::new(&mut self.current_light.inner_spot_angle, 0.0..=self.current_light.spot_angle).suffix("°"));
-                                    ui.end_row();
-                                });
-                        }
-                        LightType::Area => {
-                            ui.label(RichText::new("⬜ Area Light").strong());
-
-                            egui::Grid::new("area_settings")
-                                .num_columns(2)
-                                .spacing([10.0, 4.0])
-                                .show(ui, |ui| {
-                                    ui.label("Width:");
-                                    ui.add(egui::DragValue::new(&mut self.current_light.area_width).speed(0.1).range(0.1..=100.0));
-                                    ui.end_row();
-
-                                    ui.label("Height:");
-                                    ui.add(egui::DragValue::new(&mut self.current_light.area_height).speed(0.1).range(0.1..=100.0));
-                                    ui.end_row();
-                                });
-                        }
-                        LightType::Directional => {
-                            ui.label(RichText::new("☀️ Directional Light").strong());
-                            ui.label("Affects entire scene from rotation direction");
-                        }
-                        LightType::Ambient => {
-                            ui.label(RichText::new("🌐 Ambient Light").strong());
-                            ui.label("Uniform lighting throughout scene");
-                        }
+                                ui.label("Height:");
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_light.area_height)
+                                        .speed(0.1)
+                                        .range(0.1..=100.0),
+                                );
+                                ui.end_row();
+                            });
+                    }
+                    LightType::Directional => {
+                        ui.label(RichText::new("☀️ Directional Light").strong());
+                        ui.label("Affects entire scene from rotation direction");
+                    }
+                    LightType::Ambient => {
+                        ui.label(RichText::new("🌐 Ambient Light").strong());
+                        ui.label("Uniform lighting throughout scene");
                     }
                 });
             });
@@ -1285,9 +1382,17 @@ impl LightingPanel {
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut self.shadow_quality, ShadowQuality::Off, "Off");
                         ui.selectable_value(&mut self.shadow_quality, ShadowQuality::Low, "Low");
-                        ui.selectable_value(&mut self.shadow_quality, ShadowQuality::Medium, "Medium");
+                        ui.selectable_value(
+                            &mut self.shadow_quality,
+                            ShadowQuality::Medium,
+                            "Medium",
+                        );
                         ui.selectable_value(&mut self.shadow_quality, ShadowQuality::High, "High");
-                        ui.selectable_value(&mut self.shadow_quality, ShadowQuality::Ultra, "Ultra");
+                        ui.selectable_value(
+                            &mut self.shadow_quality,
+                            ShadowQuality::Ultra,
+                            "Ultra",
+                        );
                     });
             });
         });
@@ -1311,10 +1416,26 @@ impl LightingPanel {
                         egui::ComboBox::from_id_salt("shadow_type")
                             .selected_text(format!("{:?}", self.current_light.shadow_type))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.current_light.shadow_type, ShadowType::None, "None");
-                                ui.selectable_value(&mut self.current_light.shadow_type, ShadowType::Hard, "Hard");
-                                ui.selectable_value(&mut self.current_light.shadow_type, ShadowType::Soft, "Soft");
-                                ui.selectable_value(&mut self.current_light.shadow_type, ShadowType::PCSS, "PCSS");
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_type,
+                                    ShadowType::None,
+                                    "None",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_type,
+                                    ShadowType::Hard,
+                                    "Hard",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_type,
+                                    ShadowType::Soft,
+                                    "Soft",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_type,
+                                    ShadowType::PCSS,
+                                    "PCSS",
+                                );
                             });
                         ui.end_row();
 
@@ -1322,24 +1443,56 @@ impl LightingPanel {
                         egui::ComboBox::from_id_salt("shadow_res")
                             .selected_text(format!("{}", self.current_light.shadow_resolution))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.current_light.shadow_resolution, 256, "256");
-                                ui.selectable_value(&mut self.current_light.shadow_resolution, 512, "512");
-                                ui.selectable_value(&mut self.current_light.shadow_resolution, 1024, "1024");
-                                ui.selectable_value(&mut self.current_light.shadow_resolution, 2048, "2048");
-                                ui.selectable_value(&mut self.current_light.shadow_resolution, 4096, "4096");
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_resolution,
+                                    256,
+                                    "256",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_resolution,
+                                    512,
+                                    "512",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_resolution,
+                                    1024,
+                                    "1024",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_resolution,
+                                    2048,
+                                    "2048",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_light.shadow_resolution,
+                                    4096,
+                                    "4096",
+                                );
                             });
                         ui.end_row();
 
                         ui.label("Bias:");
-                        ui.add(egui::Slider::new(&mut self.current_light.shadow_bias, 0.0..=0.5));
+                        ui.add(egui::Slider::new(
+                            &mut self.current_light.shadow_bias,
+                            0.0..=0.5,
+                        ));
                         ui.end_row();
 
                         ui.label("Normal Bias:");
-                        ui.add(egui::Slider::new(&mut self.current_light.shadow_normal_bias, 0.0..=3.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.current_light.shadow_normal_bias,
+                            0.0..=3.0,
+                        ));
                         ui.end_row();
 
                         ui.label("Near Plane:");
-                        ui.add(egui::Slider::new(&mut self.current_light.shadow_near_plane, 0.01..=10.0).logarithmic(true));
+                        ui.add(
+                            egui::Slider::new(
+                                &mut self.current_light.shadow_near_plane,
+                                0.01..=10.0,
+                            )
+                            .logarithmic(true),
+                        );
                         ui.end_row();
                     }
                 });
@@ -1358,8 +1511,16 @@ impl LightingPanel {
                 .selected_text(format!("{:?}", self.gi_settings.mode))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.gi_settings.mode, GiMode::None, "None");
-                    ui.selectable_value(&mut self.gi_settings.mode, GiMode::BakedLightmaps, "Baked Lightmaps");
-                    ui.selectable_value(&mut self.gi_settings.mode, GiMode::RealtimeGI, "Realtime GI");
+                    ui.selectable_value(
+                        &mut self.gi_settings.mode,
+                        GiMode::BakedLightmaps,
+                        "Baked Lightmaps",
+                    );
+                    ui.selectable_value(
+                        &mut self.gi_settings.mode,
+                        GiMode::RealtimeGI,
+                        "Realtime GI",
+                    );
                     ui.selectable_value(&mut self.gi_settings.mode, GiMode::Hybrid, "Hybrid");
                 });
         });
@@ -1375,7 +1536,10 @@ impl LightingPanel {
             .max_height(280.0)
             .show(ui, |ui| {
                 // Lightmap settings
-                if matches!(self.gi_settings.mode, GiMode::BakedLightmaps | GiMode::Hybrid) {
+                if matches!(
+                    self.gi_settings.mode,
+                    GiMode::BakedLightmaps | GiMode::Hybrid
+                ) {
                     ui.group(|ui| {
                         ui.label(RichText::new("🗺️ Lightmaps").strong());
 
@@ -1384,19 +1548,31 @@ impl LightingPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Resolution:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.lightmap_resolution, 10..=100));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.lightmap_resolution,
+                                    10..=100,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Indirect Intensity:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.indirect_intensity, 0.0..=5.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.indirect_intensity,
+                                    0.0..=5.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Bounce Count:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.bounce_count, 1..=8));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.bounce_count,
+                                    1..=8,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Samples Per Texel:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.samples_per_texel, 4..=64));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.samples_per_texel,
+                                    4..=64,
+                                ));
                                 ui.end_row();
                             });
 
@@ -1419,15 +1595,24 @@ impl LightingPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Probe Spacing:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.probe_spacing, 0.5..=5.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.probe_spacing,
+                                    0.5..=5.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Update Rate:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.probe_update_rate, 0.1..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.probe_update_rate,
+                                    0.1..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Cascade Count:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.cascade_count, 1..=8));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.cascade_count,
+                                    1..=8,
+                                ));
                                 ui.end_row();
                             });
                     });
@@ -1436,7 +1621,10 @@ impl LightingPanel {
                 // AO settings
                 ui.add_space(10.0);
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.gi_settings.ambient_occlusion, RichText::new("🌑 Ambient Occlusion").strong());
+                    ui.checkbox(
+                        &mut self.gi_settings.ambient_occlusion,
+                        RichText::new("🌑 Ambient Occlusion").strong(),
+                    );
 
                     if self.gi_settings.ambient_occlusion {
                         egui::Grid::new("ao_settings")
@@ -1444,11 +1632,17 @@ impl LightingPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Intensity:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.ao_intensity, 0.0..=2.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.ao_intensity,
+                                    0.0..=2.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Max Distance:");
-                                ui.add(egui::Slider::new(&mut self.gi_settings.ao_max_distance, 0.1..=10.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.gi_settings.ao_max_distance,
+                                    0.1..=10.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1486,7 +1680,9 @@ impl LightingPanel {
                                 ui.checkbox(&mut probe.enabled, "");
                                 ui.label(&probe.name);
                                 if probe.baked {
-                                    ui.label(RichText::new("(baked)").small().color(Color32::GREEN));
+                                    ui.label(
+                                        RichText::new("(baked)").small().color(Color32::GREEN),
+                                    );
                                 }
                             });
                         }
@@ -1565,7 +1761,10 @@ impl LightingPanel {
             .show(ui, |ui| {
                 // Skybox
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.environment.skybox_enabled, RichText::new("🌌 Skybox").strong());
+                    ui.checkbox(
+                        &mut self.environment.skybox_enabled,
+                        RichText::new("🌌 Skybox").strong(),
+                    );
 
                     if self.environment.skybox_enabled {
                         egui::Grid::new("skybox_settings")
@@ -1582,11 +1781,20 @@ impl LightingPanel {
                                 ui.end_row();
 
                                 ui.label("Exposure:");
-                                ui.add(egui::Slider::new(&mut self.environment.skybox_exposure, 0.0..=8.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.environment.skybox_exposure,
+                                    0.0..=8.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Rotation:");
-                                ui.add(egui::Slider::new(&mut self.environment.skybox_rotation, 0.0..=360.0).suffix("°"));
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.environment.skybox_rotation,
+                                        0.0..=360.0,
+                                    )
+                                    .suffix("°"),
+                                );
                                 ui.end_row();
                             });
                     }
@@ -1603,9 +1811,21 @@ impl LightingPanel {
                         egui::ComboBox::from_id_salt("ambient_mode")
                             .selected_text(format!("{:?}", self.environment.ambient_mode))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.environment.ambient_mode, AmbientMode::Skybox, "Skybox");
-                                ui.selectable_value(&mut self.environment.ambient_mode, AmbientMode::Color, "Color");
-                                ui.selectable_value(&mut self.environment.ambient_mode, AmbientMode::Gradient, "Gradient");
+                                ui.selectable_value(
+                                    &mut self.environment.ambient_mode,
+                                    AmbientMode::Skybox,
+                                    "Skybox",
+                                );
+                                ui.selectable_value(
+                                    &mut self.environment.ambient_mode,
+                                    AmbientMode::Color,
+                                    "Color",
+                                );
+                                ui.selectable_value(
+                                    &mut self.environment.ambient_mode,
+                                    AmbientMode::Gradient,
+                                    "Gradient",
+                                );
                             });
                     });
 
@@ -1613,7 +1833,10 @@ impl LightingPanel {
                         AmbientMode::Skybox => {
                             ui.horizontal(|ui| {
                                 ui.label("Intensity:");
-                                ui.add(egui::Slider::new(&mut self.environment.ambient_intensity, 0.0..=8.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.environment.ambient_intensity,
+                                    0.0..=8.0,
+                                ));
                             });
                         }
                         AmbientMode::Color => {
@@ -1646,7 +1869,10 @@ impl LightingPanel {
 
                 // Fog
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.environment.fog_enabled, RichText::new("🌫️ Fog").strong());
+                    ui.checkbox(
+                        &mut self.environment.fog_enabled,
+                        RichText::new("🌫️ Fog").strong(),
+                    );
 
                     if self.environment.fog_enabled {
                         egui::Grid::new("fog_settings")
@@ -1657,10 +1883,26 @@ impl LightingPanel {
                                 egui::ComboBox::from_id_salt("fog_mode")
                                     .selected_text(format!("{:?}", self.environment.fog_mode))
                                     .show_ui(ui, |ui| {
-                                        ui.selectable_value(&mut self.environment.fog_mode, FogMode::Linear, "Linear");
-                                        ui.selectable_value(&mut self.environment.fog_mode, FogMode::Exponential, "Exponential");
-                                        ui.selectable_value(&mut self.environment.fog_mode, FogMode::ExponentialSquared, "Exponential Squared");
-                                        ui.selectable_value(&mut self.environment.fog_mode, FogMode::Height, "Height");
+                                        ui.selectable_value(
+                                            &mut self.environment.fog_mode,
+                                            FogMode::Linear,
+                                            "Linear",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.environment.fog_mode,
+                                            FogMode::Exponential,
+                                            "Exponential",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.environment.fog_mode,
+                                            FogMode::ExponentialSquared,
+                                            "Exponential Squared",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.environment.fog_mode,
+                                            FogMode::Height,
+                                            "Height",
+                                        );
                                     });
                                 ui.end_row();
 
@@ -1682,25 +1924,40 @@ impl LightingPanel {
                                 match self.environment.fog_mode {
                                     FogMode::Linear => {
                                         ui.label("Start:");
-                                        ui.add(egui::DragValue::new(&mut self.environment.fog_start).speed(1.0));
+                                        ui.add(
+                                            egui::DragValue::new(&mut self.environment.fog_start)
+                                                .speed(1.0),
+                                        );
                                         ui.end_row();
 
                                         ui.label("End:");
-                                        ui.add(egui::DragValue::new(&mut self.environment.fog_end).speed(1.0));
+                                        ui.add(
+                                            egui::DragValue::new(&mut self.environment.fog_end)
+                                                .speed(1.0),
+                                        );
                                         ui.end_row();
                                     }
                                     FogMode::Exponential | FogMode::ExponentialSquared => {
                                         ui.label("Density:");
-                                        ui.add(egui::Slider::new(&mut self.environment.fog_density, 0.0..=0.1));
+                                        ui.add(egui::Slider::new(
+                                            &mut self.environment.fog_density,
+                                            0.0..=0.1,
+                                        ));
                                         ui.end_row();
                                     }
                                     FogMode::Height => {
                                         ui.label("Height:");
-                                        ui.add(egui::DragValue::new(&mut self.environment.fog_height).speed(0.5));
+                                        ui.add(
+                                            egui::DragValue::new(&mut self.environment.fog_height)
+                                                .speed(0.5),
+                                        );
                                         ui.end_row();
 
                                         ui.label("Height Density:");
-                                        ui.add(egui::Slider::new(&mut self.environment.fog_height_density, 0.0..=1.0));
+                                        ui.add(egui::Slider::new(
+                                            &mut self.environment.fog_height_density,
+                                            0.0..=1.0,
+                                        ));
                                         ui.end_row();
                                     }
                                 }
@@ -1729,9 +1986,15 @@ impl LightingPanel {
             ui.label(RichText::new("📈 Statistics").strong());
 
             ui.label(format!("Total Lights: {}", self.lights.len()));
-            ui.label(format!("Shadow-casting: {}", self.lights.iter().filter(|l| l.cast_shadows).count()));
+            ui.label(format!(
+                "Shadow-casting: {}",
+                self.lights.iter().filter(|l| l.cast_shadows).count()
+            ));
             ui.label(format!("Light Probes: {}", self.light_probes.len()));
-            ui.label(format!("Reflection Probes: {}", self.reflection_probes.len()));
+            ui.label(format!(
+                "Reflection Probes: {}",
+                self.reflection_probes.len()
+            ));
         });
     }
 
@@ -2710,34 +2973,49 @@ mod tests {
     fn test_lighting_action_display_light_management() {
         let action = LightingAction::AddLight(LightType::Point);
         assert!(format!("{}", action).contains("Point"));
-        
+
         let action = LightingAction::RemoveLight(42);
         assert!(format!("{}", action).contains("42"));
-        
+
         let action = LightingAction::SelectLight(5);
         assert!(format!("{}", action).contains("5"));
     }
 
     #[test]
     fn test_lighting_action_display_light_properties() {
-        let action = LightingAction::SetLightEnabled { id: 1, enabled: true };
+        let action = LightingAction::SetLightEnabled {
+            id: 1,
+            enabled: true,
+        };
         assert!(format!("{}", action).contains("Enable"));
-        
-        let action = LightingAction::SetLightEnabled { id: 1, enabled: false };
+
+        let action = LightingAction::SetLightEnabled {
+            id: 1,
+            enabled: false,
+        };
         assert!(format!("{}", action).contains("Disable"));
-        
-        let action = LightingAction::SetLightIntensity { id: 1, intensity: 2.5 };
+
+        let action = LightingAction::SetLightIntensity {
+            id: 1,
+            intensity: 2.5,
+        };
         assert!(format!("{}", action).contains("2.5"));
     }
 
     #[test]
     fn test_lighting_action_display_shadows() {
-        let action = LightingAction::ToggleShadows { id: 1, enabled: true };
+        let action = LightingAction::ToggleShadows {
+            id: 1,
+            enabled: true,
+        };
         assert!(format!("{}", action).contains("Enable"));
-        
-        let action = LightingAction::SetShadowResolution { id: 1, resolution: 2048 };
+
+        let action = LightingAction::SetShadowResolution {
+            id: 1,
+            resolution: 2048,
+        };
         assert!(format!("{}", action).contains("2048"));
-        
+
         let action = LightingAction::SetShadowQuality(ShadowQuality::High);
         assert!(format!("{}", action).contains("High"));
     }
@@ -2746,10 +3024,10 @@ mod tests {
     fn test_lighting_action_display_gi() {
         let action = LightingAction::SetGiMode(GiMode::RealtimeGI);
         assert!(format!("{}", action).contains("Realtime"));
-        
+
         let action = LightingAction::BakeLightmaps;
         assert!(format!("{}", action).contains("Bake"));
-        
+
         let action = LightingAction::ToggleAmbientOcclusion(true);
         assert!(format!("{}", action).contains("on"));
     }
@@ -2758,10 +3036,10 @@ mod tests {
     fn test_lighting_action_display_probes() {
         let action = LightingAction::AddLightProbe([1.0, 2.0, 3.0]);
         assert!(format!("{}", action).contains("1.0"));
-        
+
         let action = LightingAction::BakeProbes;
         assert!(format!("{}", action).contains("Bake"));
-        
+
         let action = LightingAction::RemoveReflectionProbe(5);
         assert!(format!("{}", action).contains("5"));
     }
@@ -2770,10 +3048,10 @@ mod tests {
     fn test_lighting_action_display_environment() {
         let action = LightingAction::SetSkyboxPath("sky/cloudy.hdr".to_string());
         assert!(format!("{}", action).contains("cloudy"));
-        
+
         let action = LightingAction::SetFogEnabled(true);
         assert!(format!("{}", action).contains("on"));
-        
+
         let action = LightingAction::SetFogDensity(0.05);
         assert!(format!("{}", action).contains("0.05"));
     }
@@ -2782,10 +3060,10 @@ mod tests {
     fn test_lighting_action_display_debug() {
         let action = LightingAction::ToggleDebugShadows(true);
         assert!(format!("{}", action).contains("shadow"));
-        
+
         let action = LightingAction::ToggleDebugLightmaps(false);
         assert!(format!("{}", action).contains("off"));
-        
+
         let action = LightingAction::ToggleDebugProbes(true);
         assert!(format!("{}", action).contains("probe"));
     }
@@ -2795,7 +3073,7 @@ mod tests {
         let mut panel = LightingPanel::new();
         assert!(!panel.has_pending_actions());
         assert!(panel.pending_actions().is_empty());
-        
+
         panel.queue_action(LightingAction::AddLight(LightType::Spot));
         assert!(panel.has_pending_actions());
         assert_eq!(panel.pending_actions().len(), 1);
@@ -2806,7 +3084,7 @@ mod tests {
         let mut panel = LightingPanel::new();
         panel.queue_action(LightingAction::BakeLightmaps);
         panel.queue_action(LightingAction::BakeProbes);
-        
+
         let actions = panel.take_actions();
         assert_eq!(actions.len(), 2);
         assert!(!panel.has_pending_actions());
@@ -2816,12 +3094,21 @@ mod tests {
     fn test_lighting_panel_action_order() {
         let mut panel = LightingPanel::new();
         panel.queue_action(LightingAction::AddLight(LightType::Point));
-        panel.queue_action(LightingAction::SetLightIntensity { id: 1, intensity: 5.0 });
-        panel.queue_action(LightingAction::ToggleShadows { id: 1, enabled: true });
-        
+        panel.queue_action(LightingAction::SetLightIntensity {
+            id: 1,
+            intensity: 5.0,
+        });
+        panel.queue_action(LightingAction::ToggleShadows {
+            id: 1,
+            enabled: true,
+        });
+
         let actions = panel.take_actions();
         assert!(matches!(actions[0], LightingAction::AddLight(_)));
-        assert!(matches!(actions[1], LightingAction::SetLightIntensity { .. }));
+        assert!(matches!(
+            actions[1],
+            LightingAction::SetLightIntensity { .. }
+        ));
         assert!(matches!(actions[2], LightingAction::ToggleShadows { .. }));
     }
 
@@ -2829,8 +3116,12 @@ mod tests {
     fn test_lighting_action_spot_properties() {
         let action = LightingAction::SetSpotAngle { id: 1, angle: 45.0 };
         assert!(format!("{}", action).contains("45.0"));
-        
-        let action = LightingAction::SetAreaSize { id: 2, width: 10.0, height: 5.0 };
+
+        let action = LightingAction::SetAreaSize {
+            id: 2,
+            width: 10.0,
+            height: 5.0,
+        };
         let display = format!("{}", action);
         assert!(display.contains("10.0"));
         assert!(display.contains("5.0"));
@@ -2838,10 +3129,16 @@ mod tests {
 
     #[test]
     fn test_lighting_action_position_rotation() {
-        let action = LightingAction::SetLightPosition { id: 1, position: [1.0, 2.0, 3.0] };
+        let action = LightingAction::SetLightPosition {
+            id: 1,
+            position: [1.0, 2.0, 3.0],
+        };
         assert!(format!("{}", action).contains("Move"));
-        
-        let action = LightingAction::SetLightRotation { id: 1, rotation: [0.0, 90.0, 0.0] };
+
+        let action = LightingAction::SetLightRotation {
+            id: 1,
+            rotation: [0.0, 90.0, 0.0],
+        };
         assert!(format!("{}", action).contains("Rotate"));
     }
 
@@ -2850,7 +3147,7 @@ mod tests {
         let a1 = LightingAction::AddLight(LightType::Point);
         let a2 = LightingAction::AddLight(LightType::Point);
         let a3 = LightingAction::AddLight(LightType::Spot);
-        
+
         assert_eq!(a1, a2);
         assert_ne!(a1, a3);
     }

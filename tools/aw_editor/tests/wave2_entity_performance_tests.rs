@@ -3,13 +3,13 @@
 //!         PerfCategory, MetricUnit, PerfMetric, SubsystemTiming, MemoryStats,
 //!         GpuStats, AlertSeverity
 
+use astraweave_core::Entity;
 use aw_editor_lib::panels::entity_panel::{
     EntityArchetype, EntityFilter, EntityStats, PrefabAction, ValidationSeverity,
 };
 use aw_editor_lib::panels::performance_panel::{
     AlertSeverity, GpuStats, MemoryStats, MetricUnit, PerfCategory, PerfMetric, SubsystemTiming,
 };
-use astraweave_core::Entity;
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // ENTITY ARCHETYPE
@@ -91,7 +91,11 @@ fn entity_archetype_display() {
 fn entity_archetype_combatant_has_positive_damage() {
     for arch in EntityArchetype::all() {
         if arch.is_combatant() {
-            assert!(arch.default_damage() > 0, "{:?} combatant with 0 damage", arch);
+            assert!(
+                arch.default_damage() > 0,
+                "{:?} combatant with 0 damage",
+                arch
+            );
         }
     }
 }
@@ -103,10 +107,16 @@ fn entity_archetype_combatant_has_positive_damage() {
 #[test]
 fn prefab_action_names() {
     let e = 1u32;
-    assert_eq!(PrefabAction::RevertToOriginal(e).name(), "Revert to Original");
+    assert_eq!(
+        PrefabAction::RevertToOriginal(e).name(),
+        "Revert to Original"
+    );
     assert_eq!(PrefabAction::ApplyChangesToFile(e).name(), "Apply Changes");
     assert_eq!(PrefabAction::RevertAllToOriginal(e).name(), "Revert All");
-    assert_eq!(PrefabAction::ApplyAllChangesToFile(e).name(), "Apply All Changes");
+    assert_eq!(
+        PrefabAction::ApplyAllChangesToFile(e).name(),
+        "Apply All Changes"
+    );
 }
 
 #[test]
@@ -369,7 +379,8 @@ fn perf_metric_min_max() {
 
 #[test]
 fn perf_metric_is_over_budget() {
-    let mut m = PerfMetric::new("test", PerfCategory::Cpu, MetricUnit::Milliseconds).with_budget(16.0);
+    let mut m =
+        PerfMetric::new("test", PerfCategory::Cpu, MetricUnit::Milliseconds).with_budget(16.0);
     m.push(10.0);
     assert!(!m.is_over_budget());
     m.push(20.0);
@@ -385,7 +396,8 @@ fn perf_metric_no_budget_never_over() {
 
 #[test]
 fn perf_metric_budget_percent() {
-    let mut m = PerfMetric::new("test", PerfCategory::Cpu, MetricUnit::Milliseconds).with_budget(10.0);
+    let mut m =
+        PerfMetric::new("test", PerfCategory::Cpu, MetricUnit::Milliseconds).with_budget(10.0);
     m.push(5.0);
     assert!((m.budget_percent().unwrap() - 50.0).abs() < f64::EPSILON);
 }

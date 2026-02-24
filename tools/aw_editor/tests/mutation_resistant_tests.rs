@@ -4,7 +4,7 @@
 //! `cargo mutants` testing. Each test asserts specific values that would
 //! fail if source code arithmetic/logic is mutated.
 
-use aw_editor_lib::command::{UndoStackStats, UndoStackIssue};
+use aw_editor_lib::command::{UndoStackIssue, UndoStackStats};
 use aw_editor_lib::ui::{TaskCategory, ToastLevel};
 
 // =============================================================================
@@ -28,7 +28,11 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         let util = stats.utilization();
-        assert!((util - 0.0).abs() < 1e-6, "0/100 should be 0.0, got {}", util);
+        assert!(
+            (util - 0.0).abs() < 1e-6,
+            "0/100 should be 0.0, got {}",
+            util
+        );
     }
 
     #[test]
@@ -41,7 +45,11 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         let util = stats.utilization();
-        assert!((util - 0.5).abs() < 1e-6, "50/100 should be 0.5, got {}", util);
+        assert!(
+            (util - 0.5).abs() < 1e-6,
+            "50/100 should be 0.5, got {}",
+            util
+        );
     }
 
     #[test]
@@ -54,7 +62,11 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         let util = stats.utilization();
-        assert!((util - 1.0).abs() < 1e-6, "100/100 should be 1.0, got {}", util);
+        assert!(
+            (util - 1.0).abs() < 1e-6,
+            "100/100 should be 1.0, got {}",
+            util
+        );
     }
 
     #[test]
@@ -67,7 +79,11 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         let util = stats.utilization();
-        assert!((util - 0.5).abs() < 1e-6, "25/50 should be 0.5, got {}", util);
+        assert!(
+            (util - 0.5).abs() < 1e-6,
+            "25/50 should be 0.5, got {}",
+            util
+        );
     }
 
     #[test]
@@ -80,7 +96,11 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         let util = stats.utilization();
-        assert!((util - 0.0).abs() < 1e-6, "with max_size=0 should return 0.0, got {}", util);
+        assert!(
+            (util - 0.0).abs() < 1e-6,
+            "with max_size=0 should return 0.0, got {}",
+            util
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -109,7 +129,10 @@ mod undo_stack_stats_tests {
             auto_merge_enabled: true,
         };
         // Exactly 0.8 is NOT > 0.8, so false
-        assert!(!stats.is_near_capacity(), "80% (exactly) should not be near capacity");
+        assert!(
+            !stats.is_near_capacity(),
+            "80% (exactly) should not be near capacity"
+        );
     }
 
     #[test]
@@ -266,7 +289,11 @@ mod undo_stack_stats_tests {
             max_size: 100,
             auto_merge_enabled: true,
         };
-        assert_eq!(stats.remaining_capacity(), 0, "should saturate at 0, not underflow");
+        assert_eq!(
+            stats.remaining_capacity(),
+            0,
+            "should saturate at 0, not underflow"
+        );
     }
 }
 
@@ -283,7 +310,9 @@ mod undo_stack_issue_tests {
 
     #[test]
     fn near_capacity_is_not_error() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         assert!(!issue.is_error());
     }
 
@@ -311,7 +340,9 @@ mod undo_stack_issue_tests {
 
     #[test]
     fn near_capacity_icon_is_warning() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         assert_eq!(issue.icon(), "⚠️");
     }
 
@@ -339,7 +370,9 @@ mod undo_stack_issue_tests {
 
     #[test]
     fn near_capacity_display_shows_percent() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         assert_eq!(format!("{}", issue), "Undo stack 85% full");
     }
 

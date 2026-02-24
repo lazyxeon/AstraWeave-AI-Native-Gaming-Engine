@@ -143,7 +143,10 @@ pub enum RuntimeIssue {
     /// Simulation world corrupted or inconsistent
     CorruptedSimulation { reason: String },
     /// Frame time too long (potential freeze)
-    FrameTimeExceeded { frame_time_ms: u32, threshold_ms: u32 },
+    FrameTimeExceeded {
+        frame_time_ms: u32,
+        threshold_ms: u32,
+    },
     /// Too few FPS (performance issue)
     LowFps { fps: u32, minimum_fps: u32 },
     /// Entity count mismatch after restoration
@@ -156,10 +159,21 @@ impl RuntimeIssue {
         vec![
             RuntimeIssue::MissingSimulation,
             RuntimeIssue::MissingEditSnapshot,
-            RuntimeIssue::CorruptedSimulation { reason: "example".to_string() },
-            RuntimeIssue::FrameTimeExceeded { frame_time_ms: 50, threshold_ms: 33 },
-            RuntimeIssue::LowFps { fps: 15, minimum_fps: 30 },
-            RuntimeIssue::EntityCountMismatch { expected: 100, actual: 95 },
+            RuntimeIssue::CorruptedSimulation {
+                reason: "example".to_string(),
+            },
+            RuntimeIssue::FrameTimeExceeded {
+                frame_time_ms: 50,
+                threshold_ms: 33,
+            },
+            RuntimeIssue::LowFps {
+                fps: 15,
+                minimum_fps: 30,
+            },
+            RuntimeIssue::EntityCountMismatch {
+                expected: 100,
+                actual: 95,
+            },
         ]
     }
 
@@ -226,11 +240,11 @@ impl RuntimeIssue {
     /// Get icon for this issue
     pub fn icon(&self) -> &'static str {
         match self.severity() {
-            5 => "🔴",  // Critical
-            4 => "🟠",  // High
-            3 => "🟡",  // Medium
-            2 => "🟢",  // Low
-            _ => "ℹ️",  // Info
+            5 => "🔴", // Critical
+            4 => "🟠", // High
+            3 => "🟡", // Medium
+            2 => "🟢", // Low
+            _ => "ℹ️", // Info
         }
     }
 }
@@ -722,9 +736,12 @@ impl EditorRuntime {
             return 0.0;
         }
         let mean = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
-        let variance: f32 = self.frame_times.iter()
+        let variance: f32 = self
+            .frame_times
+            .iter()
             .map(|&t| (t - mean).powi(2))
-            .sum::<f32>() / self.frame_times.len() as f32;
+            .sum::<f32>()
+            / self.frame_times.len() as f32;
         variance.sqrt()
     }
 
@@ -1049,28 +1066,49 @@ mod tests {
 
     #[test]
     fn runtime_stats_performance_grade() {
-        let stats = RuntimeStats { fps: 10.0, ..Default::default() };
+        let stats = RuntimeStats {
+            fps: 10.0,
+            ..Default::default()
+        };
         assert_eq!(stats.performance_grade(), "Critical");
-        
-        let stats = RuntimeStats { fps: 25.0, ..Default::default() };
+
+        let stats = RuntimeStats {
+            fps: 25.0,
+            ..Default::default()
+        };
         assert_eq!(stats.performance_grade(), "Poor");
-        
-        let stats = RuntimeStats { fps: 40.0, ..Default::default() };
+
+        let stats = RuntimeStats {
+            fps: 40.0,
+            ..Default::default()
+        };
         assert_eq!(stats.performance_grade(), "Fair");
-        
-        let stats = RuntimeStats { fps: 55.0, ..Default::default() };
+
+        let stats = RuntimeStats {
+            fps: 55.0,
+            ..Default::default()
+        };
         assert_eq!(stats.performance_grade(), "Good");
-        
-        let stats = RuntimeStats { fps: 120.0, ..Default::default() };
+
+        let stats = RuntimeStats {
+            fps: 120.0,
+            ..Default::default()
+        };
         assert_eq!(stats.performance_grade(), "Excellent");
     }
 
     #[test]
     fn runtime_stats_frame_budget_percentage() {
-        let stats = RuntimeStats { frame_time_ms: 16.667, ..Default::default() };
+        let stats = RuntimeStats {
+            frame_time_ms: 16.667,
+            ..Default::default()
+        };
         assert!((stats.frame_budget_percentage() - 100.0).abs() < 1.0);
-        
-        let stats = RuntimeStats { frame_time_ms: 8.33, ..Default::default() };
+
+        let stats = RuntimeStats {
+            frame_time_ms: 8.33,
+            ..Default::default()
+        };
         assert!((stats.frame_budget_percentage() - 50.0).abs() < 1.0);
     }
 
@@ -1082,8 +1120,11 @@ mod tests {
             ..Default::default()
         };
         assert!(stats.is_running_smoothly());
-        
-        let stats = RuntimeStats { fps: 30.0, ..Default::default() };
+
+        let stats = RuntimeStats {
+            fps: 30.0,
+            ..Default::default()
+        };
         assert!(!stats.is_running_smoothly());
     }
 
@@ -1099,8 +1140,8 @@ mod tests {
     #[test]
     fn runtime_stats_validate_detects_issues() {
         let stats = RuntimeStats {
-            frame_time_ms: 50.0,  // Too slow
-            fps: 20.0,  // Too low
+            frame_time_ms: 50.0, // Too slow
+            fps: 20.0,           // Too low
             ..Default::default()
         };
         let issues = stats.validate();
@@ -1137,7 +1178,7 @@ mod tests {
     fn editor_runtime_has_edit_snapshot() {
         let mut runtime = EditorRuntime::new();
         assert!(!runtime.has_edit_snapshot());
-        
+
         let world = World::new();
         runtime.enter_play(&world).expect("enter play");
         assert!(runtime.has_edit_snapshot());
@@ -1357,7 +1398,10 @@ mod tests {
 
     #[test]
     fn runtime_issue_title() {
-        assert_eq!(RuntimeIssue::MissingSimulation.title(), "Missing Simulation");
+        assert_eq!(
+            RuntimeIssue::MissingSimulation.title(),
+            "Missing Simulation"
+        );
         assert_eq!(
             RuntimeIssue::MissingEditSnapshot.title(),
             "Missing Edit Snapshot"

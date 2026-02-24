@@ -49,7 +49,11 @@ impl PlaybackState {
 
     /// Returns all playback states
     pub fn all() -> &'static [PlaybackState] {
-        &[PlaybackState::Stopped, PlaybackState::Playing, PlaybackState::Paused]
+        &[
+            PlaybackState::Stopped,
+            PlaybackState::Playing,
+            PlaybackState::Paused,
+        ]
     }
 
     /// Returns true if playback is active (playing)
@@ -1419,7 +1423,7 @@ mod tests {
             playback_state: PlaybackState::Playing,
             ..Default::default()
         };
-        
+
         // Create clip with multiple tracks
         let mut clip = AnimationClip {
             name: "Multi".to_string(),
@@ -1430,15 +1434,31 @@ mod tests {
 
         let mut y_track = AnimationTrack::new(AnimatedProperty::PositionY);
         y_track.keyframes = vec![
-            Keyframe { time: 0.0, value: 0.0, easing: EasingFunction::Linear },
-            Keyframe { time: 1.0, value: 5.0, easing: EasingFunction::Linear },
+            Keyframe {
+                time: 0.0,
+                value: 0.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 1.0,
+                value: 5.0,
+                easing: EasingFunction::Linear,
+            },
         ];
         clip.tracks.push(y_track);
 
         let mut scale_track = AnimationTrack::new(AnimatedProperty::Scale);
         scale_track.keyframes = vec![
-            Keyframe { time: 0.0, value: 1.0, easing: EasingFunction::Linear },
-            Keyframe { time: 1.0, value: 2.0, easing: EasingFunction::Linear },
+            Keyframe {
+                time: 0.0,
+                value: 1.0,
+                easing: EasingFunction::Linear,
+            },
+            Keyframe {
+                time: 1.0,
+                value: 2.0,
+                easing: EasingFunction::Linear,
+            },
         ];
         clip.tracks.push(scale_track);
 

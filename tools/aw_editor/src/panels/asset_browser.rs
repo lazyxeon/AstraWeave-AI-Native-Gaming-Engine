@@ -1382,76 +1382,172 @@ mod tests {
 
     #[test]
     fn test_texture_type_from_filename_normal() {
-        assert_eq!(TextureType::from_filename("brick_normal.png"), TextureType::Normal);
-        assert_eq!(TextureType::from_filename("wall_n.png"), TextureType::Normal);
-        assert_eq!(TextureType::from_filename("floor_nrm.png"), TextureType::Normal);
-        assert_eq!(TextureType::from_filename("tile_nor.png"), TextureType::Normal);
+        assert_eq!(
+            TextureType::from_filename("brick_normal.png"),
+            TextureType::Normal
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_n.png"),
+            TextureType::Normal
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_nrm.png"),
+            TextureType::Normal
+        );
+        assert_eq!(
+            TextureType::from_filename("tile_nor.png"),
+            TextureType::Normal
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_albedo() {
-        assert_eq!(TextureType::from_filename("brick_albedo.png"), TextureType::Albedo);
-        assert_eq!(TextureType::from_filename("wall_diffuse.png"), TextureType::Albedo);
-        assert_eq!(TextureType::from_filename("floor_basecolor.png"), TextureType::Albedo);
-        assert_eq!(TextureType::from_filename("tile_color.png"), TextureType::Albedo);
-        assert_eq!(TextureType::from_filename("wood_d.png"), TextureType::Albedo);
+        assert_eq!(
+            TextureType::from_filename("brick_albedo.png"),
+            TextureType::Albedo
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_diffuse.png"),
+            TextureType::Albedo
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_basecolor.png"),
+            TextureType::Albedo
+        );
+        assert_eq!(
+            TextureType::from_filename("tile_color.png"),
+            TextureType::Albedo
+        );
+        assert_eq!(
+            TextureType::from_filename("wood_d.png"),
+            TextureType::Albedo
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_orm_mra() {
-        assert_eq!(TextureType::from_filename("brick_orm.png"), TextureType::ORM);
+        assert_eq!(
+            TextureType::from_filename("brick_orm.png"),
+            TextureType::ORM
+        );
         assert_eq!(TextureType::from_filename("wall_mra.png"), TextureType::MRA);
     }
 
     #[test]
     fn test_texture_type_from_filename_roughness() {
-        assert_eq!(TextureType::from_filename("brick_r.png"), TextureType::Roughness);
-        assert_eq!(TextureType::from_filename("wall_rough.png"), TextureType::Roughness);
-        assert_eq!(TextureType::from_filename("floor_roughness.png"), TextureType::Roughness);
+        assert_eq!(
+            TextureType::from_filename("brick_r.png"),
+            TextureType::Roughness
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_rough.png"),
+            TextureType::Roughness
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_roughness.png"),
+            TextureType::Roughness
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_metallic() {
-        assert_eq!(TextureType::from_filename("brick_m.png"), TextureType::Metallic);
-        assert_eq!(TextureType::from_filename("wall_metal.png"), TextureType::Metallic);
-        assert_eq!(TextureType::from_filename("floor_metallic.png"), TextureType::Metallic);
-        assert_eq!(TextureType::from_filename("tile_metalness.png"), TextureType::Metallic);
+        assert_eq!(
+            TextureType::from_filename("brick_m.png"),
+            TextureType::Metallic
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_metal.png"),
+            TextureType::Metallic
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_metallic.png"),
+            TextureType::Metallic
+        );
+        assert_eq!(
+            TextureType::from_filename("tile_metalness.png"),
+            TextureType::Metallic
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_ao() {
         assert_eq!(TextureType::from_filename("brick_ao.png"), TextureType::AO);
-        assert_eq!(TextureType::from_filename("wall_occlusion.png"), TextureType::AO);
+        assert_eq!(
+            TextureType::from_filename("wall_occlusion.png"),
+            TextureType::AO
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_emission() {
-        assert_eq!(TextureType::from_filename("brick_e.png"), TextureType::Emission);
-        assert_eq!(TextureType::from_filename("wall_emit.png"), TextureType::Emission);
-        assert_eq!(TextureType::from_filename("floor_emission.png"), TextureType::Emission);
-        assert_eq!(TextureType::from_filename("tile_emissive.png"), TextureType::Emission);
-        assert_eq!(TextureType::from_filename("neon_glow.png"), TextureType::Emission);
+        assert_eq!(
+            TextureType::from_filename("brick_e.png"),
+            TextureType::Emission
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_emit.png"),
+            TextureType::Emission
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_emission.png"),
+            TextureType::Emission
+        );
+        assert_eq!(
+            TextureType::from_filename("tile_emissive.png"),
+            TextureType::Emission
+        );
+        assert_eq!(
+            TextureType::from_filename("neon_glow.png"),
+            TextureType::Emission
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_height() {
-        assert_eq!(TextureType::from_filename("brick_h.png"), TextureType::Height);
-        assert_eq!(TextureType::from_filename("wall_height.png"), TextureType::Height);
-        assert_eq!(TextureType::from_filename("floor_disp.png"), TextureType::Height);
-        assert_eq!(TextureType::from_filename("tile_displacement.png"), TextureType::Height);
-        assert_eq!(TextureType::from_filename("stone_bump.png"), TextureType::Height);
+        assert_eq!(
+            TextureType::from_filename("brick_h.png"),
+            TextureType::Height
+        );
+        assert_eq!(
+            TextureType::from_filename("wall_height.png"),
+            TextureType::Height
+        );
+        assert_eq!(
+            TextureType::from_filename("floor_disp.png"),
+            TextureType::Height
+        );
+        assert_eq!(
+            TextureType::from_filename("tile_displacement.png"),
+            TextureType::Height
+        );
+        assert_eq!(
+            TextureType::from_filename("stone_bump.png"),
+            TextureType::Height
+        );
     }
 
     #[test]
     fn test_texture_type_from_filename_unknown() {
-        assert_eq!(TextureType::from_filename("texture.png"), TextureType::Unknown);
-        assert_eq!(TextureType::from_filename("random.jpg"), TextureType::Unknown);
+        assert_eq!(
+            TextureType::from_filename("texture.png"),
+            TextureType::Unknown
+        );
+        assert_eq!(
+            TextureType::from_filename("random.jpg"),
+            TextureType::Unknown
+        );
     }
 
     #[test]
     fn test_texture_type_case_insensitive() {
-        assert_eq!(TextureType::from_filename("Brick_NORMAL.PNG"), TextureType::Normal);
-        assert_eq!(TextureType::from_filename("Wall_ALBEDO.jpg"), TextureType::Albedo);
+        assert_eq!(
+            TextureType::from_filename("Brick_NORMAL.PNG"),
+            TextureType::Normal
+        );
+        assert_eq!(
+            TextureType::from_filename("Wall_ALBEDO.jpg"),
+            TextureType::Albedo
+        );
     }
 
     #[test]
@@ -1554,46 +1650,106 @@ mod tests {
 
     #[test]
     fn test_asset_type_from_path() {
-        assert_eq!(AssetType::from_path(Path::new("test.glb")), AssetType::Model);
-        assert_eq!(AssetType::from_path(Path::new("texture.png")), AssetType::Texture);
-        assert_eq!(AssetType::from_path(Path::new("scene.ron")), AssetType::Scene);
-        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
-        assert_eq!(AssetType::from_path(Path::new("unknown.xyz")), AssetType::Unknown);
+        assert_eq!(
+            AssetType::from_path(Path::new("test.glb")),
+            AssetType::Model
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("texture.png")),
+            AssetType::Texture
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("scene.ron")),
+            AssetType::Scene
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("config.toml")),
+            AssetType::Config
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("unknown.xyz")),
+            AssetType::Unknown
+        );
     }
 
     #[test]
     fn test_asset_type_from_path_models() {
-        assert_eq!(AssetType::from_path(Path::new("model.glb")), AssetType::Model);
-        assert_eq!(AssetType::from_path(Path::new("model.gltf")), AssetType::Model);
-        assert_eq!(AssetType::from_path(Path::new("model.obj")), AssetType::Model);
-        assert_eq!(AssetType::from_path(Path::new("model.fbx")), AssetType::Model);
+        assert_eq!(
+            AssetType::from_path(Path::new("model.glb")),
+            AssetType::Model
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("model.gltf")),
+            AssetType::Model
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("model.obj")),
+            AssetType::Model
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("model.fbx")),
+            AssetType::Model
+        );
     }
 
     #[test]
     fn test_asset_type_from_path_textures() {
-        assert_eq!(AssetType::from_path(Path::new("tex.png")), AssetType::Texture);
-        assert_eq!(AssetType::from_path(Path::new("tex.jpg")), AssetType::Texture);
-        assert_eq!(AssetType::from_path(Path::new("tex.jpeg")), AssetType::Texture);
-        assert_eq!(AssetType::from_path(Path::new("tex.ktx2")), AssetType::Texture);
-        assert_eq!(AssetType::from_path(Path::new("tex.dds")), AssetType::Texture);
+        assert_eq!(
+            AssetType::from_path(Path::new("tex.png")),
+            AssetType::Texture
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("tex.jpg")),
+            AssetType::Texture
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("tex.jpeg")),
+            AssetType::Texture
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("tex.ktx2")),
+            AssetType::Texture
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("tex.dds")),
+            AssetType::Texture
+        );
     }
 
     #[test]
     fn test_asset_type_from_path_audio() {
-        assert_eq!(AssetType::from_path(Path::new("sound.wav")), AssetType::Audio);
-        assert_eq!(AssetType::from_path(Path::new("music.ogg")), AssetType::Audio);
-        assert_eq!(AssetType::from_path(Path::new("track.mp3")), AssetType::Audio);
+        assert_eq!(
+            AssetType::from_path(Path::new("sound.wav")),
+            AssetType::Audio
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("music.ogg")),
+            AssetType::Audio
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("track.mp3")),
+            AssetType::Audio
+        );
     }
 
     #[test]
     fn test_asset_type_from_path_configs() {
-        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
-        assert_eq!(AssetType::from_path(Path::new("settings.json")), AssetType::Config);
+        assert_eq!(
+            AssetType::from_path(Path::new("config.toml")),
+            AssetType::Config
+        );
+        assert_eq!(
+            AssetType::from_path(Path::new("settings.json")),
+            AssetType::Config
+        );
     }
 
     #[test]
     fn test_asset_type_from_path_prefab() {
-        assert_eq!(AssetType::from_path(Path::new("entity.prefab.ron")), AssetType::Prefab);
+        assert_eq!(
+            AssetType::from_path(Path::new("entity.prefab.ron")),
+            AssetType::Prefab
+        );
     }
 
     #[test]
@@ -1856,7 +2012,9 @@ mod tests {
 
     #[test]
     fn test_asset_action_import_model() {
-        let action = AssetAction::ImportModel { path: PathBuf::from("model.glb") };
+        let action = AssetAction::ImportModel {
+            path: PathBuf::from("model.glb"),
+        };
         match action {
             AssetAction::ImportModel { path } => assert_eq!(path, PathBuf::from("model.glb")),
             _ => panic!("Wrong action type"),
@@ -1865,7 +2023,7 @@ mod tests {
 
     #[test]
     fn test_asset_action_apply_texture() {
-        let action = AssetAction::ApplyTexture { 
+        let action = AssetAction::ApplyTexture {
             path: PathBuf::from("tex.png"),
             texture_type: TextureType::Normal,
         };
@@ -1880,7 +2038,9 @@ mod tests {
 
     #[test]
     fn test_asset_action_load_scene() {
-        let action = AssetAction::LoadScene { path: PathBuf::from("level.ron") };
+        let action = AssetAction::LoadScene {
+            path: PathBuf::from("level.ron"),
+        };
         match action {
             AssetAction::LoadScene { path } => assert_eq!(path, PathBuf::from("level.ron")),
             _ => panic!("Wrong action type"),
@@ -1889,16 +2049,22 @@ mod tests {
 
     #[test]
     fn test_asset_action_spawn_prefab() {
-        let action = AssetAction::SpawnPrefab { path: PathBuf::from("entity.prefab.ron") };
+        let action = AssetAction::SpawnPrefab {
+            path: PathBuf::from("entity.prefab.ron"),
+        };
         match action {
-            AssetAction::SpawnPrefab { path } => assert_eq!(path, PathBuf::from("entity.prefab.ron")),
+            AssetAction::SpawnPrefab { path } => {
+                assert_eq!(path, PathBuf::from("entity.prefab.ron"))
+            }
             _ => panic!("Wrong action type"),
         }
     }
 
     #[test]
     fn test_asset_action_apply_material() {
-        let action = AssetAction::ApplyMaterial { path: PathBuf::from("metal.mat") };
+        let action = AssetAction::ApplyMaterial {
+            path: PathBuf::from("metal.mat"),
+        };
         match action {
             AssetAction::ApplyMaterial { path } => assert_eq!(path, PathBuf::from("metal.mat")),
             _ => panic!("Wrong action type"),
@@ -1907,7 +2073,9 @@ mod tests {
 
     #[test]
     fn test_asset_action_open_external() {
-        let action = AssetAction::OpenExternal { path: PathBuf::from("/assets") };
+        let action = AssetAction::OpenExternal {
+            path: PathBuf::from("/assets"),
+        };
         match action {
             AssetAction::OpenExternal { path } => assert_eq!(path, PathBuf::from("/assets")),
             _ => panic!("Wrong action type"),
@@ -1916,7 +2084,9 @@ mod tests {
 
     #[test]
     fn test_asset_action_inspect_asset() {
-        let action = AssetAction::InspectAsset { path: PathBuf::from("item.glb") };
+        let action = AssetAction::InspectAsset {
+            path: PathBuf::from("item.glb"),
+        };
         match action {
             AssetAction::InspectAsset { path } => assert_eq!(path, PathBuf::from("item.glb")),
             _ => panic!("Wrong action type"),
@@ -1925,7 +2095,9 @@ mod tests {
 
     #[test]
     fn test_asset_action_load_to_viewport() {
-        let action = AssetAction::LoadToViewport { path: PathBuf::from("preview.glb") };
+        let action = AssetAction::LoadToViewport {
+            path: PathBuf::from("preview.glb"),
+        };
         match action {
             AssetAction::LoadToViewport { path } => assert_eq!(path, PathBuf::from("preview.glb")),
             _ => panic!("Wrong action type"),

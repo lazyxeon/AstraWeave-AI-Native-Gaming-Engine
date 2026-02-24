@@ -74,7 +74,13 @@ impl EmitterShape {
 
     /// Returns true if this shape is volumetric (3D)
     pub fn is_volumetric(&self) -> bool {
-        matches!(self, EmitterShape::Sphere | EmitterShape::Hemisphere | EmitterShape::Cone | EmitterShape::Box)
+        matches!(
+            self,
+            EmitterShape::Sphere
+                | EmitterShape::Hemisphere
+                | EmitterShape::Cone
+                | EmitterShape::Box
+        )
     }
 }
 
@@ -219,7 +225,13 @@ impl ParticleRenderMode {
 
     /// Returns true if this render mode is a billboard type
     pub fn is_billboard(&self) -> bool {
-        matches!(self, ParticleRenderMode::Billboard | ParticleRenderMode::StretchedBillboard | ParticleRenderMode::HorizontalBillboard | ParticleRenderMode::VerticalBillboard)
+        matches!(
+            self,
+            ParticleRenderMode::Billboard
+                | ParticleRenderMode::StretchedBillboard
+                | ParticleRenderMode::HorizontalBillboard
+                | ParticleRenderMode::VerticalBillboard
+        )
     }
 }
 
@@ -282,7 +294,10 @@ impl CurveType {
 
     /// Returns true if this curve type is an easing function
     pub fn is_easing(&self) -> bool {
-        matches!(self, CurveType::EaseIn | CurveType::EaseOut | CurveType::EaseInOut)
+        matches!(
+            self,
+            CurveType::EaseIn | CurveType::EaseOut | CurveType::EaseInOut
+        )
     }
 }
 
@@ -301,7 +316,10 @@ impl Default for RangeValue {
 
 impl RangeValue {
     pub fn constant(value: f32) -> Self {
-        Self { min: value, max: value }
+        Self {
+            min: value,
+            max: value,
+        }
     }
 
     pub fn range(min: f32, max: f32) -> Self {
@@ -326,8 +344,14 @@ impl Default for ColorGradient {
     fn default() -> Self {
         Self {
             stops: vec![
-                GradientStop { position: 0.0, color: [1.0, 1.0, 1.0, 1.0] },
-                GradientStop { position: 1.0, color: [1.0, 1.0, 1.0, 0.0] },
+                GradientStop {
+                    position: 0.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+                GradientStop {
+                    position: 1.0,
+                    color: [1.0, 1.0, 1.0, 0.0],
+                },
             ],
         }
     }
@@ -345,16 +369,50 @@ pub struct EmitterModule {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum ModuleType {
-    Velocity { direction: [f32; 3], speed: RangeValue },
-    Force { force: [f32; 3], space: SimulationSpace },
-    Gravity { multiplier: f32 },
-    Noise { strength: f32, frequency: f32, scroll_speed: f32 },
-    Collision { bounce: f32, lifetime_loss: f32, radius_scale: f32 },
-    SubEmitter { event: SubEmitterEvent, emitter_id: u32 },
-    TextureAnimation { tiles_x: u32, tiles_y: u32, fps: f32 },
-    Trail { width: RangeValue, lifetime: f32, min_vertex_distance: f32 },
-    Light { color: [f32; 3], intensity: RangeValue, range: RangeValue },
-    Rotation { speed: RangeValue, random_start: bool },
+    Velocity {
+        direction: [f32; 3],
+        speed: RangeValue,
+    },
+    Force {
+        force: [f32; 3],
+        space: SimulationSpace,
+    },
+    Gravity {
+        multiplier: f32,
+    },
+    Noise {
+        strength: f32,
+        frequency: f32,
+        scroll_speed: f32,
+    },
+    Collision {
+        bounce: f32,
+        lifetime_loss: f32,
+        radius_scale: f32,
+    },
+    SubEmitter {
+        event: SubEmitterEvent,
+        emitter_id: u32,
+    },
+    TextureAnimation {
+        tiles_x: u32,
+        tiles_y: u32,
+        fps: f32,
+    },
+    Trail {
+        width: RangeValue,
+        lifetime: f32,
+        min_vertex_distance: f32,
+    },
+    Light {
+        color: [f32; 3],
+        intensity: RangeValue,
+        range: RangeValue,
+    },
+    Rotation {
+        speed: RangeValue,
+        random_start: bool,
+    },
 }
 
 impl std::fmt::Display for ModuleType {
@@ -668,20 +726,76 @@ pub struct ParticlePreset {
 impl ParticlePreset {
     fn presets() -> Vec<ParticlePreset> {
         vec![
-            ParticlePreset { name: "Fire".to_string(), category: "Elements".to_string(), description: "Flickering flame effect".to_string() },
-            ParticlePreset { name: "Smoke".to_string(), category: "Elements".to_string(), description: "Rising smoke plume".to_string() },
-            ParticlePreset { name: "Sparks".to_string(), category: "Elements".to_string(), description: "Flying sparks".to_string() },
-            ParticlePreset { name: "Explosion".to_string(), category: "Combat".to_string(), description: "Burst explosion".to_string() },
-            ParticlePreset { name: "Muzzle Flash".to_string(), category: "Combat".to_string(), description: "Gun muzzle flash".to_string() },
-            ParticlePreset { name: "Blood Splatter".to_string(), category: "Combat".to_string(), description: "Impact blood effect".to_string() },
-            ParticlePreset { name: "Magic Sparkle".to_string(), category: "Magic".to_string(), description: "Magical sparkle trail".to_string() },
-            ParticlePreset { name: "Heal Aura".to_string(), category: "Magic".to_string(), description: "Healing particle ring".to_string() },
-            ParticlePreset { name: "Portal".to_string(), category: "Magic".to_string(), description: "Swirling portal effect".to_string() },
-            ParticlePreset { name: "Rain".to_string(), category: "Weather".to_string(), description: "Falling rain drops".to_string() },
-            ParticlePreset { name: "Snow".to_string(), category: "Weather".to_string(), description: "Drifting snowflakes".to_string() },
-            ParticlePreset { name: "Dust".to_string(), category: "Environment".to_string(), description: "Ambient dust motes".to_string() },
-            ParticlePreset { name: "Leaves".to_string(), category: "Environment".to_string(), description: "Falling leaves".to_string() },
-            ParticlePreset { name: "Waterfall".to_string(), category: "Environment".to_string(), description: "Waterfall spray".to_string() },
+            ParticlePreset {
+                name: "Fire".to_string(),
+                category: "Elements".to_string(),
+                description: "Flickering flame effect".to_string(),
+            },
+            ParticlePreset {
+                name: "Smoke".to_string(),
+                category: "Elements".to_string(),
+                description: "Rising smoke plume".to_string(),
+            },
+            ParticlePreset {
+                name: "Sparks".to_string(),
+                category: "Elements".to_string(),
+                description: "Flying sparks".to_string(),
+            },
+            ParticlePreset {
+                name: "Explosion".to_string(),
+                category: "Combat".to_string(),
+                description: "Burst explosion".to_string(),
+            },
+            ParticlePreset {
+                name: "Muzzle Flash".to_string(),
+                category: "Combat".to_string(),
+                description: "Gun muzzle flash".to_string(),
+            },
+            ParticlePreset {
+                name: "Blood Splatter".to_string(),
+                category: "Combat".to_string(),
+                description: "Impact blood effect".to_string(),
+            },
+            ParticlePreset {
+                name: "Magic Sparkle".to_string(),
+                category: "Magic".to_string(),
+                description: "Magical sparkle trail".to_string(),
+            },
+            ParticlePreset {
+                name: "Heal Aura".to_string(),
+                category: "Magic".to_string(),
+                description: "Healing particle ring".to_string(),
+            },
+            ParticlePreset {
+                name: "Portal".to_string(),
+                category: "Magic".to_string(),
+                description: "Swirling portal effect".to_string(),
+            },
+            ParticlePreset {
+                name: "Rain".to_string(),
+                category: "Weather".to_string(),
+                description: "Falling rain drops".to_string(),
+            },
+            ParticlePreset {
+                name: "Snow".to_string(),
+                category: "Weather".to_string(),
+                description: "Drifting snowflakes".to_string(),
+            },
+            ParticlePreset {
+                name: "Dust".to_string(),
+                category: "Environment".to_string(),
+                description: "Ambient dust motes".to_string(),
+            },
+            ParticlePreset {
+                name: "Leaves".to_string(),
+                category: "Environment".to_string(),
+                description: "Falling leaves".to_string(),
+            },
+            ParticlePreset {
+                name: "Waterfall".to_string(),
+                category: "Environment".to_string(),
+                description: "Waterfall spray".to_string(),
+            },
         ]
     }
 }
@@ -1066,7 +1180,14 @@ impl ParticleSystemPanel {
 
             ui.separator();
 
-            if ui.button(if self.preview_playing { "⏸️" } else { "▶️" }).clicked() {
+            if ui
+                .button(if self.preview_playing {
+                    "⏸️"
+                } else {
+                    "▶️"
+                })
+                .clicked()
+            {
                 self.preview_playing = !self.preview_playing;
             }
             if ui.button("⏹️").clicked() {
@@ -1093,7 +1214,10 @@ impl ParticleSystemPanel {
                 .selected_text(&self.current_system.name)
                 .show_ui(ui, |ui| {
                     for sys in &self.particle_systems.clone() {
-                        if ui.selectable_value(&mut self.selected_system, Some(sys.id), &sys.name).clicked() {
+                        if ui
+                            .selectable_value(&mut self.selected_system, Some(sys.id), &sys.name)
+                            .clicked()
+                        {
                             self.current_system = sys.clone();
                         }
                     }
@@ -1142,7 +1266,12 @@ impl ParticleSystemPanel {
                             ui.end_row();
 
                             ui.label("Duration:");
-                            ui.add(egui::DragValue::new(&mut self.current_system.duration).speed(0.1).range(0.1..=60.0).suffix("s"));
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_system.duration)
+                                    .speed(0.1)
+                                    .range(0.1..=60.0)
+                                    .suffix("s"),
+                            );
                             ui.end_row();
 
                             ui.label("Looping:");
@@ -1167,20 +1296,47 @@ impl ParticleSystemPanel {
                         .show(ui, |ui| {
                             ui.label("Rate:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.emission_rate.min).prefix("Min:").speed(1.0).range(0.0..=1000.0));
-                                ui.add(egui::DragValue::new(&mut self.current_system.emission_rate.max).prefix("Max:").speed(1.0).range(0.0..=1000.0));
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.emission_rate.min,
+                                    )
+                                    .prefix("Min:")
+                                    .speed(1.0)
+                                    .range(0.0..=1000.0),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.emission_rate.max,
+                                    )
+                                    .prefix("Max:")
+                                    .speed(1.0)
+                                    .range(0.0..=1000.0),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Start Delay:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_delay.min).prefix("Min:").speed(0.1).range(0.0..=10.0));
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_delay.max).prefix("Max:").speed(0.1).range(0.0..=10.0));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_delay.min)
+                                        .prefix("Min:")
+                                        .speed(0.1)
+                                        .range(0.0..=10.0),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_delay.max)
+                                        .prefix("Max:")
+                                        .speed(0.1)
+                                        .range(0.0..=10.0),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Max Particles:");
-                            ui.add(egui::DragValue::new(&mut self.current_system.max_particles).range(1..=100000));
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_system.max_particles)
+                                    .range(1..=100000),
+                            );
                             ui.end_row();
                         });
 
@@ -1195,8 +1351,17 @@ impl ParticleSystemPanel {
                         for (idx, burst) in self.current_system.bursts.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
                                 ui.label(format!("#{}", idx + 1));
-                                ui.add(egui::DragValue::new(&mut burst.time).prefix("t:").speed(0.1));
-                                ui.add(egui::DragValue::new(&mut burst.count.min).prefix("n:").speed(1.0).range(1.0..=1000.0));
+                                ui.add(
+                                    egui::DragValue::new(&mut burst.time)
+                                        .prefix("t:")
+                                        .speed(0.1),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut burst.count.min)
+                                        .prefix("n:")
+                                        .speed(1.0)
+                                        .range(1.0..=1000.0),
+                                );
                             });
                         }
                     });
@@ -1219,7 +1384,11 @@ impl ParticleSystemPanel {
                         for shape in EmitterShape::all() {
                             let is_selected = self.current_system.shape == *shape;
                             let button = egui::Button::new(format!("{} {:?}", shape.icon(), shape))
-                                .fill(if is_selected { Color32::from_rgb(60, 100, 160) } else { Color32::from_rgb(50, 50, 55) });
+                                .fill(if is_selected {
+                                    Color32::from_rgb(60, 100, 160)
+                                } else {
+                                    Color32::from_rgb(50, 50, 55)
+                                });
 
                             if ui.add(button).clicked() {
                                 self.current_system.shape = *shape;
@@ -1239,26 +1408,51 @@ impl ParticleSystemPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             match self.current_system.shape {
-                                EmitterShape::Sphere | EmitterShape::Hemisphere | EmitterShape::Circle => {
+                                EmitterShape::Sphere
+                                | EmitterShape::Hemisphere
+                                | EmitterShape::Circle => {
                                     ui.label("Radius:");
-                                    ui.add(egui::DragValue::new(&mut self.current_system.shape_radius).speed(0.1).range(0.01..=100.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut self.current_system.shape_radius)
+                                            .speed(0.1)
+                                            .range(0.01..=100.0),
+                                    );
                                     ui.end_row();
                                 }
                                 EmitterShape::Cone => {
                                     ui.label("Radius:");
-                                    ui.add(egui::DragValue::new(&mut self.current_system.shape_radius).speed(0.1).range(0.01..=100.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut self.current_system.shape_radius)
+                                            .speed(0.1)
+                                            .range(0.01..=100.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Angle:");
-                                    ui.add(egui::Slider::new(&mut self.current_system.shape_angle, 0.0..=90.0).suffix("°"));
+                                    ui.add(
+                                        egui::Slider::new(
+                                            &mut self.current_system.shape_angle,
+                                            0.0..=90.0,
+                                        )
+                                        .suffix("°"),
+                                    );
                                     ui.end_row();
                                 }
                                 _ => {}
                             }
 
-                            if matches!(self.current_system.shape, EmitterShape::Circle | EmitterShape::Cone) {
+                            if matches!(
+                                self.current_system.shape,
+                                EmitterShape::Circle | EmitterShape::Cone
+                            ) {
                                 ui.label("Arc:");
-                                ui.add(egui::Slider::new(&mut self.current_system.shape_arc, 0.0..=360.0).suffix("°"));
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.current_system.shape_arc,
+                                        0.0..=360.0,
+                                    )
+                                    .suffix("°"),
+                                );
                                 ui.end_row();
                             }
 
@@ -1292,8 +1486,14 @@ impl ParticleSystemPanel {
                         let angle = self.current_system.shape_angle.to_radians();
                         let length = 40.0;
                         let width = length * angle.tan();
-                        painter.line_segment([center, egui::Pos2::new(center.x - width, center.y - length)], egui::Stroke::new(2.0, shape_color));
-                        painter.line_segment([center, egui::Pos2::new(center.x + width, center.y - length)], egui::Stroke::new(2.0, shape_color));
+                        painter.line_segment(
+                            [center, egui::Pos2::new(center.x - width, center.y - length)],
+                            egui::Stroke::new(2.0, shape_color),
+                        );
+                        painter.line_segment(
+                            [center, egui::Pos2::new(center.x + width, center.y - length)],
+                            egui::Stroke::new(2.0, shape_color),
+                        );
                     }
                     EmitterShape::Box => {
                         let size = 40.0;
@@ -1328,29 +1528,77 @@ impl ParticleSystemPanel {
                         .show(ui, |ui| {
                             ui.label("Lifetime:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_lifetime.min).prefix("Min:").speed(0.1).range(0.01..=60.0));
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_lifetime.max).prefix("Max:").speed(0.1).range(0.01..=60.0));
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.start_lifetime.min,
+                                    )
+                                    .prefix("Min:")
+                                    .speed(0.1)
+                                    .range(0.01..=60.0),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.start_lifetime.max,
+                                    )
+                                    .prefix("Max:")
+                                    .speed(0.1)
+                                    .range(0.01..=60.0),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Speed:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_speed.min).prefix("Min:").speed(0.1).range(0.0..=100.0));
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_speed.max).prefix("Max:").speed(0.1).range(0.0..=100.0));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_speed.min)
+                                        .prefix("Min:")
+                                        .speed(0.1)
+                                        .range(0.0..=100.0),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_speed.max)
+                                        .prefix("Max:")
+                                        .speed(0.1)
+                                        .range(0.0..=100.0),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Size:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_size.min).prefix("Min:").speed(0.01).range(0.001..=10.0));
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_size.max).prefix("Max:").speed(0.01).range(0.001..=10.0));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_size.min)
+                                        .prefix("Min:")
+                                        .speed(0.01)
+                                        .range(0.001..=10.0),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_system.start_size.max)
+                                        .prefix("Max:")
+                                        .speed(0.01)
+                                        .range(0.001..=10.0),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Rotation:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_rotation.min).prefix("Min:").speed(1.0).suffix("°"));
-                                ui.add(egui::DragValue::new(&mut self.current_system.start_rotation.max).prefix("Max:").speed(1.0).suffix("°"));
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.start_rotation.min,
+                                    )
+                                    .prefix("Min:")
+                                    .speed(1.0)
+                                    .suffix("°"),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(
+                                        &mut self.current_system.start_rotation.max,
+                                    )
+                                    .prefix("Max:")
+                                    .speed(1.0)
+                                    .suffix("°"),
+                                );
                             });
                             ui.end_row();
 
@@ -1384,15 +1632,29 @@ impl ParticleSystemPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Gravity Modifier:");
-                            ui.add(egui::Slider::new(&mut self.current_system.gravity_modifier, -2.0..=2.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_system.gravity_modifier,
+                                -2.0..=2.0,
+                            ));
                             ui.end_row();
 
                             ui.label("Simulation Space:");
                             egui::ComboBox::from_id_salt("sim_space")
-                                .selected_text(format!("{:?}", self.current_system.simulation_space))
+                                .selected_text(format!(
+                                    "{:?}",
+                                    self.current_system.simulation_space
+                                ))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_system.simulation_space, SimulationSpace::Local, "Local");
-                                    ui.selectable_value(&mut self.current_system.simulation_space, SimulationSpace::World, "World");
+                                    ui.selectable_value(
+                                        &mut self.current_system.simulation_space,
+                                        SimulationSpace::Local,
+                                        "Local",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.simulation_space,
+                                        SimulationSpace::World,
+                                        "World",
+                                    );
                                 });
                             ui.end_row();
                         });
@@ -1417,18 +1679,44 @@ impl ParticleSystemPanel {
                         .show(ui, |ui| {
                             ui.label("Curve:");
                             egui::ComboBox::from_id_salt("size_curve")
-                                .selected_text(format!("{:?}", self.current_system.size_over_lifetime))
+                                .selected_text(format!(
+                                    "{:?}",
+                                    self.current_system.size_over_lifetime
+                                ))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_system.size_over_lifetime, CurveType::Constant, "Constant");
-                                    ui.selectable_value(&mut self.current_system.size_over_lifetime, CurveType::Linear, "Linear");
-                                    ui.selectable_value(&mut self.current_system.size_over_lifetime, CurveType::EaseIn, "Ease In");
-                                    ui.selectable_value(&mut self.current_system.size_over_lifetime, CurveType::EaseOut, "Ease Out");
-                                    ui.selectable_value(&mut self.current_system.size_over_lifetime, CurveType::EaseInOut, "Ease In/Out");
+                                    ui.selectable_value(
+                                        &mut self.current_system.size_over_lifetime,
+                                        CurveType::Constant,
+                                        "Constant",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.size_over_lifetime,
+                                        CurveType::Linear,
+                                        "Linear",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.size_over_lifetime,
+                                        CurveType::EaseIn,
+                                        "Ease In",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.size_over_lifetime,
+                                        CurveType::EaseOut,
+                                        "Ease Out",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.size_over_lifetime,
+                                        CurveType::EaseInOut,
+                                        "Ease In/Out",
+                                    );
                                 });
                             ui.end_row();
 
                             ui.label("End Scale:");
-                            ui.add(egui::Slider::new(&mut self.current_system.size_curve_end, 0.0..=5.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_system.size_curve_end,
+                                0.0..=5.0,
+                            ));
                             ui.end_row();
                         });
                 });
@@ -1442,7 +1730,10 @@ impl ParticleSystemPanel {
                     // Display gradient stops
                     let gradient_height = 20.0;
                     let gradient_width = ui.available_width().min(300.0);
-                    let (rect, _) = ui.allocate_exact_size(Vec2::new(gradient_width, gradient_height), egui::Sense::hover());
+                    let (rect, _) = ui.allocate_exact_size(
+                        Vec2::new(gradient_width, gradient_height),
+                        egui::Sense::hover(),
+                    );
 
                     let painter = ui.painter();
 
@@ -1464,10 +1755,18 @@ impl ParticleSystemPanel {
                     ui.add_space(5.0);
 
                     // Gradient stops
-                    for (idx, stop) in self.current_system.color_over_lifetime.stops.iter_mut().enumerate() {
+                    for (idx, stop) in self
+                        .current_system
+                        .color_over_lifetime
+                        .stops
+                        .iter_mut()
+                        .enumerate()
+                    {
                         ui.horizontal(|ui| {
                             ui.label(format!("Stop {}:", idx + 1));
-                            ui.add(egui::Slider::new(&mut stop.position, 0.0..=1.0).show_value(true));
+                            ui.add(
+                                egui::Slider::new(&mut stop.position, 0.0..=1.0).show_value(true),
+                            );
 
                             let mut color = Color32::from_rgba_unmultiplied(
                                 (stop.color[0] * 255.0) as u8,
@@ -1487,10 +1786,13 @@ impl ParticleSystemPanel {
                     }
 
                     if ui.button("+ Add Stop").clicked() {
-                        self.current_system.color_over_lifetime.stops.push(GradientStop {
-                            position: 0.5,
-                            color: [1.0, 1.0, 1.0, 1.0],
-                        });
+                        self.current_system
+                            .color_over_lifetime
+                            .stops
+                            .push(GradientStop {
+                                position: 0.5,
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            });
                     }
                 });
 
@@ -1502,11 +1804,26 @@ impl ParticleSystemPanel {
 
                     ui.horizontal(|ui| {
                         ui.label("X:");
-                        ui.add(egui::DragValue::new(&mut self.current_system.velocity_over_lifetime[0]).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut self.current_system.velocity_over_lifetime[0],
+                            )
+                            .speed(0.1),
+                        );
                         ui.label("Y:");
-                        ui.add(egui::DragValue::new(&mut self.current_system.velocity_over_lifetime[1]).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut self.current_system.velocity_over_lifetime[1],
+                            )
+                            .speed(0.1),
+                        );
                         ui.label("Z:");
-                        ui.add(egui::DragValue::new(&mut self.current_system.velocity_over_lifetime[2]).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(
+                                &mut self.current_system.velocity_over_lifetime[2],
+                            )
+                            .speed(0.1),
+                        );
                     });
                 });
 
@@ -1518,7 +1835,13 @@ impl ParticleSystemPanel {
 
                     ui.horizontal(|ui| {
                         ui.label("Angular Velocity:");
-                        ui.add(egui::Slider::new(&mut self.current_system.rotation_over_lifetime, -360.0..=360.0).suffix("°/s"));
+                        ui.add(
+                            egui::Slider::new(
+                                &mut self.current_system.rotation_over_lifetime,
+                                -360.0..=360.0,
+                            )
+                            .suffix("°/s"),
+                        );
                     });
                 });
             });
@@ -1543,12 +1866,36 @@ impl ParticleSystemPanel {
                             egui::ComboBox::from_id_salt("render_mode")
                                 .selected_text(format!("{:?}", self.current_system.render_mode))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::Billboard, "Billboard");
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::StretchedBillboard, "Stretched Billboard");
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::HorizontalBillboard, "Horizontal Billboard");
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::VerticalBillboard, "Vertical Billboard");
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::Mesh, "Mesh");
-                                    ui.selectable_value(&mut self.current_system.render_mode, ParticleRenderMode::Trail, "Trail");
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::Billboard,
+                                        "Billboard",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::StretchedBillboard,
+                                        "Stretched Billboard",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::HorizontalBillboard,
+                                        "Horizontal Billboard",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::VerticalBillboard,
+                                        "Vertical Billboard",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::Mesh,
+                                        "Mesh",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.render_mode,
+                                        ParticleRenderMode::Trail,
+                                        "Trail",
+                                    );
                                 });
                             ui.end_row();
 
@@ -1556,10 +1903,26 @@ impl ParticleSystemPanel {
                             egui::ComboBox::from_id_salt("blend_mode")
                                 .selected_text(format!("{:?}", self.current_system.blend_mode))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_system.blend_mode, ParticleBlendMode::Alpha, "Alpha");
-                                    ui.selectable_value(&mut self.current_system.blend_mode, ParticleBlendMode::Additive, "Additive");
-                                    ui.selectable_value(&mut self.current_system.blend_mode, ParticleBlendMode::Multiply, "Multiply");
-                                    ui.selectable_value(&mut self.current_system.blend_mode, ParticleBlendMode::Premultiply, "Premultiply");
+                                    ui.selectable_value(
+                                        &mut self.current_system.blend_mode,
+                                        ParticleBlendMode::Alpha,
+                                        "Alpha",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.blend_mode,
+                                        ParticleBlendMode::Additive,
+                                        "Additive",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.blend_mode,
+                                        ParticleBlendMode::Multiply,
+                                        "Multiply",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.blend_mode,
+                                        ParticleBlendMode::Premultiply,
+                                        "Premultiply",
+                                    );
                                 });
                             ui.end_row();
 
@@ -1567,10 +1930,26 @@ impl ParticleSystemPanel {
                             egui::ComboBox::from_id_salt("sort_mode")
                                 .selected_text(format!("{:?}", self.current_system.sort_mode))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_system.sort_mode, SortMode::None, "None");
-                                    ui.selectable_value(&mut self.current_system.sort_mode, SortMode::ByDistance, "By Distance");
-                                    ui.selectable_value(&mut self.current_system.sort_mode, SortMode::OldestFirst, "Oldest First");
-                                    ui.selectable_value(&mut self.current_system.sort_mode, SortMode::YoungestFirst, "Youngest First");
+                                    ui.selectable_value(
+                                        &mut self.current_system.sort_mode,
+                                        SortMode::None,
+                                        "None",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.sort_mode,
+                                        SortMode::ByDistance,
+                                        "By Distance",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.sort_mode,
+                                        SortMode::OldestFirst,
+                                        "Oldest First",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_system.sort_mode,
+                                        SortMode::YoungestFirst,
+                                        "Youngest First",
+                                    );
                                 });
                             ui.end_row();
                         });
@@ -1613,28 +1992,42 @@ impl ParticleSystemPanel {
                 self.current_system.modules.push(EmitterModule {
                     enabled: true,
                     name: "Velocity".to_string(),
-                    module_type: ModuleType::Velocity { direction: [0.0, 1.0, 0.0], speed: RangeValue::constant(1.0) },
+                    module_type: ModuleType::Velocity {
+                        direction: [0.0, 1.0, 0.0],
+                        speed: RangeValue::constant(1.0),
+                    },
                 });
             }
             if ui.button("+ Force").clicked() {
                 self.current_system.modules.push(EmitterModule {
                     enabled: true,
                     name: "Force".to_string(),
-                    module_type: ModuleType::Force { force: [0.0, 0.0, 0.0], space: SimulationSpace::World },
+                    module_type: ModuleType::Force {
+                        force: [0.0, 0.0, 0.0],
+                        space: SimulationSpace::World,
+                    },
                 });
             }
             if ui.button("+ Noise").clicked() {
                 self.current_system.modules.push(EmitterModule {
                     enabled: true,
                     name: "Noise".to_string(),
-                    module_type: ModuleType::Noise { strength: 1.0, frequency: 1.0, scroll_speed: 0.5 },
+                    module_type: ModuleType::Noise {
+                        strength: 1.0,
+                        frequency: 1.0,
+                        scroll_speed: 0.5,
+                    },
                 });
             }
             if ui.button("+ Collision").clicked() {
                 self.current_system.modules.push(EmitterModule {
                     enabled: true,
                     name: "Collision".to_string(),
-                    module_type: ModuleType::Collision { bounce: 0.5, lifetime_loss: 0.0, radius_scale: 1.0 },
+                    module_type: ModuleType::Collision {
+                        bounce: 0.5,
+                        lifetime_loss: 0.0,
+                        radius_scale: 1.0,
+                    },
                 });
             }
         });
@@ -1665,34 +2058,84 @@ impl ParticleSystemPanel {
                                     ModuleType::Velocity { direction, speed } => {
                                         ui.horizontal(|ui| {
                                             ui.label("Dir:");
-                                            ui.add(egui::DragValue::new(&mut direction[0]).prefix("X:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut direction[1]).prefix("Y:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut direction[2]).prefix("Z:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut direction[0])
+                                                    .prefix("X:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut direction[1])
+                                                    .prefix("Y:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut direction[2])
+                                                    .prefix("Z:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.horizontal(|ui| {
                                             ui.label("Speed:");
-                                            ui.add(egui::DragValue::new(&mut speed.min).prefix("Min:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut speed.max).prefix("Max:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut speed.min)
+                                                    .prefix("Min:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut speed.max)
+                                                    .prefix("Max:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                     }
                                     ModuleType::Force { force, space } => {
                                         ui.horizontal(|ui| {
                                             ui.label("Force:");
-                                            ui.add(egui::DragValue::new(&mut force[0]).prefix("X:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut force[1]).prefix("Y:").speed(0.1));
-                                            ui.add(egui::DragValue::new(&mut force[2]).prefix("Z:").speed(0.1));
+                                            ui.add(
+                                                egui::DragValue::new(&mut force[0])
+                                                    .prefix("X:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut force[1])
+                                                    .prefix("Y:")
+                                                    .speed(0.1),
+                                            );
+                                            ui.add(
+                                                egui::DragValue::new(&mut force[2])
+                                                    .prefix("Z:")
+                                                    .speed(0.1),
+                                            );
                                         });
                                         ui.horizontal(|ui| {
                                             ui.label("Space:");
-                                            egui::ComboBox::from_id_salt(format!("force_space_{}", idx))
-                                                .selected_text(format!("{:?}", space))
-                                                .show_ui(ui, |ui| {
-                                                    ui.selectable_value(space, SimulationSpace::Local, "Local");
-                                                    ui.selectable_value(space, SimulationSpace::World, "World");
-                                                });
+                                            egui::ComboBox::from_id_salt(format!(
+                                                "force_space_{}",
+                                                idx
+                                            ))
+                                            .selected_text(format!("{:?}", space))
+                                            .show_ui(
+                                                ui,
+                                                |ui| {
+                                                    ui.selectable_value(
+                                                        space,
+                                                        SimulationSpace::Local,
+                                                        "Local",
+                                                    );
+                                                    ui.selectable_value(
+                                                        space,
+                                                        SimulationSpace::World,
+                                                        "World",
+                                                    );
+                                                },
+                                            );
                                         });
                                     }
-                                    ModuleType::Noise { strength, frequency, scroll_speed } => {
+                                    ModuleType::Noise {
+                                        strength,
+                                        frequency,
+                                        scroll_speed,
+                                    } => {
                                         ui.horizontal(|ui| {
                                             ui.label("Strength:");
                                             ui.add(egui::Slider::new(strength, 0.0..=5.0));
@@ -1706,7 +2149,11 @@ impl ParticleSystemPanel {
                                             ui.add(egui::Slider::new(scroll_speed, 0.0..=5.0));
                                         });
                                     }
-                                    ModuleType::Collision { bounce, lifetime_loss, radius_scale } => {
+                                    ModuleType::Collision {
+                                        bounce,
+                                        lifetime_loss,
+                                        radius_scale,
+                                    } => {
                                         ui.horizontal(|ui| {
                                             ui.label("Bounce:");
                                             ui.add(egui::Slider::new(bounce, 0.0..=1.0));
@@ -1753,20 +2200,32 @@ impl ParticleSystemPanel {
                 let mut current_category = String::new();
 
                 for preset in &self.presets {
-                    if !self.preset_filter.is_empty() &&
-                       !preset.name.to_lowercase().contains(&self.preset_filter.to_lowercase()) {
+                    if !self.preset_filter.is_empty()
+                        && !preset
+                            .name
+                            .to_lowercase()
+                            .contains(&self.preset_filter.to_lowercase())
+                    {
                         continue;
                     }
 
                     if preset.category != current_category {
                         current_category = preset.category.clone();
                         ui.add_space(5.0);
-                        ui.label(RichText::new(&current_category).strong().color(Color32::from_rgb(150, 150, 200)));
+                        ui.label(
+                            RichText::new(&current_category)
+                                .strong()
+                                .color(Color32::from_rgb(150, 150, 200)),
+                        );
                     }
 
                     ui.horizontal(|ui| {
                         ui.label(&preset.name);
-                        ui.label(RichText::new(&preset.description).small().color(Color32::GRAY));
+                        ui.label(
+                            RichText::new(&preset.description)
+                                .small()
+                                .color(Color32::GRAY),
+                        );
 
                         if ui.button("Apply").clicked() {
                             // Apply preset configuration
@@ -1809,7 +2268,9 @@ impl ParticleSystemPanel {
                     ui.end_row();
 
                     ui.label("GPU Memory:");
-                    ui.label(RichText::new(format!("{:.1} MB", self.stats.gpu_memory_mb)).monospace());
+                    ui.label(
+                        RichText::new(format!("{:.1} MB", self.stats.gpu_memory_mb)).monospace(),
+                    );
                     ui.end_row();
                 });
         });
@@ -1825,19 +2286,45 @@ impl ParticleSystemPanel {
                 .spacing([20.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Simulation:");
-                    let sim_color = if self.stats.simulation_time_ms < 1.0 { Color32::GREEN } else { Color32::YELLOW };
-                    ui.label(RichText::new(format!("{:.2} ms", self.stats.simulation_time_ms)).monospace().color(sim_color));
+                    let sim_color = if self.stats.simulation_time_ms < 1.0 {
+                        Color32::GREEN
+                    } else {
+                        Color32::YELLOW
+                    };
+                    ui.label(
+                        RichText::new(format!("{:.2} ms", self.stats.simulation_time_ms))
+                            .monospace()
+                            .color(sim_color),
+                    );
                     ui.end_row();
 
                     ui.label("Rendering:");
-                    let render_color = if self.stats.render_time_ms < 2.0 { Color32::GREEN } else { Color32::YELLOW };
-                    ui.label(RichText::new(format!("{:.2} ms", self.stats.render_time_ms)).monospace().color(render_color));
+                    let render_color = if self.stats.render_time_ms < 2.0 {
+                        Color32::GREEN
+                    } else {
+                        Color32::YELLOW
+                    };
+                    ui.label(
+                        RichText::new(format!("{:.2} ms", self.stats.render_time_ms))
+                            .monospace()
+                            .color(render_color),
+                    );
                     ui.end_row();
 
                     ui.label("Total:");
                     let total = self.stats.simulation_time_ms + self.stats.render_time_ms;
-                    let total_color = if total < 3.0 { Color32::GREEN } else if total < 5.0 { Color32::YELLOW } else { Color32::RED };
-                    ui.label(RichText::new(format!("{:.2} ms", total)).monospace().color(total_color));
+                    let total_color = if total < 3.0 {
+                        Color32::GREEN
+                    } else if total < 5.0 {
+                        Color32::YELLOW
+                    } else {
+                        Color32::RED
+                    };
+                    ui.label(
+                        RichText::new(format!("{:.2} ms", total))
+                            .monospace()
+                            .color(total_color),
+                    );
                     ui.end_row();
                 });
         });
@@ -1849,8 +2336,14 @@ impl ParticleSystemPanel {
             ui.label(RichText::new("📊 Current System").strong());
 
             ui.label(format!("Name: {}", self.current_system.name));
-            ui.label(format!("Max Particles: {}", self.current_system.max_particles));
-            ui.label(format!("Emission Rate: {:.0}-{:.0}/s", self.current_system.emission_rate.min, self.current_system.emission_rate.max));
+            ui.label(format!(
+                "Max Particles: {}",
+                self.current_system.max_particles
+            ));
+            ui.label(format!(
+                "Emission Rate: {:.0}-{:.0}/s",
+                self.current_system.emission_rate.min, self.current_system.emission_rate.max
+            ));
             ui.label(format!("Modules: {}", self.current_system.modules.len()));
             ui.label(format!("Bursts: {}", self.current_system.bursts.len()));
         });
@@ -1885,7 +2378,11 @@ impl ParticleSystemPanel {
 
         // Interpolate
         let range = right.position - left.position;
-        let local_t = if range > 0.001 { (t - left.position) / range } else { 0.0 };
+        let local_t = if range > 0.001 {
+            (t - left.position) / range
+        } else {
+            0.0
+        };
 
         let r = left.color[0] + (right.color[0] - left.color[0]) * local_t;
         let g = left.color[1] + (right.color[1] - left.color[1]) * local_t;
@@ -2565,16 +3062,45 @@ mod tests {
             (ParticleAction::Stop, "Stop"),
             (ParticleAction::Restart, "Restart"),
             (ParticleAction::SetSpeed(1.5), "Set Speed"),
-            (ParticleAction::CreateSystem { name: "test".to_string() }, "Create System"),
+            (
+                ParticleAction::CreateSystem {
+                    name: "test".to_string(),
+                },
+                "Create System",
+            ),
             (ParticleAction::DeleteSystem { id: 1 }, "Delete System"),
-            (ParticleAction::DuplicateSystem { id: 1 }, "Duplicate System"),
+            (
+                ParticleAction::DuplicateSystem { id: 1 },
+                "Duplicate System",
+            ),
             (ParticleAction::SelectSystem { id: 1 }, "Select System"),
-            (ParticleAction::AddBurst { time: 0.0, count: 10 }, "Add Burst"),
+            (
+                ParticleAction::AddBurst {
+                    time: 0.0,
+                    count: 10,
+                },
+                "Add Burst",
+            ),
             (ParticleAction::RemoveBurst { index: 0 }, "Remove Burst"),
-            (ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }, "Add Module"),
+            (
+                ParticleAction::AddModule {
+                    module_type: ModuleType::Gravity { multiplier: 1.0 },
+                },
+                "Add Module",
+            ),
             (ParticleAction::RemoveModule { index: 0 }, "Remove Module"),
-            (ParticleAction::ApplyPreset { preset_name: "fire".to_string() }, "Apply Preset"),
-            (ParticleAction::SaveAsPreset { name: "custom".to_string() }, "Save As Preset"),
+            (
+                ParticleAction::ApplyPreset {
+                    preset_name: "fire".to_string(),
+                },
+                "Apply Preset",
+            ),
+            (
+                ParticleAction::SaveAsPreset {
+                    name: "custom".to_string(),
+                },
+                "Save As Preset",
+            ),
             (ParticleAction::SetShape(EmitterShape::Sphere), "Set Shape"),
         ];
 
@@ -2591,32 +3117,54 @@ mod tests {
         assert!(ParticleAction::Restart.is_playback());
         assert!(ParticleAction::SetSpeed(1.0).is_playback());
 
-        assert!(!ParticleAction::CreateSystem { name: "test".to_string() }.is_playback());
+        assert!(!ParticleAction::CreateSystem {
+            name: "test".to_string()
+        }
+        .is_playback());
         assert!(!ParticleAction::DeleteSystem { id: 1 }.is_playback());
-        assert!(!ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_playback());
+        assert!(!ParticleAction::AddModule {
+            module_type: ModuleType::Gravity { multiplier: 1.0 }
+        }
+        .is_playback());
     }
 
     #[test]
     fn test_action_is_system_management() {
-        assert!(ParticleAction::CreateSystem { name: "test".to_string() }.is_system_management());
+        assert!(ParticleAction::CreateSystem {
+            name: "test".to_string()
+        }
+        .is_system_management());
         assert!(ParticleAction::DeleteSystem { id: 1 }.is_system_management());
         assert!(ParticleAction::DuplicateSystem { id: 1 }.is_system_management());
         assert!(ParticleAction::SelectSystem { id: 1 }.is_system_management());
 
         assert!(!ParticleAction::Play.is_system_management());
-        assert!(!ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_system_management());
+        assert!(!ParticleAction::AddModule {
+            module_type: ModuleType::Gravity { multiplier: 1.0 }
+        }
+        .is_system_management());
     }
 
     #[test]
     fn test_action_is_config_change() {
-        assert!(ParticleAction::AddBurst { time: 0.0, count: 10 }.is_config_change());
+        assert!(ParticleAction::AddBurst {
+            time: 0.0,
+            count: 10
+        }
+        .is_config_change());
         assert!(ParticleAction::RemoveBurst { index: 0 }.is_config_change());
-        assert!(ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: 1.0 } }.is_config_change());
+        assert!(ParticleAction::AddModule {
+            module_type: ModuleType::Gravity { multiplier: 1.0 }
+        }
+        .is_config_change());
         assert!(ParticleAction::RemoveModule { index: 0 }.is_config_change());
         assert!(ParticleAction::SetShape(EmitterShape::Cone).is_config_change());
 
         assert!(!ParticleAction::Play.is_config_change());
-        assert!(!ParticleAction::CreateSystem { name: "test".to_string() }.is_config_change());
+        assert!(!ParticleAction::CreateSystem {
+            name: "test".to_string()
+        }
+        .is_config_change());
     }
 
     #[test]
@@ -2670,7 +3218,9 @@ mod tests {
     #[test]
     fn test_multiple_system_management_actions() {
         let mut panel = ParticleSystemPanel::default();
-        panel.queue_action(ParticleAction::CreateSystem { name: "new_system".to_string() });
+        panel.queue_action(ParticleAction::CreateSystem {
+            name: "new_system".to_string(),
+        });
         panel.queue_action(ParticleAction::SelectSystem { id: 1 });
         panel.queue_action(ParticleAction::DuplicateSystem { id: 1 });
 
@@ -2683,8 +3233,12 @@ mod tests {
     fn test_mixed_action_types() {
         let mut panel = ParticleSystemPanel::default();
         panel.queue_action(ParticleAction::Play);
-        panel.queue_action(ParticleAction::CreateSystem { name: "effect".to_string() });
-        panel.queue_action(ParticleAction::AddModule { module_type: ModuleType::Gravity { multiplier: -1.0 } });
+        panel.queue_action(ParticleAction::CreateSystem {
+            name: "effect".to_string(),
+        });
+        panel.queue_action(ParticleAction::AddModule {
+            module_type: ModuleType::Gravity { multiplier: -1.0 },
+        });
 
         let actions = panel.take_actions();
         assert_eq!(actions.len(), 3);

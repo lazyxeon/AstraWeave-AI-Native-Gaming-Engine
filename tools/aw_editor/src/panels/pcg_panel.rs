@@ -299,11 +299,36 @@ impl Default for DungeonSettings {
             branching_factor: 0.3,
             loop_chance: 0.2,
             room_configs: vec![
-                RoomConfig { room_type: RoomType::Entrance, spawn_chance: 1.0, max_count: 1, ..Default::default() },
-                RoomConfig { room_type: RoomType::Exit, spawn_chance: 1.0, max_count: 1, ..Default::default() },
-                RoomConfig { room_type: RoomType::Normal, spawn_chance: 1.0, max_count: 10, ..Default::default() },
-                RoomConfig { room_type: RoomType::Treasure, spawn_chance: 0.3, max_count: 2, ..Default::default() },
-                RoomConfig { room_type: RoomType::Boss, spawn_chance: 0.5, max_count: 1, ..Default::default() },
+                RoomConfig {
+                    room_type: RoomType::Entrance,
+                    spawn_chance: 1.0,
+                    max_count: 1,
+                    ..Default::default()
+                },
+                RoomConfig {
+                    room_type: RoomType::Exit,
+                    spawn_chance: 1.0,
+                    max_count: 1,
+                    ..Default::default()
+                },
+                RoomConfig {
+                    room_type: RoomType::Normal,
+                    spawn_chance: 1.0,
+                    max_count: 10,
+                    ..Default::default()
+                },
+                RoomConfig {
+                    room_type: RoomType::Treasure,
+                    spawn_chance: 0.3,
+                    max_count: 2,
+                    ..Default::default()
+                },
+                RoomConfig {
+                    room_type: RoomType::Boss,
+                    spawn_chance: 0.5,
+                    max_count: 1,
+                    ..Default::default()
+                },
             ],
         }
     }
@@ -496,7 +521,7 @@ pub struct PcgPanel {
 
     // Dungeons
     dungeon_settings: DungeonSettings,
-    
+
     // Loot
     loot_tables: Vec<LootTable>,
     selected_loot_table: Option<u32>,
@@ -604,9 +629,30 @@ impl PcgPanel {
             id: loot_id,
             name: "Common Chest".to_string(),
             entries: vec![
-                LootEntry { item_id: "gold".to_string(), name: "Gold Coins".to_string(), rarity: LootRarity::Common, drop_weight: 5.0, min_quantity: 10, max_quantity: 50 },
-                LootEntry { item_id: "potion_health".to_string(), name: "Health Potion".to_string(), rarity: LootRarity::Common, drop_weight: 2.0, min_quantity: 1, max_quantity: 2 },
-                LootEntry { item_id: "sword_iron".to_string(), name: "Iron Sword".to_string(), rarity: LootRarity::Uncommon, drop_weight: 0.5, min_quantity: 1, max_quantity: 1 },
+                LootEntry {
+                    item_id: "gold".to_string(),
+                    name: "Gold Coins".to_string(),
+                    rarity: LootRarity::Common,
+                    drop_weight: 5.0,
+                    min_quantity: 10,
+                    max_quantity: 50,
+                },
+                LootEntry {
+                    item_id: "potion_health".to_string(),
+                    name: "Health Potion".to_string(),
+                    rarity: LootRarity::Common,
+                    drop_weight: 2.0,
+                    min_quantity: 1,
+                    max_quantity: 2,
+                },
+                LootEntry {
+                    item_id: "sword_iron".to_string(),
+                    name: "Iron Sword".to_string(),
+                    rarity: LootRarity::Uncommon,
+                    drop_weight: 0.5,
+                    min_quantity: 1,
+                    max_quantity: 1,
+                },
             ],
             guaranteed_drops: 1,
             bonus_rolls: 2,
@@ -692,7 +738,10 @@ impl PcgPanel {
                 }
 
                 if ui.button("💾 Save Seed").clicked() {
-                    self.saved_seeds.push((format!("Seed {}", self.saved_seeds.len() + 1), self.current_seed));
+                    self.saved_seeds.push((
+                        format!("Seed {}", self.saved_seeds.len() + 1),
+                        self.current_seed,
+                    ));
                 }
             });
         });
@@ -709,7 +758,11 @@ impl PcgPanel {
                     for (name, seed) in &self.saved_seeds.clone() {
                         ui.horizontal(|ui| {
                             ui.label(name);
-                            ui.label(RichText::new(format!("{}", seed)).monospace().color(Color32::GRAY));
+                            ui.label(
+                                RichText::new(format!("{}", seed))
+                                    .monospace()
+                                    .color(Color32::GRAY),
+                            );
                             if ui.button("Load").clicked() {
                                 self.current_seed = *seed;
                                 self.seed_input = seed.to_string();
@@ -769,8 +822,16 @@ impl PcgPanel {
             for enemy in &self.enemy_types {
                 ui.horizontal(|ui| {
                     ui.label(&enemy.name);
-                    ui.label(RichText::new(format!("⚡{:.1}", enemy.threat_level)).small().color(Color32::YELLOW));
-                    ui.label(RichText::new(format!("({}-{})", enemy.min_count, enemy.max_count)).small().color(Color32::GRAY));
+                    ui.label(
+                        RichText::new(format!("⚡{:.1}", enemy.threat_level))
+                            .small()
+                            .color(Color32::YELLOW),
+                    );
+                    ui.label(
+                        RichText::new(format!("({}-{})", enemy.min_count, enemy.max_count))
+                            .small()
+                            .color(Color32::GRAY),
+                    );
                 });
             }
         });
@@ -787,14 +848,20 @@ impl PcgPanel {
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
                             let diff_color = encounter.difficulty.color();
-                            let color_rect = ui.allocate_exact_size(Vec2::new(8.0, 8.0), egui::Sense::hover()).0;
+                            let color_rect = ui
+                                .allocate_exact_size(Vec2::new(8.0, 8.0), egui::Sense::hover())
+                                .0;
                             ui.painter().rect_filled(color_rect, 2.0, diff_color);
 
                             if ui.selectable_label(is_selected, &encounter.name).clicked() {
                                 self.selected_encounter = Some(encounter.id);
                             }
 
-                            ui.label(RichText::new(format!("{:?}", encounter.difficulty)).small().color(diff_color));
+                            ui.label(
+                                RichText::new(format!("{:?}", encounter.difficulty))
+                                    .small()
+                                    .color(diff_color),
+                            );
                         });
 
                         if is_selected {
@@ -810,28 +877,70 @@ impl PcgPanel {
                                     egui::ComboBox::from_id_salt(format!("diff_{}", encounter.id))
                                         .selected_text(format!("{:?}", encounter.difficulty))
                                         .show_ui(ui, |ui| {
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Trivial, "Trivial");
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Easy, "Easy");
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Medium, "Medium");
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Hard, "Hard");
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Deadly, "Deadly");
-                                            ui.selectable_value(&mut encounter.difficulty, EncounterDifficulty::Boss, "Boss");
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Trivial,
+                                                "Trivial",
+                                            );
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Easy,
+                                                "Easy",
+                                            );
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Medium,
+                                                "Medium",
+                                            );
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Hard,
+                                                "Hard",
+                                            );
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Deadly,
+                                                "Deadly",
+                                            );
+                                            ui.selectable_value(
+                                                &mut encounter.difficulty,
+                                                EncounterDifficulty::Boss,
+                                                "Boss",
+                                            );
                                         });
                                     ui.end_row();
 
                                     ui.label("Enemies:");
                                     ui.horizontal(|ui| {
-                                        ui.add(egui::DragValue::new(&mut encounter.min_enemies).prefix("Min:").range(1..=20));
-                                        ui.add(egui::DragValue::new(&mut encounter.max_enemies).prefix("Max:").range(1..=50));
+                                        ui.add(
+                                            egui::DragValue::new(&mut encounter.min_enemies)
+                                                .prefix("Min:")
+                                                .range(1..=20),
+                                        );
+                                        ui.add(
+                                            egui::DragValue::new(&mut encounter.max_enemies)
+                                                .prefix("Max:")
+                                                .range(1..=50),
+                                        );
                                     });
                                     ui.end_row();
 
                                     ui.label("Spawn Radius:");
-                                    ui.add(egui::DragValue::new(&mut encounter.spawn_radius).speed(0.5).range(1.0..=50.0));
+                                    ui.add(
+                                        egui::DragValue::new(&mut encounter.spawn_radius)
+                                            .speed(0.5)
+                                            .range(1.0..=50.0),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Reinforcement:");
-                                    ui.add(egui::Slider::new(&mut encounter.reinforcement_chance, 0.0..=1.0).show_value(true));
+                                    ui.add(
+                                        egui::Slider::new(
+                                            &mut encounter.reinforcement_chance,
+                                            0.0..=1.0,
+                                        )
+                                        .show_value(true),
+                                    );
                                     ui.end_row();
                                 });
                         }
@@ -868,17 +977,31 @@ impl PcgPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Width:");
-                            ui.add(egui::DragValue::new(&mut self.dungeon_settings.width).range(20..=500));
+                            ui.add(
+                                egui::DragValue::new(&mut self.dungeon_settings.width)
+                                    .range(20..=500),
+                            );
                             ui.end_row();
 
                             ui.label("Height:");
-                            ui.add(egui::DragValue::new(&mut self.dungeon_settings.height).range(20..=500));
+                            ui.add(
+                                egui::DragValue::new(&mut self.dungeon_settings.height)
+                                    .range(20..=500),
+                            );
                             ui.end_row();
 
                             ui.label("Room Count:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.dungeon_settings.room_count.0).prefix("Min:").range(1..=50));
-                                ui.add(egui::DragValue::new(&mut self.dungeon_settings.room_count.1).prefix("Max:").range(1..=100));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.dungeon_settings.room_count.0)
+                                        .prefix("Min:")
+                                        .range(1..=50),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.dungeon_settings.room_count.1)
+                                        .prefix("Max:")
+                                        .range(1..=100),
+                                );
                             });
                             ui.end_row();
                         });
@@ -895,15 +1018,24 @@ impl PcgPanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Corridor Width:");
-                            ui.add(egui::DragValue::new(&mut self.dungeon_settings.corridor_width).range(1..=5));
+                            ui.add(
+                                egui::DragValue::new(&mut self.dungeon_settings.corridor_width)
+                                    .range(1..=5),
+                            );
                             ui.end_row();
 
                             ui.label("Branching:");
-                            ui.add(egui::Slider::new(&mut self.dungeon_settings.branching_factor, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.dungeon_settings.branching_factor,
+                                0.0..=1.0,
+                            ));
                             ui.end_row();
 
                             ui.label("Loop Chance:");
-                            ui.add(egui::Slider::new(&mut self.dungeon_settings.loop_chance, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.dungeon_settings.loop_chance,
+                                0.0..=1.0,
+                            ));
                             ui.end_row();
                         });
                 });
@@ -918,7 +1050,10 @@ impl PcgPanel {
                         ui.horizontal(|ui| {
                             ui.label(config.room_type.icon());
                             ui.label(format!("{:?}", config.room_type));
-                            ui.add(egui::Slider::new(&mut config.spawn_chance, 0.0..=1.0).show_value(false));
+                            ui.add(
+                                egui::Slider::new(&mut config.spawn_chance, 0.0..=1.0)
+                                    .show_value(false),
+                            );
                             ui.label(format!("max: {}", config.max_count));
                         });
                     }
@@ -950,10 +1085,17 @@ impl PcgPanel {
 
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
-                            if ui.selectable_label(is_selected, format!("💎 {}", table.name)).clicked() {
+                            if ui
+                                .selectable_label(is_selected, format!("💎 {}", table.name))
+                                .clicked()
+                            {
                                 self.selected_loot_table = Some(table.id);
                             }
-                            ui.label(RichText::new(format!("({} items)", table.entries.len())).small().color(Color32::GRAY));
+                            ui.label(
+                                RichText::new(format!("({} items)", table.entries.len()))
+                                    .small()
+                                    .color(Color32::GRAY),
+                            );
                         });
 
                         if is_selected {
@@ -966,11 +1108,16 @@ impl PcgPanel {
                                     ui.end_row();
 
                                     ui.label("Guaranteed Drops:");
-                                    ui.add(egui::DragValue::new(&mut table.guaranteed_drops).range(0..=10));
+                                    ui.add(
+                                        egui::DragValue::new(&mut table.guaranteed_drops)
+                                            .range(0..=10),
+                                    );
                                     ui.end_row();
 
                                     ui.label("Bonus Rolls:");
-                                    ui.add(egui::DragValue::new(&mut table.bonus_rolls).range(0..=10));
+                                    ui.add(
+                                        egui::DragValue::new(&mut table.bonus_rolls).range(0..=10),
+                                    );
                                     ui.end_row();
                                 });
 
@@ -979,12 +1126,29 @@ impl PcgPanel {
 
                             for entry in &table.entries {
                                 ui.horizontal(|ui| {
-                                    let color_rect = ui.allocate_exact_size(Vec2::new(8.0, 8.0), egui::Sense::hover()).0;
-                                    ui.painter().rect_filled(color_rect, 2.0, entry.rarity.color());
+                                    let color_rect = ui
+                                        .allocate_exact_size(
+                                            Vec2::new(8.0, 8.0),
+                                            egui::Sense::hover(),
+                                        )
+                                        .0;
+                                    ui.painter()
+                                        .rect_filled(color_rect, 2.0, entry.rarity.color());
 
                                     ui.label(&entry.name);
-                                    ui.label(RichText::new(format!("w:{:.1}", entry.drop_weight)).small().color(Color32::GRAY));
-                                    ui.label(RichText::new(format!("({}-{})", entry.min_quantity, entry.max_quantity)).small().color(Color32::GRAY));
+                                    ui.label(
+                                        RichText::new(format!("w:{:.1}", entry.drop_weight))
+                                            .small()
+                                            .color(Color32::GRAY),
+                                    );
+                                    ui.label(
+                                        RichText::new(format!(
+                                            "({}-{})",
+                                            entry.min_quantity, entry.max_quantity
+                                        ))
+                                        .small()
+                                        .color(Color32::GRAY),
+                                    );
                                 });
                             }
                         }
@@ -1001,7 +1165,10 @@ impl PcgPanel {
         ui.horizontal(|ui| {
             ui.label("Type:");
             for gen_type in GenerationType::all() {
-                if ui.button(format!("{} {:?}", gen_type.icon(), gen_type)).clicked() {
+                if ui
+                    .button(format!("{} {:?}", gen_type.icon(), gen_type))
+                    .clicked()
+                {
                     self.generate_preview(*gen_type);
                 }
             }
@@ -1012,9 +1179,19 @@ impl PcgPanel {
         // Preview display
         if let Some(ref preview) = self.preview {
             ui.group(|ui| {
-                ui.label(RichText::new(format!("{} {:?} Preview", preview.generation_type.icon(), preview.generation_type)).strong());
+                ui.label(
+                    RichText::new(format!(
+                        "{} {:?} Preview",
+                        preview.generation_type.icon(),
+                        preview.generation_type
+                    ))
+                    .strong(),
+                );
                 ui.label(format!("Seed: {}", preview.seed));
-                ui.label(format!("Generation Time: {:.2}ms", preview.generation_time_ms));
+                ui.label(format!(
+                    "Generation Time: {:.2}ms",
+                    preview.generation_time_ms
+                ));
 
                 ui.add_space(10.0);
                 ui.label(&preview.result_summary);
@@ -1044,8 +1221,16 @@ impl PcgPanel {
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
                                 ui.label(format!("#{}", i + 1));
-                                ui.label(format!("{} {:?}", preview.generation_type.icon(), preview.generation_type));
-                                ui.label(RichText::new(format!("Seed: {}", preview.seed)).small().color(Color32::GRAY));
+                                ui.label(format!(
+                                    "{} {:?}",
+                                    preview.generation_type.icon(),
+                                    preview.generation_type
+                                ));
+                                ui.label(
+                                    RichText::new(format!("Seed: {}", preview.seed))
+                                        .small()
+                                        .color(Color32::GRAY),
+                                );
                             });
                         });
                     }
@@ -1078,8 +1263,10 @@ impl PcgPanel {
     }
 
     fn generate_dungeon_preview(&mut self) {
-        let room_count = self.dungeon_settings.room_count.0 + 
-            (self.current_seed % (self.dungeon_settings.room_count.1 - self.dungeon_settings.room_count.0 + 1) as u64) as u32;
+        let room_count = self.dungeon_settings.room_count.0
+            + (self.current_seed
+                % (self.dungeon_settings.room_count.1 - self.dungeon_settings.room_count.0 + 1)
+                    as u64) as u32;
 
         let summary = format!(
             "Generated dungeon: {}x{} tiles, {} rooms, corridor width {}",
@@ -1103,13 +1290,25 @@ impl PcgPanel {
 
     fn generate_preview(&mut self, gen_type: GenerationType) {
         let summary = match gen_type {
-            GenerationType::Encounter => format!("Generated encounter with {} enemies", 3 + self.current_seed % 5),
-            GenerationType::Dungeon => format!("Generated dungeon with {} rooms", 8 + self.current_seed % 7),
+            GenerationType::Encounter => format!(
+                "Generated encounter with {} enemies",
+                3 + self.current_seed % 5
+            ),
+            GenerationType::Dungeon => {
+                format!("Generated dungeon with {} rooms", 8 + self.current_seed % 7)
+            }
             GenerationType::Loot => format!("Generated loot: {} items", 2 + self.current_seed % 4),
             GenerationType::Terrain => "Generated terrain chunk 64x64".to_string(),
-            GenerationType::Vegetation => format!("Placed {} trees and {} bushes", 50 + self.current_seed % 30, 100 + self.current_seed % 50),
+            GenerationType::Vegetation => format!(
+                "Placed {} trees and {} bushes",
+                50 + self.current_seed % 30,
+                100 + self.current_seed % 50
+            ),
             GenerationType::Props => format!("Placed {} props", 20 + self.current_seed % 15),
-            GenerationType::NPC => format!("Generated NPC with {} dialogue lines", 5 + self.current_seed % 10),
+            GenerationType::NPC => format!(
+                "Generated NPC with {} dialogue lines",
+                5 + self.current_seed % 10
+            ),
         };
 
         self.preview = Some(GenerationPreview {
@@ -1181,7 +1380,8 @@ fn rand_seed() -> u64 {
 }
 
 fn simple_hash(seed: u64) -> u64 {
-    seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407)
+    seed.wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407)
 }
 
 impl Panel for PcgPanel {
@@ -1258,14 +1458,23 @@ mod tests {
 
     #[test]
     fn test_encounter_difficulty_colors() {
-        assert_eq!(EncounterDifficulty::Easy.color(), Color32::from_rgb(100, 200, 100));
-        assert_eq!(EncounterDifficulty::Deadly.color(), Color32::from_rgb(255, 80, 80));
+        assert_eq!(
+            EncounterDifficulty::Easy.color(),
+            Color32::from_rgb(100, 200, 100)
+        );
+        assert_eq!(
+            EncounterDifficulty::Deadly.color(),
+            Color32::from_rgb(255, 80, 80)
+        );
     }
 
     #[test]
     fn test_loot_rarity_colors() {
         assert_eq!(LootRarity::Common.color(), Color32::from_rgb(180, 180, 180));
-        assert_eq!(LootRarity::Legendary.color(), Color32::from_rgb(255, 180, 50));
+        assert_eq!(
+            LootRarity::Legendary.color(),
+            Color32::from_rgb(255, 180, 50)
+        );
     }
 
     #[test]
@@ -1337,7 +1546,8 @@ mod tests {
     #[test]
     fn test_encounter_difficulty_hash() {
         use std::collections::HashSet;
-        let set: HashSet<EncounterDifficulty> = EncounterDifficulty::all().iter().copied().collect();
+        let set: HashSet<EncounterDifficulty> =
+            EncounterDifficulty::all().iter().copied().collect();
         assert_eq!(set.len(), 6);
     }
 

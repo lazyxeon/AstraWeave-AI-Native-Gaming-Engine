@@ -535,7 +535,7 @@ mod tests {
     #[test]
     fn test_sample_entities_initialized() {
         let panel = TransformPanel::new();
-        
+
         for i in 0..5 {
             assert!(panel.entities.contains_key(&i));
             let entity = panel.entities.get(&i).unwrap();
@@ -550,9 +550,9 @@ mod tests {
     fn test_add_entity() {
         let mut panel = TransformPanel::new();
         let initial_count = panel.entities.len();
-        
+
         let id = panel.add_entity("TestEntity".to_string(), Transform::default());
-        
+
         assert_eq!(panel.entities.len(), initial_count + 1);
         assert!(panel.entities.contains_key(&id));
         assert_eq!(panel.entities.get(&id).unwrap().name, "TestEntity");
@@ -561,10 +561,10 @@ mod tests {
     #[test]
     fn test_add_entity_increments_id() {
         let mut panel = TransformPanel::new();
-        
+
         let id1 = panel.add_entity("Entity1".to_string(), Transform::default());
         let id2 = panel.add_entity("Entity2".to_string(), Transform::default());
-        
+
         assert_eq!(id2, id1 + 1);
     }
 
@@ -576,9 +576,9 @@ mod tests {
             rotation: Quat::from_rotation_y(std::f32::consts::PI),
             scale: Vec3::new(2.0, 3.0, 4.0),
         };
-        
+
         let id = panel.add_entity("Custom".to_string(), transform.clone());
-        
+
         let entity = panel.entities.get(&id).unwrap();
         assert_eq!(entity.transform.position, transform.position);
         assert_eq!(entity.transform.scale, transform.scale);
@@ -588,9 +588,9 @@ mod tests {
     fn test_remove_entity() {
         let mut panel = TransformPanel::new();
         let initial_count = panel.entities.len();
-        
+
         panel.remove_entity(0);
-        
+
         assert_eq!(panel.entities.len(), initial_count - 1);
         assert!(!panel.entities.contains_key(&0));
     }
@@ -599,9 +599,9 @@ mod tests {
     fn test_remove_nonexistent_entity() {
         let mut panel = TransformPanel::new();
         let initial_count = panel.entities.len();
-        
+
         panel.remove_entity(999); // Doesn't exist
-        
+
         assert_eq!(panel.entities.len(), initial_count);
     }
 
@@ -610,9 +610,9 @@ mod tests {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
         assert!(panel.selected_entity_id.is_some());
-        
+
         panel.remove_entity(0);
-        
+
         // Implementation clears selected_entity_id when the selected entity is removed
         // but only if we were tracking that entity
         // Current impl may or may not clear - let's verify remove_entity behavior
@@ -624,9 +624,9 @@ mod tests {
     #[test]
     fn test_select_entity() {
         let mut panel = TransformPanel::new();
-        
+
         panel.select_entity(0);
-        
+
         assert_eq!(panel.selected_entity_id, Some(0));
         assert!(panel.selected_transform.is_some());
         assert_eq!(panel.gizmo.selected_entity, Some(0));
@@ -635,9 +635,9 @@ mod tests {
     #[test]
     fn test_select_nonexistent_entity() {
         let mut panel = TransformPanel::new();
-        
+
         panel.select_entity(999); // Doesn't exist
-        
+
         assert!(panel.selected_entity_id.is_none());
     }
 
@@ -645,9 +645,9 @@ mod tests {
     fn test_select_different_entity() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.select_entity(1);
-        
+
         assert_eq!(panel.selected_entity_id, Some(1));
     }
 
@@ -655,9 +655,9 @@ mod tests {
     fn test_clear_selection() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.clear_selection();
-        
+
         // clear_selection clears selected_transform, but not selected_entity_id
         // This is the actual implementation behavior
         assert!(panel.selected_transform.is_none());
@@ -671,20 +671,23 @@ mod tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        
+
         panel.set_selected(transform.clone());
-        
+
         assert!(panel.selected_transform.is_some());
-        assert_eq!(panel.selected_transform.as_ref().unwrap().position, transform.position);
+        assert_eq!(
+            panel.selected_transform.as_ref().unwrap().position,
+            transform.position
+        );
     }
 
     #[test]
     fn test_get_transform() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         let transform = panel.get_transform();
-        
+
         assert!(transform.is_some());
     }
 
@@ -692,11 +695,11 @@ mod tests {
     fn test_get_transform_mut() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         if let Some(transform) = panel.get_transform_mut() {
             transform.position.x = 100.0;
         }
-        
+
         assert_eq!(panel.selected_transform.as_ref().unwrap().position.x, 100.0);
     }
 
@@ -706,9 +709,9 @@ mod tests {
     fn test_start_translate() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.start_translate();
-        
+
         assert!(matches!(panel.gizmo.mode, GizmoMode::Translate { .. }));
         assert!(panel.snapshot.is_some());
     }
@@ -717,9 +720,9 @@ mod tests {
     fn test_start_rotate() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.start_rotate();
-        
+
         assert!(matches!(panel.gizmo.mode, GizmoMode::Rotate { .. }));
         assert!(panel.snapshot.is_some());
     }
@@ -728,9 +731,9 @@ mod tests {
     fn test_start_scale() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.start_scale();
-        
+
         assert!(matches!(panel.gizmo.mode, GizmoMode::Scale { .. }));
         assert!(panel.snapshot.is_some());
     }
@@ -738,9 +741,9 @@ mod tests {
     #[test]
     fn test_start_translate_without_selection() {
         let mut panel = TransformPanel::new();
-        
+
         panel.start_translate();
-        
+
         // Should not crash, snapshot should be None
         assert!(panel.snapshot.is_none());
     }
@@ -750,14 +753,14 @@ mod tests {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
         panel.start_translate();
-        
+
         // Modify transform
         if let Some(transform) = panel.get_transform_mut() {
             transform.position = Vec3::new(99.0, 99.0, 99.0);
         }
-        
+
         panel.confirm_transform();
-        
+
         // Entity should be updated
         let entity = panel.entities.get(&0).unwrap();
         assert_eq!(entity.transform.position, Vec3::new(99.0, 99.0, 99.0));
@@ -769,18 +772,21 @@ mod tests {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
         let original_pos = panel.selected_transform.as_ref().unwrap().position;
-        
+
         panel.start_translate();
-        
+
         // Modify transform
         if let Some(transform) = panel.get_transform_mut() {
             transform.position = Vec3::new(99.0, 99.0, 99.0);
         }
-        
+
         panel.cancel_transform();
-        
+
         // Should revert to original
-        assert_eq!(panel.selected_transform.as_ref().unwrap().position, original_pos);
+        assert_eq!(
+            panel.selected_transform.as_ref().unwrap().position,
+            original_pos
+        );
         assert!(panel.snapshot.is_none());
     }
 
@@ -909,7 +915,7 @@ mod tests {
     fn test_local_space_toggle() {
         let mut panel = TransformPanel::new();
         assert!(!panel.local_space);
-        
+
         panel.local_space = true;
         assert!(panel.local_space);
     }
@@ -918,7 +924,7 @@ mod tests {
     fn test_snap_enabled_toggle() {
         let mut panel = TransformPanel::new();
         assert!(!panel.snap_enabled);
-        
+
         panel.snap_enabled = true;
         assert!(panel.snap_enabled);
     }
@@ -927,7 +933,7 @@ mod tests {
     fn test_numeric_buffer() {
         let mut panel = TransformPanel::new();
         assert!(panel.numeric_buffer.is_empty());
-        
+
         panel.numeric_buffer = "123.45".to_string();
         assert_eq!(panel.numeric_buffer, "123.45");
     }
@@ -941,7 +947,7 @@ mod tests {
             name: "TestEntity".to_string(),
             transform: Transform::default(),
         };
-        
+
         assert_eq!(entity.id, 42);
         assert_eq!(entity.name, "TestEntity");
     }
@@ -957,7 +963,7 @@ mod tests {
                 scale: Vec3::ONE,
             },
         };
-        
+
         let cloned = entity.clone();
         assert_eq!(cloned.id, entity.id);
         assert_eq!(cloned.name, entity.name);
@@ -969,26 +975,26 @@ mod tests {
     #[test]
     fn test_full_transform_workflow() {
         let mut panel = TransformPanel::new();
-        
+
         // Add entity
         let id = panel.add_entity("Player".to_string(), Transform::default());
-        
+
         // Select entity
         panel.select_entity(id);
         assert!(panel.selected_transform.is_some());
-        
+
         // Start translate
         panel.start_translate();
         assert!(panel.snapshot.is_some());
-        
+
         // Modify
         if let Some(t) = panel.get_transform_mut() {
             t.position = Vec3::new(10.0, 0.0, 0.0);
         }
-        
+
         // Confirm
         panel.confirm_transform();
-        
+
         // Verify entity updated
         let entity = panel.entities.get(&id).unwrap();
         assert_eq!(entity.transform.position.x, 10.0);
@@ -999,29 +1005,32 @@ mod tests {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
         let original = panel.selected_transform.as_ref().unwrap().position;
-        
+
         panel.start_translate();
-        
+
         if let Some(t) = panel.get_transform_mut() {
             t.position = Vec3::new(999.0, 999.0, 999.0);
         }
-        
+
         panel.cancel_transform();
-        
-        assert_eq!(panel.selected_transform.as_ref().unwrap().position, original);
+
+        assert_eq!(
+            panel.selected_transform.as_ref().unwrap().position,
+            original
+        );
     }
 
     #[test]
     fn test_multiple_mode_switches() {
         let mut panel = TransformPanel::new();
         panel.select_entity(0);
-        
+
         panel.start_translate();
         assert!(matches!(panel.gizmo.mode, GizmoMode::Translate { .. }));
-        
+
         panel.start_rotate();
         assert!(matches!(panel.gizmo.mode, GizmoMode::Rotate { .. }));
-        
+
         panel.start_scale();
         assert!(matches!(panel.gizmo.mode, GizmoMode::Scale { .. }));
     }

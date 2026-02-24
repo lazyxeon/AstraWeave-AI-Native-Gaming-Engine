@@ -1043,8 +1043,8 @@ mod scene_env_tests {
 
     #[test]
     fn ubo_size_is_80() {
-        assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 80);
-        assert_eq!(SceneEnvironmentUBO::size(), 80);
+        assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 96);
+        assert_eq!(SceneEnvironmentUBO::size(), 96);
     }
 
     #[test]

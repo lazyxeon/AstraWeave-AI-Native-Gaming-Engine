@@ -89,7 +89,10 @@ impl MusicMood {
     }
 
     pub fn is_combat_related(&self) -> bool {
-        matches!(self, MusicMood::Combat | MusicMood::Tension | MusicMood::Boss)
+        matches!(
+            self,
+            MusicMood::Combat | MusicMood::Tension | MusicMood::Boss
+        )
     }
 
     pub fn is_positive(&self) -> bool {
@@ -269,11 +272,20 @@ impl ReverbEnvironment {
     }
 
     pub fn is_indoor(&self) -> bool {
-        matches!(self, ReverbEnvironment::SmallRoom | ReverbEnvironment::LargeRoom | ReverbEnvironment::Hall | ReverbEnvironment::Cathedral)
+        matches!(
+            self,
+            ReverbEnvironment::SmallRoom
+                | ReverbEnvironment::LargeRoom
+                | ReverbEnvironment::Hall
+                | ReverbEnvironment::Cathedral
+        )
     }
 
     pub fn is_natural(&self) -> bool {
-        matches!(self, ReverbEnvironment::Cave | ReverbEnvironment::Forest | ReverbEnvironment::Underwater)
+        matches!(
+            self,
+            ReverbEnvironment::Cave | ReverbEnvironment::Forest | ReverbEnvironment::Underwater
+        )
     }
 }
 
@@ -654,7 +666,12 @@ impl AudioPanel {
             } else {
                 self.master_volume
             };
-            Self::show_volume_slider_labeled(ui, "Master Volume", &mut self.master_volume, effective_master);
+            Self::show_volume_slider_labeled(
+                ui,
+                "Master Volume",
+                &mut self.master_volume,
+                effective_master,
+            );
         });
 
         ui.add_space(10.0);
@@ -769,10 +786,13 @@ impl AudioPanel {
         });
 
         // Visual meter
-        let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 8.0), egui::Sense::hover());
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 8.0), egui::Sense::hover());
         let filled_width = rect.width() * effective;
-        ui.painter().rect_filled(rect, 2.0, Color32::from_rgb(40, 40, 45));
-        let filled_rect = egui::Rect::from_min_size(rect.min, Vec2::new(filled_width, rect.height()));
+        ui.painter()
+            .rect_filled(rect, 2.0, Color32::from_rgb(40, 40, 45));
+        let filled_rect =
+            egui::Rect::from_min_size(rect.min, Vec2::new(filled_width, rect.height()));
 
         let color = if effective > 0.9 {
             Color32::from_rgb(220, 80, 80)
@@ -795,11 +815,13 @@ impl AudioPanel {
         ui.label(format!("{:.1} dB", db.max(-60.0)));
 
         // Visual meter
-        let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 6.0), egui::Sense::hover());
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 6.0), egui::Sense::hover());
         let filled_width = rect.width() * effective;
         ui.painter()
             .rect_filled(rect, 2.0, Color32::from_rgb(40, 40, 45));
-        let filled_rect = egui::Rect::from_min_size(rect.min, Vec2::new(filled_width, rect.height()));
+        let filled_rect =
+            egui::Rect::from_min_size(rect.min, Vec2::new(filled_width, rect.height()));
 
         let color = if effective > 0.9 {
             Color32::from_rgb(220, 80, 80)
@@ -887,10 +909,7 @@ impl AudioPanel {
             {
                 self.playlist_shuffle = !self.playlist_shuffle;
             }
-            if ui
-                .selectable_label(self.playlist_loop, "🔁 Loop")
-                .clicked()
-            {
+            if ui.selectable_label(self.playlist_loop, "🔁 Loop").clicked() {
                 self.playlist_loop = !self.playlist_loop;
             }
         });
@@ -956,9 +975,12 @@ impl AudioPanel {
                                 self.selected_track_index = Some(*idx);
                             }
                             ui.label(track.mood.icon());
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                ui.label(format!("{:.0}s", track.duration_sec));
-                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.label(format!("{:.0}s", track.duration_sec));
+                                },
+                            );
                         });
                     }
 
@@ -1016,7 +1038,10 @@ impl AudioPanel {
                     .text("Ear Separation")
                     .suffix("m"),
             );
-            ui.checkbox(&mut self.hrtf_enabled, "Enable HRTF (Head-Related Transfer Function)");
+            ui.checkbox(
+                &mut self.hrtf_enabled,
+                "Enable HRTF (Head-Related Transfer Function)",
+            );
         });
 
         ui.add_space(10.0);
@@ -1046,9 +1071,7 @@ impl AudioPanel {
                 }
             });
 
-            ui.add(
-                egui::Slider::new(&mut self.rolloff_factor, 0.1..=5.0).text("Rolloff Factor"),
-            );
+            ui.add(egui::Slider::new(&mut self.rolloff_factor, 0.1..=5.0).text("Rolloff Factor"));
             ui.add(
                 egui::Slider::new(&mut self.reference_distance, 0.1..=20.0)
                     .text("Reference Distance")
@@ -1495,19 +1518,19 @@ mod tests {
         let mut panel = AudioPanel::new();
         panel.set_volumes(1.5, -0.5, 0.5, 2.0);
         assert_eq!(panel.master_volume(), 1.0); // Clamped
-        assert_eq!(panel.music_volume(), 0.0);  // Clamped
-        assert_eq!(panel.voice_volume(), 0.5);  // Normal
-        assert_eq!(panel.sfx_volume(), 1.0);    // Clamped
+        assert_eq!(panel.music_volume(), 0.0); // Clamped
+        assert_eq!(panel.voice_volume(), 0.5); // Normal
+        assert_eq!(panel.sfx_volume(), 1.0); // Clamped
     }
 
     #[test]
     fn test_spatial_presets() {
         let mut panel = AudioPanel::new();
-        
+
         panel.apply_spatial_preset(SpatialPreset::Headphones);
         assert!(panel.hrtf_enabled);
         assert_eq!(panel.ear_separation, 0.18);
-        
+
         panel.apply_spatial_preset(SpatialPreset::Speakers);
         assert!(!panel.hrtf_enabled);
         assert_eq!(panel.ear_separation, 0.5);
@@ -1516,12 +1539,12 @@ mod tests {
     #[test]
     fn test_reverb_presets() {
         let mut panel = AudioPanel::new();
-        
+
         panel.apply_reverb_preset(ReverbEnvironment::Cathedral);
         assert!(panel.reverb_enabled);
         assert_eq!(panel.reverb_decay_time, 5.0);
         assert_eq!(panel.reverb_wet_dry, 0.5);
-        
+
         panel.apply_reverb_preset(ReverbEnvironment::None);
         assert!(!panel.reverb_enabled);
     }
@@ -1530,10 +1553,10 @@ mod tests {
     fn test_emitter_management() {
         let mut panel = AudioPanel::new();
         assert_eq!(panel.emitter_count(), 0);
-        
+
         let id1 = panel.add_emitter("Test1", [1.0, 2.0, 3.0]);
         assert_eq!(panel.emitter_count(), 1);
-        
+
         let id2 = panel.add_emitter("Test2", [4.0, 5.0, 6.0]);
         assert_eq!(panel.emitter_count(), 2);
         assert_ne!(id1, id2);
@@ -1543,7 +1566,7 @@ mod tests {
     fn test_music_track_management() {
         let mut panel = AudioPanel::new();
         assert!(panel.music_tracks().is_empty());
-        
+
         panel.add_music_track(MusicTrackEntry {
             name: "Test Track".to_string(),
             path: "/test/path.ogg".to_string(),
@@ -1551,7 +1574,7 @@ mod tests {
             bpm: Some(120.0),
             mood: MusicMood::Combat,
         });
-        
+
         assert_eq!(panel.music_tracks().len(), 1);
         assert_eq!(panel.music_tracks()[0].name, "Test Track");
         assert_eq!(panel.music_tracks()[0].mood, MusicMood::Combat);
@@ -1849,7 +1872,10 @@ mod tests {
     #[test]
     fn test_audio_action_spatial_preset() {
         let action = AudioAction::SetSpatialPreset(SpatialPreset::Standard);
-        assert!(matches!(action, AudioAction::SetSpatialPreset(SpatialPreset::Standard)));
+        assert!(matches!(
+            action,
+            AudioAction::SetSpatialPreset(SpatialPreset::Standard)
+        ));
     }
 
     #[test]
@@ -1861,28 +1887,36 @@ mod tests {
     #[test]
     fn test_audio_action_distance_model() {
         let action = AudioAction::SetDistanceModel(DistanceModel::Exponential);
-        assert!(matches!(action, AudioAction::SetDistanceModel(DistanceModel::Exponential)));
+        assert!(matches!(
+            action,
+            AudioAction::SetDistanceModel(DistanceModel::Exponential)
+        ));
     }
 
     #[test]
     fn test_audio_action_reverb() {
         let env = AudioAction::SetReverbEnvironment(ReverbEnvironment::Cave);
         let toggle = AudioAction::ToggleReverb(true);
-        assert!(matches!(env, AudioAction::SetReverbEnvironment(ReverbEnvironment::Cave)));
+        assert!(matches!(
+            env,
+            AudioAction::SetReverbEnvironment(ReverbEnvironment::Cave)
+        ));
         assert!(matches!(toggle, AudioAction::ToggleReverb(true)));
     }
 
     #[test]
     fn test_audio_action_emitter() {
-        let add = AudioAction::AddEmitter { position: [1.0, 2.0, 3.0] };
+        let add = AudioAction::AddEmitter {
+            position: [1.0, 2.0, 3.0],
+        };
         let remove = AudioAction::RemoveEmitter { id: 42 };
-        
+
         if let AudioAction::AddEmitter { position } = add {
             assert_eq!(position, [1.0, 2.0, 3.0]);
         } else {
             panic!("Expected AddEmitter action");
         }
-        
+
         if let AudioAction::RemoveEmitter { id } = remove {
             assert_eq!(id, 42);
         } else {

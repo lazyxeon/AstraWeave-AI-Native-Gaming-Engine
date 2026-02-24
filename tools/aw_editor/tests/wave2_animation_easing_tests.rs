@@ -7,11 +7,11 @@
 //! - AnimationClip: sample_bounce/spin/pulse factories
 //! - AnimationPanel: update state machine, output accumulation
 
+use astract::animation::EasingFunction;
 use aw_editor_lib::panels::animation::{
     AnimatedProperty, AnimationClip, AnimationOutput, AnimationPanel, AnimationTrack, Keyframe,
     PlaybackState,
 };
-use astract::animation::EasingFunction;
 
 // ============================================================================
 // PLAYBACK STATE — ENUM VARIANTS
@@ -359,7 +359,7 @@ fn track_evaluate_before_first_keyframe() {
         value: 10.0,
         easing: EasingFunction::Linear,
     });
-    // Before first keyframe, should clamp to first value  
+    // Before first keyframe, should clamp to first value
     let v = track.evaluate(0.0);
     assert!((v - 5.0).abs() < 0.1, "Expected ~5.0, got {}", v);
 }
@@ -424,7 +424,11 @@ fn easing_quad_in_at_half() {
     let track = make_track_with_easing(EasingFunction::QuadIn);
     let v = track.evaluate(0.5);
     // QuadIn: t*t => 0.25
-    assert!((v - 0.25).abs() < 0.001, "QuadIn(0.5) expected 0.25, got {}", v);
+    assert!(
+        (v - 0.25).abs() < 0.001,
+        "QuadIn(0.5) expected 0.25, got {}",
+        v
+    );
 }
 
 #[test]
@@ -444,7 +448,11 @@ fn easing_quad_out_at_half() {
     let track = make_track_with_easing(EasingFunction::QuadOut);
     let v = track.evaluate(0.5);
     // QuadOut: 1 - (1-t)^2 = 1 - 0.25 = 0.75
-    assert!((v - 0.75).abs() < 0.001, "QuadOut(0.5) expected 0.75, got {}", v);
+    assert!(
+        (v - 0.75).abs() < 0.001,
+        "QuadOut(0.5) expected 0.75, got {}",
+        v
+    );
 }
 
 #[test]
@@ -464,7 +472,11 @@ fn easing_quad_in_out_first_half() {
     let track = make_track_with_easing(EasingFunction::QuadInOut);
     let v = track.evaluate(0.25);
     // t < 0.5 => 2*t*t = 2*0.0625 = 0.125
-    assert!((v - 0.125).abs() < 0.01, "QuadInOut(0.25) expected 0.125, got {}", v);
+    assert!(
+        (v - 0.125).abs() < 0.01,
+        "QuadInOut(0.25) expected 0.125, got {}",
+        v
+    );
 }
 
 #[test]
@@ -472,7 +484,11 @@ fn easing_quad_in_out_at_half() {
     let track = make_track_with_easing(EasingFunction::QuadInOut);
     let v = track.evaluate(0.5);
     // boundary: 2*0.5*0.5 = 0.5
-    assert!((v - 0.5).abs() < 0.01, "QuadInOut(0.5) expected 0.5, got {}", v);
+    assert!(
+        (v - 0.5).abs() < 0.01,
+        "QuadInOut(0.5) expected 0.5, got {}",
+        v
+    );
 }
 
 #[test]
@@ -480,7 +496,11 @@ fn easing_quad_in_out_second_half() {
     let track = make_track_with_easing(EasingFunction::QuadInOut);
     let v = track.evaluate(0.75);
     // t >= 0.5 => 1 - (-2*0.75+2)^2/2 = 1 - (0.5)^2/2 = 1 - 0.125 = 0.875
-    assert!((v - 0.875).abs() < 0.01, "QuadInOut(0.75) expected 0.875, got {}", v);
+    assert!(
+        (v - 0.875).abs() < 0.01,
+        "QuadInOut(0.75) expected 0.875, got {}",
+        v
+    );
 }
 
 #[test]
@@ -488,7 +508,11 @@ fn easing_cubic_in_at_half() {
     let track = make_track_with_easing(EasingFunction::CubicIn);
     let v = track.evaluate(0.5);
     // CubicIn: t^3 = 0.125
-    assert!((v - 0.125).abs() < 0.001, "CubicIn(0.5) expected 0.125, got {}", v);
+    assert!(
+        (v - 0.125).abs() < 0.001,
+        "CubicIn(0.5) expected 0.125, got {}",
+        v
+    );
 }
 
 #[test]
@@ -502,7 +526,11 @@ fn easing_cubic_out_at_half() {
     let track = make_track_with_easing(EasingFunction::CubicOut);
     let v = track.evaluate(0.5);
     // CubicOut: 1 - (1-0.5)^3 = 1 - 0.125 = 0.875
-    assert!((v - 0.875).abs() < 0.001, "CubicOut(0.5) expected 0.875, got {}", v);
+    assert!(
+        (v - 0.875).abs() < 0.001,
+        "CubicOut(0.5) expected 0.875, got {}",
+        v
+    );
 }
 
 #[test]
@@ -516,7 +544,11 @@ fn easing_sine_in_at_half() {
     let track = make_track_with_easing(EasingFunction::SineIn);
     let v = track.evaluate(0.5);
     // SineIn: 1 - cos(t * PI/2) = 1 - cos(PI/4) ≈ 1 - 0.7071 = 0.2929
-    assert!((v - 0.2929).abs() < 0.01, "SineIn(0.5) expected ~0.29, got {}", v);
+    assert!(
+        (v - 0.2929).abs() < 0.01,
+        "SineIn(0.5) expected ~0.29, got {}",
+        v
+    );
 }
 
 #[test]
@@ -530,7 +562,11 @@ fn easing_sine_out_at_half() {
     let track = make_track_with_easing(EasingFunction::SineOut);
     let v = track.evaluate(0.5);
     // SineOut: sin(t * PI/2) = sin(PI/4) ≈ 0.7071
-    assert!((v - 0.7071).abs() < 0.01, "SineOut(0.5) expected ~0.71, got {}", v);
+    assert!(
+        (v - 0.7071).abs() < 0.01,
+        "SineOut(0.5) expected ~0.71, got {}",
+        v
+    );
 }
 
 #[test]
@@ -544,7 +580,11 @@ fn easing_sine_in_out_at_half() {
     let track = make_track_with_easing(EasingFunction::SineInOut);
     let v = track.evaluate(0.5);
     // SineInOut: -(cos(PI*t)-1)/2 = -(cos(PI/2)-1)/2 = -(0-1)/2 = 0.5
-    assert!((v - 0.5).abs() < 0.01, "SineInOut(0.5) expected 0.5, got {}", v);
+    assert!(
+        (v - 0.5).abs() < 0.01,
+        "SineInOut(0.5) expected 0.5, got {}",
+        v
+    );
 }
 
 #[test]
@@ -599,7 +639,11 @@ fn easing_bounce_out_first_region() {
     let track = make_track_with_easing(EasingFunction::BounceOut);
     let v = track.evaluate(0.2);
     // 7.5625 * 0.04 = 0.3025
-    assert!((v - 0.3025).abs() < 0.05, "BounceOut(0.2) expected ~0.30, got {}", v);
+    assert!(
+        (v - 0.3025).abs() < 0.05,
+        "BounceOut(0.2) expected ~0.30, got {}",
+        v
+    );
 }
 
 #[test]
@@ -608,7 +652,11 @@ fn easing_bounce_out_second_region() {
     let track = make_track_with_easing(EasingFunction::BounceOut);
     let v = track.evaluate(0.5);
     // In second bounce region
-    assert!(v > 0.5 && v < 1.0, "BounceOut(0.5) expected (0.5,1.0), got {}", v);
+    assert!(
+        v > 0.5 && v < 1.0,
+        "BounceOut(0.5) expected (0.5,1.0), got {}",
+        v
+    );
 }
 
 #[test]
@@ -635,9 +683,21 @@ fn easing_bounce_out_fourth_region() {
 fn track_three_keyframes_first_segment() {
     let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
     track.keyframes = vec![
-        Keyframe { time: 0.0, value: 0.0, easing: EasingFunction::Linear },
-        Keyframe { time: 1.0, value: 10.0, easing: EasingFunction::Linear },
-        Keyframe { time: 2.0, value: 5.0, easing: EasingFunction::Linear },
+        Keyframe {
+            time: 0.0,
+            value: 0.0,
+            easing: EasingFunction::Linear,
+        },
+        Keyframe {
+            time: 1.0,
+            value: 10.0,
+            easing: EasingFunction::Linear,
+        },
+        Keyframe {
+            time: 2.0,
+            value: 5.0,
+            easing: EasingFunction::Linear,
+        },
     ];
     let v = track.evaluate(0.5);
     assert!((v - 5.0).abs() < 0.01);
@@ -647,9 +707,21 @@ fn track_three_keyframes_first_segment() {
 fn track_three_keyframes_second_segment() {
     let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
     track.keyframes = vec![
-        Keyframe { time: 0.0, value: 0.0, easing: EasingFunction::Linear },
-        Keyframe { time: 1.0, value: 10.0, easing: EasingFunction::Linear },
-        Keyframe { time: 2.0, value: 5.0, easing: EasingFunction::Linear },
+        Keyframe {
+            time: 0.0,
+            value: 0.0,
+            easing: EasingFunction::Linear,
+        },
+        Keyframe {
+            time: 1.0,
+            value: 10.0,
+            easing: EasingFunction::Linear,
+        },
+        Keyframe {
+            time: 2.0,
+            value: 5.0,
+            easing: EasingFunction::Linear,
+        },
     ];
     let v = track.evaluate(1.5);
     assert!((v - 7.5).abs() < 0.01, "Expected ~7.5, got {}", v);
@@ -659,8 +731,16 @@ fn track_three_keyframes_second_segment() {
 fn track_negative_values() {
     let mut track = AnimationTrack::new(AnimatedProperty::PositionY);
     track.keyframes = vec![
-        Keyframe { time: 0.0, value: -10.0, easing: EasingFunction::Linear },
-        Keyframe { time: 1.0, value: 10.0, easing: EasingFunction::Linear },
+        Keyframe {
+            time: 0.0,
+            value: -10.0,
+            easing: EasingFunction::Linear,
+        },
+        Keyframe {
+            time: 1.0,
+            value: 10.0,
+            easing: EasingFunction::Linear,
+        },
     ];
     let v = track.evaluate(0.5);
     assert!((v - 0.0).abs() < 0.01);
@@ -944,7 +1024,11 @@ fn panel_update_looping_wraps_time() {
     // Bounce clip is selected (idx 0), duration 1.0, looping=true
     panel.current_time = 0.9;
     panel.update(0.2); // 0.9 + 0.2 = 1.1 > 1.0 → wraps
-    assert!(panel.current_time < 1.0, "Should wrap, got {}", panel.current_time);
+    assert!(
+        panel.current_time < 1.0,
+        "Should wrap, got {}",
+        panel.current_time
+    );
     assert!(panel.current_time >= 0.0);
 }
 
@@ -991,7 +1075,11 @@ fn panel_output_rotation_from_spin() {
     assert!(out.is_some());
     let out = out.unwrap();
     // Rotation should be approximately TAU/2 at halfway
-    assert!(out.rotation_y > 0.0, "Rotation should be positive, got {}", out.rotation_y);
+    assert!(
+        out.rotation_y > 0.0,
+        "Rotation should be positive, got {}",
+        out.rotation_y
+    );
 }
 
 #[test]

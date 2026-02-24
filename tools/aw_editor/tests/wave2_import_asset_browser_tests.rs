@@ -10,12 +10,12 @@
 //! - TextureType (10 variants × from_filename 20+ suffixes, is_pbr_component, is_packed)
 //! - AssetCategory matches, AssetAction, AssetType from_path, ViewMode
 
+use aw_editor_lib::panels::asset_browser::{
+    AssetAction, AssetCategory, AssetType, TextureType, ViewMode,
+};
 use aw_editor_lib::panels::import_doctor_panel::{
     ImportDoctorPanel, ImportIssue, ImportSettings, IssueSeverity, IssueType, QuickFix,
     SourceEngine, TexturePackingFormat, UpAxis,
-};
-use aw_editor_lib::panels::asset_browser::{
-    AssetAction, AssetCategory, AssetType, TextureType, ViewMode,
 };
 use std::path::{Path, PathBuf};
 
@@ -25,92 +25,146 @@ use std::path::{Path, PathBuf};
 
 #[test]
 fn source_engine_from_unreal() {
-    assert_eq!(SourceEngine::from_filename("rock_unreal.fbx"), SourceEngine::Unreal);
+    assert_eq!(
+        SourceEngine::from_filename("rock_unreal.fbx"),
+        SourceEngine::Unreal
+    );
 }
 
 #[test]
 fn source_engine_from_ue4() {
-    assert_eq!(SourceEngine::from_filename("mesh_ue4.obj"), SourceEngine::Unreal);
+    assert_eq!(
+        SourceEngine::from_filename("mesh_ue4.obj"),
+        SourceEngine::Unreal
+    );
 }
 
 #[test]
 fn source_engine_from_ue5() {
-    assert_eq!(SourceEngine::from_filename("asset_ue5_high.fbx"), SourceEngine::Unreal);
+    assert_eq!(
+        SourceEngine::from_filename("asset_ue5_high.fbx"),
+        SourceEngine::Unreal
+    );
 }
 
 #[test]
 fn source_engine_from_unity() {
-    assert_eq!(SourceEngine::from_filename("tree_unity.fbx"), SourceEngine::Unity);
+    assert_eq!(
+        SourceEngine::from_filename("tree_unity.fbx"),
+        SourceEngine::Unity
+    );
 }
 
 #[test]
 fn source_engine_from_blender() {
-    assert_eq!(SourceEngine::from_filename("house_blender.glb"), SourceEngine::Blender);
+    assert_eq!(
+        SourceEngine::from_filename("house_blender.glb"),
+        SourceEngine::Blender
+    );
 }
 
 #[test]
 fn source_engine_from_blend() {
-    assert_eq!(SourceEngine::from_filename("char_blend.fbx"), SourceEngine::Blender);
+    assert_eq!(
+        SourceEngine::from_filename("char_blend.fbx"),
+        SourceEngine::Blender
+    );
 }
 
 #[test]
 fn source_engine_from_substance_painter() {
-    assert_eq!(SourceEngine::from_filename("mat_sp_export.png"), SourceEngine::SubstancePainter);
+    assert_eq!(
+        SourceEngine::from_filename("mat_sp_export.png"),
+        SourceEngine::SubstancePainter
+    );
 }
 
 #[test]
 fn source_engine_from_substance() {
-    assert_eq!(SourceEngine::from_filename("tex_substance.png"), SourceEngine::SubstancePainter);
+    assert_eq!(
+        SourceEngine::from_filename("tex_substance.png"),
+        SourceEngine::SubstancePainter
+    );
 }
 
 #[test]
 fn source_engine_from_quixel() {
-    assert_eq!(SourceEngine::from_filename("rock_quixel_8k.jpg"), SourceEngine::Quixel);
+    assert_eq!(
+        SourceEngine::from_filename("rock_quixel_8k.jpg"),
+        SourceEngine::Quixel
+    );
 }
 
 #[test]
 fn source_engine_from_megascans() {
-    assert_eq!(SourceEngine::from_filename("ground_megascans_2k.png"), SourceEngine::Quixel);
+    assert_eq!(
+        SourceEngine::from_filename("ground_megascans_2k.png"),
+        SourceEngine::Quixel
+    );
 }
 
 #[test]
 fn source_engine_from_maya() {
-    assert_eq!(SourceEngine::from_filename("char_maya.fbx"), SourceEngine::Maya);
+    assert_eq!(
+        SourceEngine::from_filename("char_maya.fbx"),
+        SourceEngine::Maya
+    );
 }
 
 #[test]
 fn source_engine_from_3dsmax() {
-    assert_eq!(SourceEngine::from_filename("building_3dsmax.obj"), SourceEngine::ThreeDSMax);
+    assert_eq!(
+        SourceEngine::from_filename("building_3dsmax.obj"),
+        SourceEngine::ThreeDSMax
+    );
 }
 
 #[test]
 fn source_engine_from_max() {
-    assert_eq!(SourceEngine::from_filename("prop_max.fbx"), SourceEngine::ThreeDSMax);
+    assert_eq!(
+        SourceEngine::from_filename("prop_max.fbx"),
+        SourceEngine::ThreeDSMax
+    );
 }
 
 #[test]
 fn source_engine_from_cinema4d() {
-    assert_eq!(SourceEngine::from_filename("logo_cinema4d.obj"), SourceEngine::Cinema4D);
+    assert_eq!(
+        SourceEngine::from_filename("logo_cinema4d.obj"),
+        SourceEngine::Cinema4D
+    );
 }
 
 #[test]
 fn source_engine_from_c4d() {
-    assert_eq!(SourceEngine::from_filename("widget_c4d.fbx"), SourceEngine::Cinema4D);
+    assert_eq!(
+        SourceEngine::from_filename("widget_c4d.fbx"),
+        SourceEngine::Cinema4D
+    );
 }
 
 #[test]
 fn source_engine_from_houdini() {
-    assert_eq!(SourceEngine::from_filename("terrain_houdini.obj"), SourceEngine::Houdini);
+    assert_eq!(
+        SourceEngine::from_filename("terrain_houdini.obj"),
+        SourceEngine::Houdini
+    );
 }
 
 #[test]
 fn source_engine_from_zbrush() {
-    assert_eq!(SourceEngine::from_filename("sculpt_zbrush.obj"), SourceEngine::ZBrush);
+    assert_eq!(
+        SourceEngine::from_filename("sculpt_zbrush.obj"),
+        SourceEngine::ZBrush
+    );
 }
 
 #[test]
 fn source_engine_from_unknown() {
-    assert_eq!(SourceEngine::from_filename("random_mesh.glb"), SourceEngine::Unknown);
+    assert_eq!(
+        SourceEngine::from_filename("random_mesh.glb"),
+        SourceEngine::Unknown
+    );
 }
 
 // ============================================================================
@@ -202,37 +256,58 @@ fn source_engine_zbrush_neither() {
 
 #[test]
 fn source_engine_unreal_default_packing_orm() {
-    assert_eq!(SourceEngine::Unreal.default_packing(), TexturePackingFormat::ORM);
+    assert_eq!(
+        SourceEngine::Unreal.default_packing(),
+        TexturePackingFormat::ORM
+    );
 }
 
 #[test]
 fn source_engine_unity_default_packing_mra() {
-    assert_eq!(SourceEngine::Unity.default_packing(), TexturePackingFormat::MRA);
+    assert_eq!(
+        SourceEngine::Unity.default_packing(),
+        TexturePackingFormat::MRA
+    );
 }
 
 #[test]
 fn source_engine_substance_painter_default_packing_orm() {
-    assert_eq!(SourceEngine::SubstancePainter.default_packing(), TexturePackingFormat::ORM);
+    assert_eq!(
+        SourceEngine::SubstancePainter.default_packing(),
+        TexturePackingFormat::ORM
+    );
 }
 
 #[test]
 fn source_engine_substance_designer_default_packing_orm() {
-    assert_eq!(SourceEngine::SubstanceDesigner.default_packing(), TexturePackingFormat::ORM);
+    assert_eq!(
+        SourceEngine::SubstanceDesigner.default_packing(),
+        TexturePackingFormat::ORM
+    );
 }
 
 #[test]
 fn source_engine_quixel_default_packing_orm() {
-    assert_eq!(SourceEngine::Quixel.default_packing(), TexturePackingFormat::ORM);
+    assert_eq!(
+        SourceEngine::Quixel.default_packing(),
+        TexturePackingFormat::ORM
+    );
 }
 
 #[test]
 fn source_engine_unknown_default_packing_separate() {
-    assert_eq!(SourceEngine::Unknown.default_packing(), TexturePackingFormat::Separate);
+    assert_eq!(
+        SourceEngine::Unknown.default_packing(),
+        TexturePackingFormat::Separate
+    );
 }
 
 #[test]
 fn source_engine_blender_default_packing_separate() {
-    assert_eq!(SourceEngine::Blender.default_packing(), TexturePackingFormat::Separate);
+    assert_eq!(
+        SourceEngine::Blender.default_packing(),
+        TexturePackingFormat::Separate
+    );
 }
 
 #[test]
@@ -304,32 +379,50 @@ fn packing_mro_channels() {
 
 #[test]
 fn packing_from_filename_orm() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_orm.png"), TexturePackingFormat::ORM);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_orm.png"),
+        TexturePackingFormat::ORM
+    );
 }
 
 #[test]
 fn packing_from_filename_mra() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_mra.png"), TexturePackingFormat::MRA);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_mra.png"),
+        TexturePackingFormat::MRA
+    );
 }
 
 #[test]
 fn packing_from_filename_rma() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_rma.png"), TexturePackingFormat::RMA);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_rma.png"),
+        TexturePackingFormat::RMA
+    );
 }
 
 #[test]
 fn packing_from_filename_arm() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_arm.png"), TexturePackingFormat::ARM);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_arm.png"),
+        TexturePackingFormat::ARM
+    );
 }
 
 #[test]
 fn packing_from_filename_mro() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_mro.png"), TexturePackingFormat::MRO);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_mro.png"),
+        TexturePackingFormat::MRO
+    );
 }
 
 #[test]
 fn packing_from_filename_unknown() {
-    assert_eq!(TexturePackingFormat::from_filename("rock_albedo.png"), TexturePackingFormat::Separate);
+    assert_eq!(
+        TexturePackingFormat::from_filename("rock_albedo.png"),
+        TexturePackingFormat::Separate
+    );
 }
 
 #[test]
@@ -409,47 +502,74 @@ fn severity_default_is_info() {
 
 #[test]
 fn issue_type_unknown_severity() {
-    assert_eq!(IssueType::Unknown.default_severity(), IssueSeverity::Warning);
+    assert_eq!(
+        IssueType::Unknown.default_severity(),
+        IssueSeverity::Warning
+    );
 }
 
 #[test]
 fn issue_type_normal_map_severity() {
-    assert_eq!(IssueType::NormalMapFormat.default_severity(), IssueSeverity::Warning);
+    assert_eq!(
+        IssueType::NormalMapFormat.default_severity(),
+        IssueSeverity::Warning
+    );
 }
 
 #[test]
 fn issue_type_texture_packing_severity() {
-    assert_eq!(IssueType::TexturePacking.default_severity(), IssueSeverity::Info);
+    assert_eq!(
+        IssueType::TexturePacking.default_severity(),
+        IssueSeverity::Info
+    );
 }
 
 #[test]
 fn issue_type_missing_uvs_severity() {
-    assert_eq!(IssueType::MissingUVs.default_severity(), IssueSeverity::Error);
+    assert_eq!(
+        IssueType::MissingUVs.default_severity(),
+        IssueSeverity::Error
+    );
 }
 
 #[test]
 fn issue_type_unsupported_format_severity() {
-    assert_eq!(IssueType::UnsupportedFormat.default_severity(), IssueSeverity::Critical);
+    assert_eq!(
+        IssueType::UnsupportedFormat.default_severity(),
+        IssueSeverity::Critical
+    );
 }
 
 #[test]
 fn issue_type_missing_texture_severity() {
-    assert_eq!(IssueType::MissingTexture.default_severity(), IssueSeverity::Error);
+    assert_eq!(
+        IssueType::MissingTexture.default_severity(),
+        IssueSeverity::Error
+    );
 }
 
 #[test]
 fn issue_type_missing_collider_severity() {
-    assert_eq!(IssueType::MissingCollider.default_severity(), IssueSeverity::Info);
+    assert_eq!(
+        IssueType::MissingCollider.default_severity(),
+        IssueSeverity::Info
+    );
 }
 
 #[test]
 fn issue_type_missing_lods_severity() {
-    assert_eq!(IssueType::MissingLODs.default_severity(), IssueSeverity::Info);
+    assert_eq!(
+        IssueType::MissingLODs.default_severity(),
+        IssueSeverity::Info
+    );
 }
 
 #[test]
 fn issue_type_duplicate_material_severity() {
-    assert_eq!(IssueType::DuplicateMaterial.default_severity(), IssueSeverity::Info);
+    assert_eq!(
+        IssueType::DuplicateMaterial.default_severity(),
+        IssueSeverity::Info
+    );
 }
 
 // ============================================================================
@@ -546,42 +666,66 @@ fn issue_type_oversized_no_fix_description() {
 
 #[test]
 fn issue_type_normal_map_suggested_fix() {
-    assert_eq!(IssueType::NormalMapFormat.suggested_fix(), Some(QuickFix::FlipGreenChannel));
+    assert_eq!(
+        IssueType::NormalMapFormat.suggested_fix(),
+        Some(QuickFix::FlipGreenChannel)
+    );
 }
 
 #[test]
 fn issue_type_texture_packing_suggested_fix() {
-    assert_eq!(IssueType::TexturePacking.suggested_fix(), Some(QuickFix::ConvertToORM));
+    assert_eq!(
+        IssueType::TexturePacking.suggested_fix(),
+        Some(QuickFix::ConvertToORM)
+    );
 }
 
 #[test]
 fn issue_type_missing_tangents_suggested_fix() {
-    assert_eq!(IssueType::MissingTangents.suggested_fix(), Some(QuickFix::GenerateTangents));
+    assert_eq!(
+        IssueType::MissingTangents.suggested_fix(),
+        Some(QuickFix::GenerateTangents)
+    );
 }
 
 #[test]
 fn issue_type_non_pot_suggested_fix() {
-    assert_eq!(IssueType::NonPowerOfTwo.suggested_fix(), Some(QuickFix::ResizePowerOfTwo));
+    assert_eq!(
+        IssueType::NonPowerOfTwo.suggested_fix(),
+        Some(QuickFix::ResizePowerOfTwo)
+    );
 }
 
 #[test]
 fn issue_type_incorrect_scale_suggested_fix() {
-    assert_eq!(IssueType::IncorrectScale.suggested_fix(), Some(QuickFix::FixScale));
+    assert_eq!(
+        IssueType::IncorrectScale.suggested_fix(),
+        Some(QuickFix::FixScale)
+    );
 }
 
 #[test]
 fn issue_type_incorrect_orientation_suggested_fix() {
-    assert_eq!(IssueType::IncorrectOrientation.suggested_fix(), Some(QuickFix::FixOrientation));
+    assert_eq!(
+        IssueType::IncorrectOrientation.suggested_fix(),
+        Some(QuickFix::FixOrientation)
+    );
 }
 
 #[test]
 fn issue_type_missing_lods_suggested_fix() {
-    assert_eq!(IssueType::MissingLODs.suggested_fix(), Some(QuickFix::GenerateLODs));
+    assert_eq!(
+        IssueType::MissingLODs.suggested_fix(),
+        Some(QuickFix::GenerateLODs)
+    );
 }
 
 #[test]
 fn issue_type_missing_collider_suggested_fix() {
-    assert_eq!(IssueType::MissingCollider.suggested_fix(), Some(QuickFix::GenerateCollider));
+    assert_eq!(
+        IssueType::MissingCollider.suggested_fix(),
+        Some(QuickFix::GenerateCollider)
+    );
 }
 
 #[test]
@@ -826,22 +970,26 @@ fn panel_can_import_no_issues() {
 #[test]
 fn panel_can_import_with_warning() {
     let mut p = ImportDoctorPanel::new();
-    p.issues.push(ImportIssue::new(IssueType::NonPowerOfTwo, "Not POT"));
+    p.issues
+        .push(ImportIssue::new(IssueType::NonPowerOfTwo, "Not POT"));
     assert!(p.can_import()); // Warning doesn't block
 }
 
 #[test]
 fn panel_cannot_import_with_critical() {
     let mut p = ImportDoctorPanel::new();
-    p.issues.push(ImportIssue::new(IssueType::UnsupportedFormat, "Bad format"));
+    p.issues
+        .push(ImportIssue::new(IssueType::UnsupportedFormat, "Bad format"));
     assert!(!p.can_import()); // Critical blocks
 }
 
 #[test]
 fn panel_issue_count_by_severity() {
     let mut p = ImportDoctorPanel::new();
-    p.issues.push(ImportIssue::new(IssueType::NonPowerOfTwo, "a"));
-    p.issues.push(ImportIssue::new(IssueType::MissingTangents, "b"));
+    p.issues
+        .push(ImportIssue::new(IssueType::NonPowerOfTwo, "a"));
+    p.issues
+        .push(ImportIssue::new(IssueType::MissingTangents, "b"));
     p.issues.push(ImportIssue::new(IssueType::MissingUVs, "c"));
     assert_eq!(p.issue_count(IssueSeverity::Warning), 2); // NonPOT + MissingTangents
     assert_eq!(p.issue_count(IssueSeverity::Error), 1); // MissingUVs
@@ -851,7 +999,8 @@ fn panel_issue_count_by_severity() {
 #[test]
 fn panel_fixable_count_excludes_applied() {
     let mut p = ImportDoctorPanel::new();
-    p.issues.push(ImportIssue::new(IssueType::MissingTangents, "a"));
+    p.issues
+        .push(ImportIssue::new(IssueType::MissingTangents, "a"));
     let mut applied = ImportIssue::new(IssueType::NonPowerOfTwo, "b");
     applied.fix_applied = true;
     p.issues.push(applied);
@@ -864,22 +1013,34 @@ fn panel_fixable_count_excludes_applied() {
 
 #[test]
 fn texture_type_from_normal_suffix() {
-    assert_eq!(TextureType::from_filename("rock_normal.png"), TextureType::Normal);
+    assert_eq!(
+        TextureType::from_filename("rock_normal.png"),
+        TextureType::Normal
+    );
 }
 
 #[test]
 fn texture_type_from_n_suffix() {
-    assert_eq!(TextureType::from_filename("rock_n.png"), TextureType::Normal);
+    assert_eq!(
+        TextureType::from_filename("rock_n.png"),
+        TextureType::Normal
+    );
 }
 
 #[test]
 fn texture_type_from_nrm_suffix() {
-    assert_eq!(TextureType::from_filename("rock_nrm.png"), TextureType::Normal);
+    assert_eq!(
+        TextureType::from_filename("rock_nrm.png"),
+        TextureType::Normal
+    );
 }
 
 #[test]
 fn texture_type_from_nor_suffix() {
-    assert_eq!(TextureType::from_filename("rock_nor.png"), TextureType::Normal);
+    assert_eq!(
+        TextureType::from_filename("rock_nor.png"),
+        TextureType::Normal
+    );
 }
 
 #[test]
@@ -894,37 +1055,58 @@ fn texture_type_from_mra_suffix() {
 
 #[test]
 fn texture_type_from_r_suffix() {
-    assert_eq!(TextureType::from_filename("rock_r.png"), TextureType::Roughness);
+    assert_eq!(
+        TextureType::from_filename("rock_r.png"),
+        TextureType::Roughness
+    );
 }
 
 #[test]
 fn texture_type_from_rough_suffix() {
-    assert_eq!(TextureType::from_filename("rock_rough.png"), TextureType::Roughness);
+    assert_eq!(
+        TextureType::from_filename("rock_rough.png"),
+        TextureType::Roughness
+    );
 }
 
 #[test]
 fn texture_type_from_roughness_suffix() {
-    assert_eq!(TextureType::from_filename("rock_roughness.png"), TextureType::Roughness);
+    assert_eq!(
+        TextureType::from_filename("rock_roughness.png"),
+        TextureType::Roughness
+    );
 }
 
 #[test]
 fn texture_type_from_m_suffix() {
-    assert_eq!(TextureType::from_filename("rock_m.png"), TextureType::Metallic);
+    assert_eq!(
+        TextureType::from_filename("rock_m.png"),
+        TextureType::Metallic
+    );
 }
 
 #[test]
 fn texture_type_from_metal_suffix() {
-    assert_eq!(TextureType::from_filename("rock_metal.png"), TextureType::Metallic);
+    assert_eq!(
+        TextureType::from_filename("rock_metal.png"),
+        TextureType::Metallic
+    );
 }
 
 #[test]
 fn texture_type_from_metallic_suffix() {
-    assert_eq!(TextureType::from_filename("rock_metallic.png"), TextureType::Metallic);
+    assert_eq!(
+        TextureType::from_filename("rock_metallic.png"),
+        TextureType::Metallic
+    );
 }
 
 #[test]
 fn texture_type_from_metalness_suffix() {
-    assert_eq!(TextureType::from_filename("rock_metalness.png"), TextureType::Metallic);
+    assert_eq!(
+        TextureType::from_filename("rock_metalness.png"),
+        TextureType::Metallic
+    );
 }
 
 #[test]
@@ -934,97 +1116,154 @@ fn texture_type_from_ao_suffix() {
 
 #[test]
 fn texture_type_from_occlusion_suffix() {
-    assert_eq!(TextureType::from_filename("rock_occlusion.png"), TextureType::AO);
+    assert_eq!(
+        TextureType::from_filename("rock_occlusion.png"),
+        TextureType::AO
+    );
 }
 
 #[test]
 fn texture_type_from_e_suffix() {
-    assert_eq!(TextureType::from_filename("rock_e.png"), TextureType::Emission);
+    assert_eq!(
+        TextureType::from_filename("rock_e.png"),
+        TextureType::Emission
+    );
 }
 
 #[test]
 fn texture_type_from_emit_suffix() {
-    assert_eq!(TextureType::from_filename("rock_emit.png"), TextureType::Emission);
+    assert_eq!(
+        TextureType::from_filename("rock_emit.png"),
+        TextureType::Emission
+    );
 }
 
 #[test]
 fn texture_type_from_emission_suffix() {
-    assert_eq!(TextureType::from_filename("rock_emission.png"), TextureType::Emission);
+    assert_eq!(
+        TextureType::from_filename("rock_emission.png"),
+        TextureType::Emission
+    );
 }
 
 #[test]
 fn texture_type_from_emissive_suffix() {
-    assert_eq!(TextureType::from_filename("rock_emissive.png"), TextureType::Emission);
+    assert_eq!(
+        TextureType::from_filename("rock_emissive.png"),
+        TextureType::Emission
+    );
 }
 
 #[test]
 fn texture_type_from_glow_suffix() {
-    assert_eq!(TextureType::from_filename("rock_glow.png"), TextureType::Emission);
+    assert_eq!(
+        TextureType::from_filename("rock_glow.png"),
+        TextureType::Emission
+    );
 }
 
 #[test]
 fn texture_type_from_h_suffix() {
-    assert_eq!(TextureType::from_filename("rock_h.png"), TextureType::Height);
+    assert_eq!(
+        TextureType::from_filename("rock_h.png"),
+        TextureType::Height
+    );
 }
 
 #[test]
 fn texture_type_from_height_suffix() {
-    assert_eq!(TextureType::from_filename("rock_height.png"), TextureType::Height);
+    assert_eq!(
+        TextureType::from_filename("rock_height.png"),
+        TextureType::Height
+    );
 }
 
 #[test]
 fn texture_type_from_disp_suffix() {
-    assert_eq!(TextureType::from_filename("rock_disp.png"), TextureType::Height);
+    assert_eq!(
+        TextureType::from_filename("rock_disp.png"),
+        TextureType::Height
+    );
 }
 
 #[test]
 fn texture_type_from_displacement_suffix() {
-    assert_eq!(TextureType::from_filename("rock_displacement.png"), TextureType::Height);
+    assert_eq!(
+        TextureType::from_filename("rock_displacement.png"),
+        TextureType::Height
+    );
 }
 
 #[test]
 fn texture_type_from_bump_suffix() {
-    assert_eq!(TextureType::from_filename("rock_bump.png"), TextureType::Height);
+    assert_eq!(
+        TextureType::from_filename("rock_bump.png"),
+        TextureType::Height
+    );
 }
 
 #[test]
 fn texture_type_from_albedo_suffix() {
-    assert_eq!(TextureType::from_filename("rock_albedo.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_albedo.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_diffuse_suffix() {
-    assert_eq!(TextureType::from_filename("rock_diffuse.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_diffuse.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_basecolor_suffix() {
-    assert_eq!(TextureType::from_filename("rock_basecolor.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_basecolor.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_base_color_suffix() {
-    assert_eq!(TextureType::from_filename("rock_base_color.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_base_color.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_color_suffix() {
-    assert_eq!(TextureType::from_filename("rock_color.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_color.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_col_suffix() {
-    assert_eq!(TextureType::from_filename("rock_col.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_col.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_d_suffix() {
-    assert_eq!(TextureType::from_filename("rock_d.png"), TextureType::Albedo);
+    assert_eq!(
+        TextureType::from_filename("rock_d.png"),
+        TextureType::Albedo
+    );
 }
 
 #[test]
 fn texture_type_from_unknown() {
-    assert_eq!(TextureType::from_filename("random_file.png"), TextureType::Unknown);
+    assert_eq!(
+        TextureType::from_filename("random_file.png"),
+        TextureType::Unknown
+    );
 }
 
 // ============================================================================
@@ -1139,72 +1378,114 @@ fn category_all_count() {
 
 #[test]
 fn asset_type_from_glb() {
-    assert_eq!(AssetType::from_path(Path::new("mesh.glb")), AssetType::Model);
+    assert_eq!(
+        AssetType::from_path(Path::new("mesh.glb")),
+        AssetType::Model
+    );
 }
 
 #[test]
 fn asset_type_from_gltf() {
-    assert_eq!(AssetType::from_path(Path::new("mesh.gltf")), AssetType::Model);
+    assert_eq!(
+        AssetType::from_path(Path::new("mesh.gltf")),
+        AssetType::Model
+    );
 }
 
 #[test]
 fn asset_type_from_obj() {
-    assert_eq!(AssetType::from_path(Path::new("mesh.obj")), AssetType::Model);
+    assert_eq!(
+        AssetType::from_path(Path::new("mesh.obj")),
+        AssetType::Model
+    );
 }
 
 #[test]
 fn asset_type_from_fbx() {
-    assert_eq!(AssetType::from_path(Path::new("mesh.fbx")), AssetType::Model);
+    assert_eq!(
+        AssetType::from_path(Path::new("mesh.fbx")),
+        AssetType::Model
+    );
 }
 
 #[test]
 fn asset_type_from_png() {
-    assert_eq!(AssetType::from_path(Path::new("tex.png")), AssetType::Texture);
+    assert_eq!(
+        AssetType::from_path(Path::new("tex.png")),
+        AssetType::Texture
+    );
 }
 
 #[test]
 fn asset_type_from_jpg() {
-    assert_eq!(AssetType::from_path(Path::new("tex.jpg")), AssetType::Texture);
+    assert_eq!(
+        AssetType::from_path(Path::new("tex.jpg")),
+        AssetType::Texture
+    );
 }
 
 #[test]
 fn asset_type_from_jpeg() {
-    assert_eq!(AssetType::from_path(Path::new("tex.jpeg")), AssetType::Texture);
+    assert_eq!(
+        AssetType::from_path(Path::new("tex.jpeg")),
+        AssetType::Texture
+    );
 }
 
 #[test]
 fn asset_type_from_ktx2() {
-    assert_eq!(AssetType::from_path(Path::new("tex.ktx2")), AssetType::Texture);
+    assert_eq!(
+        AssetType::from_path(Path::new("tex.ktx2")),
+        AssetType::Texture
+    );
 }
 
 #[test]
 fn asset_type_from_dds() {
-    assert_eq!(AssetType::from_path(Path::new("tex.dds")), AssetType::Texture);
+    assert_eq!(
+        AssetType::from_path(Path::new("tex.dds")),
+        AssetType::Texture
+    );
 }
 
 #[test]
 fn asset_type_from_ron() {
-    assert_eq!(AssetType::from_path(Path::new("scene.ron")), AssetType::Scene);
+    assert_eq!(
+        AssetType::from_path(Path::new("scene.ron")),
+        AssetType::Scene
+    );
 }
 
 #[test]
 fn asset_type_from_toml() {
-    assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
+    assert_eq!(
+        AssetType::from_path(Path::new("config.toml")),
+        AssetType::Config
+    );
 }
 
 #[test]
 fn asset_type_from_json() {
-    assert_eq!(AssetType::from_path(Path::new("data.json")), AssetType::Config);
+    assert_eq!(
+        AssetType::from_path(Path::new("data.json")),
+        AssetType::Config
+    );
 }
 
 #[test]
 fn asset_type_from_wav() {
-    assert_eq!(AssetType::from_path(Path::new("sound.wav")), AssetType::Audio);
+    assert_eq!(
+        AssetType::from_path(Path::new("sound.wav")),
+        AssetType::Audio
+    );
 }
 
 #[test]
 fn asset_type_from_ogg() {
-    assert_eq!(AssetType::from_path(Path::new("music.ogg")), AssetType::Audio);
+    assert_eq!(
+        AssetType::from_path(Path::new("music.ogg")),
+        AssetType::Audio
+    );
 }
 
 #[test]
@@ -1214,12 +1495,18 @@ fn asset_type_from_mp3() {
 
 #[test]
 fn asset_type_from_prefab_ron() {
-    assert_eq!(AssetType::from_path(Path::new("tree.prefab.ron")), AssetType::Prefab);
+    assert_eq!(
+        AssetType::from_path(Path::new("tree.prefab.ron")),
+        AssetType::Prefab
+    );
 }
 
 #[test]
 fn asset_type_from_unknown_ext() {
-    assert_eq!(AssetType::from_path(Path::new("data.xyz")), AssetType::Unknown);
+    assert_eq!(
+        AssetType::from_path(Path::new("data.xyz")),
+        AssetType::Unknown
+    );
 }
 
 #[test]
@@ -1258,7 +1545,9 @@ fn asset_type_all_count() {
 
 #[test]
 fn asset_action_import_model_is_modifying() {
-    let a = AssetAction::ImportModel { path: PathBuf::from("m.glb") };
+    let a = AssetAction::ImportModel {
+        path: PathBuf::from("m.glb"),
+    };
     assert!(a.is_modifying());
     assert!(!a.is_viewing());
     assert!(!a.is_scene_action());
@@ -1266,7 +1555,9 @@ fn asset_action_import_model_is_modifying() {
 
 #[test]
 fn asset_action_load_viewport_is_viewing() {
-    let a = AssetAction::LoadToViewport { path: PathBuf::from("m.glb") };
+    let a = AssetAction::LoadToViewport {
+        path: PathBuf::from("m.glb"),
+    };
     assert!(a.is_viewing());
     assert!(!a.is_modifying());
 }
@@ -1282,13 +1573,17 @@ fn asset_action_apply_texture_is_modifying() {
 
 #[test]
 fn asset_action_apply_material_is_modifying() {
-    let a = AssetAction::ApplyMaterial { path: PathBuf::from("m.mat") };
+    let a = AssetAction::ApplyMaterial {
+        path: PathBuf::from("m.mat"),
+    };
     assert!(a.is_modifying());
 }
 
 #[test]
 fn asset_action_load_scene_is_scene_action() {
-    let a = AssetAction::LoadScene { path: PathBuf::from("s.ron") };
+    let a = AssetAction::LoadScene {
+        path: PathBuf::from("s.ron"),
+    };
     assert!(a.is_scene_action());
     assert!(!a.is_modifying());
     assert!(!a.is_viewing());
@@ -1296,19 +1591,25 @@ fn asset_action_load_scene_is_scene_action() {
 
 #[test]
 fn asset_action_spawn_prefab_is_modifying() {
-    let a = AssetAction::SpawnPrefab { path: PathBuf::from("p.ron") };
+    let a = AssetAction::SpawnPrefab {
+        path: PathBuf::from("p.ron"),
+    };
     assert!(a.is_modifying());
 }
 
 #[test]
 fn asset_action_open_external_is_viewing() {
-    let a = AssetAction::OpenExternal { path: PathBuf::from("f.glb") };
+    let a = AssetAction::OpenExternal {
+        path: PathBuf::from("f.glb"),
+    };
     assert!(a.is_viewing());
 }
 
 #[test]
 fn asset_action_inspect_asset_is_viewing() {
-    let a = AssetAction::InspectAsset { path: PathBuf::from("a.glb") };
+    let a = AssetAction::InspectAsset {
+        path: PathBuf::from("a.glb"),
+    };
     assert!(a.is_viewing());
 }
 
@@ -1322,14 +1623,31 @@ fn asset_action_path_accessor() {
 #[test]
 fn asset_action_name_nonempty() {
     let actions: Vec<AssetAction> = vec![
-        AssetAction::ImportModel { path: PathBuf::from("a") },
-        AssetAction::LoadToViewport { path: PathBuf::from("a") },
-        AssetAction::ApplyTexture { path: PathBuf::from("a"), texture_type: TextureType::Normal },
-        AssetAction::ApplyMaterial { path: PathBuf::from("a") },
-        AssetAction::LoadScene { path: PathBuf::from("a") },
-        AssetAction::SpawnPrefab { path: PathBuf::from("a") },
-        AssetAction::OpenExternal { path: PathBuf::from("a") },
-        AssetAction::InspectAsset { path: PathBuf::from("a") },
+        AssetAction::ImportModel {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::LoadToViewport {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::ApplyTexture {
+            path: PathBuf::from("a"),
+            texture_type: TextureType::Normal,
+        },
+        AssetAction::ApplyMaterial {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::LoadScene {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::SpawnPrefab {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::OpenExternal {
+            path: PathBuf::from("a"),
+        },
+        AssetAction::InspectAsset {
+            path: PathBuf::from("a"),
+        },
     ];
     for a in &actions {
         assert!(!a.name().is_empty());

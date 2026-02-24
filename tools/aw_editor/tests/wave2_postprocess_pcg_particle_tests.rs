@@ -5,19 +5,19 @@
 //! - pcg_panel.rs (1,242L, 30 inline tests = 2.4/100L)
 //! - particle_system_panel.rs (2,360L, 64 inline tests = 2.7/100L)
 
-use aw_editor_lib::panels::post_process_panel::{
-    AmbientOcclusionSettings, AntiAliasing, AoMethod, BloomSettings, ChromaticAberrationSettings,
-    ColorGradingSettings, DepthOfFieldSettings, DofMode, FilmGrainSettings, MotionBlurSettings,
-    PostProcessPanel, PostProcessProfile, PostProcessTab, SsrSettings, Tonemapper,
-    VignetteSettings,
+use aw_editor_lib::panels::particle_system_panel::{
+    CurveType, EmitterShape, ModuleType, ParticleBlendMode, ParticleRenderMode, ParticleTab,
+    RangeValue, SimulationSpace, SortMode, SubEmitterEvent,
 };
 use aw_editor_lib::panels::pcg_panel::{
     DungeonSettings, EncounterConfig, EncounterDifficulty, EnemyType, GenerationType, LootEntry,
     LootRarity, LootTable, PcgPanel, PcgTab, RoomConfig, RoomType,
 };
-use aw_editor_lib::panels::particle_system_panel::{
-    CurveType, EmitterShape, ModuleType, ParticleBlendMode, ParticleRenderMode, ParticleTab,
-    RangeValue, SimulationSpace, SortMode, SubEmitterEvent,
+use aw_editor_lib::panels::post_process_panel::{
+    AmbientOcclusionSettings, AntiAliasing, AoMethod, BloomSettings, ChromaticAberrationSettings,
+    ColorGradingSettings, DepthOfFieldSettings, DofMode, FilmGrainSettings, MotionBlurSettings,
+    PostProcessPanel, PostProcessProfile, PostProcessTab, SsrSettings, Tonemapper,
+    VignetteSettings,
 };
 
 // ============================================================================
@@ -78,7 +78,13 @@ fn tonemapper_not_cinematic_neutral() {
 fn tonemapper_display_contains_name() {
     for t in Tonemapper::all() {
         let s = format!("{}", t);
-        assert!(s.contains(t.name()), "Display for {:?} = '{}', expected '{}'", t, s, t.name());
+        assert!(
+            s.contains(t.name()),
+            "Display for {:?} = '{}', expected '{}'",
+            t,
+            s,
+            t.name()
+        );
     }
 }
 
@@ -651,7 +657,10 @@ fn dungeon_settings_defaults() {
 #[test]
 fn dungeon_settings_has_entrance_and_exit() {
     let d = DungeonSettings::default();
-    assert!(d.room_configs.iter().any(|c| c.room_type == RoomType::Entrance));
+    assert!(d
+        .room_configs
+        .iter()
+        .any(|c| c.room_type == RoomType::Entrance));
     assert!(d.room_configs.iter().any(|c| c.room_type == RoomType::Exit));
 }
 
@@ -808,9 +817,18 @@ fn render_mode_default_billboard() {
 #[test]
 fn render_mode_names() {
     assert_eq!(ParticleRenderMode::Billboard.name(), "Billboard");
-    assert_eq!(ParticleRenderMode::StretchedBillboard.name(), "Stretched Billboard");
-    assert_eq!(ParticleRenderMode::HorizontalBillboard.name(), "Horizontal Billboard");
-    assert_eq!(ParticleRenderMode::VerticalBillboard.name(), "Vertical Billboard");
+    assert_eq!(
+        ParticleRenderMode::StretchedBillboard.name(),
+        "Stretched Billboard"
+    );
+    assert_eq!(
+        ParticleRenderMode::HorizontalBillboard.name(),
+        "Horizontal Billboard"
+    );
+    assert_eq!(
+        ParticleRenderMode::VerticalBillboard.name(),
+        "Vertical Billboard"
+    );
     assert_eq!(ParticleRenderMode::Mesh.name(), "Mesh");
     assert_eq!(ParticleRenderMode::Trail.name(), "Trail");
 }
@@ -1077,16 +1095,48 @@ fn module_type_all_variants_count() {
 #[test]
 fn module_type_names_nonempty() {
     let modules: Vec<ModuleType> = vec![
-        ModuleType::Velocity { direction: [0.0; 3], speed: RangeValue::default() },
-        ModuleType::Force { force: [0.0; 3], space: SimulationSpace::Local },
+        ModuleType::Velocity {
+            direction: [0.0; 3],
+            speed: RangeValue::default(),
+        },
+        ModuleType::Force {
+            force: [0.0; 3],
+            space: SimulationSpace::Local,
+        },
         ModuleType::Gravity { multiplier: 1.0 },
-        ModuleType::Noise { strength: 1.0, frequency: 1.0, scroll_speed: 0.0 },
-        ModuleType::Collision { bounce: 0.5, lifetime_loss: 0.0, radius_scale: 1.0 },
-        ModuleType::SubEmitter { event: SubEmitterEvent::Birth, emitter_id: 0 },
-        ModuleType::TextureAnimation { tiles_x: 1, tiles_y: 1, fps: 1.0 },
-        ModuleType::Trail { width: RangeValue::default(), lifetime: 1.0, min_vertex_distance: 0.1 },
-        ModuleType::Light { color: [1.0; 3], intensity: RangeValue::default(), range: RangeValue::default() },
-        ModuleType::Rotation { speed: RangeValue::default(), random_start: false },
+        ModuleType::Noise {
+            strength: 1.0,
+            frequency: 1.0,
+            scroll_speed: 0.0,
+        },
+        ModuleType::Collision {
+            bounce: 0.5,
+            lifetime_loss: 0.0,
+            radius_scale: 1.0,
+        },
+        ModuleType::SubEmitter {
+            event: SubEmitterEvent::Birth,
+            emitter_id: 0,
+        },
+        ModuleType::TextureAnimation {
+            tiles_x: 1,
+            tiles_y: 1,
+            fps: 1.0,
+        },
+        ModuleType::Trail {
+            width: RangeValue::default(),
+            lifetime: 1.0,
+            min_vertex_distance: 0.1,
+        },
+        ModuleType::Light {
+            color: [1.0; 3],
+            intensity: RangeValue::default(),
+            range: RangeValue::default(),
+        },
+        ModuleType::Rotation {
+            speed: RangeValue::default(),
+            random_start: false,
+        },
     ];
     for m in &modules {
         assert!(!m.name().is_empty());

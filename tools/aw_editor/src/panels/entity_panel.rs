@@ -59,7 +59,10 @@ impl PrefabAction {
 
     /// Returns true if this action affects all entities in the prefab
     pub fn is_bulk_action(&self) -> bool {
-        matches!(self, PrefabAction::RevertAllToOriginal(_) | PrefabAction::ApplyAllChangesToFile(_))
+        matches!(
+            self,
+            PrefabAction::RevertAllToOriginal(_) | PrefabAction::ApplyAllChangesToFile(_)
+        )
     }
 }
 
@@ -72,47 +75,78 @@ pub enum EntityAction {
     DeselectEntity,
     SelectMultiple(Vec<Entity>),
     ClearSelection,
-    
+
     // Entity creation
     SpawnFromArchetype(EntityArchetype),
-    SpawnMultiple { archetype: EntityArchetype, count: usize },
+    SpawnMultiple {
+        archetype: EntityArchetype,
+        count: usize,
+    },
     DuplicateEntity(Entity),
     DeleteEntity(Entity),
     DeleteMultiple(Vec<Entity>),
-    
+
     // Component operations
-    AddComponent { entity: Entity, component_name: String },
-    RemoveComponent { entity: Entity, component_name: String },
-    SetHealth { entity: Entity, hp: i32 },
-    SetPosition { entity: Entity, x: i32, y: i32 },
-    SetTeam { entity: Entity, team_id: u8 },
-    SetAmmo { entity: Entity, ammo: i32 },
-    
+    AddComponent {
+        entity: Entity,
+        component_name: String,
+    },
+    RemoveComponent {
+        entity: Entity,
+        component_name: String,
+    },
+    SetHealth {
+        entity: Entity,
+        hp: i32,
+    },
+    SetPosition {
+        entity: Entity,
+        x: i32,
+        y: i32,
+    },
+    SetTeam {
+        entity: Entity,
+        team_id: u8,
+    },
+    SetAmmo {
+        entity: Entity,
+        ammo: i32,
+    },
+
     // Favorites
     AddToFavorites(Entity),
     RemoveFromFavorites(Entity),
     ClearFavorites,
-    
+
     // Validation
     ValidateEntity(Entity),
     ValidateAll,
     ToggleAutoValidate(bool),
-    
+
     // Filtering
     SetFilterQuery(String),
     SetFilterTeam(Option<u8>),
-    SetFilterHealthRange { min: Option<i32>, max: Option<i32> },
+    SetFilterHealthRange {
+        min: Option<i32>,
+        max: Option<i32>,
+    },
     ClearFilters,
-    
+
     // Bulk operations
-    SetTeamForAll { team_id: u8, entities: Vec<Entity> },
-    SetHealthForAll { hp: i32, entities: Vec<Entity> },
+    SetTeamForAll {
+        team_id: u8,
+        entities: Vec<Entity>,
+    },
+    SetHealthForAll {
+        hp: i32,
+        entities: Vec<Entity>,
+    },
     DeleteFiltered,
-    
+
     // Statistics
     ToggleStats(bool),
     RefreshStats,
-    
+
     // Prefab operations (wrapping PrefabAction for unified handling)
     Prefab(PrefabAction),
 }
@@ -125,12 +159,20 @@ impl std::fmt::Display for EntityAction {
             Self::SelectMultiple(entities) => write!(f, "Select {} entities", entities.len()),
             Self::ClearSelection => write!(f, "Clear selection"),
             Self::SpawnFromArchetype(arch) => write!(f, "Spawn {}", arch.name()),
-            Self::SpawnMultiple { archetype, count } => write!(f, "Spawn {} {}s", count, archetype.name()),
+            Self::SpawnMultiple { archetype, count } => {
+                write!(f, "Spawn {} {}s", count, archetype.name())
+            }
             Self::DuplicateEntity(e) => write!(f, "Duplicate entity {:?}", e),
             Self::DeleteEntity(e) => write!(f, "Delete entity {:?}", e),
             Self::DeleteMultiple(entities) => write!(f, "Delete {} entities", entities.len()),
-            Self::AddComponent { entity, component_name } => write!(f, "Add {} to {:?}", component_name, entity),
-            Self::RemoveComponent { entity, component_name } => write!(f, "Remove {} from {:?}", component_name, entity),
+            Self::AddComponent {
+                entity,
+                component_name,
+            } => write!(f, "Add {} to {:?}", component_name, entity),
+            Self::RemoveComponent {
+                entity,
+                component_name,
+            } => write!(f, "Remove {} from {:?}", component_name, entity),
             Self::SetHealth { entity, hp } => write!(f, "Set {:?} health to {}", entity, hp),
             Self::SetPosition { entity, x, y } => write!(f, "Move {:?} to ({}, {})", entity, x, y),
             Self::SetTeam { entity, team_id } => write!(f, "Set {:?} team to {}", entity, team_id),
@@ -140,21 +182,25 @@ impl std::fmt::Display for EntityAction {
             Self::ClearFavorites => write!(f, "Clear favorites"),
             Self::ValidateEntity(e) => write!(f, "Validate {:?}", e),
             Self::ValidateAll => write!(f, "Validate all entities"),
-            Self::ToggleAutoValidate(on) => write!(f, "Turn auto-validate {}", if *on { "on" } else { "off" }),
+            Self::ToggleAutoValidate(on) => {
+                write!(f, "Turn auto-validate {}", if *on { "on" } else { "off" })
+            }
             Self::SetFilterQuery(q) => write!(f, "Filter by '{}'", q),
             Self::SetFilterTeam(Some(t)) => write!(f, "Filter by team {}", t),
             Self::SetFilterTeam(None) => write!(f, "Clear team filter"),
-            Self::SetFilterHealthRange { min, max } => {
-                match (min, max) {
-                    (Some(mn), Some(mx)) => write!(f, "Filter health {}-{}", mn, mx),
-                    (Some(mn), None) => write!(f, "Filter health >= {}", mn),
-                    (None, Some(mx)) => write!(f, "Filter health <= {}", mx),
-                    (None, None) => write!(f, "Clear health filter"),
-                }
-            }
+            Self::SetFilterHealthRange { min, max } => match (min, max) {
+                (Some(mn), Some(mx)) => write!(f, "Filter health {}-{}", mn, mx),
+                (Some(mn), None) => write!(f, "Filter health >= {}", mn),
+                (None, Some(mx)) => write!(f, "Filter health <= {}", mx),
+                (None, None) => write!(f, "Clear health filter"),
+            },
             Self::ClearFilters => write!(f, "Clear all filters"),
-            Self::SetTeamForAll { team_id, entities } => write!(f, "Set team {} for {} entities", team_id, entities.len()),
-            Self::SetHealthForAll { hp, entities } => write!(f, "Set health {} for {} entities", hp, entities.len()),
+            Self::SetTeamForAll { team_id, entities } => {
+                write!(f, "Set team {} for {} entities", team_id, entities.len())
+            }
+            Self::SetHealthForAll { hp, entities } => {
+                write!(f, "Set health {} for {} entities", hp, entities.len())
+            }
             Self::DeleteFiltered => write!(f, "Delete filtered entities"),
             Self::ToggleStats(on) => write!(f, "Turn stats {}", if *on { "on" } else { "off" }),
             Self::RefreshStats => write!(f, "Refresh statistics"),
@@ -229,7 +275,10 @@ impl EntityArchetype {
 
     /// Returns true if this archetype is combat-related
     pub fn is_combatant(&self) -> bool {
-        matches!(self, Self::Player | Self::Companion | Self::Enemy | Self::Boss)
+        matches!(
+            self,
+            Self::Player | Self::Companion | Self::Enemy | Self::Boss
+        )
     }
 
     pub fn default_health(&self) -> i32 {
@@ -349,7 +398,7 @@ pub struct EntityStats {
 /// Now integrated with real ECS World instead of mock entities.
 pub struct EntityPanel {
     component_registry: ComponentRegistry,
-    
+
     // New features
     entity_filter: EntityFilter,
     favorites: HashSet<Entity>,
@@ -360,7 +409,7 @@ pub struct EntityPanel {
     entity_stats: EntityStats,
     show_stats: bool,
     search_results: Vec<Entity>,
-    
+
     // Action queue for external processing
     pending_actions: Vec<EntityAction>,
 }
@@ -381,24 +430,24 @@ impl EntityPanel {
             pending_actions: Vec::new(),
         }
     }
-    
+
     // ==================== Action Queue Methods ====================
-    
+
     /// Takes all pending actions, leaving the internal queue empty
     pub fn take_actions(&mut self) -> Vec<EntityAction> {
         std::mem::take(&mut self.pending_actions)
     }
-    
+
     /// Returns true if there are pending actions
     pub fn has_pending_actions(&self) -> bool {
         !self.pending_actions.is_empty()
     }
-    
+
     /// Queue an action for external processing
     pub fn queue_action(&mut self, action: EntityAction) {
         self.pending_actions.push(action);
     }
-    
+
     /// Returns a reference to pending actions
     pub fn pending_actions(&self) -> &[EntityAction] {
         &self.pending_actions
@@ -418,16 +467,32 @@ impl EntityPanel {
 
             // Count component usage
             if world.pose(entity).is_some() {
-                *self.entity_stats.component_usage.entry("Position".to_string()).or_insert(0) += 1;
+                *self
+                    .entity_stats
+                    .component_usage
+                    .entry("Position".to_string())
+                    .or_insert(0) += 1;
             }
             if world.health(entity).is_some() {
-                *self.entity_stats.component_usage.entry("Health".to_string()).or_insert(0) += 1;
+                *self
+                    .entity_stats
+                    .component_usage
+                    .entry("Health".to_string())
+                    .or_insert(0) += 1;
             }
             if world.ammo(entity).is_some() {
-                *self.entity_stats.component_usage.entry("Ammo".to_string()).or_insert(0) += 1;
+                *self
+                    .entity_stats
+                    .component_usage
+                    .entry("Ammo".to_string())
+                    .or_insert(0) += 1;
             }
             if world.team(entity).is_some() {
-                *self.entity_stats.component_usage.entry("Team".to_string()).or_insert(0) += 1;
+                *self
+                    .entity_stats
+                    .component_usage
+                    .entry("Team".to_string())
+                    .or_insert(0) += 1;
             }
         }
 
@@ -473,7 +538,10 @@ impl EntityPanel {
             }
 
             // Check for missing team on combat entities
-            if world.health(entity).is_some() && world.ammo(entity).is_some() && world.team(entity).is_none() {
+            if world.health(entity).is_some()
+                && world.ammo(entity).is_some()
+                && world.team(entity).is_none()
+            {
                 self.validation_issues.push(ValidationIssue {
                     entity,
                     severity: ValidationSeverity::Warning,
@@ -533,23 +601,29 @@ impl EntityPanel {
     }
 
     /// Spawn entity from archetype
-    fn spawn_from_archetype(&self, world: &mut World, archetype: &EntityArchetype, position: IVec2) -> Entity {
+    fn spawn_from_archetype(
+        &self,
+        world: &mut World,
+        archetype: &EntityArchetype,
+        position: IVec2,
+    ) -> Entity {
         let count = world.entities().len();
         let name = format!("{archetype:?}_{count}");
-        
+
         world.spawn(
             &name,
             position,
-            Team { id: match archetype {
-                EntityArchetype::Player | EntityArchetype::Companion => 0,
-                EntityArchetype::Enemy | EntityArchetype::Boss => 1,
-                _ => 2,
-            }},
+            Team {
+                id: match archetype {
+                    EntityArchetype::Player | EntityArchetype::Companion => 0,
+                    EntityArchetype::Enemy | EntityArchetype::Boss => 1,
+                    _ => 2,
+                },
+            },
             archetype.default_health(),
             archetype.default_damage(),
         )
     }
-
 
     /// Show entity panel with real world integration
     ///
@@ -575,7 +649,12 @@ impl EntityPanel {
 
         // Update statistics if needed
         if self.show_stats {
-            self.update_statistics(scene_state.as_ref().map(|s| s.world()).unwrap_or(&World::new()));
+            self.update_statistics(
+                scene_state
+                    .as_ref()
+                    .map(|s| s.world())
+                    .unwrap_or(&World::new()),
+            );
         }
 
         // Archetype template selector
@@ -606,12 +685,19 @@ impl EntityPanel {
 
         ui.horizontal(|ui| {
             if let Some(ref archetype) = self.selected_archetype {
-                if ui.button(format!("➕ Spawn {}", archetype.icon())).clicked() {
+                if ui
+                    .button(format!("➕ Spawn {}", archetype.icon()))
+                    .clicked()
+                {
                     spawn_selected = true;
                 }
             }
-            
-            ui.add(egui::DragValue::new(&mut self.bulk_spawn_count).speed(1.0).range(1..=100));
+
+            ui.add(
+                egui::DragValue::new(&mut self.bulk_spawn_count)
+                    .speed(1.0)
+                    .range(1..=100),
+            );
             if ui.button("➕➕ Spawn Multiple").clicked() {
                 spawn_bulk = true;
             }
@@ -619,7 +705,7 @@ impl EntityPanel {
             if ui.button("🗑️ Clear All").clicked() {
                 clear_all = true;
             }
-            
+
             if ui.button("🔍 Validate").clicked() {
                 validate_all = true;
             }
@@ -639,27 +725,38 @@ impl EntityPanel {
                     }
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Team:");
                 let mut team_filter = self.entity_filter.team_id.map(|id| id as i32).unwrap_or(-1);
                 if egui::ComboBox::from_id_salt("team_filter")
-                    .selected_text(if team_filter < 0 { "All".to_string() } else { format!("Team {}", team_filter) })
+                    .selected_text(if team_filter < 0 {
+                        "All".to_string()
+                    } else {
+                        format!("Team {}", team_filter)
+                    })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut team_filter, -1, "All");
                         ui.selectable_value(&mut team_filter, 0, "Team 0 (Friendly)");
                         ui.selectable_value(&mut team_filter, 1, "Team 1 (Enemy)");
                         ui.selectable_value(&mut team_filter, 2, "Team 2 (Neutral)");
-                    }).response.changed() {
-                    self.entity_filter.team_id = if team_filter < 0 { None } else { Some(team_filter as u32) };
+                    })
+                    .response
+                    .changed()
+                {
+                    self.entity_filter.team_id = if team_filter < 0 {
+                        None
+                    } else {
+                        Some(team_filter as u32)
+                    };
                     if let Some(scene_state) = scene_state.as_ref() {
                         self.filter_entities(scene_state.world());
                     }
                 }
-                
+
                 ui.checkbox(&mut self.entity_filter.favorites_only, "⭐ Favorites Only");
             });
-            
+
             if !self.search_results.is_empty() || !self.entity_filter.query.is_empty() {
                 ui.label(format!("Found: {} entities", self.search_results.len()));
             }
@@ -677,31 +774,50 @@ impl EntityPanel {
                         self.validation_issues.clear();
                     }
                 });
-                
-                let error_count = self.validation_issues.iter().filter(|i| matches!(i.severity, ValidationSeverity::Error)).count();
-                let warning_count = self.validation_issues.iter().filter(|i| matches!(i.severity, ValidationSeverity::Warning)).count();
-                
+
+                let error_count = self
+                    .validation_issues
+                    .iter()
+                    .filter(|i| matches!(i.severity, ValidationSeverity::Error))
+                    .count();
+                let warning_count = self
+                    .validation_issues
+                    .iter()
+                    .filter(|i| matches!(i.severity, ValidationSeverity::Warning))
+                    .count();
+
                 ui.horizontal(|ui| {
                     if error_count > 0 {
-                        ui.colored_label(Color32::from_rgb(255, 100, 100), format!("❌ {} Errors", error_count));
+                        ui.colored_label(
+                            Color32::from_rgb(255, 100, 100),
+                            format!("❌ {} Errors", error_count),
+                        );
                     }
                     if warning_count > 0 {
-                        ui.colored_label(Color32::from_rgb(255, 200, 100), format!("⚠️ {} Warnings", warning_count));
+                        ui.colored_label(
+                            Color32::from_rgb(255, 200, 100),
+                            format!("⚠️ {} Warnings", warning_count),
+                        );
                     }
                     if self.validation_issues.is_empty() {
                         ui.colored_label(Color32::from_rgb(100, 255, 100), "✓ All Valid");
                     }
                 });
-                
+
                 if !self.validation_issues.is_empty() {
-                    egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                        for issue in &self.validation_issues {
-                            ui.horizontal(|ui| {
-                                ui.colored_label(issue.severity.color(), issue.severity.icon());
-                                ui.label(format!("Entity #{}: {}", issue.entity, issue.message));
-                            });
-                        }
-                    });
+                    egui::ScrollArea::vertical()
+                        .max_height(150.0)
+                        .show(ui, |ui| {
+                            for issue in &self.validation_issues {
+                                ui.horizontal(|ui| {
+                                    ui.colored_label(issue.severity.color(), issue.severity.icon());
+                                    ui.label(format!(
+                                        "Entity #{}: {}",
+                                        issue.entity, issue.message
+                                    ));
+                                });
+                            }
+                        });
                 }
             });
             ui.add_space(5.0);
@@ -718,12 +834,12 @@ impl EntityPanel {
                         }
                     }
                 });
-                
+
                 ui.label(format!("Total Entities: {}", self.entity_stats.total_count));
                 ui.label(format!("Total Health: {}", self.entity_stats.total_health));
                 ui.label(format!("Avg Health: {:.1}", self.entity_stats.avg_health));
                 ui.label(format!("Favorites: {}", self.favorites.len()));
-                
+
                 if !self.entity_stats.component_usage.is_empty() {
                     ui.label("Component Usage:");
                     for (component, count) in &self.entity_stats.component_usage {
@@ -750,7 +866,10 @@ impl EntityPanel {
                 };
                 let entity = self.spawn_from_archetype(scene_state.world_mut(), archetype, pos);
                 scene_state.sync_entity(entity);
-                debug!("✅ Spawned {:?} entity #{} at ({}, {})", archetype, entity, pos.x, pos.y);
+                debug!(
+                    "✅ Spawned {:?} entity #{} at ({}, {})",
+                    archetype, entity, pos.x, pos.y
+                );
             }
         }
 
@@ -765,7 +884,10 @@ impl EntityPanel {
                     let entity = self.spawn_from_archetype(scene_state.world_mut(), archetype, pos);
                     scene_state.sync_entity(entity);
                 }
-                debug!("✅ Spawned {} {:?} entities", self.bulk_spawn_count, archetype);
+                debug!(
+                    "✅ Spawned {} {:?} entities",
+                    self.bulk_spawn_count, archetype
+                );
             }
         }
 
@@ -786,7 +908,10 @@ impl EntityPanel {
         if validate_all || self.auto_validate {
             self.validate_entities(scene_state.world());
             if self.auto_validate {
-                debug!("✅ Auto-validated entities: {} issues", self.validation_issues.len());
+                debug!(
+                    "✅ Auto-validated entities: {} issues",
+                    self.validation_issues.len()
+                );
             }
         }
 
@@ -797,12 +922,20 @@ impl EntityPanel {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
                     ui.heading(format!("✏️ Entity #{}", entity));
-                    
+
                     // Favorites toggle button
                     let is_favorite = self.favorites.contains(&entity);
                     let star_icon = if is_favorite { "⭐" } else { "☆" };
-                    let star_color = if is_favorite { Color32::from_rgb(255, 215, 0) } else { Color32::GRAY };
-                    if ui.colored_label(star_color, star_icon).on_hover_text("Toggle favorite").clicked() {
+                    let star_color = if is_favorite {
+                        Color32::from_rgb(255, 215, 0)
+                    } else {
+                        Color32::GRAY
+                    };
+                    if ui
+                        .colored_label(star_color, star_icon)
+                        .on_hover_text("Toggle favorite")
+                        .clicked()
+                    {
                         toggle_favorite = true;
                     }
                 });
@@ -988,7 +1121,7 @@ impl Panel for EntityPanel {
         ui.horizontal(|ui| {
             ui.checkbox(&mut self.show_stats, "📊 Show Statistics");
             ui.checkbox(&mut self.auto_validate, "🔍 Auto-validate");
-            
+
             if ui.button("🔄 Refresh All").clicked() {
                 debug!("🔄 Refreshing entity data");
             }
@@ -1162,17 +1295,29 @@ mod tests {
 
     #[test]
     fn test_archetype_player_has_correct_icon() {
-        assert_eq!(EntityArchetype::Player.icon(), "🎮", "Player icon should be 🎮");
+        assert_eq!(
+            EntityArchetype::Player.icon(),
+            "🎮",
+            "Player icon should be 🎮"
+        );
     }
 
     #[test]
     fn test_archetype_companion_has_correct_icon() {
-        assert_eq!(EntityArchetype::Companion.icon(), "🤝", "Companion icon should be 🤝");
+        assert_eq!(
+            EntityArchetype::Companion.icon(),
+            "🤝",
+            "Companion icon should be 🤝"
+        );
     }
 
     #[test]
     fn test_archetype_enemy_has_correct_icon() {
-        assert_eq!(EntityArchetype::Enemy.icon(), "👾", "Enemy icon should be 👾");
+        assert_eq!(
+            EntityArchetype::Enemy.icon(),
+            "👾",
+            "Enemy icon should be 👾"
+        );
     }
 
     #[test]
@@ -1192,107 +1337,191 @@ mod tests {
 
     #[test]
     fn test_archetype_trigger_has_correct_icon() {
-        assert_eq!(EntityArchetype::Trigger.icon(), "⚡", "Trigger icon should be ⚡");
+        assert_eq!(
+            EntityArchetype::Trigger.icon(),
+            "⚡",
+            "Trigger icon should be ⚡"
+        );
     }
 
     #[test]
     fn test_archetype_light_has_correct_icon() {
-        assert_eq!(EntityArchetype::Light.icon(), "💡", "Light icon should be 💡");
+        assert_eq!(
+            EntityArchetype::Light.icon(),
+            "💡",
+            "Light icon should be 💡"
+        );
     }
 
     #[test]
     fn test_archetype_camera_has_correct_icon() {
-        assert_eq!(EntityArchetype::Camera.icon(), "📷", "Camera icon should be 📷");
+        assert_eq!(
+            EntityArchetype::Camera.icon(),
+            "📷",
+            "Camera icon should be 📷"
+        );
     }
 
     #[test]
     fn test_archetype_player_default_health() {
-        assert_eq!(EntityArchetype::Player.default_health(), 100, "Player default health should be 100");
+        assert_eq!(
+            EntityArchetype::Player.default_health(),
+            100,
+            "Player default health should be 100"
+        );
     }
 
     #[test]
     fn test_archetype_companion_default_health() {
-        assert_eq!(EntityArchetype::Companion.default_health(), 80, "Companion default health should be 80");
+        assert_eq!(
+            EntityArchetype::Companion.default_health(),
+            80,
+            "Companion default health should be 80"
+        );
     }
 
     #[test]
     fn test_archetype_enemy_default_health() {
-        assert_eq!(EntityArchetype::Enemy.default_health(), 50, "Enemy default health should be 50");
+        assert_eq!(
+            EntityArchetype::Enemy.default_health(),
+            50,
+            "Enemy default health should be 50"
+        );
     }
 
     #[test]
     fn test_archetype_boss_default_health() {
-        assert_eq!(EntityArchetype::Boss.default_health(), 500, "Boss default health should be 500");
+        assert_eq!(
+            EntityArchetype::Boss.default_health(),
+            500,
+            "Boss default health should be 500"
+        );
     }
 
     #[test]
     fn test_archetype_npc_default_health() {
-        assert_eq!(EntityArchetype::NPC.default_health(), 100, "NPC default health should be 100");
+        assert_eq!(
+            EntityArchetype::NPC.default_health(),
+            100,
+            "NPC default health should be 100"
+        );
     }
 
     #[test]
     fn test_archetype_prop_default_health() {
-        assert_eq!(EntityArchetype::Prop.default_health(), 10, "Prop default health should be 10");
+        assert_eq!(
+            EntityArchetype::Prop.default_health(),
+            10,
+            "Prop default health should be 10"
+        );
     }
 
     #[test]
     fn test_archetype_trigger_default_health() {
-        assert_eq!(EntityArchetype::Trigger.default_health(), 1, "Trigger default health should be 1");
+        assert_eq!(
+            EntityArchetype::Trigger.default_health(),
+            1,
+            "Trigger default health should be 1"
+        );
     }
 
     #[test]
     fn test_archetype_light_default_health() {
-        assert_eq!(EntityArchetype::Light.default_health(), 1, "Light default health should be 1");
+        assert_eq!(
+            EntityArchetype::Light.default_health(),
+            1,
+            "Light default health should be 1"
+        );
     }
 
     #[test]
     fn test_archetype_camera_default_health() {
-        assert_eq!(EntityArchetype::Camera.default_health(), 1, "Camera default health should be 1");
+        assert_eq!(
+            EntityArchetype::Camera.default_health(),
+            1,
+            "Camera default health should be 1"
+        );
     }
 
     #[test]
     fn test_archetype_player_default_damage() {
-        assert_eq!(EntityArchetype::Player.default_damage(), 25, "Player default damage should be 25");
+        assert_eq!(
+            EntityArchetype::Player.default_damage(),
+            25,
+            "Player default damage should be 25"
+        );
     }
 
     #[test]
     fn test_archetype_companion_default_damage() {
-        assert_eq!(EntityArchetype::Companion.default_damage(), 20, "Companion default damage should be 20");
+        assert_eq!(
+            EntityArchetype::Companion.default_damage(),
+            20,
+            "Companion default damage should be 20"
+        );
     }
 
     #[test]
     fn test_archetype_enemy_default_damage() {
-        assert_eq!(EntityArchetype::Enemy.default_damage(), 15, "Enemy default damage should be 15");
+        assert_eq!(
+            EntityArchetype::Enemy.default_damage(),
+            15,
+            "Enemy default damage should be 15"
+        );
     }
 
     #[test]
     fn test_archetype_boss_default_damage() {
-        assert_eq!(EntityArchetype::Boss.default_damage(), 50, "Boss default damage should be 50");
+        assert_eq!(
+            EntityArchetype::Boss.default_damage(),
+            50,
+            "Boss default damage should be 50"
+        );
     }
 
     #[test]
     fn test_archetype_npc_default_damage() {
-        assert_eq!(EntityArchetype::NPC.default_damage(), 0, "NPC default damage should be 0");
+        assert_eq!(
+            EntityArchetype::NPC.default_damage(),
+            0,
+            "NPC default damage should be 0"
+        );
     }
 
     #[test]
     fn test_archetype_prop_default_damage() {
-        assert_eq!(EntityArchetype::Prop.default_damage(), 0, "Prop default damage should be 0");
+        assert_eq!(
+            EntityArchetype::Prop.default_damage(),
+            0,
+            "Prop default damage should be 0"
+        );
     }
 
     #[test]
     fn test_archetype_trigger_default_damage() {
-        assert_eq!(EntityArchetype::Trigger.default_damage(), 0, "Trigger default damage should be 0");
+        assert_eq!(
+            EntityArchetype::Trigger.default_damage(),
+            0,
+            "Trigger default damage should be 0"
+        );
     }
 
     #[test]
     fn test_archetype_light_default_damage() {
-        assert_eq!(EntityArchetype::Light.default_damage(), 0, "Light default damage should be 0");
+        assert_eq!(
+            EntityArchetype::Light.default_damage(),
+            0,
+            "Light default damage should be 0"
+        );
     }
 
     #[test]
     fn test_archetype_camera_default_damage() {
-        assert_eq!(EntityArchetype::Camera.default_damage(), 0, "Camera default damage should be 0");
+        assert_eq!(
+            EntityArchetype::Camera.default_damage(),
+            0,
+            "Camera default damage should be 0"
+        );
     }
 
     // =====================================================================
@@ -1305,8 +1534,14 @@ mod tests {
         assert_eq!(filter.query, "", "Default query should be empty");
         assert_eq!(filter.archetype, None, "Default archetype should be None");
         assert_eq!(filter.team_id, None, "Default team_id should be None");
-        assert_eq!(filter.health_range, None, "Default health_range should be None");
-        assert!(!filter.favorites_only, "Default favorites_only should be false");
+        assert_eq!(
+            filter.health_range, None,
+            "Default health_range should be None"
+        );
+        assert!(
+            !filter.favorites_only,
+            "Default favorites_only should be false"
+        );
     }
 
     #[test]
@@ -1546,7 +1781,10 @@ mod tests {
         let mut panel = EntityPanel::new();
         let world = World::new();
         panel.update_statistics(&world);
-        assert_eq!(panel.entity_stats.avg_health, 0.0, "Average health should be 0.0 for empty world");
+        assert_eq!(
+            panel.entity_stats.avg_health, 0.0,
+            "Average health should be 0.0 for empty world"
+        );
     }
 
     // =====================================================================
@@ -1567,7 +1805,10 @@ mod tests {
         let mut world = World::new();
         world.spawn("Player", IVec2::new(5, 5), Team { id: 0 }, 100, 25);
         panel.validate_entities(&world);
-        assert!(panel.validation_issues.is_empty(), "Healthy entity should have no validation issues");
+        assert!(
+            panel.validation_issues.is_empty(),
+            "Healthy entity should have no validation issues"
+        );
     }
 
     #[test]
@@ -1578,8 +1819,13 @@ mod tests {
         panel.validate_entities(&world);
         assert_eq!(panel.validation_issues.len(), 1);
         assert_eq!(panel.validation_issues[0].entity, entity);
-        assert!(matches!(panel.validation_issues[0].severity, ValidationSeverity::Warning));
-        assert!(panel.validation_issues[0].message.contains("zero or negative health"));
+        assert!(matches!(
+            panel.validation_issues[0].severity,
+            ValidationSeverity::Warning
+        ));
+        assert!(panel.validation_issues[0]
+            .message
+            .contains("zero or negative health"));
     }
 
     #[test]
@@ -1591,7 +1837,10 @@ mod tests {
         panel.validate_entities(&world);
         assert_eq!(panel.validation_issues.len(), 1);
         assert_eq!(panel.validation_issues[0].entity, entity);
-        assert!(matches!(panel.validation_issues[0].severity, ValidationSeverity::Info));
+        assert!(matches!(
+            panel.validation_issues[0].severity,
+            ValidationSeverity::Info
+        ));
         assert!(panel.validation_issues[0].message.contains("low health"));
     }
 
@@ -1624,12 +1873,15 @@ mod tests {
         world.spawn("Player", IVec2::new(5, 5), Team { id: 0 }, 0, 25);
         panel.validate_entities(&world);
         assert_eq!(panel.validation_issues.len(), 1);
-        
+
         // Fix the world
         let mut world2 = World::new();
         world2.spawn("Player", IVec2::new(5, 5), Team { id: 0 }, 100, 25);
         panel.validate_entities(&world2);
-        assert!(panel.validation_issues.is_empty(), "Validation should clear previous issues");
+        assert!(
+            panel.validation_issues.is_empty(),
+            "Validation should clear previous issues"
+        );
     }
 
     // =====================================================================
@@ -1687,7 +1939,11 @@ mod tests {
         world.spawn("Weak", IVec2::new(0, 0), Team { id: 1 }, 30, 15);
         world.spawn("Strong", IVec2::new(0, 0), Team { id: 1 }, 200, 15);
         panel.filter_entities(&world);
-        assert_eq!(panel.search_results.len(), 1, "Only entity with health 100 (in range 50-100) should match");
+        assert_eq!(
+            panel.search_results.len(),
+            1,
+            "Only entity with health 100 (in range 50-100) should match"
+        );
     }
 
     #[test]
@@ -1713,7 +1969,11 @@ mod tests {
         world.spawn("Enemy", IVec2::new(0, 0), Team { id: 1 }, 100, 15);
         world.spawn("Weak", IVec2::new(0, 0), Team { id: 0 }, 50, 15);
         panel.filter_entities(&world);
-        assert_eq!(panel.search_results.len(), 1, "Only team 0 entity with health 100 should match");
+        assert_eq!(
+            panel.search_results.len(),
+            1,
+            "Only team 0 entity with health 100 should match"
+        );
     }
 
     #[test]
@@ -1723,7 +1983,10 @@ mod tests {
         world.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 25);
         panel.entity_filter.favorites_only = true;
         panel.filter_entities(&world);
-        assert!(panel.search_results.is_empty(), "No entities should match when favorites_only=true but no favorites");
+        assert!(
+            panel.search_results.is_empty(),
+            "No entities should match when favorites_only=true but no favorites"
+        );
     }
 
     #[test]
@@ -1733,10 +1996,13 @@ mod tests {
         world1.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 25);
         panel.filter_entities(&world1);
         assert_eq!(panel.search_results.len(), 1);
-        
+
         let world2 = World::new(); // Empty world
         panel.filter_entities(&world2);
-        assert!(panel.search_results.is_empty(), "Filtering should clear previous results");
+        assert!(
+            panel.search_results.is_empty(),
+            "Filtering should clear previous results"
+        );
     }
 
     #[test]
@@ -1748,7 +2014,11 @@ mod tests {
         world.spawn("Enemy1", IVec2::new(0, 0), Team { id: 1 }, 80, 15);
         world.spawn("Enemy2", IVec2::new(0, 0), Team { id: 1 }, 90, 15);
         panel.filter_entities(&world);
-        assert_eq!(panel.search_results.len(), 1, "Only team 0 entity should match");
+        assert_eq!(
+            panel.search_results.len(),
+            1,
+            "Only team 0 entity should match"
+        );
     }
 
     // =====================================================================
@@ -1759,7 +2029,8 @@ mod tests {
     fn test_spawn_from_archetype_player() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(10, 20));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(10, 20));
         assert!(world.health(entity).is_some());
         let health = world.health(entity).unwrap();
         assert_eq!(health.hp, 100);
@@ -1769,7 +2040,8 @@ mod tests {
     fn test_spawn_from_archetype_companion() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Companion, IVec2::new(10, 20));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Companion, IVec2::new(10, 20));
         let health = world.health(entity).unwrap();
         assert_eq!(health.hp, 80);
     }
@@ -1778,7 +2050,8 @@ mod tests {
     fn test_spawn_from_archetype_enemy() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Enemy, IVec2::new(10, 20));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Enemy, IVec2::new(10, 20));
         let health = world.health(entity).unwrap();
         assert_eq!(health.hp, 50);
     }
@@ -1787,7 +2060,8 @@ mod tests {
     fn test_spawn_from_archetype_boss() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Boss, IVec2::new(10, 20));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Boss, IVec2::new(10, 20));
         let health = world.health(entity).unwrap();
         assert_eq!(health.hp, 500);
     }
@@ -1806,7 +2080,8 @@ mod tests {
     fn test_spawn_from_archetype_with_team() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(0, 0));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(0, 0));
         let team = world.team(entity).unwrap();
         assert_eq!(team.id, 0, "Player should spawn on team 0");
     }
@@ -1815,7 +2090,8 @@ mod tests {
     fn test_spawn_from_archetype_enemy_team() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Enemy, IVec2::new(0, 0));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Enemy, IVec2::new(0, 0));
         let team = world.team(entity).unwrap();
         assert_eq!(team.id, 1, "Enemy should spawn on team 1");
     }
@@ -1824,7 +2100,8 @@ mod tests {
     fn test_spawn_from_archetype_damage() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(0, 0));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::Player, IVec2::new(0, 0));
         assert!(world.ammo(entity).is_some());
         let ammo = world.ammo(entity).unwrap();
         assert_eq!(ammo.rounds, 25);
@@ -1834,7 +2111,8 @@ mod tests {
     fn test_spawn_from_archetype_npc_no_damage() {
         let panel = EntityPanel::new();
         let mut world = World::new();
-        let entity = panel.spawn_from_archetype(&mut world, &EntityArchetype::NPC, IVec2::new(0, 0));
+        let entity =
+            panel.spawn_from_archetype(&mut world, &EntityArchetype::NPC, IVec2::new(0, 0));
         let ammo = world.ammo(entity).unwrap();
         assert_eq!(ammo.rounds, 0, "NPC should have 0 damage");
     }
@@ -1899,7 +2177,11 @@ mod tests {
         let entity = world.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 25);
         panel.favorites.insert(entity);
         panel.favorites.insert(entity); // Insert again
-        assert_eq!(panel.favorites.len(), 1, "HashSet should prevent duplicates");
+        assert_eq!(
+            panel.favorites.len(),
+            1,
+            "HashSet should prevent duplicates"
+        );
     }
 
     #[test]
@@ -1920,15 +2202,24 @@ mod tests {
     fn test_prefab_action_display() {
         let action = PrefabAction::RevertToOriginal(1);
         let display = format!("{}", action);
-        assert!(display.contains(action.name()), "Display should contain name");
+        assert!(
+            display.contains(action.name()),
+            "Display should contain name"
+        );
     }
 
     #[test]
     fn test_prefab_action_name() {
-        assert_eq!(PrefabAction::RevertToOriginal(1).name(), "Revert to Original");
+        assert_eq!(
+            PrefabAction::RevertToOriginal(1).name(),
+            "Revert to Original"
+        );
         assert_eq!(PrefabAction::ApplyChangesToFile(1).name(), "Apply Changes");
         assert_eq!(PrefabAction::RevertAllToOriginal(1).name(), "Revert All");
-        assert_eq!(PrefabAction::ApplyAllChangesToFile(1).name(), "Apply All Changes");
+        assert_eq!(
+            PrefabAction::ApplyAllChangesToFile(1).name(),
+            "Apply All Changes"
+        );
     }
 
     #[test]
@@ -2050,10 +2341,10 @@ mod tests {
     fn test_entity_action_display_selection() {
         let action = EntityAction::SelectEntity(42);
         assert!(format!("{}", action).contains("42"));
-        
+
         let action = EntityAction::DeselectEntity;
         assert!(format!("{}", action).contains("Deselect"));
-        
+
         let action = EntityAction::ClearSelection;
         assert!(format!("{}", action).contains("Clear"));
     }
@@ -2062,10 +2353,10 @@ mod tests {
     fn test_entity_action_display_creation() {
         let action = EntityAction::SpawnFromArchetype(EntityArchetype::Player);
         assert!(format!("{}", action).contains("Player"));
-        
-        let action = EntityAction::SpawnMultiple { 
-            archetype: EntityArchetype::Enemy, 
-            count: 10 
+
+        let action = EntityAction::SpawnMultiple {
+            archetype: EntityArchetype::Enemy,
+            count: 10,
         };
         let display = format!("{}", action);
         assert!(display.contains("10"));
@@ -2074,16 +2365,20 @@ mod tests {
 
     #[test]
     fn test_entity_action_display_components() {
-        let action = EntityAction::AddComponent { 
-            entity: 1, 
-            component_name: "Health".to_string() 
+        let action = EntityAction::AddComponent {
+            entity: 1,
+            component_name: "Health".to_string(),
         };
         assert!(format!("{}", action).contains("Health"));
-        
+
         let action = EntityAction::SetHealth { entity: 1, hp: 100 };
         assert!(format!("{}", action).contains("100"));
-        
-        let action = EntityAction::SetPosition { entity: 1, x: 10, y: 20 };
+
+        let action = EntityAction::SetPosition {
+            entity: 1,
+            x: 10,
+            y: 20,
+        };
         let display = format!("{}", action);
         assert!(display.contains("10"));
         assert!(display.contains("20"));
@@ -2093,10 +2388,10 @@ mod tests {
     fn test_entity_action_display_favorites() {
         let action = EntityAction::AddToFavorites(5);
         assert!(format!("{}", action).contains("favorites"));
-        
+
         let action = EntityAction::RemoveFromFavorites(5);
         assert!(format!("{}", action).contains("Remove"));
-        
+
         let action = EntityAction::ClearFavorites;
         assert!(format!("{}", action).contains("Clear"));
     }
@@ -2105,10 +2400,10 @@ mod tests {
     fn test_entity_action_display_validation() {
         let action = EntityAction::ValidateEntity(1);
         assert!(format!("{}", action).contains("Validate"));
-        
+
         let action = EntityAction::ValidateAll;
         assert!(format!("{}", action).contains("all"));
-        
+
         let action = EntityAction::ToggleAutoValidate(true);
         assert!(format!("{}", action).contains("on"));
     }
@@ -2117,33 +2412,45 @@ mod tests {
     fn test_entity_action_display_filtering() {
         let action = EntityAction::SetFilterQuery("player".to_string());
         assert!(format!("{}", action).contains("player"));
-        
+
         let action = EntityAction::SetFilterTeam(Some(2));
         assert!(format!("{}", action).contains("2"));
-        
+
         let action = EntityAction::SetFilterTeam(None);
         assert!(format!("{}", action).contains("Clear"));
     }
 
     #[test]
     fn test_entity_action_display_health_range() {
-        let action = EntityAction::SetFilterHealthRange { min: Some(10), max: Some(100) };
+        let action = EntityAction::SetFilterHealthRange {
+            min: Some(10),
+            max: Some(100),
+        };
         let display = format!("{}", action);
         assert!(display.contains("10"));
         assert!(display.contains("100"));
-        
-        let action = EntityAction::SetFilterHealthRange { min: Some(50), max: None };
+
+        let action = EntityAction::SetFilterHealthRange {
+            min: Some(50),
+            max: None,
+        };
         assert!(format!("{}", action).contains(">= 50"));
-        
-        let action = EntityAction::SetFilterHealthRange { min: None, max: Some(75) };
+
+        let action = EntityAction::SetFilterHealthRange {
+            min: None,
+            max: Some(75),
+        };
         assert!(format!("{}", action).contains("<= 75"));
     }
 
     #[test]
     fn test_entity_action_display_bulk() {
-        let action = EntityAction::SetTeamForAll { team_id: 1, entities: vec![1, 2, 3] };
+        let action = EntityAction::SetTeamForAll {
+            team_id: 1,
+            entities: vec![1, 2, 3],
+        };
         assert!(format!("{}", action).contains("3 entities"));
-        
+
         let action = EntityAction::DeleteFiltered;
         assert!(format!("{}", action).contains("Delete"));
     }
@@ -2159,7 +2466,7 @@ mod tests {
         let mut panel = EntityPanel::new();
         assert!(!panel.has_pending_actions());
         assert!(panel.pending_actions().is_empty());
-        
+
         panel.queue_action(EntityAction::SelectEntity(1));
         assert!(panel.has_pending_actions());
         assert_eq!(panel.pending_actions().len(), 1);
@@ -2170,7 +2477,7 @@ mod tests {
         let mut panel = EntityPanel::new();
         panel.queue_action(EntityAction::SpawnFromArchetype(EntityArchetype::Enemy));
         panel.queue_action(EntityAction::SetHealth { entity: 1, hp: 50 });
-        
+
         let actions = panel.take_actions();
         assert_eq!(actions.len(), 2);
         assert!(!panel.has_pending_actions());
@@ -2181,8 +2488,11 @@ mod tests {
         let mut panel = EntityPanel::new();
         panel.queue_action(EntityAction::SpawnFromArchetype(EntityArchetype::Player));
         panel.queue_action(EntityAction::SelectEntity(1));
-        panel.queue_action(EntityAction::SetTeam { entity: 1, team_id: 0 });
-        
+        panel.queue_action(EntityAction::SetTeam {
+            entity: 1,
+            team_id: 0,
+        });
+
         let actions = panel.take_actions();
         assert!(matches!(actions[0], EntityAction::SpawnFromArchetype(_)));
         assert!(matches!(actions[1], EntityAction::SelectEntity(_)));
@@ -2193,7 +2503,7 @@ mod tests {
     fn test_entity_action_stats() {
         let action = EntityAction::ToggleStats(true);
         assert!(format!("{}", action).contains("on"));
-        
+
         let action = EntityAction::RefreshStats;
         assert!(format!("{}", action).contains("Refresh"));
     }
@@ -2203,7 +2513,7 @@ mod tests {
         let a1 = EntityAction::SelectEntity(5);
         let a2 = EntityAction::SelectEntity(5);
         let a3 = EntityAction::SelectEntity(10);
-        
+
         assert_eq!(a1, a2);
         assert_ne!(a1, a3);
     }

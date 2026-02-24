@@ -754,7 +754,11 @@ mod perf_alert_tests {
     use super::*;
 
     fn make_alert() -> PerfAlert {
-        PerfAlert::new(AlertSeverity::Warning, PerfCategory::Frame, "Frame spike detected")
+        PerfAlert::new(
+            AlertSeverity::Warning,
+            PerfCategory::Frame,
+            "Frame spike detected",
+        )
     }
 
     #[test]

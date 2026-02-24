@@ -31,15 +31,15 @@ pub mod ui;
 pub mod viewport;
 
 #[cfg(test)]
-mod tests_game_project;
-#[cfg(test)]
-mod tests_dock_layout;
+mod mutation_tests;
 #[cfg(test)]
 mod tests_asset_pack;
 #[cfg(test)]
-mod tests_polish;
+mod tests_dock_layout;
 #[cfg(test)]
-mod mutation_tests;
+mod tests_game_project;
+#[cfg(test)]
+mod tests_polish;
 
 // Re-export level document types
 pub use level_doc::{

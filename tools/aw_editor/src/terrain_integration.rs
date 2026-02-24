@@ -320,12 +320,18 @@ impl TerrainState {
 
     /// Get total vertex count across all chunks
     pub fn total_vertex_count(&self) -> usize {
-        self.generated_chunks.values().map(|c| c.vertices.len()).sum()
+        self.generated_chunks
+            .values()
+            .map(|c| c.vertices.len())
+            .sum()
     }
 
     /// Get total index/triangle count across all chunks
     pub fn total_index_count(&self) -> usize {
-        self.generated_chunks.values().map(|c| c.indices.len()).sum()
+        self.generated_chunks
+            .values()
+            .map(|c| c.indices.len())
+            .sum()
     }
 
     /// Get total triangle count

@@ -30,11 +30,26 @@ astraweave-behavior = { path = "../../astraweave-behavior" }
 # LLM integration for AI companions
 astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }
 
+# Visual mode dependencies (enable with --features visual)
+astraweave-asset = { path = "../../astraweave-asset", features = ["gltf"], optional = true }
+egui = { workspace = true, optional = true }
+egui-winit = { workspace = true, optional = true }
+egui-wgpu = { workspace = true, optional = true }
+
 [[bin]]
 name = "veilweaver_demo"
 path = "src/main.rs"
 
 [features]
+visual = [
+    "astraweave-render/gltf-assets",
+    "astraweave-render/bloom",
+    "astraweave-render/textures",
+    "dep:astraweave-asset",
+    "dep:egui",
+    "dep:egui-winit",
+    "dep:egui-wgpu",
+]
 veilweaver_slice = [
     "astraweave-ai/veilweaver_slice",
     "astraweave-director/veilweaver_slice",

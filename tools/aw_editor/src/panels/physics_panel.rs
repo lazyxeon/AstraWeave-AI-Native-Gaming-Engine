@@ -446,7 +446,10 @@ impl GravityZoneShape {
     }
 
     pub fn is_volumetric(&self) -> bool {
-        matches!(self, GravityZoneShape::Box | GravityZoneShape::Sphere | GravityZoneShape::Cylinder)
+        matches!(
+            self,
+            GravityZoneShape::Box | GravityZoneShape::Sphere | GravityZoneShape::Cylinder
+        )
     }
 }
 
@@ -923,7 +926,10 @@ impl PhysicsPanel {
                     self.simulation_mode = SimulationMode::StepOnce;
                 }
                 if ui
-                    .selectable_label(self.simulation_mode == SimulationMode::SlowMotion, "🐢 Slow")
+                    .selectable_label(
+                        self.simulation_mode == SimulationMode::SlowMotion,
+                        "🐢 Slow",
+                    )
                     .clicked()
                 {
                     self.simulation_mode = SimulationMode::SlowMotion;
@@ -1027,7 +1033,10 @@ impl PhysicsPanel {
                 ui.separator();
                 ui.label(format!("🧵 {} Cloth", self.stats.cloth_count));
                 ui.separator();
-                ui.label(format!("💥 {} Destructibles", self.stats.destructible_count));
+                ui.label(format!(
+                    "💥 {} Destructibles",
+                    self.stats.destructible_count
+                ));
             });
         });
     }
@@ -1058,11 +1067,11 @@ impl PhysicsPanel {
         ui.group(|ui| {
             ui.label(RichText::new("Options").strong());
 
-            ui.add(
-                egui::Slider::new(&mut self.collider_alpha, 0.1..=1.0)
-                    .text("Collider Alpha"),
+            ui.add(egui::Slider::new(&mut self.collider_alpha, 0.1..=1.0).text("Collider Alpha"));
+            ui.checkbox(
+                &mut self.show_sleeping_bodies,
+                "Show sleeping bodies (dimmed)",
             );
-            ui.checkbox(&mut self.show_sleeping_bodies, "Show sleeping bodies (dimmed)");
             ui.checkbox(&mut self.show_aabbs, "Show AABBs");
             ui.checkbox(&mut self.show_mass_centers, "Show center of mass");
         });
@@ -1112,13 +1121,9 @@ impl PhysicsPanel {
             ui.label(RichText::new("Joint Settings").strong());
 
             ui.add(
-                egui::Slider::new(&mut self.ragdoll_joint_stiffness, 0.0..=500.0)
-                    .text("Stiffness"),
+                egui::Slider::new(&mut self.ragdoll_joint_stiffness, 0.0..=500.0).text("Stiffness"),
             );
-            ui.add(
-                egui::Slider::new(&mut self.ragdoll_joint_damping, 0.0..=50.0)
-                    .text("Damping"),
-            );
+            ui.add(egui::Slider::new(&mut self.ragdoll_joint_damping, 0.0..=50.0).text("Damping"));
             ui.add(
                 egui::Slider::new(&mut self.ragdoll_impulse_multiplier, 0.1..=5.0)
                     .text("Impulse Multiplier"),
@@ -1201,8 +1206,7 @@ impl PhysicsPanel {
                     .logarithmic(true),
             );
             ui.add(
-                egui::Slider::new(&mut self.suspension_damping, 1000.0..=10000.0)
-                    .text("Damping"),
+                egui::Slider::new(&mut self.suspension_damping, 1000.0..=10000.0).text("Damping"),
             );
         });
 
@@ -1212,14 +1216,8 @@ impl PhysicsPanel {
         ui.group(|ui| {
             ui.label(RichText::new("Wheels & Aero").strong());
 
-            ui.add(
-                egui::Slider::new(&mut self.wheel_friction, 0.5..=2.0)
-                    .text("Wheel Friction"),
-            );
-            ui.add(
-                egui::Slider::new(&mut self.downforce_coefficient, 0.0..=1.0)
-                    .text("Downforce"),
-            );
+            ui.add(egui::Slider::new(&mut self.wheel_friction, 0.5..=2.0).text("Wheel Friction"));
+            ui.add(egui::Slider::new(&mut self.downforce_coefficient, 0.0..=1.0).text("Downforce"));
         });
 
         ui.add_space(10.0);
@@ -1271,20 +1269,12 @@ impl PhysicsPanel {
             ui.label(RichText::new("Physics").strong());
 
             ui.add(
-                egui::Slider::new(&mut self.cloth_gravity_scale, 0.0..=2.0)
-                    .text("Gravity Scale"),
+                egui::Slider::new(&mut self.cloth_gravity_scale, 0.0..=2.0).text("Gravity Scale"),
             );
+            ui.add(egui::Slider::new(&mut self.cloth_damping, 0.0..=0.1).text("Damping"));
+            ui.add(egui::Slider::new(&mut self.cloth_stiffness, 0.1..=2.0).text("Stiffness"));
             ui.add(
-                egui::Slider::new(&mut self.cloth_damping, 0.0..=0.1)
-                    .text("Damping"),
-            );
-            ui.add(
-                egui::Slider::new(&mut self.cloth_stiffness, 0.1..=2.0)
-                    .text("Stiffness"),
-            );
-            ui.add(
-                egui::Slider::new(&mut self.cloth_wind_influence, 0.0..=2.0)
-                    .text("Wind Influence"),
+                egui::Slider::new(&mut self.cloth_wind_influence, 0.0..=2.0).text("Wind Influence"),
             );
             ui.checkbox(&mut self.cloth_self_collision, "Self Collision");
         });
@@ -1414,14 +1404,8 @@ impl PhysicsPanel {
                         ui.end_row();
                     });
 
-                ui.add(
-                    egui::Slider::new(&mut self.wind_strength, 0.0..=50.0)
-                        .text("Strength"),
-                );
-                ui.add(
-                    egui::Slider::new(&mut self.wind_turbulence, 0.0..=1.0)
-                        .text("Turbulence"),
-                );
+                ui.add(egui::Slider::new(&mut self.wind_strength, 0.0..=50.0).text("Strength"));
+                ui.add(egui::Slider::new(&mut self.wind_turbulence, 0.0..=1.0).text("Turbulence"));
             }
         });
 
@@ -1789,14 +1773,20 @@ mod tests {
 
     #[test]
     fn test_physics_visualization_display() {
-        assert_eq!(format!("{}", PhysicsVisualization::Colliders), "📦 Colliders");
+        assert_eq!(
+            format!("{}", PhysicsVisualization::Colliders),
+            "📦 Colliders"
+        );
         assert_eq!(format!("{}", PhysicsVisualization::Joints), "🔗 Joints");
     }
 
     #[test]
     fn test_physics_visualization_name() {
         assert_eq!(PhysicsVisualization::ContactPoints.name(), "Contact Points");
-        assert_eq!(PhysicsVisualization::VelocityVectors.name(), "Velocity Vectors");
+        assert_eq!(
+            PhysicsVisualization::VelocityVectors.name(),
+            "Velocity Vectors"
+        );
     }
 
     #[test]
@@ -2026,7 +2016,7 @@ mod tests {
         let (min, max) = DestructionPattern::Voronoi.fragment_count_range();
         assert_eq!(min, 10);
         assert_eq!(max, 30);
-        
+
         let (min, max) = DestructionPattern::Crumble.fragment_count_range();
         assert_eq!(min, 30);
         assert_eq!(max, 100);
@@ -2152,16 +2142,45 @@ mod tests {
             (PhysicsAction::Step, "Step"),
             (PhysicsAction::Reset, "Reset"),
             (PhysicsAction::SetTimeScale(1.5), "Set Time Scale"),
-            (PhysicsAction::SetSimulationMode(SimulationMode::Running), "Set Simulation Mode"),
-            (PhysicsAction::SetVisualization(PhysicsVisualization::Colliders), "Set Visualization"),
-            (PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid), "Apply Ragdoll Preset"),
+            (
+                PhysicsAction::SetSimulationMode(SimulationMode::Running),
+                "Set Simulation Mode",
+            ),
+            (
+                PhysicsAction::SetVisualization(PhysicsVisualization::Colliders),
+                "Set Visualization",
+            ),
+            (
+                PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid),
+                "Apply Ragdoll Preset",
+            ),
             (PhysicsAction::SpawnTestRagdoll, "Spawn Test Ragdoll"),
-            (PhysicsAction::ApplyTestImpulse { strength: 100.0 }, "Apply Test Impulse"),
-            (PhysicsAction::SetVehicleType(VehicleType::Sedan), "Set Vehicle Type"),
-            (PhysicsAction::SetClothQuality(ClothQuality::High), "Set Cloth Quality"),
-            (PhysicsAction::SetDestructionPattern(DestructionPattern::Voronoi), "Set Destruction Pattern"),
-            (PhysicsAction::AddGravityZone { name: "zone".to_string() }, "Add Gravity Zone"),
-            (PhysicsAction::RemoveGravityZone { index: 0 }, "Remove Gravity Zone"),
+            (
+                PhysicsAction::ApplyTestImpulse { strength: 100.0 },
+                "Apply Test Impulse",
+            ),
+            (
+                PhysicsAction::SetVehicleType(VehicleType::Sedan),
+                "Set Vehicle Type",
+            ),
+            (
+                PhysicsAction::SetClothQuality(ClothQuality::High),
+                "Set Cloth Quality",
+            ),
+            (
+                PhysicsAction::SetDestructionPattern(DestructionPattern::Voronoi),
+                "Set Destruction Pattern",
+            ),
+            (
+                PhysicsAction::AddGravityZone {
+                    name: "zone".to_string(),
+                },
+                "Add Gravity Zone",
+            ),
+            (
+                PhysicsAction::RemoveGravityZone { index: 0 },
+                "Remove Gravity Zone",
+            ),
             (PhysicsAction::ToggleWind(true), "Toggle Wind"),
         ];
 
@@ -2185,7 +2204,9 @@ mod tests {
 
     #[test]
     fn test_action_is_visualization() {
-        assert!(PhysicsAction::SetVisualization(PhysicsVisualization::Colliders).is_visualization());
+        assert!(
+            PhysicsAction::SetVisualization(PhysicsVisualization::Colliders).is_visualization()
+        );
         assert!(PhysicsAction::SetVisualization(PhysicsVisualization::All).is_visualization());
 
         assert!(!PhysicsAction::Play.is_visualization());
@@ -2197,15 +2218,23 @@ mod tests {
         assert!(PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid).is_system_config());
         assert!(PhysicsAction::SetVehicleType(VehicleType::Truck).is_system_config());
         assert!(PhysicsAction::SetClothQuality(ClothQuality::Low).is_system_config());
-        assert!(PhysicsAction::SetDestructionPattern(DestructionPattern::Shatter).is_system_config());
+        assert!(
+            PhysicsAction::SetDestructionPattern(DestructionPattern::Shatter).is_system_config()
+        );
 
         assert!(!PhysicsAction::Play.is_system_config());
-        assert!(!PhysicsAction::AddGravityZone { name: "test".to_string() }.is_system_config());
+        assert!(!PhysicsAction::AddGravityZone {
+            name: "test".to_string()
+        }
+        .is_system_config());
     }
 
     #[test]
     fn test_action_is_environment() {
-        assert!(PhysicsAction::AddGravityZone { name: "zone".to_string() }.is_environment());
+        assert!(PhysicsAction::AddGravityZone {
+            name: "zone".to_string()
+        }
+        .is_environment());
         assert!(PhysicsAction::RemoveGravityZone { index: 0 }.is_environment());
         assert!(PhysicsAction::ToggleWind(true).is_environment());
 
@@ -2252,7 +2281,9 @@ mod tests {
     fn test_mixed_action_types() {
         let mut panel = PhysicsPanel::default();
         panel.queue_action(PhysicsAction::Play);
-        panel.queue_action(PhysicsAction::SetVisualization(PhysicsVisualization::Colliders));
+        panel.queue_action(PhysicsAction::SetVisualization(
+            PhysicsVisualization::Colliders,
+        ));
         panel.queue_action(PhysicsAction::ApplyRagdollPreset(RagdollPreset::Humanoid));
         panel.queue_action(PhysicsAction::ToggleWind(true));
 

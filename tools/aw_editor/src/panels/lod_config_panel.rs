@@ -405,25 +405,49 @@ impl std::fmt::Display for LodConfigAction {
             LodConfigAction::SelectGroup(id) => write!(f, "Select group {}", id),
             LodConfigAction::DuplicateGroup(id) => write!(f, "Duplicate group {}", id),
             LodConfigAction::SetGroupName(id, name) => write!(f, "Set group {} name: {}", id, name),
-            LodConfigAction::SetGroupAssetPath(id, path) => write!(f, "Set group {} path: {}", id, path),
-            LodConfigAction::ToggleGroupEnabled(id, b) => write!(f, "Toggle group {} enabled: {}", id, b),
+            LodConfigAction::SetGroupAssetPath(id, path) => {
+                write!(f, "Set group {} path: {}", id, path)
+            }
+            LodConfigAction::ToggleGroupEnabled(id, b) => {
+                write!(f, "Toggle group {} enabled: {}", id, b)
+            }
             LodConfigAction::AddLevel(gid) => write!(f, "Add level to group {}", gid),
-            LodConfigAction::RemoveLevel(gid, lid) => write!(f, "Remove level {} from group {}", lid, gid),
-            LodConfigAction::SetLevelDistance(gid, lid, d) => write!(f, "Set group {} level {} distance: {:.1}", gid, lid, d),
-            LodConfigAction::SetLevelScreenCoverage(gid, lid, c) => write!(f, "Set group {} level {} coverage: {:.2}", gid, lid, c),
-            LodConfigAction::SetLevelMesh(gid, lid, m) => write!(f, "Set group {} level {} mesh: {}", gid, lid, m),
-            LodConfigAction::SetFadeMode(id, mode) => write!(f, "Set group {} fade: {:?}", id, mode),
-            LodConfigAction::SetFadeWidth(id, w) => write!(f, "Set group {} fade width: {:.2}", id, w),
-            LodConfigAction::ToggleCrossFade(id, b) => write!(f, "Toggle group {} crossfade: {}", id, b),
+            LodConfigAction::RemoveLevel(gid, lid) => {
+                write!(f, "Remove level {} from group {}", lid, gid)
+            }
+            LodConfigAction::SetLevelDistance(gid, lid, d) => {
+                write!(f, "Set group {} level {} distance: {:.1}", gid, lid, d)
+            }
+            LodConfigAction::SetLevelScreenCoverage(gid, lid, c) => {
+                write!(f, "Set group {} level {} coverage: {:.2}", gid, lid, c)
+            }
+            LodConfigAction::SetLevelMesh(gid, lid, m) => {
+                write!(f, "Set group {} level {} mesh: {}", gid, lid, m)
+            }
+            LodConfigAction::SetFadeMode(id, mode) => {
+                write!(f, "Set group {} fade: {:?}", id, mode)
+            }
+            LodConfigAction::SetFadeWidth(id, w) => {
+                write!(f, "Set group {} fade width: {:.2}", id, w)
+            }
+            LodConfigAction::ToggleCrossFade(id, b) => {
+                write!(f, "Toggle group {} crossfade: {}", id, b)
+            }
             LodConfigAction::SetCullDistance(id, d) => write!(f, "Set group {} cull: {:.1}", id, d),
-            LodConfigAction::SetShadowLodOffset(id, o) => write!(f, "Set group {} shadow offset: {}", id, o),
+            LodConfigAction::SetShadowLodOffset(id, o) => {
+                write!(f, "Set group {} shadow offset: {}", id, o)
+            }
             LodConfigAction::SetBiasMode(mode) => write!(f, "Set bias mode: {}", mode),
             LodConfigAction::SetGlobalBias(b) => write!(f, "Set global bias: {:.2}", b),
             LodConfigAction::SetMaxLodLevel(l) => write!(f, "Set max LOD: {}", l),
             LodConfigAction::ToggleAutoLod(b) => write!(f, "Toggle auto LOD: {}", b),
-            LodConfigAction::SetScreenSizeThreshold(t) => write!(f, "Set screen threshold: {:.2}", t),
+            LodConfigAction::SetScreenSizeThreshold(t) => {
+                write!(f, "Set screen threshold: {:.2}", t)
+            }
             LodConfigAction::SetReductionMethod(m) => write!(f, "Set reduction: {:?}", m),
-            LodConfigAction::SetTargetTriangles(id, t) => write!(f, "Set group {} target: {:.0}%", id, t),
+            LodConfigAction::SetTargetTriangles(id, t) => {
+                write!(f, "Set group {} target: {:.0}%", id, t)
+            }
             LodConfigAction::GenerateLods(id) => write!(f, "Generate LODs for group {}", id),
             LodConfigAction::GenerateAllLods => write!(f, "Generate all LODs"),
             LodConfigAction::SetPreviewDistance(d) => write!(f, "Set preview distance: {:.1}", d),
@@ -524,10 +548,42 @@ impl LodConfigPanel {
         };
 
         character_lod.levels = vec![
-            LodLevel { level: 0, mesh_path: "player_lod0.mesh".to_string(), distance: 0.0, screen_coverage: 1.0, triangle_count: 25000, vertex_count: 15000, reduction_percent: 0.0 },
-            LodLevel { level: 1, mesh_path: "player_lod1.mesh".to_string(), distance: 15.0, screen_coverage: 0.5, triangle_count: 12500, vertex_count: 7500, reduction_percent: 50.0 },
-            LodLevel { level: 2, mesh_path: "player_lod2.mesh".to_string(), distance: 35.0, screen_coverage: 0.25, triangle_count: 6250, vertex_count: 3750, reduction_percent: 75.0 },
-            LodLevel { level: 3, mesh_path: "player_lod3.mesh".to_string(), distance: 70.0, screen_coverage: 0.1, triangle_count: 2500, vertex_count: 1500, reduction_percent: 90.0 },
+            LodLevel {
+                level: 0,
+                mesh_path: "player_lod0.mesh".to_string(),
+                distance: 0.0,
+                screen_coverage: 1.0,
+                triangle_count: 25000,
+                vertex_count: 15000,
+                reduction_percent: 0.0,
+            },
+            LodLevel {
+                level: 1,
+                mesh_path: "player_lod1.mesh".to_string(),
+                distance: 15.0,
+                screen_coverage: 0.5,
+                triangle_count: 12500,
+                vertex_count: 7500,
+                reduction_percent: 50.0,
+            },
+            LodLevel {
+                level: 2,
+                mesh_path: "player_lod2.mesh".to_string(),
+                distance: 35.0,
+                screen_coverage: 0.25,
+                triangle_count: 6250,
+                vertex_count: 3750,
+                reduction_percent: 75.0,
+            },
+            LodLevel {
+                level: 3,
+                mesh_path: "player_lod3.mesh".to_string(),
+                distance: 70.0,
+                screen_coverage: 0.1,
+                triangle_count: 2500,
+                vertex_count: 1500,
+                reduction_percent: 90.0,
+            },
         ];
 
         self.lod_groups.push(character_lod.clone());
@@ -546,10 +602,38 @@ impl LodConfigPanel {
         };
 
         tree_lod.levels = vec![
-            LodLevel { level: 0, distance: 0.0, triangle_count: 8000, vertex_count: 5000, reduction_percent: 0.0, ..Default::default() },
-            LodLevel { level: 1, distance: 25.0, triangle_count: 4000, vertex_count: 2500, reduction_percent: 50.0, ..Default::default() },
-            LodLevel { level: 2, distance: 75.0, triangle_count: 1000, vertex_count: 600, reduction_percent: 87.5, ..Default::default() },
-            LodLevel { level: 3, distance: 150.0, triangle_count: 100, vertex_count: 60, reduction_percent: 98.75, ..Default::default() },
+            LodLevel {
+                level: 0,
+                distance: 0.0,
+                triangle_count: 8000,
+                vertex_count: 5000,
+                reduction_percent: 0.0,
+                ..Default::default()
+            },
+            LodLevel {
+                level: 1,
+                distance: 25.0,
+                triangle_count: 4000,
+                vertex_count: 2500,
+                reduction_percent: 50.0,
+                ..Default::default()
+            },
+            LodLevel {
+                level: 2,
+                distance: 75.0,
+                triangle_count: 1000,
+                vertex_count: 600,
+                reduction_percent: 87.5,
+                ..Default::default()
+            },
+            LodLevel {
+                level: 3,
+                distance: 150.0,
+                triangle_count: 100,
+                vertex_count: 60,
+                reduction_percent: 98.75,
+                ..Default::default()
+            },
         ];
 
         self.lod_groups.push(tree_lod);
@@ -566,9 +650,30 @@ impl LodConfigPanel {
         };
 
         building_lod.levels = vec![
-            LodLevel { level: 0, distance: 0.0, triangle_count: 15000, vertex_count: 9000, reduction_percent: 0.0, ..Default::default() },
-            LodLevel { level: 1, distance: 50.0, triangle_count: 7500, vertex_count: 4500, reduction_percent: 50.0, ..Default::default() },
-            LodLevel { level: 2, distance: 150.0, triangle_count: 3000, vertex_count: 1800, reduction_percent: 80.0, ..Default::default() },
+            LodLevel {
+                level: 0,
+                distance: 0.0,
+                triangle_count: 15000,
+                vertex_count: 9000,
+                reduction_percent: 0.0,
+                ..Default::default()
+            },
+            LodLevel {
+                level: 1,
+                distance: 50.0,
+                triangle_count: 7500,
+                vertex_count: 4500,
+                reduction_percent: 50.0,
+                ..Default::default()
+            },
+            LodLevel {
+                level: 2,
+                distance: 150.0,
+                triangle_count: 3000,
+                vertex_count: 1800,
+                reduction_percent: 80.0,
+                ..Default::default()
+            },
         ];
 
         self.lod_groups.push(building_lod);
@@ -638,8 +743,12 @@ impl LodConfigPanel {
                 .show(ui, |ui| {
                     for group in &self.lod_groups.clone() {
                         let is_selected = self.selected_group == Some(group.id);
-                        let label = format!("{} ({} levels, {} tris)",
-                            group.name, group.levels.len(), group.base_triangles);
+                        let label = format!(
+                            "{} ({} levels, {} tris)",
+                            group.name,
+                            group.levels.len(),
+                            group.base_triangles
+                        );
 
                         if ui.selectable_label(is_selected, label).clicked() {
                             self.selected_group = Some(group.id);
@@ -678,19 +787,41 @@ impl LodConfigPanel {
                     egui::ComboBox::from_id_salt("fade_mode")
                         .selected_text(format!("{:?}", self.current_group.fade_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.current_group.fade_mode, FadeMode::None, "None");
-                            ui.selectable_value(&mut self.current_group.fade_mode, FadeMode::CrossFade, "Cross Fade");
-                            ui.selectable_value(&mut self.current_group.fade_mode, FadeMode::SpeedTree, "SpeedTree");
-                            ui.selectable_value(&mut self.current_group.fade_mode, FadeMode::Dither, "Dither");
+                            ui.selectable_value(
+                                &mut self.current_group.fade_mode,
+                                FadeMode::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_group.fade_mode,
+                                FadeMode::CrossFade,
+                                "Cross Fade",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_group.fade_mode,
+                                FadeMode::SpeedTree,
+                                "SpeedTree",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_group.fade_mode,
+                                FadeMode::Dither,
+                                "Dither",
+                            );
                         });
                     ui.end_row();
 
                     ui.label("Cull Distance:");
-                    ui.add(egui::DragValue::new(&mut self.current_group.cull_distance).speed(1.0).suffix("m"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_group.cull_distance)
+                            .speed(1.0)
+                            .suffix("m"),
+                    );
                     ui.end_row();
 
                     ui.label("Shadow LOD Offset:");
-                    ui.add(egui::DragValue::new(&mut self.current_group.shadow_lod_offset).speed(1));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_group.shadow_lod_offset).speed(1),
+                    );
                     ui.end_row();
                 });
         });
@@ -703,7 +834,10 @@ impl LodConfigPanel {
                 ui.label(RichText::new("📊 LOD Levels").strong());
                 if ui.button("+ Add Level").clicked() {
                     let level = self.current_group.levels.len() as u32;
-                    let last_distance = self.current_group.levels.last()
+                    let last_distance = self
+                        .current_group
+                        .levels
+                        .last()
                         .map(|l| l.distance)
                         .unwrap_or(0.0);
 
@@ -741,8 +875,14 @@ impl LodConfigPanel {
                                     _ => Color32::from_rgb(200, 50, 50),
                                 };
 
-                                ui.label(RichText::new(format!("LOD {}", level.level)).color(color));
-                                ui.add(egui::DragValue::new(&mut level.distance).speed(1.0).suffix("m"));
+                                ui.label(
+                                    RichText::new(format!("LOD {}", level.level)).color(color),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut level.distance)
+                                        .speed(1.0)
+                                        .suffix("m"),
+                                );
                                 ui.label(format!("{}", level.triangle_count));
                                 ui.label(format!("{:.1}%", level.reduction_percent));
 
@@ -770,23 +910,35 @@ impl LodConfigPanel {
             });
 
             // Show current LOD at preview distance
-            let current_lod = self.current_group.levels.iter()
+            let current_lod = self
+                .current_group
+                .levels
+                .iter()
                 .filter(|l| l.distance <= self.preview_distance)
                 .next_back()
                 .map(|l| l.level)
                 .unwrap_or(0);
 
-            ui.label(format!("Current LOD: {} at {:.0}m", current_lod, self.preview_distance));
+            ui.label(format!(
+                "Current LOD: {} at {:.0}m",
+                current_lod, self.preview_distance
+            ));
 
             // Visual bar showing LOD ranges
             let bar_height = 20.0;
-            let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), bar_height), egui::Sense::hover());
+            let (rect, _) = ui.allocate_exact_size(
+                Vec2::new(ui.available_width(), bar_height),
+                egui::Sense::hover(),
+            );
 
             let painter = ui.painter();
             let total_distance = self.current_group.cull_distance;
 
             for (i, level) in self.current_group.levels.iter().enumerate() {
-                let next_distance = self.current_group.levels.get(i + 1)
+                let next_distance = self
+                    .current_group
+                    .levels
+                    .get(i + 1)
                     .map(|l| l.distance)
                     .unwrap_or(total_distance);
 
@@ -839,26 +991,55 @@ impl LodConfigPanel {
                     egui::ComboBox::from_id_salt("bias_mode")
                         .selected_text(format!("{:?}", self.global_settings.bias_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.global_settings.bias_mode, LodBiasMode::Auto, "Auto");
-                            ui.selectable_value(&mut self.global_settings.bias_mode, LodBiasMode::Quality, "Quality");
-                            ui.selectable_value(&mut self.global_settings.bias_mode, LodBiasMode::Balanced, "Balanced");
-                            ui.selectable_value(&mut self.global_settings.bias_mode, LodBiasMode::Performance, "Performance");
-                            ui.selectable_value(&mut self.global_settings.bias_mode, LodBiasMode::Custom, "Custom");
+                            ui.selectable_value(
+                                &mut self.global_settings.bias_mode,
+                                LodBiasMode::Auto,
+                                "Auto",
+                            );
+                            ui.selectable_value(
+                                &mut self.global_settings.bias_mode,
+                                LodBiasMode::Quality,
+                                "Quality",
+                            );
+                            ui.selectable_value(
+                                &mut self.global_settings.bias_mode,
+                                LodBiasMode::Balanced,
+                                "Balanced",
+                            );
+                            ui.selectable_value(
+                                &mut self.global_settings.bias_mode,
+                                LodBiasMode::Performance,
+                                "Performance",
+                            );
+                            ui.selectable_value(
+                                &mut self.global_settings.bias_mode,
+                                LodBiasMode::Custom,
+                                "Custom",
+                            );
                         });
                     ui.end_row();
 
                     if self.global_settings.bias_mode == LodBiasMode::Custom {
                         ui.label("Custom Bias:");
-                        ui.add(egui::Slider::new(&mut self.global_settings.custom_bias, 0.25..=4.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.global_settings.custom_bias,
+                            0.25..=4.0,
+                        ));
                         ui.end_row();
                     }
 
                     ui.label("Max LOD Level:");
-                    ui.add(egui::Slider::new(&mut self.global_settings.maximum_lod_level, 0..=8));
+                    ui.add(egui::Slider::new(
+                        &mut self.global_settings.maximum_lod_level,
+                        0..=8,
+                    ));
                     ui.end_row();
 
                     ui.label("Cross Fade Time:");
-                    ui.add(egui::Slider::new(&mut self.global_settings.lod_cross_fade_time, 0.0..=2.0).suffix("s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.global_settings.lod_cross_fade_time, 0.0..=2.0)
+                            .suffix("s"),
+                    );
                     ui.end_row();
                 });
         });
@@ -870,7 +1051,12 @@ impl LodConfigPanel {
             ui.label(RichText::new("📏 Distance Presets").strong());
 
             ui.collapsing("Quality Distances", |ui| {
-                for (i, dist) in self.global_settings.quality_distances.iter_mut().enumerate() {
+                for (i, dist) in self
+                    .global_settings
+                    .quality_distances
+                    .iter_mut()
+                    .enumerate()
+                {
                     ui.horizontal(|ui| {
                         ui.label(format!("LOD {}:", i + 1));
                         ui.add(egui::DragValue::new(dist).speed(1.0).suffix("m"));
@@ -879,7 +1065,12 @@ impl LodConfigPanel {
             });
 
             ui.collapsing("Balanced Distances", |ui| {
-                for (i, dist) in self.global_settings.balanced_distances.iter_mut().enumerate() {
+                for (i, dist) in self
+                    .global_settings
+                    .balanced_distances
+                    .iter_mut()
+                    .enumerate()
+                {
                     ui.horizontal(|ui| {
                         ui.label(format!("LOD {}:", i + 1));
                         ui.add(egui::DragValue::new(dist).speed(1.0).suffix("m"));
@@ -888,7 +1079,12 @@ impl LodConfigPanel {
             });
 
             ui.collapsing("Performance Distances", |ui| {
-                for (i, dist) in self.global_settings.performance_distances.iter_mut().enumerate() {
+                for (i, dist) in self
+                    .global_settings
+                    .performance_distances
+                    .iter_mut()
+                    .enumerate()
+                {
                     ui.horizontal(|ui| {
                         ui.label(format!("LOD {}:", i + 1));
                         ui.add(egui::DragValue::new(dist).speed(1.0).suffix("m"));
@@ -903,12 +1099,18 @@ impl LodConfigPanel {
         ui.group(|ui| {
             ui.label(RichText::new("📐 Screen Coverage").strong());
 
-            ui.checkbox(&mut self.global_settings.screen_coverage_enabled, "Enable Screen Coverage LOD");
+            ui.checkbox(
+                &mut self.global_settings.screen_coverage_enabled,
+                "Enable Screen Coverage LOD",
+            );
 
             if self.global_settings.screen_coverage_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Min Coverage:");
-                    ui.add(egui::Slider::new(&mut self.global_settings.min_screen_coverage, 0.001..=0.1));
+                    ui.add(egui::Slider::new(
+                        &mut self.global_settings.min_screen_coverage,
+                        0.001..=0.1,
+                    ));
                 });
             }
         });
@@ -924,11 +1126,18 @@ impl LodConfigPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Shadow LOD Bias:");
-                    ui.add(egui::Slider::new(&mut self.global_settings.shadow_lod_bias, -2..=4));
+                    ui.add(egui::Slider::new(
+                        &mut self.global_settings.shadow_lod_bias,
+                        -2..=4,
+                    ));
                     ui.end_row();
 
                     ui.label("Shadow Cull Distance:");
-                    ui.add(egui::DragValue::new(&mut self.global_settings.shadow_cull_distance).speed(10.0).suffix("m"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.global_settings.shadow_cull_distance)
+                            .speed(10.0)
+                            .suffix("m"),
+                    );
                     ui.end_row();
                 });
         });
@@ -950,17 +1159,36 @@ impl LodConfigPanel {
                     ui.end_row();
 
                     ui.label("Number of Levels:");
-                    ui.add(egui::Slider::new(&mut self.generation_settings.num_levels, 1..=6));
+                    ui.add(egui::Slider::new(
+                        &mut self.generation_settings.num_levels,
+                        1..=6,
+                    ));
                     ui.end_row();
 
                     ui.label("Reduction Method:");
                     egui::ComboBox::from_id_salt("reduction_method")
                         .selected_text(format!("{:?}", self.generation_settings.reduction_method))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.generation_settings.reduction_method, ReductionMethod::QuadricErrorMetric, "Quadric Error Metric");
-                            ui.selectable_value(&mut self.generation_settings.reduction_method, ReductionMethod::EdgeCollapse, "Edge Collapse");
-                            ui.selectable_value(&mut self.generation_settings.reduction_method, ReductionMethod::VertexClustering, "Vertex Clustering");
-                            ui.selectable_value(&mut self.generation_settings.reduction_method, ReductionMethod::Simplygon, "Simplygon");
+                            ui.selectable_value(
+                                &mut self.generation_settings.reduction_method,
+                                ReductionMethod::QuadricErrorMetric,
+                                "Quadric Error Metric",
+                            );
+                            ui.selectable_value(
+                                &mut self.generation_settings.reduction_method,
+                                ReductionMethod::EdgeCollapse,
+                                "Edge Collapse",
+                            );
+                            ui.selectable_value(
+                                &mut self.generation_settings.reduction_method,
+                                ReductionMethod::VertexClustering,
+                                "Vertex Clustering",
+                            );
+                            ui.selectable_value(
+                                &mut self.generation_settings.reduction_method,
+                                ReductionMethod::Simplygon,
+                                "Simplygon",
+                            );
                         });
                     ui.end_row();
                 });
@@ -972,7 +1200,12 @@ impl LodConfigPanel {
         ui.group(|ui| {
             ui.label(RichText::new("📉 Target Reductions").strong());
 
-            for (i, reduction) in self.generation_settings.target_reductions.iter_mut().enumerate() {
+            for (i, reduction) in self
+                .generation_settings
+                .target_reductions
+                .iter_mut()
+                .enumerate()
+            {
                 ui.horizontal(|ui| {
                     ui.label(format!("LOD {} Reduction:", i + 1));
                     ui.add(egui::Slider::new(reduction, 0.0..=99.0).suffix("%"));
@@ -987,12 +1220,22 @@ impl LodConfigPanel {
             ui.label(RichText::new("🛡️ Preservation").strong());
 
             ui.checkbox(&mut self.generation_settings.preserve_uvs, "Preserve UVs");
-            ui.checkbox(&mut self.generation_settings.preserve_normals, "Preserve Normals");
-            ui.checkbox(&mut self.generation_settings.preserve_borders, "Preserve Borders");
+            ui.checkbox(
+                &mut self.generation_settings.preserve_normals,
+                "Preserve Normals",
+            );
+            ui.checkbox(
+                &mut self.generation_settings.preserve_borders,
+                "Preserve Borders",
+            );
 
             ui.horizontal(|ui| {
                 ui.label("Weld Threshold:");
-                ui.add(egui::DragValue::new(&mut self.generation_settings.weld_threshold).speed(0.0001).min_decimals(4));
+                ui.add(
+                    egui::DragValue::new(&mut self.generation_settings.weld_threshold)
+                        .speed(0.0001)
+                        .min_decimals(4),
+                );
             });
         });
 
@@ -1056,14 +1299,19 @@ impl LodConfigPanel {
 
                             for level in &group.levels {
                                 let savings = if group.base_triangles > 0 {
-                                    100.0 * (1.0 - level.triangle_count as f32 / group.base_triangles as f32)
+                                    100.0
+                                        * (1.0
+                                            - level.triangle_count as f32
+                                                / group.base_triangles as f32)
                                 } else {
                                     0.0
                                 };
 
                                 ui.horizontal(|ui| {
-                                    ui.label(format!("  LOD {}: {} tris ({:.1}% saved)",
-                                        level.level, level.triangle_count, savings));
+                                    ui.label(format!(
+                                        "  LOD {}: {} tris ({:.1}% saved)",
+                                        level.level, level.triangle_count, savings
+                                    ));
                                 });
                             }
                         });
@@ -1078,7 +1326,9 @@ impl LodConfigPanel {
             ui.label(RichText::new("💾 Memory Estimate").strong());
 
             // Rough estimate: 32 bytes per vertex
-            let total_vertices: u32 = self.lod_groups.iter()
+            let total_vertices: u32 = self
+                .lod_groups
+                .iter()
                 .flat_map(|g| &g.levels)
                 .map(|l| l.vertex_count)
                 .sum();
@@ -1293,9 +1543,15 @@ mod tests {
 
     #[test]
     fn test_reduction_method_name() {
-        assert_eq!(ReductionMethod::QuadricErrorMetric.name(), "Quadric Error Metric");
+        assert_eq!(
+            ReductionMethod::QuadricErrorMetric.name(),
+            "Quadric Error Metric"
+        );
         assert_eq!(ReductionMethod::EdgeCollapse.name(), "Edge Collapse");
-        assert_eq!(ReductionMethod::VertexClustering.name(), "Vertex Clustering");
+        assert_eq!(
+            ReductionMethod::VertexClustering.name(),
+            "Vertex Clustering"
+        );
         assert_eq!(ReductionMethod::Simplygon.name(), "Simplygon");
     }
 
@@ -1319,7 +1575,10 @@ mod tests {
 
     #[test]
     fn test_reduction_method_default_value() {
-        assert_eq!(ReductionMethod::default(), ReductionMethod::QuadricErrorMetric);
+        assert_eq!(
+            ReductionMethod::default(),
+            ReductionMethod::QuadricErrorMetric
+        );
     }
 
     #[test]
@@ -1572,9 +1831,15 @@ mod tests {
 
     #[test]
     fn test_reduction_method_variants() {
-        assert_eq!(ReductionMethod::QuadricErrorMetric, ReductionMethod::QuadricErrorMetric);
+        assert_eq!(
+            ReductionMethod::QuadricErrorMetric,
+            ReductionMethod::QuadricErrorMetric
+        );
         assert_eq!(ReductionMethod::EdgeCollapse, ReductionMethod::EdgeCollapse);
-        assert_eq!(ReductionMethod::VertexClustering, ReductionMethod::VertexClustering);
+        assert_eq!(
+            ReductionMethod::VertexClustering,
+            ReductionMethod::VertexClustering
+        );
         assert_eq!(ReductionMethod::Simplygon, ReductionMethod::Simplygon);
     }
 
@@ -1587,7 +1852,10 @@ mod tests {
         let settings = LodGenerationSettings::default();
         assert!(settings.auto_generate);
         assert_eq!(settings.num_levels, 4);
-        assert_eq!(settings.reduction_method, ReductionMethod::QuadricErrorMetric);
+        assert_eq!(
+            settings.reduction_method,
+            ReductionMethod::QuadricErrorMetric
+        );
         assert_eq!(settings.target_reductions, [50.0, 75.0, 90.0, 95.0]);
         assert!(settings.preserve_uvs);
         assert!(settings.preserve_normals);
@@ -1708,7 +1976,10 @@ mod tests {
     #[test]
     fn test_sample_data_character() {
         let panel = LodConfigPanel::new();
-        let character = panel.lod_groups.iter().find(|g| g.name == "Player Character");
+        let character = panel
+            .lod_groups
+            .iter()
+            .find(|g| g.name == "Player Character");
         assert!(character.is_some());
         let char_group = character.unwrap();
         assert_eq!(char_group.base_triangles, 25000);
@@ -1764,22 +2035,30 @@ mod tests {
     #[test]
     fn test_lod_level_chain() {
         let panel = LodConfigPanel::new();
-        let char_group = panel.lod_groups.iter().find(|g| g.name == "Player Character").unwrap();
-        
+        let char_group = panel
+            .lod_groups
+            .iter()
+            .find(|g| g.name == "Player Character")
+            .unwrap();
+
         // Verify LOD levels have increasing distances
         for i in 1..char_group.levels.len() {
-            assert!(char_group.levels[i].distance >= char_group.levels[i-1].distance);
+            assert!(char_group.levels[i].distance >= char_group.levels[i - 1].distance);
         }
     }
 
     #[test]
     fn test_lod_level_triangle_reduction() {
         let panel = LodConfigPanel::new();
-        let char_group = panel.lod_groups.iter().find(|g| g.name == "Player Character").unwrap();
-        
+        let char_group = panel
+            .lod_groups
+            .iter()
+            .find(|g| g.name == "Player Character")
+            .unwrap();
+
         // Verify triangle counts decrease
         for i in 1..char_group.levels.len() {
-            assert!(char_group.levels[i].triangle_count <= char_group.levels[i-1].triangle_count);
+            assert!(char_group.levels[i].triangle_count <= char_group.levels[i - 1].triangle_count);
         }
     }
 
@@ -1809,7 +2088,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -1963,4 +2246,3 @@ mod tests {
         }
     }
 }
-

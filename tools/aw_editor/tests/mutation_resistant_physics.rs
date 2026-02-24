@@ -23,14 +23,20 @@ mod physics_visualization_tests {
 
     #[test]
     fn test_all_names_unique() {
-        let names: Vec<&str> = PhysicsVisualization::all().iter().map(|c| c.name()).collect();
+        let names: Vec<&str> = PhysicsVisualization::all()
+            .iter()
+            .map(|c| c.name())
+            .collect();
         let unique: HashSet<_> = names.iter().collect();
         assert_eq!(names.len(), unique.len());
     }
 
     #[test]
     fn test_all_icons_unique() {
-        let icons: Vec<&str> = PhysicsVisualization::all().iter().map(|c| c.icon()).collect();
+        let icons: Vec<&str> = PhysicsVisualization::all()
+            .iter()
+            .map(|c| c.icon())
+            .collect();
         let unique: HashSet<_> = icons.iter().collect();
         assert_eq!(icons.len(), unique.len());
     }

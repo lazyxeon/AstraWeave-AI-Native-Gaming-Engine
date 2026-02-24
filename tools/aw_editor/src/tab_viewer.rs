@@ -411,12 +411,18 @@ impl std::fmt::Display for PanelEvent {
                 write!(f, "Material Changed: {}.{}", name, property)
             }
             PanelEvent::AnimationPlayStateChanged { is_playing } => {
-                write!(f, "Animation {}", if *is_playing { "Playing" } else { "Paused" })
+                write!(
+                    f,
+                    "Animation {}",
+                    if *is_playing { "Playing" } else { "Paused" }
+                )
             }
             PanelEvent::AnimationFrameChanged { frame } => {
                 write!(f, "Animation Frame: {}", frame)
             }
-            PanelEvent::AnimationKeyframeAdded { track_index, frame, .. } => {
+            PanelEvent::AnimationKeyframeAdded {
+                track_index, frame, ..
+            } => {
                 write!(f, "Keyframe Added: Track {} @ {}", track_index, frame)
             }
             PanelEvent::ThemeChanged(theme) => write!(f, "Theme Changed: {}", theme),
@@ -465,11 +471,22 @@ impl PanelEvent {
     /// Returns the event category name.
     pub fn category(&self) -> &'static str {
         match self {
-            PanelEvent::PanelClosed(_) | PanelEvent::PanelFocused(_) | PanelEvent::AddPanel(_) | PanelEvent::ResetLayout => "Panel",
-            PanelEvent::EntitySelected(_) | PanelEvent::EntityDeselected | PanelEvent::CreateEntity | PanelEvent::DeleteEntity(_) | PanelEvent::DuplicateEntity(_) => "Entity",
-            PanelEvent::TransformPositionChanged { .. } | PanelEvent::TransformRotationChanged { .. } | PanelEvent::TransformScaleChanged { .. } => "Transform",
+            PanelEvent::PanelClosed(_)
+            | PanelEvent::PanelFocused(_)
+            | PanelEvent::AddPanel(_)
+            | PanelEvent::ResetLayout => "Panel",
+            PanelEvent::EntitySelected(_)
+            | PanelEvent::EntityDeselected
+            | PanelEvent::CreateEntity
+            | PanelEvent::DeleteEntity(_)
+            | PanelEvent::DuplicateEntity(_) => "Entity",
+            PanelEvent::TransformPositionChanged { .. }
+            | PanelEvent::TransformRotationChanged { .. }
+            | PanelEvent::TransformScaleChanged { .. } => "Transform",
             PanelEvent::MaterialChanged { .. } => "Material",
-            PanelEvent::AnimationPlayStateChanged { .. } | PanelEvent::AnimationFrameChanged { .. } | PanelEvent::AnimationKeyframeAdded { .. } => "Animation",
+            PanelEvent::AnimationPlayStateChanged { .. }
+            | PanelEvent::AnimationFrameChanged { .. }
+            | PanelEvent::AnimationKeyframeAdded { .. } => "Animation",
             PanelEvent::ThemeChanged(_) => "Theme",
             PanelEvent::BuildRequested { .. } => "Build",
             PanelEvent::ConsoleCleared | PanelEvent::ConsoleSearchChanged(_) => "Console",
@@ -478,65 +495,76 @@ impl PanelEvent {
             PanelEvent::HierarchySearchChanged(_) => "Hierarchy",
             PanelEvent::RefreshSceneStats => "Scene",
             PanelEvent::AddComponent { .. } | PanelEvent::RemoveComponent { .. } => "Component",
-            PanelEvent::ViewportViewModeChanged(_) | PanelEvent::ViewportGizmoModeChanged(_) | PanelEvent::ViewportGizmoSpaceChanged(_) | PanelEvent::ViewportOverlayToggled { .. } | PanelEvent::ViewportCameraChanged { .. } | PanelEvent::ViewportFocusOnSelection | PanelEvent::ViewportResetCamera | PanelEvent::ViewportCameraPreset(_) => "Viewport",
+            PanelEvent::ViewportViewModeChanged(_)
+            | PanelEvent::ViewportGizmoModeChanged(_)
+            | PanelEvent::ViewportGizmoSpaceChanged(_)
+            | PanelEvent::ViewportOverlayToggled { .. }
+            | PanelEvent::ViewportCameraChanged { .. }
+            | PanelEvent::ViewportFocusOnSelection
+            | PanelEvent::ViewportResetCamera
+            | PanelEvent::ViewportCameraPreset(_) => "Viewport",
         }
     }
 
     /// Returns true if this is a panel management event.
     pub fn is_panel_event(&self) -> bool {
-        matches!(self, 
-            PanelEvent::PanelClosed(_) | 
-            PanelEvent::PanelFocused(_) | 
-            PanelEvent::AddPanel(_) | 
-            PanelEvent::ResetLayout
+        matches!(
+            self,
+            PanelEvent::PanelClosed(_)
+                | PanelEvent::PanelFocused(_)
+                | PanelEvent::AddPanel(_)
+                | PanelEvent::ResetLayout
         )
     }
 
     /// Returns true if this is an entity-related event.
     pub fn is_entity_event(&self) -> bool {
-        matches!(self,
-            PanelEvent::EntitySelected(_) |
-            PanelEvent::EntityDeselected |
-            PanelEvent::CreateEntity |
-            PanelEvent::DeleteEntity(_) |
-            PanelEvent::DuplicateEntity(_)
+        matches!(
+            self,
+            PanelEvent::EntitySelected(_)
+                | PanelEvent::EntityDeselected
+                | PanelEvent::CreateEntity
+                | PanelEvent::DeleteEntity(_)
+                | PanelEvent::DuplicateEntity(_)
         )
     }
 
     /// Returns true if this is a transform event.
     pub fn is_transform_event(&self) -> bool {
-        matches!(self,
-            PanelEvent::TransformPositionChanged { .. } |
-            PanelEvent::TransformRotationChanged { .. } |
-            PanelEvent::TransformScaleChanged { .. }
+        matches!(
+            self,
+            PanelEvent::TransformPositionChanged { .. }
+                | PanelEvent::TransformRotationChanged { .. }
+                | PanelEvent::TransformScaleChanged { .. }
         )
     }
 
     /// Returns true if this is a viewport event.
     pub fn is_viewport_event(&self) -> bool {
-        matches!(self,
-            PanelEvent::ViewportViewModeChanged(_) |
-            PanelEvent::ViewportGizmoModeChanged(_) |
-            PanelEvent::ViewportGizmoSpaceChanged(_) |
-            PanelEvent::ViewportOverlayToggled { .. } |
-            PanelEvent::ViewportCameraChanged { .. } |
-            PanelEvent::ViewportFocusOnSelection |
-            PanelEvent::ViewportResetCamera |
-            PanelEvent::ViewportCameraPreset(_)
+        matches!(
+            self,
+            PanelEvent::ViewportViewModeChanged(_)
+                | PanelEvent::ViewportGizmoModeChanged(_)
+                | PanelEvent::ViewportGizmoSpaceChanged(_)
+                | PanelEvent::ViewportOverlayToggled { .. }
+                | PanelEvent::ViewportCameraChanged { .. }
+                | PanelEvent::ViewportFocusOnSelection
+                | PanelEvent::ViewportResetCamera
+                | PanelEvent::ViewportCameraPreset(_)
         )
     }
 
     /// Returns the entity ID if this event references one.
     pub fn entity_id(&self) -> Option<u64> {
         match self {
-            PanelEvent::EntitySelected(id) |
-            PanelEvent::DeleteEntity(id) |
-            PanelEvent::DuplicateEntity(id) |
-            PanelEvent::TransformPositionChanged { entity_id: id, .. } |
-            PanelEvent::TransformRotationChanged { entity_id: id, .. } |
-            PanelEvent::TransformScaleChanged { entity_id: id, .. } |
-            PanelEvent::AddComponent { entity_id: id, .. } |
-            PanelEvent::RemoveComponent { entity_id: id, .. } => Some(*id),
+            PanelEvent::EntitySelected(id)
+            | PanelEvent::DeleteEntity(id)
+            | PanelEvent::DuplicateEntity(id)
+            | PanelEvent::TransformPositionChanged { entity_id: id, .. }
+            | PanelEvent::TransformRotationChanged { entity_id: id, .. }
+            | PanelEvent::TransformScaleChanged { entity_id: id, .. }
+            | PanelEvent::AddComponent { entity_id: id, .. }
+            | PanelEvent::RemoveComponent { entity_id: id, .. } => Some(*id),
             _ => None,
         }
     }
@@ -883,7 +911,10 @@ impl BehaviorNodeType {
 
     /// Returns true if this is a composite node type.
     pub fn is_composite(&self) -> bool {
-        matches!(self, BehaviorNodeType::Sequence | BehaviorNodeType::Selector)
+        matches!(
+            self,
+            BehaviorNodeType::Sequence | BehaviorNodeType::Selector
+        )
     }
 
     /// Returns true if this is a leaf node type.
@@ -893,11 +924,12 @@ impl BehaviorNodeType {
 
     /// Returns true if this node can have children.
     pub fn can_have_children(&self) -> bool {
-        matches!(self, 
-            BehaviorNodeType::Root | 
-            BehaviorNodeType::Sequence | 
-            BehaviorNodeType::Selector | 
-            BehaviorNodeType::Decorator
+        matches!(
+            self,
+            BehaviorNodeType::Root
+                | BehaviorNodeType::Sequence
+                | BehaviorNodeType::Selector
+                | BehaviorNodeType::Decorator
         )
     }
 }
@@ -6824,7 +6856,11 @@ mod tests {
         let event = PanelEvent::EntitySelected(42);
         assert!(event.to_string().contains("Selected"));
 
-        let event = PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 };
+        let event = PanelEvent::TransformPositionChanged {
+            entity_id: 1,
+            x: 0.0,
+            y: 0.0,
+        };
         assert!(event.to_string().contains("Transform"));
     }
 
@@ -6834,7 +6870,12 @@ mod tests {
         assert!(PanelEvent::PanelFocused(PanelType::Console).is_panel_event());
         assert!(PanelEvent::EntitySelected(1).is_entity_event());
         assert!(PanelEvent::EntityDeselected.is_entity_event());
-        assert!(PanelEvent::TransformPositionChanged { entity_id: 1, x: 0.0, y: 0.0 }.is_transform_event());
+        assert!(PanelEvent::TransformPositionChanged {
+            entity_id: 1,
+            x: 0.0,
+            y: 0.0
+        }
+        .is_transform_event());
         assert!(PanelEvent::ViewportFocusOnSelection.is_viewport_event());
     }
 
@@ -6842,7 +6883,15 @@ mod tests {
     fn test_panel_event_entity_id() {
         assert_eq!(PanelEvent::EntitySelected(42).entity_id(), Some(42));
         assert_eq!(PanelEvent::EntityDeselected.entity_id(), None);
-        assert_eq!(PanelEvent::TransformPositionChanged { entity_id: 5, x: 0.0, y: 0.0 }.entity_id(), Some(5));
+        assert_eq!(
+            PanelEvent::TransformPositionChanged {
+                entity_id: 5,
+                x: 0.0,
+                y: 0.0
+            }
+            .entity_id(),
+            Some(5)
+        );
     }
 
     // ==================== EditorTheme Tests ====================
