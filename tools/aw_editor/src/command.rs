@@ -1960,4 +1960,59 @@ mod tests {
         stack.set_auto_merge(false);
         assert!(!stack.is_auto_merge_enabled());
     }
+
+    // ====================================================================
+    // Mutation-resistant: default try_merge returns false
+    // ====================================================================
+
+    /// Verify that the default `EditorCommand::try_merge` returns `false`.
+    ///
+    /// Mutation target: `command.rs:98:9: replace EditorCommand::try_merge -> bool with true`
+    /// If the default returned `true`, non-mergeable commands would silently
+    /// be discarded from the undo stack when auto_merge is enabled.
+    #[test]
+    fn test_default_try_merge_returns_false_exactly() {
+        let mut world = World::new();
+        let entity = world.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+
+        // EditHealthCommand uses the default try_merge (no override).
+        let mut cmd1 = EditHealthCommand::new(entity, 100, 75);
+        let cmd2 = EditHealthCommand::new(entity, 75, 50);
+
+        // The default must return exactly false.
+        assert_eq!(
+            cmd1.try_merge(cmd2.as_ref()),
+            false,
+            "default EditorCommand::try_merge must return false, not true"
+        );
+    }
+
+    /// Verify that non-mergeable commands stay separate in the undo stack
+    /// even when auto_merge is enabled. This is the observable behavioral
+    /// consequence of the default `try_merge` returning `false`.
+    #[test]
+    fn test_non_mergeable_commands_not_merged_with_auto_merge() {
+        let mut world = World::new();
+        let entity = world.spawn("Patient", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+
+        let mut stack = UndoStack::new(10);
+        stack.set_auto_merge(true); // auto_merge ON
+
+        // Push two EditHealthCommands (uses default try_merge -> false).
+        stack.push_executed(EditHealthCommand::new(entity, 100, 75));
+        stack.push_executed(EditHealthCommand::new(entity, 75, 50));
+
+        // Both commands must remain in the stack — NOT be merged.
+        assert_eq!(
+            stack.len(),
+            2,
+            "non-mergeable commands must remain separate even with auto_merge enabled"
+        );
+
+        // Verify undo of each command is independent.
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.health(entity).unwrap().hp, 75);
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.health(entity).unwrap().hp, 100);
+    }
 }
