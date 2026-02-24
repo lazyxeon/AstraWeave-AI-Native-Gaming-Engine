@@ -615,50 +615,79 @@ mod tests {
     #[test]
     fn test_optimize_prompt_at_exact_max_length_no_compression() {
         // Remediation: kills "replace > with >=" at line 110
+        // Use a multi-line prompt so compression actually changes it
         let mut config = OptimizationConfig::default();
         config.enable_compression = true;
-        config.max_prompt_length = 10;
+        config.max_prompt_length = 7;
         let mut engine = OptimizationEngine::new(config);
 
-        // Prompt exactly at max_length should NOT be compressed
-        let prompt = "a".repeat(10);
-        let result = engine.optimize_prompt(&prompt).unwrap();
-        assert_eq!(result, prompt, "prompt at exact max_length should not be compressed");
+        // "ab\ncd\ne" = 7 bytes. Compressed → "ab cd e" (different string).
+        // With >:  7 > 7 = false → no compression → returns "ab\ncd\ne"
+        // With >=: 7 >= 7 = true → compresses → returns "ab cd e" ≠ original
+        let prompt = "ab\ncd\ne";
+        assert_eq!(prompt.len(), 7);
+        let result = engine.optimize_prompt(prompt).unwrap();
+        assert_eq!(
+            result, prompt,
+            "prompt at exact max_length should not be compressed"
+        );
     }
 
     #[test]
     fn test_update_metrics_avg_is_division() {
         // Remediation: kills "replace / with % or *" in update_metrics
+        // Must produce measurable total_processing_time (> 0 ms integer)
         let mut config = OptimizationConfig::default();
-        config.enable_compression = false;
+        config.enable_compression = true;
+        config.max_prompt_length = 1; // Force compression on every call
         let mut engine = OptimizationEngine::new(config);
 
-        // Process multiple prompts to get non-trivial average
-        for _ in 0..3 {
-            let _ = engine.optimize_prompt("test prompt");
+        // Large multi-line prompt — compression takes measurable time
+        let big_prompt: String = (0..10_000)
+            .map(|i| format!("line_{i}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        for _ in 0..5 {
+            let _ = engine.optimize_prompt(&big_prompt);
         }
-        let metrics = engine.get_metrics();
-        assert_eq!(metrics.templates_processed, 3);
-        // avg should be total / 3, not total % 3 or total * 3
-        let total_ms = metrics.total_processing_time.as_millis() as f64;
-        let expected_avg = total_ms / 3.0;
-        let actual_avg = metrics.avg_processing_time_ms;
-        assert!((actual_avg - expected_avg).abs() < 0.001, "avg should be total/count, got {}", actual_avg);
+        let m = engine.get_metrics();
+        assert_eq!(m.templates_processed, 5);
+        let total_ms = m.total_processing_time.as_millis() as f64;
+        assert!(
+            total_ms > 0.0,
+            "processing 5 large prompts should register >= 1ms total"
+        );
+        // With /: avg = total/5 ✓
+        // With %: avg = total%5 ≠ total/5 (when total > 5)
+        // With *: avg = total*5 ≠ total/5
+        let expected_avg = total_ms / 5.0;
+        assert!(
+            (m.avg_processing_time_ms - expected_avg).abs() < 0.001,
+            "avg_ms={}, expected total({total_ms})/count(5)={expected_avg}",
+            m.avg_processing_time_ms
+        );
     }
 
     #[test]
     fn test_cache_ttl_boundary_not_expired() {
         // Remediation: kills "replace > with == / >=" in TemplateCache::get TTL check
+        // With ttl_seconds=0, a freshly inserted item has elapsed.as_secs()=0:
+        //   0 > 0  = false → valid → Some (normal)
+        //   0 >= 0 = true  → expired → None (mutant)
+        //   0 == 0 = true  → expired → None (mutant)
         let config = CacheConfig {
             max_size: 100,
-            ttl_seconds: 3600, // 1 hour — won't expire during test
+            ttl_seconds: 0,
         };
         let mut cache = TemplateCache::new(config);
         cache.put("key1".to_string(), "value1".to_string());
 
-        // Should still be valid (just inserted, far from TTL)
         let result = cache.get("key1");
-        assert!(result.is_some(), "freshly cached template should not be expired");
-        assert_eq!(result.unwrap(), "value1");
+        assert_eq!(
+            result,
+            Some("value1".to_string()),
+            "entry at ttl boundary (0>0=false) should still be valid"
+        );
     }
 }

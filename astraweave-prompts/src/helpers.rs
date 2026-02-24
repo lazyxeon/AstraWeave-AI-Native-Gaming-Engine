@@ -906,4 +906,49 @@ mod tests {
             "short flat prompt must have complexity 0"
         );
     }
+
+    #[test]
+    fn test_calculate_readability_exact_scores_kills_arithmetic_mutants() {
+        // Remediation: kills 10 MISSED mutants in calculate_readability
+        // lines 446, 448, 450 — all arithmetic ops (*, -, /) in 3 branches
+
+        // Branch 1 (avg <= 15.0): 10 words, 1 sentence
+        // avg = 10.0 -> score = 90 - (10.0 * 2.0) as u8 = 70
+        let b1 = (0..10)
+            .map(|i| format!("w{i}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+            + ".";
+        assert_eq!(
+            PromptAnalyzer::calculate_readability(&b1),
+            70,
+            "branch1: 10 words/1 sentence -> 70"
+        );
+
+        // Branch 2 (15 < avg <= 25): 20 words, 1 sentence
+        // avg = 20.0 -> score = 70 - ((20.0 - 15.0) * 3.0) as u8 = 55
+        let b2 = (0..20)
+            .map(|i| format!("w{i}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+            + ".";
+        assert_eq!(
+            PromptAnalyzer::calculate_readability(&b2),
+            55,
+            "branch2: 20 words/1 sentence -> 55"
+        );
+
+        // Branch 3 (avg > 25): 40 words, 1 sentence
+        // avg = 40.0 -> score = 40 - ((40.0 - 25.0) * 1.5) as u8 = 40 - 22 = 18
+        let b3 = (0..40)
+            .map(|i| format!("w{i}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+            + ".";
+        assert_eq!(
+            PromptAnalyzer::calculate_readability(&b3),
+            18,
+            "branch3: 40 words/1 sentence -> 18"
+        );
+    }
 }
