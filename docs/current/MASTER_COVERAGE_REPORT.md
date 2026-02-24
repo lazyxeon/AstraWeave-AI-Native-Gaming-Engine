@@ -1,6 +1,6 @@
 # AstraWeave: Master Test Coverage Report
 
-**Version**: 4.0.0  
+**Version**: 4.1.0  
 **Last Updated**: February 10, 2026  
 **Status**: Authoritative Source  
 **Maintainer**: Core Team  
@@ -185,6 +185,7 @@ These crates are outside the primary tier system but have been measured:
 
 | Crate | Coverage | Tests | Notes |
 |-------|----------|-------|-------|
+| veilweaver_slice_runtime | ~95% (est) | 320 | `#![forbid(unsafe_code)]`, 20 modules, 6 integration suites, NaN-hardened |
 | aw_editor | ~95% (est) | 71 | Production ready; integration + command + animation + graph tests |
 | astraweave-asset | 65.30% | 156 | lib.rs hotspot at 51.49% (gltf_loader needs GLB fixtures) |
 | astraweave-assets | 92.07% | 124 | PolyHaven API mocked; downloader + organizer tested |

@@ -441,8 +441,11 @@ mod tests {
         let src = "[Guard] Hello there!";
         let dialogue = compile_banter_to_nodes("txt_test", src);
         let line = dialogue.nodes[0].line.as_ref().unwrap();
-        assert_eq!(line.text, "Hello there!",
-            "Text must not include ] bracket; got: {}", line.text);
+        assert_eq!(
+            line.text, "Hello there!",
+            "Text must not include ] bracket; got: {}",
+            line.text
+        );
         assert!(!line.text.contains(']'), "Text must not contain ]");
     }
 

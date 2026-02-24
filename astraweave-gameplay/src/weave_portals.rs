@@ -363,10 +363,13 @@ mod tests {
         let a = Vec3::new(1.0, 0.0, 1.0);
         let b = Vec3::new(2.0, 0.0, 1.0); // ab = (1,0,0)
         let c = Vec3::new(1.0, 0.0, 2.0); // ac = (0,0,1)
-        // area2 = ab.x*ac.z - ab.z*ac.x = 1*1 - 0*0 = 1.0
+                                          // area2 = ab.x*ac.z - ab.z*ac.x = 1*1 - 0*0 = 1.0
         let area = triangle_area2(a, b, c);
-        assert!((area - 1.0).abs() < f32::EPSILON,
-            "triangle_area2 with non-origin a must be exactly 1.0, got {}", area);
+        assert!(
+            (area - 1.0).abs() < f32::EPSILON,
+            "triangle_area2 with non-origin a must be exactly 1.0, got {}",
+            area
+        );
     }
 
     #[test]
@@ -375,11 +378,14 @@ mod tests {
         let a = Vec3::new(0.0, 0.0, 0.0);
         let b = Vec3::new(1.0, 0.0, 1.0); // ab = (1,0,1)
         let c = Vec3::new(2.0, 0.0, 0.0); // ac = (2,0,0)
-        // area2 = 1*0 - 1*2 = -2.0
-        // With mutation +: 1*0 + 1*2 = 2.0 (wrong sign)
+                                          // area2 = 1*0 - 1*2 = -2.0
+                                          // With mutation +: 1*0 + 1*2 = 2.0 (wrong sign)
         let area = triangle_area2(a, b, c);
-        assert!((area - (-2.0)).abs() < f32::EPSILON,
-            "Cross product must be -2.0 (not +2.0), got {}", area);
+        assert!(
+            (area - (-2.0)).abs() < f32::EPSILON,
+            "Cross product must be -2.0 (not +2.0), got {}",
+            area
+        );
     }
 
     #[test]
@@ -388,9 +394,12 @@ mod tests {
         let a = Vec3::ZERO;
         let b = Vec3::new(3.0, 0.0, 2.0); // ab = (3,0,2)
         let c = Vec3::new(1.0, 0.0, 4.0); // ac = (1,0,4)
-        // area2 = 3*4 - 2*1 = 12 - 2 = 10.0
+                                          // area2 = 3*4 - 2*1 = 12 - 2 = 10.0
         let area = triangle_area2(a, b, c);
-        assert!((area - 10.0).abs() < f32::EPSILON,
-            "Expected 3*4 - 2*1 = 10.0, got {}", area);
+        assert!(
+            (area - 10.0).abs() < f32::EPSILON,
+            "Expected 3*4 - 2*1 = 10.0, got {}",
+            area
+        );
     }
 }

@@ -1,0 +1,18 @@
+// Navmesh stub: Z2a Side Alcove — optional secret zone (8×12m)
+// Bake target: NavMesh::bake() with zone greybox geometry
+(
+    zone_id: "Z2a_side_alcove",
+    bounds: (
+        min: (-4.0, 0.0, -6.0),
+        max: (4.0, 4.0, 6.0),
+    ),
+    walkable_area_m2: 80.0,
+    max_step: 0.5,
+    max_slope_deg: 40.0,
+    waypoints: [
+        (name: "entry_from_Z2", pos: (-3.5, 0.0, 0.0)),
+        (name: "echo_shard_pickup", pos: (0.0, 0.5, 3.0)),
+        (name: "lore_glyph", pos: (2.0, 0.0, -2.0)),
+    ],
+    excluded_regions: [],
+)

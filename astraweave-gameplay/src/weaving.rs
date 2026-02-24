@@ -532,13 +532,23 @@ mod tests {
         let mut logger = |_: String| {};
 
         let consequence = apply_weave_op(
-            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
-        ).unwrap();
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        )
+        .unwrap();
 
-        assert!((consequence.drop_multiplier - 1.1).abs() < f32::EPSILON,
-            "ReinforcePath drop_multiplier must be 1.1");
-        assert_eq!(consequence.faction_disposition, 5,
-            "ReinforcePath faction_disposition must be 5");
+        assert!(
+            (consequence.drop_multiplier - 1.1).abs() < f32::EPSILON,
+            "ReinforcePath drop_multiplier must be 1.1"
+        );
+        assert_eq!(
+            consequence.faction_disposition, 5,
+            "ReinforcePath faction_disposition must be 5"
+        );
     }
 
     #[test]
@@ -557,13 +567,23 @@ mod tests {
         let mut logger = |_: String| {};
 
         let consequence = apply_weave_op(
-            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
-        ).unwrap();
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        )
+        .unwrap();
 
-        assert!((consequence.drop_multiplier - 0.9).abs() < f32::EPSILON,
-            "CollapseBridge drop_multiplier must be 0.9");
-        assert_eq!(consequence.faction_disposition, -10,
-            "CollapseBridge faction_disposition must be -10");
+        assert!(
+            (consequence.drop_multiplier - 0.9).abs() < f32::EPSILON,
+            "CollapseBridge drop_multiplier must be 0.9"
+        );
+        assert_eq!(
+            consequence.faction_disposition, -10,
+            "CollapseBridge faction_disposition must be -10"
+        );
     }
 
     #[test]
@@ -586,7 +606,12 @@ mod tests {
         let mut logger = |msg: String| log_output.push(msg);
 
         let result = apply_weave_op(
-            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
         );
         assert!(result.is_ok());
         assert_eq!(budget.terrain_edits, 4, "Budget must be consumed");
@@ -609,9 +634,17 @@ mod tests {
         let mut logger = |_: String| {};
 
         let _ = apply_weave_op(
-            &mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger,
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
         );
-        assert_eq!(budget.weather_ops, initial_weather - 1,
-            "RedirectWind must decrement weather_ops by exactly 1");
+        assert_eq!(
+            budget.weather_ops,
+            initial_weather - 1,
+            "RedirectWind must decrement weather_ops by exactly 1"
+        );
     }
 }

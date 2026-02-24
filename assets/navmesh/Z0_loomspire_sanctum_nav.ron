@@ -1,0 +1,21 @@
+// Navmesh stub: Z0 Loomspire Sanctum — tutorial zone (20×20m)
+// Bake target: NavMesh::bake() with zone greybox geometry
+(
+    zone_id: "Z0_loomspire_sanctum",
+    bounds: (
+        min: (-10.0, 0.0, -10.0),
+        max: (10.0, 5.0, 10.0),
+    ),
+    walkable_area_m2: 320.0,
+    max_step: 0.5,
+    max_slope_deg: 45.0,
+    waypoints: [
+        (name: "spawn_ledge", pos: (0.0, 0.0, 0.0)),
+        (name: "tutorial_anchor_1", pos: (5.0, 0.0, 3.0)),
+        (name: "exit_to_Z1", pos: (9.5, 0.0, 0.0)),
+    ],
+    excluded_regions: [
+        // Central pillar
+        (min: (-1.0, 0.0, -1.0), max: (1.0, 5.0, 1.0)),
+    ],
+)

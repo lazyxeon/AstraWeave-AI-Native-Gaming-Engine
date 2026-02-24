@@ -203,6 +203,7 @@ mod tests {
                 shape: Some("sphere".to_string()),
                 radius: Some(5.0),
                 extents: None,
+                action: None,
             }],
             decision_prompts: vec![DecisionPromptSpec {
                 cell: GridCoord::new(0, 0, 0),
@@ -575,14 +576,18 @@ mod tests {
         tutorial_anchor_sync(&mut world);
 
         let state_after = world.get_resource::<WeaveTutorialState>().unwrap();
-        assert!(state_after.initialized,
-            "tutorial_anchor_sync must set initialized=true on first call");
+        assert!(
+            state_after.initialized,
+            "tutorial_anchor_sync must set initialized=true on first call"
+        );
 
         // Calling again should not change anything (already initialized)
         tutorial_anchor_sync(&mut world);
         let state_after2 = world.get_resource::<WeaveTutorialState>().unwrap();
-        assert!(state_after2.initialized,
-            "tutorial_anchor_sync must remain initialized after second call");
+        assert!(
+            state_after2.initialized,
+            "tutorial_anchor_sync must remain initialized after second call"
+        );
     }
 
     #[test]
@@ -622,8 +627,10 @@ mod tests {
         tutorial_trigger_system(&mut world);
 
         let state = world.get_resource::<WeaveTutorialState>().unwrap();
-        assert!(state.active_triggers.contains("zone_1"),
-            "tutorial_trigger_system must process entering events");
+        assert!(
+            state.active_triggers.contains("zone_1"),
+            "tutorial_trigger_system must process entering events"
+        );
     }
 
     #[test]
@@ -646,8 +653,10 @@ mod tests {
         tutorial_trigger_system(&mut world);
 
         let state = world.get_resource::<WeaveTutorialState>().unwrap();
-        assert!(!state.active_triggers.contains("zone_1"),
-            "tutorial_trigger_system must process leaving events");
+        assert!(
+            !state.active_triggers.contains("zone_1"),
+            "tutorial_trigger_system must process leaving events"
+        );
     }
 
     #[test]
@@ -656,7 +665,7 @@ mod tests {
         let mut world = World::new();
         let meta = make_test_metadata();
         let state = WeaveTutorialState::from_metadata(meta);
-        
+
         // Verify anchor starts unstabilized
         assert!(!state.anchors.get("anchor_1").unwrap().stabilized);
         world.insert_resource(state);
@@ -670,9 +679,13 @@ mod tests {
         tutorial_anchor_events(&mut world);
 
         let state = world.get_resource::<WeaveTutorialState>().unwrap();
-        assert!(state.anchors.get("anchor_1").unwrap().stabilized,
-            "tutorial_anchor_events must mark anchor as stabilized");
-        assert!(state.anchor_sequence.contains(&"anchor_1".to_string()),
-            "tutorial_anchor_events must record anchor in sequence");
+        assert!(
+            state.anchors.get("anchor_1").unwrap().stabilized,
+            "tutorial_anchor_events must mark anchor as stabilized"
+        );
+        assert!(
+            state.anchor_sequence.contains(&"anchor_1".to_string()),
+            "tutorial_anchor_events must record anchor in sequence"
+        );
     }
 }

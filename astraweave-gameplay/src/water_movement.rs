@@ -731,34 +731,52 @@ mod tests {
         // At EXACT wading threshold: submersion == 0.15, `< 0.15` is false → should NOT be Dry
         let mut state = WaterPlayerState::new(config.clone());
         state.update(0.15, 0.1);
-        assert_ne!(state.mode, WaterMovementMode::Dry,
-            "At exact wading threshold 0.15, mode must NOT be Dry");
-        assert_eq!(state.mode, WaterMovementMode::Wading,
-            "At exact wading threshold, mode must be Wading");
+        assert_ne!(
+            state.mode,
+            WaterMovementMode::Dry,
+            "At exact wading threshold 0.15, mode must NOT be Dry"
+        );
+        assert_eq!(
+            state.mode,
+            WaterMovementMode::Wading,
+            "At exact wading threshold, mode must be Wading"
+        );
 
         // Just below wading threshold: 0.149 < 0.15 → Dry
         let mut state2 = WaterPlayerState::new(config.clone());
         state2.update(0.149, 0.1);
-        assert_eq!(state2.mode, WaterMovementMode::Dry,
-            "Just below wading threshold must be Dry");
+        assert_eq!(
+            state2.mode,
+            WaterMovementMode::Dry,
+            "Just below wading threshold must be Dry"
+        );
 
         // At EXACT waist threshold: 0.4 → should be WaistDeep
         let mut state3 = WaterPlayerState::new(config.clone());
         state3.update(0.4, 0.1);
-        assert_eq!(state3.mode, WaterMovementMode::WaistDeep,
-            "At exact waist_deep threshold, mode must be WaistDeep");
+        assert_eq!(
+            state3.mode,
+            WaterMovementMode::WaistDeep,
+            "At exact waist_deep threshold, mode must be WaistDeep"
+        );
 
         // At EXACT swimming threshold: 0.7 → should be Swimming
         let mut state4 = WaterPlayerState::new(config.clone());
         state4.update(0.7, 0.1);
-        assert_eq!(state4.mode, WaterMovementMode::Swimming,
-            "At exact swimming threshold, mode must be Swimming");
+        assert_eq!(
+            state4.mode,
+            WaterMovementMode::Swimming,
+            "At exact swimming threshold, mode must be Swimming"
+        );
 
         // At EXACT diving threshold: 0.95 → should be Diving
         let mut state5 = WaterPlayerState::new(config.clone());
         state5.update(0.95, 0.1);
-        assert_eq!(state5.mode, WaterMovementMode::Diving,
-            "At exact diving threshold, mode must be Diving");
+        assert_eq!(
+            state5.mode,
+            WaterMovementMode::Diving,
+            "At exact diving threshold, mode must be Diving"
+        );
     }
 
     #[test]
@@ -772,8 +790,11 @@ mod tests {
         state.oxygen = 15.0;
         let result = state.update(0.0, 0.0); // Just get state without changing
         let pct = result.oxygen_percent;
-        assert!((pct - 0.5).abs() < 0.01,
-            "oxygen_percent must be 15/30=0.5, got {}", pct);
+        assert!(
+            (pct - 0.5).abs() < 0.01,
+            "oxygen_percent must be 15/30=0.5, got {}",
+            pct
+        );
     }
 
     #[test]
@@ -786,10 +807,16 @@ mod tests {
         // dt=0.0 so wet_timer stays exactly 1.0
         state.update(1.0, 0.0);
         // At exactly wet_timer == 1.0, `< 1.0` is false → should not be Damp
-        assert_ne!(state.wet_status, WetStatus::Damp,
-            "At wet_timer=1.0, status should NOT be Damp (< 1.0 is false)");
-        assert_eq!(state.wet_status, WetStatus::Wet,
-            "At wet_timer=1.0, status should be Wet");
+        assert_ne!(
+            state.wet_status,
+            WetStatus::Damp,
+            "At wet_timer=1.0, status should NOT be Damp (< 1.0 is false)"
+        );
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Wet,
+            "At wet_timer=1.0, status should be Wet"
+        );
     }
 
     #[test]
@@ -818,8 +845,8 @@ mod tests {
         state.wet_timer = 0.05; // Almost dry
 
         state.update(0.0, 0.1); // Out of water, dt=0.1
-        // wet_timer should decrease; if != was ==, the else branch wouldn't execute
-        // for non-Dry status
+                                // wet_timer should decrease; if != was ==, the else branch wouldn't execute
+                                // for non-Dry status
         assert!(
             state.wet_status == WetStatus::Damp || state.wet_status == WetStatus::Dry,
             "Non-dry status out of water must transition toward dry, got {:?}",
@@ -845,8 +872,11 @@ mod tests {
 
         let drain = initial - state.oxygen;
         // Expected: 2.0 * 0.5 * 2 = 2.0 over 1 second
-        assert!((drain - 2.0).abs() < 0.1,
-            "Oxygen drain should be rate*dt=2.0*0.5 per tick, total drain={}", drain);
+        assert!(
+            (drain - 2.0).abs() < 0.1,
+            "Oxygen drain should be rate*dt=2.0*0.5 per tick, total drain={}",
+            drain
+        );
     }
 
     #[test]
@@ -872,9 +902,15 @@ mod tests {
             total_dmg += result.drowning_damage;
         }
         // After 2.0s total: grace=1.0s, drowning for 1.0s → damage = 10.0 * 1.0 = 10.0
-        assert!(total_dmg > 0.0, "Must deal drowning damage after grace period");
-        assert!((total_dmg - 10.0).abs() < 2.0,
-            "Drowning damage should be ~10.0 over 1s post-grace, got {}", total_dmg);
+        assert!(
+            total_dmg > 0.0,
+            "Must deal drowning damage after grace period"
+        );
+        assert!(
+            (total_dmg - 10.0).abs() < 2.0,
+            "Drowning damage should be ~10.0 over 1s post-grace, got {}",
+            total_dmg
+        );
     }
 
     #[test]
@@ -894,15 +930,21 @@ mod tests {
         }
 
         // Expected gain: 5.0 * 0.5 * 4 = 10.0
-        assert!((state.oxygen - 60.0).abs() < 0.5,
-            "Oxygen should recover by rate*dt per tick, got {}", state.oxygen);
+        assert!(
+            (state.oxygen - 60.0).abs() < 0.5,
+            "Oxygen should recover by rate*dt per tick, got {}",
+            state.oxygen
+        );
     }
 
     #[test]
     fn is_drowning_returns_false_when_has_oxygen() {
         // Catches: replace is_drowning -> bool with true (line 336)
         let state = WaterPlayerState::default();
-        assert!(!state.is_drowning(), "Must not be drowning with full oxygen");
+        assert!(
+            !state.is_drowning(),
+            "Must not be drowning with full oxygen"
+        );
     }
 
     #[test]
@@ -911,13 +953,17 @@ mod tests {
         let mut state = WaterPlayerState::default();
         state.oxygen = 0.0;
         state.drowning_timer = 0.0; // Not past grace period
-        assert!(!state.is_drowning(),
-            "Must not be drowning when timer hasn't passed grace period");
+        assert!(
+            !state.is_drowning(),
+            "Must not be drowning when timer hasn't passed grace period"
+        );
 
         state.oxygen = 10.0; // Has oxygen
         state.drowning_timer = 100.0; // Past grace
-        assert!(!state.is_drowning(),
-            "Must not be drowning when still has oxygen");
+        assert!(
+            !state.is_drowning(),
+            "Must not be drowning when still has oxygen"
+        );
     }
 
     #[test]
@@ -930,12 +976,16 @@ mod tests {
         let mut state = WaterPlayerState::new(config);
         state.oxygen = 0.0;
         state.drowning_timer = 3.0; // Exactly at grace period
-        assert!(!state.is_drowning(),
-            "At exactly grace period (timer == 3.0), > should be false");
+        assert!(
+            !state.is_drowning(),
+            "At exactly grace period (timer == 3.0), > should be false"
+        );
 
         state.drowning_timer = 3.001;
-        assert!(state.is_drowning(),
-            "Just past grace period should be drowning");
+        assert!(
+            state.is_drowning(),
+            "Just past grace period should be drowning"
+        );
     }
 
     #[test]
@@ -948,12 +998,13 @@ mod tests {
         let mut state = WaterPlayerState::new(config);
 
         state.oxygen = 25.0; // Exactly at 25% boundary
-        assert!(!state.is_low_oxygen(),
-            "At exactly 25%, < should be false → not low oxygen");
+        assert!(
+            !state.is_low_oxygen(),
+            "At exactly 25%, < should be false → not low oxygen"
+        );
 
         state.oxygen = 24.9;
-        assert!(state.is_low_oxygen(),
-            "Below 25% should be low oxygen");
+        assert!(state.is_low_oxygen(), "Below 25% should be low oxygen");
     }
 
     // ========================================================================
@@ -966,10 +1017,13 @@ mod tests {
         // Use dt=1.0 to avoid float accumulation errors
         let mut state = WaterPlayerState::default();
         state.update(0.5, 1.0); // wet_timer = 0.0 + 1.0 = exactly 1.0
-        // At 1.0, `< 1.0` is false → falls to `< 3.0` → Wet
-        // If `<= 1.0`, it would stay Damp
-        assert_eq!(state.wet_status, WetStatus::Wet,
-            "wet_timer=1.0 must be Wet (not Damp), < 1.0 boundary");
+                                // At 1.0, `< 1.0` is false → falls to `< 3.0` → Wet
+                                // If `<= 1.0`, it would stay Damp
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Wet,
+            "wet_timer=1.0 must be Wet (not Damp), < 1.0 boundary"
+        );
     }
 
     #[test]
@@ -984,15 +1038,22 @@ mod tests {
 
         // This should transition Wet → Damp and reset timer to dry_time(2.0)
         state.update(0.0, 0.1);
-        assert_eq!(state.wet_status, WetStatus::Damp, "Should transition to Damp");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Damp,
+            "Should transition to Damp"
+        );
 
         // With correct timer reset, Damp should persist for many more ticks
         for _ in 0..5 {
             state.update(0.0, 0.1);
         }
         // If timer was NOT reset (mutation), Damp→Dry would happen immediately
-        assert_eq!(state.wet_status, WetStatus::Damp,
-            "Damp must persist after timer reset; if inner != was ==, timer isn't reset");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Damp,
+            "Damp must persist after timer reset; if inner != was ==, timer isn't reset"
+        );
     }
 
     #[test]
@@ -1014,8 +1075,10 @@ mod tests {
         // Tick exactly to grace period: drowning_timer = 1.0
         let result = state.update(1.0, 1.0);
         // At exactly 1.0, `> 1.0` is false → no drowning damage
-        assert_eq!(result.drowning_damage, 0.0,
-            "At drowning_timer == grace_period, > means no damage yet");
+        assert_eq!(
+            result.drowning_damage, 0.0,
+            "At drowning_timer == grace_period, > means no damage yet"
+        );
     }
 
     #[test]
@@ -1025,8 +1088,11 @@ mod tests {
         let mut state = WaterPlayerState::default();
         state.wet_status = WetStatus::Soaking;
         let mult = state.get_stamina_max_multiplier();
-        assert!((mult - 0.8).abs() < f32::EPSILON,
-            "Soaking stamina_max_multiplier must be 0.8, got {}", mult);
+        assert!(
+            (mult - 0.8).abs() < f32::EPSILON,
+            "Soaking stamina_max_multiplier must be 0.8, got {}",
+            mult
+        );
     }
 
     #[test]
@@ -1036,10 +1102,14 @@ mod tests {
         let mut skills = WaterSkills::default();
         skills.splash_dash_timer = 0.0;
         skills.update(0.1);
-        assert!(skills.splash_dash_timer >= 0.0,
-            "Timer should not go negative when already at 0.0");
-        assert!((skills.splash_dash_timer - 0.0).abs() < f32::EPSILON,
-            "Timer at 0 should stay exactly 0");
+        assert!(
+            skills.splash_dash_timer >= 0.0,
+            "Timer should not go negative when already at 0.0"
+        );
+        assert!(
+            (skills.splash_dash_timer - 0.0).abs() < f32::EPSILON,
+            "Timer at 0 should stay exactly 0"
+        );
     }
 
     #[test]
@@ -1050,13 +1120,18 @@ mod tests {
             water_drag: 3.0,
             swim_force: 8.0,
         };
-        let forces = helper.calculate_water_forces(
-            Vec3::ZERO, 0.5, Vec3::ZERO, WaterMovementMode::Wading,
-        );
+        let forces =
+            helper.calculate_water_forces(Vec3::ZERO, 0.5, Vec3::ZERO, WaterMovementMode::Wading);
         // buoyancy_force(15) * submersion(0.5) = 7.5
-        assert!((forces.buoyancy.y - 7.5).abs() < f32::EPSILON,
-            "Buoyancy y must be 15*0.5=7.5, got {}", forces.buoyancy.y);
-        assert!((forces.buoyancy.x).abs() < f32::EPSILON, "Buoyancy x must be 0");
+        assert!(
+            (forces.buoyancy.y - 7.5).abs() < f32::EPSILON,
+            "Buoyancy y must be 15*0.5=7.5, got {}",
+            forces.buoyancy.y
+        );
+        assert!(
+            (forces.buoyancy.x).abs() < f32::EPSILON,
+            "Buoyancy x must be 0"
+        );
     }
 
     #[test]
@@ -1069,14 +1144,16 @@ mod tests {
             swim_force: 8.0,
         };
         let vel = Vec3::new(2.0, 0.0, 0.0);
-        let forces = helper.calculate_water_forces(
-            vel, 1.0, Vec3::ZERO, WaterMovementMode::Swimming,
-        );
+        let forces =
+            helper.calculate_water_forces(vel, 1.0, Vec3::ZERO, WaterMovementMode::Swimming);
         // drag_force = vel * vel.length() * water_drag * submersion
         //            = (2,0,0) * 2.0 * 3.0 * 1.0 = (12, 0, 0)
         // forces.drag = -drag_force = (-12, 0, 0)
-        assert!((forces.drag.x - (-12.0)).abs() < 0.01,
-            "Drag x must be -12.0, got {}", forces.drag.x);
+        assert!(
+            (forces.drag.x - (-12.0)).abs() < 0.01,
+            "Drag x must be -12.0, got {}",
+            forces.drag.x
+        );
     }
 
     #[test]
@@ -1088,22 +1165,29 @@ mod tests {
             swim_force: 8.0,
         };
         let forces = helper.calculate_water_forces(
-            Vec3::ZERO, 0.5, Vec3::new(1.0, 0.0, 0.0), WaterMovementMode::Swimming,
+            Vec3::ZERO,
+            0.5,
+            Vec3::new(1.0, 0.0, 0.0),
+            WaterMovementMode::Swimming,
         );
         // swim = input(1,0,0) * swim_force(8) = (8, 0, 0)
-        assert!((forces.swim.x - 8.0).abs() < f32::EPSILON,
-            "Swim x must be 8.0, got {}", forces.swim.x);
+        assert!(
+            (forces.swim.x - 8.0).abs() < f32::EPSILON,
+            "Swim x must be 8.0, got {}",
+            forces.swim.x
+        );
     }
 
     #[test]
     fn calculate_water_forces_no_buoyancy_dry() {
         // Catches: submersion > 0.0 boundary (line 500)
         let helper = WaterMovementHelper::default();
-        let forces = helper.calculate_water_forces(
-            Vec3::ZERO, 0.0, Vec3::ZERO, WaterMovementMode::Dry,
+        let forces =
+            helper.calculate_water_forces(Vec3::ZERO, 0.0, Vec3::ZERO, WaterMovementMode::Dry);
+        assert!(
+            (forces.buoyancy.y).abs() < f32::EPSILON,
+            "No buoyancy when submersion=0"
         );
-        assert!((forces.buoyancy.y).abs() < f32::EPSILON,
-            "No buoyancy when submersion=0");
     }
 
     // ========================================================================
@@ -1120,17 +1204,33 @@ mod tests {
         let dive = WaterMovementMode::Diving.speed_multiplier();
 
         assert!((dry - 1.0).abs() < f32::EPSILON, "Dry speed must be 1.0");
-        assert!((wade - 0.85).abs() < f32::EPSILON, "Wading speed must be 0.85");
-        assert!((waist - 0.6).abs() < f32::EPSILON, "WaistDeep speed must be 0.6");
-        assert!((swim - 0.7).abs() < f32::EPSILON, "Swimming speed must be 0.7");
-        assert!((dive - 0.5).abs() < f32::EPSILON, "Diving speed must be 0.5");
+        assert!(
+            (wade - 0.85).abs() < f32::EPSILON,
+            "Wading speed must be 0.85"
+        );
+        assert!(
+            (waist - 0.6).abs() < f32::EPSILON,
+            "WaistDeep speed must be 0.6"
+        );
+        assert!(
+            (swim - 0.7).abs() < f32::EPSILON,
+            "Swimming speed must be 0.7"
+        );
+        assert!(
+            (dive - 0.5).abs() < f32::EPSILON,
+            "Diving speed must be 0.5"
+        );
 
         // All different from each other
         let vals = [dry, wade, waist, swim, dive];
         for i in 0..vals.len() {
             for j in (i + 1)..vals.len() {
-                assert!((vals[i] - vals[j]).abs() > f32::EPSILON,
-                    "speed_multiplier values must be distinct: index {} == {}", i, j);
+                assert!(
+                    (vals[i] - vals[j]).abs() > f32::EPSILON,
+                    "speed_multiplier values must be distinct: index {} == {}",
+                    i,
+                    j
+                );
             }
         }
     }
@@ -1145,10 +1245,22 @@ mod tests {
         let dive = WaterMovementMode::Diving.stamina_drain_multiplier();
 
         assert!((dry - 1.0).abs() < f32::EPSILON, "Dry drain must be 1.0");
-        assert!((wade - 1.1).abs() < f32::EPSILON, "Wading drain must be 1.1");
-        assert!((waist - 1.3).abs() < f32::EPSILON, "WaistDeep drain must be 1.3");
-        assert!((swim - 1.5).abs() < f32::EPSILON, "Swimming drain must be 1.5");
-        assert!((dive - 2.0).abs() < f32::EPSILON, "Diving drain must be 2.0");
+        assert!(
+            (wade - 1.1).abs() < f32::EPSILON,
+            "Wading drain must be 1.1"
+        );
+        assert!(
+            (waist - 1.3).abs() < f32::EPSILON,
+            "WaistDeep drain must be 1.3"
+        );
+        assert!(
+            (swim - 1.5).abs() < f32::EPSILON,
+            "Swimming drain must be 1.5"
+        );
+        assert!(
+            (dive - 2.0).abs() < f32::EPSILON,
+            "Diving drain must be 2.0"
+        );
 
         // Monotonically increasing
         assert!(wade > dry, "Wading > Dry");
@@ -1162,9 +1274,18 @@ mod tests {
         // Catches: replace can_jump -> bool with true/false
         assert!(WaterMovementMode::Dry.can_jump(), "Can jump on dry land");
         assert!(WaterMovementMode::Wading.can_jump(), "Can jump in wading");
-        assert!(WaterMovementMode::WaistDeep.can_jump(), "Can jump in waist-deep");
-        assert!(!WaterMovementMode::Swimming.can_jump(), "Cannot jump while swimming");
-        assert!(!WaterMovementMode::Diving.can_jump(), "Cannot jump while diving");
+        assert!(
+            WaterMovementMode::WaistDeep.can_jump(),
+            "Can jump in waist-deep"
+        );
+        assert!(
+            !WaterMovementMode::Swimming.can_jump(),
+            "Cannot jump while swimming"
+        );
+        assert!(
+            !WaterMovementMode::Diving.can_jump(),
+            "Cannot jump while diving"
+        );
     }
 
     #[test]
@@ -1178,7 +1299,10 @@ mod tests {
         assert!((dry - 1.0).abs() < f32::EPSILON, "Dry regen must be 1.0");
         assert!((damp - 0.9).abs() < f32::EPSILON, "Damp regen must be 0.9");
         assert!((wet - 0.5).abs() < f32::EPSILON, "Wet regen must be 0.5");
-        assert!((soak - 0.5).abs() < f32::EPSILON, "Soaking regen must be 0.5");
+        assert!(
+            (soak - 0.5).abs() < f32::EPSILON,
+            "Soaking regen must be 0.5"
+        );
         // Damp is different from Dry (catches 1.0 mutation)
         assert!((dry - damp).abs() > f32::EPSILON, "Dry != Damp regen");
     }
@@ -1192,9 +1316,18 @@ mod tests {
         let soak = WetStatus::Soaking.dry_time();
 
         assert!((dry - 0.0).abs() < f32::EPSILON, "Dry dry_time must be 0.0");
-        assert!((damp - 10.0).abs() < f32::EPSILON, "Damp dry_time must be 10.0");
-        assert!((wet - 30.0).abs() < f32::EPSILON, "Wet dry_time must be 30.0");
-        assert!((soak - 60.0).abs() < f32::EPSILON, "Soaking dry_time must be 60.0");
+        assert!(
+            (damp - 10.0).abs() < f32::EPSILON,
+            "Damp dry_time must be 10.0"
+        );
+        assert!(
+            (wet - 30.0).abs() < f32::EPSILON,
+            "Wet dry_time must be 30.0"
+        );
+        assert!(
+            (soak - 60.0).abs() < f32::EPSILON,
+            "Soaking dry_time must be 60.0"
+        );
 
         // Monotonically increasing
         assert!(damp > dry, "Damp > Dry");
@@ -1208,16 +1341,23 @@ mod tests {
         //          replace += with -=/*= in submerge_time += dt (line 230)
         let mut state = WaterPlayerState::default();
         state.update(0.5, 1.0); // submersion=0.5, dt=1.0
-        assert!(state.submerge_time > 0.0,
-            "submerge_time must increase when submerged");
-        assert!((state.submerge_time - 1.0).abs() < 0.1,
+        assert!(
+            state.submerge_time > 0.0,
+            "submerge_time must increase when submerged"
+        );
+        assert!(
+            (state.submerge_time - 1.0).abs() < 0.1,
             "submerge_time should be ~1.0 after 1s submerged, got {}",
-            state.submerge_time);
+            state.submerge_time
+        );
 
         // A second tick should add more time
         state.update(0.5, 1.0);
-        assert!(state.submerge_time > 1.0,
-            "submerge_time must keep increasing, got {}", state.submerge_time);
+        assert!(
+            state.submerge_time > 1.0,
+            "submerge_time must keep increasing, got {}",
+            state.submerge_time
+        );
     }
 
     #[test]
@@ -1228,9 +1368,11 @@ mod tests {
         assert!(state.submerge_time > 0.0);
 
         state.update(0.0, 1.0); // Out of water – submersion=0.0
-        assert!((state.submerge_time - 0.0).abs() < f32::EPSILON,
+        assert!(
+            (state.submerge_time - 0.0).abs() < f32::EPSILON,
             "submerge_time must reset to 0 when submersion==0.0, got {}",
-            state.submerge_time);
+            state.submerge_time
+        );
     }
 
     #[test]
@@ -1242,13 +1384,19 @@ mod tests {
 
         // First tick: small dt → wet_timer < 1.0 → Damp
         state.update(1.0, 0.5);
-        assert_eq!(state.wet_status, WetStatus::Damp,
-            "After 0.5s submersion, should be Damp");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Damp,
+            "After 0.5s submersion, should be Damp"
+        );
 
         // Second tick: wet_timer = 1.5, which is >= 1.0 and < 3.0 → Wet
         state.update(1.0, 1.0);
-        assert_eq!(state.wet_status, WetStatus::Wet,
-            "After 1.5s submersion, should be Wet");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Wet,
+            "After 1.5s submersion, should be Wet"
+        );
     }
 
     #[test]
@@ -1273,8 +1421,11 @@ mod tests {
         state.update(0.0, 1.0);
         // wet_timer was ~0.5, now ~-1.0 → transition Wet→Damp and reset
         // The transition should have happened
-        assert_ne!(state.wet_status, WetStatus::Wet,
-            "After enough drying with skill bonus, should no longer be Wet");
+        assert_ne!(
+            state.wet_status,
+            WetStatus::Wet,
+            "After enough drying with skill bonus, should no longer be Wet"
+        );
 
         // Without skill bonus, same time should still be wet
         let config_no_skill = WaterPlayerConfig {
@@ -1300,22 +1451,31 @@ mod tests {
         state.wet_timer = 0.01;
         state.submersion = 0.0;
         state.update(0.0, 0.1);
-        assert_eq!(state.wet_status, WetStatus::Wet,
-            "Soaking must transition to Wet when timer expires");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Wet,
+            "Soaking must transition to Wet when timer expires"
+        );
 
         // Wet → Damp (already tested above, but explicit)
         state.wet_status = WetStatus::Wet;
         state.wet_timer = 0.01;
         state.update(0.0, 0.1);
-        assert_eq!(state.wet_status, WetStatus::Damp,
-            "Wet must transition to Damp when timer expires");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Damp,
+            "Wet must transition to Damp when timer expires"
+        );
 
         // Damp → Dry
         state.wet_status = WetStatus::Damp;
         state.wet_timer = 0.01;
         state.update(0.0, 0.1);
-        assert_eq!(state.wet_status, WetStatus::Dry,
-            "Damp must transition to Dry when timer expires");
+        assert_eq!(
+            state.wet_status,
+            WetStatus::Dry,
+            "Damp must transition to Dry when timer expires"
+        );
     }
 
     // ========================================================================
@@ -1346,16 +1506,25 @@ mod tests {
         };
         let mut state = WaterPlayerState::new(config);
         state.oxygen = 50.0;
-        assert!((state.oxygen_percent() - 0.5).abs() < f32::EPSILON,
-            "50/100 oxygen must be 0.5, got {}", state.oxygen_percent());
+        assert!(
+            (state.oxygen_percent() - 0.5).abs() < f32::EPSILON,
+            "50/100 oxygen must be 0.5, got {}",
+            state.oxygen_percent()
+        );
 
         state.oxygen = 25.0;
-        assert!((state.oxygen_percent() - 0.25).abs() < f32::EPSILON,
-            "25/100 oxygen must be 0.25, got {}", state.oxygen_percent());
+        assert!(
+            (state.oxygen_percent() - 0.25).abs() < f32::EPSILON,
+            "25/100 oxygen must be 0.25, got {}",
+            state.oxygen_percent()
+        );
 
         state.oxygen = 100.0;
-        assert!((state.oxygen_percent() - 1.0).abs() < f32::EPSILON,
-            "100/100 oxygen must be 1.0, got {}", state.oxygen_percent());
+        assert!(
+            (state.oxygen_percent() - 1.0).abs() < f32::EPSILON,
+            "100/100 oxygen must be 1.0, got {}",
+            state.oxygen_percent()
+        );
     }
 
     #[test]
@@ -1364,16 +1533,25 @@ mod tests {
         let mut state = WaterPlayerState::default();
 
         state.mode = WaterMovementMode::Swimming;
-        assert!((state.get_speed_multiplier() - 0.7).abs() < f32::EPSILON,
-            "Swimming speed must be 0.7, got {}", state.get_speed_multiplier());
+        assert!(
+            (state.get_speed_multiplier() - 0.7).abs() < f32::EPSILON,
+            "Swimming speed must be 0.7, got {}",
+            state.get_speed_multiplier()
+        );
 
         state.mode = WaterMovementMode::Diving;
-        assert!((state.get_speed_multiplier() - 0.5).abs() < f32::EPSILON,
-            "Diving speed must be 0.5, got {}", state.get_speed_multiplier());
+        assert!(
+            (state.get_speed_multiplier() - 0.5).abs() < f32::EPSILON,
+            "Diving speed must be 0.5, got {}",
+            state.get_speed_multiplier()
+        );
 
         state.mode = WaterMovementMode::WaistDeep;
-        assert!((state.get_speed_multiplier() - 0.6).abs() < f32::EPSILON,
-            "WaistDeep speed must be 0.6, got {}", state.get_speed_multiplier());
+        assert!(
+            (state.get_speed_multiplier() - 0.6).abs() < f32::EPSILON,
+            "WaistDeep speed must be 0.6, got {}",
+            state.get_speed_multiplier()
+        );
     }
 
     #[test]
@@ -1382,12 +1560,18 @@ mod tests {
         let mut state = WaterPlayerState::default();
 
         state.mode = WaterMovementMode::Diving;
-        assert!((state.get_stamina_drain_multiplier() - 2.0).abs() < f32::EPSILON,
-            "Diving drain must be 2.0, got {}", state.get_stamina_drain_multiplier());
+        assert!(
+            (state.get_stamina_drain_multiplier() - 2.0).abs() < f32::EPSILON,
+            "Diving drain must be 2.0, got {}",
+            state.get_stamina_drain_multiplier()
+        );
 
         state.mode = WaterMovementMode::Wading;
-        assert!((state.get_stamina_drain_multiplier() - 1.1).abs() < f32::EPSILON,
-            "Wading drain must be 1.1, got {}", state.get_stamina_drain_multiplier());
+        assert!(
+            (state.get_stamina_drain_multiplier() - 1.1).abs() < f32::EPSILON,
+            "Wading drain must be 1.1, got {}",
+            state.get_stamina_drain_multiplier()
+        );
     }
 
     #[test]
@@ -1406,8 +1590,11 @@ mod tests {
         let mut state0 = WaterPlayerState::new(config0);
         state0.wet_status = WetStatus::Wet;
         let r0 = state0.get_stamina_regen_multiplier();
-        assert!((r0 - 0.5).abs() < f32::EPSILON,
-            "level 0 + Wet: 1.0-(1.0-0.5)*1.0=0.5, got {}", r0);
+        assert!(
+            (r0 - 0.5).abs() < f32::EPSILON,
+            "level 0 + Wet: 1.0-(1.0-0.5)*1.0=0.5, got {}",
+            r0
+        );
 
         // Skill level 1: skill_reduction=0.75
         // result = 1.0 - (1.0 - 0.5) * 0.75 = 1.0 - 0.375 = 0.625
@@ -1418,8 +1605,11 @@ mod tests {
         let mut state1 = WaterPlayerState::new(config1);
         state1.wet_status = WetStatus::Wet;
         let r1 = state1.get_stamina_regen_multiplier();
-        assert!((r1 - 0.625).abs() < f32::EPSILON,
-            "level 1 + Wet: 1.0-(0.5)*0.75=0.625, got {}", r1);
+        assert!(
+            (r1 - 0.625).abs() < f32::EPSILON,
+            "level 1 + Wet: 1.0-(0.5)*0.75=0.625, got {}",
+            r1
+        );
 
         // Skill level 2: skill_reduction=0.5
         // result = 1.0 - (1.0 - 0.5) * 0.5 = 1.0 - 0.25 = 0.75
@@ -1430,8 +1620,11 @@ mod tests {
         let mut state2 = WaterPlayerState::new(config2);
         state2.wet_status = WetStatus::Wet;
         let r2 = state2.get_stamina_regen_multiplier();
-        assert!((r2 - 0.75).abs() < f32::EPSILON,
-            "level 2 + Wet: 1.0-(0.5)*0.5=0.75, got {}", r2);
+        assert!(
+            (r2 - 0.75).abs() < f32::EPSILON,
+            "level 2 + Wet: 1.0-(0.5)*0.5=0.75, got {}",
+            r2
+        );
 
         // All three must be different (catches "delete match arm" mutations)
         assert!((r0 - r1).abs() > f32::EPSILON, "lvl 0 != lvl 1");
@@ -1450,13 +1643,19 @@ mod tests {
         state.oxygen = 50.0;
 
         state.add_oxygen(20.0);
-        assert!((state.oxygen - 70.0).abs() < f32::EPSILON,
-            "50 + 20 = 70, got {}", state.oxygen);
+        assert!(
+            (state.oxygen - 70.0).abs() < f32::EPSILON,
+            "50 + 20 = 70, got {}",
+            state.oxygen
+        );
 
         // Test cap at max
         state.add_oxygen(50.0);
-        assert!((state.oxygen - 100.0).abs() < f32::EPSILON,
-            "Oxygen must cap at max_oxygen, got {}", state.oxygen);
+        assert!(
+            (state.oxygen - 100.0).abs() < f32::EPSILON,
+            "Oxygen must cap at max_oxygen, got {}",
+            state.oxygen
+        );
     }
 
     #[test]
@@ -1470,20 +1669,20 @@ mod tests {
         let mut state = WaterPlayerState::default();
         state.mode = WaterMovementMode::Swimming;
         state.oxygen = 0.0;
-        assert!(state.can_breathe(),
-            "Swimming doesn't consume oxygen, so can_breathe=true even with 0 oxygen");
+        assert!(
+            state.can_breathe(),
+            "Swimming doesn't consume oxygen, so can_breathe=true even with 0 oxygen"
+        );
 
         // Diving mode with oxygen: consumes_oxygen()=true, oxygen>0 → can breathe
         state.mode = WaterMovementMode::Diving;
         state.oxygen = 10.0;
-        assert!(state.can_breathe(),
-            "Diving with oxygen > 0 can breathe");
+        assert!(state.can_breathe(), "Diving with oxygen > 0 can breathe");
 
         // Diving mode without oxygen: consumes_oxygen()=true, oxygen==0 → cannot breathe
         state.mode = WaterMovementMode::Diving;
         state.oxygen = 0.0;
-        assert!(!state.can_breathe(),
-            "Diving with 0 oxygen cannot breathe");
+        assert!(!state.can_breathe(), "Diving with 0 oxygen cannot breathe");
     }
 
     #[test]
@@ -1492,26 +1691,36 @@ mod tests {
         let mut skills = WaterSkills::default();
 
         skills.deep_diver_level = 0;
-        assert!((skills.oxygen_bonus() - 1.0).abs() < f32::EPSILON,
-            "Level 0 bonus must be 1.0");
+        assert!(
+            (skills.oxygen_bonus() - 1.0).abs() < f32::EPSILON,
+            "Level 0 bonus must be 1.0"
+        );
 
         skills.deep_diver_level = 1;
-        assert!((skills.oxygen_bonus() - 1.25).abs() < f32::EPSILON,
-            "Level 1 bonus must be 1.25");
+        assert!(
+            (skills.oxygen_bonus() - 1.25).abs() < f32::EPSILON,
+            "Level 1 bonus must be 1.25"
+        );
 
         skills.deep_diver_level = 2;
-        assert!((skills.oxygen_bonus() - 1.5).abs() < f32::EPSILON,
-            "Level 2 bonus must be 1.5");
+        assert!(
+            (skills.oxygen_bonus() - 1.5).abs() < f32::EPSILON,
+            "Level 2 bonus must be 1.5"
+        );
 
         skills.deep_diver_level = 3;
-        assert!((skills.oxygen_bonus() - 2.0).abs() < f32::EPSILON,
-            "Level 3+ bonus must be 2.0");
+        assert!(
+            (skills.oxygen_bonus() - 2.0).abs() < f32::EPSILON,
+            "Level 3+ bonus must be 2.0"
+        );
 
         // All different (catches deleted arms)
-        let bonuses: Vec<f32> = (0..=2).map(|l| {
-            skills.deep_diver_level = l;
-            skills.oxygen_bonus()
-        }).collect();
+        let bonuses: Vec<f32> = (0..=2)
+            .map(|l| {
+                skills.deep_diver_level = l;
+                skills.oxygen_bonus()
+            })
+            .collect();
         assert!((bonuses[0] - bonuses[1]).abs() > f32::EPSILON);
         assert!((bonuses[1] - bonuses[2]).abs() > f32::EPSILON);
     }
@@ -1522,25 +1731,35 @@ mod tests {
         let mut skills = WaterSkills::default();
 
         skills.swift_swimmer_level = 0;
-        assert!((skills.swim_speed_bonus() - 1.0).abs() < f32::EPSILON,
-            "Level 0 swim bonus must be 1.0");
+        assert!(
+            (skills.swim_speed_bonus() - 1.0).abs() < f32::EPSILON,
+            "Level 0 swim bonus must be 1.0"
+        );
 
         skills.swift_swimmer_level = 1;
-        assert!((skills.swim_speed_bonus() - 1.15).abs() < f32::EPSILON,
-            "Level 1 swim bonus must be 1.15");
+        assert!(
+            (skills.swim_speed_bonus() - 1.15).abs() < f32::EPSILON,
+            "Level 1 swim bonus must be 1.15"
+        );
 
         skills.swift_swimmer_level = 2;
-        assert!((skills.swim_speed_bonus() - 1.3).abs() < f32::EPSILON,
-            "Level 2 swim bonus must be 1.3");
+        assert!(
+            (skills.swim_speed_bonus() - 1.3).abs() < f32::EPSILON,
+            "Level 2 swim bonus must be 1.3"
+        );
 
         skills.swift_swimmer_level = 3;
-        assert!((skills.swim_speed_bonus() - 1.5).abs() < f32::EPSILON,
-            "Level 3+ swim bonus must be 1.5");
+        assert!(
+            (skills.swim_speed_bonus() - 1.5).abs() < f32::EPSILON,
+            "Level 3+ swim bonus must be 1.5"
+        );
 
-        let bonuses: Vec<f32> = (0..=2).map(|l| {
-            skills.swift_swimmer_level = l;
-            skills.swim_speed_bonus()
-        }).collect();
+        let bonuses: Vec<f32> = (0..=2)
+            .map(|l| {
+                skills.swift_swimmer_level = l;
+                skills.swim_speed_bonus()
+            })
+            .collect();
         assert!((bonuses[0] - bonuses[1]).abs() > f32::EPSILON);
         assert!((bonuses[1] - bonuses[2]).abs() > f32::EPSILON);
     }
@@ -1562,10 +1781,15 @@ mod tests {
 
         // Tick should drain oxygen: 50 - 10*1.0 = 40
         let result = state.update(1.0, 1.0);
-        assert!(state.oxygen < 50.0,
-            "Oxygen must decrease while diving, got {}", state.oxygen);
-        assert_eq!(result.drowning_damage, 0.0,
-            "No drowning damage with oxygen remaining");
+        assert!(
+            state.oxygen < 50.0,
+            "Oxygen must decrease while diving, got {}",
+            state.oxygen
+        );
+        assert_eq!(
+            result.drowning_damage, 0.0,
+            "No drowning damage with oxygen remaining"
+        );
     }
 
     #[test]
@@ -1578,17 +1802,20 @@ mod tests {
         };
 
         // submersion = 0.0: > means false, no buoyancy
-        let forces_zero = helper.calculate_water_forces(
-            Vec3::ZERO, 0.0, Vec3::ZERO, WaterMovementMode::Dry,
+        let forces_zero =
+            helper.calculate_water_forces(Vec3::ZERO, 0.0, Vec3::ZERO, WaterMovementMode::Dry);
+        assert!(
+            (forces_zero.buoyancy.y).abs() < f32::EPSILON,
+            "At submersion=0.0, > means no buoyancy"
         );
-        assert!((forces_zero.buoyancy.y).abs() < f32::EPSILON,
-            "At submersion=0.0, > means no buoyancy");
 
         // submersion = tiny positive: > means true, buoyancy applied
-        let forces_tiny = helper.calculate_water_forces(
-            Vec3::ZERO, 0.001, Vec3::ZERO, WaterMovementMode::Wading,
+        let forces_tiny =
+            helper.calculate_water_forces(Vec3::ZERO, 0.001, Vec3::ZERO, WaterMovementMode::Wading);
+        assert!(
+            forces_tiny.buoyancy.y > 0.0,
+            "At submersion>0.0, buoyancy must be positive, got {}",
+            forces_tiny.buoyancy.y
         );
-        assert!(forces_tiny.buoyancy.y > 0.0,
-            "At submersion>0.0, buoyancy must be positive, got {}", forces_tiny.buoyancy.y);
     }
 }

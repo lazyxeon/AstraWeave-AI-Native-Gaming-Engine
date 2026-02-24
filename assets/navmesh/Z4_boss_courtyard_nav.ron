@@ -1,0 +1,29 @@
+// Navmesh stub: Z4 Boss Courtyard — Oathbound Warden arena (40×40m)
+// Bake target: NavMesh::bake() with zone greybox geometry
+(
+    zone_id: "Z4_boss_courtyard",
+    bounds: (
+        min: (-20.0, 0.0, -20.0),
+        max: (20.0, 12.0, 20.0),
+    ),
+    walkable_area_m2: 1400.0,
+    max_step: 0.5,
+    max_slope_deg: 45.0,
+    waypoints: [
+        (name: "entry_from_Z3", pos: (-18.0, 0.0, 0.0)),
+        (name: "arena_center", pos: (0.0, 0.0, 0.0)),
+        (name: "arena_anchor_north", pos: (0.0, 0.0, -15.0)),
+        (name: "arena_anchor_south", pos: (0.0, 0.0, 15.0)),
+        (name: "gravity_pylon_1", pos: (-10.0, 0.0, -10.0)),
+        (name: "gravity_pylon_2", pos: (10.0, 0.0, -10.0)),
+        (name: "gravity_pylon_3", pos: (0.0, 0.0, 12.0)),
+        (name: "boss_spawn", pos: (0.0, 2.0, 0.0)),
+        (name: "companion_rally_point", pos: (-12.0, 0.0, 0.0)),
+    ],
+    excluded_regions: [
+        // Gravity pylon bases (non-walkable pillars)
+        (min: (-11.0, 0.0, -11.0), max: (-9.0, 4.0, -9.0)),
+        (min: (9.0, 0.0, -11.0), max: (11.0, 4.0, -9.0)),
+        (min: (-1.0, 0.0, 11.0), max: (1.0, 4.0, 13.0)),
+    ],
+)

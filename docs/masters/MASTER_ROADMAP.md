@@ -1,7 +1,7 @@
 # AstraWeave: Master Strategic Roadmap
 
-**Version**: 1.45  
-**Last Updated**: February 3, 2026  
+**Version**: 1.46  
+**Last Updated**: February 10, 2026  
 **Status**: Authoritative Source  
 **Validation**: ✅ PASS — [Full Report](../current/ENGINE_VALIDATION_2026_01_13.md)
 
@@ -330,6 +330,7 @@ Key achievements:
 
 | Ver | Date | Type | Impact | Summary (≤80 chars) |
 |-----|------|------|--------|---------------------|
+| **1.46** | Feb 10 | 🔷 | 🔴 | Veilweaver vertical slice: 5 phases, 20 modules, 320 tests, zero unsafe |
 | **1.44** | Jan 26 | 📋 | 🟢 | Revised Validation Plan v2.0: Sanitizers, CI workflow, validate.ps1 |
 | **1.43** | Jan 26 | ⚠️ | 🔴 | ECS REGRESSION FIXED: BlobVec 52-68% faster, 10K+ entities restored |
 | **1.42** | Dec 21 | 🔍 | 🟢 | Renderer production validation: Headless verification complete |
@@ -391,11 +392,35 @@ Dec 8 ─── v1.40: AI-Orchestrated Dynamic Terrain (320+ tests)
 Dec 20-21 ─ v1.41-1.42: Renderer Headless (+365 tests)
     │
 Jan 2026 ─ v1.43-1.44: ECS Regression Fix, Validation Plan v2.0
+    │
+Feb 2026 ─ v1.46: Veilweaver Vertical Slice (320 tests, 20 modules)
 ```
 
 ---
 
 ### Detailed Changelog (Critical Versions)
+
+<details>
+<summary><b>v1.46 (Feb 2026) - VEILWEAVER VERTICAL SLICE</b></summary>
+
+**Impact**: 🔴 CRITICAL  
+**Type**: 🔷 MAJOR  
+**Author**: AI Team
+
+**Changes**:
+- Complete 5-phase Veilweaver vertical slice (`veilweaver_slice_runtime` crate)
+- `#![forbid(unsafe_code)]` — zero unsafe, headless-safe, no wgpu/egui deps
+- **Phase 1**: Core game loop, zone registry (5 zones), ECS integration
+- **Phase 2**: Dialogue system, cinematics player, storm choice branching
+- **Phase 3**: Boss HUD (3-phase health bar), companion affinity meter, telemetry
+- **Phase 4**: VFX descriptors (6 categories), audio specs (10+ cue types), palette
+- **Phase 5**: Determinism validation (3-run hash consistency), perf budget tracker (p50/p95/p99), save/checkpoint, 30-min pacing simulation, edge case hardening
+- **Edge case hardening**: NaN guards on all animation ticks, `.expect()` → guard clause, VecDeque for O(1) eviction, Default impls, `.first()` vs direct-index safety
+- **20 source modules**, 6 integration test suites, 320 tests (265 unit + 55 integration)
+- Clippy clean, fmt clean, zero warnings in crate
+- New crate: `veilweaver_slice_runtime v0.1.0`
+
+</details>
 
 <details>
 <summary><b>v1.43 (Jan 2026) - ECS REGRESSION FIX</b></summary>

@@ -1,0 +1,245 @@
+// Boss Courtyard Zone Descriptor (Z4)
+// Version: 1.0 (Phase 1 — Content Completion)
+// Date: February 20, 2026
+// Zone: Z4 - Adaptive boss fight (The Oathbound Warden) with arena weaving
+// GridCoord: (104, 0, 0)   Elevation offset: +28 m
+
+ZoneDescriptor(
+    // Unique zone identifier (referenced by zone transitions, save data)
+    zone_id: "Z4_boss_courtyard",
+
+    // Greybox mesh reference (55m × 55m octagonal arena, gravity pylons, arena lip)
+    mesh_path: "models/greybox/boss_courtyard_greybox.gltf",
+
+    // Player spawn at south entrance, facing north into arena center
+    spawn_points: [
+        (pos: (0.0, 28.5, -22.0), facing: (0.0, 0.0, 1.0)),
+    ],
+
+    // Event triggers
+    // - boss_intro: Starts boss cinematic & selects arena variant based on storm choice
+    // - arena_anchor_a / arena_anchor_b: Repairable thread anchors the boss targets in Phase 2
+    // - phase_transition: VFX/material switch after 2nd sigil break
+    // - boss_defeat: Triggers outro metrics overlay and resolution dialogue
+    // - pylon_a / pylon_b / pylon_c: Gravity pylon interaction zones
+    triggers: [
+        // Boss introduction cinematic trigger (south entrance corridor)
+        (
+            name: "boss_intro",
+            bounds: (min: (-4.0, -24.0), max: (4.0, -18.0)),
+            action: "cinematic.play:boss_intro",
+        ),
+        // East arena anchor (repairable, boss targets in Phase 2)
+        (
+            name: "arena_anchor_a",
+            bounds: (min: (8.0, -2.0), max: (12.0, 2.0)),
+            action: "anchor.interact:arena_east",
+        ),
+        // West arena anchor (repairable, boss targets in Phase 2)
+        (
+            name: "arena_anchor_b",
+            bounds: (min: (-12.0, -2.0), max: (-8.0, 2.0)),
+            action: "anchor.interact:arena_west",
+        ),
+        // Phase transition VFX trigger (center, fires on 2nd sigil break)
+        (
+            name: "phase_transition",
+            bounds: (min: (-3.0, -3.0), max: (3.0, 3.0)),
+            action: "boss.phase_transition_vfx",
+        ),
+        // Boss defeat trigger (center, fires when 3rd sigil breaks)
+        (
+            name: "boss_defeat",
+            bounds: (min: (-5.0, -5.0), max: (5.0, 5.0)),
+            action: "boss.defeat:oathbound_warden",
+        ),
+        // Gravity pylon A (northeast, 120° position)
+        (
+            name: "pylon_northeast",
+            bounds: (min: (7.0, 10.0), max: (11.0, 14.0)),
+            action: "pylon.interact:gravity_pulse",
+        ),
+        // Gravity pylon B (northwest, 240° position)
+        (
+            name: "pylon_northwest",
+            bounds: (min: (-11.0, 10.0), max: (-7.0, 14.0)),
+            action: "pylon.interact:gravity_pulse",
+        ),
+        // Gravity pylon C (south, 360° position)
+        (
+            name: "pylon_south",
+            bounds: (min: (-2.0, -14.0), max: (2.0, -10.0)),
+            action: "pylon.interact:gravity_pulse",
+        ),
+    ],
+
+    // Arena anchors: 2 repairable thread anchors + 3 boss binding sigils
+    // Boss targets anchors during Phase 2 (Anchor Rupture ability)
+    // Never targets the same anchor twice consecutively (deterministic constraint)
+    anchors: [
+        // East arena anchor (repairable throughout fight)
+        (
+            id: "arena_anchor_east",
+            pos: (10.0, 28.5, 0.0),
+            stability: 1.0,
+            repair_cost: 4,
+            max_stability: 1.0,
+        ),
+        // West arena anchor (repairable throughout fight)
+        (
+            id: "arena_anchor_west",
+            pos: (-10.0, 28.5, 0.0),
+            stability: 1.0,
+            repair_cost: 4,
+            max_stability: 1.0,
+        ),
+        // Boss binding sigil 1 (northeast — must be broken to defeat boss)
+        (
+            id: "binding_sigil_ne",
+            pos: (9.0, 29.0, 12.0),
+            stability: 1.0,
+            repair_cost: 0,
+            max_stability: 1.0,
+        ),
+        // Boss binding sigil 2 (northwest — must be broken to defeat boss)
+        (
+            id: "binding_sigil_nw",
+            pos: (-9.0, 29.0, 12.0),
+            stability: 1.0,
+            repair_cost: 0,
+            max_stability: 1.0,
+        ),
+        // Boss binding sigil 3 (south — must be broken to defeat boss)
+        (
+            id: "binding_sigil_s",
+            pos: (0.0, 29.0, -12.0),
+            stability: 1.0,
+            repair_cost: 0,
+            max_stability: 1.0,
+        ),
+    ],
+
+    // Navigation mesh placeholder
+    navigation_mesh: "navmeshes/boss_courtyard_navmesh.ron",
+
+    // Dialogue nodes (from dialogue_intro.toml: n10→n11 branches)
+    // Triggers depend on storm choice made at Z3
+    dialogue_nodes: [
+        "boss_intro_speech",
+        "boss_phase2_taunt",
+        "boss_defeat_stable",
+        "boss_defeat_redirect",
+    ],
+
+    // Cinematic triggers: boss introduction, defeat resolution
+    cinematic_triggers: [
+        "boss_intro",
+        "boss_defeat_resolution",
+    ],
+
+    // Encounter specification
+    // The Oathbound Warden: 3-phase adaptive boss
+    // Phase 1 (Assessment): HP 100%–66% — mirrors player attack patterns
+    // Phase 2 (Fulcrum Shift): HP 66%–33% — arena reconfiguration, anchor targeting
+    // Phase 3 (Directive Override): HP 33%–0% — adaptive ability, wisp summoning
+    encounter_triggers: [
+        (
+            id: "oathbound_warden",
+            enemy_type: "boss",
+            spawn_pos: (0.0, 28.5, 8.0),
+            trigger_id: "boss_intro",
+            facing: (0.0, 0.0, -1.0),
+        ),
+    ],
+
+    // Enemy spawn points (Stormbound Wisps in Phase 3)
+    enemy_spawn_points: [
+        (pos: (12.0, 29.0, 6.0), facing: (-1.0, 0.0, 0.0)),
+        (pos: (-12.0, 29.0, 6.0), facing: (1.0, 0.0, 0.0)),
+        (pos: (0.0, 29.0, -14.0), facing: (0.0, 0.0, 1.0)),
+    ],
+)
+
+//
+// COORDINATE REFERENCE (Y-up, right-handed, Z=North)
+//
+// Arena geometry (55m × 55m at +28m elevation):
+//   - Octagonal platform with 6m edge lengths
+//   - Center: (0, 28, 0) — boss engagement zone
+//   - 1.5m lip on outer edge (Y = 28 to Y = 29.5) to prevent accidental falls
+//   - Arena radius (inscribed circle): ~22m from center to edge
+//   - Platform extends: X ∈ [-27.5, +27.5], Z ∈ [-27.5, +27.5]
+//   - Ground elevation: Y = 28m
+//
+// Gravity pylons (2m radius cylinders at 120° intervals):
+//   - Pylon A (NE):  (9.0, 28, 12.0)   — 120° from south
+//   - Pylon B (NW):  (-9.0, 28, 12.0)   — 240° from south
+//   - Pylon C (S):   (0.0, 28, -12.0)   — 360° (south)
+//
+// Thread anchors:
+//   - East anchor:  (10, 28.5, 0) — player-repairable, boss targets in Phase 2
+//   - West anchor:  (-10, 28.5, 0) — player-repairable, boss targets in Phase 2
+//
+// Binding sigils (defeat condition: break all 3):
+//   - Sigil NE: (9, 29, 12)   — near Pylon A
+//   - Sigil NW: (-9, 29, 12)   — near Pylon B
+//   - Sigil S:  (0, 29, -12)   — near Pylon C
+//
+// Boss spawn:
+//   - Oathbound Warden: (0, 28.5, 8) — north of center, facing south
+//
+// Wisp spawn points (Phase 3):
+//   - NE: (12, 29, 6)   — flanking east
+//   - NW: (-12, 29, 6)   — flanking west
+//   - S:  (0, 29, -14)   — behind player
+//
+// Trigger zones:
+//   boss_intro:        (-4, -24) to (+4, -18)   = 8m × 6m at south entrance
+//   arena_anchor_a:    (8, -2) to (12, 2)        = 4m × 4m at east anchor
+//   arena_anchor_b:    (-12, -2) to (-8, 2)      = 4m × 4m at west anchor
+//   phase_transition:  (-3, -3) to (+3, +3)      = 6m × 6m at center
+//   boss_defeat:       (-5, -5) to (+5, +5)      = 10m × 10m at center
+//   pylon_northeast:   (7, 10) to (11, 14)       = 4m × 4m at NE pylon
+//   pylon_northwest:   (-11, 10) to (-7, 14)     = 4m × 4m at NW pylon
+//   pylon_south:       (-2, -14) to (2, -10)     = 4m × 4m at S pylon
+//
+// Boss fight flow:
+//   1. Player enters from south (Z3 → Z4 transition)
+//   2. boss_intro trigger fires cinematic (arena reveal, Warden awakens)
+//   3. Arena variant applied based on storm choice:
+//      - stabilize: Clear arena, boss gains Storm Barrier
+//      - redirect: Unstable gravity pockets, boss loses fog
+//   4. Phase 1 (Assessment): Boss tests player, mirrors attack patterns
+//   5. Phase 2 (Fulcrum Shift): Boss targets thread anchors with Anchor Rupture
+//      - Player must repair anchors under pressure (echo cost: 4 per repair)
+//      - Boss never targets same anchor twice consecutively
+//   6. Phase 3 (Directive Override): Boss gains adaptive ability
+//      - If player used ranged >60%: boss gains AntiRangedField
+//      - If player used melee >60%: boss gains CounterShockAura
+//      - Stormbound Wisps spawn at 3 points (heal boss unless threads severed)
+//   7. Defeat condition: Break all 3 binding sigils (requires stagger + weaving combo)
+//   8. boss_defeat trigger fires resolution dialogue + metrics overlay
+//
+// Storm choice effects on arena:
+//   stabilize:
+//     - Boss gains Storm Barrier (reduces damage taken by 15%)
+//     - Arena is clear (no traversal hazards)
+//     - Gravity pylons function normally (tactical repositioning)
+//
+//   redirect:
+//     - Boss loses fog reinforcements (no vision obscuring)
+//     - Unstable gravity pockets spawn periodically (knockback hazard)
+//     - Gravity pylons have reversed polarity (repel instead of attract)
+
+// ===== VALIDATION STATUS =====
+
+// ✅ Zone ID: Z4_boss_courtyard (GridCoord 104,0,0)
+// ✅ Mesh Path: Pending greybox generation
+// ✅ Spawn Points: South entrance, facing north into arena
+// ✅ Triggers: 8 defined (boss intro, 2 anchors, phase transition, defeat, 3 pylons)
+// ✅ Anchors: 5 defined (2 repairable + 3 binding sigils)
+// ⏳ Navigation Mesh: Placeholder, pending generation
+// ✅ Dialogue Nodes: 4 defined (intro, taunt, 2 defeat branches)
+// ✅ Cinematic Triggers: 2 defined (boss intro, defeat resolution)
+// ✅ Encounter Triggers: 1 defined (Oathbound Warden spawn)
+// ✅ Enemy Spawn Points: 3 defined (Stormbound Wisp locations)
