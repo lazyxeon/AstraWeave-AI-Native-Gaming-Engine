@@ -460,20 +460,39 @@ mod tests {
 
         let mut targets = vec![Combatant {
             body: target_id,
-            stats: Stats { hp: 100, stamina: 100, power: 10, defense: 0, echo_amp: 1.0, effects: vec![] },
+            stats: Stats {
+                hp: 100,
+                stamina: 100,
+                power: 10,
+                defense: 0,
+                echo_amp: 1.0,
+                effects: vec![],
+            },
             iframes: None,
-            parry: Some(Parry { window: 0.0, active: true }), // window exactly 0.0
+            parry: Some(Parry {
+                window: 0.0,
+                active: true,
+            }), // window exactly 0.0
         }];
 
         let result = perform_attack_sweep(
-            &mut phys, attacker_id, Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(3.0, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
 
         assert!(result.is_some());
         let hit = result.unwrap();
         assert!(!hit.parried, "Parry with window=0.0 should NOT activate");
-        assert_eq!(hit.damage, 20, "Should deal full damage when parry window expired");
+        assert_eq!(
+            hit.damage, 20,
+            "Should deal full damage when parry window expired"
+        );
     }
 
     /// Catches: `parry.active && parry.window > 0.0` → `|| ` (line ~116)
@@ -488,20 +507,39 @@ mod tests {
 
         let mut targets = vec![Combatant {
             body: target_id,
-            stats: Stats { hp: 100, stamina: 100, power: 10, defense: 0, echo_amp: 1.0, effects: vec![] },
+            stats: Stats {
+                hp: 100,
+                stamina: 100,
+                power: 10,
+                defense: 0,
+                echo_amp: 1.0,
+                effects: vec![],
+            },
             iframes: None,
-            parry: Some(Parry { window: 0.5, active: false }), // active = false
+            parry: Some(Parry {
+                window: 0.5,
+                active: false,
+            }), // active = false
         }];
 
         let result = perform_attack_sweep(
-            &mut phys, attacker_id, Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(3.0, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
 
         assert!(result.is_some());
         let hit = result.unwrap();
         assert!(!hit.parried, "Inactive parry should NOT block damage");
-        assert_eq!(hit.damage, 20, "Full damage should apply when parry is inactive");
+        assert_eq!(
+            hit.damage, 20,
+            "Full damage should apply when parry is inactive"
+        );
     }
 
     /// Catches: `iframe.time_left > 0.0` → `>= 0.0` (line ~129)
@@ -516,19 +554,35 @@ mod tests {
 
         let mut targets = vec![Combatant {
             body: target_id,
-            stats: Stats { hp: 100, stamina: 100, power: 10, defense: 0, echo_amp: 1.0, effects: vec![] },
+            stats: Stats {
+                hp: 100,
+                stamina: 100,
+                power: 10,
+                defense: 0,
+                echo_amp: 1.0,
+                effects: vec![],
+            },
             iframes: Some(IFrame { time_left: 0.0 }), // time_left exactly 0.0
             parry: None,
         }];
 
         let result = perform_attack_sweep(
-            &mut phys, attacker_id, Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(3.0, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
 
         assert!(result.is_some());
         let hit = result.unwrap();
-        assert_eq!(hit.damage, 20, "Expired iframes (time_left=0.0) should NOT block damage");
+        assert_eq!(
+            hit.damage, 20,
+            "Expired iframes (time_left=0.0) should NOT block damage"
+        );
         assert!(!hit.parried);
     }
 
@@ -544,12 +598,20 @@ mod tests {
 
         // from→to distance is 0.0005 which is <= 1e-3
         let result = perform_attack_sweep(
-            &mut phys, attacker_id,
-            Vec3::ZERO, Vec3::new(0.0005, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(0.0005, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
 
-        assert!(result.is_none(), "Negligible sweep distance must return None");
+        assert!(
+            result.is_none(),
+            "Negligible sweep distance must return None"
+        );
         assert_eq!(targets[0].stats.hp, 100);
     }
 
@@ -571,11 +633,19 @@ mod tests {
         // Long sweep: direction is (5,0,0), distance=5.
         // Normalized: (1,0,0). Target at 2 should be hit within distance 5.
         let result = perform_attack_sweep(
-            &mut phys, attacker_id,
-            Vec3::ZERO, Vec3::new(5.0, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(5.0, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
-        assert!(result.is_some(), "Target at 2m within 5m sweep should be hit");
+        assert!(
+            result.is_some(),
+            "Target at 2m within 5m sweep should be hit"
+        );
         assert_eq!(result.unwrap().damage, 20);
     }
 
@@ -594,14 +664,25 @@ mod tests {
         let mut targets = vec![create_test_combatant(target_id, 100)];
 
         let result = perform_attack_sweep(
-            &mut phys, attacker_id,
-            Vec3::ZERO, Vec3::new(3.0, 0.0, 0.0),
-            0.5, 20, DamageType::Physical, &mut targets,
+            &mut phys,
+            attacker_id,
+            Vec3::ZERO,
+            Vec3::new(3.0, 0.0, 0.0),
+            0.5,
+            20,
+            DamageType::Physical,
+            &mut targets,
         );
 
         // With correct +y offset, ray at character center should hit.
         // With -y offset (underground), ray would miss.
-        assert!(result.is_some(), "Ray with correct height offset should hit target");
-        assert_eq!(targets[0].stats.hp, 80, "Target HP should reflect damage taken");
+        assert!(
+            result.is_some(),
+            "Ray with correct height offset should hit target"
+        );
+        assert_eq!(
+            targets[0].stats.hp, 80,
+            "Target HP should reflect damage taken"
+        );
     }
 }

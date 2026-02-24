@@ -1,0 +1,116 @@
+// Debrief Resolution Cinematic
+// Duration: 35 seconds
+// Purpose: Post-boss victory — metrics overlay, companion debrief, world outcome reveal
+// Triggers: Z4 boss_defeat trigger (all 3 binding sigils broken)
+// Interruptible: Skippable after 10s (let players who re-run skip to summary)
+// Branching: Dialogue and world-state reflect earlier choices (storm routing, anchor repairs)
+
+Cinematic(
+    id: "boss_defeat_resolution",
+    duration: 35.0,
+    interruptible: true,
+
+    // Camera path: Slow pull-up from defeated Warden → panoramic world reveal → settle on companion
+    //
+    // Beat 1 (0–10s):  Close on Warden's collapsed form, sigil energy dissipating
+    // Beat 2 (10–22s): Rising aerial shot — threads across the world visibly stabilize/shift
+    // Beat 3 (22–35s): Camera settles on companion at arena edge, final dialogue
+    camera_path: [
+        // Beat 1: Close on defeated Warden
+        CameraKeyframe(
+            time: 0.0,
+            position: (2.0, 29.5, 7.0),          // Near boss collapse point
+            rotation: (20.0, -10.0, 0.0),          // Looking down at Warden
+            fov: 45.0,                              // Tight emotional framing
+        ),
+        // Beat 1 end: Lingering moment + metrics overlay appears
+        CameraKeyframe(
+            time: 10.0,
+            position: (0.0, 30.0, 5.0),           // Slightly pulled back
+            rotation: (15.0, 0.0, 0.0),            // Centered
+            fov: 50.0,
+        ),
+        // Beat 2: Rising shot — world becomes visible, threads glow
+        CameraKeyframe(
+            time: 22.0,
+            position: (0.0, 55.0, 0.0),           // High above arena center
+            rotation: (60.0, 0.0, 0.0),            // Looking down at world
+            fov: 80.0,                              // Wide panoramic
+        ),
+        // Beat 3: Camera descends to companion at arena edge
+        CameraKeyframe(
+            time: 35.0,
+            position: (-3.0, 30.0, -16.0),        // Near south edge, offset left
+            rotation: (5.0, 10.0, 0.0),            // Looking at companion
+            fov: 55.0,                              // Medium close-up
+        ),
+    ],
+
+    // Subtitle timing: Resolution dialogue
+    // Content depends on storm_routing choice and overall performance
+    subtitle_timing: [
+        (1.0, "boss_defeat_immediate"),            // [Companion]: "It's over. The Warden's sigils... shattered."
+        (6.0, "boss_defeat_metrics"),              // [System]: Performance metrics overlay display
+        (12.0, "boss_defeat_world_state"),         // [Companion]: "Look — the threads across the world..."
+        (18.0, "boss_defeat_storm_consequence"),   // [Companion]: Varies by storm choice (stabilize vs redirect)
+        (24.0, "boss_defeat_anchor_summary"),      // [Companion]: Anchor repair summary
+        (30.0, "boss_defeat_farewell"),            // [Companion]: "This is just the beginning."
+    ],
+
+    // Audio: Resolution music (calm, reflective, builds to hopeful)
+    audio: Some(AudioConfig(
+        file: "assets/audio/resolution_theme.ogg",
+        volume: 0.8,
+        spatial: false,
+        loop_audio: false,
+    )),
+
+    // Post-processing: Warm resolution tone, gradually brightening
+    post_fx: Some(PostFxConfig(
+        bloom_intensity: 0.4,                       // Moderate bloom on thread energy
+        vignette: 0.15,                              // Slight vignette for cinematic feel
+        color_grading: Some("warm_gold"),            // Warm gold for resolution/hope
+    )),
+
+    // Focus entity: Initially Warden, then world, then companion
+    focus_entity: Some("oathbound_warden"),
+)
+
+//
+// CINEMATIC FLOW NOTES:
+//
+// This cinematic plays when the player breaks the final (3rd) binding sigil.
+// It serves as the vertical slice's denouement and performance summary.
+//
+// Metrics Overlay (appears at t=6s, persists through Beat 2):
+//   - Total play time
+//   - Echo currency earned / spent
+//   - Anchors repaired / destroyed
+//   - Combat style breakdown (melee % vs ranged %)
+//   - Companion directives used
+//   - Storm choice made + consequence
+//   - Boss phases completed / attempts
+//   - Final anchor stability across all zones
+//
+// Storm Choice Consequences (visible in Beat 2 world reveal):
+//   stabilize:
+//     - Threads across the world glow steady blue
+//     - Companion says: "The weave holds firm. Your choice gave us stability."
+//     - Narrative: Immediate safety, but the root instability festers
+//
+//   redirect:
+//     - Threads pulse with wild energy, some fraying visibly
+//     - Companion says: "The energy surges freely now. Unpredictable, but full of potential."
+//     - Narrative: Risky but potentially transformative for the world
+//
+// Anchor Summary (Beat 3):
+//   - If all anchors repaired: "Every thread anchor stands strong."
+//   - If some broken: "Some anchors fell... the weave carries scars."
+//   - If Z2a hidden anchor repaired: "Even the hidden threads hold."
+//
+// Post-cinematic:
+//   - Cinematic ends with fade to black
+//   - "VEILWEAVER — Vertical Slice Complete" title card
+//   - "Built on AstraWeave Engine" subtitle
+//   - Return to main menu or replay option
+//

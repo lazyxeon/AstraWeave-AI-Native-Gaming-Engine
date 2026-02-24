@@ -5,9 +5,7 @@
 //! detect specific mutation patterns (value swap, sign flip, op replacement,
 //! condition inversion, off-by-one) that cargo-mutants would introduce.
 
-#![allow(
-    clippy::field_reassign_with_default
-)]
+#![allow(clippy::field_reassign_with_default)]
 
 use astraweave_gameplay::*;
 use glam::Vec3;

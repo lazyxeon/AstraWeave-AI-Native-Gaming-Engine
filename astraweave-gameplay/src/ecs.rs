@@ -365,8 +365,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 2, y: 3 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 2, y: 3 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -381,7 +391,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -402,8 +418,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 3, y: 4 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 3, y: 4 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -418,7 +444,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -426,7 +458,10 @@ mod tests {
         app = app.run_fixed(1);
 
         let health = app.world.get::<CHealth>(target).unwrap();
-        assert_eq!(health.hp, 100, "Manhattan dist=7, reach=5 → miss, no damage");
+        assert_eq!(
+            health.hp, 100,
+            "Manhattan dist=7, reach=5 → miss, no damage"
+        );
     }
 
     // ===== Additional mutation-resistant tests for combat_system =====
@@ -445,8 +480,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 5, y: 3 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 2, y: 1 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 5, y: 3 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 2, y: 1 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -461,7 +506,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -486,8 +537,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -502,7 +563,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -510,7 +577,10 @@ mod tests {
         app = app.run_fixed(1);
 
         let health = app.world.get::<CHealth>(target).unwrap();
-        assert_eq!(health.hp, 85, "t_since_last must += dt to reach window; *= would keep it at 0");
+        assert_eq!(
+            health.hp, 85,
+            "t_since_last must += dt to reach window; *= would keep it at 0"
+        );
     }
 
     #[test]
@@ -525,8 +595,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -541,7 +621,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -563,8 +649,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
 
         let chain = crate::ComboChain {
@@ -588,7 +684,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -601,7 +703,10 @@ mod tests {
         // Second hit — should do step[1].damage = 20
         app = app.run_fixed(1);
         let health = app.world.get::<CHealth>(target).unwrap();
-        assert_eq!(health.hp, 70, "Second step should deal 20 more damage (idx must advance)");
+        assert_eq!(
+            health.hp, 70,
+            "Second step should deal 20 more damage (idx must advance)"
+        );
 
         // Attack should now be inactive (idx >= steps.len())
         let attack = app.world.get::<CAttackState>(attacker).unwrap();
@@ -618,8 +723,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 200 });
 
         let chain = crate::ComboChain {
@@ -634,7 +749,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
@@ -647,7 +768,10 @@ mod tests {
         // Chain should not fire again
         app = app.run_fixed(1);
         let health = app.world.get::<CHealth>(target).unwrap();
-        assert_eq!(health.hp, 190, "Chain must stop dealing damage after deactivating");
+        assert_eq!(
+            health.hp, 190,
+            "Chain must stop dealing damage after deactivating"
+        );
     }
 
     #[test]
@@ -677,6 +801,9 @@ mod tests {
         app = app.run_fixed(1); // progress becomes 5.0
 
         let queue = app.world.get::<CCraftingQueue>(crafter).unwrap();
-        assert!(queue.recipes.is_empty(), "Recipe at progress 5.0 must be removed (>= 5.0)");
+        assert!(
+            queue.recipes.is_empty(),
+            "Recipe at progress 5.0 must be removed (>= 5.0)"
+        );
     }
 }

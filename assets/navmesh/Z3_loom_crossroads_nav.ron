@@ -1,0 +1,24 @@
+// Navmesh stub: Z3 Loom Crossroads — storm choice zone (35×30m)
+// Bake target: NavMesh::bake() with zone greybox geometry
+(
+    zone_id: "Z3_loom_crossroads",
+    bounds: (
+        min: (-17.5, 0.0, -15.0),
+        max: (17.5, 10.0, 15.0),
+    ),
+    walkable_area_m2: 850.0,
+    max_step: 0.5,
+    max_slope_deg: 45.0,
+    waypoints: [
+        (name: "entry_from_Z2", pos: (-16.0, 0.0, 0.0)),
+        (name: "crossroads_center", pos: (0.0, 0.0, 0.0)),
+        (name: "storm_stabilize_path", pos: (8.0, 0.0, -8.0)),
+        (name: "storm_redirect_path", pos: (8.0, 0.0, 8.0)),
+        (name: "choice_prompt_anchor", pos: (0.0, 1.0, 0.0)),
+        (name: "exit_to_Z4", pos: (16.0, 0.0, 0.0)),
+    ],
+    excluded_regions: [
+        // Storm vortex area (dynamic — depends on choice)
+        (min: (-3.0, 0.0, -3.0), max: (3.0, 8.0, 3.0)),
+    ],
+)

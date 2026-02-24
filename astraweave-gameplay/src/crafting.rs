@@ -480,13 +480,19 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Potion".to_string(),
                 output_item: ItemKind::Consumable { heal: 10 },
-                costs: vec![CraftCost { kind: ResourceKind::Fiber, count: 2 }],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Fiber,
+                    count: 2,
+                }],
             }],
         };
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Fiber, 5);
         let result = book.craft("Potion", &mut inv);
-        assert!(result.is_some(), "craft() must return Some on valid recipe with resources");
+        assert!(
+            result.is_some(),
+            "craft() must return Some on valid recipe with resources"
+        );
         let item = result.unwrap();
         assert_eq!(item.name, "Potion");
     }
@@ -512,7 +518,11 @@ mod tests {
         let mut inv = Inventory::default();
         let result = book.craft("Beta", &mut inv);
         assert!(result.is_some());
-        assert_eq!(result.unwrap().name, "Beta", "Must find recipe by exact name match");
+        assert_eq!(
+            result.unwrap().name,
+            "Beta",
+            "Must find recipe by exact name match"
+        );
     }
 
     #[test]
@@ -522,14 +532,23 @@ mod tests {
         let book = RecipeBook {
             recipes: vec![CraftRecipe {
                 name: "Sword".to_string(),
-                output_item: ItemKind::Weapon { base_damage: 10, dtype: DamageType::Physical },
-                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+                output_item: ItemKind::Weapon {
+                    base_damage: 10,
+                    dtype: DamageType::Physical,
+                },
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Ore,
+                    count: 3,
+                }],
             }],
         };
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Wood, 10); // Wrong resource
         let result = book.craft("Sword", &mut inv);
-        assert!(result.is_none(), "Must not craft when resource kind doesn't match");
+        assert!(
+            result.is_none(),
+            "Must not craft when resource kind doesn't match"
+        );
     }
 
     #[test]
@@ -541,15 +560,26 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Shield".to_string(),
                 output_item: ItemKind::Armor { defense: 5 },
-                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Ore,
+                    count: 3,
+                }],
             }],
         };
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Ore, 3); // Exactly enough
         let result = book.craft("Shield", &mut inv);
-        assert!(result.is_some(), "Exact resource count must allow crafting (have==cost)");
+        assert!(
+            result.is_some(),
+            "Exact resource count must allow crafting (have==cost)"
+        );
         // Resources should be consumed
-        let remaining = inv.resources.iter().find(|(k,_)| *k == ResourceKind::Ore).map(|(_,n)| *n).unwrap_or(0);
+        let remaining = inv
+            .resources
+            .iter()
+            .find(|(k, _)| *k == ResourceKind::Ore)
+            .map(|(_, n)| *n)
+            .unwrap_or(0);
         assert_eq!(remaining, 0, "Resources must be fully consumed");
     }
 
@@ -561,7 +591,10 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Shield".to_string(),
                 output_item: ItemKind::Armor { defense: 5 },
-                costs: vec![CraftCost { kind: ResourceKind::Ore, count: 3 }],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Ore,
+                    count: 3,
+                }],
             }],
         };
         let mut inv = Inventory::default();
@@ -579,13 +612,19 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Gem".to_string(),
                 output_item: ItemKind::Consumable { heal: 50 },
-                costs: vec![CraftCost { kind: ResourceKind::Crystal, count: 1 }],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Crystal,
+                    count: 1,
+                }],
             }],
         };
         let mut inv = Inventory::default();
         inv.add_resource(ResourceKind::Crystal, 5);
         let result = book.craft("Gem", &mut inv);
-        assert!(result.is_some(), "Successful remove_resource must not return None");
+        assert!(
+            result.is_some(),
+            "Successful remove_resource must not return None"
+        );
     }
 
     #[test]
@@ -595,7 +634,10 @@ mod tests {
             recipes: vec![CraftRecipe {
                 name: "Ring".to_string(),
                 output_item: ItemKind::Consumable { heal: 1 },
-                costs: vec![CraftCost { kind: ResourceKind::Essence, count: 4 }],
+                costs: vec![CraftCost {
+                    kind: ResourceKind::Essence,
+                    count: 4,
+                }],
             }],
         };
         let mut inv = Inventory::default();

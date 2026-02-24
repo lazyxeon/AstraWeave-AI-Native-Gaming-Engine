@@ -1,0 +1,98 @@
+// Boss Introduction Cinematic
+// Duration: 25 seconds
+// Purpose: Reveal the Boss Courtyard arena and awaken the Oathbound Warden
+// Triggers: Z4 boss_intro trigger (player enters from south corridor)
+// Interruptible: No (critical boss introduction)
+// Storm choice variant: Arena appearance differs based on Z3 storm_routing decision
+
+Cinematic(
+    id: "boss_intro",
+    duration: 25.0,
+    interruptible: false,
+
+    // Camera path: Sweeping arena reveal → Warden awakening close-up → pull back to combat position
+    //
+    // Beat 1 (0–8s):  High wide shot — camera flies over arena lip revealing octagonal platform
+    // Beat 2 (8–16s): Crane down to Warden pedestal — gravity pylons pulse
+    // Beat 3 (16–25s): Pull back to combat camera behind player spawn
+    camera_path: [
+        // Beat 1: High establishing shot from south entrance
+        CameraKeyframe(
+            time: 0.0,
+            position: (0.0, 42.0, -28.0),     // High above south entrance
+            rotation: (45.0, 0.0, 0.0),         // Looking down at arena center
+            fov: 75.0,                           // Wide for spectacle
+        ),
+        // Beat 1→2 transition: Sweeping orbit northeast
+        CameraKeyframe(
+            time: 8.0,
+            position: (15.0, 36.0, 10.0),       // Northeast, descending
+            rotation: (35.0, -50.0, 0.0),        // Angled toward center
+            fov: 65.0,
+        ),
+        // Beat 2: Close-up on Warden pedestal as binding sigils ignite
+        CameraKeyframe(
+            time: 16.0,
+            position: (3.0, 30.0, 5.0),         // Close to boss spawn, offset right
+            rotation: (10.0, -15.0, 0.0),        // Slight downward look at Warden
+            fov: 50.0,                            // Tighter framing on boss
+        ),
+        // Beat 3: Pull back to combat camera position (player POV preparation)
+        CameraKeyframe(
+            time: 25.0,
+            position: (0.0, 31.0, -18.0),       // Behind player spawn, elevated
+            rotation: (15.0, 0.0, 0.0),          // Looking north at arena + Warden
+            fov: 60.0,                            // Standard combat FOV
+        ),
+    ],
+
+    // Subtitle timing: Warden's awakening dialogue
+    // References dialogue_intro.toml node n10 (boss introduction)
+    subtitle_timing: [
+        (2.0, "boss_intro_preamble"),      // [Companion]: "This is it. The Warden's seal..."
+        (8.0, "boss_intro_speech"),         // [Warden]: "You dare trespass upon the binding grounds?"
+        (14.0, "boss_intro_threat"),        // [Warden]: "The threads remember. I remember."
+        (20.0, "boss_intro_companion"),     // [Companion]: "Stay sharp. Watch the sigils."
+    ],
+
+    // Audio: Boss arena ambient + Warden awakening SFX
+    audio: Some(AudioConfig(
+        file: "assets/audio/boss_arena_ambient.ogg",
+        volume: 0.7,
+        spatial: true,
+        loop_audio: false,
+    )),
+
+    // Post-processing: Dramatic lighting for boss reveal
+    post_fx: Some(PostFxConfig(
+        bloom_intensity: 0.6,                     // Strong bloom on sigil ignition
+        vignette: 0.35,                            // Focus attention on arena center
+        color_grading: Some("storm_purple"),       // Purple-tinted for storm energy
+    )),
+
+    // Focus entity: Track the Oathbound Warden during camera movement
+    focus_entity: Some("oathbound_warden"),
+)
+
+//
+// CINEMATIC FLOW NOTES:
+//
+// This cinematic plays when the player first enters Z4 through the south corridor.
+// The exact arena visual depends on the storm_routing choice from Z3:
+//
+// If player chose "stabilize":
+//   - Arena is clear, well-lit, golden energy haze
+//   - Gravity pylons emit steady blue glow
+//   - Warden has visible Storm Barrier shimmer (15% damage reduction indicator)
+//
+// If player chose "redirect":
+//   - Arena has unstable gravity pockets (visible distortion FX)
+//   - Gravity pylons have red-shifted reversed polarity glow
+//   - Warden appears without fog reinforcements (clearer visibility)
+//
+// Post-cinematic:
+//   - Player regains control at spawn position (0, 28.5, -22)
+//   - Boss AI enters Phase 1 (Assessment) immediately
+//   - Combat music begins (crossfaded from cinematic audio)
+//   - HUD displays boss health bar + phase indicator
+//

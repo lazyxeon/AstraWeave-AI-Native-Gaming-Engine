@@ -1,0 +1,130 @@
+// Side Alcove Zone Descriptor (Z2a)
+// Version: 1.0 (Phase 1 — Content Completion)
+// Date: February 20, 2026
+// Zone: Z2a - Optional hidden alcove branching off the Fractured Cliffs (Z2)
+// GridCoord: (102, 1, 0)   Elevation offset: +14 m
+
+ZoneDescriptor(
+    // Unique zone identifier (referenced by zone transitions, save data)
+    zone_id: "Z2a_side_alcove",
+
+    // Greybox mesh reference (10m × 10m alcove, narrow entrance tunnel)
+    mesh_path: "models/greybox/side_alcove_greybox.gltf",
+
+    // Player spawn at alcove entrance (south wall, facing north into alcove)
+    spawn_points: [
+        (pos: (0.0, 14.0, -4.0), facing: (0.0, 0.0, 1.0)),
+    ],
+
+    // Event triggers
+    // - alcove_entry: Discovery trigger (companion reacts to hidden space)
+    // - echo_shard_pickup: Optional Echo Shard collectible at alcove center
+    // - lore_glyph: Environmental storytelling glyph on back wall
+    // - alcove_exit: Returns player to Z2 Fractured Cliffs path
+    triggers: [
+        // Entry discovery trigger (narrow passage from Z2)
+        (
+            name: "alcove_entry",
+            bounds: (min: (-2.0, -5.0), max: (2.0, -3.0)),
+            action: "dialogue.play:alcove_discovery",
+        ),
+        // Optional Echo Shard pickup at center pedestal
+        (
+            name: "echo_shard_pickup",
+            bounds: (min: (-1.5, -1.5), max: (1.5, 1.5)),
+            action: "pickup.collect:echo_shard_bonus",
+        ),
+        // Lore glyph on north wall (environmental storytelling)
+        (
+            name: "lore_glyph",
+            bounds: (min: (-2.0, 3.0), max: (2.0, 5.0)),
+            action: "dialogue.play:alcove_lore_glyph",
+        ),
+        // Exit trigger (returns to Z2 midpoint path)
+        (
+            name: "alcove_exit",
+            bounds: (min: (-2.0, -6.0), max: (2.0, -4.5)),
+            action: "zone.transition:Z2_fractured_cliffs",
+        ),
+    ],
+
+    // Anchors: 1 minor anchor (reward for exploration)
+    // Repairing this anchor grants a bonus modifier for the Z4 boss fight
+    anchors: [
+        (
+            id: "alcove_hidden_anchor",
+            pos: (0.0, 14.5, 2.0),
+            stability: 0.3,
+            repair_cost: 3,
+            max_stability: 1.0,
+        ),
+    ],
+
+    // Navigation mesh placeholder
+    navigation_mesh: "navmeshes/side_alcove_navmesh.ron",
+
+    // Dialogue node references
+    // - alcove_discovery: Companion expresses surprise at hidden path (8s, 2 lines)
+    // - alcove_lore_glyph: Companion reads ancient glyph, reveals backstory hint (15s, 3 lines)
+    dialogue_nodes: [
+        "alcove_discovery",
+        "alcove_lore_glyph",
+    ],
+
+    // No cinematics in this small optional zone
+    cinematic_triggers: [],
+)
+
+//
+// COORDINATE REFERENCE (Y-up, right-handed, Z=North)
+//
+// Alcove geometry (10m × 10m at +14m elevation):
+//   - Center: (0, 14, 0)
+//   - Walkable area: X ∈ [-5, +5], Z ∈ [-5, +5]
+//   - Ground elevation: Y = 14m (accessed via hidden passage at Z2 ~Z=120m)
+//   - Ceiling height: 4m (Y = 14 to Y = 18)
+//   - Walls: Rough-hewn stone with phosphorescent thread veins
+//
+// Entrance tunnel (2m × 3m passage):
+//   - Connects to Z2 at approximately Z=120m on the cliffs
+//   - Tunnel length: ~6m, slight upward slope (+2m rise)
+//   - Entry from Z2 side is partially concealed by rock overhang
+//   - Player must look off the main path to discover it
+//
+// Interior layout:
+//   - Center pedestal: (0, 14.3, 0) — Echo Shard on small stone column
+//   - Hidden anchor: (0, 14.5, 2) — thread anchor behind pedestal, faintly glowing
+//   - Lore glyph: (0, 15.5, 4.5) — carved into north wall, eye level
+//   - Ambient: 2 small crystal clusters at (-3, 14, 3) and (3, 14, 3)
+//
+// Trigger zones:
+//   alcove_entry:       (-2, -5) to (+2, -3)    = 4m × 2m at south entrance
+//   echo_shard_pickup:  (-1.5, -1.5) to (+1.5, +1.5) = 3m × 3m at center pedestal
+//   lore_glyph:         (-2, 3) to (+2, 5)      = 4m × 2m at north wall
+//   alcove_exit:        (-2, -6) to (+2, -4.5)   = 4m × 1.5m at south passage
+//
+// Discovery reward:
+//   - Echo Shard: +5 Echoes bonus (roughly 1 anchor repair worth)
+//   - Hidden anchor repair: Grants "Alcove Blessing" modifier
+//     - Effect: +10% thread weaving speed during Z4 boss fight
+//     - Narrative: Companion comments on the strengthened connection
+//   - Lore glyph: Unlocks journal entry about the Warden's origin
+//
+// Exploration flow:
+//   1. Player notices faint glow off Z2 main path (Z=120m area)
+//   2. Enters narrow passage → alcove_entry trigger fires companion dialogue
+//   3. Explores small room → finds Echo Shard at center pedestal
+//   4. Optionally reads lore glyph on back wall
+//   5. Optionally repairs hidden anchor (3 Echoes)
+//   6. Returns to Z2 via same passage → alcove_exit trigger
+
+// ===== VALIDATION STATUS =====
+
+// ✅ Zone ID: Z2a_side_alcove (GridCoord 102,1,0)
+// ✅ Mesh Path: Pending greybox generation
+// ✅ Spawn Points: South entrance, facing north
+// ✅ Triggers: 4 defined (entry, pickup, lore, exit)
+// ✅ Anchors: 1 defined (hidden anchor with 0.3 stability, repair cost 3)
+// ⏳ Navigation Mesh: Placeholder, pending generation
+// ✅ Dialogue Nodes: 2 defined (discovery, lore glyph)
+// ✅ Cinematic Triggers: None (intentional — small optional zone)

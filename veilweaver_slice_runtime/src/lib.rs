@@ -1,3 +1,29 @@
+//! # Veilweaver Vertical Slice Runtime
+//!
+//! Headless game runtime for the AstraWeave **Veilweaver** vertical slice —
+//! a 30-minute playable demo spanning 6 zones (Z0–Z4 + Z2a), a 3-phase
+//! boss encounter, companion AI, narrative branching, and full HUD/VFX/audio
+//! data pipelines.
+//!
+//! ## Architecture
+//!
+//! The crate is organized around [`walkthrough::SliceOrchestrator`], which
+//! composes 10+ subsystems into a deterministic `tick(dt) → TickResult` loop:
+//!
+//! - **Core**: [`game_loop`], [`player_state`], [`combat`], [`storm_choice`]
+//! - **HUD**: [`hud_state`], [`boss_hud`], [`companion_hud`], [`decision_ui`], [`recap_panel`]
+//! - **Presentation**: [`vfx_specs`], [`audio_specs`], [`vfx_dispatch`], [`palette`]
+//! - **Validation**: [`determinism`], [`perf_budget`], [`checkpoint`], [`telemetry`]
+//! - **AI** (feature-gated): [`boss_encounter`], [`companion_ai`]
+//!
+//! ## Design Principles
+//!
+//! - `#![forbid(unsafe_code)]` — memory safety at compile time
+//! - **Headless-safe** — zero rendering/audio/windowing dependencies
+//! - **Pure data models** — runtime produces data, presentation reads each frame
+//! - **Deterministic** — identical inputs produce identical state
+//! - **NaN-hardened** — all numeric paths guard against non-finite values
+
 #![forbid(unsafe_code)]
 use anyhow::Result;
 use astraweave_core::ecs_adapter;
@@ -15,6 +41,51 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use tracing::info;
 
+pub mod cinematic_player;
+pub mod game_loop;
+pub mod storm_choice;
+pub mod zone_transitions;
+
+// Phase 2: Core game loop integration (headless-safe)
+pub mod combat;
+pub mod player_state;
+pub mod walkthrough;
+
+// Phase 3: UI & HUD data models (headless-safe, no rendering deps)
+pub mod boss_hud;
+pub mod companion_hud;
+pub mod decision_ui;
+pub mod hud_state;
+pub mod recap_panel;
+pub mod telemetry;
+
+// Phase 4: VFX, audio & polish descriptors (headless-safe)
+pub mod audio_specs;
+pub mod palette;
+pub mod vfx_dispatch;
+pub mod vfx_specs;
+
+// Phase 5: Validation & ship (headless-safe)
+pub mod checkpoint;
+pub mod determinism;
+pub mod perf_budget;
+
+/// Boss encounter system — Oathbound Warden fight lifecycle.
+///
+/// Requires the `boss-director` feature (pulls in `astraweave-director`).
+#[cfg(feature = "boss-director")]
+pub mod boss_encounter;
+
+/// Companion AI integration — GOAP-based companion planner.
+///
+/// Requires the `ai-companion` feature (pulls in `astraweave-ai`).
+#[cfg(feature = "ai-companion")]
+pub mod companion_ai;
+
+/// Configuration loaded from a TOML/RON slice descriptor.
+///
+/// Controls the fixed timestep (`dt`), initial cell coordinate, and
+/// optional camera spawn position for the Veilweaver vertical slice.
 #[derive(Debug, Clone, Deserialize)]
 pub struct VeilweaverSliceConfig {
     pub dt: f32,
@@ -297,13 +368,35 @@ fn trigger_contains(trigger: &TriggerZoneSpec, point: [f32; 3]) -> bool {
     }
 }
 
+/// Top-level ECS runtime for the Veilweaver vertical slice.
+///
+/// Wraps an [`App`] (ECS world + schedule), a [`WorldPartition`] (zone cells),
+/// and aggregated [`VeilweaverSliceMetadata`] (triggers, anchors, dialogue).
+/// Tutorial systems are auto-installed on construction.
 pub struct VeilweaverRuntime {
     pub app: App,
     pub partition: WorldPartition,
     pub metadata: VeilweaverSliceMetadata,
 }
 
+impl std::fmt::Debug for VeilweaverRuntime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VeilweaverRuntime")
+            .field("partition", &self.partition)
+            .field("metadata", &self.metadata)
+            .finish_non_exhaustive()
+    }
+}
+
 impl VeilweaverRuntime {
+    /// Creates a new runtime from a config and a pre-loaded world partition.
+    ///
+    /// Installs tutorial ECS systems and gathers zone metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the world partition fails to produce valid
+    /// metadata (e.g., unresolvable cell references).
     pub fn new(config: VeilweaverSliceConfig, partition: WorldPartition) -> Result<Self> {
         let legacy_world = LegacyWorld::new();
         let dt = config.dt.max(0.0001);
@@ -328,6 +421,7 @@ impl VeilweaverRuntime {
         VeilweaverSliceMetadata::from_cells(&cells).unwrap_or_default()
     }
 
+    /// Returns all weave anchors that belong to the given cell coordinate.
     pub fn anchors_in_cell(&self, coord: GridCoord) -> Vec<&WeaveAnchorSpec> {
         self.metadata
             .anchors
@@ -336,18 +430,24 @@ impl VeilweaverRuntime {
             .collect()
     }
 
+    /// Registers a system to run once after the initial ECS setup.
     pub fn add_post_setup_system(&mut self, system: fn(&mut World)) {
         self.app
             .schedule
             .add_system("veilweaver_post_setup", system);
     }
 
+    /// Advances the ECS world by one fixed tick.
     pub fn run_tick(&mut self) {
         let mut app = std::mem::take(&mut self.app);
         app = app.run_fixed(1);
         self.app = app;
     }
 
+    /// Re-scans the world partition and updates metadata + tutorial context.
+    ///
+    /// Call after loading or unloading cells to keep anchors, triggers,
+    /// and tutorial state in sync.
     pub fn refresh_metadata(&mut self) {
         self.metadata = Self::gather_metadata(&self.partition);
         info!(

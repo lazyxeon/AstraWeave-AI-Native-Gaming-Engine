@@ -7,7 +7,9 @@ use astraweave_core::{
 };
 use astraweave_ecs as ecs;
 
-use crate::orchestrator::{Orchestrator, RuleOrchestrator};
+use crate::orchestrator::Orchestrator;
+#[cfg(not(feature = "veilweaver_slice"))]
+use crate::orchestrator::RuleOrchestrator;
 #[cfg(feature = "veilweaver_slice")]
 use crate::VeilweaverCompanionOrchestrator;
 

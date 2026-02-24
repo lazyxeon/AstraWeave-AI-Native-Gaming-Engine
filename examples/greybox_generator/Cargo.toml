@@ -22,3 +22,15 @@ path = "src/echo_grove.rs"
 [[bin]]
 name = "generate_fractured_cliffs"
 path = "src/fractured_cliffs.rs"
+
+[[bin]]
+name = "generate_loom_crossroads"
+path = "src/loom_crossroads.rs"
+
+[[bin]]
+name = "generate_boss_courtyard"
+path = "src/boss_courtyard.rs"
+
+[[bin]]
+name = "generate_side_alcove"
+path = "src/side_alcove.rs"

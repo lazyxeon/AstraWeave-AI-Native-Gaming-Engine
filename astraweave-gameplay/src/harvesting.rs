@@ -218,7 +218,7 @@ mod tests {
             node.amount = 0;
             node.timer = 0.5;
             node.tick(1.0); // timer -> -0.5, triggers respawn
-            // Result must be in 1..=5
+                            // Result must be in 1..=5
             assert!(
                 node.amount >= 1 && node.amount <= 5,
                 "Legacy tick respawn must be in 1..=5, got {}",
@@ -253,7 +253,10 @@ mod tests {
         node2.timer = 0.5;
         let mut rng2 = StdRng::seed_from_u64(42);
         node2.tick_seeded(1.0, &mut rng2);
-        assert_eq!(node.amount, node2.amount, "Same seed must produce same result");
+        assert_eq!(
+            node.amount, node2.amount,
+            "Same seed must produce same result"
+        );
     }
 
     #[test]
@@ -277,7 +280,11 @@ mod tests {
             );
         }
         // We should see multiple distinct values
-        assert!(seen.len() > 1, "Expected multiple distinct respawn values, got {:?}", seen);
+        assert!(
+            seen.len() > 1,
+            "Expected multiple distinct respawn values, got {:?}",
+            seen
+        );
     }
 
     #[test]

@@ -242,7 +242,7 @@ impl SkyRenderer {
         self.uniform_buffer = Some(device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Sky Uniform Buffer"),
             size: std::mem::size_of::<SkyUniforms>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM ^ /* ~ changed by cargo-mutants ~ */ wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         }));
 

@@ -21,6 +21,8 @@ pub struct TriggerZoneSpec {
     pub shape: Option<String>,
     pub radius: Option<f32>,
     pub extents: Option<[f32; 3]>,
+    /// Data-driven action string (e.g. `"zone.transition:Z4_boss_courtyard"`).
+    pub action: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +150,7 @@ fn parse_trigger_zone(view: CellComponentView<'_>, coord: GridCoord) -> Result<T
         shape: Option<String>,
         radius: Option<f32>,
         extents: Option<[f32; 3]>,
+        action: Option<String>,
     }
     let data: Data = deserialize_component(&view)?;
     Ok(TriggerZoneSpec {
@@ -157,6 +160,7 @@ fn parse_trigger_zone(view: CellComponentView<'_>, coord: GridCoord) -> Result<T
         shape: data.shape,
         radius: data.radius,
         extents: data.extents,
+        action: data.action,
     })
 }
 
@@ -339,6 +343,7 @@ mod tests {
             shape: Some("sphere".to_string()),
             radius: Some(10.0),
             extents: None,
+            action: None,
         };
         assert_eq!(trigger.trigger_id, "zone_a");
         assert_eq!(trigger.shape, Some("sphere".to_string()));
@@ -353,6 +358,7 @@ mod tests {
             shape: Some("box".to_string()),
             radius: None,
             extents: Some([5.0, 10.0, 5.0]),
+            action: None,
         };
         assert!(trigger.extents.is_some());
         assert!(trigger.radius.is_none());

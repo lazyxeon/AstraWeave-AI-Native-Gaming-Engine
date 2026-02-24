@@ -8,16 +8,28 @@ license.workspace = true
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+toml = { workspace = true }
 tracing = { workspace = true }
 
 astraweave-core = { path = "../astraweave-core" }
 astraweave-ecs = { path = "../astraweave-ecs" }
-astraweave-ai = { path = "../astraweave-ai", optional = true }
-astraweave-director = { path = "../astraweave-director", optional = true }
+astraweave-ai = { path = "../astraweave-ai", optional = true, features = ["veilweaver_slice"] }
+astraweave-director = { path = "../astraweave-director", optional = true, features = ["veilweaver_slice"] }
 astraweave-scene = { path = "../astraweave-scene" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
+astraweave-dialogue = { path = "../astraweave-dialogue" }
+astraweave-cinematics = { path = "../astraweave-cinematics" }
+ron = "0.8"
+
+[features]
+default = []
+ai-companion = ["dep:astraweave-ai"]
+boss-director = ["dep:astraweave-director"]
+full-ai = ["ai-companion", "boss-director"]
 
 [dev-dependencies]
 serde_json = { workspace = true }
 astraweave-scene = { path = "../astraweave-scene" }
 astraweave-ecs = { path = "../astraweave-ecs" }
+astraweave-ai = { path = "../astraweave-ai", features = ["veilweaver_slice"] }
+astraweave-director = { path = "../astraweave-director", features = ["veilweaver_slice"] }

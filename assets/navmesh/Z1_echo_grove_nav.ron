@@ -1,0 +1,24 @@
+// Navmesh stub: Z1 Echo Grove — combat intro zone (12×60m corridor)
+// Bake target: NavMesh::bake() with zone greybox geometry
+(
+    zone_id: "Z1_echo_grove",
+    bounds: (
+        min: (-6.0, 0.0, -30.0),
+        max: (6.0, 8.0, 30.0),
+    ),
+    walkable_area_m2: 580.0,
+    max_step: 0.5,
+    max_slope_deg: 45.0,
+    waypoints: [
+        (name: "entry_from_Z0", pos: (-5.5, 0.0, -28.0)),
+        (name: "skirmish_arena_center", pos: (0.0, 0.0, 0.0)),
+        (name: "echo_shard_platform", pos: (3.0, 1.5, 10.0)),
+        (name: "companion_cover_point", pos: (-4.0, 0.0, 5.0)),
+        (name: "exit_to_Z2", pos: (5.5, 0.0, 28.0)),
+    ],
+    excluded_regions: [
+        // Tree cluster obstacles
+        (min: (-3.0, 0.0, -15.0), max: (-1.0, 6.0, -13.0)),
+        (min: (2.0, 0.0, 8.0), max: (4.0, 6.0, 10.0)),
+    ],
+)

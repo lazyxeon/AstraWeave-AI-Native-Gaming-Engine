@@ -1,0 +1,167 @@
+// Loom Crossroads Zone Descriptor (Z3)
+// Version: 1.0 (Phase 1 — Content Completion)
+// Date: February 20, 2026
+// Zone: Z3 - Storm routing choice, branching narrative data flag
+// GridCoord: (103, 0, 0)   Elevation offset: +20 m
+
+ZoneDescriptor(
+    // Unique zone identifier (referenced by zone transitions, save data)
+    zone_id: "Z3_loom_crossroads",
+
+    // Greybox mesh reference (35m × 30m platform, 3 concentric rings, central plinth)
+    mesh_path: "models/greybox/loom_crossroads_greybox.gltf",
+
+    // Player spawn at south edge, facing north toward central plinth
+    spawn_points: [
+        (pos: (0.0, 20.5, -12.0), facing: (0.0, 0.0, 1.0)),
+    ],
+
+    // Event triggers
+    // - choice_prompt: Opens storm routing radial UI at central plinth
+    // - storm_stable_fx: Visual feedback for stabilization choice (blue particles)
+    // - storm_redirect_fx: Visual feedback for redirect choice (amber particles)
+    // - zone_entry: Dialogue trigger when player enters crossroads
+    // - zone_exit_boss: Transition to Z4 Boss Courtyard after choice is made
+    triggers: [
+        // Central plinth: storm routing decision prompt
+        (
+            name: "choice_prompt",
+            bounds: (min: (-3.0, -3.0), max: (3.0, 3.0)),
+            action: "decision.open:storm_routing",
+        ),
+        // Storm stabilization visual feedback (north conduit)
+        (
+            name: "storm_stable_fx",
+            bounds: (min: (-2.0, 8.0), max: (2.0, 12.0)),
+            action: "vfx.activate:storm_stabilize_blue",
+        ),
+        // Storm redirect visual feedback (south conduit)
+        (
+            name: "storm_redirect_fx",
+            bounds: (min: (-2.0, -12.0), max: (2.0, -8.0)),
+            action: "vfx.activate:storm_redirect_amber",
+        ),
+        // Zone entry dialogue
+        (
+            name: "crossroads_entry",
+            bounds: (min: (-5.0, -14.0), max: (5.0, -10.0)),
+            action: "dialogue.play:crossroads_arrival",
+        ),
+        // Transition to boss arena (north exit, opens after choice)
+        (
+            name: "zone_exit_boss",
+            bounds: (min: (-3.0, 13.0), max: (3.0, 16.0)),
+            action: "zone.transition:Z4_boss_courtyard",
+        ),
+    ],
+
+    // Storm conduit anchors (from spec: 3 conduits at 120° intervals on outer ring)
+    // Center conduit is the primary interaction point; flanking conduits are visual props
+    anchors: [
+        (
+            id: "conduit_north",
+            pos: (0.0, 22.0, 10.0),
+            stability: 0.5,
+            repair_cost: 3,
+            max_stability: 1.0,
+        ),
+        (
+            id: "conduit_southeast",
+            pos: (8.66, 22.0, -5.0),
+            stability: 0.4,
+            repair_cost: 3,
+            max_stability: 1.0,
+        ),
+        (
+            id: "conduit_southwest",
+            pos: (-8.66, 22.0, -5.0),
+            stability: 0.4,
+            repair_cost: 3,
+            max_stability: 1.0,
+        ),
+    ],
+
+    // Navigation mesh placeholder
+    navigation_mesh: "navmeshes/loom_crossroads_navmesh.ron",
+
+    // Dialogue nodes (from dialogue_intro.toml)
+    // n7: Companion explains the loom resonance ("The patterns converge here...")
+    // n8: Storm choice dialogue — player picks stabilize or redirect
+    // n9_stable / n9_redirect: Branch-specific companion commentary
+    dialogue_nodes: [
+        "crossroads_arrival",
+        "storm_choice",
+        "storm_stable_commentary",
+        "storm_redirect_commentary",
+    ],
+
+    // Cinematic triggers: crossroads reveal
+    cinematic_triggers: [
+        "crossroads_reveal",
+    ],
+
+    // Decision prompts: storm routing choice
+    // This is the key narrative divergence point for the vertical slice
+    decision_prompts: [
+        (
+            id: "storm_routing",
+            text: "The storm conduits hum with unstable energy. How do you channel the threads?",
+            options: [
+                (id: "storm_stabilize", label: "Stabilize the Storm", description: "Safer arena, but boss gains protective shielding"),
+                (id: "storm_redirect", label: "Redirect the Storm", description: "Harder traversal, but boss loses fog reinforcements"),
+            ],
+        ),
+    ],
+)
+
+//
+// COORDINATE REFERENCE (Y-up, right-handed, Z=North)
+//
+// Platform geometry (35m × 30m at +20m elevation):
+//   - Center: (0, 20, 0) — central plinth (radius 4m)
+//   - Outer ring: 3m wide lanes for looped traversal
+//   - Three storm conduits at 120° intervals:
+//     * North conduit:     (0,    22, 10)    — primary interaction
+//     * Southeast conduit: (8.66, 22, -5)    — visual prop
+//     * Southwest conduit: (-8.66,22, -5)    — visual prop
+//   - Platform extends: X ∈ [-17.5, +17.5], Z ∈ [-15, +15]
+//   - Ground elevation: Y = 20m
+//
+// Trigger zones:
+//   choice_prompt:     (-3, -3) to (+3, +3)     = 6m × 6m at center plinth
+//   storm_stable_fx:   (-2, 8) to (+2, 12)      = 4m × 4m at north conduit
+//   storm_redirect_fx: (-2, -12) to (+2, -8)    = 4m × 4m at south conduit area
+//   crossroads_entry:  (-5, -14) to (+5, -10)   = 10m × 4m at south edge (arrival)
+//   zone_exit_boss:    (-3, 13) to (+3, 16)     = 6m × 3m at north edge (exit)
+//
+// Narrative flow:
+//   1. Player enters from south (Z2 → Z3 transition)
+//   2. crossroads_entry trigger fires dialogue
+//   3. Cinematic "crossroads_reveal" plays (camera pan of 3 conduits)
+//   4. Player approaches central plinth → choice_prompt fires
+//   5. Radial UI presents storm_routing decision
+//   6. Choice sets global data flag: STORM_CHOICE = stabilize | redirect
+//   7. Corresponding conduit VFX activates (blue or amber)
+//   8. Companion delivers branch-specific commentary
+//   9. North exit opens → player proceeds to Z4 Boss Courtyard
+//
+// Storm choice consequences:
+//   stabilize → Boss gains Storm Barrier (defensive shielding)
+//             → Arena is clear (no fog hazards)
+//             → Companion dialogue: "Safer path, but the Warden draws strength from order"
+//
+//   redirect  → Boss loses fog reinforcements
+//             → Arena has unstable gravity pockets (traversal hazards)
+//             → Companion dialogue: "Chaos may be our ally... if we survive it"
+
+// ===== VALIDATION STATUS =====
+
+// ✅ Zone ID: Z3_loom_crossroads (GridCoord 103,0,0)
+// ✅ Mesh Path: Pending greybox generation
+// ✅ Spawn Points: South edge, facing north toward plinth
+// ✅ Triggers: 5 defined (choice, 2 VFX, entry dialogue, exit transition)
+// ✅ Anchors: 3 conduits at 120° intervals (spec-accurate positions)
+// ⏳ Navigation Mesh: Placeholder, pending generation
+// ✅ Dialogue Nodes: 4 defined (arrival, choice, 2 branch commentaries)
+// ✅ Cinematic Triggers: 1 defined (crossroads_reveal)
+// ✅ Decision Prompts: 1 defined (storm_routing with 2 options)
