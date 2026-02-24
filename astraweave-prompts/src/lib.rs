@@ -1723,6 +1723,36 @@ mod tests {
     }
 
     #[test]
+    fn test_template_format_description_exact_strings() {
+        // Kills: replace TemplateFormat::description -> &'static str with "xyzzy"
+        // Assert each variant returns a non-trivial, specific description.
+        let hb = TemplateFormat::Handlebars.description();
+        let si = TemplateFormat::Simple.description();
+        let j2 = TemplateFormat::Jinja2.description();
+
+        assert!(hb.contains("Mustache"), "Handlebars description must mention Mustache, got: {hb}");
+        assert!(si.contains("interpolation"), "Simple description must mention interpolation, got: {si}");
+        assert!(j2.contains("Python"), "Jinja2 description must mention Python, got: {j2}");
+
+        // "xyzzy" would fail all three contain checks
+        assert_ne!(hb, "xyzzy");
+        assert_ne!(si, "xyzzy");
+        assert_ne!(j2, "xyzzy");
+    }
+
+    #[test]
+    fn test_age_seconds_returns_nonzero_for_past_created_at() {
+        // Kills: replace TemplateMetadata::age_seconds -> u64 with 0
+        // Create metadata with created_at far in the past, so age_seconds must be > 0.
+        let mut meta = TemplateMetadata::new("age_test");
+        meta.created_at = 1_000_000; // ~Jan 12, 1970 — guaranteed to be in the past
+        let age = meta.age_seconds();
+        // current_timestamp() is well past 1_000_000, so age must be large
+        assert!(age > 1_000_000, "age_seconds must be > 1M for a very old timestamp, got {age}");
+        // With the mutation (→ 0), this assert fails
+    }
+
+    #[test]
     fn update_avg_time_zero_count_guard() {
         // Mutant: `> 0.0` → `>= 0.0` in update_avg_time (lib.rs:922)
         // When successful_renders == 0, new_count == 0.0:
