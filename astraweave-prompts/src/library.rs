@@ -1106,4 +1106,20 @@ mod tests {
         assert!(lib.has_collection("default"), "should have default collection");
         assert_eq!(lib.total_template_count(), 0, "no templates from nonexistent dir");
     }
+
+    #[test]
+    fn test_load_from_directory_with_existing_file_not_dir_kills_and_or_mutant() {
+        // Remediation: kills "&& → ||" in load_from_directory
+        // A path that EXISTS but is NOT a directory:
+        //   Normal (&&): exists=true && is_dir=false → false → skip block → Ok
+        //   Mutant (||): exists=true || is_dir=false → true → read_dir(file) → Err
+        let temp = std::env::temp_dir().join("astraweave_mutant_test_lib_340.txt");
+        std::fs::write(&temp, "not a directory").unwrap();
+        let result = TemplateLibrary::load_from_directory(temp.clone());
+        let _ = std::fs::remove_file(&temp);
+        assert!(
+            result.is_ok(),
+            "loading from file path (not dir) should succeed (skip non-dir)"
+        );
+    }
 }
