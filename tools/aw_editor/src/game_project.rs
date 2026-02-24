@@ -171,8 +171,8 @@ impl GameProject {
 
     /// Save the game project to a TOML file
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), GameProjectError> {
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| GameProjectError::Serialize(e.to_string()))?;
+        let content =
+            toml::to_string_pretty(self).map_err(|e| GameProjectError::Serialize(e.to_string()))?;
 
         std::fs::write(path.as_ref(), content).map_err(|e| GameProjectError::Io(e.to_string()))
     }
@@ -229,9 +229,7 @@ impl GameProject {
     pub fn summary(&self) -> String {
         format!(
             "{} v{} ({})",
-            self.project.name,
-            self.project.version,
-            self.build.default_target
+            self.project.name, self.project.version, self.build.default_target
         )
     }
 

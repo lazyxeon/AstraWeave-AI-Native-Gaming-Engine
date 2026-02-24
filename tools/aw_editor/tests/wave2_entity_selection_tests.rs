@@ -126,7 +126,11 @@ fn validation_zero_scale_x_is_error() {
     let mut entity = EditorEntity::new(1, "Bad".to_string());
     entity.scale = Vec3::new(0.0, 1.0, 1.0);
     assert!(!entity.is_valid());
-    assert!(entity.validate().errors.iter().any(|e| e.to_lowercase().contains("scale")));
+    assert!(entity
+        .validate()
+        .errors
+        .iter()
+        .any(|e| e.to_lowercase().contains("scale")));
 }
 
 #[test]
@@ -561,7 +565,9 @@ fn stats_mesh_percentage_calculation() {
 fn stats_texture_percentage_calculation() {
     let mut mgr = EntityManager::new();
     let id = mgr.create("WithTex".to_string());
-    mgr.get_mut(id).unwrap().set_texture(MaterialSlot::Albedo, PathBuf::from("t.png"));
+    mgr.get_mut(id)
+        .unwrap()
+        .set_texture(MaterialSlot::Albedo, PathBuf::from("t.png"));
     mgr.create("NoTex1".to_string());
     mgr.create("NoTex2".to_string());
     mgr.create("NoTex3".to_string());
@@ -577,8 +583,14 @@ fn stats_component_percentage_calculation() {
     let id2 = mgr.create("WithComp2".to_string());
     mgr.create("NoComp".to_string());
 
-    mgr.get_mut(id1).unwrap().components.insert("Health".to_string(), serde_json::json!(100));
-    mgr.get_mut(id2).unwrap().components.insert("AI".to_string(), serde_json::json!(true));
+    mgr.get_mut(id1)
+        .unwrap()
+        .components
+        .insert("Health".to_string(), serde_json::json!(100));
+    mgr.get_mut(id2)
+        .unwrap()
+        .components
+        .insert("AI".to_string(), serde_json::json!(true));
 
     let s = mgr.stats();
     assert!((s.component_percentage() - 66.66).abs() < 1.0);
@@ -975,7 +987,9 @@ fn entity_components_crud() {
     let mut entity = EditorEntity::new(1, "E".to_string());
     assert!(entity.components.is_empty());
 
-    entity.components.insert("Health".to_string(), serde_json::json!({"value": 100}));
+    entity
+        .components
+        .insert("Health".to_string(), serde_json::json!({"value": 100}));
     assert_eq!(entity.components.len(), 1);
     assert!(entity.components.contains_key("Health"));
 

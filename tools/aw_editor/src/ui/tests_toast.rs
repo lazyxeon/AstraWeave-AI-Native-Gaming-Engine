@@ -15,10 +15,10 @@ mod tests {
     fn test_toast_actions() {
         let action = ToastAction::Undo;
         assert_eq!(action.label(), "Undo");
-        
+
         let action = ToastAction::Retry;
         assert_eq!(action.label(), "Retry");
-        
+
         let action = ToastAction::ViewDetails("log.txt".into());
         assert_eq!(action.label(), "Details");
     }
@@ -37,7 +37,7 @@ mod tests {
             .with_duration(Duration::from_secs(10))
             .with_group("group1")
             .with_action(ToastAction::Retry);
-            
+
         assert_eq!(toast.duration.as_secs(), 10);
         assert_eq!(toast.group_key, Some("group1".to_string()));
         assert_eq!(toast.actions.len(), 1);
@@ -45,17 +45,16 @@ mod tests {
 
     #[test]
     fn test_toast_should_remove() {
-        let toast = Toast::new("Test", ToastLevel::Info)
-            .with_duration(Duration::from_secs(0)); // Expired immediately
-        
+        let toast = Toast::new("Test", ToastLevel::Info).with_duration(Duration::from_secs(0)); // Expired immediately
+
         std::thread::sleep(Duration::from_millis(10));
         assert!(toast.should_remove());
-        
-        let mut toast_hovered = Toast::new("Test", ToastLevel::Info)
-            .with_duration(Duration::from_secs(0));
+
+        let mut toast_hovered =
+            Toast::new("Test", ToastLevel::Info).with_duration(Duration::from_secs(0));
         toast_hovered.hovered = true;
         assert!(!toast_hovered.should_remove());
-        
+
         let mut toast_dismissed = Toast::new("Test", ToastLevel::Info);
         toast_dismissed.dismissed = true;
         assert!(toast_dismissed.should_remove());
@@ -64,13 +63,13 @@ mod tests {
     #[test]
     fn test_toast_manager_deduplication() {
         let mut manager = ToastManager::new();
-        
+
         manager.add(Toast::new("T1", ToastLevel::Info).with_group("g1"));
         assert_eq!(manager.active_count(), 1);
-        
+
         manager.add(Toast::new("T2", ToastLevel::Info).with_group("g1"));
         assert_eq!(manager.active_count(), 1); // Should replace previous
-        
+
         manager.add(Toast::new("T3", ToastLevel::Info).with_group("g2"));
         assert_eq!(manager.active_count(), 2);
     }

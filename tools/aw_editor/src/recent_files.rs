@@ -25,12 +25,12 @@ impl Default for RecentFilesManager {
 
 impl RecentFilesManager {
     pub fn new() -> Self {
-        Self { 
+        Self {
             files: Vec::new(),
             storage_path: default_storage_path(),
         }
     }
-    
+
     pub fn with_storage_path(path: PathBuf) -> Self {
         Self {
             files: Vec::new(),
@@ -63,7 +63,8 @@ impl RecentFilesManager {
     pub fn save(&self) -> Result<()> {
         let json =
             serde_json::to_string_pretty(&self).context("Failed to serialize recent files")?;
-        fs::write(&self.storage_path, json).with_context(|| format!("Failed to write recent files to {:?}", self.storage_path))?;
+        fs::write(&self.storage_path, json)
+            .with_context(|| format!("Failed to write recent files to {:?}", self.storage_path))?;
         Ok(())
     }
 
@@ -181,14 +182,14 @@ mod tests {
     fn test_manager() -> (RecentFilesManager, tempfile::TempPath) {
         let file = NamedTempFile::new().unwrap();
         let path = file.into_temp_path();
-        // Keep path alive but close file so we can write to it? 
+        // Keep path alive but close file so we can write to it?
         // Or just generate a random path in temp dir.
         // NamedTempFile deletes on drop. useful.
-        
+
         let manager = RecentFilesManager::with_storage_path(path.to_path_buf());
         (manager, path)
     }
-    
+
     #[test]
     fn test_recent_files_add() {
         let (mut manager, _path) = test_manager();
@@ -238,44 +239,44 @@ mod tests {
 
         assert_eq!(manager.get_files().len(), 0);
     }
-    
+
     #[test]
     fn test_persistence() {
         let file = NamedTempFile::new().unwrap();
         let path = file.path().to_path_buf();
         // Allow file to be deleted/closed so we can write
         drop(file);
-        
+
         {
             let mut manager = RecentFilesManager::with_storage_path(path.clone());
             manager.add_file(PathBuf::from("persist.ron"));
         } // drops manager, file should be written
-        
+
         assert!(path.exists());
-        
+
         let content = fs::read_to_string(&path).unwrap();
         assert!(content.contains("persist.ron"));
-        
+
         fs::remove_file(path).unwrap();
     }
-    
+
     #[test]
     fn test_remove_missing_files() {
         let (mut manager, _path) = test_manager();
-        
+
         // create a real file
         let real_file = NamedTempFile::new().unwrap();
         let real_path = real_file.path().to_path_buf();
-        
+
         let fake_path = PathBuf::from("non_existent_file_xyz.ron");
-        
+
         manager.add_file(real_path.clone());
         manager.add_file(fake_path.clone());
-        
+
         assert_eq!(manager.get_files().len(), 2);
-        
+
         manager.remove_missing_files();
-        
+
         assert_eq!(manager.get_files().len(), 1);
         assert_eq!(manager.get_files()[0], real_path);
     }

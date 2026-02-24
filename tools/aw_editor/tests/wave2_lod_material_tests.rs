@@ -170,9 +170,15 @@ fn reduction_method_all_count() {
 
 #[test]
 fn reduction_method_names() {
-    assert_eq!(ReductionMethod::QuadricErrorMetric.name(), "Quadric Error Metric");
+    assert_eq!(
+        ReductionMethod::QuadricErrorMetric.name(),
+        "Quadric Error Metric"
+    );
     assert_eq!(ReductionMethod::EdgeCollapse.name(), "Edge Collapse");
-    assert_eq!(ReductionMethod::VertexClustering.name(), "Vertex Clustering");
+    assert_eq!(
+        ReductionMethod::VertexClustering.name(),
+        "Vertex Clustering"
+    );
     assert_eq!(ReductionMethod::Simplygon.name(), "Simplygon");
 }
 
@@ -185,7 +191,10 @@ fn reduction_method_icons_non_empty() {
 
 #[test]
 fn reduction_method_default() {
-    assert_eq!(ReductionMethod::default(), ReductionMethod::QuadricErrorMetric);
+    assert_eq!(
+        ReductionMethod::default(),
+        ReductionMethod::QuadricErrorMetric
+    );
 }
 
 #[test]

@@ -136,7 +136,12 @@ impl ConnectionState {
     }
 
     pub fn is_active(&self) -> bool {
-        matches!(self, ConnectionState::Connecting | ConnectionState::Connected | ConnectionState::Reconnecting)
+        matches!(
+            self,
+            ConnectionState::Connecting
+                | ConnectionState::Connected
+                | ConnectionState::Reconnecting
+        )
     }
 
     pub fn is_stable(&self) -> bool {
@@ -204,11 +209,19 @@ impl InterestPolicy {
     }
 
     pub fn is_spatial(&self) -> bool {
-        matches!(self, InterestPolicy::Radius | InterestPolicy::FieldOfView | InterestPolicy::FieldOfViewWithLOS)
+        matches!(
+            self,
+            InterestPolicy::Radius
+                | InterestPolicy::FieldOfView
+                | InterestPolicy::FieldOfViewWithLOS
+        )
     }
 
     pub fn has_visibility_check(&self) -> bool {
-        matches!(self, InterestPolicy::FieldOfView | InterestPolicy::FieldOfViewWithLOS)
+        matches!(
+            self,
+            InterestPolicy::FieldOfView | InterestPolicy::FieldOfViewWithLOS
+        )
     }
 }
 
@@ -365,7 +378,10 @@ pub enum NetworkAction {
     /// Kick a client from the server
     KickClient { client_id: u64, reason: String },
     /// Ban a client from the server
-    BanClient { client_id: u64, duration_seconds: Option<u64> },
+    BanClient {
+        client_id: u64,
+        duration_seconds: Option<u64>,
+    },
     /// Set the network role
     SetRole(NetworkRole),
     /// Set the interest management policy
@@ -599,25 +615,23 @@ impl NetworkingPanel {
 
         // Connect/Disconnect buttons
         if self.role != NetworkRole::Offline {
-            ui.horizontal(|ui| {
-                match self.connection_state {
-                    ConnectionState::Disconnected | ConnectionState::Error => {
-                        if ui.button("▶ Start").clicked() {
-                            self.start_networking();
-                        }
+            ui.horizontal(|ui| match self.connection_state {
+                ConnectionState::Disconnected | ConnectionState::Error => {
+                    if ui.button("▶ Start").clicked() {
+                        self.start_networking();
                     }
-                    ConnectionState::Connecting | ConnectionState::Reconnecting => {
-                        if ui.button("⏹ Cancel").clicked() {
-                            self.stop_networking();
-                        }
-                        ui.spinner();
+                }
+                ConnectionState::Connecting | ConnectionState::Reconnecting => {
+                    if ui.button("⏹ Cancel").clicked() {
+                        self.stop_networking();
                     }
-                    ConnectionState::Connected => {
-                        if ui.button("⏹ Stop").clicked() {
-                            self.stop_networking();
-                        }
-                        ui.label(format!("Uptime: {:.0}s", self.uptime_seconds));
+                    ui.spinner();
+                }
+                ConnectionState::Connected => {
+                    if ui.button("⏹ Stop").clicked() {
+                        self.stop_networking();
                     }
+                    ui.label(format!("Uptime: {:.0}s", self.uptime_seconds));
                 }
             });
         }
@@ -739,7 +753,11 @@ impl NetworkingPanel {
 
         // Server view - client list
         ui.horizontal(|ui| {
-            ui.label(format!("{}/{} clients connected", self.clients.len(), self.max_clients));
+            ui.label(format!(
+                "{}/{} clients connected",
+                self.clients.len(),
+                self.max_clients
+            ));
             if ui.button("🔄 Refresh").clicked() {
                 // Refresh client list
             }
@@ -762,10 +780,7 @@ impl NetworkingPanel {
                             let is_selected = self.selected_client_id == Some(client.id);
                             ui.horizontal(|ui| {
                                 ui.label(client.state.icon());
-                                if ui
-                                    .selectable_label(is_selected, &client.name)
-                                    .clicked()
-                                {
+                                if ui.selectable_label(is_selected, &client.name).clicked() {
                                     self.selected_client_id = Some(client.id);
                                 }
                                 ui.with_layout(
@@ -919,7 +934,10 @@ impl NetworkingPanel {
                     ui.label("Level:");
                     for level in CompressionLevel::all() {
                         if ui
-                            .selectable_label(self.compression_level == *level, format!("{:?}", level))
+                            .selectable_label(
+                                self.compression_level == *level,
+                                format!("{:?}", level),
+                            )
                             .clicked()
                         {
                             self.compression_level = *level;
@@ -1017,7 +1035,10 @@ impl NetworkingPanel {
                     } else {
                         Color32::GREEN
                     };
-                    ui.colored_label(loss_color, format!("{:.1}%", self.stats.packet_loss_percent));
+                    ui.colored_label(
+                        loss_color,
+                        format!("{:.1}%", self.stats.packet_loss_percent),
+                    );
                     ui.end_row();
                 });
 
@@ -1123,7 +1144,10 @@ impl NetworkingPanel {
         ui.group(|ui| {
             ui.label(RichText::new("Debug Options").strong());
 
-            ui.checkbox(&mut self.show_network_overlay, "Show network overlay in viewport");
+            ui.checkbox(
+                &mut self.show_network_overlay,
+                "Show network overlay in viewport",
+            );
             ui.checkbox(&mut self.log_packets, "Log packets to console");
         });
 
@@ -1177,54 +1201,62 @@ impl NetworkingPanel {
     }
 
     fn draw_bandwidth_graph(&self, ui: &mut Ui) {
-        let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 60.0), egui::Sense::hover());
-        
-        ui.painter().rect_filled(rect, 2.0, Color32::from_rgb(30, 30, 35));
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 60.0), egui::Sense::hover());
+
+        ui.painter()
+            .rect_filled(rect, 2.0, Color32::from_rgb(30, 30, 35));
 
         if self.bandwidth_history.len() < 2 {
             return;
         }
 
-        let max_value = self.bandwidth_history
+        let max_value = self
+            .bandwidth_history
             .iter()
             .flat_map(|(s, r)| [*s, *r])
             .fold(1.0f32, |a, b| a.max(b));
 
         // Draw sent (green) and received (blue)
         let step = rect.width() / self.bandwidth_history.len().max(1) as f32;
-        
+
         for (i, (sent, recv)) in self.bandwidth_history.iter().enumerate() {
             let x = rect.left() + i as f32 * step;
-            
+
             // Sent (green bar)
             let sent_height = (sent / max_value) * rect.height() * 0.9;
             let sent_rect = egui::Rect::from_min_size(
                 egui::Pos2::new(x, rect.bottom() - sent_height),
                 Vec2::new(step * 0.4, sent_height),
             );
-            ui.painter().rect_filled(sent_rect, 0.0, Color32::from_rgb(80, 200, 120));
-            
+            ui.painter()
+                .rect_filled(sent_rect, 0.0, Color32::from_rgb(80, 200, 120));
+
             // Received (blue bar)
             let recv_height = (recv / max_value) * rect.height() * 0.9;
             let recv_rect = egui::Rect::from_min_size(
                 egui::Pos2::new(x + step * 0.5, rect.bottom() - recv_height),
                 Vec2::new(step * 0.4, recv_height),
             );
-            ui.painter().rect_filled(recv_rect, 0.0, Color32::from_rgb(100, 150, 255));
+            ui.painter()
+                .rect_filled(recv_rect, 0.0, Color32::from_rgb(100, 150, 255));
         }
     }
 
     fn draw_ping_graph(&self, ui: &mut Ui) {
-        let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 40.0), egui::Sense::hover());
-        
-        ui.painter().rect_filled(rect, 2.0, Color32::from_rgb(30, 30, 35));
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 40.0), egui::Sense::hover());
+
+        ui.painter()
+            .rect_filled(rect, 2.0, Color32::from_rgb(30, 30, 35));
 
         if self.ping_history.len() < 2 {
             return;
         }
 
         let max_ping = self.ping_history.iter().cloned().fold(50.0f32, f32::max);
-        let points: Vec<egui::Pos2> = self.ping_history
+        let points: Vec<egui::Pos2> = self
+            .ping_history
             .iter()
             .enumerate()
             .map(|(i, &ping)| {
@@ -1235,7 +1267,10 @@ impl NetworkingPanel {
             .collect();
 
         if points.len() >= 2 {
-            ui.painter().add(egui::Shape::line(points, egui::Stroke::new(1.5, Color32::from_rgb(255, 200, 100))));
+            ui.painter().add(egui::Shape::line(
+                points,
+                egui::Stroke::new(1.5, Color32::from_rgb(255, 200, 100)),
+            ));
         }
     }
 
@@ -1670,10 +1705,10 @@ mod tests {
     #[test]
     fn test_role_switching() {
         let mut panel = NetworkingPanel::new();
-        
+
         panel.set_role(NetworkRole::Server);
         assert_eq!(panel.role(), NetworkRole::Server);
-        
+
         panel.set_role(NetworkRole::Client);
         assert_eq!(panel.role(), NetworkRole::Client);
     }
@@ -1691,7 +1726,7 @@ mod tests {
     fn test_interest_policy() {
         let mut panel = NetworkingPanel::new();
         assert_eq!(panel.interest_policy(), InterestPolicy::Radius);
-        
+
         panel.set_interest_policy(InterestPolicy::FieldOfViewWithLOS);
         assert_eq!(panel.interest_policy(), InterestPolicy::FieldOfViewWithLOS);
     }
@@ -1709,7 +1744,7 @@ mod tests {
     fn test_client_management() {
         let mut panel = NetworkingPanel::new();
         assert_eq!(panel.client_count(), 0);
-        
+
         panel.add_client(ClientInfo {
             id: 1,
             name: "Player1".to_string(),
@@ -1717,7 +1752,7 @@ mod tests {
             ping_ms: 50,
             ..Default::default()
         });
-        
+
         assert_eq!(panel.client_count(), 1);
     }
 
@@ -1739,7 +1774,7 @@ mod tests {
     fn test_lag_simulation() {
         let mut panel = NetworkingPanel::new();
         assert!(!panel.is_lag_simulation_enabled());
-        
+
         panel.set_lag_simulation(true, 100);
         assert!(panel.is_lag_simulation_enabled());
         assert_eq!(panel.lag_sim.latency_ms, 100);
@@ -2038,7 +2073,11 @@ mod tests {
             client_id: 99,
             duration_seconds: Some(3600),
         };
-        if let NetworkAction::BanClient { client_id, duration_seconds } = action {
+        if let NetworkAction::BanClient {
+            client_id,
+            duration_seconds,
+        } = action
+        {
             assert_eq!(client_id, 99);
             assert_eq!(duration_seconds, Some(3600));
         } else {
@@ -2049,13 +2088,19 @@ mod tests {
     #[test]
     fn test_network_action_set_role() {
         let action = NetworkAction::SetRole(NetworkRole::Server);
-        assert!(matches!(action, NetworkAction::SetRole(NetworkRole::Server)));
+        assert!(matches!(
+            action,
+            NetworkAction::SetRole(NetworkRole::Server)
+        ));
     }
 
     #[test]
     fn test_network_action_set_interest_policy() {
         let action = NetworkAction::SetInterestPolicy(InterestPolicy::Radius);
-        assert!(matches!(action, NetworkAction::SetInterestPolicy(InterestPolicy::Radius)));
+        assert!(matches!(
+            action,
+            NetworkAction::SetInterestPolicy(InterestPolicy::Radius)
+        ));
     }
 
     #[test]

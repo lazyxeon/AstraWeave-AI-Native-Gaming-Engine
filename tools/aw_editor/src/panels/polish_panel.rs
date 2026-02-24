@@ -266,7 +266,11 @@ pub struct Achievement {
 }
 
 impl Achievement {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -331,7 +335,6 @@ impl Default for GameFeelSettings {
         }
     }
 }
-
 
 impl Default for PolishPanel {
     fn default() -> Self {
@@ -536,7 +539,6 @@ impl PolishPanel {
         });
     }
 
-
     fn show_save_load_tab(&mut self, ui: &mut Ui) {
         ui.heading("Save/Load Configuration");
         ui.add_space(5.0);
@@ -624,7 +626,10 @@ impl PolishPanel {
                 ui.end_row();
 
                 ui.label("Scroll Speed:");
-                ui.add(egui::Slider::new(&mut self.credits_config.scroll_speed, 10.0..=200.0).suffix(" px/s"));
+                ui.add(
+                    egui::Slider::new(&mut self.credits_config.scroll_speed, 10.0..=200.0)
+                        .suffix(" px/s"),
+                );
                 ui.end_row();
 
                 ui.label("Music Track:");
@@ -633,7 +638,10 @@ impl PolishPanel {
             });
 
         ui.add_space(10.0);
-        ui.checkbox(&mut self.credits_config.music_enabled, "Enable music during credits");
+        ui.checkbox(
+            &mut self.credits_config.music_enabled,
+            "Enable music during credits",
+        );
 
         // Credits entries
         ui.add_space(10.0);
@@ -664,7 +672,10 @@ impl PolishPanel {
             ui.text_edit_singleline(&mut self.new_credit_name);
             ui.label("Role:");
             ui.text_edit_singleline(&mut self.new_credit_role);
-            if ui.button("Add Entry").clicked() && !self.new_credit_name.is_empty() && !self.new_credit_role.is_empty() {
+            if ui.button("Add Entry").clicked()
+                && !self.new_credit_name.is_empty()
+                && !self.new_credit_role.is_empty()
+            {
                 self.credits_config.entries.push((
                     std::mem::take(&mut self.new_credit_name),
                     std::mem::take(&mut self.new_credit_role),
@@ -720,12 +731,18 @@ impl PolishPanel {
         // Animations
         ui.group(|ui| {
             ui.label(RichText::new("Animations").strong());
-            ui.checkbox(&mut self.ui_polish.animations_enabled, "Enable UI animations");
-            
+            ui.checkbox(
+                &mut self.ui_polish.animations_enabled,
+                "Enable UI animations",
+            );
+
             if self.ui_polish.animations_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Speed:");
-                    ui.add(egui::Slider::new(&mut self.ui_polish.animation_speed, 0.1..=3.0).suffix("×"));
+                    ui.add(
+                        egui::Slider::new(&mut self.ui_polish.animation_speed, 0.1..=3.0)
+                            .suffix("×"),
+                    );
                 });
             }
         });
@@ -736,7 +753,7 @@ impl PolishPanel {
         ui.group(|ui| {
             ui.label(RichText::new("UI Sounds").strong());
             ui.checkbox(&mut self.ui_polish.sounds_enabled, "Enable UI sounds");
-            
+
             if self.ui_polish.sounds_enabled {
                 egui::Grid::new("ui_sounds_grid")
                     .num_columns(2)
@@ -758,12 +775,18 @@ impl PolishPanel {
         // Transitions
         ui.group(|ui| {
             ui.label(RichText::new("Screen Transitions").strong());
-            ui.checkbox(&mut self.ui_polish.transitions_enabled, "Enable screen transitions");
-            
+            ui.checkbox(
+                &mut self.ui_polish.transitions_enabled,
+                "Enable screen transitions",
+            );
+
             if self.ui_polish.transitions_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Duration:");
-                    ui.add(egui::Slider::new(&mut self.ui_polish.transition_duration, 0.1..=2.0).suffix("s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.ui_polish.transition_duration, 0.1..=2.0)
+                            .suffix("s"),
+                    );
                 });
 
                 ui.horizontal(|ui| {
@@ -771,13 +794,41 @@ impl PolishPanel {
                     egui::ComboBox::from_id_salt("transition_style")
                         .selected_text(format!("{:?}", self.ui_polish.transition_style))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::Fade, "Fade");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::SlideRight, "Slide Right");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::SlideLeft, "Slide Left");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::SlideTop, "Slide Top");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::SlideBottom, "Slide Bottom");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::Dissolve, "Dissolve");
-                            ui.selectable_value(&mut self.ui_polish.transition_style, TransitionStyle::Instant, "Instant");
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::Fade,
+                                "Fade",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::SlideRight,
+                                "Slide Right",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::SlideLeft,
+                                "Slide Left",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::SlideTop,
+                                "Slide Top",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::SlideBottom,
+                                "Slide Bottom",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::Dissolve,
+                                "Dissolve",
+                            );
+                            ui.selectable_value(
+                                &mut self.ui_polish.transition_style,
+                                TransitionStyle::Instant,
+                                "Instant",
+                            );
                         });
                 });
             }
@@ -788,22 +839,30 @@ impl PolishPanel {
         // Other UI features
         ui.group(|ui| {
             ui.label(RichText::new("Other Features").strong());
-            ui.checkbox(&mut self.ui_polish.button_hover_enabled, "Button hover effects");
+            ui.checkbox(
+                &mut self.ui_polish.button_hover_enabled,
+                "Button hover effects",
+            );
             ui.checkbox(&mut self.ui_polish.tooltips_enabled, "Tooltips");
-            
+
             if self.ui_polish.tooltips_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Delay:");
-                    ui.add(egui::Slider::new(&mut self.ui_polish.tooltip_delay, 0.0..=2.0).suffix("s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.ui_polish.tooltip_delay, 0.0..=2.0).suffix("s"),
+                    );
                 });
             }
 
             ui.checkbox(&mut self.ui_polish.notifications_enabled, "Notifications");
-            
+
             if self.ui_polish.notifications_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Duration:");
-                    ui.add(egui::Slider::new(&mut self.ui_polish.notification_duration, 1.0..=10.0).suffix("s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.ui_polish.notification_duration, 1.0..=10.0)
+                            .suffix("s"),
+                    );
                 });
             }
         });
@@ -814,7 +873,7 @@ impl PolishPanel {
         ui.add_space(5.0);
 
         ui.checkbox(&mut self.achievements.enabled, "Enable achievement system");
-        
+
         if !self.achievements.enabled {
             ui.label("Achievement system is disabled");
             return;
@@ -825,17 +884,26 @@ impl PolishPanel {
         // Settings
         ui.group(|ui| {
             ui.label(RichText::new("Settings").strong());
-            ui.checkbox(&mut self.achievements.show_notifications, "Show unlock notifications");
-            
+            ui.checkbox(
+                &mut self.achievements.show_notifications,
+                "Show unlock notifications",
+            );
+
             if self.achievements.show_notifications {
                 ui.horizontal(|ui| {
                     ui.label("Duration:");
-                    ui.add(egui::Slider::new(&mut self.achievements.notification_duration, 2.0..=10.0).suffix("s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.achievements.notification_duration, 2.0..=10.0)
+                            .suffix("s"),
+                    );
                 });
             }
 
-            ui.checkbox(&mut self.achievements.unlock_sound_enabled, "Play unlock sound");
-            
+            ui.checkbox(
+                &mut self.achievements.unlock_sound_enabled,
+                "Play unlock sound",
+            );
+
             if self.achievements.unlock_sound_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Sound:");
@@ -843,14 +911,23 @@ impl PolishPanel {
                 });
             }
 
-            ui.checkbox(&mut self.achievements.steam_integration, "Steam integration");
+            ui.checkbox(
+                &mut self.achievements.steam_integration,
+                "Steam integration",
+            );
         });
 
         ui.add_space(10.0);
 
         // Achievements list
         ui.separator();
-        ui.label(RichText::new(format!("Achievements ({})", self.achievements.achievements.len())).strong());
+        ui.label(
+            RichText::new(format!(
+                "Achievements ({})",
+                self.achievements.achievements.len()
+            ))
+            .strong(),
+        );
 
         egui::ScrollArea::vertical()
             .max_height(300.0)
@@ -896,9 +973,9 @@ impl PolishPanel {
                 ui.end_row();
             });
 
-        if ui.button("➕ Add Achievement").clicked() 
-            && !self.new_achievement_id.is_empty() 
-            && !self.new_achievement_name.is_empty() 
+        if ui.button("➕ Add Achievement").clicked()
+            && !self.new_achievement_id.is_empty()
+            && !self.new_achievement_name.is_empty()
         {
             self.achievements.achievements.push(Achievement::new(
                 std::mem::take(&mut self.new_achievement_id),
@@ -915,20 +992,29 @@ impl PolishPanel {
         // Camera effects
         ui.group(|ui| {
             ui.label(RichText::new("Camera Effects").strong());
-            
+
             ui.checkbox(&mut self.game_feel.screen_shake_enabled, "Screen shake");
             if self.game_feel.screen_shake_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.screen_shake_intensity, 0.0..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.game_feel.screen_shake_intensity,
+                        0.0..=2.0,
+                    ));
                 });
             }
 
-            ui.checkbox(&mut self.game_feel.camera_zoom_enabled, "Camera zoom on events");
+            ui.checkbox(
+                &mut self.game_feel.camera_zoom_enabled,
+                "Camera zoom on events",
+            );
             if self.game_feel.camera_zoom_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.camera_zoom_intensity, 0.0..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.game_feel.camera_zoom_intensity,
+                        0.0..=2.0,
+                    ));
                 });
             }
         });
@@ -938,12 +1024,18 @@ impl PolishPanel {
         // Hit effects
         ui.group(|ui| {
             ui.label(RichText::new("Hit Effects").strong());
-            
-            ui.checkbox(&mut self.game_feel.hit_stop_enabled, "Hit stop (freeze frames)");
+
+            ui.checkbox(
+                &mut self.game_feel.hit_stop_enabled,
+                "Hit stop (freeze frames)",
+            );
             if self.game_feel.hit_stop_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Duration:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.hit_stop_duration, 10..=200).suffix(" ms"));
+                    ui.add(
+                        egui::Slider::new(&mut self.game_feel.hit_stop_duration, 10..=200)
+                            .suffix(" ms"),
+                    );
                 });
             }
         });
@@ -953,12 +1045,15 @@ impl PolishPanel {
         // Particles
         ui.group(|ui| {
             ui.label(RichText::new("Particles").strong());
-            
+
             ui.checkbox(&mut self.game_feel.particles_enabled, "Particle effects");
             if self.game_feel.particles_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Density:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.particle_density, 0.1..=2.0).suffix("×"));
+                    ui.add(
+                        egui::Slider::new(&mut self.game_feel.particle_density, 0.1..=2.0)
+                            .suffix("×"),
+                    );
                 });
             }
         });
@@ -968,12 +1063,18 @@ impl PolishPanel {
         // Post-processing effects
         ui.group(|ui| {
             ui.label(RichText::new("Post-Processing Effects").strong());
-            
-            ui.checkbox(&mut self.game_feel.chromatic_aberration, "Chromatic aberration");
+
+            ui.checkbox(
+                &mut self.game_feel.chromatic_aberration,
+                "Chromatic aberration",
+            );
             if self.game_feel.chromatic_aberration {
                 ui.horizontal(|ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.chromatic_intensity, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.game_feel.chromatic_intensity,
+                        0.0..=1.0,
+                    ));
                 });
             }
 
@@ -981,7 +1082,10 @@ impl PolishPanel {
             if self.game_feel.motion_blur {
                 ui.horizontal(|ui| {
                     ui.label("Samples:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.motion_blur_samples, 2..=16));
+                    ui.add(egui::Slider::new(
+                        &mut self.game_feel.motion_blur_samples,
+                        2..=16,
+                    ));
                 });
             }
 
@@ -989,7 +1093,10 @@ impl PolishPanel {
             if self.game_feel.vignette_enabled {
                 ui.horizontal(|ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.game_feel.vignette_intensity, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.game_feel.vignette_intensity,
+                        0.0..=1.0,
+                    ));
                 });
             }
         });
@@ -1037,7 +1144,7 @@ mod tests {
 
         panel.active_tab = PolishTab::SaveLoad;
         assert_eq!(panel.active_tab, PolishTab::SaveLoad);
-        
+
         panel.active_tab = PolishTab::Credits;
         assert_eq!(panel.active_tab, PolishTab::Credits);
     }
@@ -1061,7 +1168,9 @@ mod tests {
     #[test]
     fn test_credits_add_entry() {
         let mut config = CreditsConfig::default();
-        config.entries.push(("John Doe".to_string(), "Lead Developer".to_string()));
+        config
+            .entries
+            .push(("John Doe".to_string(), "Lead Developer".to_string()));
         assert_eq!(config.entries.len(), 3);
     }
 
@@ -1083,7 +1192,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(settings.transition_style, TransitionStyle::SlideRight);
-        
+
         settings.transition_style = TransitionStyle::Dissolve;
         assert_eq!(settings.transition_style, TransitionStyle::Dissolve);
     }
@@ -1111,7 +1220,11 @@ mod tests {
     #[test]
     fn test_add_achievement() {
         let mut settings = AchievementSettings::default();
-        settings.achievements.push(Achievement::new("test_id", "Test Achievement", "Test description"));
+        settings.achievements.push(Achievement::new(
+            "test_id",
+            "Test Achievement",
+            "Test description",
+        ));
         assert_eq!(settings.achievements.len(), 1);
         assert_eq!(settings.achievements[0].id, "test_id");
     }
@@ -1228,7 +1341,8 @@ mod tests {
 
     #[test]
     fn test_achievement_hidden_flag() {
-        let mut achievement = Achievement::new("secret", "Secret Achievement", "Discover the secret");
+        let mut achievement =
+            Achievement::new("secret", "Secret Achievement", "Discover the secret");
         achievement.hidden = true;
         assert!(achievement.hidden);
     }
@@ -1285,7 +1399,7 @@ mod tests {
         let panel = PolishPanel::new();
         // Test that we can switch to all tabs
         assert_eq!(panel.active_tab, PolishTab::Splash);
-        
+
         let mut panel = panel;
         panel.active_tab = PolishTab::Loading;
         panel.active_tab = PolishTab::SaveLoad;
@@ -1293,7 +1407,7 @@ mod tests {
         panel.active_tab = PolishTab::UiPolish;
         panel.active_tab = PolishTab::Achievements;
         panel.active_tab = PolishTab::GameFeel;
-        
+
         assert_eq!(panel.active_tab, PolishTab::GameFeel);
     }
 
@@ -1301,7 +1415,9 @@ mod tests {
     fn test_credits_multiple_entries() {
         let mut config = CreditsConfig::default();
         for i in 0..10 {
-            config.entries.push((format!("Person {}", i), format!("Role {}", i)));
+            config
+                .entries
+                .push((format!("Person {}", i), format!("Role {}", i)));
         }
         assert_eq!(config.entries.len(), 12); // 2 default + 10 new
     }
@@ -1329,7 +1445,7 @@ mod tests {
             vignette_enabled: false,
             ..Default::default()
         };
-        
+
         assert!(!settings.screen_shake_enabled);
         assert!(!settings.hit_stop_enabled);
         assert!(!settings.camera_zoom_enabled);
@@ -1348,7 +1464,7 @@ mod tests {
             notifications_enabled: false,
             ..Default::default()
         };
-        
+
         assert!(!settings.animations_enabled);
         assert!(!settings.sounds_enabled);
         assert!(!settings.transitions_enabled);
@@ -1457,4 +1573,3 @@ mod tests {
         assert_eq!(style, TransitionStyle::Fade);
     }
 }
-

@@ -132,7 +132,7 @@ use std::{fs, path::PathBuf};
 use tab_viewer::{EditorDrawContext, EditorTabViewer, EntityInfo};
 use tracing::{debug, error, info, span, warn, Level};
 use ui::StatusBar;
-use ui::{AlignDirection, DistributeDirection, MenuBar, MenuActionHandler};
+use ui::{AlignDirection, DistributeDirection, MenuActionHandler, MenuBar};
 use uuid::Uuid;
 use viewport::ViewportWidget; // Phase 1.1
 
@@ -629,50 +629,59 @@ impl EditorApp {
     fn toast_info(&mut self, message: impl Into<String>) {
         self.toast_manager.info(message);
     }
-    
+
     fn toast_warning(&mut self, message: impl Into<String>) {
         self.toast_manager.warning(message);
     }
-    
+
     /// Show success toast with undo action
     fn toast_success_with_undo(&mut self, message: impl Into<String>) {
         self.toast_manager.success_with_undo(message);
     }
-    
+
     /// Show error toast with retry action
     fn toast_error_with_retry(&mut self, message: impl Into<String>) {
         self.toast_manager.error_with_retry(message);
     }
 
     // Week 6: Progress tracking helper methods
-    
+
     /// Start a new progress task
-    fn start_progress(&mut self, label: impl Into<String>, category: ui::TaskCategory) -> ui::TaskId {
+    fn start_progress(
+        &mut self,
+        label: impl Into<String>,
+        category: ui::TaskCategory,
+    ) -> ui::TaskId {
         self.progress_manager.start_task(label, category)
     }
-    
+
     /// Start a cancellable progress task
-    fn start_progress_cancellable(&mut self, label: impl Into<String>, category: ui::TaskCategory) -> ui::TaskId {
-        self.progress_manager.start_cancellable_task(label, category)
+    fn start_progress_cancellable(
+        &mut self,
+        label: impl Into<String>,
+        category: ui::TaskCategory,
+    ) -> ui::TaskId {
+        self.progress_manager
+            .start_cancellable_task(label, category)
     }
-    
+
     /// Update progress for a task (0.0 - 1.0)
     fn update_progress(&mut self, task_id: ui::TaskId, progress: f32, status: impl Into<String>) {
         self.progress_manager.update(task_id, progress, status);
     }
-    
+
     /// Complete a progress task
     fn complete_progress(&mut self, task_id: ui::TaskId) {
         self.progress_manager.complete_task(task_id);
     }
-    
+
     /// Fail a progress task with an error
     fn fail_progress(&mut self, task_id: ui::TaskId, error: impl Into<String>) {
         self.progress_manager.fail_task(task_id, error);
     }
 
     /// Week 6 Day 5: Sample current resource usage
-    /// 
+    ///
     /// This provides rough estimates of memory and GPU usage.
     /// For precise monitoring, consider using platform-specific APIs.
     fn sample_resource_usage(&mut self) {
@@ -680,12 +689,12 @@ impl EditorApp {
         // Note: This is a rough estimate. Real implementation would use:
         // - sysinfo crate for system memory
         // - wgpu adapter info for GPU memory
-        
+
         // For now, use process-level estimates
         #[cfg(windows)]
         {
             use std::mem::MaybeUninit;
-            
+
             // Get process memory info on Windows
             #[repr(C)]
             struct ProcessMemoryCounters {
@@ -700,7 +709,7 @@ impl EditorApp {
                 pagefile_usage: usize,
                 peak_pagefile_usage: usize,
             }
-            
+
             #[link(name = "psapi")]
             extern "system" {
                 fn GetProcessMemoryInfo(
@@ -710,7 +719,7 @@ impl EditorApp {
                 ) -> i32;
                 fn GetCurrentProcess() -> *mut std::ffi::c_void;
             }
-            
+
             #[repr(C)]
             struct MemoryStatusEx {
                 length: u32,
@@ -723,19 +732,19 @@ impl EditorApp {
                 avail_virtual: u64,
                 avail_extended_virtual: u64,
             }
-            
+
             #[link(name = "kernel32")]
             extern "system" {
                 fn GlobalMemoryStatusEx(buffer: *mut MemoryStatusEx) -> i32;
             }
-            
+
             // SAFETY: Calling Win32 `GetProcessMemoryInfo` and `GlobalMemoryStatusEx`
             // with properly sized and initialized structs. These are safe Win32 API calls
             // that only read process memory statistics.
             unsafe {
                 let mut counters = MaybeUninit::<ProcessMemoryCounters>::uninit();
                 (*counters.as_mut_ptr()).cb = std::mem::size_of::<ProcessMemoryCounters>() as u32;
-                
+
                 if GetProcessMemoryInfo(
                     GetCurrentProcess(),
                     counters.as_mut_ptr(),
@@ -745,18 +754,18 @@ impl EditorApp {
                     let counters = counters.assume_init();
                     self.resource_usage.memory_used = counters.working_set_size as u64;
                 }
-                
+
                 // Get system memory
                 let mut status = MaybeUninit::<MemoryStatusEx>::uninit();
                 (*status.as_mut_ptr()).length = std::mem::size_of::<MemoryStatusEx>() as u32;
-                
+
                 if GlobalMemoryStatusEx(status.as_mut_ptr()) != 0 {
                     let status = status.assume_init();
                     self.resource_usage.memory_total = status.total_phys;
                 }
             }
         }
-        
+
         #[cfg(not(windows))]
         {
             // Fallback: just use rough estimates
@@ -764,7 +773,7 @@ impl EditorApp {
             self.resource_usage.memory_used = 0;
             self.resource_usage.memory_total = 0;
         }
-        
+
         // GPU stats would come from wgpu adapter/device
         // For now, leave as 0 (placeholder)
         // Real implementation:
@@ -1062,12 +1071,14 @@ impl EditorApp {
             // Check if there's an auto-save to recover
             if let Some(autosave_path) = self.get_most_recent_autosave() {
                 // Read lock file for session info
-                let session_info = fs::read_to_string(&self.lock_file_path)
-                    .unwrap_or_default();
+                let session_info = fs::read_to_string(&self.lock_file_path).unwrap_or_default();
 
                 self.console_logs.push(format!(
                     "⚠️  Previous session may have crashed. Found auto-save: {}",
-                    autosave_path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown")
+                    autosave_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
                 ));
 
                 // Log session info if available
@@ -1081,9 +1092,8 @@ impl EditorApp {
                 self.show_recovery_dialog = true;
             } else {
                 // Lock file exists but no auto-save - just clean up
-                self.console_logs.push(
-                    "⚠️  Previous session may have crashed (no auto-save found)".to_string()
-                );
+                self.console_logs
+                    .push("⚠️  Previous session may have crashed (no auto-save found)".to_string());
                 self.remove_lock_file();
             }
         }
@@ -1095,10 +1105,13 @@ impl EditorApp {
             // Load the auto-save file
             self.load_scene_from_path(&path);
             self.toast(
-                format!("🔄 Recovered from auto-save: {}",
-                    path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown")
+                format!(
+                    "🔄 Recovered from auto-save: {}",
+                    path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
                 ),
-                ToastLevel::Success
+                ToastLevel::Success,
             );
 
             // Clear the recovery state and create new lock file
@@ -1114,7 +1127,8 @@ impl EditorApp {
         self.show_recovery_dialog = false;
         self.remove_lock_file();
         self.create_lock_file();
-        self.console_logs.push("ℹ️  Recovery declined - starting fresh".to_string());
+        self.console_logs
+            .push("ℹ️  Recovery declined - starting fresh".to_string());
     }
 
     /// Week 4 Day 5: Validate model file before import
@@ -1137,7 +1151,9 @@ impl EditorApp {
             Ok(m) => m,
             Err(e) => {
                 result.is_valid = false;
-                result.warnings.push(format!("Cannot read file metadata: {}", e));
+                result
+                    .warnings
+                    .push(format!("Cannot read file metadata: {}", e));
                 return result;
             }
         };
@@ -1146,7 +1162,9 @@ impl EditorApp {
         let file_size_mb = file_size as f64 / (1024.0 * 1024.0);
 
         // Info: File size
-        result.info.push(format!("File size: {:.2} MB", file_size_mb));
+        result
+            .info
+            .push(format!("File size: {:.2} MB", file_size_mb));
 
         // Warning: Very large files
         if file_size_mb > 100.0 {
@@ -1182,7 +1200,9 @@ impl EditorApp {
             }
             _ => {
                 result.is_valid = false;
-                result.warnings.push(format!("Unsupported format: .{}", extension));
+                result
+                    .warnings
+                    .push(format!("Unsupported format: .{}", extension));
             }
         }
 
@@ -1198,7 +1218,9 @@ impl EditorApp {
                         result.info.push("Valid GLB magic header".to_string());
                     } else {
                         result.is_valid = false;
-                        result.warnings.push("Invalid GLB header - file may be corrupted".to_string());
+                        result
+                            .warnings
+                            .push("Invalid GLB header - file may be corrupted".to_string());
                     }
                 }
             }
@@ -1208,12 +1230,12 @@ impl EditorApp {
     }
 
     /// Week 4 Day 3-4: Import texture with GPU-optimized compression
-    /// 
+    ///
     /// Validates texture dimensions and saves in GPU-friendly format.
     /// For production BC7/ASTC compression, use the asset pipeline CLI tools.
     fn import_texture_with_compression(&mut self, path: &std::path::Path, file_name: &str) {
         self.log(format!("🖼️ Importing texture: {}", file_name));
-        
+
         // Load the image
         let image = match image::open(path) {
             Ok(img) => img,
@@ -1223,38 +1245,52 @@ impl EditorApp {
                 return;
             }
         };
-        
+
         let rgba = image.to_rgba8();
         let (width, height) = rgba.dimensions();
         let original_size = rgba.len();
-        
-        self.log(format!("📊 Image dimensions: {}×{}, {} bytes", width, height, original_size));
-        
+
+        self.log(format!(
+            "📊 Image dimensions: {}×{}, {} bytes",
+            width, height, original_size
+        ));
+
         // Check if dimensions are divisible by 4 (required for BC7/DXT block compression)
         let gpu_compatible = width % 4 == 0 && height % 4 == 0;
         if !gpu_compatible {
-            self.log(format!("⚠️ GPU block compression requires dimensions divisible by 4 (got {}×{})", width, height));
-            self.log("💡 Consider resizing to nearest power of 2 (e.g., 512×512, 1024×1024, 2048×2048)".to_string());
+            self.log(format!(
+                "⚠️ GPU block compression requires dimensions divisible by 4 (got {}×{})",
+                width, height
+            ));
+            self.log(
+                "💡 Consider resizing to nearest power of 2 (e.g., 512×512, 1024×1024, 2048×2048)"
+                    .to_string(),
+            );
         }
-        
+
         // Check power of 2 for best GPU compatibility
         let is_pow2 = width.is_power_of_two() && height.is_power_of_two();
         if !is_pow2 {
-            self.log(format!("💡 Non-power-of-2 dimensions ({}×{}) may have reduced GPU compatibility", width, height));
+            self.log(format!(
+                "💡 Non-power-of-2 dimensions ({}×{}) may have reduced GPU compatibility",
+                width, height
+            ));
         }
-        
+
         // Save as optimized PNG (lossless, good compression)
         let start_time = std::time::Instant::now();
         let output_path = self.content_root.join("textures").join(format!(
             "{}.png",
-            path.file_stem().and_then(|s| s.to_str()).unwrap_or("texture")
+            path.file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("texture")
         ));
-        
+
         // Create textures directory if needed
         if let Some(parent) = output_path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
-        
+
         match rgba.save(&output_path) {
             Ok(_) => {
                 let elapsed = start_time.elapsed();
@@ -1263,13 +1299,17 @@ impl EditorApp {
                     .unwrap_or(0);
                 let ratio = original_size as f32 / saved_size.max(1) as f32;
                 let reduction = 100.0 * (1.0 - saved_size as f32 / original_size.max(1) as f32);
-                
+
                 self.log(format!(
                     "✅ PNG saved: {} → {} bytes ({:.1}:1, {:.1}% reduction) in {:.2}s",
-                    original_size, saved_size, ratio, reduction, elapsed.as_secs_f32()
+                    original_size,
+                    saved_size,
+                    ratio,
+                    reduction,
+                    elapsed.as_secs_f32()
                 ));
                 self.log(format!("💾 Saved texture: {}", output_path.display()));
-                
+
                 let status = if gpu_compatible && is_pow2 {
                     "✅ GPU-optimal"
                 } else if gpu_compatible {
@@ -1277,7 +1317,7 @@ impl EditorApp {
                 } else {
                     "⚠️ Needs resize for BC7"
                 };
-                
+
                 self.toast_success(format!(
                     "Imported {}: {}×{} {}",
                     file_name, width, height, status
@@ -1297,19 +1337,25 @@ impl EditorApp {
     /// Apply current material to all selected entities
     fn apply_material_to_selection(&mut self) {
         let selected_ids: Vec<_> = self.selection_set.entities.iter().copied().collect();
-        
+
         if selected_ids.is_empty() {
             self.log("⚠️ No entities selected".to_string());
             return;
         }
-        
+
         // Use a default material name based on current PBR settings
-        let material_name = format!("PBR_{:.0}_{:.0}", self.mat_doc.metallic * 100.0, self.mat_doc.roughness * 100.0);
+        let material_name = format!(
+            "PBR_{:.0}_{:.0}",
+            self.mat_doc.metallic * 100.0,
+            self.mat_doc.roughness * 100.0
+        );
         let mut applied_count = 0;
-        
+
         if let Some(scene_state) = self.scene_state.as_mut() {
             for entity_id in &selected_ids {
-                if let Some(editor_entity) = scene_state.get_editor_entity_mut(*entity_id as astraweave_core::Entity) {
+                if let Some(editor_entity) =
+                    scene_state.get_editor_entity_mut(*entity_id as astraweave_core::Entity)
+                {
                     let mut material = entity_manager::EntityMaterial::new();
                     material.name = material_name.clone();
                     editor_entity.set_material(material);
@@ -1317,9 +1363,12 @@ impl EditorApp {
                 }
             }
         }
-        
+
         if applied_count > 0 {
-            self.log(format!("✅ Applied material '{}' to {} entities", material_name, applied_count));
+            self.log(format!(
+                "✅ Applied material '{}' to {} entities",
+                material_name, applied_count
+            ));
             self.toast_success(format!("Material applied to {} entities", applied_count));
             self.status = format!("Applied material to {} entities", applied_count);
         }
@@ -1328,15 +1377,21 @@ impl EditorApp {
     /// Group selected entities under a new parent entity
     fn group_selection(&mut self) {
         let selected_ids: Vec<_> = self.selection_set.entities.iter().copied().collect();
-        
+
         if selected_ids.len() < 2 {
             self.log("⚠️ Select at least 2 entities to group".to_string());
             return;
         }
-        
+
         // For now, just log the intent - full hierarchy grouping requires ECS parent-child support
-        self.log(format!("📁 Grouping {} entities (hierarchy support pending)", selected_ids.len()));
-        self.toast_info(format!("Group {} entities - hierarchy pending", selected_ids.len()));
+        self.log(format!(
+            "📁 Grouping {} entities (hierarchy support pending)",
+            selected_ids.len()
+        ));
+        self.toast_info(format!(
+            "Group {} entities - hierarchy pending",
+            selected_ids.len()
+        ));
         self.status = format!("Group {} entities - pending", selected_ids.len());
     }
 
@@ -1354,31 +1409,45 @@ impl EditorApp {
     /// Align selected entities in the specified direction
     fn align_selection(&mut self, direction: AlignDirection) {
         let selected_ids: Vec<_> = self.selection_set.entities.iter().copied().collect();
-        
+
         if selected_ids.len() < 2 {
             return;
         }
-        
+
         if let Some(scene_state) = self.scene_state.as_mut() {
             // Gather positions using EditorEntity API
             let mut positions: Vec<(entity_manager::EntityId, glam::Vec3)> = Vec::new();
-            
+
             for entity_id in &selected_ids {
-                if let Some(transform) = scene_state.transform_for(*entity_id as astraweave_core::Entity) {
+                if let Some(transform) =
+                    scene_state.transform_for(*entity_id as astraweave_core::Entity)
+                {
                     positions.push((*entity_id, transform.position));
                 }
             }
-            
+
             if positions.is_empty() {
                 return;
             }
-            
+
             // Calculate target value based on alignment direction
             let target = match direction {
-                AlignDirection::Left => positions.iter().map(|(_, p)| p.x).fold(f32::INFINITY, f32::min),
-                AlignDirection::Right => positions.iter().map(|(_, p)| p.x).fold(f32::NEG_INFINITY, f32::max),
-                AlignDirection::Top => positions.iter().map(|(_, p)| p.z).fold(f32::NEG_INFINITY, f32::max),
-                AlignDirection::Bottom => positions.iter().map(|(_, p)| p.z).fold(f32::INFINITY, f32::min),
+                AlignDirection::Left => positions
+                    .iter()
+                    .map(|(_, p)| p.x)
+                    .fold(f32::INFINITY, f32::min),
+                AlignDirection::Right => positions
+                    .iter()
+                    .map(|(_, p)| p.x)
+                    .fold(f32::NEG_INFINITY, f32::max),
+                AlignDirection::Top => positions
+                    .iter()
+                    .map(|(_, p)| p.z)
+                    .fold(f32::NEG_INFINITY, f32::max),
+                AlignDirection::Bottom => positions
+                    .iter()
+                    .map(|(_, p)| p.z)
+                    .fold(f32::INFINITY, f32::min),
                 AlignDirection::CenterX => {
                     let sum: f32 = positions.iter().map(|(_, p)| p.x).sum();
                     sum / positions.len() as f32
@@ -1388,7 +1457,7 @@ impl EditorApp {
                     sum / positions.len() as f32
                 }
             };
-            
+
             // Apply alignment
             for (entity_id, pos) in &positions {
                 let new_pos = match direction {
@@ -1399,24 +1468,30 @@ impl EditorApp {
                         glam::Vec3::new(pos.x, pos.y, target)
                     }
                 };
-                
+
                 // Get current transform and update position
-                if let Some(mut transform) = scene_state.transform_for(*entity_id as astraweave_core::Entity) {
+                if let Some(mut transform) =
+                    scene_state.transform_for(*entity_id as astraweave_core::Entity)
+                {
                     transform.position = new_pos;
                     scene_state.apply_transform(*entity_id as astraweave_core::Entity, &transform);
                 }
             }
-            
+
             let dir_name = match direction {
                 AlignDirection::Left => "left",
-                AlignDirection::Right => "right", 
+                AlignDirection::Right => "right",
                 AlignDirection::Top => "top",
                 AlignDirection::Bottom => "bottom",
                 AlignDirection::CenterX => "center X",
                 AlignDirection::CenterZ => "center Z",
             };
-            
-            self.log(format!("📐 Aligned {} entities to {}", positions.len(), dir_name));
+
+            self.log(format!(
+                "📐 Aligned {} entities to {}",
+                positions.len(),
+                dir_name
+            ));
             self.status = format!("Aligned {} entities", positions.len());
         }
     }
@@ -1424,35 +1499,41 @@ impl EditorApp {
     /// Distribute selected entities evenly along an axis
     fn distribute_selection(&mut self, direction: DistributeDirection) {
         let selected_ids: Vec<_> = self.selection_set.entities.iter().copied().collect();
-        
+
         if selected_ids.len() < 3 {
             return;
         }
-        
+
         if let Some(scene_state) = self.scene_state.as_mut() {
             // Gather positions using EditorEntity API
             let mut positions: Vec<(entity_manager::EntityId, glam::Vec3)> = Vec::new();
-            
+
             for entity_id in &selected_ids {
-                if let Some(transform) = scene_state.transform_for(*entity_id as astraweave_core::Entity) {
+                if let Some(transform) =
+                    scene_state.transform_for(*entity_id as astraweave_core::Entity)
+                {
                     positions.push((*entity_id, transform.position));
                 }
             }
-            
+
             if positions.len() < 3 {
                 return;
             }
-            
+
             // Sort by the distribution axis (use Equal for NaN safety)
             match direction {
                 DistributeDirection::X => positions.sort_by(|a, b| {
-                    a.1.x.partial_cmp(&b.1.x).unwrap_or(std::cmp::Ordering::Equal)
+                    a.1.x
+                        .partial_cmp(&b.1.x)
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 }),
                 DistributeDirection::Z => positions.sort_by(|a, b| {
-                    a.1.z.partial_cmp(&b.1.z).unwrap_or(std::cmp::Ordering::Equal)
+                    a.1.z
+                        .partial_cmp(&b.1.z)
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 }),
             }
-            
+
             // Calculate spacing
             let first = &positions[0].1;
             let last = &positions[positions.len() - 1].1;
@@ -1460,31 +1541,41 @@ impl EditorApp {
                 DistributeDirection::X => (last.x - first.x) / (positions.len() - 1) as f32,
                 DistributeDirection::Z => (last.z - first.z) / (positions.len() - 1) as f32,
             };
-            
+
             // Apply distribution (skip first and last which stay in place)
             for (i, (entity_id, pos)) in positions.iter().enumerate() {
                 if i == 0 || i == positions.len() - 1 {
                     continue;
                 }
-                
+
                 let new_pos = match direction {
-                    DistributeDirection::X => glam::Vec3::new(first.x + spacing * i as f32, pos.y, pos.z),
-                    DistributeDirection::Z => glam::Vec3::new(pos.x, pos.y, first.z + spacing * i as f32),
+                    DistributeDirection::X => {
+                        glam::Vec3::new(first.x + spacing * i as f32, pos.y, pos.z)
+                    }
+                    DistributeDirection::Z => {
+                        glam::Vec3::new(pos.x, pos.y, first.z + spacing * i as f32)
+                    }
                 };
-                
+
                 // Get current transform and update position
-                if let Some(mut transform) = scene_state.transform_for(*entity_id as astraweave_core::Entity) {
+                if let Some(mut transform) =
+                    scene_state.transform_for(*entity_id as astraweave_core::Entity)
+                {
                     transform.position = new_pos;
                     scene_state.apply_transform(*entity_id as astraweave_core::Entity, &transform);
                 }
             }
-            
+
             let axis = match direction {
                 DistributeDirection::X => "X",
                 DistributeDirection::Z => "Z",
             };
-            
-            self.log(format!("📏 Distributed {} entities along {}", positions.len(), axis));
+
+            self.log(format!(
+                "📏 Distributed {} entities along {}",
+                positions.len(),
+                axis
+            ));
             self.status = format!("Distributed {} entities", positions.len());
         }
     }
@@ -1493,16 +1584,17 @@ impl EditorApp {
     fn select_all_entities(&mut self) {
         if let Some(scene_state) = self.scene_state.as_ref() {
             self.selection_set.clear();
-            
+
             // Get all entity IDs from the world
             let entities = scene_state.world().entities();
             let mut count = 0;
-            
+
             for entity in entities {
-                self.selection_set.add(entity as entity_manager::EntityId, count == 0);
+                self.selection_set
+                    .add(entity as entity_manager::EntityId, count == 0);
                 count += 1;
             }
-            
+
             self.log(format!("📦 Selected {} entities", count));
             self.status = format!("Selected {} entities", count);
         }
@@ -1518,7 +1610,8 @@ impl EditorApp {
 
         // Check for dropped files
         let dropped_files: Vec<std::path::PathBuf> = ctx.input(|i| {
-            i.raw.dropped_files
+            i.raw
+                .dropped_files
                 .iter()
                 .filter_map(|f| f.path.clone())
                 .collect()
@@ -1530,32 +1623,41 @@ impl EditorApp {
 
         for path in dropped_files {
             let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("unknown");
+            let file_name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown");
 
             match extension.to_lowercase().as_str() {
                 // 3D Models - Load to viewport with validation
                 "glb" | "gltf" => {
                     self.log(format!("📦 Importing model: {}", file_name));
-                    
+
                     // Week 4 Day 5: Validate asset before import
                     let validation = self.validate_model_file(&path);
                     for warning in &validation.warnings {
                         self.log(format!("⚠️ {}", warning));
                     }
-                    
+
                     if !validation.is_valid {
-                        self.toast_error(format!("Invalid model: {}", validation.warnings.first().unwrap_or(&"Unknown error".to_string())));
+                        self.toast_error(format!(
+                            "Invalid model: {}",
+                            validation
+                                .warnings
+                                .first()
+                                .unwrap_or(&"Unknown error".to_string())
+                        ));
                         self.log(format!("❌ Model validation failed: {}", file_name));
                         continue;
                     }
-                    
+
                     // Log validation stats
                     if !validation.info.is_empty() {
                         for info in &validation.info {
                             self.log(format!("ℹ️ {}", info));
                         }
                     }
-                    
+
                     if let Some(viewport) = &self.viewport {
                         match viewport.load_gltf_model(file_name, &path) {
                             Ok(_) => {
@@ -1600,10 +1702,13 @@ impl EditorApp {
                 "png" | "jpg" | "jpeg" => {
                     self.import_texture_with_compression(&path, file_name);
                 }
-                
+
                 // KTX2 textures - Already compressed, just register
                 "ktx2" => {
-                    self.log(format!("🖼️ KTX2 texture imported: {} (already compressed)", file_name));
+                    self.log(format!(
+                        "🖼️ KTX2 texture imported: {} (already compressed)",
+                        file_name
+                    ));
                     self.toast_success(format!("Imported: {} (KTX2)", file_name));
                 }
 
@@ -1617,9 +1722,14 @@ impl EditorApp {
                                 match toml::from_str::<toml::Value>(&content) {
                                     Ok(material_def) => {
                                         self.log(format!("🎨 Material parsed: {}", file_name));
-                                        self.toast_success(format!("Loaded material: {}", file_name));
+                                        self.toast_success(format!(
+                                            "Loaded material: {}",
+                                            file_name
+                                        ));
                                         // Store in material cache for later use
-                                        if let Some(name) = material_def.get("name").and_then(|v| v.as_str()) {
+                                        if let Some(name) =
+                                            material_def.get("name").and_then(|v| v.as_str())
+                                        {
                                             self.log(format!("   Material name: {}", name));
                                         }
                                     }
@@ -1647,7 +1757,10 @@ impl EditorApp {
                         Ok(meta) => {
                             let size_kb = meta.len() / 1024;
                             self.log(format!("   Audio size: {} KB", size_kb));
-                            self.toast_success(format!("Audio imported: {} ({} KB)", file_name, size_kb));
+                            self.toast_success(format!(
+                                "Audio imported: {} ({} KB)",
+                                file_name, size_kb
+                            ));
                             // Copy to assets/audio if not already there
                             let audio_dir = self.content_root.join("audio");
                             if !path.starts_with(&audio_dir) {
@@ -1672,7 +1785,10 @@ impl EditorApp {
 
                 // Unknown file types
                 _ => {
-                    self.log(format!("❓ Unknown file type dropped: {} ({})", file_name, extension));
+                    self.log(format!(
+                        "❓ Unknown file type dropped: {} ({})",
+                        file_name, extension
+                    ));
                     self.toast_info(format!("Unknown file: .{} not supported", extension));
                 }
             }
@@ -1682,7 +1798,7 @@ impl EditorApp {
     /// Week 4: Show visual overlay when dragging files over editor
     fn show_drop_overlay(&self, ctx: &egui::Context, hovered_files: &[egui::HoveredFile]) {
         let screen_rect = ctx.screen_rect();
-        
+
         // Count file types
         let mut model_count = 0;
         let mut scene_count = 0;
@@ -1691,7 +1807,13 @@ impl EditorApp {
 
         for file in hovered_files {
             if let Some(path) = &file.path {
-                match path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase().as_str() {
+                match path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .as_str()
+                {
                     "glb" | "gltf" => model_count += 1,
                     "ron" => scene_count += 1,
                     "png" | "jpg" | "jpeg" | "ktx2" => texture_count += 1,
@@ -1705,16 +1827,32 @@ impl EditorApp {
         // Build description text
         let mut parts = Vec::new();
         if model_count > 0 {
-            parts.push(format!("📦 {} model{}", model_count, if model_count > 1 { "s" } else { "" }));
+            parts.push(format!(
+                "📦 {} model{}",
+                model_count,
+                if model_count > 1 { "s" } else { "" }
+            ));
         }
         if scene_count > 0 {
-            parts.push(format!("📂 {} scene{}", scene_count, if scene_count > 1 { "s" } else { "" }));
+            parts.push(format!(
+                "📂 {} scene{}",
+                scene_count,
+                if scene_count > 1 { "s" } else { "" }
+            ));
         }
         if texture_count > 0 {
-            parts.push(format!("🖼️ {} texture{}", texture_count, if texture_count > 1 { "s" } else { "" }));
+            parts.push(format!(
+                "🖼️ {} texture{}",
+                texture_count,
+                if texture_count > 1 { "s" } else { "" }
+            ));
         }
         if other_count > 0 {
-            parts.push(format!("📄 {} file{}", other_count, if other_count > 1 { "s" } else { "" }));
+            parts.push(format!(
+                "📄 {} file{}",
+                other_count,
+                if other_count > 1 { "s" } else { "" }
+            ));
         }
 
         let description = if parts.is_empty() {
@@ -1740,11 +1878,7 @@ impl EditorApp {
         let box_size = egui::vec2(400.0, 150.0);
         let box_rect = egui::Rect::from_center_size(screen_rect.center(), box_size);
 
-        painter.rect_filled(
-            box_rect,
-            12.0,
-            egui::Color32::from_rgb(40, 60, 80),
-        );
+        painter.rect_filled(box_rect, 12.0, egui::Color32::from_rgb(40, 60, 80));
 
         painter.rect_stroke(
             box_rect,
@@ -1785,10 +1919,10 @@ impl EditorApp {
     fn render_toasts(&mut self, ctx: &egui::Context) {
         // Use the new ToastManager for rendering
         self.toast_manager.show(ctx);
-        
+
         // Process any pending toast actions
         let actions = self.toast_manager.take_pending_actions();
-        
+
         // Track state changes for after processing
         let mut do_undo = false;
         let mut do_retry = false;
@@ -1796,7 +1930,7 @@ impl EditorApp {
         let mut details_to_log = Vec::new();
         let mut paths_to_open = Vec::new();
         let mut custom_actions = Vec::new();
-        
+
         for (toast_id, action) in actions {
             match action {
                 ui::ToastAction::Undo => {
@@ -1817,7 +1951,7 @@ impl EditorApp {
                 }
             }
         }
-        
+
         // Process collected actions
         if do_undo && self.undo_stack.can_undo() {
             if let Some(state) = self.scene_state.as_mut() {
@@ -1826,22 +1960,25 @@ impl EditorApp {
                 self.toast_manager.info("Undone");
             }
         }
-        
+
         if do_retry {
-            self.console_logs.push(format!("🔄 Retry requested for toast {}", retry_toast_id));
+            self.console_logs
+                .push(format!("🔄 Retry requested for toast {}", retry_toast_id));
         }
-        
+
         for details in details_to_log {
             self.console_logs.push(format!("📋 Details: {}", details));
         }
-        
+
         for path in paths_to_open {
-            self.console_logs.push(format!("📂 Open requested: {}", path));
+            self.console_logs
+                .push(format!("📂 Open requested: {}", path));
             self.status = format!("Open: {}", path);
         }
-        
+
         for (label, action_id) in custom_actions {
-            self.console_logs.push(format!("🎯 Custom action: {} ({})", label, action_id));
+            self.console_logs
+                .push(format!("🎯 Custom action: {} ({})", label, action_id));
         }
     }
 
@@ -2140,7 +2277,7 @@ impl EditorApp {
         if !self.show_quit_dialog {
             return;
         }
-        
+
         dialogs::show_modal_overlay(ctx, "quit_dialog_overlay");
         egui::Window::new("⚠️ Unsaved Changes")
             .collapsible(false)
@@ -2149,7 +2286,7 @@ impl EditorApp {
             .min_width(350.0)
             .show(ctx, |ui| {
                 ui.add_space(8.0);
-                
+
                 // Warning icon and message
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("📝").size(24.0));
@@ -2164,52 +2301,56 @@ impl EditorApp {
                         }
                     });
                 });
-                
+
                 ui.add_space(16.0);
                 ui.separator();
                 ui.add_space(8.0);
-                
+
                 // Action buttons
                 let mut do_save_quit = false;
                 let mut do_quit = false;
                 let mut do_cancel = false;
-                
+
                 ui.horizontal(|ui| {
-                    let save_btn = egui::Button::new(egui::RichText::new("💾 Save & Quit").strong())
-                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                    let save_btn =
+                        egui::Button::new(egui::RichText::new("💾 Save & Quit").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45));
                     if ui.add(save_btn).clicked() {
                         do_save_quit = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     let quit_btn = egui::Button::new("🚪 Quit Without Saving")
                         .fill(egui::Color32::from_rgb(165, 45, 45));
                     if ui.add(quit_btn).clicked() {
                         do_quit = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     if ui.button("Cancel").clicked() {
                         do_cancel = true;
                     }
                 });
-                
+
                 ui.add_space(8.0);
-                
+
                 ui.label(
-                    egui::RichText::new("Press Escape to cancel • Auto-save available in Edit > Preferences")
-                        .weak()
-                        .small()
+                    egui::RichText::new(
+                        "Press Escape to cancel • Auto-save available in Edit > Preferences",
+                    )
+                    .weak()
+                    .small(),
                 );
-                
+
                 // Process actions after UI
                 if do_save_quit {
                     if let Some(world) = self.edit_world() {
-                        let path = self.current_scene_path.clone().unwrap_or_else(|| {
-                            self.content_root.join("scenes/untitled.scene.ron")
-                        });
+                        let path = self
+                            .current_scene_path
+                            .clone()
+                            .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
                         if scene_serialization::save_scene(world, &path).is_ok() {
                             self.toast_success("Scene saved");
                             self.remove_lock_file();
@@ -2222,12 +2363,12 @@ impl EditorApp {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 }
-                
+
                 if do_quit {
                     self.remove_lock_file();
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
-                
+
                 if do_cancel {
                     self.show_quit_dialog = false;
                 }
@@ -2239,7 +2380,7 @@ impl EditorApp {
         if !self.show_help_dialog {
             return;
         }
-        
+
         egui::Window::new("Keyboard Shortcuts")
             .collapsible(false)
             .resizable(true)
@@ -2247,7 +2388,7 @@ impl EditorApp {
             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 dialogs::show_shortcuts_grid(ui);
-                
+
                 ui.add_space(12.0);
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -2264,7 +2405,7 @@ impl EditorApp {
         if !self.show_settings_dialog {
             return;
         }
-        
+
         egui::Window::new("Settings")
             .collapsible(false)
             .resizable(true)
@@ -2272,7 +2413,7 @@ impl EditorApp {
             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 self.render_settings_content(ui);
-                
+
                 ui.add_space(12.0);
                 ui.separator();
 
@@ -2398,9 +2539,9 @@ impl EditorApp {
         if !self.show_new_confirm_dialog {
             return;
         }
-        
+
         dialogs::show_modal_overlay(ctx, "new_scene_dialog_overlay");
-        
+
         egui::Window::new("⚠️ Unsaved Changes")
             .collapsible(false)
             .resizable(false)
@@ -2408,7 +2549,7 @@ impl EditorApp {
             .min_width(380.0)
             .show(ctx, |ui| {
                 ui.add_space(8.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("📄").size(24.0));
                     ui.add_space(8.0);
@@ -2418,51 +2559,54 @@ impl EditorApp {
                         ui.label("You have unsaved changes that will be lost.");
                         ui.add_space(4.0);
                         if let Some(path) = &self.current_scene_path {
-                            ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                            ui.label(
+                                egui::RichText::new(format!("Current: {}", path.display())).weak(),
+                            );
                         } else {
                             ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
                         }
                     });
                 });
-                
+
                 ui.add_space(16.0);
                 ui.separator();
                 ui.add_space(8.0);
-                
+
                 let mut do_save = false;
                 let mut do_discard = false;
                 let mut do_cancel = false;
-                
+
                 ui.horizontal(|ui| {
                     let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
                         .fill(egui::Color32::from_rgb(45, 125, 45));
                     if ui.add(save_btn).clicked() {
                         do_save = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     let discard_btn = egui::Button::new("🗑️ Discard Changes")
                         .fill(egui::Color32::from_rgb(165, 45, 45));
                     if ui.add(discard_btn).clicked() {
                         do_discard = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     if ui.button("Cancel").clicked() {
                         do_cancel = true;
                     }
                 });
-                
+
                 ui.add_space(8.0);
                 ui.label(egui::RichText::new("Press Escape to cancel").weak().small());
-                
+
                 if do_save {
                     if let Some(world) = self.edit_world() {
-                        let path = self.current_scene_path.clone().unwrap_or_else(|| {
-                            self.content_root.join("scenes/untitled.scene.ron")
-                        });
+                        let path = self
+                            .current_scene_path
+                            .clone()
+                            .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
                         if scene_serialization::save_scene(world, &path).is_ok() {
                             self.toast_success("Scene saved");
                             self.show_new_confirm_dialog = false;
@@ -2475,12 +2619,12 @@ impl EditorApp {
                         self.create_new_scene();
                     }
                 }
-                
+
                 if do_discard {
                     self.show_new_confirm_dialog = false;
                     self.create_new_scene();
                 }
-                
+
                 if do_cancel {
                     self.show_new_confirm_dialog = false;
                 }
@@ -2492,13 +2636,20 @@ impl EditorApp {
         if !self.show_open_confirm_dialog {
             return;
         }
-        
+
         dialogs::show_modal_overlay(ctx, "open_scene_dialog_overlay");
-        
-        let pending_path_display = self.pending_open_path.as_ref()
-            .map(|p| p.file_name().unwrap_or_default().to_string_lossy().to_string())
+
+        let pending_path_display = self
+            .pending_open_path
+            .as_ref()
+            .map(|p| {
+                p.file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string()
+            })
             .unwrap_or_else(|| "selected scene".to_string());
-        
+
         egui::Window::new("⚠️ Unsaved Changes")
             .collapsible(false)
             .resizable(false)
@@ -2506,61 +2657,67 @@ impl EditorApp {
             .min_width(400.0)
             .show(ctx, |ui| {
                 ui.add_space(8.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("📂").size(24.0));
                     ui.add_space(8.0);
                     ui.vertical(|ui| {
-                        ui.label(egui::RichText::new(format!("Open \"{}\"?", pending_path_display)).strong());
+                        ui.label(
+                            egui::RichText::new(format!("Open \"{}\"?", pending_path_display))
+                                .strong(),
+                        );
                         ui.add_space(4.0);
                         ui.label("You have unsaved changes that will be lost.");
                         ui.add_space(4.0);
                         if let Some(path) = &self.current_scene_path {
-                            ui.label(egui::RichText::new(format!("Current: {}", path.display())).weak());
+                            ui.label(
+                                egui::RichText::new(format!("Current: {}", path.display())).weak(),
+                            );
                         } else {
                             ui.label(egui::RichText::new("Current: Untitled (never saved)").weak());
                         }
                     });
                 });
-                
+
                 ui.add_space(16.0);
                 ui.separator();
                 ui.add_space(8.0);
-                
+
                 let mut do_save = false;
                 let mut do_discard = false;
                 let mut do_cancel = false;
-                
+
                 ui.horizontal(|ui| {
                     let save_btn = egui::Button::new(egui::RichText::new("💾 Save First").strong())
                         .fill(egui::Color32::from_rgb(45, 125, 45));
                     if ui.add(save_btn).clicked() {
                         do_save = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     let discard_btn = egui::Button::new("🗑️ Discard & Open")
                         .fill(egui::Color32::from_rgb(165, 45, 45));
                     if ui.add(discard_btn).clicked() {
                         do_discard = true;
                     }
-                    
+
                     ui.add_space(8.0);
-                    
+
                     if ui.button("Cancel").clicked() {
                         do_cancel = true;
                     }
                 });
-                
+
                 ui.add_space(8.0);
                 ui.label(egui::RichText::new("Press Escape to cancel").weak().small());
-                
+
                 if do_save {
                     if let Some(world) = self.edit_world() {
-                        let save_path = self.current_scene_path.clone().unwrap_or_else(|| {
-                            self.content_root.join("scenes/untitled.scene.ron")
-                        });
+                        let save_path = self
+                            .current_scene_path
+                            .clone()
+                            .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
                         if scene_serialization::save_scene(world, &save_path).is_ok() {
                             self.toast_success("Scene saved");
                             if let Some(open_path) = self.pending_open_path.take() {
@@ -2577,14 +2734,14 @@ impl EditorApp {
                         self.show_open_confirm_dialog = false;
                     }
                 }
-                
+
                 if do_discard {
                     if let Some(open_path) = self.pending_open_path.take() {
                         self.load_scene_from_path(&open_path);
                     }
                     self.show_open_confirm_dialog = false;
                 }
-                
+
                 if do_cancel {
                     self.pending_open_path = None;
                     self.show_open_confirm_dialog = false;
@@ -2597,17 +2754,19 @@ impl EditorApp {
         if !self.show_recovery_dialog {
             return;
         }
-        
+
         dialogs::show_modal_overlay(ctx, "recovery_dialog_overlay");
-        
-        let autosave_name = self.recovery_autosave_path.as_ref()
+
+        let autosave_name = self
+            .recovery_autosave_path
+            .as_ref()
             .and_then(|p| p.file_name())
             .and_then(|n| n.to_str())
             .unwrap_or("unknown")
             .to_string();
-        
+
         let recovery_path = self.recovery_autosave_path.clone();
-        
+
         egui::Window::new("🔄 Crash Recovery")
             .collapsible(false)
             .resizable(false)
@@ -2615,20 +2774,24 @@ impl EditorApp {
             .min_width(450.0)
             .show(ctx, |ui| {
                 ui.add_space(8.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new("⚠️").size(32.0));
                     ui.add_space(8.0);
                     ui.vertical(|ui| {
-                        ui.label(egui::RichText::new("Previous Session Detected").strong().size(16.0));
+                        ui.label(
+                            egui::RichText::new("Previous Session Detected")
+                                .strong()
+                                .size(16.0),
+                        );
                         ui.add_space(4.0);
                         ui.label("The editor may have closed unexpectedly.");
                         ui.label("An auto-save backup was found:");
                     });
                 });
-                
+
                 ui.add_space(12.0);
-                
+
                 egui::Frame::new()
                     .fill(egui::Color32::from_rgb(35, 45, 55))
                     .corner_radius(4.0)
@@ -2639,7 +2802,7 @@ impl EditorApp {
                             ui.add_space(4.0);
                             ui.label(egui::RichText::new(&autosave_name).monospace());
                         });
-                        
+
                         if let Some(path) = &recovery_path {
                             if let Ok(metadata) = fs::metadata(path) {
                                 if let Ok(modified) = metadata.modified() {
@@ -2652,49 +2815,54 @@ impl EditorApp {
                                         } else {
                                             format!("{} days ago", mins_ago / 1440)
                                         };
-                                        ui.label(egui::RichText::new(format!("Modified: {}", time_str)).weak().small());
+                                        ui.label(
+                                            egui::RichText::new(format!("Modified: {}", time_str))
+                                                .weak()
+                                                .small(),
+                                        );
                                     }
                                 }
                             }
                         }
                     });
-                
+
                 ui.add_space(16.0);
                 ui.separator();
                 ui.add_space(8.0);
-                
+
                 let mut do_restore = false;
                 let mut do_fresh = false;
-                
+
                 ui.horizontal(|ui| {
-                    let restore_btn = egui::Button::new(egui::RichText::new("✅ Restore Auto-Save").strong())
-                        .fill(egui::Color32::from_rgb(45, 125, 45))
-                        .min_size(egui::vec2(150.0, 32.0));
+                    let restore_btn =
+                        egui::Button::new(egui::RichText::new("✅ Restore Auto-Save").strong())
+                            .fill(egui::Color32::from_rgb(45, 125, 45))
+                            .min_size(egui::vec2(150.0, 32.0));
                     if ui.add(restore_btn).clicked() {
                         do_restore = true;
                     }
-                    
+
                     ui.add_space(16.0);
-                    
-                    let fresh_btn = egui::Button::new("🆕 Start Fresh")
-                        .min_size(egui::vec2(120.0, 32.0));
+
+                    let fresh_btn =
+                        egui::Button::new("🆕 Start Fresh").min_size(egui::vec2(120.0, 32.0));
                     if ui.add(fresh_btn).clicked() {
                         do_fresh = true;
                     }
                 });
-                
+
                 ui.add_space(12.0);
-                
+
                 ui.label(
                     egui::RichText::new("💡 Tip: Auto-saves are stored in the .autosave/ folder")
                         .weak()
-                        .small()
+                        .small(),
                 );
-                
+
                 if do_restore {
                     self.recover_from_autosave();
                 }
-                
+
                 if do_fresh {
                     self.decline_recovery();
                 }
@@ -2715,8 +2883,11 @@ impl EditorApp {
             .unwrap_or(0);
 
         // Clone the path string to avoid borrow conflicts
-        let bottom_scene_path_str: Option<String> =
-            self.current_scene_path.as_ref().and_then(|p| p.to_str()).map(String::from);
+        let bottom_scene_path_str: Option<String> = self
+            .current_scene_path
+            .as_ref()
+            .and_then(|p| p.to_str())
+            .map(String::from);
 
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
@@ -3116,8 +3287,7 @@ impl EditorApp {
                     entity_id,
                     component_type,
                 } => {
-                    self.status =
-                        format!("Removing {} from entity {}", component_type, entity_id);
+                    self.status = format!("Removing {} from entity {}", component_type, entity_id);
                     // Would remove component from entity in actual implementation
                 }
                 tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
@@ -3174,19 +3344,20 @@ impl EditorApp {
         }
     }
 
-
     fn show_top_panel(&mut self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("top")
-            .show(ctx, |ui| {
-                ui.set_min_size(ui.available_size());
-                ui.heading("AstraWeave Level & Encounter Editor");
+        egui::TopBottomPanel::top("top").show(ctx, |ui| {
+            ui.set_min_size(ui.available_size());
+            ui.heading("AstraWeave Level & Encounter Editor");
             ui.separator();
             MenuBar::show(ui, self);
             ui.separator();
 
             ui.horizontal(|ui| {
                 if ui.button("Diff Assets").clicked() {
-                     match std::process::Command::new("git").args(["diff", "assets"]).output() {
+                    match std::process::Command::new("git")
+                        .args(["diff", "assets"])
+                        .output()
+                    {
                         Ok(output) => {
                             let stdout = String::from_utf8_lossy(&output.stdout);
                             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -3194,11 +3365,13 @@ impl EditorApp {
                                 self.console_logs.push("No asset changes.".into());
                             } else {
                                 self.console_logs.push(format!("Asset diff:\n{}", stdout));
-                                if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
+                                if !stderr.is_empty() {
+                                    self.console_logs.push(format!("Diff stderr: {}", stderr));
+                                }
                             }
                         }
                         Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
-                     }
+                    }
                 }
             });
 
@@ -3219,15 +3392,18 @@ impl EditorApp {
                     egui::Color32::from_rgb(255, 100, 100) // Red
                 };
 
-                ui.label(egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
-                    .color(fps_color)
-                    .strong());
+                ui.label(
+                    egui::RichText::new(format!("FPS: {:.0}", self.current_fps))
+                        .color(fps_color)
+                        .strong(),
+                );
                 ui.separator();
-                ui.label(egui::RichText::new(format!("{:.1}ms", frame_time))
-                    .color(egui::Color32::from_gray(180)));
+                ui.label(
+                    egui::RichText::new(format!("{:.1}ms", frame_time))
+                        .color(egui::Color32::from_gray(180)),
+                );
                 ui.separator();
-                ui.label(egui::RichText::new("⚡")
-                    .color(fps_color));
+                ui.label(egui::RichText::new("⚡").color(fps_color));
             });
         });
     }
@@ -3772,12 +3948,13 @@ impl EditorApp {
             self.log("❌ No scene loaded".to_string());
             return;
         };
-        
+
         let world = scene_state.world();
-        let name = world.name(entity)
+        let name = world
+            .name(entity)
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("Entity_{}", entity));
-        
+
         match self.prefab_manager.create_prefab(world, entity, &name) {
             Ok(path) => {
                 self.log(format!("✅ Created prefab: {}", path.display()));
@@ -3791,17 +3968,23 @@ impl EditorApp {
             }
         }
     }
-    
+
     /// Apply overrides from an entity instance back to its prefab source file
     fn apply_overrides_to_prefab(&mut self, entity: Entity) {
         let Some(scene_state) = self.scene_state.as_ref() else {
             self.log("❌ No scene loaded".to_string());
             return;
         };
-        
-        match self.prefab_manager.apply_overrides_to_prefab(entity, scene_state.world()) {
+
+        match self
+            .prefab_manager
+            .apply_overrides_to_prefab(entity, scene_state.world())
+        {
             Ok(()) => {
-                self.log(format!("✅ Applied overrides to prefab for entity {}", entity));
+                self.log(format!(
+                    "✅ Applied overrides to prefab for entity {}",
+                    entity
+                ));
                 self.toast_success("Applied overrides to prefab".to_string());
                 self.status = "Applied overrides to prefab".to_string();
             }
@@ -3811,18 +3994,24 @@ impl EditorApp {
             }
         }
     }
-    
+
     /// Revert an entity to match its original prefab values
     fn revert_to_original_prefab(&mut self, entity: Entity) {
         let Some(scene_state) = self.scene_state.as_mut() else {
             self.log("❌ No scene loaded".to_string());
             return;
         };
-        
-        match self.prefab_manager.revert_instance_to_prefab(entity, scene_state.world_mut()) {
+
+        match self
+            .prefab_manager
+            .revert_instance_to_prefab(entity, scene_state.world_mut())
+        {
             Ok(()) => {
                 scene_state.sync_entity(entity);
-                self.log(format!("✅ Reverted entity {} to original prefab values", entity));
+                self.log(format!(
+                    "✅ Reverted entity {} to original prefab values",
+                    entity
+                ));
                 self.toast_success("Reverted to original prefab".to_string());
                 self.status = "Reverted to original prefab".to_string();
             }
@@ -3832,14 +4021,16 @@ impl EditorApp {
             }
         }
     }
-    
+
     /// Break the connection between an entity and its prefab source
     fn break_prefab_connection(&mut self, entity: Entity) {
         match self.prefab_manager.break_prefab_connection(entity) {
             Ok(()) => {
                 self.hierarchy_panel.unmark_as_prefab_instance(entity);
                 self.log(format!("✅ Broke prefab connection for entity {}", entity));
-                self.toast_success("Broke prefab connection - entity is now standalone".to_string());
+                self.toast_success(
+                    "Broke prefab connection - entity is now standalone".to_string(),
+                );
                 self.status = "Prefab connection broken".to_string();
             }
             Err(e) => {
@@ -3848,17 +4039,18 @@ impl EditorApp {
             }
         }
     }
-    
+
     /// Sync hierarchy panel's prefab instance tracking with prefab manager
     fn sync_hierarchy_prefab_instances(&mut self) {
         let prefab_entities: Vec<_> = self.prefab_manager.get_all_prefab_entities().collect();
-        self.hierarchy_panel.sync_prefab_instances(prefab_entities.into_iter());
+        self.hierarchy_panel
+            .sync_prefab_instances(prefab_entities.into_iter());
     }
-    
+
     /// Process pending hierarchy panel actions
     fn process_hierarchy_actions(&mut self) {
         use crate::panels::hierarchy_panel::HierarchyAction;
-        
+
         let actions = self.hierarchy_panel.take_pending_actions();
         for action in actions {
             match action {
@@ -3869,7 +4061,8 @@ impl EditorApp {
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         // Use undo-able command instead of direct deletion
                         let delete_cmd = command::DeleteEntitiesCommand::new(vec![entity]);
-                        if let Err(e) = self.undo_stack.execute(delete_cmd, scene_state.world_mut()) {
+                        if let Err(e) = self.undo_stack.execute(delete_cmd, scene_state.world_mut())
+                        {
                             self.log(format!("⚠️ Delete failed: {}", e));
                         } else {
                             scene_state.sync_entity(entity);
@@ -3896,7 +4089,10 @@ impl EditorApp {
                                 if let Some(&first) = spawned.first() {
                                     self.selected_entity = Some(first as u64);
                                 }
-                                self.log(format!("📋 Duplicated entity {} → {:?}", entity, spawned));
+                                self.log(format!(
+                                    "📋 Duplicated entity {} → {:?}",
+                                    entity, spawned
+                                ));
                             }
                             Err(e) => {
                                 self.log(format!("⚠️ Duplicate failed: {}", e));
@@ -4355,13 +4551,22 @@ impl EditorApp {
             ui.label("🎨 Base Color:");
         });
 
-        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("R")).changed() {
+        if ui
+            .add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("R"))
+            .changed()
+        {
             changed = true;
         }
-        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[1], 0.0..=1.0).text("G")).changed() {
+        if ui
+            .add(egui::Slider::new(&mut self.mat_doc.base_color[1], 0.0..=1.0).text("G"))
+            .changed()
+        {
             changed = true;
         }
-        if ui.add(egui::Slider::new(&mut self.mat_doc.base_color[2], 0.0..=1.0).text("B")).changed() {
+        if ui
+            .add(egui::Slider::new(&mut self.mat_doc.base_color[2], 0.0..=1.0).text("B"))
+            .changed()
+        {
             changed = true;
         }
 
@@ -4370,10 +4575,16 @@ impl EditorApp {
             ui.label("⚙️ PBR Properties:");
         });
 
-        if ui.add(egui::Slider::new(&mut self.mat_doc.metallic, 0.0..=1.0).text("Metallic")).changed() {
+        if ui
+            .add(egui::Slider::new(&mut self.mat_doc.metallic, 0.0..=1.0).text("Metallic"))
+            .changed()
+        {
             changed = true;
         }
-        if ui.add(egui::Slider::new(&mut self.mat_doc.roughness, 0.04..=1.0).text("Roughness")).changed() {
+        if ui
+            .add(egui::Slider::new(&mut self.mat_doc.roughness, 0.04..=1.0).text("Roughness"))
+            .changed()
+        {
             changed = true;
         }
 
@@ -4386,7 +4597,11 @@ impl EditorApp {
                     self.mat_doc.base_color[2],
                     1.0, // Alpha
                 ];
-                let _ = viewport.set_material_params(base_color, self.mat_doc.metallic, self.mat_doc.roughness);
+                let _ = viewport.set_material_params(
+                    base_color,
+                    self.mat_doc.metallic,
+                    self.mat_doc.roughness,
+                );
             }
         }
 
@@ -4399,7 +4614,8 @@ impl EditorApp {
         );
         ui.horizontal(|ui| {
             ui.label("Preview:");
-            let (rect, _response) = ui.allocate_exact_size(egui::vec2(40.0, 20.0), egui::Sense::hover());
+            let (rect, _response) =
+                ui.allocate_exact_size(egui::vec2(40.0, 20.0), egui::Sense::hover());
             ui.painter().rect_filled(rect, 4.0, preview_color);
             ui.label(format!(
                 "M:{:.2} R:{:.2}",
@@ -4411,7 +4627,11 @@ impl EditorApp {
 
         // Manual apply button (in case auto-sync didn't work)
         ui.horizontal(|ui| {
-            if ui.button("🔄 Apply to Viewport").on_hover_text("Manually apply material to 3D viewport").clicked() {
+            if ui
+                .button("🔄 Apply to Viewport")
+                .on_hover_text("Manually apply material to 3D viewport")
+                .clicked()
+            {
                 if let Some(viewport) = &self.viewport {
                     let base_color = [
                         self.mat_doc.base_color[0],
@@ -4419,9 +4639,14 @@ impl EditorApp {
                         self.mat_doc.base_color[2],
                         1.0,
                     ];
-                    match viewport.set_material_params(base_color, self.mat_doc.metallic, self.mat_doc.roughness) {
+                    match viewport.set_material_params(
+                        base_color,
+                        self.mat_doc.metallic,
+                        self.mat_doc.roughness,
+                    ) {
                         Ok(_) => {
-                            self.console_logs.push("🎨 Material applied to viewport".into());
+                            self.console_logs
+                                .push("🎨 Material applied to viewport".into());
                         }
                         Err(e) => {
                             self.console_logs.push(format!("⚠️ Material error: {}", e));
@@ -4869,7 +5094,10 @@ impl MenuActionHandler for EditorApp {
                     self.recent_files.add_file(path.clone());
                     self.is_dirty = false;
                     self.status = format!("💾 Saved scene to {:?}", path);
-                    self.toast_success(format!("Saved scene: {:?}", path.file_name().unwrap_or_default()));
+                    self.toast_success(format!(
+                        "Saved scene: {:?}",
+                        path.file_name().unwrap_or_default()
+                    ));
                     self.console_logs
                         .push(format!("✅ Scene saved: {:?}", path));
                     self.last_auto_save = std::time::Instant::now();
@@ -4965,35 +5193,80 @@ impl MenuActionHandler for EditorApp {
     }
 
     // View
-    fn is_view_hierarchy_open(&self) -> bool { self.show_hierarchy_panel }
-    fn toggle_view_hierarchy(&mut self) { 
+    fn is_view_hierarchy_open(&self) -> bool {
+        self.show_hierarchy_panel
+    }
+    fn toggle_view_hierarchy(&mut self) {
         self.show_hierarchy_panel = !self.show_hierarchy_panel;
-        self.status = format!("Hierarchy panel {}", if self.show_hierarchy_panel {"shown"} else {"hidden"});
+        self.status = format!(
+            "Hierarchy panel {}",
+            if self.show_hierarchy_panel {
+                "shown"
+            } else {
+                "hidden"
+            }
+        );
     }
 
-    fn is_view_inspector_open(&self) -> bool { self.show_inspector_panel }
+    fn is_view_inspector_open(&self) -> bool {
+        self.show_inspector_panel
+    }
     fn toggle_view_inspector(&mut self) {
         self.show_inspector_panel = !self.show_inspector_panel;
-        self.status = format!("Inspector panel {}", if self.show_inspector_panel {"shown"} else {"hidden"});
+        self.status = format!(
+            "Inspector panel {}",
+            if self.show_inspector_panel {
+                "shown"
+            } else {
+                "hidden"
+            }
+        );
     }
 
-    fn is_view_console_open(&self) -> bool { self.show_console_panel }
+    fn is_view_console_open(&self) -> bool {
+        self.show_console_panel
+    }
     fn toggle_view_console(&mut self) {
         self.show_console_panel = !self.show_console_panel;
-        self.status = format!("Console panel {}", if self.show_console_panel {"shown"} else {"hidden"});
+        self.status = format!(
+            "Console panel {}",
+            if self.show_console_panel {
+                "shown"
+            } else {
+                "hidden"
+            }
+        );
     }
-    
-    fn is_grid_visible(&self) -> bool { self.show_grid }
+
+    fn is_grid_visible(&self) -> bool {
+        self.show_grid
+    }
     fn toggle_grid(&mut self) {
         self.show_grid = !self.show_grid;
-        self.status = format!("Grid {}", if self.show_grid {"enabled"} else {"disabled"});
+        self.status = format!(
+            "Grid {}",
+            if self.show_grid {
+                "enabled"
+            } else {
+                "disabled"
+            }
+        );
     }
 
     // Window
-    fn is_docking_enabled(&self) -> bool { self.use_docking }
+    fn is_docking_enabled(&self) -> bool {
+        self.use_docking
+    }
     fn toggle_docking(&mut self) {
         self.use_docking = !self.use_docking;
-         self.status = format!("Switched to {} layout mode", if self.use_docking { "Docking" } else { "Legacy" });
+        self.status = format!(
+            "Switched to {} layout mode",
+            if self.use_docking {
+                "Docking"
+            } else {
+                "Legacy"
+            }
+        );
     }
 
     fn on_apply_layout_preset(&mut self, preset_name: &str) {
@@ -5009,18 +5282,18 @@ impl MenuActionHandler for EditorApp {
         self.dock_layout = DockLayout::from_preset(preset);
         self.status = format!("Applied {} layout", preset_name);
     }
-    
+
     fn is_dock_panel_visible(&self, panel: PanelType) -> bool {
         self.dock_layout.has_panel(&panel)
     }
-    
+
     fn toggle_dock_panel(&mut self, panel: PanelType) {
         if self.dock_layout.has_panel(&panel) {
             self.dock_layout.remove_panel(&panel);
-             self.status = format!("Closed {} panel", panel.title());
+            self.status = format!("Closed {} panel", panel.title());
         } else {
             self.dock_layout.add_panel(panel);
-             self.status = format!("Opened {} panel", panel.title());
+            self.status = format!("Opened {} panel", panel.title());
         }
     }
 
@@ -5052,19 +5325,22 @@ impl MenuActionHandler for EditorApp {
                         .collect();
                     if !glb_files.is_empty() {
                         found_any = true;
-                        self.console_logs.push(format!("📁 {} ({}):", name, glb_files.len()));
+                        self.console_logs
+                            .push(format!("📁 {} ({}):", name, glb_files.len()));
                         for entry in glb_files {
-                            self.console_logs.push(format!("  • {}", entry.file_name().to_string_lossy()));
+                            self.console_logs
+                                .push(format!("  • {}", entry.file_name().to_string_lossy()));
                         }
                     }
                 }
             }
         }
         if !found_any {
-            self.console_logs.push("⚠️ No glTF/glb models found in any scanned directory".into());
+            self.console_logs
+                .push("⚠️ No glTF/glb models found in any scanned directory".into());
         }
     }
-    
+
     fn on_load_test_model(&mut self, name: &str, path: PathBuf) {
         let target_path = if path.to_string_lossy() == "PINE_TREE_AUTO" {
             let possible_paths = [
@@ -5078,38 +5354,42 @@ impl MenuActionHandler for EditorApp {
         } else {
             None
         };
-        
+
         if let Some(target) = target_path {
-             if let Some(viewport) = &self.viewport {
+            if let Some(viewport) = &self.viewport {
                 match viewport.load_gltf_model(name, &target) {
                     Ok(()) => {
                         self.toast_success(format!("Model {} loaded!", name));
-                        self.console_logs.push(format!("✅ Loaded model: {:?}", target));
+                        self.console_logs
+                            .push(format!("✅ Loaded model: {:?}", target));
                     }
                     Err(e) => {
-                        self.console_logs.push(format!("❌ Model load failed: {}", e));
+                        self.console_logs
+                            .push(format!("❌ Model load failed: {}", e));
                     }
                 }
             }
         } else {
-             self.console_logs.push(format!("⚠️ Model not found: {:?}", path));
+            self.console_logs
+                .push(format!("⚠️ Model not found: {:?}", path));
         }
     }
-    
+
     fn on_toggle_engine_rendering(&mut self) {
         if let Some(viewport) = &self.viewport {
             if let Ok(mut renderer) = viewport.renderer().lock() {
                 let current = renderer.use_engine_rendering();
                 renderer.set_use_engine_rendering(!current);
                 let state = if !current { "enabled" } else { "disabled" };
-                self.console_logs.push(format!("🎨 Engine rendering {}", state));
+                self.console_logs
+                    .push(format!("🎨 Engine rendering {}", state));
                 self.status = format!("Engine rendering {}", state);
             }
         }
     }
-    
+
     fn on_show_engine_info(&mut self) {
-         if let Some(viewport) = &self.viewport {
+        if let Some(viewport) = &self.viewport {
             if let Ok(renderer) = viewport.renderer().lock() {
                 let engine_active = renderer.use_engine_rendering();
                 let adapter_init = renderer.engine_adapter_initialized();
@@ -5120,9 +5400,9 @@ impl MenuActionHandler for EditorApp {
             }
         }
     }
-    
+
     fn on_debug_material(&mut self, name: &str) {
-         if let Some(viewport) = &self.viewport {
+        if let Some(viewport) = &self.viewport {
             let res = match name {
                 "Red" => viewport.set_material_params([1.0, 0.2, 0.2, 1.0], 0.0, 0.5),
                 "Green" => viewport.set_material_params([0.2, 0.8, 0.2, 1.0], 0.9, 0.3),
@@ -5131,15 +5411,15 @@ impl MenuActionHandler for EditorApp {
                 _ => Ok(()),
             };
             if let Err(e) = res {
-                 self.console_logs.push(format!("⚠️ Material error: {}", e));
+                self.console_logs.push(format!("⚠️ Material error: {}", e));
             } else {
-                 self.console_logs.push(format!("{} material applied", name));
+                self.console_logs.push(format!("{} material applied", name));
             }
         }
     }
-    
+
     fn on_debug_time_set(&mut self, time: f32) {
-         if let Some(viewport) = &self.viewport {
+        if let Some(viewport) = &self.viewport {
             if let Err(e) = viewport.set_time_of_day(time) {
                 self.console_logs.push(format!("⚠️ Lighting error: {}", e));
             } else {
@@ -5147,31 +5427,47 @@ impl MenuActionHandler for EditorApp {
             }
         }
     }
-    
+
     fn get_time_of_day(&self) -> f32 {
-         self.viewport.as_ref().and_then(|v| v.get_time_of_day().ok()).unwrap_or(0.0)
+        self.viewport
+            .as_ref()
+            .and_then(|v| v.get_time_of_day().ok())
+            .unwrap_or(0.0)
     }
-    
+
     fn get_time_period(&self) -> String {
-         self.viewport.as_ref().and_then(|v| v.get_time_period().ok()).unwrap_or("Unknown").to_string()
+        self.viewport
+            .as_ref()
+            .and_then(|v| v.get_time_period().ok())
+            .unwrap_or("Unknown")
+            .to_string()
     }
-    
+
     fn is_shadows_enabled(&self) -> bool {
-        self.viewport.as_ref().and_then(|v| v.shadows_enabled().ok()).unwrap_or(false)
+        self.viewport
+            .as_ref()
+            .and_then(|v| v.shadows_enabled().ok())
+            .unwrap_or(false)
     }
-    
+
     fn set_shadows_enabled(&mut self, enabled: bool) {
-         if let Some(viewport) = &self.viewport {
-             if let Err(e) = viewport.set_shadows_enabled(enabled) {
-                 self.console_logs.push(format!("⚠️ Shadow error: {}", e));
-             } else {
-                 self.console_logs.push(format!("Shadows {}", if enabled { "enabled" } else { "disabled" }));
-             }
-         }
+        if let Some(viewport) = &self.viewport {
+            if let Err(e) = viewport.set_shadows_enabled(enabled) {
+                self.console_logs.push(format!("⚠️ Shadow error: {}", e));
+            } else {
+                self.console_logs.push(format!(
+                    "Shadows {}",
+                    if enabled { "enabled" } else { "disabled" }
+                ));
+            }
+        }
     }
-    
+
     fn on_diff_assets(&mut self) {
-        match std::process::Command::new("git").args(["diff", "assets"]).output() {
+        match std::process::Command::new("git")
+            .args(["diff", "assets"])
+            .output()
+        {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -5179,13 +5475,15 @@ impl MenuActionHandler for EditorApp {
                     self.console_logs.push("No asset changes.".into());
                 } else {
                     self.console_logs.push(format!("Asset diff:\n{}", stdout));
-                     if !stderr.is_empty() { self.console_logs.push(format!("Diff stderr: {}", stderr)); }
+                    if !stderr.is_empty() {
+                        self.console_logs.push(format!("Diff stderr: {}", stderr));
+                    }
                 }
             }
             Err(e) => self.console_logs.push(format!("Git diff failed: {}", e)),
-         }
+        }
     }
-    
+
     fn on_clear_console(&mut self) {
         self.console_logs.clear();
     }
@@ -5249,7 +5547,7 @@ impl eframe::App for EditorApp {
             .as_ref()
             .map(|s| s.world().entities().len())
             .unwrap_or(0);
-        
+
         // Week 5 Day 5: Enhanced scene statistics with mesh/texture/performance estimates
         // Note: These are reasonable estimates until we have real mesh/texture tracking
         let mesh_count = scene_entity_count; // Assume 1 mesh per entity
@@ -5258,18 +5556,18 @@ impl eframe::App for EditorApp {
         let total_triangles = mesh_count * avg_triangles_per_mesh;
         let total_vertices = mesh_count * avg_vertices_per_mesh;
         let mesh_memory_kb = (total_vertices * 32 + total_triangles * 12) / 1024; // vertex attrs + indices
-        
+
         // Texture estimates (could be replaced with actual tracking later)
         let texture_count = (scene_entity_count / 5).max(1); // ~1 texture per 5 entities
         let avg_texture_size_kb = 256; // 512x512 RGBA compressed
         let texture_memory_kb = texture_count * avg_texture_size_kb;
-        
+
         // Material and draw call estimates
         let material_count = (scene_entity_count / 3).max(1);
         let unique_shader_count = 3; // Standard PBR, unlit, transparent
         let estimated_draw_calls = mesh_count; // 1 draw per mesh (no batching assumed)
         let estimated_state_changes = material_count + unique_shader_count;
-        
+
         self.scene_stats_panel.update_stats(SceneStats {
             entity_count: scene_entity_count,
             selected_count,

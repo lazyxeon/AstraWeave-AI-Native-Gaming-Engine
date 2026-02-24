@@ -81,8 +81,8 @@ impl CompressionMethod {
     pub fn recommended_level(&self) -> i32 {
         match self {
             Self::None => 0,
-            Self::Zstd => 3,  // Good balance of speed/ratio
-            Self::Lz4 => 1,   // LZ4 doesn't have many levels
+            Self::Zstd => 3, // Good balance of speed/ratio
+            Self::Lz4 => 1,  // LZ4 doesn't have many levels
         }
     }
 }
@@ -227,7 +227,8 @@ pub struct PackManifestStats {
 impl PackManifestStats {
     /// Returns the space saved in bytes.
     pub fn space_saved(&self) -> u64 {
-        self.total_uncompressed.saturating_sub(self.total_compressed)
+        self.total_uncompressed
+            .saturating_sub(self.total_compressed)
     }
 
     /// Returns the space saved as a percentage.
@@ -370,8 +371,7 @@ impl AssetPackBuilder {
         }
 
         // Create output file
-        let file =
-            File::create(&self.output_path).map_err(|e| PackError::Io(e.to_string()))?;
+        let file = File::create(&self.output_path).map_err(|e| PackError::Io(e.to_string()))?;
         let mut writer = BufWriter::new(file);
 
         // Write magic and placeholder for manifest offset
@@ -450,9 +450,7 @@ impl AssetPackBuilder {
             .write_all(&manifest_offset.to_le_bytes())
             .map_err(|e| PackError::Io(e.to_string()))?;
 
-        writer
-            .flush()
-            .map_err(|e| PackError::Io(e.to_string()))?;
+        writer.flush().map_err(|e| PackError::Io(e.to_string()))?;
 
         if let Some(ref callback) = self.progress_callback {
             callback(1.0, "Pack complete!");
@@ -626,7 +624,10 @@ mod tests {
     fn test_pack_error_display() {
         assert_eq!(format!("{}", PackError::NoAssets), "No assets to pack");
         assert_eq!(format!("{}", PackError::Io("foo".into())), "IO error: foo");
-        assert_eq!(format!("{}", PackError::Compression("bar".into())), "Compression error: bar");
+        assert_eq!(
+            format!("{}", PackError::Compression("bar".into())),
+            "Compression error: bar"
+        );
     }
 
     #[test]
@@ -653,14 +654,14 @@ mod tests {
         assert_eq!(builder.compression, CompressionMethod::Zstd);
         assert_eq!(builder.assets.len(), 0);
     }
-    
+
     #[test]
     fn test_builder_chaining() {
         let builder = AssetPackBuilder::new("out.pak", "Proj")
             .with_compression(CompressionMethod::Lz4)
             .with_compression_level(5)
             .add_asset("src.txt", "arch.txt");
-            
+
         assert_eq!(builder.compression, CompressionMethod::Lz4);
         assert_eq!(builder.compression_level, 5);
         assert_eq!(builder.assets.len(), 1);

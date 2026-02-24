@@ -1,12 +1,12 @@
+pub mod menu_bar;
 pub mod progress;
 pub mod status_bar;
 pub mod toast;
-pub mod menu_bar;
 
+pub use menu_bar::{AlignDirection, DistributeDirection, MenuActionHandler, MenuBar};
 pub use progress::{ProgressManager, TaskCategory, TaskId};
 pub use status_bar::{ResourceUsage, StatusBar};
 pub use toast::{ToastAction, ToastLevel, ToastManager};
-pub use menu_bar::{MenuBar, MenuActionHandler, AlignDirection, DistributeDirection};
 
 #[cfg(test)]
 mod tests_progress;

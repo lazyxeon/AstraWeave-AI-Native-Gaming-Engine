@@ -2,13 +2,11 @@
 //! Covers: FillerMode, ScatterCategory, BiomePreset, EnvironmentPreset (filler),
 //!         ChartType, DataSource, ExportFormat (charts), ChartStats, ChartsAction
 
-use aw_editor_lib::panels::procedural_filler_panel::{
-    BiomePreset, FillerMode, ScatterCategory,
-    EnvironmentPreset as FillerEnvPreset,
-};
 use aw_editor_lib::panels::charts_panel::{
-    ChartStats, ChartType, ChartsAction, ChartsPanel, DataSource,
-    ExportFormat as ChartExportFormat,
+    ChartStats, ChartType, ChartsAction, ChartsPanel, DataSource, ExportFormat as ChartExportFormat,
+};
+use aw_editor_lib::panels::procedural_filler_panel::{
+    BiomePreset, EnvironmentPreset as FillerEnvPreset, FillerMode, ScatterCategory,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -182,7 +180,9 @@ fn biome_preset_rock_density_non_negative() {
 
 #[test]
 fn biome_preset_jungle_densest_trees() {
-    assert!(BiomePreset::TropicalJungle.tree_density() > BiomePreset::TemperateForest.tree_density());
+    assert!(
+        BiomePreset::TropicalJungle.tree_density() > BiomePreset::TemperateForest.tree_density()
+    );
 }
 
 #[test]
@@ -195,7 +195,11 @@ fn biome_preset_primary_color_in_range() {
     for b in BiomePreset::all() {
         let c = b.primary_color();
         for channel in &c {
-            assert!(*channel >= 0.0 && *channel <= 1.0, "{:?} color out of range", b);
+            assert!(
+                *channel >= 0.0 && *channel <= 1.0,
+                "{:?} color out of range",
+                b
+            );
         }
     }
 }
@@ -242,7 +246,12 @@ fn filler_env_preset_names_non_empty() {
 fn filler_env_preset_sun_intensity_range() {
     for p in FillerEnvPreset::all() {
         let i = p.sun_intensity();
-        assert!(i >= 0.0 && i <= 2.0, "{:?} sun intensity {} out of range", p, i);
+        assert!(
+            i >= 0.0 && i <= 2.0,
+            "{:?} sun intensity {} out of range",
+            p,
+            i
+        );
     }
 }
 
@@ -255,7 +264,12 @@ fn filler_env_preset_night_no_sun() {
 fn filler_env_preset_ambient_intensity_range() {
     for p in FillerEnvPreset::all() {
         let i = p.ambient_intensity();
-        assert!(i >= 0.0 && i <= 1.0, "{:?} ambient intensity {} out of range", p, i);
+        assert!(
+            i >= 0.0 && i <= 1.0,
+            "{:?} ambient intensity {} out of range",
+            p,
+            i
+        );
     }
 }
 
@@ -263,7 +277,12 @@ fn filler_env_preset_ambient_intensity_range() {
 fn filler_env_preset_fog_density_range() {
     for p in FillerEnvPreset::all() {
         let d = p.fog_density();
-        assert!(d >= 0.0 && d <= 1.0, "{:?} fog density {} out of range", p, d);
+        assert!(
+            d >= 0.0 && d <= 1.0,
+            "{:?} fog density {} out of range",
+            p,
+            d
+        );
     }
 }
 
@@ -450,21 +469,38 @@ fn chart_stats_from_multiple_points() {
 
 #[test]
 fn charts_action_is_export() {
-    assert!(ChartsAction::ExportCsv { data: "x".to_string() }.is_export());
-    assert!(ChartsAction::ExportJson { data: "x".to_string() }.is_export());
+    assert!(ChartsAction::ExportCsv {
+        data: "x".to_string()
+    }
+    .is_export());
+    assert!(ChartsAction::ExportJson {
+        data: "x".to_string()
+    }
+    .is_export());
     assert!(ChartsAction::ExportPng.is_export());
     assert!(!ChartsAction::ClearHistory.is_export());
-    assert!(!ChartsAction::SetChartType { chart_type: ChartType::Line }.is_export());
+    assert!(!ChartsAction::SetChartType {
+        chart_type: ChartType::Line
+    }
+    .is_export());
 }
 
 #[test]
 fn charts_action_name_non_empty() {
     let actions = [
-        ChartsAction::ExportCsv { data: String::new() },
-        ChartsAction::ExportJson { data: String::new() },
+        ChartsAction::ExportCsv {
+            data: String::new(),
+        },
+        ChartsAction::ExportJson {
+            data: String::new(),
+        },
         ChartsAction::ExportPng,
-        ChartsAction::SetChartType { chart_type: ChartType::Bar },
-        ChartsAction::SetDataSource { source: DataSource::FrameTiming },
+        ChartsAction::SetChartType {
+            chart_type: ChartType::Bar,
+        },
+        ChartsAction::SetDataSource {
+            source: DataSource::FrameTiming,
+        },
         ChartsAction::ClearHistory,
     ];
     for a in &actions {

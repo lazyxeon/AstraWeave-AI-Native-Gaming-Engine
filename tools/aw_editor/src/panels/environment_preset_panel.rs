@@ -21,18 +21,14 @@ use crate::panels::Panel;
 #[non_exhaustive]
 pub enum EnvironmentAction {
     /// Apply current settings to the scene
-    ApplySettings {
-        settings: EnvironmentSettings,
-    },
+    ApplySettings { settings: EnvironmentSettings },
     /// Save current settings as a named preset
     SavePreset {
         name: String,
         settings: EnvironmentSettings,
     },
     /// Load a preset by name
-    LoadPreset {
-        name: String,
-    },
+    LoadPreset { name: String },
     /// Apply a quick preset (time of day or weather)
     ApplyQuickPreset {
         time: TimeOfDay,
@@ -893,7 +889,10 @@ impl EnvironmentPresetPanel {
                 WeatherCondition::Foggy,
             ] {
                 let selected = self.settings.weather == *weather;
-                if ui.selectable_label(selected, format!("{}", weather)).clicked() {
+                if ui
+                    .selectable_label(selected, format!("{}", weather))
+                    .clicked()
+                {
                     self.settings.apply_weather(*weather);
                 }
             }
@@ -921,7 +920,10 @@ impl EnvironmentPresetPanel {
                     .show_ui(ui, |ui| {
                         for sky in SkyType::all() {
                             if ui
-                                .selectable_label(self.settings.sky_type == *sky, format!("{}", sky))
+                                .selectable_label(
+                                    self.settings.sky_type == *sky,
+                                    format!("{}", sky),
+                                )
                                 .clicked()
                             {
                                 self.settings.sky_type = *sky;
@@ -945,7 +947,10 @@ impl EnvironmentPresetPanel {
                     .show_ui(ui, |ui| {
                         for fog in FogType::all() {
                             if ui
-                                .selectable_label(self.settings.fog_type == *fog, format!("{}", fog))
+                                .selectable_label(
+                                    self.settings.fog_type == *fog,
+                                    format!("{}", fog),
+                                )
                                 .clicked()
                             {
                                 self.settings.fog_type = *fog;
@@ -1006,22 +1011,15 @@ impl EnvironmentPresetPanel {
                         }
                     });
 
-                ui.add(
-                    egui::Slider::new(&mut self.settings.exposure, -3.0..=3.0).text("Exposure"),
-                );
+                ui.add(egui::Slider::new(&mut self.settings.exposure, -3.0..=3.0).text("Exposure"));
+
+                ui.add(egui::Slider::new(&mut self.settings.contrast, -1.0..=1.0).text("Contrast"));
 
                 ui.add(
-                    egui::Slider::new(&mut self.settings.contrast, -1.0..=1.0).text("Contrast"),
+                    egui::Slider::new(&mut self.settings.saturation, -1.0..=1.0).text("Saturation"),
                 );
 
-                ui.add(
-                    egui::Slider::new(&mut self.settings.saturation, -1.0..=1.0)
-                        .text("Saturation"),
-                );
-
-                ui.add(
-                    egui::Slider::new(&mut self.settings.vignette, 0.0..=1.0).text("Vignette"),
-                );
+                ui.add(egui::Slider::new(&mut self.settings.vignette, 0.0..=1.0).text("Vignette"));
             });
     }
 
@@ -1088,8 +1086,7 @@ impl Panel for EnvironmentPresetPanel {
             ui.toggle_value(&mut self.preview_enabled, "👁️ Live Preview");
             ui.separator();
             ui.add(
-                egui::Slider::new(&mut self.transition_duration, 0.0..=10.0)
-                    .text("Transition (s)"),
+                egui::Slider::new(&mut self.transition_duration, 0.0..=10.0).text("Transition (s)"),
             );
         });
 
@@ -1241,8 +1238,14 @@ mod tests {
 
     #[test]
     fn test_mood_preset_tonemapper() {
-        assert_eq!(MoodPreset::Cinematic.recommended_tonemapper(), Tonemapper::Aces);
-        assert_eq!(MoodPreset::Neutral.recommended_tonemapper(), Tonemapper::Khronos);
+        assert_eq!(
+            MoodPreset::Cinematic.recommended_tonemapper(),
+            Tonemapper::Aces
+        );
+        assert_eq!(
+            MoodPreset::Neutral.recommended_tonemapper(),
+            Tonemapper::Khronos
+        );
     }
 
     #[test]
@@ -1280,7 +1283,9 @@ mod tests {
     #[test]
     fn test_take_actions_drains_queue() {
         let mut panel = EnvironmentPresetPanel::new();
-        panel.pending_actions.push(EnvironmentAction::ResetToDefault);
+        panel
+            .pending_actions
+            .push(EnvironmentAction::ResetToDefault);
         panel.pending_actions.push(EnvironmentAction::StartPreview);
 
         assert!(panel.has_pending_actions());

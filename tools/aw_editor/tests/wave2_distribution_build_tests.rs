@@ -4,13 +4,13 @@
 //!         BuildTarget (build_manager), BuildProfile (build_manager),
 //!         BuildStatus, BuildConfig, BuildMessage
 
-use aw_editor_lib::panels::distribution_panel::{
-    AudioFormat, AssetOptions, BuildOptions, BuildProfile as DistBuildProfile,
-    BuildStep, BuildProgress, TargetPlatform, TextureFormat,
-};
 use aw_editor_lib::panels::build_manager::{
-    BuildConfig, BuildMessage, BuildManagerPanel, BuildProfile as BmBuildProfile,
-    BuildStatus, BuildTarget,
+    BuildConfig, BuildManagerPanel, BuildMessage, BuildProfile as BmBuildProfile, BuildStatus,
+    BuildTarget,
+};
+use aw_editor_lib::panels::distribution_panel::{
+    AssetOptions, AudioFormat, BuildOptions, BuildProfile as DistBuildProfile, BuildProgress,
+    BuildStep, TargetPlatform, TextureFormat,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -26,7 +26,10 @@ fn dist_build_profile_all_count() {
 fn dist_build_profile_names() {
     assert_eq!(DistBuildProfile::Debug.name(), "Debug");
     assert_eq!(DistBuildProfile::Release.name(), "Release");
-    assert_eq!(DistBuildProfile::ReleaseOptimized.name(), "Release (Optimized)");
+    assert_eq!(
+        DistBuildProfile::ReleaseOptimized.name(),
+        "Release (Optimized)"
+    );
     assert_eq!(DistBuildProfile::MinSize.name(), "Minimum Size");
 }
 
@@ -48,7 +51,10 @@ fn dist_build_profile_description_non_empty() {
 fn dist_build_profile_cargo_profile() {
     assert_eq!(DistBuildProfile::Debug.cargo_profile(), "debug");
     assert_eq!(DistBuildProfile::Release.cargo_profile(), "release");
-    assert_eq!(DistBuildProfile::ReleaseOptimized.cargo_profile(), "release-lto");
+    assert_eq!(
+        DistBuildProfile::ReleaseOptimized.cargo_profile(),
+        "release-lto"
+    );
     assert_eq!(DistBuildProfile::MinSize.cargo_profile(), "release-small");
 }
 
@@ -101,8 +107,14 @@ fn target_platform_icons_non_empty() {
 #[test]
 fn target_platform_rust_target() {
     assert!(TargetPlatform::Native.rust_target().is_none());
-    assert_eq!(TargetPlatform::Windows64.rust_target(), Some("x86_64-pc-windows-msvc"));
-    assert_eq!(TargetPlatform::LinuxX64.rust_target(), Some("x86_64-unknown-linux-gnu"));
+    assert_eq!(
+        TargetPlatform::Windows64.rust_target(),
+        Some("x86_64-pc-windows-msvc")
+    );
+    assert_eq!(
+        TargetPlatform::LinuxX64.rust_target(),
+        Some("x86_64-unknown-linux-gnu")
+    );
 }
 
 #[test]
@@ -336,8 +348,14 @@ fn bm_build_target_icons_non_empty() {
 #[test]
 fn bm_build_target_cargo_target() {
     assert!(BuildTarget::Windows.cargo_target().is_none());
-    assert_eq!(BuildTarget::Linux.cargo_target(), Some("x86_64-unknown-linux-gnu"));
-    assert_eq!(BuildTarget::Web.cargo_target(), Some("wasm32-unknown-unknown"));
+    assert_eq!(
+        BuildTarget::Linux.cargo_target(),
+        Some("x86_64-unknown-linux-gnu")
+    );
+    assert_eq!(
+        BuildTarget::Web.cargo_target(),
+        Some("wasm32-unknown-unknown")
+    );
 }
 
 #[test]
@@ -483,7 +501,9 @@ fn build_config_defaults() {
 
 #[test]
 fn build_message_is_error() {
-    let msg = BuildMessage::Failed { error: "oom".to_string() };
+    let msg = BuildMessage::Failed {
+        error: "oom".to_string(),
+    };
     assert!(msg.is_error());
     let msg2 = BuildMessage::LogLine("ok".to_string());
     assert!(!msg2.is_error());
@@ -491,19 +511,38 @@ fn build_message_is_error() {
 
 #[test]
 fn build_message_is_terminal() {
-    assert!(BuildMessage::Complete { output_path: "out".into(), duration_secs: 1.0 }.is_terminal());
-    assert!(BuildMessage::Failed { error: "err".to_string() }.is_terminal());
+    assert!(BuildMessage::Complete {
+        output_path: "out".into(),
+        duration_secs: 1.0
+    }
+    .is_terminal());
+    assert!(BuildMessage::Failed {
+        error: "err".to_string()
+    }
+    .is_terminal());
     assert!(!BuildMessage::LogLine("log".to_string()).is_terminal());
-    assert!(!(BuildMessage::Progress { percent: 0.5, step: "x".to_string() }).is_terminal());
+    assert!(!(BuildMessage::Progress {
+        percent: 0.5,
+        step: "x".to_string()
+    })
+    .is_terminal());
 }
 
 #[test]
 fn build_message_icon_non_empty() {
     let msgs: Vec<BuildMessage> = vec![
-        BuildMessage::Progress { percent: 0.0, step: "init".to_string() },
+        BuildMessage::Progress {
+            percent: 0.0,
+            step: "init".to_string(),
+        },
         BuildMessage::LogLine("log".to_string()),
-        BuildMessage::Complete { output_path: "out".into(), duration_secs: 1.0 },
-        BuildMessage::Failed { error: "err".to_string() },
+        BuildMessage::Complete {
+            output_path: "out".into(),
+            duration_secs: 1.0,
+        },
+        BuildMessage::Failed {
+            error: "err".to_string(),
+        },
     ];
     for m in &msgs {
         assert!(!m.icon().is_empty());

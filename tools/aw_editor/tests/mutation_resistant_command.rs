@@ -3,7 +3,7 @@
 //! Comprehensive tests for boundary conditions, comparison operators,
 //! and boolean return paths to achieve ≥95% mutation kill rate.
 
-use aw_editor_lib::command::{UndoStackStats, UndoStackIssue, UndoStack};
+use aw_editor_lib::command::{UndoStack, UndoStackIssue, UndoStackStats};
 
 // =============================================================================
 // UNDO STACK STATS - UTILIZATION() TESTS
@@ -491,7 +491,9 @@ mod issue_is_error_tests {
 
     #[test]
     fn near_capacity_is_not_error() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         assert!(!issue.is_error());
     }
 
@@ -523,7 +525,9 @@ mod issue_icon_tests {
 
     #[test]
     fn near_capacity_icon_is_warning_emoji() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         assert_eq!(issue.icon(), "⚠️");
     }
 
@@ -555,7 +559,9 @@ mod issue_display_tests {
 
     #[test]
     fn near_capacity_display_includes_percent() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         let display = format!("{}", issue);
         assert!(display.contains("85"));
         assert!(display.contains("%"));

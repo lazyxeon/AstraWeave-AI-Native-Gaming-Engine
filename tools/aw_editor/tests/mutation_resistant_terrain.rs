@@ -7,8 +7,8 @@
 //! - Boolean return path testing for all predicate methods
 //! - Comparison and ordering tests where applicable
 
+use aw_editor_lib::panels::terrain_panel::{FluidQualityPreset, WaterBodyPreset};
 use aw_editor_lib::panels::{BrushMode, ErosionPresetType};
-use aw_editor_lib::panels::terrain_panel::{WaterBodyPreset, FluidQualityPreset};
 
 // ============================================================================
 // ErosionPresetType Tests (6 variants)
@@ -53,32 +53,50 @@ mod erosion_preset_type_tests {
 
     #[test]
     fn erosion_preset_custom_is_not_desert() {
-        assert_ne!(ErosionPresetType::Custom.name(), ErosionPresetType::Desert.name());
+        assert_ne!(
+            ErosionPresetType::Custom.name(),
+            ErosionPresetType::Desert.name()
+        );
     }
 
     #[test]
     fn erosion_preset_custom_is_not_mountain() {
-        assert_ne!(ErosionPresetType::Custom.name(), ErosionPresetType::Mountain.name());
+        assert_ne!(
+            ErosionPresetType::Custom.name(),
+            ErosionPresetType::Mountain.name()
+        );
     }
 
     #[test]
     fn erosion_preset_desert_is_not_coastal() {
-        assert_ne!(ErosionPresetType::Desert.name(), ErosionPresetType::Coastal.name());
+        assert_ne!(
+            ErosionPresetType::Desert.name(),
+            ErosionPresetType::Coastal.name()
+        );
     }
 
     #[test]
     fn erosion_preset_mountain_is_not_alpine() {
-        assert_ne!(ErosionPresetType::Mountain.name(), ErosionPresetType::Alpine.name());
+        assert_ne!(
+            ErosionPresetType::Mountain.name(),
+            ErosionPresetType::Alpine.name()
+        );
     }
 
     #[test]
     fn erosion_preset_coastal_is_not_canyon() {
-        assert_ne!(ErosionPresetType::Coastal.name(), ErosionPresetType::Canyon.name());
+        assert_ne!(
+            ErosionPresetType::Coastal.name(),
+            ErosionPresetType::Canyon.name()
+        );
     }
 
     #[test]
     fn erosion_preset_alpine_is_not_custom() {
-        assert_ne!(ErosionPresetType::Alpine.name(), ErosionPresetType::Custom.name());
+        assert_ne!(
+            ErosionPresetType::Alpine.name(),
+            ErosionPresetType::Custom.name()
+        );
     }
 
     // --- all() method tests ---
@@ -368,13 +386,19 @@ mod water_body_preset_tests {
 
     #[test]
     fn water_body_flowing_count_equals_three() {
-        let count = WaterBodyPreset::all().iter().filter(|p| p.is_flowing()).count();
+        let count = WaterBodyPreset::all()
+            .iter()
+            .filter(|p| p.is_flowing())
+            .count();
         assert_eq!(count, 3);
     }
 
     #[test]
     fn water_body_not_flowing_count_equals_four() {
-        let count = WaterBodyPreset::all().iter().filter(|p| !p.is_flowing()).count();
+        let count = WaterBodyPreset::all()
+            .iter()
+            .filter(|p| !p.is_flowing())
+            .count();
         assert_eq!(count, 4);
     }
 
@@ -421,22 +445,34 @@ mod fluid_quality_preset_tests {
 
     #[test]
     fn fluid_quality_performance_is_not_balanced() {
-        assert_ne!(FluidQualityPreset::Performance.name(), FluidQualityPreset::Balanced.name());
+        assert_ne!(
+            FluidQualityPreset::Performance.name(),
+            FluidQualityPreset::Balanced.name()
+        );
     }
 
     #[test]
     fn fluid_quality_balanced_is_not_quality() {
-        assert_ne!(FluidQualityPreset::Balanced.name(), FluidQualityPreset::Quality.name());
+        assert_ne!(
+            FluidQualityPreset::Balanced.name(),
+            FluidQualityPreset::Quality.name()
+        );
     }
 
     #[test]
     fn fluid_quality_quality_is_not_cinematic() {
-        assert_ne!(FluidQualityPreset::Quality.name(), FluidQualityPreset::Cinematic.name());
+        assert_ne!(
+            FluidQualityPreset::Quality.name(),
+            FluidQualityPreset::Cinematic.name()
+        );
     }
 
     #[test]
     fn fluid_quality_cinematic_is_not_performance() {
-        assert_ne!(FluidQualityPreset::Cinematic.name(), FluidQualityPreset::Performance.name());
+        assert_ne!(
+            FluidQualityPreset::Cinematic.name(),
+            FluidQualityPreset::Performance.name()
+        );
     }
 
     // --- all() method tests ---
@@ -470,7 +506,10 @@ mod fluid_quality_preset_tests {
 
     #[test]
     fn fluid_quality_performance_display_matches_name() {
-        assert_eq!(format!("{}", FluidQualityPreset::Performance), "Performance");
+        assert_eq!(
+            format!("{}", FluidQualityPreset::Performance),
+            "Performance"
+        );
     }
 
     #[test]
@@ -492,7 +531,10 @@ mod fluid_quality_preset_tests {
 
     #[test]
     fn fluid_quality_performance_equals_performance() {
-        assert_eq!(FluidQualityPreset::Performance, FluidQualityPreset::Performance);
+        assert_eq!(
+            FluidQualityPreset::Performance,
+            FluidQualityPreset::Performance
+        );
     }
 
     #[test]
@@ -502,7 +544,10 @@ mod fluid_quality_preset_tests {
 
     #[test]
     fn fluid_quality_performance_not_equal_to_balanced() {
-        assert_ne!(FluidQualityPreset::Performance, FluidQualityPreset::Balanced);
+        assert_ne!(
+            FluidQualityPreset::Performance,
+            FluidQualityPreset::Balanced
+        );
     }
 }
 
@@ -753,9 +798,18 @@ mod cross_type_integration_tests {
 
     #[test]
     fn water_body_flowing_and_not_flowing_partitions_all_variants() {
-        let flowing_count = WaterBodyPreset::all().iter().filter(|p| p.is_flowing()).count();
-        let not_flowing_count = WaterBodyPreset::all().iter().filter(|p| !p.is_flowing()).count();
-        assert_eq!(flowing_count + not_flowing_count, WaterBodyPreset::all().len());
+        let flowing_count = WaterBodyPreset::all()
+            .iter()
+            .filter(|p| p.is_flowing())
+            .count();
+        let not_flowing_count = WaterBodyPreset::all()
+            .iter()
+            .filter(|p| !p.is_flowing())
+            .count();
+        assert_eq!(
+            flowing_count + not_flowing_count,
+            WaterBodyPreset::all().len()
+        );
     }
 
     #[test]

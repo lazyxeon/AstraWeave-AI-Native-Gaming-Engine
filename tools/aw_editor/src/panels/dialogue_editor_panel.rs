@@ -87,7 +87,10 @@ impl DialogueNodeType {
     }
 
     pub fn is_branching(&self) -> bool {
-        matches!(self, DialogueNodeType::Choice | DialogueNodeType::Condition | DialogueNodeType::RandomBranch)
+        matches!(
+            self,
+            DialogueNodeType::Choice | DialogueNodeType::Condition | DialogueNodeType::RandomBranch
+        )
     }
 
     pub fn is_terminal(&self) -> bool {
@@ -516,10 +519,7 @@ impl DialogueTemplate {
         Self {
             name: "Greeting".to_string(),
             description: "Basic greeting dialogue with response options".to_string(),
-            node_pattern: vec![
-                DialogueNodeType::Speech,
-                DialogueNodeType::Choice,
-            ],
+            node_pattern: vec![DialogueNodeType::Speech, DialogueNodeType::Choice],
         }
     }
 
@@ -648,10 +648,7 @@ impl EditorAction {
 
     /// Returns true if this is an add action
     pub fn is_add(&self) -> bool {
-        matches!(
-            self,
-            EditorAction::AddNode(_) | EditorAction::AddSpeaker(_)
-        )
+        matches!(self, EditorAction::AddNode(_) | EditorAction::AddSpeaker(_))
     }
 
     /// Returns true if this is a delete action
@@ -728,7 +725,8 @@ impl DialogueEditorAction {
     pub fn is_io_action(&self) -> bool {
         matches!(
             self,
-            DialogueEditorAction::ExportDialogue { .. } | DialogueEditorAction::ImportDialogue { .. }
+            DialogueEditorAction::ExportDialogue { .. }
+                | DialogueEditorAction::ImportDialogue { .. }
         )
     }
 
@@ -846,7 +844,13 @@ impl Default for DialogueEditorPanel {
             preview_history: Vec::new(),
 
             current_language: "en".to_string(),
-            available_languages: vec!["en".to_string(), "es".to_string(), "fr".to_string(), "de".to_string(), "ja".to_string()],
+            available_languages: vec![
+                "en".to_string(),
+                "es".to_string(),
+                "fr".to_string(),
+                "de".to_string(),
+                "ja".to_string(),
+            ],
             localization_entries: Vec::new(),
 
             validation_issues: Vec::new(),
@@ -1035,11 +1039,21 @@ impl DialogueEditorPanel {
 
             for (tab, label) in tabs {
                 let is_selected = self.active_tab == tab;
-                
+
                 // Show validation badge
-                let display_label = if matches!(tab, DialogueTab::Validation) && !self.validation_issues.is_empty() {
-                    let error_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Error)).count();
-                    let warning_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Warning)).count();
+                let display_label = if matches!(tab, DialogueTab::Validation)
+                    && !self.validation_issues.is_empty()
+                {
+                    let error_count = self
+                        .validation_issues
+                        .iter()
+                        .filter(|i| matches!(i.severity, IssueSeverity::Error))
+                        .count();
+                    let warning_count = self
+                        .validation_issues
+                        .iter()
+                        .filter(|i| matches!(i.severity, IssueSeverity::Warning))
+                        .count();
                     if error_count > 0 {
                         format!("{} ({})", label, error_count)
                     } else if warning_count > 0 {
@@ -1050,7 +1064,7 @@ impl DialogueEditorPanel {
                 } else {
                     label.to_string()
                 };
-                
+
                 let button = egui::Button::new(display_label).fill(if is_selected {
                     Color32::from_rgb(60, 100, 160)
                 } else {
@@ -1068,7 +1082,7 @@ impl DialogueEditorPanel {
             ui.label(format!("📁 {}", self.current_graph.name));
             ui.label(format!("| {} nodes", self.current_graph.nodes.len()));
             ui.label(format!("| {} speakers", self.current_graph.speakers.len()));
-            
+
             // Show statistics
             if self.total_word_count > 0 {
                 ui.label(format!("| {} words", self.total_word_count));
@@ -1076,16 +1090,30 @@ impl DialogueEditorPanel {
             if self.avg_branch_factor > 0.0 {
                 ui.label(format!("| {:.1} avg branches", self.avg_branch_factor));
             }
-            
+
             // Show validation status
             if !self.validation_issues.is_empty() {
-                let error_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Error)).count();
-                let warning_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Warning)).count();
+                let error_count = self
+                    .validation_issues
+                    .iter()
+                    .filter(|i| matches!(i.severity, IssueSeverity::Error))
+                    .count();
+                let warning_count = self
+                    .validation_issues
+                    .iter()
+                    .filter(|i| matches!(i.severity, IssueSeverity::Warning))
+                    .count();
                 if error_count > 0 {
-                    ui.colored_label(Color32::from_rgb(255, 100, 100), format!("| ❌ {} errors", error_count));
+                    ui.colored_label(
+                        Color32::from_rgb(255, 100, 100),
+                        format!("| ❌ {} errors", error_count),
+                    );
                 }
                 if warning_count > 0 {
-                    ui.colored_label(Color32::from_rgb(255, 200, 100), format!("| ⚠️ {} warnings", warning_count));
+                    ui.colored_label(
+                        Color32::from_rgb(255, 200, 100),
+                        format!("| ⚠️ {} warnings", warning_count),
+                    );
                 }
             } else {
                 ui.colored_label(Color32::from_rgb(100, 255, 100), "| ✓ Valid");
@@ -1151,7 +1179,10 @@ impl DialogueEditorPanel {
         let mut x = rect.min.x + (self.pan_offset.0 % grid_spacing);
         while x < rect.max.x {
             painter.line_segment(
-                [egui::Pos2::new(x, rect.min.y), egui::Pos2::new(x, rect.max.y)],
+                [
+                    egui::Pos2::new(x, rect.min.y),
+                    egui::Pos2::new(x, rect.max.y),
+                ],
                 egui::Stroke::new(1.0, grid_color),
             );
             x += grid_spacing;
@@ -1160,7 +1191,10 @@ impl DialogueEditorPanel {
         let mut y = rect.min.y + (self.pan_offset.1 % grid_spacing);
         while y < rect.max.y {
             painter.line_segment(
-                [egui::Pos2::new(rect.min.x, y), egui::Pos2::new(rect.max.x, y)],
+                [
+                    egui::Pos2::new(rect.min.x, y),
+                    egui::Pos2::new(rect.max.x, y),
+                ],
                 egui::Stroke::new(1.0, grid_color),
             );
             y += grid_spacing;
@@ -1175,22 +1209,30 @@ impl DialogueEditorPanel {
 
             for choice in &node.choices {
                 if let Some(target_id) = choice.target_node_id {
-                    if let Some(target_node) = self.current_graph.nodes.iter().find(|n| n.id == target_id) {
+                    if let Some(target_node) =
+                        self.current_graph.nodes.iter().find(|n| n.id == target_id)
+                    {
                         let target_pos = egui::Pos2::new(
-                            rect.min.x + target_node.position.0 * self.zoom_level + self.pan_offset.0,
-                            rect.min.y + target_node.position.1 * self.zoom_level + self.pan_offset.1,
+                            rect.min.x
+                                + target_node.position.0 * self.zoom_level
+                                + self.pan_offset.0,
+                            rect.min.y
+                                + target_node.position.1 * self.zoom_level
+                                + self.pan_offset.1,
                         );
 
                         // Draw curved connection line
                         let ctrl1 = egui::Pos2::new(node_pos.x + 50.0, node_pos.y);
                         let ctrl2 = egui::Pos2::new(target_pos.x - 50.0, target_pos.y);
 
-                        painter.add(egui::Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
-                            [node_pos, ctrl1, ctrl2, target_pos],
-                            false,
-                            Color32::TRANSPARENT,
-                            egui::Stroke::new(2.0, Color32::from_rgb(150, 150, 150)),
-                        )));
+                        painter.add(egui::Shape::CubicBezier(
+                            egui::epaint::CubicBezierShape::from_points_stroke(
+                                [node_pos, ctrl1, ctrl2, target_pos],
+                                false,
+                                Color32::TRANSPARENT,
+                                egui::Stroke::new(2.0, Color32::from_rgb(150, 150, 150)),
+                            ),
+                        ));
                     }
                 }
             }
@@ -1230,7 +1272,16 @@ impl DialogueEditorPanel {
                     node_rect.min,
                     Vec2::new(node_rect.width(), 6.0 * self.zoom_level),
                 );
-                painter.rect_filled(type_bar, egui::CornerRadius { nw: 8, ne: 8, sw: 0, se: 0 }, node.node_type.color());
+                painter.rect_filled(
+                    type_bar,
+                    egui::CornerRadius {
+                        nw: 8,
+                        ne: 8,
+                        sw: 0,
+                        se: 0,
+                    },
+                    node.node_type.color(),
+                );
 
                 // Start node indicator
                 if is_start {
@@ -1280,7 +1331,10 @@ impl DialogueEditorPanel {
                         rect.min.x + node.position.0 * self.zoom_level + self.pan_offset.0,
                         rect.min.y + node.position.1 * self.zoom_level + self.pan_offset.1,
                     );
-                    let node_rect = egui::Rect::from_center_size(node_pos, Vec2::new(120.0 * self.zoom_level, 40.0 * self.zoom_level));
+                    let node_rect = egui::Rect::from_center_size(
+                        node_pos,
+                        Vec2::new(120.0 * self.zoom_level, 40.0 * self.zoom_level),
+                    );
                     if node_rect.contains(pos) {
                         self.selected_node = Some(node.id);
                         break;
@@ -1297,9 +1351,16 @@ impl DialogueEditorPanel {
     }
 
     fn show_node_details(&mut self, ui: &mut Ui, node_id: u32) {
-        if let Some(node) = self.current_graph.nodes.iter_mut().find(|n| n.id == node_id) {
+        if let Some(node) = self
+            .current_graph
+            .nodes
+            .iter_mut()
+            .find(|n| n.id == node_id)
+        {
             ui.group(|ui| {
-                ui.label(RichText::new(format!("{} Node #{}", node.node_type.icon(), node.id)).strong());
+                ui.label(
+                    RichText::new(format!("{} Node #{}", node.node_type.icon(), node.id)).strong(),
+                );
 
                 egui::Grid::new("node_details_grid")
                     .num_columns(2)
@@ -1307,10 +1368,18 @@ impl DialogueEditorPanel {
                     .show(ui, |ui| {
                         ui.label("Type:");
                         egui::ComboBox::from_id_salt("node_type")
-                            .selected_text(format!("{} {:?}", node.node_type.icon(), node.node_type))
+                            .selected_text(format!(
+                                "{} {:?}",
+                                node.node_type.icon(),
+                                node.node_type
+                            ))
                             .show_ui(ui, |ui| {
                                 for t in DialogueNodeType::all() {
-                                    ui.selectable_value(&mut node.node_type, *t, format!("{} {:?}", t.icon(), t));
+                                    ui.selectable_value(
+                                        &mut node.node_type,
+                                        *t,
+                                        format!("{} {:?}", t.icon(), t),
+                                    );
                                 }
                             });
                         ui.end_row();
@@ -1367,11 +1436,20 @@ impl DialogueEditorPanel {
 
                     ui.horizontal(|ui| {
                         // Type icon with color
-                        ui.label(RichText::new(node.node_type.icon()).color(node.node_type.color()));
+                        ui.label(
+                            RichText::new(node.node_type.icon()).color(node.node_type.color()),
+                        );
 
                         // Node info
-                        let label = format!("#{} - {}", node.id, 
-                            if node.text.is_empty() { format!("{:?}", node.node_type) } else { node.text.chars().take(30).collect::<String>() });
+                        let label = format!(
+                            "#{} - {}",
+                            node.id,
+                            if node.text.is_empty() {
+                                format!("{:?}", node.node_type)
+                            } else {
+                                node.text.chars().take(30).collect::<String>()
+                            }
+                        );
 
                         if ui.selectable_label(is_selected, label).clicked() {
                             self.selected_node = Some(node.id);
@@ -1383,7 +1461,11 @@ impl DialogueEditorPanel {
 
                         // Choice count
                         if !node.choices.is_empty() {
-                            ui.label(RichText::new(format!("({} choices)", node.choices.len())).small().color(Color32::GRAY));
+                            ui.label(
+                                RichText::new(format!("({} choices)", node.choices.len()))
+                                    .small()
+                                    .color(Color32::GRAY),
+                            );
                         }
                     });
                 }
@@ -1414,7 +1496,9 @@ impl DialogueEditorPanel {
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
                             // Color indicator
-                            let color_rect = ui.allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover()).0;
+                            let color_rect = ui
+                                .allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover())
+                                .0;
                             ui.painter().rect_filled(color_rect, 3.0, speaker.color);
 
                             if ui.selectable_label(is_selected, &speaker.name).clicked() {
@@ -1487,10 +1571,26 @@ impl DialogueEditorPanel {
                                     egui::ComboBox::from_id_salt(format!("type_{}", var.name))
                                         .selected_text(format!("{:?}", var.var_type))
                                         .show_ui(ui, |ui| {
-                                            ui.selectable_value(&mut var.var_type, VariableType::Boolean, "Boolean");
-                                            ui.selectable_value(&mut var.var_type, VariableType::Integer, "Integer");
-                                            ui.selectable_value(&mut var.var_type, VariableType::Float, "Float");
-                                            ui.selectable_value(&mut var.var_type, VariableType::String, "String");
+                                            ui.selectable_value(
+                                                &mut var.var_type,
+                                                VariableType::Boolean,
+                                                "Boolean",
+                                            );
+                                            ui.selectable_value(
+                                                &mut var.var_type,
+                                                VariableType::Integer,
+                                                "Integer",
+                                            );
+                                            ui.selectable_value(
+                                                &mut var.var_type,
+                                                VariableType::Float,
+                                                "Float",
+                                            );
+                                            ui.selectable_value(
+                                                &mut var.var_type,
+                                                VariableType::String,
+                                                "String",
+                                            );
                                         });
                                     ui.end_row();
 
@@ -1569,11 +1669,23 @@ impl DialogueEditorPanel {
             if let Some(node) = self.current_graph.nodes.iter().find(|n| n.id == node_id) {
                 // Speaker name
                 if let Some(ref speaker_id) = node.speaker_id {
-                    if let Some(speaker) = self.current_graph.speakers.iter().find(|s| &s.id == speaker_id) {
+                    if let Some(speaker) = self
+                        .current_graph
+                        .speakers
+                        .iter()
+                        .find(|s| &s.id == speaker_id)
+                    {
                         ui.horizontal(|ui| {
-                            let color_rect = ui.allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover()).0;
+                            let color_rect = ui
+                                .allocate_exact_size(Vec2::new(12.0, 12.0), egui::Sense::hover())
+                                .0;
                             ui.painter().rect_filled(color_rect, 3.0, speaker.color);
-                            ui.label(RichText::new(&speaker.name).strong().size(16.0).color(speaker.color));
+                            ui.label(
+                                RichText::new(&speaker.name)
+                                    .strong()
+                                    .size(16.0)
+                                    .color(speaker.color),
+                            );
                         });
                     }
                 }
@@ -1673,19 +1785,40 @@ impl DialogueEditorPanel {
         ui.separator();
 
         // Issue summary
-        let error_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Error)).count();
-        let warning_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Warning)).count();
-        let info_count = self.validation_issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Info)).count();
+        let error_count = self
+            .validation_issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Error))
+            .count();
+        let warning_count = self
+            .validation_issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Warning))
+            .count();
+        let info_count = self
+            .validation_issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Info))
+            .count();
 
         ui.horizontal(|ui| {
             if error_count > 0 {
-                ui.colored_label(Color32::from_rgb(255, 100, 100), format!("❌ {} Errors", error_count));
+                ui.colored_label(
+                    Color32::from_rgb(255, 100, 100),
+                    format!("❌ {} Errors", error_count),
+                );
             }
             if warning_count > 0 {
-                ui.colored_label(Color32::from_rgb(255, 200, 100), format!("⚠️ {} Warnings", warning_count));
+                ui.colored_label(
+                    Color32::from_rgb(255, 200, 100),
+                    format!("⚠️ {} Warnings", warning_count),
+                );
             }
             if info_count > 0 {
-                ui.colored_label(Color32::from_rgb(100, 200, 255), format!("ℹ️ {} Info", info_count));
+                ui.colored_label(
+                    Color32::from_rgb(100, 200, 255),
+                    format!("ℹ️ {} Info", info_count),
+                );
             }
             if self.validation_issues.is_empty() {
                 ui.colored_label(Color32::from_rgb(100, 255, 100), "✓ No Issues Found");
@@ -1712,7 +1845,10 @@ impl DialogueEditorPanel {
                         });
                     }
                     if !issue.suggestion.is_empty() {
-                        ui.label(RichText::new(format!("💡 {}", issue.suggestion)).color(Color32::from_rgb(200, 200, 100)));
+                        ui.label(
+                            RichText::new(format!("💡 {}", issue.suggestion))
+                                .color(Color32::from_rgb(200, 200, 100)),
+                        );
                     }
                 });
                 if idx < self.validation_issues.len() - 1 {
@@ -1768,10 +1904,19 @@ impl DialogueEditorPanel {
         // Statistics
         ui.heading("Dialogue Statistics");
         ui.label(format!("Total nodes: {}", self.current_graph.nodes.len()));
-        ui.label(format!("Total speakers: {}", self.current_graph.speakers.len()));
-        ui.label(format!("Total variables: {}", self.current_graph.variables.len()));
+        ui.label(format!(
+            "Total speakers: {}",
+            self.current_graph.speakers.len()
+        ));
+        ui.label(format!(
+            "Total variables: {}",
+            self.current_graph.variables.len()
+        ));
         ui.label(format!("Word count: {}", self.total_word_count));
-        ui.label(format!("Average branch factor: {:.2}", self.avg_branch_factor));
+        ui.label(format!(
+            "Average branch factor: {:.2}",
+            self.avg_branch_factor
+        ));
     }
 
     fn show_templates_tab(&mut self, ui: &mut Ui) {
@@ -1794,12 +1939,14 @@ impl DialogueEditorPanel {
                         }
                     });
                     ui.label(&template.description);
-                    
+
                     // Show template preview
                     ui.collapsing("Preview Structure", |ui| {
                         ui.label(format!("Nodes: {}", template.node_pattern.len()));
                         ui.label("Pattern:");
-                        let pattern_str = template.node_pattern.iter()
+                        let pattern_str = template
+                            .node_pattern
+                            .iter()
                             .map(|t| format!("{:?}", t))
                             .collect::<Vec<_>>()
                             .join(" → ");
@@ -1822,8 +1969,16 @@ impl DialogueEditorPanel {
         if ui.button("💾 Save Current as Template").clicked() {
             let template = DialogueTemplate {
                 name: format!("Custom - {}", self.current_graph.name),
-                description: format!("Custom template with {} nodes", self.current_graph.nodes.len()),
-                node_pattern: self.current_graph.nodes.iter().map(|n| n.node_type).collect(),
+                description: format!(
+                    "Custom template with {} nodes",
+                    self.current_graph.nodes.len()
+                ),
+                node_pattern: self
+                    .current_graph
+                    .nodes
+                    .iter()
+                    .map(|n| n.node_type)
+                    .collect(),
             };
             self.templates.push(template);
         }
@@ -1882,10 +2037,18 @@ impl DialogueEditorPanel {
 
             // Check for invalid speaker references
             if let Some(ref speaker_id) = node.speaker_id {
-                if !self.current_graph.speakers.iter().any(|s| &s.id == speaker_id) {
+                if !self
+                    .current_graph
+                    .speakers
+                    .iter()
+                    .any(|s| &s.id == speaker_id)
+                {
                     self.validation_issues.push(ValidationIssue {
                         severity: IssueSeverity::Error,
-                        message: format!("Node {} references unknown speaker '{}'", node.id, speaker_id),
+                        message: format!(
+                            "Node {} references unknown speaker '{}'",
+                            node.id, speaker_id
+                        ),
                         node_id: Some(node.id),
                         suggestion: "Create the speaker or assign a valid speaker".to_string(),
                     });
@@ -1898,9 +2061,13 @@ impl DialogueEditorPanel {
                     if !self.current_graph.nodes.iter().any(|n| n.id == target_id) {
                         self.validation_issues.push(ValidationIssue {
                             severity: IssueSeverity::Error,
-                            message: format!("Node {} choice {} points to non-existent node {}", node.id, choice_idx, target_id),
+                            message: format!(
+                                "Node {} choice {} points to non-existent node {}",
+                                node.id, choice_idx, target_id
+                            ),
                             node_id: Some(node.id),
-                            suggestion: "Remove this choice or point it to a valid node".to_string(),
+                            suggestion: "Remove this choice or point it to a valid node"
+                                .to_string(),
                         });
                     }
                 }
@@ -1981,7 +2148,8 @@ impl DialogueEditorPanel {
 
             // Filter by type
             if let Some(ref filter_type) = self.search_filter.filter_type {
-                if !std::mem::discriminant(&node.node_type).eq(&std::mem::discriminant(filter_type)) {
+                if !std::mem::discriminant(&node.node_type).eq(&std::mem::discriminant(filter_type))
+                {
                     matches = false;
                 }
             }
@@ -2019,7 +2187,12 @@ impl DialogueEditorPanel {
                     // Cannot restore without storing the deleted node
                 }
                 EditorAction::ModifyNode(_id, old_node) => {
-                    if let Some(node) = self.current_graph.nodes.iter_mut().find(|n| n.id == old_node.id) {
+                    if let Some(node) = self
+                        .current_graph
+                        .nodes
+                        .iter_mut()
+                        .find(|n| n.id == old_node.id)
+                    {
                         *node = old_node.clone();
                     }
                 }
@@ -2027,7 +2200,12 @@ impl DialogueEditorPanel {
                     self.current_graph.speakers.retain(|s| s.id != speaker.id);
                 }
                 EditorAction::ModifySpeaker(_idx, old_speaker) => {
-                    if let Some(speaker) = self.current_graph.speakers.iter_mut().find(|s| s.id == old_speaker.id) {
+                    if let Some(speaker) = self
+                        .current_graph
+                        .speakers
+                        .iter_mut()
+                        .find(|s| s.id == old_speaker.id)
+                    {
                         *speaker = old_speaker.clone();
                     }
                 }
@@ -2067,7 +2245,7 @@ impl DialogueEditorPanel {
         }
 
         let template = &self.templates[template_idx];
-        
+
         // Clear current graph
         self.current_graph.nodes.clear();
         self.current_graph.name = format!("New {}", template.name);
@@ -2082,7 +2260,7 @@ impl DialogueEditorPanel {
 
         // Update statistics
         self.update_statistics();
-        
+
         // Validate if auto-validate is enabled
         if self.auto_validate {
             self.validate_graph();
@@ -2126,7 +2304,7 @@ impl DialogueEditorPanel {
 
     fn apply_quest_template(&mut self) {
         let start_id = self.next_id();
-        
+
         // Quest giver speech
         self.current_graph.nodes.push(DialogueNode {
             id: start_id,
@@ -2169,13 +2347,11 @@ impl DialogueEditorPanel {
             id: start_id + 2,
             node_type: DialogueNodeType::Speech,
             text: "The task involves... [details here]".to_string(),
-            choices: vec![
-                DialogueChoice {
-                    text: "Okay, I'll do it.".to_string(),
-                    target_node_id: Some(start_id + 1),
-                    ..Default::default()
-                },
-            ],
+            choices: vec![DialogueChoice {
+                text: "Okay, I'll do it.".to_string(),
+                target_node_id: Some(start_id + 1),
+                ..Default::default()
+            }],
             position: (300.0, 150.0),
             ..Default::default()
         });
@@ -2196,7 +2372,7 @@ impl DialogueEditorPanel {
 
     fn apply_shop_template(&mut self) {
         let start_id = self.next_id();
-        
+
         self.current_graph.nodes.push(DialogueNode {
             id: start_id,
             node_type: DialogueNodeType::Speech,
@@ -2262,19 +2438,23 @@ impl DialogueEditorPanel {
 
     fn update_statistics(&mut self) {
         // Calculate total word count
-        self.total_word_count = self.current_graph.nodes.iter()
+        self.total_word_count = self
+            .current_graph
+            .nodes
+            .iter()
             .map(|n| n.text.split_whitespace().count())
             .sum();
 
         // Calculate average branch factor
-        let branching_nodes: Vec<_> = self.current_graph.nodes.iter()
+        let branching_nodes: Vec<_> = self
+            .current_graph
+            .nodes
+            .iter()
             .filter(|n| n.choices.len() > 1)
             .collect();
 
         if !branching_nodes.is_empty() {
-            let total_branches: usize = branching_nodes.iter()
-                .map(|n| n.choices.len())
-                .sum();
+            let total_branches: usize = branching_nodes.iter().map(|n| n.choices.len()).sum();
             self.avg_branch_factor = total_branches as f32 / branching_nodes.len() as f32;
         } else {
             self.avg_branch_factor = 0.0;
@@ -2343,7 +2523,12 @@ impl DialogueEditorPanel {
         for (i, node) in self.current_graph.nodes.iter().enumerate() {
             for choice in &node.choices {
                 if let Some(target_id) = choice.target_node_id {
-                    if let Some(j) = self.current_graph.nodes.iter().position(|n| n.id == target_id) {
+                    if let Some(j) = self
+                        .current_graph
+                        .nodes
+                        .iter()
+                        .position(|n| n.id == target_id)
+                    {
                         edges.push((i, j));
                     }
                 }
@@ -2405,7 +2590,8 @@ impl DialogueEditorPanel {
                 velocities[i].1 = (velocities[i].1 + forces[i].1) * DAMPING;
 
                 // Limit velocity to prevent instability
-                let speed = (velocities[i].0 * velocities[i].0 + velocities[i].1 * velocities[i].1).sqrt();
+                let speed =
+                    (velocities[i].0 * velocities[i].0 + velocities[i].1 * velocities[i].1).sqrt();
                 if speed > 50.0 {
                     velocities[i].0 = (velocities[i].0 / speed) * 50.0;
                     velocities[i].1 = (velocities[i].1 / speed) * 50.0;
@@ -2415,8 +2601,10 @@ impl DialogueEditorPanel {
                 self.current_graph.nodes[i].position.1 += velocities[i].1;
 
                 // Keep nodes within bounds
-                self.current_graph.nodes[i].position.0 = self.current_graph.nodes[i].position.0.clamp(50.0, 800.0);
-                self.current_graph.nodes[i].position.1 = self.current_graph.nodes[i].position.1.clamp(50.0, 600.0);
+                self.current_graph.nodes[i].position.0 =
+                    self.current_graph.nodes[i].position.0.clamp(50.0, 800.0);
+                self.current_graph.nodes[i].position.1 =
+                    self.current_graph.nodes[i].position.1.clamp(50.0, 600.0);
             }
         }
     }
@@ -2429,7 +2617,12 @@ impl DialogueEditorPanel {
     }
 
     fn layout_tree_recursive(&mut self, node_id: u32, depth: usize, sibling_offset: f32) {
-        if let Some(node) = self.current_graph.nodes.iter_mut().find(|n| n.id == node_id) {
+        if let Some(node) = self
+            .current_graph
+            .nodes
+            .iter_mut()
+            .find(|n| n.id == node_id)
+        {
             node.position = (100.0 + depth as f32 * 200.0, 100.0 + sibling_offset * 150.0);
         }
     }
@@ -2525,7 +2718,10 @@ mod tests {
     fn test_node_type_properties() {
         assert_eq!(DialogueNodeType::Speech.icon(), "💬");
         assert_eq!(DialogueNodeType::Choice.icon(), "🔀");
-        assert_eq!(DialogueNodeType::End.color(), Color32::from_rgb(220, 20, 60));
+        assert_eq!(
+            DialogueNodeType::End.color(),
+            Color32::from_rgb(220, 20, 60)
+        );
     }
 
     #[test]
@@ -2547,23 +2743,27 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
         panel.current_graph.start_node_id = None;
-        
+
         panel.validate_graph();
-        
+
         assert!(!panel.validation_issues.is_empty());
-        assert!(panel.validation_issues.iter().any(|i| i.message.contains("No start node")));
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| i.message.contains("No start node")));
     }
 
     #[test]
     fn test_validation_unreachable_nodes() {
         let mut panel = DialogueEditorPanel::new();
         let orphan_id = panel.add_node(DialogueNodeType::Speech);
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            i.message.contains("unreachable") && i.node_id == Some(orphan_id)
-        ));
+
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| i.message.contains("unreachable") && i.node_id == Some(orphan_id)));
     }
 
     #[test]
@@ -2573,11 +2773,11 @@ mod tests {
         if let Some(node) = panel.current_graph.nodes.iter_mut().find(|n| n.id == id) {
             node.text = String::new();
         }
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            matches!(i.severity, IssueSeverity::Error) && i.message.contains("empty text")
+
+        assert!(panel.validation_issues.iter().any(
+            |i| matches!(i.severity, IssueSeverity::Error) && i.message.contains("empty text")
         ));
     }
 
@@ -2588,12 +2788,13 @@ mod tests {
         if let Some(node) = panel.current_graph.nodes.iter_mut().find(|n| n.id == id) {
             node.speaker_id = None;
         }
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            i.message.contains("no speaker")
-        ));
+
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| i.message.contains("no speaker")));
     }
 
     #[test]
@@ -2603,12 +2804,14 @@ mod tests {
         if let Some(node) = panel.current_graph.nodes.iter_mut().find(|n| n.id == id) {
             node.speaker_id = Some("nonexistent_speaker".to_string());
         }
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            matches!(i.severity, IssueSeverity::Error) && i.message.contains("unknown speaker")
-        ));
+
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| matches!(i.severity, IssueSeverity::Error)
+                && i.message.contains("unknown speaker")));
     }
 
     #[test]
@@ -2622,12 +2825,14 @@ mod tests {
                 ..Default::default()
             });
         }
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            matches!(i.severity, IssueSeverity::Error) && i.message.contains("non-existent node")
-        ));
+
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| matches!(i.severity, IssueSeverity::Error)
+                && i.message.contains("non-existent node")));
     }
 
     #[test]
@@ -2635,12 +2840,14 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         panel.add_speaker("duplicate_id", "Speaker 1");
         panel.add_speaker("duplicate_id", "Speaker 2");
-        
+
         panel.validate_graph();
-        
-        assert!(panel.validation_issues.iter().any(|i| 
-            matches!(i.severity, IssueSeverity::Error) && i.message.contains("Duplicate speaker")
-        ));
+
+        assert!(panel
+            .validation_issues
+            .iter()
+            .any(|i| matches!(i.severity, IssueSeverity::Error)
+                && i.message.contains("Duplicate speaker")));
     }
 
     #[test]
@@ -2648,10 +2855,16 @@ mod tests {
         assert_eq!(IssueSeverity::Error.icon(), "❌");
         assert_eq!(IssueSeverity::Warning.icon(), "⚠️");
         assert_eq!(IssueSeverity::Info.icon(), "ℹ️");
-        
+
         assert_eq!(IssueSeverity::Error.color(), Color32::from_rgb(220, 60, 60));
-        assert_eq!(IssueSeverity::Warning.color(), Color32::from_rgb(255, 180, 60));
-        assert_eq!(IssueSeverity::Info.color(), Color32::from_rgb(100, 150, 255));
+        assert_eq!(
+            IssueSeverity::Warning.color(),
+            Color32::from_rgb(255, 180, 60)
+        );
+        assert_eq!(
+            IssueSeverity::Info.color(),
+            Color32::from_rgb(100, 150, 255)
+        );
     }
 
     #[test]
@@ -2682,9 +2895,9 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         let _initial_nodes = panel.current_graph.nodes.len();
         panel.current_graph.nodes.clear();
-        
+
         panel.apply_template(0); // greeting template
-        
+
         // Template should add nodes
         assert!(!panel.current_graph.nodes.is_empty());
         assert!(panel.current_graph.start_node_id.is_some());
@@ -2694,9 +2907,9 @@ mod tests {
     fn test_apply_quest_template() {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
-        
+
         panel.apply_template(1); // quest template
-        
+
         assert!(!panel.current_graph.nodes.is_empty());
         assert!(panel.current_graph.start_node_id.is_some());
     }
@@ -2705,9 +2918,9 @@ mod tests {
     fn test_apply_shop_template() {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
-        
+
         panel.apply_template(2); // shop template
-        
+
         assert!(!panel.current_graph.nodes.is_empty());
         assert!(panel.current_graph.start_node_id.is_some());
     }
@@ -2717,9 +2930,9 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
         panel.total_word_count = 0;
-        
+
         panel.apply_template(0);
-        
+
         assert!(panel.total_word_count > 0);
     }
 
@@ -2737,9 +2950,9 @@ mod tests {
     fn test_search_in_text() {
         let mut panel = DialogueEditorPanel::new();
         panel.search_filter.query = "welcome".to_string();
-        
+
         panel.search_nodes();
-        
+
         assert!(!panel.search_results.is_empty());
     }
 
@@ -2747,9 +2960,9 @@ mod tests {
     fn test_search_empty_query() {
         let mut panel = DialogueEditorPanel::new();
         panel.search_filter.query = String::new();
-        
+
         panel.search_nodes();
-        
+
         assert!(panel.search_results.is_empty());
     }
 
@@ -2757,9 +2970,9 @@ mod tests {
     fn test_search_case_insensitive() {
         let mut panel = DialogueEditorPanel::new();
         panel.search_filter.query = "WELCOME".to_string();
-        
+
         panel.search_nodes();
-        
+
         assert!(!panel.search_results.is_empty());
     }
 
@@ -2768,11 +2981,16 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         panel.search_filter.query = "a".to_string();
         panel.search_filter.filter_type = Some(DialogueNodeType::Speech);
-        
+
         panel.search_nodes();
-        
+
         for node_id in &panel.search_results {
-            let node = panel.current_graph.nodes.iter().find(|n| n.id == *node_id).unwrap();
+            let node = panel
+                .current_graph
+                .nodes
+                .iter()
+                .find(|n| n.id == *node_id)
+                .unwrap();
             assert!(matches!(node.node_type, DialogueNodeType::Speech));
         }
     }
@@ -2791,10 +3009,12 @@ mod tests {
     fn test_push_undo_clears_redo() {
         let mut panel = DialogueEditorPanel::new();
         let dummy_node = DialogueNode::default();
-        panel.redo_stack.push(EditorAction::AddNode(dummy_node.clone()));
-        
+        panel
+            .redo_stack
+            .push(EditorAction::AddNode(dummy_node.clone()));
+
         panel.push_undo(EditorAction::AddNode(dummy_node));
-        
+
         assert!(panel.redo_stack.is_empty());
         assert_eq!(panel.undo_stack.len(), 1);
     }
@@ -2803,12 +3023,18 @@ mod tests {
     fn test_undo_add_node() {
         let mut panel = DialogueEditorPanel::new();
         let id = panel.add_node(DialogueNodeType::Speech);
-        let node = panel.current_graph.nodes.iter().find(|n| n.id == id).unwrap().clone();
+        let node = panel
+            .current_graph
+            .nodes
+            .iter()
+            .find(|n| n.id == id)
+            .unwrap()
+            .clone();
         panel.push_undo(EditorAction::AddNode(node));
-        
+
         let count_before = panel.node_count();
         panel.undo();
-        
+
         assert_eq!(panel.node_count(), count_before - 1);
     }
 
@@ -2816,12 +3042,12 @@ mod tests {
     fn test_undo_stack_max_size() {
         let mut panel = DialogueEditorPanel::new();
         panel.max_undo_steps = 3;
-        
+
         let dummy_node = DialogueNode::default();
         for _ in 0..5 {
             panel.push_undo(EditorAction::AddNode(dummy_node.clone()));
         }
-        
+
         assert_eq!(panel.undo_stack.len(), 3);
     }
 
@@ -2864,14 +3090,14 @@ mod tests {
     fn test_update_statistics_word_count() {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
-        
+
         let id = panel.add_node(DialogueNodeType::Speech);
         if let Some(node) = panel.current_graph.nodes.iter_mut().find(|n| n.id == id) {
             node.text = "This is a test message with seven words.".to_string();
         }
-        
+
         panel.update_statistics();
-        
+
         assert_eq!(panel.total_word_count, 8);
     }
 
@@ -2879,7 +3105,7 @@ mod tests {
     fn test_update_statistics_branch_factor() {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
-        
+
         let id = panel.add_node(DialogueNodeType::Choice);
         if let Some(node) = panel.current_graph.nodes.iter_mut().find(|n| n.id == id) {
             node.choices = vec![
@@ -2888,9 +3114,9 @@ mod tests {
                 DialogueChoice::default(),
             ];
         }
-        
+
         panel.update_statistics();
-        
+
         assert_eq!(panel.avg_branch_factor, 3.0);
     }
 
@@ -2899,9 +3125,9 @@ mod tests {
         let mut panel = DialogueEditorPanel::new();
         panel.current_graph.nodes.clear();
         panel.add_node(DialogueNodeType::Speech);
-        
+
         panel.update_statistics();
-        
+
         assert_eq!(panel.avg_branch_factor, 0.0);
     }
 
@@ -2910,7 +3136,10 @@ mod tests {
     #[test]
     fn test_layout_algorithm_default() {
         let panel = DialogueEditorPanel::new();
-        assert!(matches!(panel.layout_algorithm, LayoutAlgorithm::Hierarchical));
+        assert!(matches!(
+            panel.layout_algorithm,
+            LayoutAlgorithm::Hierarchical
+        ));
     }
 
     #[test]
@@ -2923,9 +3152,9 @@ mod tests {
     fn test_layout_hierarchical() {
         let mut panel = DialogueEditorPanel::new();
         panel.layout_algorithm = LayoutAlgorithm::Hierarchical;
-        
+
         panel.auto_layout();
-        
+
         // Should space nodes vertically
         assert!(!panel.current_graph.nodes.is_empty());
     }
@@ -2934,9 +3163,9 @@ mod tests {
     fn test_layout_radial() {
         let mut panel = DialogueEditorPanel::new();
         panel.layout_algorithm = LayoutAlgorithm::Radial;
-        
+
         panel.auto_layout();
-        
+
         // Nodes should be arranged in a circle
         assert!(!panel.current_graph.nodes.is_empty());
     }

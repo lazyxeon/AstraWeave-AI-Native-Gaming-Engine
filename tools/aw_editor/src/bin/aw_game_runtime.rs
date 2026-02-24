@@ -105,37 +105,41 @@ impl GameApp {
             }
         };
 
-        let adapter = match pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: Some(&surface),
-            force_fallback_adapter: false,
-        })) {
-            Ok(a) => a,
-            Err(e) => {
-                log::error!("❌ No compatible graphics adapter found: {}", e);
-                log::error!("   AstraWeave requires a GPU with Vulkan, DirectX 12, or Metal support.");
-                log::error!("   Please check:");
-                log::error!("   - Graphics drivers are installed and up to date");
-                log::error!("   - Your GPU supports modern graphics APIs");
-                panic!("No compatible GPU found: {}", e);
-            }
-        };
+        let adapter =
+            match pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            })) {
+                Ok(a) => a,
+                Err(e) => {
+                    log::error!("❌ No compatible graphics adapter found: {}", e);
+                    log::error!(
+                        "   AstraWeave requires a GPU with Vulkan, DirectX 12, or Metal support."
+                    );
+                    log::error!("   Please check:");
+                    log::error!("   - Graphics drivers are installed and up to date");
+                    log::error!("   - Your GPU supports modern graphics APIs");
+                    panic!("No compatible GPU found: {}", e);
+                }
+            };
 
-        let (device, queue) = match pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-            label: Some("game_device"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
-            memory_hints: wgpu::MemoryHints::Performance,
-            trace: wgpu::Trace::Off,
-        })) {
-            Ok((d, q)) => (d, q),
-            Err(e) => {
-                log::error!("❌ Failed to create graphics device: {}", e);
-                log::error!("   GPU: {}", adapter.get_info().name);
-                log::error!("   This may indicate insufficient GPU resources.");
-                panic!("GPU device creation failed: {}", e);
-            }
-        };
+        let (device, queue) =
+            match pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+                label: Some("game_device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::Performance,
+                trace: wgpu::Trace::Off,
+            })) {
+                Ok((d, q)) => (d, q),
+                Err(e) => {
+                    log::error!("❌ Failed to create graphics device: {}", e);
+                    log::error!("   GPU: {}", adapter.get_info().name);
+                    log::error!("   This may indicate insufficient GPU resources.");
+                    panic!("GPU device creation failed: {}", e);
+                }
+            };
 
         log::info!("🖥️ GPU initialized: {}", adapter.get_info().name);
 

@@ -11380,6 +11380,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-ai",
+ "astraweave-asset",
  "astraweave-audio",
  "astraweave-behavior",
  "astraweave-director",
@@ -11388,6 +11389,9 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "bytemuck",
+ "egui 0.32.3",
+ "egui-wgpu",
+ "egui-winit",
  "glam",
  "pollster",
  "serde",

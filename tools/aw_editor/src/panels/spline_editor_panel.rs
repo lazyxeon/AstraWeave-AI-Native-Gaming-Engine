@@ -118,7 +118,10 @@ impl SplinePreset {
     }
 
     pub fn is_infrastructure(&self) -> bool {
-        matches!(self, SplinePreset::Road | SplinePreset::Rail | SplinePreset::Fence | SplinePreset::Cable)
+        matches!(
+            self,
+            SplinePreset::Road | SplinePreset::Rail | SplinePreset::Fence | SplinePreset::Cable
+        )
     }
 }
 
@@ -300,11 +303,7 @@ impl UvMode {
     }
 
     pub fn all() -> &'static [UvMode] {
-        &[
-            UvMode::Stretch,
-            UvMode::Tile,
-            UvMode::TileWorld,
-        ]
+        &[UvMode::Stretch, UvMode::Tile, UvMode::TileWorld]
     }
 }
 
@@ -418,8 +417,16 @@ impl Default for CustomProfile {
         Self {
             name: "Custom".to_string(),
             points: vec![
-                ProfilePoint { x: -1.0, y: 0.0, uv: 0.0 },
-                ProfilePoint { x: 1.0, y: 0.0, uv: 1.0 },
+                ProfilePoint {
+                    x: -1.0,
+                    y: 0.0,
+                    uv: 0.0,
+                },
+                ProfilePoint {
+                    x: 1.0,
+                    y: 0.0,
+                    uv: 1.0,
+                },
             ],
         }
     }
@@ -583,51 +590,113 @@ impl std::fmt::Display for SplineEditorAction {
             SplineEditorAction::DeselectSpline => write!(f, "Deselect spline"),
             SplineEditorAction::RenameSpline(id, n) => write!(f, "Rename spline {}: {}", id, n),
             SplineEditorAction::SetSplineType(id, t) => write!(f, "Set spline {} type: {}", id, t),
-            SplineEditorAction::SetSplinePreset(id, p) => write!(f, "Set spline {} preset: {}", id, p),
-            SplineEditorAction::ToggleClosed(id, b) => write!(f, "Toggle spline {} closed: {}", id, b),
+            SplineEditorAction::SetSplinePreset(id, p) => {
+                write!(f, "Set spline {} preset: {}", id, p)
+            }
+            SplineEditorAction::ToggleClosed(id, b) => {
+                write!(f, "Toggle spline {} closed: {}", id, b)
+            }
             SplineEditorAction::SetSplineColor(id, _) => write!(f, "Set spline {} color", id),
-            SplineEditorAction::SetSplineThickness(id, t) => write!(f, "Set spline {} thickness: {:.1}", id, t),
-            SplineEditorAction::ToggleShowPoints(id, b) => write!(f, "Toggle spline {} points: {}", id, b),
-            SplineEditorAction::ToggleShowTangents(id, b) => write!(f, "Toggle spline {} tangents: {}", id, b),
-            SplineEditorAction::AddPoint(id, pos) => write!(f, "Add point to spline {} at ({:.1}, {:.1}, {:.1})", id, pos[0], pos[1], pos[2]),
-            SplineEditorAction::InsertPoint(id, i, _) => write!(f, "Insert point to spline {} at index {}", id, i),
-            SplineEditorAction::DeletePoint(sid, pid) => write!(f, "Delete point {} from spline {}", pid, sid),
+            SplineEditorAction::SetSplineThickness(id, t) => {
+                write!(f, "Set spline {} thickness: {:.1}", id, t)
+            }
+            SplineEditorAction::ToggleShowPoints(id, b) => {
+                write!(f, "Toggle spline {} points: {}", id, b)
+            }
+            SplineEditorAction::ToggleShowTangents(id, b) => {
+                write!(f, "Toggle spline {} tangents: {}", id, b)
+            }
+            SplineEditorAction::AddPoint(id, pos) => write!(
+                f,
+                "Add point to spline {} at ({:.1}, {:.1}, {:.1})",
+                id, pos[0], pos[1], pos[2]
+            ),
+            SplineEditorAction::InsertPoint(id, i, _) => {
+                write!(f, "Insert point to spline {} at index {}", id, i)
+            }
+            SplineEditorAction::DeletePoint(sid, pid) => {
+                write!(f, "Delete point {} from spline {}", pid, sid)
+            }
             SplineEditorAction::SelectPoint(id) => write!(f, "Select point {}", id),
             SplineEditorAction::DeselectPoint => write!(f, "Deselect point"),
-            SplineEditorAction::SetPointPosition(sid, pid, _) => write!(f, "Set point {}/{} position", sid, pid),
-            SplineEditorAction::SetPointRotation(sid, pid, _) => write!(f, "Set point {}/{} rotation", sid, pid),
-            SplineEditorAction::SetPointScale(sid, pid, _) => write!(f, "Set point {}/{} scale", sid, pid),
-            SplineEditorAction::SetPointTangentMode(sid, pid, m) => write!(f, "Set point {}/{} tangent: {}", sid, pid, m),
-            SplineEditorAction::SetPointInTangent(sid, pid, _) => write!(f, "Set point {}/{} in-tangent", sid, pid),
-            SplineEditorAction::SetPointOutTangent(sid, pid, _) => write!(f, "Set point {}/{} out-tangent", sid, pid),
-            SplineEditorAction::SetPointRoll(sid, pid, r) => write!(f, "Set point {}/{} roll: {:.1}°", sid, pid, r),
-            SplineEditorAction::SetPointWidth(sid, pid, w) => write!(f, "Set point {}/{} width: {:.2}", sid, pid, w),
-            SplineEditorAction::ToggleGenerateMesh(id, b) => write!(f, "Toggle spline {} mesh gen: {}", id, b),
-            SplineEditorAction::SetMeshProfile(id, p) => write!(f, "Set spline {} profile: {}", id, p),
+            SplineEditorAction::SetPointPosition(sid, pid, _) => {
+                write!(f, "Set point {}/{} position", sid, pid)
+            }
+            SplineEditorAction::SetPointRotation(sid, pid, _) => {
+                write!(f, "Set point {}/{} rotation", sid, pid)
+            }
+            SplineEditorAction::SetPointScale(sid, pid, _) => {
+                write!(f, "Set point {}/{} scale", sid, pid)
+            }
+            SplineEditorAction::SetPointTangentMode(sid, pid, m) => {
+                write!(f, "Set point {}/{} tangent: {}", sid, pid, m)
+            }
+            SplineEditorAction::SetPointInTangent(sid, pid, _) => {
+                write!(f, "Set point {}/{} in-tangent", sid, pid)
+            }
+            SplineEditorAction::SetPointOutTangent(sid, pid, _) => {
+                write!(f, "Set point {}/{} out-tangent", sid, pid)
+            }
+            SplineEditorAction::SetPointRoll(sid, pid, r) => {
+                write!(f, "Set point {}/{} roll: {:.1}°", sid, pid, r)
+            }
+            SplineEditorAction::SetPointWidth(sid, pid, w) => {
+                write!(f, "Set point {}/{} width: {:.2}", sid, pid, w)
+            }
+            SplineEditorAction::ToggleGenerateMesh(id, b) => {
+                write!(f, "Toggle spline {} mesh gen: {}", id, b)
+            }
+            SplineEditorAction::SetMeshProfile(id, p) => {
+                write!(f, "Set spline {} profile: {}", id, p)
+            }
             SplineEditorAction::SetUvMode(id, m) => write!(f, "Set spline {} UV mode: {}", id, m),
-            SplineEditorAction::SetSegmentLength(id, l) => write!(f, "Set spline {} segment: {:.2}", id, l),
+            SplineEditorAction::SetSegmentLength(id, l) => {
+                write!(f, "Set spline {} segment: {:.2}", id, l)
+            }
             SplineEditorAction::RebuildMesh(id) => write!(f, "Rebuild mesh for spline {}", id),
-            SplineEditorAction::ToggleDeformTerrain(id, b) => write!(f, "Toggle spline {} terrain: {}", id, b),
-            SplineEditorAction::SetTerrainWidth(id, w) => write!(f, "Set spline {} terrain width: {:.1}", id, w),
-            SplineEditorAction::SetTerrainFalloff(id, v) => write!(f, "Set spline {} terrain falloff: {:.1}", id, v),
-            SplineEditorAction::SetTerrainHeightOffset(id, h) => write!(f, "Set spline {} terrain height: {:.1}", id, h),
-            SplineEditorAction::ApplyTerrainDeformation(id) => write!(f, "Apply terrain deformation for spline {}", id),
-            SplineEditorAction::SetAnimationDuration(id, d) => write!(f, "Set spline {} anim duration: {:.1}s", id, d),
-            SplineEditorAction::ToggleLoopAnimation(id, b) => write!(f, "Toggle spline {} anim loop: {}", id, b),
-            SplineEditorAction::PreviewAnimation(id) => write!(f, "Preview animation for spline {}", id),
+            SplineEditorAction::ToggleDeformTerrain(id, b) => {
+                write!(f, "Toggle spline {} terrain: {}", id, b)
+            }
+            SplineEditorAction::SetTerrainWidth(id, w) => {
+                write!(f, "Set spline {} terrain width: {:.1}", id, w)
+            }
+            SplineEditorAction::SetTerrainFalloff(id, v) => {
+                write!(f, "Set spline {} terrain falloff: {:.1}", id, v)
+            }
+            SplineEditorAction::SetTerrainHeightOffset(id, h) => {
+                write!(f, "Set spline {} terrain height: {:.1}", id, h)
+            }
+            SplineEditorAction::ApplyTerrainDeformation(id) => {
+                write!(f, "Apply terrain deformation for spline {}", id)
+            }
+            SplineEditorAction::SetAnimationDuration(id, d) => {
+                write!(f, "Set spline {} anim duration: {:.1}s", id, d)
+            }
+            SplineEditorAction::ToggleLoopAnimation(id, b) => {
+                write!(f, "Toggle spline {} anim loop: {}", id, b)
+            }
+            SplineEditorAction::PreviewAnimation(id) => {
+                write!(f, "Preview animation for spline {}", id)
+            }
             SplineEditorAction::StopAnimationPreview => write!(f, "Stop animation preview"),
             SplineEditorAction::AddCustomProfile => write!(f, "Add custom profile"),
             SplineEditorAction::DeleteCustomProfile(i) => write!(f, "Delete custom profile {}", i),
             SplineEditorAction::RenameProfile(i, n) => write!(f, "Rename profile {}: {}", i, n),
             SplineEditorAction::AddProfilePoint(i, _, _) => write!(f, "Add point to profile {}", i),
-            SplineEditorAction::RemoveProfilePoint(pi, pti) => write!(f, "Remove point {} from profile {}", pti, pi),
+            SplineEditorAction::RemoveProfilePoint(pi, pti) => {
+                write!(f, "Remove point {} from profile {}", pti, pi)
+            }
             SplineEditorAction::ToggleSnapToGrid(b) => write!(f, "Toggle snap to grid: {}", b),
             SplineEditorAction::SetGridSize(s) => write!(f, "Set grid size: {:.2}", s),
             SplineEditorAction::ToggleAutoSmooth(b) => write!(f, "Toggle auto smooth: {}", b),
             SplineEditorAction::TogglePreviewMesh(b) => write!(f, "Toggle preview mesh: {}", b),
-            SplineEditorAction::SelectAllPoints(id) => write!(f, "Select all points in spline {}", id),
+            SplineEditorAction::SelectAllPoints(id) => {
+                write!(f, "Select all points in spline {}", id)
+            }
             SplineEditorAction::ReverseSpline(id) => write!(f, "Reverse spline {}", id),
-            SplineEditorAction::SimplifySpline(id, t) => write!(f, "Simplify spline {} (tolerance: {:.2})", id, t),
+            SplineEditorAction::SimplifySpline(id, t) => {
+                write!(f, "Simplify spline {} (tolerance: {:.2})", id, t)
+            }
             SplineEditorAction::SubdivideSpline(id) => write!(f, "Subdivide spline {}", id),
             SplineEditorAction::SmoothSpline(id) => write!(f, "Smooth spline {}", id),
             SplineEditorAction::ExportSpline(id) => write!(f, "Export spline {}", id),
@@ -778,11 +847,7 @@ impl SplineEditorPanel {
             ..Default::default()
         };
 
-        let camera_positions = [
-            [0.0, 5.0, 0.0],
-            [10.0, 8.0, 10.0],
-            [20.0, 5.0, 20.0],
-        ];
+        let camera_positions = [[0.0, 5.0, 0.0], [10.0, 8.0, 10.0], [20.0, 5.0, 20.0]];
 
         for pos in camera_positions {
             let point_id = self.next_point_id();
@@ -909,8 +974,13 @@ impl SplineEditorPanel {
 
                 for tool in tools {
                     let is_selected = self.current_tool == tool;
-                    let btn = egui::Button::new(format!("{} {:?}", tool.icon(), tool))
-                        .fill(if is_selected { Color32::from_rgb(80, 120, 180) } else { Color32::from_rgb(50, 50, 55) });
+                    let btn = egui::Button::new(format!("{} {:?}", tool.icon(), tool)).fill(
+                        if is_selected {
+                            Color32::from_rgb(80, 120, 180)
+                        } else {
+                            Color32::from_rgb(50, 50, 55)
+                        },
+                    );
 
                     if ui.add(btn).clicked() {
                         self.current_tool = tool;
@@ -943,8 +1013,12 @@ impl SplineEditorPanel {
                 .show(ui, |ui| {
                     for spline in &self.splines.clone() {
                         let is_selected = self.selected_spline == Some(spline.id);
-                        let label = format!("{} {} ({} pts)",
-                            spline.preset.icon(), spline.name, spline.points.len());
+                        let label = format!(
+                            "{} {} ({} pts)",
+                            spline.preset.icon(),
+                            spline.name,
+                            spline.points.len()
+                        );
 
                         if ui.selectable_label(is_selected, label).clicked() {
                             self.selected_spline = Some(spline.id);
@@ -977,17 +1051,29 @@ impl SplineEditorPanel {
                         .selected_text(format!("{:?}", self.current_spline.spline_type))
                         .show_ui(ui, |ui| {
                             for st in SplineType::all() {
-                                ui.selectable_value(&mut self.current_spline.spline_type, *st, format!("{:?}", st));
+                                ui.selectable_value(
+                                    &mut self.current_spline.spline_type,
+                                    *st,
+                                    format!("{:?}", st),
+                                );
                             }
                         });
                     ui.end_row();
 
                     ui.label("Preset:");
                     egui::ComboBox::from_id_salt("spline_preset")
-                        .selected_text(format!("{} {:?}", self.current_spline.preset.icon(), self.current_spline.preset))
+                        .selected_text(format!(
+                            "{} {:?}",
+                            self.current_spline.preset.icon(),
+                            self.current_spline.preset
+                        ))
                         .show_ui(ui, |ui| {
                             for preset in SplinePreset::all() {
-                                ui.selectable_value(&mut self.current_spline.preset, *preset, format!("{} {:?}", preset.icon(), preset));
+                                ui.selectable_value(
+                                    &mut self.current_spline.preset,
+                                    *preset,
+                                    format!("{} {:?}", preset.icon(), preset),
+                                );
                             }
                         });
                     ui.end_row();
@@ -1024,7 +1110,10 @@ impl SplineEditorPanel {
                 ui.label(RichText::new("📋 Points").strong());
                 if ui.button("+ Add").clicked() {
                     let id = self.next_point_id();
-                    let last_pos = self.current_spline.points.last()
+                    let last_pos = self
+                        .current_spline
+                        .points
+                        .last()
                         .map(|p| p.position)
                         .unwrap_or([0.0, 0.0, 0.0]);
 
@@ -1044,8 +1133,13 @@ impl SplineEditorPanel {
                 .show(ui, |ui| {
                     for (i, point) in self.current_spline.points.iter().enumerate() {
                         let is_selected = self.selected_point == Some(point.id);
-                        let label = format!("Point {} ({:.1}, {:.1}, {:.1})",
-                            i + 1, point.position[0], point.position[1], point.position[2]);
+                        let label = format!(
+                            "Point {} ({:.1}, {:.1}, {:.1})",
+                            i + 1,
+                            point.position[0],
+                            point.position[1],
+                            point.position[2]
+                        );
 
                         if ui.selectable_label(is_selected, label).clicked() {
                             self.selected_point = Some(point.id);
@@ -1067,17 +1161,41 @@ impl SplineEditorPanel {
                 .show(ui, |ui| {
                     ui.label("Position:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.current_point.position[0]).speed(0.1).prefix("X:"));
-                        ui.add(egui::DragValue::new(&mut self.current_point.position[1]).speed(0.1).prefix("Y:"));
-                        ui.add(egui::DragValue::new(&mut self.current_point.position[2]).speed(0.1).prefix("Z:"));
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.position[0])
+                                .speed(0.1)
+                                .prefix("X:"),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.position[1])
+                                .speed(0.1)
+                                .prefix("Y:"),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.position[2])
+                                .speed(0.1)
+                                .prefix("Z:"),
+                        );
                     });
                     ui.end_row();
 
                     ui.label("Rotation:");
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.current_point.rotation[0]).speed(1.0).suffix("°"));
-                        ui.add(egui::DragValue::new(&mut self.current_point.rotation[1]).speed(1.0).suffix("°"));
-                        ui.add(egui::DragValue::new(&mut self.current_point.rotation[2]).speed(1.0).suffix("°"));
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.rotation[0])
+                                .speed(1.0)
+                                .suffix("°"),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.rotation[1])
+                                .speed(1.0)
+                                .suffix("°"),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.current_point.rotation[2])
+                                .speed(1.0)
+                                .suffix("°"),
+                        );
                     });
                     ui.end_row();
 
@@ -1090,22 +1208,48 @@ impl SplineEditorPanel {
                     ui.end_row();
 
                     ui.label("Roll:");
-                    ui.add(egui::Slider::new(&mut self.current_point.roll, -180.0..=180.0).suffix("°"));
+                    ui.add(
+                        egui::Slider::new(&mut self.current_point.roll, -180.0..=180.0).suffix("°"),
+                    );
                     ui.end_row();
 
                     ui.label("Width:");
-                    ui.add(egui::DragValue::new(&mut self.current_point.width).speed(0.1).suffix("m"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_point.width)
+                            .speed(0.1)
+                            .suffix("m"),
+                    );
                     ui.end_row();
 
                     ui.label("Tangent Mode:");
                     egui::ComboBox::from_id_salt("tangent_mode")
                         .selected_text(format!("{:?}", self.current_point.tangent_mode))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.current_point.tangent_mode, TangentMode::Auto, "Auto");
-                            ui.selectable_value(&mut self.current_point.tangent_mode, TangentMode::Smooth, "Smooth");
-                            ui.selectable_value(&mut self.current_point.tangent_mode, TangentMode::Linear, "Linear");
-                            ui.selectable_value(&mut self.current_point.tangent_mode, TangentMode::Free, "Free");
-                            ui.selectable_value(&mut self.current_point.tangent_mode, TangentMode::Aligned, "Aligned");
+                            ui.selectable_value(
+                                &mut self.current_point.tangent_mode,
+                                TangentMode::Auto,
+                                "Auto",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_point.tangent_mode,
+                                TangentMode::Smooth,
+                                "Smooth",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_point.tangent_mode,
+                                TangentMode::Linear,
+                                "Linear",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_point.tangent_mode,
+                                TangentMode::Free,
+                                "Free",
+                            );
+                            ui.selectable_value(
+                                &mut self.current_point.tangent_mode,
+                                TangentMode::Aligned,
+                                "Aligned",
+                            );
                         });
                     ui.end_row();
                 });
@@ -1124,17 +1268,35 @@ impl SplineEditorPanel {
                     .show(ui, |ui| {
                         ui.label("In Tangent:");
                         ui.horizontal(|ui| {
-                            ui.add(egui::DragValue::new(&mut self.current_point.in_tangent[0]).speed(0.1));
-                            ui.add(egui::DragValue::new(&mut self.current_point.in_tangent[1]).speed(0.1));
-                            ui.add(egui::DragValue::new(&mut self.current_point.in_tangent[2]).speed(0.1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.in_tangent[0])
+                                    .speed(0.1),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.in_tangent[1])
+                                    .speed(0.1),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.in_tangent[2])
+                                    .speed(0.1),
+                            );
                         });
                         ui.end_row();
 
                         ui.label("Out Tangent:");
                         ui.horizontal(|ui| {
-                            ui.add(egui::DragValue::new(&mut self.current_point.out_tangent[0]).speed(0.1));
-                            ui.add(egui::DragValue::new(&mut self.current_point.out_tangent[1]).speed(0.1));
-                            ui.add(egui::DragValue::new(&mut self.current_point.out_tangent[2]).speed(0.1));
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.out_tangent[0])
+                                    .speed(0.1),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.out_tangent[1])
+                                    .speed(0.1),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut self.current_point.out_tangent[2])
+                                    .speed(0.1),
+                            );
                         });
                         ui.end_row();
                     });
@@ -1146,7 +1308,10 @@ impl SplineEditorPanel {
         ui.heading("🔷 Mesh Generation");
         ui.add_space(10.0);
 
-        ui.checkbox(&mut self.current_spline.generate_mesh, "Enable Mesh Generation");
+        ui.checkbox(
+            &mut self.current_spline.generate_mesh,
+            "Enable Mesh Generation",
+        );
 
         if self.current_spline.generate_mesh {
             ui.add_space(10.0);
@@ -1162,12 +1327,36 @@ impl SplineEditorPanel {
                         egui::ComboBox::from_id_salt("mesh_profile")
                             .selected_text(format!("{:?}", self.current_spline.mesh_profile))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::Flat, "Flat");
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::Round, "Round");
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::Square, "Square");
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::RoadWithSidewalk, "Road + Sidewalk");
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::RiverBed, "River Bed");
-                                ui.selectable_value(&mut self.current_spline.mesh_profile, MeshProfile::Custom, "Custom");
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::Flat,
+                                    "Flat",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::Round,
+                                    "Round",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::Square,
+                                    "Square",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::RoadWithSidewalk,
+                                    "Road + Sidewalk",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::RiverBed,
+                                    "River Bed",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.mesh_profile,
+                                    MeshProfile::Custom,
+                                    "Custom",
+                                );
                             });
                         ui.end_row();
 
@@ -1175,14 +1364,29 @@ impl SplineEditorPanel {
                         egui::ComboBox::from_id_salt("uv_mode")
                             .selected_text(format!("{:?}", self.current_spline.uv_mode))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut self.current_spline.uv_mode, UvMode::Stretch, "Stretch");
-                                ui.selectable_value(&mut self.current_spline.uv_mode, UvMode::Tile, "Tile");
-                                ui.selectable_value(&mut self.current_spline.uv_mode, UvMode::TileWorld, "Tile World");
+                                ui.selectable_value(
+                                    &mut self.current_spline.uv_mode,
+                                    UvMode::Stretch,
+                                    "Stretch",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.uv_mode,
+                                    UvMode::Tile,
+                                    "Tile",
+                                );
+                                ui.selectable_value(
+                                    &mut self.current_spline.uv_mode,
+                                    UvMode::TileWorld,
+                                    "Tile World",
+                                );
                             });
                         ui.end_row();
 
                         ui.label("Segment Length:");
-                        ui.add(egui::Slider::new(&mut self.current_spline.segment_length, 0.1..=10.0).suffix("m"));
+                        ui.add(
+                            egui::Slider::new(&mut self.current_spline.segment_length, 0.1..=10.0)
+                                .suffix("m"),
+                        );
                         ui.end_row();
                     });
             });
@@ -1204,7 +1408,10 @@ impl SplineEditorPanel {
         ui.heading("🏔️ Terrain Deformation");
         ui.add_space(10.0);
 
-        ui.checkbox(&mut self.current_spline.deform_terrain, "Enable Terrain Deformation");
+        ui.checkbox(
+            &mut self.current_spline.deform_terrain,
+            "Enable Terrain Deformation",
+        );
 
         if self.current_spline.deform_terrain {
             ui.add_space(10.0);
@@ -1217,15 +1424,27 @@ impl SplineEditorPanel {
                     .spacing([10.0, 4.0])
                     .show(ui, |ui| {
                         ui.label("Width:");
-                        ui.add(egui::Slider::new(&mut self.current_spline.terrain_width, 1.0..=50.0).suffix("m"));
+                        ui.add(
+                            egui::Slider::new(&mut self.current_spline.terrain_width, 1.0..=50.0)
+                                .suffix("m"),
+                        );
                         ui.end_row();
 
                         ui.label("Falloff:");
-                        ui.add(egui::Slider::new(&mut self.current_spline.terrain_falloff, 0.0..=20.0).suffix("m"));
+                        ui.add(
+                            egui::Slider::new(&mut self.current_spline.terrain_falloff, 0.0..=20.0)
+                                .suffix("m"),
+                        );
                         ui.end_row();
 
                         ui.label("Height Offset:");
-                        ui.add(egui::Slider::new(&mut self.current_spline.terrain_height_offset, -10.0..=10.0).suffix("m"));
+                        ui.add(
+                            egui::Slider::new(
+                                &mut self.current_spline.terrain_height_offset,
+                                -10.0..=10.0,
+                            )
+                            .suffix("m"),
+                        );
                         ui.end_row();
                     });
             });
@@ -1255,7 +1474,11 @@ impl SplineEditorPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Duration:");
-                    ui.add(egui::DragValue::new(&mut self.current_spline.animation_duration).speed(0.1).suffix("s"));
+                    ui.add(
+                        egui::DragValue::new(&mut self.current_spline.animation_duration)
+                            .speed(0.1)
+                            .suffix("s"),
+                    );
                     ui.end_row();
 
                     ui.label("Loop:");
@@ -1324,7 +1547,10 @@ impl SplineEditorPanel {
 
                     // Simple profile visualization
                     let height = 60.0;
-                    let (rect, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), height), egui::Sense::hover());
+                    let (rect, _) = ui.allocate_exact_size(
+                        Vec2::new(ui.available_width(), height),
+                        egui::Sense::hover(),
+                    );
 
                     let painter = ui.painter();
                     painter.rect_filled(rect, 2.0, Color32::from_rgb(40, 40, 45));
@@ -1411,7 +1637,12 @@ impl Panel for SplineEditorPanel {
     fn update(&mut self) {
         // Sync current point back to spline
         if let Some(point_id) = self.selected_point {
-            if let Some(point) = self.current_spline.points.iter_mut().find(|p| p.id == point_id) {
+            if let Some(point) = self
+                .current_spline
+                .points
+                .iter_mut()
+                .find(|p| p.id == point_id)
+            {
                 *point = self.current_point.clone();
             }
         }
@@ -1817,7 +2048,11 @@ mod tests {
 
     #[test]
     fn test_profile_point_values() {
-        let pp = ProfilePoint { x: 0.5, y: 1.0, uv: 0.5 };
+        let pp = ProfilePoint {
+            x: 0.5,
+            y: 1.0,
+            uv: 0.5,
+        };
         assert!((pp.x - 0.5).abs() < 0.001);
         assert!((pp.y - 1.0).abs() < 0.001);
         assert!((pp.uv - 0.5).abs() < 0.001);
@@ -2054,7 +2289,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -2212,7 +2451,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(display.contains("true"), "Display should contain 'true': {}", display);
+            assert!(
+                display.contains("true"),
+                "Display should contain 'true': {}",
+                display
+            );
         }
     }
 
@@ -2263,4 +2506,3 @@ mod tests {
         }
     }
 }
-

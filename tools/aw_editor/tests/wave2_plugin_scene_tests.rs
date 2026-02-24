@@ -6,12 +6,12 @@
 //! - scene_serialization.rs: SceneData::validate() comparison operators, SceneValidationIssue helpers,
 //!   SceneStats aggregation, EntityData field defaults
 
+use astraweave_core::IVec2;
 use aw_editor_lib::plugin::{
-    ExamplePlugin, PluginError, PluginEvent, PluginManager, PluginManagerStats, PluginMetadata,
-    PluginMenuItem, PluginState,
+    ExamplePlugin, PluginError, PluginEvent, PluginManager, PluginManagerStats, PluginMenuItem,
+    PluginMetadata, PluginState,
 };
 use aw_editor_lib::scene_serialization::{EntityData, SceneData, SceneValidationIssue};
-use astraweave_core::IVec2;
 use std::collections::HashMap;
 
 // ============================================================================
@@ -45,7 +45,10 @@ fn plugin_event_display_scene_saved() {
 
 #[test]
 fn plugin_event_display_entity_selected() {
-    assert_eq!(format!("{}", PluginEvent::EntitySelected), "Entity Selected");
+    assert_eq!(
+        format!("{}", PluginEvent::EntitySelected),
+        "Entity Selected"
+    );
 }
 
 #[test]
@@ -252,13 +255,11 @@ fn plugin_error_missing_dependency_is_fatal() {
 
 #[test]
 fn plugin_error_incompatible_version_is_fatal() {
-    assert!(
-        PluginError::IncompatibleVersion {
-            required: "2.0".into(),
-            actual: "1.0".into()
-        }
-        .is_fatal()
-    );
+    assert!(PluginError::IncompatibleVersion {
+        required: "2.0".into(),
+        actual: "1.0".into()
+    }
+    .is_fatal());
 }
 
 #[test]
@@ -849,7 +850,9 @@ fn validate_scale_zero_is_error() {
     // scale <= 0.0 triggers error
     let s = make_scene(vec![make_entity(1, "E", 0.0, 100, 10)], 5);
     let issues = s.validate();
-    assert!(issues.iter().any(|i| i.is_error() && i.message().contains("scale")));
+    assert!(issues
+        .iter()
+        .any(|i| i.is_error() && i.message().contains("scale")));
     assert!(!s.is_valid());
 }
 

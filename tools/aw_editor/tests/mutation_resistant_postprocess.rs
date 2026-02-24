@@ -9,7 +9,7 @@
 
 // Note: Using post_process_panel::Tonemapper (has is_cinematic), not environment_preset_panel::Tonemapper
 use aw_editor_lib::panels::post_process_panel::{
-    Tonemapper, AntiAliasing, DofMode, AoMethod, PostProcessTab,
+    AntiAliasing, AoMethod, DofMode, PostProcessTab, Tonemapper,
 };
 
 // ============================================================================
@@ -170,13 +170,19 @@ mod tonemapper_tests {
 
     #[test]
     fn tonemapper_cinematic_count_equals_three() {
-        let count = Tonemapper::all().iter().filter(|t| t.is_cinematic()).count();
+        let count = Tonemapper::all()
+            .iter()
+            .filter(|t| t.is_cinematic())
+            .count();
         assert_eq!(count, 3);
     }
 
     #[test]
     fn tonemapper_not_cinematic_count_equals_three() {
-        let count = Tonemapper::all().iter().filter(|t| !t.is_cinematic()).count();
+        let count = Tonemapper::all()
+            .iter()
+            .filter(|t| !t.is_cinematic())
+            .count();
         assert_eq!(count, 3);
     }
 
@@ -513,13 +519,17 @@ mod antialiasing_tests {
 
     #[test]
     fn aa_post_process_count_equals_three() {
-        let count = AntiAliasing::all().iter().filter(|aa| aa.is_post_process()).count();
+        let count = AntiAliasing::all()
+            .iter()
+            .filter(|aa| aa.is_post_process())
+            .count();
         assert_eq!(count, 3);
     }
 
     #[test]
     fn aa_neither_count_equals_one() {
-        let count = AntiAliasing::all().iter()
+        let count = AntiAliasing::all()
+            .iter()
             .filter(|aa| !aa.is_msaa() && !aa.is_post_process())
             .count();
         assert_eq!(count, 1);
@@ -815,17 +825,26 @@ mod ao_method_tests {
 
     #[test]
     fn ao_ssao_description_returns_screen_space() {
-        assert_eq!(AoMethod::SSAO.description(), "Screen-space ambient occlusion");
+        assert_eq!(
+            AoMethod::SSAO.description(),
+            "Screen-space ambient occlusion"
+        );
     }
 
     #[test]
     fn ao_hbao_description_returns_horizon_based() {
-        assert_eq!(AoMethod::HBAO.description(), "Horizon-based ambient occlusion");
+        assert_eq!(
+            AoMethod::HBAO.description(),
+            "Horizon-based ambient occlusion"
+        );
     }
 
     #[test]
     fn ao_gtao_description_returns_ground_truth() {
-        assert_eq!(AoMethod::GTAO.description(), "Ground-truth ambient occlusion");
+        assert_eq!(
+            AoMethod::GTAO.description(),
+            "Ground-truth ambient occlusion"
+        );
     }
 
     // --- Variant identity tests ---
@@ -1037,49 +1056,76 @@ mod post_process_tab_tests {
 
     #[test]
     fn pptab_overview_is_not_bloom() {
-        assert_ne!(PostProcessTab::Overview.name(), PostProcessTab::Bloom.name());
+        assert_ne!(
+            PostProcessTab::Overview.name(),
+            PostProcessTab::Bloom.name()
+        );
     }
 
     #[test]
     fn pptab_bloom_is_not_depth_of_field() {
-        assert_ne!(PostProcessTab::Bloom.name(), PostProcessTab::DepthOfField.name());
+        assert_ne!(
+            PostProcessTab::Bloom.name(),
+            PostProcessTab::DepthOfField.name()
+        );
     }
 
     #[test]
     fn pptab_depth_of_field_is_not_motion_blur() {
-        assert_ne!(PostProcessTab::DepthOfField.name(), PostProcessTab::MotionBlur.name());
+        assert_ne!(
+            PostProcessTab::DepthOfField.name(),
+            PostProcessTab::MotionBlur.name()
+        );
     }
 
     #[test]
     fn pptab_motion_blur_is_not_color_grading() {
-        assert_ne!(PostProcessTab::MotionBlur.name(), PostProcessTab::ColorGrading.name());
+        assert_ne!(
+            PostProcessTab::MotionBlur.name(),
+            PostProcessTab::ColorGrading.name()
+        );
     }
 
     #[test]
     fn pptab_color_grading_is_not_effects() {
-        assert_ne!(PostProcessTab::ColorGrading.name(), PostProcessTab::Effects.name());
+        assert_ne!(
+            PostProcessTab::ColorGrading.name(),
+            PostProcessTab::Effects.name()
+        );
     }
 
     #[test]
     fn pptab_effects_is_not_presets() {
-        assert_ne!(PostProcessTab::Effects.name(), PostProcessTab::Presets.name());
+        assert_ne!(
+            PostProcessTab::Effects.name(),
+            PostProcessTab::Presets.name()
+        );
     }
 
     // --- Icon uniqueness tests ---
 
     #[test]
     fn pptab_overview_icon_is_not_bloom_icon() {
-        assert_ne!(PostProcessTab::Overview.icon(), PostProcessTab::Bloom.icon());
+        assert_ne!(
+            PostProcessTab::Overview.icon(),
+            PostProcessTab::Bloom.icon()
+        );
     }
 
     #[test]
     fn pptab_bloom_icon_is_not_depth_of_field_icon() {
-        assert_ne!(PostProcessTab::Bloom.icon(), PostProcessTab::DepthOfField.icon());
+        assert_ne!(
+            PostProcessTab::Bloom.icon(),
+            PostProcessTab::DepthOfField.icon()
+        );
     }
 
     #[test]
     fn pptab_depth_of_field_icon_is_not_motion_blur_icon() {
-        assert_ne!(PostProcessTab::DepthOfField.icon(), PostProcessTab::MotionBlur.icon());
+        assert_ne!(
+            PostProcessTab::DepthOfField.icon(),
+            PostProcessTab::MotionBlur.icon()
+        );
     }
 
     // --- all() method tests ---
@@ -1217,9 +1263,18 @@ mod cross_type_integration_tests {
 
     #[test]
     fn tonemapper_cinematic_and_not_cinematic_partitions_all_variants() {
-        let cinematic_count = Tonemapper::all().iter().filter(|t| t.is_cinematic()).count();
-        let not_cinematic_count = Tonemapper::all().iter().filter(|t| !t.is_cinematic()).count();
-        assert_eq!(cinematic_count + not_cinematic_count, Tonemapper::all().len());
+        let cinematic_count = Tonemapper::all()
+            .iter()
+            .filter(|t| t.is_cinematic())
+            .count();
+        let not_cinematic_count = Tonemapper::all()
+            .iter()
+            .filter(|t| !t.is_cinematic())
+            .count();
+        assert_eq!(
+            cinematic_count + not_cinematic_count,
+            Tonemapper::all().len()
+        );
     }
 
     #[test]
@@ -1232,10 +1287,18 @@ mod cross_type_integration_tests {
     #[test]
     fn antialiasing_msaa_plus_post_plus_neither_partitions_all_variants() {
         let msaa_count = AntiAliasing::all().iter().filter(|aa| aa.is_msaa()).count();
-        let post_count = AntiAliasing::all().iter().filter(|aa| aa.is_post_process()).count();
-        let neither_count = AntiAliasing::all().iter()
-            .filter(|aa| !aa.is_msaa() && !aa.is_post_process()).count();
-        assert_eq!(msaa_count + post_count + neither_count, AntiAliasing::all().len());
+        let post_count = AntiAliasing::all()
+            .iter()
+            .filter(|aa| aa.is_post_process())
+            .count();
+        let neither_count = AntiAliasing::all()
+            .iter()
+            .filter(|aa| !aa.is_msaa() && !aa.is_post_process())
+            .count();
+        assert_eq!(
+            msaa_count + post_count + neither_count,
+            AntiAliasing::all().len()
+        );
     }
 
     #[test]

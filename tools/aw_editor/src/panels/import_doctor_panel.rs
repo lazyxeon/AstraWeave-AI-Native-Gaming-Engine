@@ -25,14 +25,9 @@ use crate::panels::Panel;
 #[non_exhaustive]
 pub enum ImportAction {
     /// Apply a specific quick fix
-    ApplyQuickFix {
-        fix: QuickFix,
-        asset_path: PathBuf,
-    },
+    ApplyQuickFix { fix: QuickFix, asset_path: PathBuf },
     /// Apply all auto-fixable issues
-    ApplyAllFixes {
-        asset_path: PathBuf,
-    },
+    ApplyAllFixes { asset_path: PathBuf },
     /// Import the asset with current settings
     ImportAsset {
         asset_path: PathBuf,
@@ -42,13 +37,9 @@ pub enum ImportAction {
     /// Clear the current selection
     ClearSelection,
     /// Request to scan an asset for issues
-    ScanAsset {
-        asset_path: PathBuf,
-    },
+    ScanAsset { asset_path: PathBuf },
     /// Request 3D preview of asset
-    PreviewAsset {
-        asset_path: PathBuf,
-    },
+    PreviewAsset { asset_path: PathBuf },
 }
 
 // ============================================================================
@@ -670,8 +661,12 @@ impl QuickFix {
     /// Detailed description
     pub fn description(&self) -> &'static str {
         match self {
-            QuickFix::TreatAsNormalMap => "Mark texture as normal map (linear colorspace, correct sampling)",
-            QuickFix::FlipGreenChannel => "Flip green channel for DirectX ↔ OpenGL normal map conversion",
+            QuickFix::TreatAsNormalMap => {
+                "Mark texture as normal map (linear colorspace, correct sampling)"
+            }
+            QuickFix::FlipGreenChannel => {
+                "Flip green channel for DirectX ↔ OpenGL normal map conversion"
+            }
             QuickFix::ConvertToORM => "Repack channels to Occlusion-Roughness-Metallic format",
             QuickFix::ConvertToMRA => "Repack channels to Metallic-Roughness-AO format",
             QuickFix::GenerateTangents => "Calculate tangent vectors from UV coordinates",
@@ -681,7 +676,9 @@ impl QuickFix {
             QuickFix::FixScale => "Apply scale correction (e.g., cm → m, inches → m)",
             QuickFix::FixOrientation => "Rotate to correct up-axis (Y-up vs Z-up)",
             QuickFix::MarkAsSRGB => "Set texture color space to sRGB (for albedo/emissive)",
-            QuickFix::MarkAsLinear => "Set texture color space to Linear (for normal/roughness/metal)",
+            QuickFix::MarkAsLinear => {
+                "Set texture color space to Linear (for normal/roughness/metal)"
+            }
         }
     }
 
@@ -832,12 +829,18 @@ impl ImportDoctorPanel {
 
     /// Count issues by severity
     pub fn issue_count(&self, severity: IssueSeverity) -> usize {
-        self.issues.iter().filter(|i| i.severity == severity).count()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == severity)
+            .count()
     }
 
     /// Count total fixable issues
     pub fn fixable_count(&self) -> usize {
-        self.issues.iter().filter(|i| i.can_auto_fix && !i.fix_applied).count()
+        self.issues
+            .iter()
+            .filter(|i| i.can_auto_fix && !i.fix_applied)
+            .count()
     }
 
     /// Whether import can proceed
@@ -897,19 +900,13 @@ impl ImportDoctorPanel {
             let info = self.issue_count(IssueSeverity::Info);
 
             if critical > 0 {
-                ui.colored_label(
-                    IssueSeverity::Critical.color(),
-                    format!("{} 🚨", critical),
-                );
+                ui.colored_label(IssueSeverity::Critical.color(), format!("{} 🚨", critical));
             }
             if errors > 0 {
                 ui.colored_label(IssueSeverity::Error.color(), format!("{} ❌", errors));
             }
             if warnings > 0 {
-                ui.colored_label(
-                    IssueSeverity::Warning.color(),
-                    format!("{} ⚠️", warnings),
-                );
+                ui.colored_label(IssueSeverity::Warning.color(), format!("{} ⚠️", warnings));
             }
             if info > 0 {
                 ui.colored_label(IssueSeverity::Info.color(), format!("{} ℹ️", info));
@@ -971,13 +968,19 @@ impl ImportDoctorPanel {
             .spacing([8.0, 4.0])
             .show(ui, |ui| {
                 // Normal map fixes
-                if ui.button(format!("{}", QuickFix::TreatAsNormalMap)).clicked() {
+                if ui
+                    .button(format!("{}", QuickFix::TreatAsNormalMap))
+                    .clicked()
+                {
                     self.quick_fixes_applied.push(QuickFix::TreatAsNormalMap);
                 }
                 ui.label(QuickFix::TreatAsNormalMap.description());
                 ui.end_row();
 
-                if ui.button(format!("{}", QuickFix::FlipGreenChannel)).clicked() {
+                if ui
+                    .button(format!("{}", QuickFix::FlipGreenChannel))
+                    .clicked()
+                {
                     self.quick_fixes_applied.push(QuickFix::FlipGreenChannel);
                 }
                 ui.label(QuickFix::FlipGreenChannel.description());
@@ -997,7 +1000,10 @@ impl ImportDoctorPanel {
                 ui.end_row();
 
                 // Mesh fixes
-                if ui.button(format!("{}", QuickFix::GenerateTangents)).clicked() {
+                if ui
+                    .button(format!("{}", QuickFix::GenerateTangents))
+                    .clicked()
+                {
                     self.quick_fixes_applied.push(QuickFix::GenerateTangents);
                 }
                 ui.label(QuickFix::GenerateTangents.description());
@@ -1017,7 +1023,10 @@ impl ImportDoctorPanel {
         egui::CollapsingHeader::new("Textures")
             .default_open(true)
             .show(ui, |ui| {
-                ui.checkbox(&mut self.settings.flip_normal_green, "Flip normal green channel");
+                ui.checkbox(
+                    &mut self.settings.flip_normal_green,
+                    "Flip normal green channel",
+                );
                 ui.checkbox(&mut self.settings.resize_non_pot, "Resize non-power-of-two");
 
                 ui.horizontal(|ui| {
@@ -1064,7 +1073,10 @@ impl ImportDoctorPanel {
                 if self.settings.fix_scale {
                     ui.horizontal(|ui| {
                         ui.label("Scale Factor:");
-                        ui.add(egui::DragValue::new(&mut self.settings.scale_factor).range(0.001..=1000.0));
+                        ui.add(
+                            egui::DragValue::new(&mut self.settings.scale_factor)
+                                .range(0.001..=1000.0),
+                        );
                     });
                 }
 
@@ -1079,19 +1091,23 @@ impl ImportDoctorPanel {
                 }
             });
 
-        ui.checkbox(&mut self.settings.show_preview, "Show preview with lighting");
+        ui.checkbox(
+            &mut self.settings.show_preview,
+            "Show preview with lighting",
+        );
     }
 
     fn render_preview(&mut self, ui: &mut Ui) {
         ui.heading("👁️ Preview");
 
-        let (rect, response) = ui.allocate_exact_size(Vec2::new(200.0, 150.0), egui::Sense::click());
+        let (rect, response) =
+            ui.allocate_exact_size(Vec2::new(200.0, 150.0), egui::Sense::click());
 
         if self.preview_ready {
             // Preview is active - show placeholder with lighting
             ui.painter()
                 .rect_filled(rect, 8.0, Color32::from_rgb(40, 45, 50));
-            
+
             // Draw a simple mesh icon to indicate 3D preview
             let center = rect.center();
             ui.painter().text(
@@ -1122,9 +1138,7 @@ impl ImportDoctorPanel {
             // Handle click to request preview
             if response.clicked() {
                 if let Some(path) = self.current_asset_path() {
-                    self.queue_action(ImportAction::PreviewAsset {
-                        asset_path: path,
-                    });
+                    self.queue_action(ImportAction::PreviewAsset { asset_path: path });
                     self.preview_ready = true;
                 }
             }
@@ -1281,10 +1295,22 @@ mod tests {
 
     #[test]
     fn test_source_engine_from_filename() {
-        assert_eq!(SourceEngine::from_filename("rock_unreal_export.fbx"), SourceEngine::Unreal);
-        assert_eq!(SourceEngine::from_filename("character_blender.glb"), SourceEngine::Blender);
-        assert_eq!(SourceEngine::from_filename("texture_sp_export.png"), SourceEngine::SubstancePainter);
-        assert_eq!(SourceEngine::from_filename("random_asset.fbx"), SourceEngine::Unknown);
+        assert_eq!(
+            SourceEngine::from_filename("rock_unreal_export.fbx"),
+            SourceEngine::Unreal
+        );
+        assert_eq!(
+            SourceEngine::from_filename("character_blender.glb"),
+            SourceEngine::Blender
+        );
+        assert_eq!(
+            SourceEngine::from_filename("texture_sp_export.png"),
+            SourceEngine::SubstancePainter
+        );
+        assert_eq!(
+            SourceEngine::from_filename("random_asset.fbx"),
+            SourceEngine::Unknown
+        );
     }
 
     #[test]
@@ -1312,9 +1338,18 @@ mod tests {
 
     #[test]
     fn test_packing_from_filename() {
-        assert_eq!(TexturePackingFormat::from_filename("rock_orm.png"), TexturePackingFormat::ORM);
-        assert_eq!(TexturePackingFormat::from_filename("rock_mra.png"), TexturePackingFormat::MRA);
-        assert_eq!(TexturePackingFormat::from_filename("rock_diffuse.png"), TexturePackingFormat::Separate);
+        assert_eq!(
+            TexturePackingFormat::from_filename("rock_orm.png"),
+            TexturePackingFormat::ORM
+        );
+        assert_eq!(
+            TexturePackingFormat::from_filename("rock_mra.png"),
+            TexturePackingFormat::MRA
+        );
+        assert_eq!(
+            TexturePackingFormat::from_filename("rock_diffuse.png"),
+            TexturePackingFormat::Separate
+        );
     }
 
     #[test]
@@ -1383,9 +1418,15 @@ mod tests {
     #[test]
     fn test_panel_issue_count() {
         let mut panel = ImportDoctorPanel::new();
-        panel.issues.push(ImportIssue::new(IssueType::MissingTangents, ""));
-        panel.issues.push(ImportIssue::new(IssueType::NonPowerOfTwo, ""));
-        panel.issues.push(ImportIssue::new(IssueType::MissingTexture, ""));
+        panel
+            .issues
+            .push(ImportIssue::new(IssueType::MissingTangents, ""));
+        panel
+            .issues
+            .push(ImportIssue::new(IssueType::NonPowerOfTwo, ""));
+        panel
+            .issues
+            .push(ImportIssue::new(IssueType::MissingTexture, ""));
 
         assert_eq!(panel.issue_count(IssueSeverity::Warning), 2);
         assert_eq!(panel.issue_count(IssueSeverity::Error), 1);
@@ -1476,9 +1517,7 @@ mod tests {
         let mut panel = ImportDoctorPanel::new();
         assert!(panel.current_asset_path().is_none());
 
-        panel
-            .selected_files
-            .push(PathBuf::from("assets/model.fbx"));
+        panel.selected_files.push(PathBuf::from("assets/model.fbx"));
         assert_eq!(
             panel.current_asset_path(),
             Some(PathBuf::from("assets/model.fbx"))

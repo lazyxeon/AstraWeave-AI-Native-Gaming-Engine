@@ -32,7 +32,10 @@ fn physics_viz_names() {
     assert_eq!(PhysicsVisualization::Colliders.name(), "Colliders");
     assert_eq!(PhysicsVisualization::ContactPoints.name(), "Contact Points");
     assert_eq!(PhysicsVisualization::Joints.name(), "Joints");
-    assert_eq!(PhysicsVisualization::VelocityVectors.name(), "Velocity Vectors");
+    assert_eq!(
+        PhysicsVisualization::VelocityVectors.name(),
+        "Velocity Vectors"
+    );
     assert_eq!(PhysicsVisualization::BroadPhase.name(), "Broad Phase");
     assert_eq!(PhysicsVisualization::Islands.name(), "Islands");
     assert_eq!(PhysicsVisualization::All.name(), "All");
@@ -808,7 +811,10 @@ fn custom_profile_default_values() {
 
 #[test]
 fn physics_viz_names_unique() {
-    let names: Vec<&str> = PhysicsVisualization::all().iter().map(|v| v.name()).collect();
+    let names: Vec<&str> = PhysicsVisualization::all()
+        .iter()
+        .map(|v| v.name())
+        .collect();
     let set: std::collections::HashSet<&&str> = names.iter().collect();
     assert_eq!(names.len(), set.len());
 }

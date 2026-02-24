@@ -123,7 +123,11 @@ fn nav_area_type_cost_blocked_is_infinity() {
 fn nav_area_type_display_format() {
     for variant in NavAreaType::all() {
         let s = format!("{}", variant);
-        assert!(s.contains(variant.name()), "Display missing name for {:?}", variant);
+        assert!(
+            s.contains(variant.name()),
+            "Display missing name for {:?}",
+            variant
+        );
     }
 }
 
@@ -375,7 +379,11 @@ fn network_role_is_online() {
 #[test]
 fn network_role_description_non_empty() {
     for role in NetworkRole::all() {
-        assert!(!role.description().is_empty(), "{:?} description empty", role);
+        assert!(
+            !role.description().is_empty(),
+            "{:?} description empty",
+            role
+        );
     }
 }
 
@@ -508,7 +516,10 @@ fn compression_level_names() {
 
 #[test]
 fn compression_level_cpu_cost_monotonic() {
-    let costs: Vec<u8> = CompressionLevel::all().iter().map(|c| c.cpu_cost()).collect();
+    let costs: Vec<u8> = CompressionLevel::all()
+        .iter()
+        .map(|c| c.cpu_cost())
+        .collect();
     for w in costs.windows(2) {
         assert!(w[0] <= w[1], "CPU cost not monotonic: {:?}", costs);
     }

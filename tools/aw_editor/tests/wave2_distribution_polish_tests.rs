@@ -62,12 +62,18 @@ fn dist_ext_steam_depot() {
 
 #[test]
 fn dist_name_windows_installer() {
-    assert_eq!(DistributionFormat::WindowsInstaller.name(), "Windows Installer");
+    assert_eq!(
+        DistributionFormat::WindowsInstaller.name(),
+        "Windows Installer"
+    );
 }
 
 #[test]
 fn dist_name_windows_portable() {
-    assert_eq!(DistributionFormat::WindowsPortable.name(), "Windows Portable");
+    assert_eq!(
+        DistributionFormat::WindowsPortable.name(),
+        "Windows Portable"
+    );
 }
 
 #[test]
@@ -167,37 +173,51 @@ fn dist_icon_steam_depot() {
 
 #[test]
 fn dist_description_windows_installer() {
-    assert!(DistributionFormat::WindowsInstaller.description().contains("Installable"));
+    assert!(DistributionFormat::WindowsInstaller
+        .description()
+        .contains("Installable"));
 }
 
 #[test]
 fn dist_description_windows_portable() {
-    assert!(DistributionFormat::WindowsPortable.description().contains("Portable"));
+    assert!(DistributionFormat::WindowsPortable
+        .description()
+        .contains("Portable"));
 }
 
 #[test]
 fn dist_description_macos_bundle() {
-    assert!(DistributionFormat::MacOSBundle.description().contains("macOS"));
+    assert!(DistributionFormat::MacOSBundle
+        .description()
+        .contains("macOS"));
 }
 
 #[test]
 fn dist_description_macos_dmg() {
-    assert!(DistributionFormat::MacOSDmg.description().contains("Disk image"));
+    assert!(DistributionFormat::MacOSDmg
+        .description()
+        .contains("Disk image"));
 }
 
 #[test]
 fn dist_description_linux_appimage() {
-    assert!(DistributionFormat::LinuxAppImage.description().contains("portable"));
+    assert!(DistributionFormat::LinuxAppImage
+        .description()
+        .contains("portable"));
 }
 
 #[test]
 fn dist_description_linux_tarball() {
-    assert!(DistributionFormat::LinuxTarball.description().contains("archive"));
+    assert!(DistributionFormat::LinuxTarball
+        .description()
+        .contains("archive"));
 }
 
 #[test]
 fn dist_description_steam_depot() {
-    assert!(DistributionFormat::SteamDepot.description().contains("Steam"));
+    assert!(DistributionFormat::SteamDepot
+        .description()
+        .contains("Steam"));
 }
 
 // ============================================================================
@@ -766,7 +786,9 @@ fn splash_sequence_single_screen_duration() {
 
 #[test]
 fn splash_sequence_multiple_screens_sum() {
-    let seq = SplashSequence::new().with_engine_logo().with_publisher_logo("pub.png");
+    let seq = SplashSequence::new()
+        .with_engine_logo()
+        .with_publisher_logo("pub.png");
     assert!(seq.total_duration() > Duration::ZERO);
     assert_eq!(seq.screens.len(), 2);
 }
@@ -803,9 +825,7 @@ fn splash_screen_default_has_duration() {
 
 #[test]
 fn loading_screen_add_tip() {
-    let ls = LoadingScreen::default()
-        .add_tip("Tip 1")
-        .add_tip("Tip 2");
+    let ls = LoadingScreen::default().add_tip("Tip 1").add_tip("Tip 2");
     assert_eq!(ls.tips.len(), 2);
     assert_eq!(ls.tips[0], "Tip 1");
 }

@@ -104,9 +104,7 @@ impl TaskCategory {
     pub fn is_io_intensive(&self) -> bool {
         matches!(
             self,
-            TaskCategory::SceneLoading
-                | TaskCategory::AssetImport
-                | TaskCategory::Export
+            TaskCategory::SceneLoading | TaskCategory::AssetImport | TaskCategory::Export
         )
     }
 
@@ -305,8 +303,9 @@ impl ProgressManager {
     /// Clean up old completed tasks
     pub fn cleanup(&mut self) {
         let now = Instant::now();
-        self.recently_completed
-            .retain(|(_, _, completed_at)| now.duration_since(*completed_at) < self.completion_display_duration);
+        self.recently_completed.retain(|(_, _, completed_at)| {
+            now.duration_since(*completed_at) < self.completion_display_duration
+        });
     }
 
     /// Get iterator over active tasks
@@ -387,7 +386,8 @@ impl ProgressManager {
         for (_, task, completed_at) in &self.recently_completed {
             let age = now.duration_since(*completed_at);
             let alpha = 1.0
-                - (age.as_secs_f32() / self.completion_display_duration.as_secs_f32()).clamp(0.0, 1.0);
+                - (age.as_secs_f32() / self.completion_display_duration.as_secs_f32())
+                    .clamp(0.0, 1.0);
 
             if alpha > 0.1 {
                 ui.scope(|ui| {
@@ -428,7 +428,11 @@ impl ProgressManager {
         let overall = self.overall_progress();
 
         ui.horizontal(|ui| {
-            ui.label(format!("⏳ {} task{}", task_count, if task_count == 1 { "" } else { "s" }));
+            ui.label(format!(
+                "⏳ {} task{}",
+                task_count,
+                if task_count == 1 { "" } else { "s" }
+            ));
             ui.add(
                 egui::ProgressBar::new(overall)
                     .desired_width(80.0)
@@ -474,14 +478,14 @@ mod tests {
     fn test_update_progress() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Test", TaskCategory::Build);
-        
+
         pm.update_progress(id, 0.5);
         assert_eq!(pm.tasks.get(&id).unwrap().progress, 0.5);
-        
+
         // Test clamping
         pm.update_progress(id, 1.5);
         assert_eq!(pm.tasks.get(&id).unwrap().progress, 1.0);
-        
+
         pm.update_progress(id, -0.5);
         assert_eq!(pm.tasks.get(&id).unwrap().progress, 0.0);
     }
@@ -490,7 +494,7 @@ mod tests {
     fn test_update_status() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Test", TaskCategory::AssetImport);
-        
+
         pm.update_status(id, "Loading textures...");
         assert_eq!(pm.tasks.get(&id).unwrap().status, "Loading textures...");
     }
@@ -499,9 +503,9 @@ mod tests {
     fn test_complete_task() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Test", TaskCategory::SceneLoading);
-        
+
         pm.complete_task(id);
-        
+
         assert_eq!(pm.active_count(), 0);
         assert_eq!(pm.recently_completed.len(), 1);
         assert_eq!(pm.recently_completed[0].1.status, "Complete");
@@ -511,9 +515,9 @@ mod tests {
     fn test_fail_task() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Test", TaskCategory::Build);
-        
+
         pm.fail_task(id, "Compilation error");
-        
+
         assert_eq!(pm.active_count(), 0);
         assert!(pm.recently_completed[0].1.status.contains("Failed"));
     }
@@ -522,10 +526,10 @@ mod tests {
     fn test_cancellable_task() {
         let mut pm = ProgressManager::new();
         let id = pm.start_cancellable_task("Test", TaskCategory::Export);
-        
+
         assert!(pm.tasks.get(&id).unwrap().cancellable);
         assert!(!pm.is_cancel_requested(id));
-        
+
         assert!(pm.cancel_task(id));
         assert!(pm.is_cancel_requested(id));
     }
@@ -534,7 +538,7 @@ mod tests {
     fn test_non_cancellable_task() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Test", TaskCategory::PlayMode);
-        
+
         assert!(!pm.tasks.get(&id).unwrap().cancellable);
         assert!(!pm.cancel_task(id)); // Should return false
     }
@@ -543,12 +547,12 @@ mod tests {
     fn test_sub_tasks() {
         let mut pm = ProgressManager::new();
         let id = pm.start_task("Main Task", TaskCategory::Build);
-        
+
         pm.add_sub_task(id, "Compile shaders");
         pm.add_sub_task(id, "Process assets");
-        
+
         assert_eq!(pm.tasks.get(&id).unwrap().sub_tasks.len(), 2);
-        
+
         pm.update_sub_task(id, 0, 1.0);
         assert!(pm.tasks.get(&id).unwrap().sub_tasks[0].completed);
     }
@@ -556,16 +560,16 @@ mod tests {
     #[test]
     fn test_overall_progress() {
         let mut pm = ProgressManager::new();
-        
+
         // No tasks = 1.0 (complete)
         assert_eq!(pm.overall_progress(), 1.0);
-        
+
         let id1 = pm.start_task("Task 1", TaskCategory::Other);
         let id2 = pm.start_task("Task 2", TaskCategory::Other);
-        
+
         pm.update_progress(id1, 0.5);
         pm.update_progress(id2, 1.0);
-        
+
         // Average of 0.5 and 1.0 = 0.75
         assert!((pm.overall_progress() - 0.75).abs() < 0.001);
     }
@@ -587,20 +591,26 @@ mod tests {
     #[test]
     fn test_multiple_tasks_different_categories() {
         let mut pm = ProgressManager::new();
-        
+
         let id1 = pm.start_task("Loading scene", TaskCategory::SceneLoading);
         let id2 = pm.start_task("Importing texture", TaskCategory::AssetImport);
         let id3 = pm.start_task("Building project", TaskCategory::Build);
-        
+
         assert_eq!(pm.active_count(), 3);
-        
+
         pm.update(id1, 0.5, "Loading entities...");
         pm.update(id2, 0.8, "Processing mipmaps...");
         pm.update(id3, 0.2, "Compiling crate 1/10...");
-        
+
         // Verify each task has correct category
-        assert_eq!(pm.tasks.get(&id1).unwrap().category, TaskCategory::SceneLoading);
-        assert_eq!(pm.tasks.get(&id2).unwrap().category, TaskCategory::AssetImport);
+        assert_eq!(
+            pm.tasks.get(&id1).unwrap().category,
+            TaskCategory::SceneLoading
+        );
+        assert_eq!(
+            pm.tasks.get(&id2).unwrap().category,
+            TaskCategory::AssetImport
+        );
         assert_eq!(pm.tasks.get(&id3).unwrap().category, TaskCategory::Build);
     }
 
@@ -620,7 +630,10 @@ mod tests {
 
     #[test]
     fn test_task_category_display() {
-        assert_eq!(format!("{}", TaskCategory::SceneLoading), "📂 Scene Loading");
+        assert_eq!(
+            format!("{}", TaskCategory::SceneLoading),
+            "📂 Scene Loading"
+        );
         assert_eq!(format!("{}", TaskCategory::AssetImport), "📥 Asset Import");
         assert_eq!(format!("{}", TaskCategory::Build), "🔨 Build");
         assert_eq!(format!("{}", TaskCategory::PlayMode), "▶️ Play Mode");

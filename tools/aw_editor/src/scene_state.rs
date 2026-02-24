@@ -456,10 +456,9 @@ mod tests {
 
         // Manually add to cache
         let entity: Entity = 1;
-        state.cache.insert(
-            entity,
-            make_test_entity(1, "Test", Vec3::ZERO, Vec3::ONE),
-        );
+        state
+            .cache
+            .insert(entity, make_test_entity(1, "Test", Vec3::ZERO, Vec3::ONE));
 
         assert_eq!(state.cache.len(), 1);
         state.clear_cache();
@@ -519,18 +518,15 @@ mod tests {
         let world = World::default();
         let mut state = EditorSceneState::new(world);
 
-        state.cache.insert(
-            1,
-            make_test_entity(1, "Player", Vec3::ZERO, Vec3::ONE),
-        );
-        state.cache.insert(
-            2,
-            make_test_entity(2, "Enemy_Alpha", Vec3::ZERO, Vec3::ONE),
-        );
-        state.cache.insert(
-            3,
-            make_test_entity(3, "Enemy_Beta", Vec3::ZERO, Vec3::ONE),
-        );
+        state
+            .cache
+            .insert(1, make_test_entity(1, "Player", Vec3::ZERO, Vec3::ONE));
+        state
+            .cache
+            .insert(2, make_test_entity(2, "Enemy_Alpha", Vec3::ZERO, Vec3::ONE));
+        state
+            .cache
+            .insert(3, make_test_entity(3, "Enemy_Beta", Vec3::ZERO, Vec3::ONE));
 
         let enemies = state.find_entities_by_name("enemy");
         assert_eq!(enemies.len(), 2);
@@ -550,8 +546,12 @@ mod tests {
         let world = World::default();
         let mut state = EditorSceneState::new(world);
 
-        state.cache.insert(1, make_test_entity(1, "A", Vec3::ZERO, Vec3::ONE));
-        state.cache.insert(2, make_test_entity(2, "B", Vec3::ZERO, Vec3::ONE));
+        state
+            .cache
+            .insert(1, make_test_entity(1, "A", Vec3::ZERO, Vec3::ONE));
+        state
+            .cache
+            .insert(2, make_test_entity(2, "B", Vec3::ZERO, Vec3::ONE));
 
         let all: Vec<_> = state.all_cached_entities().collect();
         assert_eq!(all.len(), 2);
@@ -562,7 +562,9 @@ mod tests {
         let world = World::default();
         let mut state = EditorSceneState::new(world);
 
-        state.cache.insert(1, make_test_entity(1, "Test", Vec3::ZERO, Vec3::ONE));
+        state
+            .cache
+            .insert(1, make_test_entity(1, "Test", Vec3::ZERO, Vec3::ONE));
 
         let stats = state.stats();
         assert_eq!(stats.cached_entity_count, 1);

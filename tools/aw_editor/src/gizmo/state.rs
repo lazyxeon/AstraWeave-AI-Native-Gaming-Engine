@@ -30,7 +30,10 @@ impl std::fmt::Display for GizmoMode {
             GizmoMode::Inactive => write!(f, "Inactive"),
             GizmoMode::Translate { constraint } => write!(f, "Translate ({})", constraint),
             GizmoMode::Rotate { constraint } => write!(f, "Rotate ({})", constraint),
-            GizmoMode::Scale { constraint, uniform } => {
+            GizmoMode::Scale {
+                constraint,
+                uniform,
+            } => {
                 if *uniform {
                     write!(f, "Scale Uniform")
                 } else {
@@ -52,9 +55,16 @@ impl GizmoMode {
     pub fn all() -> &'static [Self] {
         &[
             GizmoMode::Inactive,
-            GizmoMode::Translate { constraint: AxisConstraint::None },
-            GizmoMode::Rotate { constraint: AxisConstraint::None },
-            GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false },
+            GizmoMode::Translate {
+                constraint: AxisConstraint::None,
+            },
+            GizmoMode::Rotate {
+                constraint: AxisConstraint::None,
+            },
+            GizmoMode::Scale {
+                constraint: AxisConstraint::None,
+                uniform: false,
+            },
         ]
     }
 
@@ -247,13 +257,13 @@ impl AxisConstraint {
     /// Returns the color for this constraint (for gizmo rendering).
     pub fn color(&self) -> [f32; 3] {
         match self {
-            AxisConstraint::None => [1.0, 1.0, 1.0],  // White
-            AxisConstraint::X => [1.0, 0.2, 0.2],     // Red
-            AxisConstraint::Y => [0.2, 1.0, 0.2],     // Green
-            AxisConstraint::Z => [0.3, 0.3, 1.0],     // Blue
-            AxisConstraint::XY => [1.0, 1.0, 0.2],    // Yellow
-            AxisConstraint::XZ => [1.0, 0.2, 1.0],    // Magenta
-            AxisConstraint::YZ => [0.2, 1.0, 1.0],    // Cyan
+            AxisConstraint::None => [1.0, 1.0, 1.0], // White
+            AxisConstraint::X => [1.0, 0.2, 0.2],    // Red
+            AxisConstraint::Y => [0.2, 1.0, 0.2],    // Green
+            AxisConstraint::Z => [0.3, 0.3, 1.0],    // Blue
+            AxisConstraint::XY => [1.0, 1.0, 0.2],   // Yellow
+            AxisConstraint::XZ => [1.0, 0.2, 1.0],   // Magenta
+            AxisConstraint::YZ => [0.2, 1.0, 1.0],   // Cyan
         }
     }
 }
@@ -887,13 +897,13 @@ mod tests {
         let mut state = GizmoState::new();
         state.selected_entity = Some(1);
         state.start_translate();
-        
+
         state.update_mouse(Vec2::new(10.0, 10.0));
         state.handle_key(KeyCode::Digit5);
-        
+
         // Internal helper check
         state.reset_operation_state();
-        
+
         assert!(state.start_mouse.is_none());
         assert!(state.current_mouse.is_none());
         assert!(state.numeric_buffer.is_empty());
@@ -905,10 +915,28 @@ mod tests {
     #[test]
     fn test_gizmo_mode_display() {
         assert_eq!(GizmoMode::Inactive.to_string(), "Inactive");
-        assert!(GizmoMode::Translate { constraint: AxisConstraint::X }.to_string().contains("Translate"));
-        assert!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.to_string().contains("Rotate"));
-        assert!(GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false }.to_string().contains("Scale"));
-        assert!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true }.to_string().contains("Uniform"));
+        assert!(GizmoMode::Translate {
+            constraint: AxisConstraint::X
+        }
+        .to_string()
+        .contains("Translate"));
+        assert!(GizmoMode::Rotate {
+            constraint: AxisConstraint::Y
+        }
+        .to_string()
+        .contains("Rotate"));
+        assert!(GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: false
+        }
+        .to_string()
+        .contains("Scale"));
+        assert!(GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: true
+        }
+        .to_string()
+        .contains("Uniform"));
     }
 
     #[test]
@@ -924,25 +952,69 @@ mod tests {
     #[test]
     fn test_gizmo_mode_helpers() {
         assert!(!GizmoMode::Inactive.is_active());
-        assert!(GizmoMode::Translate { constraint: AxisConstraint::None }.is_active());
-        assert!(GizmoMode::Translate { constraint: AxisConstraint::X }.is_translate());
-        assert!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.is_rotate());
-        assert!(GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false }.is_scale());
+        assert!(GizmoMode::Translate {
+            constraint: AxisConstraint::None
+        }
+        .is_active());
+        assert!(GizmoMode::Translate {
+            constraint: AxisConstraint::X
+        }
+        .is_translate());
+        assert!(GizmoMode::Rotate {
+            constraint: AxisConstraint::Y
+        }
+        .is_rotate());
+        assert!(GizmoMode::Scale {
+            constraint: AxisConstraint::Z,
+            uniform: false
+        }
+        .is_scale());
     }
 
     #[test]
     fn test_gizmo_mode_constraint() {
         assert_eq!(GizmoMode::Inactive.constraint(), None);
-        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::X }.constraint(), Some(AxisConstraint::X));
-        assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::Y }.constraint(), Some(AxisConstraint::Y));
+        assert_eq!(
+            GizmoMode::Translate {
+                constraint: AxisConstraint::X
+            }
+            .constraint(),
+            Some(AxisConstraint::X)
+        );
+        assert_eq!(
+            GizmoMode::Rotate {
+                constraint: AxisConstraint::Y
+            }
+            .constraint(),
+            Some(AxisConstraint::Y)
+        );
     }
 
     #[test]
     fn test_gizmo_mode_shortcut() {
         assert_eq!(GizmoMode::Inactive.shortcut(), None);
-        assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::None }.shortcut(), Some("G"));
-        assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::None }.shortcut(), Some("R"));
-        assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.shortcut(), Some("S"));
+        assert_eq!(
+            GizmoMode::Translate {
+                constraint: AxisConstraint::None
+            }
+            .shortcut(),
+            Some("G")
+        );
+        assert_eq!(
+            GizmoMode::Rotate {
+                constraint: AxisConstraint::None
+            }
+            .shortcut(),
+            Some("R")
+        );
+        assert_eq!(
+            GizmoMode::Scale {
+                constraint: AxisConstraint::None,
+                uniform: false
+            }
+            .shortcut(),
+            Some("S")
+        );
     }
 
     // ==================== AxisConstraint Tests ====================

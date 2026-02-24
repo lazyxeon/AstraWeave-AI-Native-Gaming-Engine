@@ -29,13 +29,9 @@ pub enum InputBindingAction {
         key: String, // Key name as string for flexibility
     },
     /// Clear all bindings for an action
-    ClearBindings {
-        action_index: usize,
-    },
+    ClearBindings { action_index: usize },
     /// Apply a binding preset
-    ApplyPreset {
-        preset: BindingPreset,
-    },
+    ApplyPreset { preset: BindingPreset },
     /// Save current bindings to file
     SaveBindings,
     /// Load bindings from file
@@ -43,14 +39,9 @@ pub enum InputBindingAction {
     /// Reset bindings to defaults
     ResetToDefaults,
     /// Update mouse sensitivity
-    SetMouseSensitivity {
-        sensitivity: f32,
-    },
+    SetMouseSensitivity { sensitivity: f32 },
     /// Update gamepad rumble settings
-    SetRumble {
-        enabled: bool,
-        intensity: f32,
-    },
+    SetRumble { enabled: bool, intensity: f32 },
 }
 
 /// Input device type
@@ -161,7 +152,13 @@ impl ActionCategory {
     }
 
     pub fn is_gameplay(&self) -> bool {
-        matches!(self, ActionCategory::Movement | ActionCategory::Combat | ActionCategory::Interaction | ActionCategory::Vehicle)
+        matches!(
+            self,
+            ActionCategory::Movement
+                | ActionCategory::Combat
+                | ActionCategory::Interaction
+                | ActionCategory::Vehicle
+        )
     }
 }
 
@@ -231,10 +228,10 @@ impl BindingPreset {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum GamepadButton {
-    South,      // A (Xbox), X (PlayStation)
-    East,       // B (Xbox), Circle (PlayStation)
-    West,       // X (Xbox), Square (PlayStation)
-    North,      // Y (Xbox), Triangle (PlayStation)
+    South, // A (Xbox), X (PlayStation)
+    East,  // B (Xbox), Circle (PlayStation)
+    West,  // X (Xbox), Square (PlayStation)
+    North, // Y (Xbox), Triangle (PlayStation)
     L1,
     R1,
     L2,
@@ -299,15 +296,27 @@ impl GamepadButton {
     }
 
     pub fn is_face_button(&self) -> bool {
-        matches!(self, GamepadButton::South | GamepadButton::East | GamepadButton::West | GamepadButton::North)
+        matches!(
+            self,
+            GamepadButton::South | GamepadButton::East | GamepadButton::West | GamepadButton::North
+        )
     }
 
     pub fn is_shoulder(&self) -> bool {
-        matches!(self, GamepadButton::L1 | GamepadButton::R1 | GamepadButton::L2 | GamepadButton::R2)
+        matches!(
+            self,
+            GamepadButton::L1 | GamepadButton::R1 | GamepadButton::L2 | GamepadButton::R2
+        )
     }
 
     pub fn is_dpad(&self) -> bool {
-        matches!(self, GamepadButton::DPadUp | GamepadButton::DPadDown | GamepadButton::DPadLeft | GamepadButton::DPadRight)
+        matches!(
+            self,
+            GamepadButton::DPadUp
+                | GamepadButton::DPadDown
+                | GamepadButton::DPadLeft
+                | GamepadButton::DPadRight
+        )
     }
 }
 
@@ -317,20 +326,81 @@ impl GamepadButton {
 pub enum KeyboardKey {
     // Letters
     #[default]
-    A, B, C, D, E, F, G, H, I, J, K, L, M,
-    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
     // Numbers
-    Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8, Key9, Key0,
+    Key1,
+    Key2,
+    Key3,
+    Key4,
+    Key5,
+    Key6,
+    Key7,
+    Key8,
+    Key9,
+    Key0,
     // Function keys
-    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
     // Modifiers
-    ShiftLeft, ShiftRight, CtrlLeft, CtrlRight, AltLeft, AltRight,
+    ShiftLeft,
+    ShiftRight,
+    CtrlLeft,
+    CtrlRight,
+    AltLeft,
+    AltRight,
     // Special
-    Space, Enter, Escape, Tab, Backspace,
+    Space,
+    Enter,
+    Escape,
+    Tab,
+    Backspace,
     // Arrow keys
-    ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+    ArrowUp,
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
     // Other
-    Insert, Delete, Home, End, PageUp, PageDown,
+    Insert,
+    Delete,
+    Home,
+    End,
+    PageUp,
+    PageDown,
 }
 
 impl std::fmt::Display for KeyboardKey {
@@ -344,35 +414,81 @@ impl KeyboardKey {
     pub fn all() -> &'static [KeyboardKey] {
         &[
             // Letters
-            KeyboardKey::A, KeyboardKey::B, KeyboardKey::C, KeyboardKey::D,
-            KeyboardKey::E, KeyboardKey::F, KeyboardKey::G, KeyboardKey::H,
-            KeyboardKey::I, KeyboardKey::J, KeyboardKey::K, KeyboardKey::L,
-            KeyboardKey::M, KeyboardKey::N, KeyboardKey::O, KeyboardKey::P,
-            KeyboardKey::Q, KeyboardKey::R, KeyboardKey::S, KeyboardKey::T,
-            KeyboardKey::U, KeyboardKey::V, KeyboardKey::W, KeyboardKey::X,
-            KeyboardKey::Y, KeyboardKey::Z,
+            KeyboardKey::A,
+            KeyboardKey::B,
+            KeyboardKey::C,
+            KeyboardKey::D,
+            KeyboardKey::E,
+            KeyboardKey::F,
+            KeyboardKey::G,
+            KeyboardKey::H,
+            KeyboardKey::I,
+            KeyboardKey::J,
+            KeyboardKey::K,
+            KeyboardKey::L,
+            KeyboardKey::M,
+            KeyboardKey::N,
+            KeyboardKey::O,
+            KeyboardKey::P,
+            KeyboardKey::Q,
+            KeyboardKey::R,
+            KeyboardKey::S,
+            KeyboardKey::T,
+            KeyboardKey::U,
+            KeyboardKey::V,
+            KeyboardKey::W,
+            KeyboardKey::X,
+            KeyboardKey::Y,
+            KeyboardKey::Z,
             // Numbers
-            KeyboardKey::Key1, KeyboardKey::Key2, KeyboardKey::Key3,
-            KeyboardKey::Key4, KeyboardKey::Key5, KeyboardKey::Key6,
-            KeyboardKey::Key7, KeyboardKey::Key8, KeyboardKey::Key9,
+            KeyboardKey::Key1,
+            KeyboardKey::Key2,
+            KeyboardKey::Key3,
+            KeyboardKey::Key4,
+            KeyboardKey::Key5,
+            KeyboardKey::Key6,
+            KeyboardKey::Key7,
+            KeyboardKey::Key8,
+            KeyboardKey::Key9,
             KeyboardKey::Key0,
             // Function keys
-            KeyboardKey::F1, KeyboardKey::F2, KeyboardKey::F3, KeyboardKey::F4,
-            KeyboardKey::F5, KeyboardKey::F6, KeyboardKey::F7, KeyboardKey::F8,
-            KeyboardKey::F9, KeyboardKey::F10, KeyboardKey::F11, KeyboardKey::F12,
+            KeyboardKey::F1,
+            KeyboardKey::F2,
+            KeyboardKey::F3,
+            KeyboardKey::F4,
+            KeyboardKey::F5,
+            KeyboardKey::F6,
+            KeyboardKey::F7,
+            KeyboardKey::F8,
+            KeyboardKey::F9,
+            KeyboardKey::F10,
+            KeyboardKey::F11,
+            KeyboardKey::F12,
             // Modifiers
-            KeyboardKey::ShiftLeft, KeyboardKey::ShiftRight,
-            KeyboardKey::CtrlLeft, KeyboardKey::CtrlRight,
-            KeyboardKey::AltLeft, KeyboardKey::AltRight,
+            KeyboardKey::ShiftLeft,
+            KeyboardKey::ShiftRight,
+            KeyboardKey::CtrlLeft,
+            KeyboardKey::CtrlRight,
+            KeyboardKey::AltLeft,
+            KeyboardKey::AltRight,
             // Special
-            KeyboardKey::Space, KeyboardKey::Enter, KeyboardKey::Escape,
-            KeyboardKey::Tab, KeyboardKey::Backspace,
+            KeyboardKey::Space,
+            KeyboardKey::Enter,
+            KeyboardKey::Escape,
+            KeyboardKey::Tab,
+            KeyboardKey::Backspace,
             // Arrow keys
-            KeyboardKey::ArrowUp, KeyboardKey::ArrowDown,
-            KeyboardKey::ArrowLeft, KeyboardKey::ArrowRight,
+            KeyboardKey::ArrowUp,
+            KeyboardKey::ArrowDown,
+            KeyboardKey::ArrowLeft,
+            KeyboardKey::ArrowRight,
             // Other
-            KeyboardKey::Insert, KeyboardKey::Delete, KeyboardKey::Home,
-            KeyboardKey::End, KeyboardKey::PageUp, KeyboardKey::PageDown,
+            KeyboardKey::Insert,
+            KeyboardKey::Delete,
+            KeyboardKey::Home,
+            KeyboardKey::End,
+            KeyboardKey::PageUp,
+            KeyboardKey::PageDown,
         ]
     }
 
@@ -385,13 +501,32 @@ impl KeyboardKey {
     pub fn is_letter(&self) -> bool {
         matches!(
             self,
-            KeyboardKey::A | KeyboardKey::B | KeyboardKey::C | KeyboardKey::D
-                | KeyboardKey::E | KeyboardKey::F | KeyboardKey::G | KeyboardKey::H
-                | KeyboardKey::I | KeyboardKey::J | KeyboardKey::K | KeyboardKey::L
-                | KeyboardKey::M | KeyboardKey::N | KeyboardKey::O | KeyboardKey::P
-                | KeyboardKey::Q | KeyboardKey::R | KeyboardKey::S | KeyboardKey::T
-                | KeyboardKey::U | KeyboardKey::V | KeyboardKey::W | KeyboardKey::X
-                | KeyboardKey::Y | KeyboardKey::Z
+            KeyboardKey::A
+                | KeyboardKey::B
+                | KeyboardKey::C
+                | KeyboardKey::D
+                | KeyboardKey::E
+                | KeyboardKey::F
+                | KeyboardKey::G
+                | KeyboardKey::H
+                | KeyboardKey::I
+                | KeyboardKey::J
+                | KeyboardKey::K
+                | KeyboardKey::L
+                | KeyboardKey::M
+                | KeyboardKey::N
+                | KeyboardKey::O
+                | KeyboardKey::P
+                | KeyboardKey::Q
+                | KeyboardKey::R
+                | KeyboardKey::S
+                | KeyboardKey::T
+                | KeyboardKey::U
+                | KeyboardKey::V
+                | KeyboardKey::W
+                | KeyboardKey::X
+                | KeyboardKey::Y
+                | KeyboardKey::Z
         )
     }
 
@@ -399,9 +534,15 @@ impl KeyboardKey {
     pub fn is_number(&self) -> bool {
         matches!(
             self,
-            KeyboardKey::Key0 | KeyboardKey::Key1 | KeyboardKey::Key2
-                | KeyboardKey::Key3 | KeyboardKey::Key4 | KeyboardKey::Key5
-                | KeyboardKey::Key6 | KeyboardKey::Key7 | KeyboardKey::Key8
+            KeyboardKey::Key0
+                | KeyboardKey::Key1
+                | KeyboardKey::Key2
+                | KeyboardKey::Key3
+                | KeyboardKey::Key4
+                | KeyboardKey::Key5
+                | KeyboardKey::Key6
+                | KeyboardKey::Key7
+                | KeyboardKey::Key8
                 | KeyboardKey::Key9
         )
     }
@@ -410,9 +551,18 @@ impl KeyboardKey {
     pub fn is_function(&self) -> bool {
         matches!(
             self,
-            KeyboardKey::F1 | KeyboardKey::F2 | KeyboardKey::F3 | KeyboardKey::F4
-                | KeyboardKey::F5 | KeyboardKey::F6 | KeyboardKey::F7 | KeyboardKey::F8
-                | KeyboardKey::F9 | KeyboardKey::F10 | KeyboardKey::F11 | KeyboardKey::F12
+            KeyboardKey::F1
+                | KeyboardKey::F2
+                | KeyboardKey::F3
+                | KeyboardKey::F4
+                | KeyboardKey::F5
+                | KeyboardKey::F6
+                | KeyboardKey::F7
+                | KeyboardKey::F8
+                | KeyboardKey::F9
+                | KeyboardKey::F10
+                | KeyboardKey::F11
+                | KeyboardKey::F12
         )
     }
 
@@ -420,9 +570,12 @@ impl KeyboardKey {
     pub fn is_modifier(&self) -> bool {
         matches!(
             self,
-            KeyboardKey::ShiftLeft | KeyboardKey::ShiftRight
-                | KeyboardKey::CtrlLeft | KeyboardKey::CtrlRight
-                | KeyboardKey::AltLeft | KeyboardKey::AltRight
+            KeyboardKey::ShiftLeft
+                | KeyboardKey::ShiftRight
+                | KeyboardKey::CtrlLeft
+                | KeyboardKey::CtrlRight
+                | KeyboardKey::AltLeft
+                | KeyboardKey::AltRight
         )
     }
 
@@ -430,41 +583,84 @@ impl KeyboardKey {
     pub fn is_arrow(&self) -> bool {
         matches!(
             self,
-            KeyboardKey::ArrowUp | KeyboardKey::ArrowDown
-                | KeyboardKey::ArrowLeft | KeyboardKey::ArrowRight
+            KeyboardKey::ArrowUp
+                | KeyboardKey::ArrowDown
+                | KeyboardKey::ArrowLeft
+                | KeyboardKey::ArrowRight
         )
     }
 
     pub fn display_name(&self) -> &'static str {
         match self {
-            KeyboardKey::A => "A", KeyboardKey::B => "B", KeyboardKey::C => "C",
-            KeyboardKey::D => "D", KeyboardKey::E => "E", KeyboardKey::F => "F",
-            KeyboardKey::G => "G", KeyboardKey::H => "H", KeyboardKey::I => "I",
-            KeyboardKey::J => "J", KeyboardKey::K => "K", KeyboardKey::L => "L",
-            KeyboardKey::M => "M", KeyboardKey::N => "N", KeyboardKey::O => "O",
-            KeyboardKey::P => "P", KeyboardKey::Q => "Q", KeyboardKey::R => "R",
-            KeyboardKey::S => "S", KeyboardKey::T => "T", KeyboardKey::U => "U",
-            KeyboardKey::V => "V", KeyboardKey::W => "W", KeyboardKey::X => "X",
-            KeyboardKey::Y => "Y", KeyboardKey::Z => "Z",
-            KeyboardKey::Key1 => "1", KeyboardKey::Key2 => "2", KeyboardKey::Key3 => "3",
-            KeyboardKey::Key4 => "4", KeyboardKey::Key5 => "5", KeyboardKey::Key6 => "6",
-            KeyboardKey::Key7 => "7", KeyboardKey::Key8 => "8", KeyboardKey::Key9 => "9",
+            KeyboardKey::A => "A",
+            KeyboardKey::B => "B",
+            KeyboardKey::C => "C",
+            KeyboardKey::D => "D",
+            KeyboardKey::E => "E",
+            KeyboardKey::F => "F",
+            KeyboardKey::G => "G",
+            KeyboardKey::H => "H",
+            KeyboardKey::I => "I",
+            KeyboardKey::J => "J",
+            KeyboardKey::K => "K",
+            KeyboardKey::L => "L",
+            KeyboardKey::M => "M",
+            KeyboardKey::N => "N",
+            KeyboardKey::O => "O",
+            KeyboardKey::P => "P",
+            KeyboardKey::Q => "Q",
+            KeyboardKey::R => "R",
+            KeyboardKey::S => "S",
+            KeyboardKey::T => "T",
+            KeyboardKey::U => "U",
+            KeyboardKey::V => "V",
+            KeyboardKey::W => "W",
+            KeyboardKey::X => "X",
+            KeyboardKey::Y => "Y",
+            KeyboardKey::Z => "Z",
+            KeyboardKey::Key1 => "1",
+            KeyboardKey::Key2 => "2",
+            KeyboardKey::Key3 => "3",
+            KeyboardKey::Key4 => "4",
+            KeyboardKey::Key5 => "5",
+            KeyboardKey::Key6 => "6",
+            KeyboardKey::Key7 => "7",
+            KeyboardKey::Key8 => "8",
+            KeyboardKey::Key9 => "9",
             KeyboardKey::Key0 => "0",
-            KeyboardKey::F1 => "F1", KeyboardKey::F2 => "F2", KeyboardKey::F3 => "F3",
-            KeyboardKey::F4 => "F4", KeyboardKey::F5 => "F5", KeyboardKey::F6 => "F6",
-            KeyboardKey::F7 => "F7", KeyboardKey::F8 => "F8", KeyboardKey::F9 => "F9",
-            KeyboardKey::F10 => "F10", KeyboardKey::F11 => "F11", KeyboardKey::F12 => "F12",
-            KeyboardKey::ShiftLeft => "L-Shift", KeyboardKey::ShiftRight => "R-Shift",
-            KeyboardKey::CtrlLeft => "L-Ctrl", KeyboardKey::CtrlRight => "R-Ctrl",
-            KeyboardKey::AltLeft => "L-Alt", KeyboardKey::AltRight => "R-Alt",
-            KeyboardKey::Space => "Space", KeyboardKey::Enter => "Enter",
-            KeyboardKey::Escape => "Esc", KeyboardKey::Tab => "Tab",
+            KeyboardKey::F1 => "F1",
+            KeyboardKey::F2 => "F2",
+            KeyboardKey::F3 => "F3",
+            KeyboardKey::F4 => "F4",
+            KeyboardKey::F5 => "F5",
+            KeyboardKey::F6 => "F6",
+            KeyboardKey::F7 => "F7",
+            KeyboardKey::F8 => "F8",
+            KeyboardKey::F9 => "F9",
+            KeyboardKey::F10 => "F10",
+            KeyboardKey::F11 => "F11",
+            KeyboardKey::F12 => "F12",
+            KeyboardKey::ShiftLeft => "L-Shift",
+            KeyboardKey::ShiftRight => "R-Shift",
+            KeyboardKey::CtrlLeft => "L-Ctrl",
+            KeyboardKey::CtrlRight => "R-Ctrl",
+            KeyboardKey::AltLeft => "L-Alt",
+            KeyboardKey::AltRight => "R-Alt",
+            KeyboardKey::Space => "Space",
+            KeyboardKey::Enter => "Enter",
+            KeyboardKey::Escape => "Esc",
+            KeyboardKey::Tab => "Tab",
             KeyboardKey::Backspace => "Backspace",
-            KeyboardKey::ArrowUp => "↑", KeyboardKey::ArrowDown => "↓",
-            KeyboardKey::ArrowLeft => "←", KeyboardKey::ArrowRight => "→",
-            KeyboardKey::Insert => "Ins", KeyboardKey::Delete => "Del",
-            KeyboardKey::Home => "Home", KeyboardKey::End => "End",
-            KeyboardKey::PageUp => "PgUp", KeyboardKey::PageDown => "PgDn",
+            KeyboardKey::ArrowUp => "↑",
+            KeyboardKey::ArrowDown => "↓",
+            KeyboardKey::ArrowLeft => "←",
+            KeyboardKey::ArrowRight => "→",
+            KeyboardKey::Insert => "Ins",
+            KeyboardKey::Delete => "Del",
+            KeyboardKey::Home => "Home",
+            KeyboardKey::End => "End",
+            KeyboardKey::PageUp => "PgUp",
+            KeyboardKey::PageDown => "PgDn",
         }
     }
 }
@@ -1119,9 +1315,9 @@ impl InputBindingsPanel {
                                 .name
                                 .to_lowercase()
                                 .contains(&self.search_text.to_lowercase())
-                            {
-                                return false;
-                            }
+                        {
+                            return false;
+                        }
                         true
                     })
                     .map(|(i, _)| i)
@@ -1227,10 +1423,7 @@ impl InputBindingsPanel {
                     .text("Sensitivity")
                     .logarithmic(true),
             );
-            ui.add(
-                egui::Slider::new(&mut self.mouse_smoothing, 0.0..=1.0)
-                    .text("Smoothing"),
-            );
+            ui.add(egui::Slider::new(&mut self.mouse_smoothing, 0.0..=1.0).text("Smoothing"));
             ui.checkbox(&mut self.mouse_invert_y, "Invert Y axis");
             ui.checkbox(&mut self.mouse_raw_input, "Raw input (no acceleration)");
         });
@@ -1252,18 +1445,9 @@ impl InputBindingsPanel {
                 ui.collapsing(&axis.name, |ui| {
                     ui.label(&axis.description);
 
-                    ui.add(
-                        egui::Slider::new(&mut axis.sensitivity, 0.1..=5.0)
-                            .text("Sensitivity"),
-                    );
-                    ui.add(
-                        egui::Slider::new(&mut axis.deadzone, 0.0..=0.5)
-                            .text("Deadzone"),
-                    );
-                    ui.add(
-                        egui::Slider::new(&mut axis.smoothing, 0.0..=1.0)
-                            .text("Smoothing"),
-                    );
+                    ui.add(egui::Slider::new(&mut axis.sensitivity, 0.1..=5.0).text("Sensitivity"));
+                    ui.add(egui::Slider::new(&mut axis.deadzone, 0.0..=0.5).text("Deadzone"));
+                    ui.add(egui::Slider::new(&mut axis.smoothing, 0.0..=1.0).text("Smoothing"));
                     ui.checkbox(&mut axis.invert, "Invert");
                 });
             }
@@ -1306,10 +1490,7 @@ impl InputBindingsPanel {
             ui.checkbox(&mut self.rumble_enabled, "Enable rumble");
 
             if self.rumble_enabled {
-                ui.add(
-                    egui::Slider::new(&mut self.rumble_intensity, 0.0..=1.0)
-                        .text("Intensity"),
-                );
+                ui.add(egui::Slider::new(&mut self.rumble_intensity, 0.0..=1.0).text("Intensity"));
 
                 ui.horizontal(|ui| {
                     if ui.button("Test Light").clicked() {
@@ -1516,7 +1697,11 @@ impl InputBindingsPanel {
         // Conflicts
         if !self.conflicts.is_empty() {
             ui.group(|ui| {
-                ui.label(RichText::new("⚠️ Binding Conflicts").strong().color(Color32::YELLOW));
+                ui.label(
+                    RichText::new("⚠️ Binding Conflicts")
+                        .strong()
+                        .color(Color32::YELLOW),
+                );
 
                 for conflict in &self.conflicts {
                     ui.horizontal(|ui| {
@@ -1534,8 +1719,10 @@ impl InputBindingsPanel {
     }
 
     fn draw_gamepad_diagram(&self, ui: &mut Ui) {
-        let (rect, _) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width().min(300.0), 150.0), egui::Sense::hover());
+        let (rect, _) = ui.allocate_exact_size(
+            Vec2::new(ui.available_width().min(300.0), 150.0),
+            egui::Sense::hover(),
+        );
 
         let center = rect.center();
         let painter = ui.painter();

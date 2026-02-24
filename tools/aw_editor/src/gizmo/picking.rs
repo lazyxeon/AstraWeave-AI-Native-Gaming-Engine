@@ -79,17 +79,29 @@ impl GizmoHandle {
 
     /// Returns true if this is a translation handle.
     pub fn is_translate(&self) -> bool {
-        matches!(self, GizmoHandle::TranslateX | GizmoHandle::TranslateY | GizmoHandle::TranslateZ)
+        matches!(
+            self,
+            GizmoHandle::TranslateX | GizmoHandle::TranslateY | GizmoHandle::TranslateZ
+        )
     }
 
     /// Returns true if this is a rotation handle.
     pub fn is_rotate(&self) -> bool {
-        matches!(self, GizmoHandle::RotateX | GizmoHandle::RotateY | GizmoHandle::RotateZ)
+        matches!(
+            self,
+            GizmoHandle::RotateX | GizmoHandle::RotateY | GizmoHandle::RotateZ
+        )
     }
 
     /// Returns true if this is a scale handle.
     pub fn is_scale(&self) -> bool {
-        matches!(self, GizmoHandle::ScaleX | GizmoHandle::ScaleY | GizmoHandle::ScaleZ | GizmoHandle::ScaleUniform)
+        matches!(
+            self,
+            GizmoHandle::ScaleX
+                | GizmoHandle::ScaleY
+                | GizmoHandle::ScaleZ
+                | GizmoHandle::ScaleUniform
+        )
     }
 
     /// Returns the axis character for this handle ('X', 'Y', 'Z', or 'U' for uniform).

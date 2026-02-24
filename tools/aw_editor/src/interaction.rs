@@ -108,13 +108,20 @@ impl GizmoMeasurement {
     pub fn summary(&self) -> String {
         match self {
             Self::Translate { from, to } => {
-                format!("Moved from ({}, {}) to ({}, {})", from.x, from.y, to.x, to.y)
+                format!(
+                    "Moved from ({}, {}) to ({}, {})",
+                    from.x, from.y, to.x, to.y
+                )
             }
             Self::Rotate { from, to } => {
                 format!(
                     "Rotated from ({:.1}°, {:.1}°, {:.1}°) to ({:.1}°, {:.1}°, {:.1}°)",
-                    from.0.to_degrees(), from.1.to_degrees(), from.2.to_degrees(),
-                    to.0.to_degrees(), to.1.to_degrees(), to.2.to_degrees()
+                    from.0.to_degrees(),
+                    from.1.to_degrees(),
+                    from.2.to_degrees(),
+                    to.0.to_degrees(),
+                    to.1.to_degrees(),
+                    to.2.to_degrees()
                 )
             }
             Self::Scale { from, to } => {
@@ -164,7 +171,8 @@ impl GizmoCancelMetadata {
     pub fn summary(&self) -> String {
         format!(
             "{} cancelled on entity {:?}",
-            self.operation.name(), self.entity
+            self.operation.name(),
+            self.entity
         )
     }
 
@@ -203,9 +211,16 @@ impl std::fmt::Display for GizmoMeasurement {
                 write!(f, "Move ({},{})→({},{})", from.x, from.y, to.x, to.y)
             }
             Self::Rotate { from, to } => {
-                write!(f, "Rotate ({:.1}°,{:.1}°,{:.1}°)→({:.1}°,{:.1}°,{:.1}°)",
-                    from.0.to_degrees(), from.1.to_degrees(), from.2.to_degrees(),
-                    to.0.to_degrees(), to.1.to_degrees(), to.2.to_degrees())
+                write!(
+                    f,
+                    "Rotate ({:.1}°,{:.1}°,{:.1}°)→({:.1}°,{:.1}°,{:.1}°)",
+                    from.0.to_degrees(),
+                    from.1.to_degrees(),
+                    from.2.to_degrees(),
+                    to.0.to_degrees(),
+                    to.1.to_degrees(),
+                    to.2.to_degrees()
+                )
             }
             Self::Scale { from, to } => {
                 write!(f, "Scale {:.2}→{:.2}", from, to)
@@ -400,9 +415,9 @@ pub fn ensure_world_snapshot(state: &mut GizmoState, world: &World) -> Option<Tr
 mod tests {
     use super::*;
     use crate::command::UndoStack;
-    use crate::gizmo::state::{GizmoMode, TransformSnapshot, AxisConstraint};
-    use astraweave_core::{World, Entity, IVec2, Team};
-    use glam::{Vec3, Quat};
+    use crate::gizmo::state::{AxisConstraint, GizmoMode, TransformSnapshot};
+    use astraweave_core::{Entity, IVec2, Team, World};
+    use glam::{Quat, Vec3};
 
     fn create_test_world() -> (World, Entity) {
         let mut world = World::new();
@@ -414,31 +429,33 @@ mod tests {
     fn test_commit_translate_generates_command() {
         let (mut world, entity) = create_test_world();
         let mut undo_stack = UndoStack::new(100);
-        
+
         let start_pos = Vec3::new(10.0, 0.0, 10.0);
         let snapshot = TransformSnapshot {
             position: start_pos,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        
+
         let mut state = GizmoState {
             selected_entity: Some(entity),
             start_transform: Some(snapshot),
-            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            last_mode: GizmoMode::Translate {
+                constraint: AxisConstraint::X,
+            },
             mode: GizmoMode::Inactive,
             ..Default::default()
         };
-        
+
         if let Some(pose) = world.pose_mut(entity) {
             pose.pos = IVec2::new(20, 20);
         }
-        
+
         let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
-        
+
         assert!(meta.is_some());
         assert!(undo_stack.can_undo());
-        
+
         let meta = meta.unwrap();
         match meta.measurement {
             GizmoMeasurement::Translate { from, to } => {
@@ -447,7 +464,7 @@ mod tests {
             }
             _ => panic!("Expected Translate measurement"),
         }
-        
+
         assert!(state.start_transform.is_none());
     }
 
@@ -455,24 +472,26 @@ mod tests {
     fn test_commit_no_change_does_not_generate_command() {
         let (mut world, entity) = create_test_world();
         let mut undo_stack = UndoStack::new(100);
-        
+
         let start_pos = Vec3::ZERO;
         let snapshot = TransformSnapshot {
             position: start_pos,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        
+
         let mut state = GizmoState {
             selected_entity: Some(entity),
             start_transform: Some(snapshot),
-            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            last_mode: GizmoMode::Translate {
+                constraint: AxisConstraint::X,
+            },
             mode: GizmoMode::Inactive,
             ..Default::default()
         };
 
         let meta = commit_active_gizmo(&mut state, &mut world, &mut undo_stack);
-        
+
         assert!(meta.is_none());
         assert!(!undo_stack.can_undo());
         assert!(state.start_transform.is_none());
@@ -481,30 +500,34 @@ mod tests {
     #[test]
     fn test_cancel_gizmo_reverts_transform() {
         let (mut world, entity) = create_test_world();
-        
+
         let start_pos = Vec3::new(5.0, 0.0, 5.0);
         let snapshot = TransformSnapshot {
             position: start_pos,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
         };
-        
+
         let mut state = GizmoState {
             selected_entity: Some(entity),
             start_transform: Some(snapshot),
-            last_mode: GizmoMode::Translate { constraint: AxisConstraint::X },
-            mode: GizmoMode::Translate { constraint: AxisConstraint::X },
+            last_mode: GizmoMode::Translate {
+                constraint: AxisConstraint::X,
+            },
+            mode: GizmoMode::Translate {
+                constraint: AxisConstraint::X,
+            },
             ..Default::default()
-        }; 
-        
+        };
+
         if let Some(pose) = world.pose_mut(entity) {
             pose.pos = IVec2::new(100, 100);
         }
-        
+
         let meta = cancel_active_gizmo(&mut state, &mut world);
-        
+
         assert!(meta.is_some());
-        
+
         if let Some(pose) = world.pose(entity) {
             assert_eq!(pose.pos, IVec2::new(5, 5));
         }
@@ -585,7 +608,10 @@ mod tests {
 
     #[test]
     fn test_gizmo_measurement_is_significant() {
-        let small = GizmoMeasurement::Scale { from: 1.0, to: 1.001 };
+        let small = GizmoMeasurement::Scale {
+            from: 1.0,
+            to: 1.001,
+        };
         assert!(!small.is_significant());
 
         let large = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
@@ -684,7 +710,7 @@ mod tests {
             operation: GizmoOperationKind::Translate,
             snapshot,
         };
-        
+
         assert_eq!(meta.original_position(), Vec3::new(10.0, 20.0, 30.0));
         assert_eq!(meta.original_rotation(), Quat::IDENTITY);
         assert_eq!(meta.original_scale(), Vec3::splat(2.0));
@@ -756,4 +782,3 @@ mod tests {
         assert!(display.contains("2.50"));
     }
 }
-

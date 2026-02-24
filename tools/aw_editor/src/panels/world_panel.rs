@@ -531,26 +531,26 @@ pub struct WorldPanel {
     chunk_radius: i32,
     generation_status: Option<String>,
     auto_regenerate: bool,
-    
+
     // Weather
     weather: WeatherSettings,
-    
+
     // Time
     time: TimeSettings,
-    
+
     // Lighting
     lighting: LightingSettings,
-    
+
     // World bounds
     bounds: WorldBounds,
-    
+
     // Environment preset
     current_preset: EnvironmentPreset,
-    
+
     // Event log
     events: VecDeque<WorldEvent>,
     max_events: usize,
-    
+
     // UI state
     show_weather: bool,
     show_time: bool,
@@ -590,7 +590,7 @@ impl WorldPanel {
 
     fn apply_preset(&mut self, preset: EnvironmentPreset) {
         self.current_preset = preset;
-        
+
         match preset {
             EnvironmentPreset::Sunny => {
                 self.weather.current = WeatherType::Clear;
@@ -660,8 +660,11 @@ impl WorldPanel {
             }
             EnvironmentPreset::Custom => {}
         }
-        
-        self.add_event(WorldEventType::SettingsModified, format!("Applied preset: {}", preset.name()));
+
+        self.add_event(
+            WorldEventType::SettingsModified,
+            format!("Applied preset: {}", preset.name()),
+        );
     }
 
     pub fn show_with_level(&mut self, ui: &mut Ui, level: &mut LevelDoc) {
@@ -670,9 +673,14 @@ impl WorldPanel {
 
         // Quick summary bar
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("{} {}", 
-                self.weather.current.icon(), 
-                self.weather.current.name())).strong());
+            ui.label(
+                RichText::new(format!(
+                    "{} {}",
+                    self.weather.current.icon(),
+                    self.weather.current.name()
+                ))
+                .strong(),
+            );
             ui.separator();
             ui.label(format!("🕐 {}", self.time.format_time()));
             ui.separator();
@@ -717,7 +725,10 @@ impl WorldPanel {
                     .selected_text(biome_display_name(&level.biome))
                     .show_ui(ui, |ui| {
                         for (value, display) in all_biome_options() {
-                            if ui.selectable_label(level.biome == *value, *display).clicked() {
+                            if ui
+                                .selectable_label(level.biome == *value, *display)
+                                .clicked()
+                            {
                                 level.biome = value.to_string();
                             }
                         }
@@ -756,13 +767,18 @@ impl WorldPanel {
                 self.terrain_state.configure(level.seed, &level.biome);
 
                 let should_generate = generate_clicked
-                    || (self.auto_regenerate && (old_biome != level.biome || old_seed != level.seed));
+                    || (self.auto_regenerate
+                        && (old_biome != level.biome || old_seed != level.seed));
 
                 if should_generate {
                     match self.terrain_state.generate_terrain(self.chunk_radius) {
                         Ok(count) => {
-                            let msg = format!("Generated {} chunks (seed={}, biome={})",
-                                count, level.seed, biome_display_name(&level.biome));
+                            let msg = format!(
+                                "Generated {} chunks (seed={}, biome={})",
+                                count,
+                                level.seed,
+                                biome_display_name(&level.biome)
+                            );
                             self.generation_status = Some(msg.clone());
                             self.add_event(WorldEventType::TerrainGenerated, msg);
                         }
@@ -778,7 +794,10 @@ impl WorldPanel {
                 }
 
                 if self.terrain_state.chunk_count() > 0 {
-                    ui.label(format!("Active: {} chunks", self.terrain_state.chunk_count()));
+                    ui.label(format!(
+                        "Active: {} chunks",
+                        self.terrain_state.chunk_count()
+                    ));
                 }
             });
         });
@@ -789,62 +808,94 @@ impl WorldPanel {
                 ui.horizontal(|ui| {
                     ui.label("Type:");
                     egui::ComboBox::from_id_salt("weather_type")
-                        .selected_text(format!("{} {}", 
-                            self.weather.current.icon(), 
-                            self.weather.current.name()))
+                        .selected_text(format!(
+                            "{} {}",
+                            self.weather.current.icon(),
+                            self.weather.current.name()
+                        ))
                         .show_ui(ui, |ui| {
                             for w in WeatherType::all() {
                                 let text = format!("{} {}", w.icon(), w.name());
-                                if ui.selectable_label(self.weather.current == *w, text).clicked() {
+                                if ui
+                                    .selectable_label(self.weather.current == *w, text)
+                                    .clicked()
+                                {
                                     let old = self.weather.current;
                                     self.weather.current = *w;
                                     if old != *w {
-                                        self.add_event(WorldEventType::WeatherChanged, 
-                                            format!("Weather: {} → {}", old.name(), w.name()));
+                                        self.add_event(
+                                            WorldEventType::WeatherChanged,
+                                            format!("Weather: {} → {}", old.name(), w.name()),
+                                        );
                                     }
                                 }
                             }
                         });
                 });
 
-                ui.label(RichText::new(self.weather.current.description()).small().weak());
+                ui.label(
+                    RichText::new(self.weather.current.description())
+                        .small()
+                        .weak(),
+                );
 
                 ui.add_space(5.0);
 
                 ui.horizontal(|ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.weather.intensity, 0.0..=1.0).show_value(true));
+                    ui.add(
+                        egui::Slider::new(&mut self.weather.intensity, 0.0..=1.0).show_value(true),
+                    );
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Wind Speed:");
-                    ui.add(egui::Slider::new(&mut self.weather.wind_speed, 0.0..=50.0).suffix(" m/s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.weather.wind_speed, 0.0..=50.0).suffix(" m/s"),
+                    );
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Wind Direction:");
-                    ui.add(egui::Slider::new(&mut self.weather.wind_direction, 0.0..=360.0).suffix("°"));
+                    ui.add(
+                        egui::Slider::new(&mut self.weather.wind_direction, 0.0..=360.0)
+                            .suffix("°"),
+                    );
                 });
 
-                if matches!(self.weather.current, 
-                    WeatherType::LightRain | WeatherType::HeavyRain | 
-                    WeatherType::Snow | WeatherType::Blizzard | WeatherType::Hail) {
+                if matches!(
+                    self.weather.current,
+                    WeatherType::LightRain
+                        | WeatherType::HeavyRain
+                        | WeatherType::Snow
+                        | WeatherType::Blizzard
+                        | WeatherType::Hail
+                ) {
                     ui.horizontal(|ui| {
                         ui.label("Precipitation:");
-                        ui.add(egui::Slider::new(&mut self.weather.precipitation_density, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.weather.precipitation_density,
+                            0.0..=1.0,
+                        ));
                     });
                 }
 
                 if self.weather.current == WeatherType::Thunderstorm {
                     ui.horizontal(|ui| {
                         ui.label("Lightning:");
-                        ui.add(egui::Slider::new(&mut self.weather.lightning_frequency, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.weather.lightning_frequency,
+                            0.0..=1.0,
+                        ));
                     });
                 }
 
                 ui.horizontal(|ui| {
                     ui.label("Transition Time:");
-                    ui.add(egui::Slider::new(&mut self.weather.transition_time, 1.0..=120.0).suffix(" s"));
+                    ui.add(
+                        egui::Slider::new(&mut self.weather.transition_time, 1.0..=120.0)
+                            .suffix(" s"),
+                    );
                 });
             });
         }
@@ -860,8 +911,14 @@ impl WorldPanel {
                             let old_hour = self.time.current_hour;
                             self.time.current_hour = preset.hour();
                             level.sky.time_of_day = preset.name().to_lowercase();
-                            self.add_event(WorldEventType::TimeChanged, 
-                                format!("Time: {:02}:00 → {:02}:00", old_hour as u32, preset.hour() as u32));
+                            self.add_event(
+                                WorldEventType::TimeChanged,
+                                format!(
+                                    "Time: {:02}:00 → {:02}:00",
+                                    old_hour as u32,
+                                    preset.hour() as u32
+                                ),
+                            );
                         }
                     }
                 });
@@ -870,19 +927,31 @@ impl WorldPanel {
 
                 ui.horizontal(|ui| {
                     ui.label("Hour:");
-                    ui.add(egui::Slider::new(&mut self.time.current_hour, 0.0..=23.99)
-                        .custom_formatter(|v, _| {
-                            let h = v.floor() as u32 % 24;
-                            let m = ((v.fract() * 60.0).floor() as u32) % 60;
-                            format!("{:02}:{:02}", h, m)
-                        }));
+                    ui.add(
+                        egui::Slider::new(&mut self.time.current_hour, 0.0..=23.99)
+                            .custom_formatter(|v, _| {
+                                let h = v.floor() as u32 % 24;
+                                let m = ((v.fract() * 60.0).floor() as u32) % 60;
+                                format!("{:02}:{:02}", h, m)
+                            }),
+                    );
                 });
 
-                let daytime_icon = if self.time.is_daytime() { "☀️" } else { "🌙" };
-                ui.label(format!("{} {} (Sun: {:.0}%)", 
+                let daytime_icon = if self.time.is_daytime() {
+                    "☀️"
+                } else {
+                    "🌙"
+                };
+                ui.label(format!(
+                    "{} {} (Sun: {:.0}%)",
                     daytime_icon,
-                    if self.time.is_daytime() { "Daytime" } else { "Nighttime" },
-                    self.time.sun_intensity() * 100.0));
+                    if self.time.is_daytime() {
+                        "Daytime"
+                    } else {
+                        "Nighttime"
+                    },
+                    self.time.sun_intensity() * 100.0
+                ));
 
                 ui.add_space(5.0);
 
@@ -890,11 +959,16 @@ impl WorldPanel {
                 if self.time.auto_cycle {
                     ui.horizontal(|ui| {
                         ui.label("Day Length:");
-                        ui.add(egui::Slider::new(&mut self.time.day_length_minutes, 1.0..=60.0).suffix(" min"));
+                        ui.add(
+                            egui::Slider::new(&mut self.time.day_length_minutes, 1.0..=60.0)
+                                .suffix(" min"),
+                        );
                     });
                     ui.horizontal(|ui| {
                         ui.label("Cycle Speed:");
-                        ui.add(egui::Slider::new(&mut self.time.cycle_speed, 0.1..=10.0).suffix("x"));
+                        ui.add(
+                            egui::Slider::new(&mut self.time.cycle_speed, 0.1..=10.0).suffix("x"),
+                        );
                     });
                 }
             });
@@ -905,17 +979,26 @@ impl WorldPanel {
             ui.collapsing("💡 Lighting", |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Sun Intensity:");
-                    ui.add(egui::Slider::new(&mut self.lighting.sun_intensity, 0.0..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.lighting.sun_intensity,
+                        0.0..=2.0,
+                    ));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Ambient Intensity:");
-                    ui.add(egui::Slider::new(&mut self.lighting.ambient_intensity, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.lighting.ambient_intensity,
+                        0.0..=1.0,
+                    ));
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Shadow Intensity:");
-                    ui.add(egui::Slider::new(&mut self.lighting.shadow_intensity, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.lighting.shadow_intensity,
+                        0.0..=1.0,
+                    ));
                 });
 
                 ui.add_space(5.0);
@@ -924,15 +1007,24 @@ impl WorldPanel {
                 if self.lighting.fog_enabled {
                     ui.horizontal(|ui| {
                         ui.label("Fog Density:");
-                        ui.add(egui::Slider::new(&mut self.lighting.fog_density, 0.001..=0.1).logarithmic(true));
+                        ui.add(
+                            egui::Slider::new(&mut self.lighting.fog_density, 0.001..=0.1)
+                                .logarithmic(true),
+                        );
                     });
                     ui.horizontal(|ui| {
                         ui.label("Fog Start:");
-                        ui.add(egui::Slider::new(&mut self.lighting.fog_start, 0.0..=100.0).suffix(" m"));
+                        ui.add(
+                            egui::Slider::new(&mut self.lighting.fog_start, 0.0..=100.0)
+                                .suffix(" m"),
+                        );
                     });
                     ui.horizontal(|ui| {
                         ui.label("Fog End:");
-                        ui.add(egui::Slider::new(&mut self.lighting.fog_end, 50.0..=1000.0).suffix(" m"));
+                        ui.add(
+                            egui::Slider::new(&mut self.lighting.fog_end, 50.0..=1000.0)
+                                .suffix(" m"),
+                        );
                     });
                 }
 
@@ -958,7 +1050,10 @@ impl WorldPanel {
                 ui.add_space(5.0);
 
                 let size = self.bounds.size();
-                ui.label(format!("World Size: {:.0} x {:.0} x {:.0} m", size[0], size[1], size[2]));
+                ui.label(format!(
+                    "World Size: {:.0} x {:.0} x {:.0} m",
+                    size[0], size[1], size[2]
+                ));
 
                 ui.horizontal(|ui| {
                     ui.label("Kill Plane Y:");
@@ -975,21 +1070,25 @@ impl WorldPanel {
         // Event log section
         if self.show_events && !self.events.is_empty() {
             ui.collapsing(format!("📋 Events ({})", self.events.len()), |ui| {
-                egui::ScrollArea::vertical().max_height(100.0).show(ui, |ui| {
-                    for event in self.events.iter().take(10) {
-                        let age = event.age_secs();
-                        let alpha = if age < 30.0 { 255 } else { 
-                            (255.0 * (1.0 - (age - 30.0) / 60.0).max(0.0)) as u8 
-                        };
-                        let color = Color32::from_rgba_unmultiplied(200, 200, 200, alpha);
-                        
-                        ui.horizontal(|ui| {
-                            ui.label(RichText::new(event.event_type.icon()).color(color));
-                            ui.label(RichText::new(&event.message).color(color).small());
-                            ui.label(RichText::new(format!("{:.0}s", age)).weak().small());
-                        });
-                    }
-                });
+                egui::ScrollArea::vertical()
+                    .max_height(100.0)
+                    .show(ui, |ui| {
+                        for event in self.events.iter().take(10) {
+                            let age = event.age_secs();
+                            let alpha = if age < 30.0 {
+                                255
+                            } else {
+                                (255.0 * (1.0 - (age - 30.0) / 60.0).max(0.0)) as u8
+                            };
+                            let color = Color32::from_rgba_unmultiplied(200, 200, 200, alpha);
+
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new(event.event_type.icon()).color(color));
+                                ui.label(RichText::new(&event.message).color(color).small());
+                                ui.label(RichText::new(format!("{:.0}s", age)).weak().small());
+                            });
+                        }
+                    });
             });
         }
     }
@@ -1145,36 +1244,45 @@ mod tests {
 
     #[test]
     fn test_time_settings_is_daytime() {
-        let mut settings = TimeSettings { current_hour: 12.0, ..Default::default() };
+        let mut settings = TimeSettings {
+            current_hour: 12.0,
+            ..Default::default()
+        };
         assert!(settings.is_daytime());
-        
+
         settings.current_hour = 2.0;
         assert!(!settings.is_daytime());
-        
+
         settings.current_hour = 22.0;
         assert!(!settings.is_daytime());
     }
 
     #[test]
     fn test_time_settings_sun_intensity() {
-        let mut settings = TimeSettings { current_hour: 12.0, ..Default::default() };
+        let mut settings = TimeSettings {
+            current_hour: 12.0,
+            ..Default::default()
+        };
         assert_eq!(settings.sun_intensity(), 1.0);
-        
+
         settings.current_hour = 2.0;
         assert_eq!(settings.sun_intensity(), 0.0);
-        
+
         settings.current_hour = 7.5;
         assert!(settings.sun_intensity() > 0.0 && settings.sun_intensity() < 1.0);
     }
 
     #[test]
     fn test_time_settings_format_time() {
-        let mut settings = TimeSettings { current_hour: 12.0, ..Default::default() };
+        let mut settings = TimeSettings {
+            current_hour: 12.0,
+            ..Default::default()
+        };
         assert_eq!(settings.format_time(), "12:00");
-        
+
         settings.current_hour = 9.5;
         assert_eq!(settings.format_time(), "09:30");
-        
+
         settings.current_hour = 0.0;
         assert_eq!(settings.format_time(), "00:00");
     }
@@ -1209,7 +1317,7 @@ mod tests {
             max: [100.0, 50.0, 200.0],
             ..Default::default()
         };
-        
+
         let size = bounds.size();
         assert_eq!(size[0], 100.0);
         assert_eq!(size[1], 50.0);
@@ -1223,7 +1331,7 @@ mod tests {
             max: [100.0, 100.0, 100.0],
             ..Default::default()
         };
-        
+
         let center = bounds.center();
         assert_eq!(center[0], 50.0);
         assert_eq!(center[1], 50.0);
@@ -1356,7 +1464,7 @@ mod tests {
     fn test_world_panel_apply_preset_sunny() {
         let mut panel = WorldPanel::new();
         panel.apply_preset(EnvironmentPreset::Sunny);
-        
+
         assert_eq!(panel.current_preset, EnvironmentPreset::Sunny);
         assert_eq!(panel.weather.current, WeatherType::Clear);
         assert_eq!(panel.time.current_hour, 12.0);
@@ -1366,7 +1474,7 @@ mod tests {
     fn test_world_panel_apply_preset_rainy() {
         let mut panel = WorldPanel::new();
         panel.apply_preset(EnvironmentPreset::Rainy);
-        
+
         assert_eq!(panel.current_preset, EnvironmentPreset::Rainy);
         assert_eq!(panel.weather.current, WeatherType::HeavyRain);
         assert!(panel.lighting.fog_enabled);
@@ -1376,7 +1484,7 @@ mod tests {
     fn test_world_panel_apply_preset_night() {
         let mut panel = WorldPanel::new();
         panel.apply_preset(EnvironmentPreset::Night);
-        
+
         assert_eq!(panel.current_preset, EnvironmentPreset::Night);
         assert_eq!(panel.time.current_hour, 22.0);
         assert_eq!(panel.lighting.sun_intensity, 0.0);
@@ -1386,11 +1494,11 @@ mod tests {
     fn test_world_panel_event_limit() {
         let mut panel = WorldPanel::new();
         panel.max_events = 5;
-        
+
         for i in 0..10 {
             panel.add_event(WorldEventType::SettingsModified, format!("Event {}", i));
         }
-        
+
         assert_eq!(panel.events.len(), 5);
     }
 
@@ -1402,7 +1510,10 @@ mod tests {
     fn test_weather_type_display() {
         for weather in WeatherType::all() {
             let display = format!("{}", weather);
-            assert!(display.contains(weather.name()), "Display should contain name");
+            assert!(
+                display.contains(weather.name()),
+                "Display should contain name"
+            );
         }
     }
 
@@ -1433,7 +1544,10 @@ mod tests {
     fn test_time_preset_display() {
         for preset in TimePreset::all() {
             let display = format!("{}", preset);
-            assert!(display.contains(preset.name()), "Display should contain name");
+            assert!(
+                display.contains(preset.name()),
+                "Display should contain name"
+            );
         }
     }
 
@@ -1464,14 +1578,21 @@ mod tests {
     fn test_environment_preset_display() {
         for preset in EnvironmentPreset::all() {
             let display = format!("{}", preset);
-            assert!(display.contains(preset.name()), "Display should contain name");
+            assert!(
+                display.contains(preset.name()),
+                "Display should contain name"
+            );
         }
     }
 
     #[test]
     fn test_environment_preset_all_variants() {
         let variants = EnvironmentPreset::all();
-        assert_eq!(variants.len(), 11, "Expected 11 environment preset variants");
+        assert_eq!(
+            variants.len(),
+            11,
+            "Expected 11 environment preset variants"
+        );
         assert!(variants.contains(&EnvironmentPreset::Sunny));
         assert!(variants.contains(&EnvironmentPreset::Stormy));
         assert!(variants.contains(&EnvironmentPreset::Custom));
@@ -1495,7 +1616,10 @@ mod tests {
     fn test_world_event_type_display() {
         for event in WorldEventType::all() {
             let display = format!("{}", event);
-            assert!(display.contains(event.name()), "Display should contain name");
+            assert!(
+                display.contains(event.name()),
+                "Display should contain name"
+            );
         }
     }
 

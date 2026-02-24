@@ -27,26 +27,15 @@ use crate::panels::Panel;
 #[non_exhaustive]
 pub enum AssetStoreAction {
     /// Spawn the asset in the current scene
-    SpawnAsset {
-        asset_id: u64,
-        asset_path: PathBuf,
-    },
+    SpawnAsset { asset_id: u64, asset_path: PathBuf },
     /// Request to preview the asset in 3D viewer
-    PreviewAsset {
-        asset_id: u64,
-        asset_path: PathBuf,
-    },
+    PreviewAsset { asset_id: u64, asset_path: PathBuf },
     /// Filter by tag
-    FilterByTag {
-        tag: String,
-    },
+    FilterByTag { tag: String },
     /// Request to refresh the asset list
     RefreshAssets,
     /// Request to validate an asset's checklist
-    ValidateAsset {
-        asset_id: u64,
-        asset_path: PathBuf,
-    },
+    ValidateAsset { asset_id: u64, asset_path: PathBuf },
 }
 
 // ============================================================================
@@ -280,7 +269,9 @@ impl ChecklistItem {
             ChecklistItem::HasAnimations => "Animation clips are included",
             ChecklistItem::PowerOfTwoTextures => "All textures are power-of-two dimensions",
             ChecklistItem::MaterialsComplete => "All material slots have textures assigned",
-            ChecklistItem::ScaleCorrect => "Model is at correct real-world scale (1 unit = 1 meter)",
+            ChecklistItem::ScaleCorrect => {
+                "Model is at correct real-world scale (1 unit = 1 meter)"
+            }
         }
     }
 }
@@ -515,7 +506,10 @@ impl ReadyAsset {
     pub fn matches_search(&self, query: &str) -> bool {
         let query_lower = query.to_lowercase();
         self.name.to_lowercase().contains(&query_lower)
-            || self.tags.iter().any(|t| t.to_lowercase().contains(&query_lower))
+            || self
+                .tags
+                .iter()
+                .any(|t| t.to_lowercase().contains(&query_lower))
     }
 
     /// Check if asset matches category filter
@@ -698,16 +692,10 @@ impl ReadyAssetStorePanel {
 
             ui.separator();
 
-            if ui
-                .selectable_label(self.grid_view, "▦ Grid")
-                .clicked()
-            {
+            if ui.selectable_label(self.grid_view, "▦ Grid").clicked() {
                 self.grid_view = true;
             }
-            if ui
-                .selectable_label(!self.grid_view, "☰ List")
-                .clicked()
-            {
+            if ui.selectable_label(!self.grid_view, "☰ List").clicked() {
                 self.grid_view = false;
             }
         });
@@ -715,7 +703,8 @@ impl ReadyAssetStorePanel {
 
     fn render_asset_grid(&mut self, ui: &mut Ui) {
         // Collect data needed for rendering first to avoid borrowing issues
-        let filtered_data: Vec<_> = self.filtered_assets()
+        let filtered_data: Vec<_> = self
+            .filtered_assets()
             .iter()
             .enumerate()
             .map(|(idx, asset)| (idx, asset.name.clone(), asset.category, asset.readiness()))
@@ -785,12 +774,8 @@ impl ReadyAssetStorePanel {
 
                             // Name
                             ui.add(
-                                egui::Label::new(
-                                    RichText::new(name)
-                                        .small()
-                                        .color(Color32::WHITE),
-                                )
-                                .wrap_mode(egui::TextWrapMode::Truncate),
+                                egui::Label::new(RichText::new(name).small().color(Color32::WHITE))
+                                    .wrap_mode(egui::TextWrapMode::Truncate),
                             );
                         });
 
@@ -808,7 +793,8 @@ impl ReadyAssetStorePanel {
 
     fn render_asset_list(&mut self, ui: &mut Ui) {
         // Collect data needed for rendering first to avoid borrowing issues
-        let filtered_data: Vec<_> = self.filtered_assets()
+        let filtered_data: Vec<_> = self
+            .filtered_assets()
             .iter()
             .enumerate()
             .map(|(idx, asset)| {
@@ -1027,28 +1013,43 @@ mod tests {
         let mut checklist = AssetChecklist::new();
 
         // No items = NotReady
-        assert_eq!(ReadinessLevel::from_checklist(&checklist), ReadinessLevel::NotReady);
+        assert_eq!(
+            ReadinessLevel::from_checklist(&checklist),
+            ReadinessLevel::NotReady
+        );
 
         // 3 items = Basic
         checklist.pass(ChecklistItem::HasMesh);
         checklist.pass(ChecklistItem::HasMaterial);
         checklist.pass(ChecklistItem::HasCollider);
-        assert_eq!(ReadinessLevel::from_checklist(&checklist), ReadinessLevel::Basic);
+        assert_eq!(
+            ReadinessLevel::from_checklist(&checklist),
+            ReadinessLevel::Basic
+        );
 
         // 5 items = Standard
         checklist.pass(ChecklistItem::HasLODs);
         checklist.pass(ChecklistItem::HasLightmapUVs);
-        assert_eq!(ReadinessLevel::from_checklist(&checklist), ReadinessLevel::Standard);
+        assert_eq!(
+            ReadinessLevel::from_checklist(&checklist),
+            ReadinessLevel::Standard
+        );
 
         // 7 items = Production
         checklist.pass(ChecklistItem::HasOcclusionFlags);
         checklist.pass(ChecklistItem::HasShadowFlags);
-        assert_eq!(ReadinessLevel::from_checklist(&checklist), ReadinessLevel::Production);
+        assert_eq!(
+            ReadinessLevel::from_checklist(&checklist),
+            ReadinessLevel::Production
+        );
 
         // 9+ items = Premium
         checklist.pass(ChecklistItem::HasTags);
         checklist.pass(ChecklistItem::HasThumbnail);
-        assert_eq!(ReadinessLevel::from_checklist(&checklist), ReadinessLevel::Premium);
+        assert_eq!(
+            ReadinessLevel::from_checklist(&checklist),
+            ReadinessLevel::Premium
+        );
     }
 
     #[test]
@@ -1234,7 +1235,10 @@ mod tests {
         let filter_action = AssetStoreAction::FilterByTag {
             tag: "nature".into(),
         };
-        assert!(matches!(filter_action, AssetStoreAction::FilterByTag { .. }));
+        assert!(matches!(
+            filter_action,
+            AssetStoreAction::FilterByTag { .. }
+        ));
 
         let validate_action = AssetStoreAction::ValidateAsset {
             asset_id: 1,

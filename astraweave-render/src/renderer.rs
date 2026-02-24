@@ -392,6 +392,10 @@ pub struct Renderer {
     hdr_tex: wgpu::Texture,
     hdr_view: wgpu::TextureView,
     hdr_sampler: wgpu::Sampler,
+    // 1×1 black dummy texture used as AO/GI placeholder when SSAO/SSGI aren't active
+    #[allow(dead_code)]
+    _postfx_dummy_tex: wgpu::Texture,
+    postfx_dummy_view: wgpu::TextureView,
     #[allow(dead_code)]
     shadow_tex: wgpu::Texture,
     #[allow(dead_code)]
@@ -795,6 +799,37 @@ impl Renderer {
             ..Default::default()
         });
 
+        // 1×1 black dummy for AO/GI placeholders in the postfx compositing pass.
+        // Without real SSAO/SSGI data, using this avoids the negative-brightness
+        // artefact that occurs when the HDR scene texture is sampled as AO input.
+        let postfx_dummy_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("postfx dummy black"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &postfx_dummy_tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &[0u8; 8], // 4 × f16 = 8 bytes, all zeros → ao=0 (no occlusion), gi=black
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(8),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        );
+        let postfx_dummy_view = postfx_dummy_tex
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
         #[cfg(feature = "postfx")]
         let hdr_aux = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("hdr aux tex"),
@@ -853,6 +888,7 @@ impl Renderer {
             label: Some("post shader"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)),
         });
+        #[cfg(not(feature = "postfx"))]
         let post_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("post bgl"),
             entries: &[
@@ -1232,11 +1268,11 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&hdr_view),
+                    resource: wgpu::BindingResource::TextureView(&postfx_dummy_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&hdr_view),
+                    resource: wgpu::BindingResource::TextureView(&postfx_dummy_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
@@ -1250,6 +1286,11 @@ impl Renderer {
             bind_group_layouts: &[&post_fx_bgl, &scene_env_bgl],
             push_constant_ranges: &[],
         });
+
+        // When postfx is enabled, self.post_bgl must use the 4-binding layout
+        // so that resize() recreates the bind group with the correct layout.
+        #[cfg(feature = "postfx")]
+        let post_bgl = post_fx_bgl;
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
         let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -2439,6 +2480,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             hdr_tex,
             hdr_view,
             hdr_sampler,
+            _postfx_dummy_tex: postfx_dummy_tex,
+            postfx_dummy_view,
             shadow_tex,
             shadow_view,
             shadow_layer0_view,
@@ -2921,15 +2964,31 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .hdr_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.post_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            #[cfg(not(feature = "postfx"))]
             label: Some("post bg"),
+            #[cfg(feature = "postfx")]
+            label: Some("post fx bg"),
             layout: &self.post_bgl,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(&self.hdr_view),
                 },
+                #[cfg(feature = "postfx")]
                 wgpu::BindGroupEntry {
                     binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&self.postfx_dummy_view),
+                },
+                #[cfg(feature = "postfx")]
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&self.postfx_dummy_view),
+                },
+                wgpu::BindGroupEntry {
+                    #[cfg(not(feature = "postfx"))]
+                    binding: 1,
+                    #[cfg(feature = "postfx")]
+                    binding: 3,
                     resource: wgpu::BindingResource::Sampler(&self.hdr_sampler),
                 },
             ],

@@ -3,10 +3,8 @@
 //! These tests target boundary conditions, comparison operators, and boolean return paths
 //! to achieve high mutation testing kill rates (90%+).
 
-use aw_editor_lib::panels::{
-    EmitterShape, ParticleBlendMode, ParticleRenderMode, SimulationSpace,
-};
 use aw_editor_lib::panels::particle_system_panel::CurveType;
+use aw_editor_lib::panels::{EmitterShape, ParticleBlendMode, ParticleRenderMode, SimulationSpace};
 use std::collections::HashSet;
 
 // ============================================================================

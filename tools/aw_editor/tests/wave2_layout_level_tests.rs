@@ -8,8 +8,8 @@
 
 use aw_editor_lib::dock_layout::{DockLayout, LayoutPreset, LayoutStats};
 use aw_editor_lib::level_doc::{
-    BiomePaint, BossCfg, Circle, DirectorOp, FateThread, FortRegion, LevelDoc,
-    LevelStats, LevelValidationIssue, NpcSpawn, Obstacle, Spawn, Trigger,
+    BiomePaint, BossCfg, Circle, DirectorOp, FateThread, FortRegion, LevelDoc, LevelStats,
+    LevelValidationIssue, NpcSpawn, Obstacle, Spawn, Trigger,
 };
 use aw_editor_lib::panel_type::PanelType;
 
@@ -609,7 +609,9 @@ fn level_validate_npc_negative_radius_error() {
         behavior: "Patrol".into(),
     });
     let issues = doc.validate();
-    let err = issues.iter().find(|i| i.message.contains("negative radius"));
+    let err = issues
+        .iter()
+        .find(|i| i.message.contains("negative radius"));
     assert!(err.is_some());
     assert!(err.unwrap().is_error);
 }
@@ -631,10 +633,7 @@ fn level_validate_npc_zero_radius_no_error() {
         },
         behavior: "Patrol".into(),
     });
-    assert!(!doc
-        .validate()
-        .iter()
-        .any(|i| i.message.contains("radius")));
+    assert!(!doc.validate().iter().any(|i| i.message.contains("radius")));
 }
 
 #[test]
@@ -996,11 +995,7 @@ fn trigger_all_variants() {
 #[test]
 fn director_op_display_fortify() {
     let op = DirectorOp::Fortify {
-        area: FortRegion {
-            cx: 0,
-            cz: 0,
-            r: 5,
-        },
+        area: FortRegion { cx: 0, cz: 0, r: 5 },
     };
     assert_eq!(format!("{}", op), "Fortify");
 }
@@ -1008,11 +1003,7 @@ fn director_op_display_fortify() {
 #[test]
 fn director_op_display_collapse() {
     let op = DirectorOp::Collapse {
-        area: FortRegion {
-            cx: 0,
-            cz: 0,
-            r: 5,
-        },
+        area: FortRegion { cx: 0, cz: 0, r: 5 },
     };
     assert_eq!(format!("{}", op), "Collapse");
 }

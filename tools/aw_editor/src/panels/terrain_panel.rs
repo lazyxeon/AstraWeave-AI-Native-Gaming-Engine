@@ -43,7 +43,7 @@ impl ErosionPresetType {
             ErosionPresetType::Canyon => "Canyon",
         }
     }
-    
+
     pub fn all() -> &'static [ErosionPresetType] {
         &[
             ErosionPresetType::Custom,
@@ -215,7 +215,7 @@ impl WaterBodyPreset {
             WaterBodyPreset::SwampWetland => "Swamp/Wetland",
         }
     }
-    
+
     pub fn all() -> &'static [WaterBodyPreset] {
         &[
             WaterBodyPreset::Custom,
@@ -229,7 +229,12 @@ impl WaterBodyPreset {
     }
 
     pub fn is_flowing(&self) -> bool {
-        matches!(self, WaterBodyPreset::MountainStream | WaterBodyPreset::RagingRiver | WaterBodyPreset::Waterfall)
+        matches!(
+            self,
+            WaterBodyPreset::MountainStream
+                | WaterBodyPreset::RagingRiver
+                | WaterBodyPreset::Waterfall
+        )
     }
 }
 
@@ -275,7 +280,7 @@ pub struct FluidSimParams {
     pub enabled: bool,
     pub quality_preset: FluidQualityPreset,
     pub water_body_preset: WaterBodyPreset,
-    
+
     // Physics
     pub particle_count: u32,
     pub smoothing_radius: f32,
@@ -285,13 +290,13 @@ pub struct FluidSimParams {
     pub surface_tension: f32,
     pub gravity: f32,
     pub solver_iterations: u32,
-    
+
     // Flow
     pub flow_enabled: bool,
     pub flow_speed: f32,
     pub flow_direction: [f32; 2],
     pub turbulence: f32,
-    
+
     // Rendering
     pub water_color: [f32; 4],
     pub transparency: f32,
@@ -300,18 +305,18 @@ pub struct FluidSimParams {
     pub caustics_intensity: f32,
     pub foam_enabled: bool,
     pub foam_threshold: f32,
-    
+
     // Thermal
     pub thermal_enabled: bool,
     pub thermal_diffusivity: f32,
     pub buoyancy: f32,
-    
+
     // Detection
     pub auto_detect_water_bodies: bool,
     pub min_river_flow_threshold: f32,
     pub lake_depth_threshold: f32,
     pub waterfall_height_threshold: f32,
-    
+
     // Emitters
     pub emitter_count: u32,
     pub spawn_rate: f32,
@@ -324,7 +329,7 @@ impl Default for FluidSimParams {
             enabled: true,
             quality_preset: FluidQualityPreset::Balanced,
             water_body_preset: WaterBodyPreset::CalmLake,
-            
+
             // Physics
             particle_count: 65536,
             smoothing_radius: 1.0,
@@ -334,13 +339,13 @@ impl Default for FluidSimParams {
             surface_tension: 0.02,
             gravity: -9.8,
             solver_iterations: 4,
-            
+
             // Flow
             flow_enabled: false,
             flow_speed: 1.0,
             flow_direction: [1.0, 0.0],
             turbulence: 0.1,
-            
+
             // Rendering
             water_color: [0.2, 0.5, 0.8, 0.9],
             transparency: 0.7,
@@ -349,18 +354,18 @@ impl Default for FluidSimParams {
             caustics_intensity: 1.0,
             foam_enabled: true,
             foam_threshold: 0.3,
-            
+
             // Thermal
             thermal_enabled: false,
             thermal_diffusivity: 0.1,
             buoyancy: 0.0002,
-            
+
             // Detection
             auto_detect_water_bodies: true,
             min_river_flow_threshold: 500.0,
             lake_depth_threshold: 2.0,
             waterfall_height_threshold: 5.0,
-            
+
             // Emitters
             emitter_count: 1,
             spawn_rate: 1000.0,
@@ -395,43 +400,43 @@ pub struct FluidStats {
 pub struct TerrainPanel {
     /// Terrain generation state
     terrain_state: TerrainState,
-    
+
     /// Generation parameters
     seed: u64,
     seed_string: String,
     primary_biome: String,
     chunk_radius: i32,
-    
+
     /// Noise parameters
     octaves: u32,
     lacunarity: f32,
     persistence: f32,
     base_amplitude: f32,
-    
+
     /// Erosion parameters
     erosion_preset: ErosionPresetType,
     hydraulic_erosion: HydraulicErosionParams,
     thermal_erosion: ThermalErosionParams,
     wind_erosion: WindErosionParams,
-    
+
     /// Biome blending parameters
     biome_blend: BiomeBlendParams,
-    
+
     /// Texture splatting parameters
     splat_params: SplatParams,
-    
+
     /// Fluid simulation parameters
     fluid_params: FluidSimParams,
     fluid_stats: FluidStats,
     detected_water_bodies: Vec<DetectedWaterBodyInfo>,
     show_fluid_debug: bool,
-    
+
     /// UI state
     auto_regenerate: bool,
     show_advanced: bool,
     last_generation_time_ms: f32,
     generation_stats: GenerationStats,
-    
+
     /// Brush settings for voxel editing
     brush_mode: BrushMode,
     brush_radius: f32,
@@ -597,26 +602,26 @@ impl TerrainPanel {
     pub fn queue_action(&mut self, action: TerrainAction) {
         self.pending_actions.push(action);
     }
-    
+
     /// Get reference to terrain state for rendering
     pub fn terrain_state(&self) -> &TerrainState {
         &self.terrain_state
     }
-    
+
     /// Get mutable reference to terrain state
     pub fn terrain_state_mut(&mut self) -> &mut TerrainState {
         &mut self.terrain_state
     }
-    
+
     /// Check if terrain needs regeneration
     pub fn needs_regeneration(&self) -> bool {
         self.terrain_state.is_dirty()
     }
-    
+
     fn show_generation_section(&mut self, ui: &mut Ui) {
         ui.heading("🏔️ Terrain Generation");
         ui.separator();
-        
+
         // Seed input
         ui.horizontal(|ui| {
             ui.label("Seed:");
@@ -632,7 +637,7 @@ impl TerrainPanel {
                 self.terrain_state.configure(self.seed, &self.primary_biome);
             }
         });
-        
+
         // Primary biome selection
         ui.horizontal(|ui| {
             ui.label("Primary Biome:");
@@ -640,83 +645,109 @@ impl TerrainPanel {
                 .selected_text(&self.primary_biome)
                 .show_ui(ui, |ui| {
                     for (value, display) in all_biome_options() {
-                        if ui.selectable_value(&mut self.primary_biome, value.to_string(), *display).clicked() {
+                        if ui
+                            .selectable_value(&mut self.primary_biome, value.to_string(), *display)
+                            .clicked()
+                        {
                             self.terrain_state.configure(self.seed, &self.primary_biome);
                         }
                     }
                 });
         });
-        
+
         // Chunk radius slider
         ui.horizontal(|ui| {
             ui.label("Chunk Radius:");
-            if ui.add(egui::Slider::new(&mut self.chunk_radius, 1..=5)).changed() {
+            if ui
+                .add(egui::Slider::new(&mut self.chunk_radius, 1..=5))
+                .changed()
+            {
                 self.terrain_state.configure(self.seed, &self.primary_biome);
             }
             ui.label(format!("({} chunks)", (self.chunk_radius * 2 + 1).pow(2)));
         });
-        
+
         ui.add_space(10.0);
-        
+
         // Generate button
         let generate_text = if self.terrain_state.is_dirty() {
             RichText::new("🔄 Generate Terrain").color(Color32::YELLOW)
         } else {
             RichText::new("✅ Generate Terrain")
         };
-        
+
         if ui.button(generate_text).clicked() {
             self.regenerate_terrain();
         }
-        
+
         ui.checkbox(&mut self.auto_regenerate, "Auto-regenerate on change");
-        
+
         // Stats
         if self.generation_stats.chunks_generated > 0 {
             ui.add_space(5.0);
             ui.group(|ui| {
                 ui.label(RichText::new("Generation Stats").strong());
-                ui.label(format!("Chunks: {}", self.generation_stats.chunks_generated));
-                ui.label(format!("Vertices: {}", self.generation_stats.total_vertices));
-                ui.label(format!("Triangles: {}", self.generation_stats.total_triangles));
-                ui.label(format!("Memory: {:.2} MB", self.generation_stats.memory_estimate_mb));
+                ui.label(format!(
+                    "Chunks: {}",
+                    self.generation_stats.chunks_generated
+                ));
+                ui.label(format!(
+                    "Vertices: {}",
+                    self.generation_stats.total_vertices
+                ));
+                ui.label(format!(
+                    "Triangles: {}",
+                    self.generation_stats.total_triangles
+                ));
+                ui.label(format!(
+                    "Memory: {:.2} MB",
+                    self.generation_stats.memory_estimate_mb
+                ));
                 ui.label(format!("Time: {:.1} ms", self.last_generation_time_ms));
             });
         }
     }
-    
+
     fn show_noise_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
         ui.collapsing("🎛️ Noise Parameters", |ui| {
             let mut changed = false;
-            
+
             ui.horizontal(|ui| {
                 ui.label("Octaves:");
-                changed |= ui.add(egui::Slider::new(&mut self.octaves, 1..=8)).changed();
+                changed |= ui
+                    .add(egui::Slider::new(&mut self.octaves, 1..=8))
+                    .changed();
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Lacunarity:");
-                changed |= ui.add(egui::Slider::new(&mut self.lacunarity, 1.5..=3.0)).changed();
+                changed |= ui
+                    .add(egui::Slider::new(&mut self.lacunarity, 1.5..=3.0))
+                    .changed();
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Persistence:");
-                changed |= ui.add(egui::Slider::new(&mut self.persistence, 0.1..=0.9)).changed();
+                changed |= ui
+                    .add(egui::Slider::new(&mut self.persistence, 0.1..=0.9))
+                    .changed();
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Amplitude:");
-                changed |= ui.add(egui::Slider::new(&mut self.base_amplitude, 10.0..=200.0)).changed();
+                changed |= ui
+                    .add(egui::Slider::new(&mut self.base_amplitude, 10.0..=200.0))
+                    .changed();
             });
-            
+
             if changed {
                 self.terrain_state.configure(self.seed, &self.primary_biome);
                 if self.auto_regenerate {
                     self.regenerate_terrain();
                 }
             }
-            
+
             if ui.button("Reset to Defaults").clicked() {
                 self.octaves = 6;
                 self.lacunarity = 2.0;
@@ -726,7 +757,7 @@ impl TerrainPanel {
             }
         });
     }
-    
+
     fn show_brush_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
         ui.collapsing("🖌️ Sculpting Brushes", |ui| {
@@ -738,17 +769,17 @@ impl TerrainPanel {
                 ui.selectable_value(&mut self.brush_mode, BrushMode::Paint, "Paint");
                 ui.selectable_value(&mut self.brush_mode, BrushMode::Erode, "Erode");
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Radius:");
                 ui.add(egui::Slider::new(&mut self.brush_radius, 1.0..=50.0));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Strength:");
                 ui.add(egui::Slider::new(&mut self.brush_strength, 0.0..=1.0));
             });
-            
+
             if self.brush_mode == BrushMode::Paint {
                 ui.horizontal(|ui| {
                     ui.label("Material:");
@@ -756,21 +787,33 @@ impl TerrainPanel {
                         .selected_text(Self::material_name(self.selected_material))
                         .show_ui(ui, |ui| {
                             for i in 0..8 {
-                                ui.selectable_value(&mut self.selected_material, i, Self::material_name(i));
+                                ui.selectable_value(
+                                    &mut self.selected_material,
+                                    i,
+                                    Self::material_name(i),
+                                );
                             }
                         });
                 });
             }
-            
+
             if self.brush_mode == BrushMode::Erode {
-                ui.label(RichText::new("Applies localized hydraulic erosion").small().italics());
+                ui.label(
+                    RichText::new("Applies localized hydraulic erosion")
+                        .small()
+                        .italics(),
+                );
             }
-            
+
             ui.add_space(5.0);
-            ui.label(RichText::new("Tip: Use in viewport with Shift+Click").small().italics());
+            ui.label(
+                RichText::new("Tip: Use in viewport with Shift+Click")
+                    .small()
+                    .italics(),
+            );
         });
     }
-    
+
     fn show_erosion_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
         ui.collapsing("🌊 Erosion Simulation", |ui| {
@@ -781,139 +824,202 @@ impl TerrainPanel {
                     .selected_text(self.erosion_preset.name())
                     .show_ui(ui, |ui| {
                         for preset in ErosionPresetType::all() {
-                            if ui.selectable_value(&mut self.erosion_preset, *preset, preset.name()).clicked() {
+                            if ui
+                                .selectable_value(&mut self.erosion_preset, *preset, preset.name())
+                                .clicked()
+                            {
                                 self.apply_erosion_preset(*preset);
                             }
                         }
                     });
             });
-            
+
             ui.separator();
-            
+
             // Hydraulic erosion
             ui.collapsing("💧 Hydraulic Erosion", |ui| {
                 ui.checkbox(&mut self.hydraulic_erosion.enabled, "Enabled");
-                
+
                 if self.hydraulic_erosion.enabled {
                     ui.horizontal(|ui| {
                         ui.label("Iterations:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.iterations, 1000..=200000).logarithmic(true));
+                        ui.add(
+                            egui::Slider::new(
+                                &mut self.hydraulic_erosion.iterations,
+                                1000..=200000,
+                            )
+                            .logarithmic(true),
+                        );
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Inertia:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.inertia, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.inertia,
+                            0.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Capacity:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.capacity, 1.0..=20.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.capacity,
+                            1.0..=20.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Deposition:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.deposition, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.deposition,
+                            0.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Erosion Rate:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.erosion, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.erosion,
+                            0.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Evaporation:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.evaporation, 0.0..=0.1));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.evaporation,
+                            0.0..=0.1,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Min Slope:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.min_slope, 0.001..=0.1).logarithmic(true));
+                        ui.add(
+                            egui::Slider::new(&mut self.hydraulic_erosion.min_slope, 0.001..=0.1)
+                                .logarithmic(true),
+                        );
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Gravity:");
-                        ui.add(egui::Slider::new(&mut self.hydraulic_erosion.gravity, 1.0..=20.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.hydraulic_erosion.gravity,
+                            1.0..=20.0,
+                        ));
                     });
                 }
             });
-            
+
             // Thermal erosion
             ui.collapsing("🔥 Thermal Erosion", |ui| {
                 ui.checkbox(&mut self.thermal_erosion.enabled, "Enabled");
-                
+
                 if self.thermal_erosion.enabled {
                     ui.horizontal(|ui| {
                         ui.label("Iterations:");
-                        ui.add(egui::Slider::new(&mut self.thermal_erosion.iterations, 1..=200));
+                        ui.add(egui::Slider::new(
+                            &mut self.thermal_erosion.iterations,
+                            1..=200,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Talus Angle (°):");
-                        ui.add(egui::Slider::new(&mut self.thermal_erosion.talus_angle, 20.0..=60.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.thermal_erosion.talus_angle,
+                            20.0..=60.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Erosion Rate:");
-                        ui.add(egui::Slider::new(&mut self.thermal_erosion.erosion_rate, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.thermal_erosion.erosion_rate,
+                            0.0..=1.0,
+                        ));
                     });
                 }
             });
-            
+
             // Wind erosion
             ui.collapsing("💨 Wind Erosion", |ui| {
                 ui.checkbox(&mut self.wind_erosion.enabled, "Enabled");
-                
+
                 if self.wind_erosion.enabled {
                     ui.horizontal(|ui| {
                         ui.label("Iterations:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.iterations, 1..=100));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.iterations,
+                            1..=100,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Direction X:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.wind_direction[0], -1.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.wind_direction[0],
+                            -1.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Direction Y:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.wind_direction[1], -1.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.wind_direction[1],
+                            -1.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Strength:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.wind_strength, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.wind_strength,
+                            0.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Suspension:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.suspension, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.suspension,
+                            0.0..=1.0,
+                        ));
                     });
-                    
+
                     ui.horizontal(|ui| {
                         ui.label("Abrasion:");
-                        ui.add(egui::Slider::new(&mut self.wind_erosion.abrasion, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.wind_erosion.abrasion,
+                            0.0..=1.0,
+                        ));
                     });
                 }
             });
-            
+
             ui.add_space(5.0);
-            
+
             // Apply erosion button
-            if ui.button(RichText::new("⚡ Apply Erosion").color(Color32::LIGHT_BLUE)).clicked() {
+            if ui
+                .button(RichText::new("⚡ Apply Erosion").color(Color32::LIGHT_BLUE))
+                .clicked()
+            {
                 self.apply_erosion();
             }
-            
+
             if self.generation_stats.erosion_time_ms > 0.0 {
-                ui.label(format!("Last erosion: {:.1} ms", self.generation_stats.erosion_time_ms));
+                ui.label(format!(
+                    "Last erosion: {:.1} ms",
+                    self.generation_stats.erosion_time_ms
+                ));
             }
         });
     }
-    
+
     fn show_biome_blend_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
         ui.collapsing("🌍 Biome Blending", |ui| {
             ui.checkbox(&mut self.biome_blend.enabled, "Enable Biome Blending");
-            
+
             if self.biome_blend.enabled {
                 // Secondary biome
                 ui.horizontal(|ui| {
@@ -922,11 +1028,15 @@ impl TerrainPanel {
                         .selected_text(&self.biome_blend.secondary_biome)
                         .show_ui(ui, |ui| {
                             for (value, display) in all_biome_options() {
-                                ui.selectable_value(&mut self.biome_blend.secondary_biome, value.to_string(), *display);
+                                ui.selectable_value(
+                                    &mut self.biome_blend.secondary_biome,
+                                    value.to_string(),
+                                    *display,
+                                );
                             }
                         });
                 });
-                
+
                 // Tertiary biome
                 ui.horizontal(|ui| {
                     ui.label("Tertiary Biome:");
@@ -934,36 +1044,52 @@ impl TerrainPanel {
                         .selected_text(&self.biome_blend.tertiary_biome)
                         .show_ui(ui, |ui| {
                             for (value, display) in all_biome_options() {
-                                ui.selectable_value(&mut self.biome_blend.tertiary_biome, value.to_string(), *display);
+                                ui.selectable_value(
+                                    &mut self.biome_blend.tertiary_biome,
+                                    value.to_string(),
+                                    *display,
+                                );
                             }
                         });
                 });
-                
+
                 ui.separator();
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Blend Radius:");
-                    ui.add(egui::Slider::new(&mut self.biome_blend.blend_radius, 4.0..=128.0).logarithmic(true));
+                    ui.add(
+                        egui::Slider::new(&mut self.biome_blend.blend_radius, 4.0..=128.0)
+                            .logarithmic(true),
+                    );
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Falloff Power:");
-                    ui.add(egui::Slider::new(&mut self.biome_blend.falloff_power, 0.5..=4.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.biome_blend.falloff_power,
+                        0.5..=4.0,
+                    ));
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Noise Influence:");
-                    ui.add(egui::Slider::new(&mut self.biome_blend.noise_influence, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.biome_blend.noise_influence,
+                        0.0..=1.0,
+                    ));
                 });
-                
-                ui.checkbox(&mut self.biome_blend.show_blend_preview, "Show Blend Preview");
-                
+
+                ui.checkbox(
+                    &mut self.biome_blend.show_blend_preview,
+                    "Show Blend Preview",
+                );
+
                 if self.biome_blend.show_blend_preview {
                     ui.group(|ui| {
                         ui.label(RichText::new("Blend Preview").strong());
                         // Preview visualization would be rendered in viewport
                         ui.label("Preview overlay enabled in viewport");
-                        
+
                         // Color legend
                         ui.horizontal(|ui| {
                             ui.colored_label(Color32::from_rgb(100, 200, 100), "■");
@@ -982,16 +1108,16 @@ impl TerrainPanel {
             }
         });
     }
-    
+
     fn show_splatting_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
         ui.collapsing("🎨 Texture Splatting", |ui| {
             ui.checkbox(&mut self.splat_params.enabled, "Enable Texture Splatting");
-            
+
             if self.splat_params.enabled {
                 ui.separator();
                 ui.label(RichText::new("Material Rules").strong());
-                
+
                 // Grass rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
@@ -1000,11 +1126,19 @@ impl TerrainPanel {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Height Range:");
-                        ui.add(egui::DragValue::new(&mut self.splat_params.grass_height_min).speed(0.01).prefix("min: "));
-                        ui.add(egui::DragValue::new(&mut self.splat_params.grass_height_max).speed(0.01).prefix("max: "));
+                        ui.add(
+                            egui::DragValue::new(&mut self.splat_params.grass_height_min)
+                                .speed(0.01)
+                                .prefix("min: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.splat_params.grass_height_max)
+                                .speed(0.01)
+                                .prefix("max: "),
+                        );
                     });
                 });
-                
+
                 // Rock rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
@@ -1013,10 +1147,13 @@ impl TerrainPanel {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Slope Threshold:");
-                        ui.add(egui::Slider::new(&mut self.splat_params.rock_slope_threshold, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.splat_params.rock_slope_threshold,
+                            0.0..=1.0,
+                        ));
                     });
                 });
-                
+
                 // Snow rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
@@ -1025,10 +1162,13 @@ impl TerrainPanel {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Height Threshold:");
-                        ui.add(egui::Slider::new(&mut self.splat_params.snow_height_threshold, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.splat_params.snow_height_threshold,
+                            0.0..=1.0,
+                        ));
                     });
                 });
-                
+
                 // Sand rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
@@ -1037,36 +1177,55 @@ impl TerrainPanel {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Max Height:");
-                        ui.add(egui::Slider::new(&mut self.splat_params.sand_height_max, 0.0..=0.5));
+                        ui.add(egui::Slider::new(
+                            &mut self.splat_params.sand_height_max,
+                            0.0..=0.5,
+                        ));
                     });
                 });
-                
+
                 ui.separator();
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Triplanar Sharpness:");
-                    ui.add(egui::Slider::new(&mut self.splat_params.triplanar_sharpness, 1.0..=16.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.splat_params.triplanar_sharpness,
+                        1.0..=16.0,
+                    ));
                 });
-                
-                ui.checkbox(&mut self.splat_params.show_splat_preview, "Show Splat Preview");
-                
+
+                ui.checkbox(
+                    &mut self.splat_params.show_splat_preview,
+                    "Show Splat Preview",
+                );
+
                 if self.splat_params.show_splat_preview {
-                    ui.label(RichText::new("Splatmap visualization enabled in viewport").small().italics());
+                    ui.label(
+                        RichText::new("Splatmap visualization enabled in viewport")
+                            .small()
+                            .italics(),
+                    );
                 }
-                
+
                 ui.add_space(5.0);
-                
-                if ui.button(RichText::new("🔄 Regenerate Splatmaps")).clicked() {
+
+                if ui
+                    .button(RichText::new("🔄 Regenerate Splatmaps"))
+                    .clicked()
+                {
                     self.regenerate_splatmaps();
                 }
-                
+
                 if self.generation_stats.splatmap_time_ms > 0.0 {
-                    ui.label(format!("Last splatmap: {:.1} ms", self.generation_stats.splatmap_time_ms));
+                    ui.label(format!(
+                        "Last splatmap: {:.1} ms",
+                        self.generation_stats.splatmap_time_ms
+                    ));
                 }
             }
         });
     }
-    
+
     fn apply_erosion_preset(&mut self, preset: ErosionPresetType) {
         match preset {
             ErosionPresetType::Custom => {
@@ -1120,32 +1279,44 @@ impl TerrainPanel {
             }
         }
     }
-    
+
     fn apply_erosion(&mut self) {
         let start = std::time::Instant::now();
-        
+
         // In a real implementation, this would call the erosion systems
         // For now, just track the timing
         tracing::info!("Applying erosion with preset: {:?}", self.erosion_preset);
-        tracing::info!("Hydraulic: enabled={}, iterations={}", 
-            self.hydraulic_erosion.enabled, self.hydraulic_erosion.iterations);
-        tracing::info!("Thermal: enabled={}, iterations={}", 
-            self.thermal_erosion.enabled, self.thermal_erosion.iterations);
-        tracing::info!("Wind: enabled={}, iterations={}", 
-            self.wind_erosion.enabled, self.wind_erosion.iterations);
-        
+        tracing::info!(
+            "Hydraulic: enabled={}, iterations={}",
+            self.hydraulic_erosion.enabled,
+            self.hydraulic_erosion.iterations
+        );
+        tracing::info!(
+            "Thermal: enabled={}, iterations={}",
+            self.thermal_erosion.enabled,
+            self.thermal_erosion.iterations
+        );
+        tracing::info!(
+            "Wind: enabled={}, iterations={}",
+            self.wind_erosion.enabled,
+            self.wind_erosion.iterations
+        );
+
         self.generation_stats.erosion_time_ms = start.elapsed().as_secs_f32() * 1000.0;
     }
-    
+
     fn regenerate_splatmaps(&mut self) {
         let start = std::time::Instant::now();
-        
+
         // In a real implementation, this would regenerate splatmaps
-        tracing::info!("Regenerating splatmaps with params: {:?}", self.splat_params);
-        
+        tracing::info!(
+            "Regenerating splatmaps with params: {:?}",
+            self.splat_params
+        );
+
         self.generation_stats.splatmap_time_ms = start.elapsed().as_secs_f32() * 1000.0;
     }
-    
+
     fn material_name(id: usize) -> &'static str {
         match id {
             0 => "Grass",
@@ -1159,23 +1330,26 @@ impl TerrainPanel {
             _ => "Unknown",
         }
     }
-    
+
     fn regenerate_terrain(&mut self) {
         let start = std::time::Instant::now();
-        
+
         match self.terrain_state.generate_terrain(self.chunk_radius) {
             Ok(count) => {
                 self.last_generation_time_ms = start.elapsed().as_secs_f32() * 1000.0;
-                
+
                 let all_vertices = self.terrain_state.get_all_vertices();
                 let vertex_count = all_vertices.len();
                 let triangle_count = self.terrain_state.get_all_indices(0).len() / 3;
-                
+
                 self.generation_stats = GenerationStats {
                     chunks_generated: count,
                     total_vertices: vertex_count,
                     total_triangles: triangle_count,
-                    memory_estimate_mb: (vertex_count * std::mem::size_of::<crate::terrain_integration::TerrainVertex>()) as f32 / (1024.0 * 1024.0),
+                    memory_estimate_mb: (vertex_count
+                        * std::mem::size_of::<crate::terrain_integration::TerrainVertex>())
+                        as f32
+                        / (1024.0 * 1024.0),
                     erosion_time_ms: 0.0,
                     splatmap_time_ms: 0.0,
                 };
@@ -1191,7 +1365,7 @@ impl Panel for TerrainPanel {
     fn name(&self) -> &str {
         "Terrain"
     }
-    
+
     fn show(&mut self, ui: &mut Ui) {
         egui::ScrollArea::vertical().show(ui, |ui| {
             self.show_generation_section(ui);
@@ -1207,7 +1381,7 @@ impl Panel for TerrainPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // ============================================================
     // EROSION PRESET TYPE TESTS
     // ============================================================
@@ -1501,7 +1675,7 @@ mod tests {
         assert_eq!(panel.primary_biome, "grassland");
         assert_eq!(panel.chunk_radius, 2);
     }
-    
+
     #[test]
     fn test_default_noise_params() {
         let panel = TerrainPanel::new();
@@ -1509,15 +1683,15 @@ mod tests {
         assert!((panel.lacunarity - 2.0).abs() < 0.01);
         assert!((panel.persistence - 0.5).abs() < 0.01);
     }
-    
+
     #[test]
     fn test_brush_modes() {
         let mut panel = TerrainPanel::new();
         assert_eq!(panel.brush_mode, BrushMode::Sculpt);
-        
+
         panel.brush_mode = BrushMode::Smooth;
         assert_eq!(panel.brush_mode, BrushMode::Smooth);
-        
+
         panel.brush_mode = BrushMode::Erode;
         assert_eq!(panel.brush_mode, BrushMode::Erode);
     }
@@ -1537,7 +1711,7 @@ mod tests {
             assert_eq!(panel.brush_mode, mode);
         }
     }
-    
+
     #[test]
     fn test_material_names() {
         assert_eq!(TerrainPanel::material_name(0), "Grass");
@@ -1551,17 +1725,17 @@ mod tests {
         assert_eq!(TerrainPanel::material_name(3), "Snow");
         assert_eq!(TerrainPanel::material_name(4), "Dirt");
     }
-    
+
     #[test]
     fn test_erosion_presets() {
         let mut panel = TerrainPanel::new();
         assert_eq!(panel.erosion_preset, ErosionPresetType::Mountain);
-        
+
         panel.apply_erosion_preset(ErosionPresetType::Desert);
         assert!(!panel.hydraulic_erosion.enabled);
         assert!(panel.thermal_erosion.enabled);
         assert!(panel.wind_erosion.enabled);
-        
+
         panel.apply_erosion_preset(ErosionPresetType::Coastal);
         assert!(panel.hydraulic_erosion.enabled);
         assert!(!panel.thermal_erosion.enabled);
@@ -1575,7 +1749,7 @@ mod tests {
         // Alpine should have both hydraulic and thermal active
         assert!(panel.hydraulic_erosion.enabled || panel.thermal_erosion.enabled);
     }
-    
+
     #[test]
     fn test_default_erosion_params() {
         let panel = TerrainPanel::new();
@@ -1584,7 +1758,7 @@ mod tests {
         assert!(panel.thermal_erosion.enabled);
         assert!(!panel.wind_erosion.enabled);
     }
-    
+
     #[test]
     fn test_biome_blend_defaults() {
         let panel = TerrainPanel::new();
@@ -1593,7 +1767,7 @@ mod tests {
         assert_eq!(panel.biome_blend.secondary_biome, "desert");
         assert_eq!(panel.biome_blend.tertiary_biome, "mountains");
     }
-    
+
     #[test]
     fn test_splat_params_defaults() {
         let panel = TerrainPanel::new();
@@ -1788,7 +1962,10 @@ mod tests {
     #[test]
     fn test_terrain_action_erosion_preset() {
         let action = TerrainAction::ApplyErosionPreset(ErosionPresetType::Mountain);
-        assert!(matches!(action, TerrainAction::ApplyErosionPreset(ErosionPresetType::Mountain)));
+        assert!(matches!(
+            action,
+            TerrainAction::ApplyErosionPreset(ErosionPresetType::Mountain)
+        ));
     }
 
     #[test]
@@ -1796,7 +1973,7 @@ mod tests {
         let hydraulic = TerrainAction::RunHydraulicErosion;
         let thermal = TerrainAction::RunThermalErosion;
         let wind = TerrainAction::RunWindErosion;
-        
+
         assert!(matches!(hydraulic, TerrainAction::RunHydraulicErosion));
         assert!(matches!(thermal, TerrainAction::RunThermalErosion));
         assert!(matches!(wind, TerrainAction::RunWindErosion));
@@ -1805,20 +1982,23 @@ mod tests {
     #[test]
     fn test_terrain_action_brush_mode() {
         let action = TerrainAction::SetBrushMode(BrushMode::Sculpt);
-        assert!(matches!(action, TerrainAction::SetBrushMode(BrushMode::Sculpt)));
+        assert!(matches!(
+            action,
+            TerrainAction::SetBrushMode(BrushMode::Sculpt)
+        ));
     }
 
     #[test]
     fn test_terrain_action_brush_settings() {
         let radius = TerrainAction::SetBrushRadius(10.0);
         let strength = TerrainAction::SetBrushStrength(0.75);
-        
+
         if let TerrainAction::SetBrushRadius(r) = radius {
             assert!((r - 10.0).abs() < f32::EPSILON);
         } else {
             panic!("Expected SetBrushRadius");
         }
-        
+
         if let TerrainAction::SetBrushStrength(s) = strength {
             assert!((s - 0.75).abs() < f32::EPSILON);
         } else {
@@ -1828,7 +2008,9 @@ mod tests {
 
     #[test]
     fn test_terrain_action_apply_brush() {
-        let action = TerrainAction::ApplyBrush { position: [1.0, 2.0, 3.0] };
+        let action = TerrainAction::ApplyBrush {
+            position: [1.0, 2.0, 3.0],
+        };
         if let TerrainAction::ApplyBrush { position } = action {
             assert_eq!(position, [1.0, 2.0, 3.0]);
         } else {
@@ -1840,22 +2022,26 @@ mod tests {
     fn test_terrain_action_fluid_simulation() {
         let toggle = TerrainAction::ToggleFluidSimulation(true);
         let reset = TerrainAction::ResetFluidSimulation;
-        
+
         assert!(matches!(toggle, TerrainAction::ToggleFluidSimulation(true)));
         assert!(matches!(reset, TerrainAction::ResetFluidSimulation));
     }
 
     #[test]
     fn test_terrain_action_export_import() {
-        let export = TerrainAction::ExportHeightmap { path: "/tmp/height.raw".to_string() };
-        let import = TerrainAction::ImportHeightmap { path: "/tmp/height.raw".to_string() };
-        
+        let export = TerrainAction::ExportHeightmap {
+            path: "/tmp/height.raw".to_string(),
+        };
+        let import = TerrainAction::ImportHeightmap {
+            path: "/tmp/height.raw".to_string(),
+        };
+
         if let TerrainAction::ExportHeightmap { path } = export {
             assert_eq!(path, "/tmp/height.raw");
         } else {
             panic!("Expected ExportHeightmap");
         }
-        
+
         if let TerrainAction::ImportHeightmap { path } = import {
             assert_eq!(path, "/tmp/height.raw");
         } else {

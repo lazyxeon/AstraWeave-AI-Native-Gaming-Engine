@@ -546,12 +546,18 @@ mod tests {
 
     #[test]
     fn test_node_template_label_decorator_inverter() {
-        assert_eq!(NodeTemplate::DecoratorInverter.label(), "Decorator • Inverter");
+        assert_eq!(
+            NodeTemplate::DecoratorInverter.label(),
+            "Decorator • Inverter"
+        );
     }
 
     #[test]
     fn test_node_template_label_decorator_succeeder() {
-        assert_eq!(NodeTemplate::DecoratorSucceeder.label(), "Decorator • Succeeder");
+        assert_eq!(
+            NodeTemplate::DecoratorSucceeder.label(),
+            "Decorator • Succeeder"
+        );
     }
 
     #[test]
@@ -786,7 +792,10 @@ mod tests {
 
     #[test]
     fn test_format_decorator_label_succeeder() {
-        assert_eq!(format_decorator_label(&DecoratorKind::Succeeder), "Succeeder");
+        assert_eq!(
+            format_decorator_label(&DecoratorKind::Succeeder),
+            "Succeeder"
+        );
     }
 
     #[test]
@@ -796,12 +805,18 @@ mod tests {
 
     #[test]
     fn test_format_decorator_label_repeat() {
-        assert_eq!(format_decorator_label(&DecoratorKind::Repeat(3)), "Repeat (3)");
+        assert_eq!(
+            format_decorator_label(&DecoratorKind::Repeat(3)),
+            "Repeat (3)"
+        );
     }
 
     #[test]
     fn test_format_decorator_label_retry() {
-        assert_eq!(format_decorator_label(&DecoratorKind::Retry(5)), "Retry (5)");
+        assert_eq!(
+            format_decorator_label(&DecoratorKind::Retry(5)),
+            "Retry (5)"
+        );
     }
 
     // === count_runtime_nodes Tests ===

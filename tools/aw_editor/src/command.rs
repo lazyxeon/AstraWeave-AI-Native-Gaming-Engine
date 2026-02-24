@@ -187,7 +187,9 @@ impl UndoStackIssue {
 impl std::fmt::Display for UndoStackIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UndoStackIssue::NearCapacity { utilization_percent } => {
+            UndoStackIssue::NearCapacity {
+                utilization_percent,
+            } => {
                 write!(f, "Undo stack {}% full", utilization_percent)
             }
             UndoStackIssue::AtCapacity => write!(f, "Undo stack at capacity"),
@@ -431,7 +433,9 @@ impl UndoStack {
         if self.commands.len() >= self.max_size {
             issues.push(UndoStackIssue::AtCapacity);
         } else if utilization > 80 {
-            issues.push(UndoStackIssue::NearCapacity { utilization_percent: utilization });
+            issues.push(UndoStackIssue::NearCapacity {
+                utilization_percent: utilization,
+            });
         }
 
         if !self.auto_merge {
@@ -1611,10 +1615,16 @@ mod tests {
 
         // Execute some commands
         stack
-            .execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world)
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
             .unwrap();
         stack
-            .execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world)
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)),
+                &mut world,
+            )
             .unwrap();
 
         let stats = stack.stats();
@@ -1806,7 +1816,12 @@ mod tests {
         assert!(!stats.can_undo());
         assert!(!stats.can_redo());
 
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
+            .unwrap();
 
         let stats = stack.stats();
         assert!(stats.can_undo());
@@ -1828,8 +1843,18 @@ mod tests {
 
         assert_eq!(stack.stats().remaining_capacity(), 5);
 
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
+            .unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)),
+                &mut world,
+            )
+            .unwrap();
 
         assert_eq!(stack.stats().remaining_capacity(), 3);
     }
@@ -1840,7 +1865,10 @@ mod tests {
 
     #[test]
     fn test_undo_stack_issue_is_error() {
-        assert!(!UndoStackIssue::NearCapacity { utilization_percent: 85 }.is_error());
+        assert!(!UndoStackIssue::NearCapacity {
+            utilization_percent: 85
+        }
+        .is_error());
         assert!(UndoStackIssue::AtCapacity.is_error());
         assert!(!UndoStackIssue::AutoMergeDisabled.is_error());
         assert!(!UndoStackIssue::NoHistory.is_error());
@@ -1848,7 +1876,11 @@ mod tests {
 
     #[test]
     fn test_undo_stack_issue_icon_not_empty() {
-        assert!(!UndoStackIssue::NearCapacity { utilization_percent: 85 }.icon().is_empty());
+        assert!(!UndoStackIssue::NearCapacity {
+            utilization_percent: 85
+        }
+        .icon()
+        .is_empty());
         assert!(!UndoStackIssue::AtCapacity.icon().is_empty());
         assert!(!UndoStackIssue::AutoMergeDisabled.icon().is_empty());
         assert!(!UndoStackIssue::NoHistory.icon().is_empty());
@@ -1856,7 +1888,9 @@ mod tests {
 
     #[test]
     fn test_undo_stack_issue_display() {
-        let issue = UndoStackIssue::NearCapacity { utilization_percent: 85 };
+        let issue = UndoStackIssue::NearCapacity {
+            utilization_percent: 85,
+        };
         let display = format!("{}", issue);
         assert!(display.contains("85"));
 
@@ -1873,7 +1907,9 @@ mod tests {
     fn test_undo_stack_validate_empty() {
         let stack = UndoStack::new(10);
         let issues = stack.validate();
-        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::NoHistory)));
+        assert!(issues
+            .iter()
+            .any(|i| matches!(i, UndoStackIssue::NoHistory)));
     }
 
     #[test]
@@ -1881,7 +1917,9 @@ mod tests {
         let mut stack = UndoStack::new(10);
         stack.set_auto_merge(false);
         let issues = stack.validate();
-        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AutoMergeDisabled)));
+        assert!(issues
+            .iter()
+            .any(|i| matches!(i, UndoStackIssue::AutoMergeDisabled)));
     }
 
     #[test]
@@ -1892,11 +1930,18 @@ mod tests {
         stack.set_auto_merge(false);
 
         for i in 0..3 {
-            stack.execute(MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)), &mut world).unwrap();
+            stack
+                .execute(
+                    MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                    &mut world,
+                )
+                .unwrap();
         }
 
         let issues = stack.validate();
-        assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AtCapacity)));
+        assert!(issues
+            .iter()
+            .any(|i| matches!(i, UndoStackIssue::AtCapacity)));
     }
 
     #[test]
@@ -1905,7 +1950,12 @@ mod tests {
         let entity = spawn_basic_entity(&mut world);
         let mut stack = UndoStack::new(10);
 
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
+            .unwrap();
 
         assert!(stack.is_valid());
     }
@@ -1921,9 +1971,24 @@ mod tests {
         let mut stack = UndoStack::new(10);
         stack.set_auto_merge(false);
 
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(2, 2), IVec2::new(3, 3)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
+            .unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)),
+                &mut world,
+            )
+            .unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(2, 2), IVec2::new(3, 3)),
+                &mut world,
+            )
+            .unwrap();
 
         let recent = stack.recent_commands(2);
         assert_eq!(recent.len(), 2);
@@ -1936,8 +2001,18 @@ mod tests {
         let mut stack = UndoStack::new(10);
         stack.set_auto_merge(false);
 
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)), &mut world).unwrap();
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(1, 1)),
+                &mut world,
+            )
+            .unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(1, 1), IVec2::new(2, 2)),
+                &mut world,
+            )
+            .unwrap();
 
         stack.undo(&mut world).unwrap();
         stack.undo(&mut world).unwrap();
@@ -1956,7 +2031,7 @@ mod tests {
     fn test_undo_stack_auto_merge_accessor() {
         let mut stack = UndoStack::new(10);
         assert!(stack.is_auto_merge_enabled());
-        
+
         stack.set_auto_merge(false);
         assert!(!stack.is_auto_merge_enabled());
     }

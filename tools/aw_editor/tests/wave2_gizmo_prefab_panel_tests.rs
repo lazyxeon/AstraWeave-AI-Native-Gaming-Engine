@@ -27,9 +27,7 @@ use aw_editor_lib::gizmo::picking::{GizmoHandle, Ray};
 use aw_editor_lib::gizmo::snapping::SnappingConfig;
 use aw_editor_lib::gizmo::state::{AxisConstraint, GizmoMode, TransformSnapshot};
 use aw_editor_lib::panel_type::{PanelCategory, PanelType};
-use aw_editor_lib::prefab::{
-    EntityOverrides, PrefabHierarchySnapshot, PrefabIssue, PrefabStats,
-};
+use aw_editor_lib::prefab::{EntityOverrides, PrefabHierarchySnapshot, PrefabIssue, PrefabStats};
 use glam::{Quat, Vec3};
 use std::path::PathBuf;
 
@@ -49,43 +47,80 @@ fn gizmo_mode_is_active_false_for_inactive() {
 
 #[test]
 fn gizmo_mode_is_active_true_for_translate() {
-    let m = GizmoMode::Translate { constraint: AxisConstraint::None };
+    let m = GizmoMode::Translate {
+        constraint: AxisConstraint::None,
+    };
     assert!(m.is_active());
 }
 
 #[test]
 fn gizmo_mode_is_active_true_for_rotate() {
-    let m = GizmoMode::Rotate { constraint: AxisConstraint::X };
+    let m = GizmoMode::Rotate {
+        constraint: AxisConstraint::X,
+    };
     assert!(m.is_active());
 }
 
 #[test]
 fn gizmo_mode_is_active_true_for_scale() {
-    let m = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true };
+    let m = GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: true,
+    };
     assert!(m.is_active());
 }
 
 #[test]
 fn gizmo_mode_is_translate_only_for_translate() {
-    assert!(GizmoMode::Translate { constraint: AxisConstraint::None }.is_translate());
-    assert!(!GizmoMode::Rotate { constraint: AxisConstraint::None }.is_translate());
-    assert!(!GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.is_translate());
+    assert!(GizmoMode::Translate {
+        constraint: AxisConstraint::None
+    }
+    .is_translate());
+    assert!(!GizmoMode::Rotate {
+        constraint: AxisConstraint::None
+    }
+    .is_translate());
+    assert!(!GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: false
+    }
+    .is_translate());
     assert!(!GizmoMode::Inactive.is_translate());
 }
 
 #[test]
 fn gizmo_mode_is_rotate_only_for_rotate() {
-    assert!(!GizmoMode::Translate { constraint: AxisConstraint::None }.is_rotate());
-    assert!(GizmoMode::Rotate { constraint: AxisConstraint::None }.is_rotate());
-    assert!(!GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.is_rotate());
+    assert!(!GizmoMode::Translate {
+        constraint: AxisConstraint::None
+    }
+    .is_rotate());
+    assert!(GizmoMode::Rotate {
+        constraint: AxisConstraint::None
+    }
+    .is_rotate());
+    assert!(!GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: false
+    }
+    .is_rotate());
     assert!(!GizmoMode::Inactive.is_rotate());
 }
 
 #[test]
 fn gizmo_mode_is_scale_only_for_scale() {
-    assert!(!GizmoMode::Translate { constraint: AxisConstraint::None }.is_scale());
-    assert!(!GizmoMode::Rotate { constraint: AxisConstraint::None }.is_scale());
-    assert!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.is_scale());
+    assert!(!GizmoMode::Translate {
+        constraint: AxisConstraint::None
+    }
+    .is_scale());
+    assert!(!GizmoMode::Rotate {
+        constraint: AxisConstraint::None
+    }
+    .is_scale());
+    assert!(GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: false
+    }
+    .is_scale());
     assert!(!GizmoMode::Inactive.is_scale());
 }
 
@@ -96,13 +131,20 @@ fn gizmo_mode_constraint_returns_none_for_inactive() {
 
 #[test]
 fn gizmo_mode_constraint_returns_some_for_active() {
-    let t = GizmoMode::Translate { constraint: AxisConstraint::X };
+    let t = GizmoMode::Translate {
+        constraint: AxisConstraint::X,
+    };
     assert_eq!(t.constraint(), Some(AxisConstraint::X));
 
-    let r = GizmoMode::Rotate { constraint: AxisConstraint::YZ };
+    let r = GizmoMode::Rotate {
+        constraint: AxisConstraint::YZ,
+    };
     assert_eq!(r.constraint(), Some(AxisConstraint::YZ));
 
-    let s = GizmoMode::Scale { constraint: AxisConstraint::Z, uniform: false };
+    let s = GizmoMode::Scale {
+        constraint: AxisConstraint::Z,
+        uniform: false,
+    };
     assert_eq!(s.constraint(), Some(AxisConstraint::Z));
 }
 
@@ -113,9 +155,28 @@ fn gizmo_mode_constraint_returns_some_for_active() {
 #[test]
 fn gizmo_mode_name_matches() {
     assert_eq!(GizmoMode::Inactive.name(), "Inactive");
-    assert_eq!(GizmoMode::Translate { constraint: AxisConstraint::X }.name(), "Translate");
-    assert_eq!(GizmoMode::Rotate { constraint: AxisConstraint::None }.name(), "Rotate");
-    assert_eq!(GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false }.name(), "Scale");
+    assert_eq!(
+        GizmoMode::Translate {
+            constraint: AxisConstraint::X
+        }
+        .name(),
+        "Translate"
+    );
+    assert_eq!(
+        GizmoMode::Rotate {
+            constraint: AxisConstraint::None
+        }
+        .name(),
+        "Rotate"
+    );
+    assert_eq!(
+        GizmoMode::Scale {
+            constraint: AxisConstraint::None,
+            uniform: false
+        }
+        .name(),
+        "Scale"
+    );
 }
 
 #[test]
@@ -132,25 +193,34 @@ fn gizmo_mode_shortcut_none_for_inactive() {
 
 #[test]
 fn gizmo_mode_shortcut_g_for_translate() {
-    let m = GizmoMode::Translate { constraint: AxisConstraint::None };
+    let m = GizmoMode::Translate {
+        constraint: AxisConstraint::None,
+    };
     assert_eq!(m.shortcut(), Some("G"));
 }
 
 #[test]
 fn gizmo_mode_shortcut_r_for_rotate() {
-    let m = GizmoMode::Rotate { constraint: AxisConstraint::None };
+    let m = GizmoMode::Rotate {
+        constraint: AxisConstraint::None,
+    };
     assert_eq!(m.shortcut(), Some("R"));
 }
 
 #[test]
 fn gizmo_mode_shortcut_s_for_scale() {
-    let m = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: false };
+    let m = GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: false,
+    };
     assert_eq!(m.shortcut(), Some("S"));
 }
 
 #[test]
 fn gizmo_mode_display_translate_includes_constraint() {
-    let m = GizmoMode::Translate { constraint: AxisConstraint::X };
+    let m = GizmoMode::Translate {
+        constraint: AxisConstraint::X,
+    };
     let d = format!("{}", m);
     assert!(d.contains("Translate"));
     assert!(d.contains("X"));
@@ -158,7 +228,10 @@ fn gizmo_mode_display_translate_includes_constraint() {
 
 #[test]
 fn gizmo_mode_display_scale_uniform() {
-    let m = GizmoMode::Scale { constraint: AxisConstraint::None, uniform: true };
+    let m = GizmoMode::Scale {
+        constraint: AxisConstraint::None,
+        uniform: true,
+    };
     let d = format!("{}", m);
     assert!(d.contains("Uniform"));
 }
@@ -252,52 +325,82 @@ fn axis_default_is_none() {
 
 #[test]
 fn cycle_none_press_x_gives_x() {
-    assert_eq!(AxisConstraint::None.cycle(AxisConstraint::X), AxisConstraint::X);
+    assert_eq!(
+        AxisConstraint::None.cycle(AxisConstraint::X),
+        AxisConstraint::X
+    );
 }
 
 #[test]
 fn cycle_none_press_y_gives_y() {
-    assert_eq!(AxisConstraint::None.cycle(AxisConstraint::Y), AxisConstraint::Y);
+    assert_eq!(
+        AxisConstraint::None.cycle(AxisConstraint::Y),
+        AxisConstraint::Y
+    );
 }
 
 #[test]
 fn cycle_none_press_z_gives_z() {
-    assert_eq!(AxisConstraint::None.cycle(AxisConstraint::Z), AxisConstraint::Z);
+    assert_eq!(
+        AxisConstraint::None.cycle(AxisConstraint::Z),
+        AxisConstraint::Z
+    );
 }
 
 #[test]
 fn cycle_x_press_x_gives_yz_plane() {
-    assert_eq!(AxisConstraint::X.cycle(AxisConstraint::X), AxisConstraint::YZ);
+    assert_eq!(
+        AxisConstraint::X.cycle(AxisConstraint::X),
+        AxisConstraint::YZ
+    );
 }
 
 #[test]
 fn cycle_y_press_y_gives_xz_plane() {
-    assert_eq!(AxisConstraint::Y.cycle(AxisConstraint::Y), AxisConstraint::XZ);
+    assert_eq!(
+        AxisConstraint::Y.cycle(AxisConstraint::Y),
+        AxisConstraint::XZ
+    );
 }
 
 #[test]
 fn cycle_z_press_z_gives_xy_plane() {
-    assert_eq!(AxisConstraint::Z.cycle(AxisConstraint::Z), AxisConstraint::XY);
+    assert_eq!(
+        AxisConstraint::Z.cycle(AxisConstraint::Z),
+        AxisConstraint::XY
+    );
 }
 
 #[test]
 fn cycle_yz_press_x_gives_none() {
-    assert_eq!(AxisConstraint::YZ.cycle(AxisConstraint::X), AxisConstraint::None);
+    assert_eq!(
+        AxisConstraint::YZ.cycle(AxisConstraint::X),
+        AxisConstraint::None
+    );
 }
 
 #[test]
 fn cycle_xz_press_y_gives_none() {
-    assert_eq!(AxisConstraint::XZ.cycle(AxisConstraint::Y), AxisConstraint::None);
+    assert_eq!(
+        AxisConstraint::XZ.cycle(AxisConstraint::Y),
+        AxisConstraint::None
+    );
 }
 
 #[test]
 fn cycle_xy_press_z_gives_none() {
-    assert_eq!(AxisConstraint::XY.cycle(AxisConstraint::Z), AxisConstraint::None);
+    assert_eq!(
+        AxisConstraint::XY.cycle(AxisConstraint::Z),
+        AxisConstraint::None
+    );
 }
 
 #[test]
 fn cycle_x_press_y_switches_to_y() {
-    assert_eq!(AxisConstraint::X.cycle(AxisConstraint::Y), AxisConstraint::Y);
+    assert_eq!(
+        AxisConstraint::X.cycle(AxisConstraint::Y),
+        AxisConstraint::Y
+    );
 }
 
 #[test]
@@ -563,7 +666,10 @@ fn gizmo_handle_to_constraint() {
     assert_eq!(GizmoHandle::TranslateX.to_constraint(), AxisConstraint::X);
     assert_eq!(GizmoHandle::TranslateY.to_constraint(), AxisConstraint::Y);
     assert_eq!(GizmoHandle::TranslateZ.to_constraint(), AxisConstraint::Z);
-    assert_eq!(GizmoHandle::ScaleUniform.to_constraint(), AxisConstraint::None);
+    assert_eq!(
+        GizmoHandle::ScaleUniform.to_constraint(),
+        AxisConstraint::None
+    );
 }
 
 #[test]
@@ -686,7 +792,11 @@ fn prefab_stats_default_zeros() {
 
 #[test]
 fn prefab_stats_avg_entities_zero_instances() {
-    let s = PrefabStats { instance_count: 0, total_prefab_entities: 0, ..Default::default() };
+    let s = PrefabStats {
+        instance_count: 0,
+        total_prefab_entities: 0,
+        ..Default::default()
+    };
     assert_eq!(s.avg_entities_per_instance(), 0.0);
 }
 
@@ -702,7 +812,10 @@ fn prefab_stats_avg_entities_calculation() {
 
 #[test]
 fn prefab_stats_override_percentage_zero() {
-    let s = PrefabStats { total_prefab_entities: 0, ..Default::default() };
+    let s = PrefabStats {
+        total_prefab_entities: 0,
+        ..Default::default()
+    };
     assert_eq!(s.override_percentage(), 0.0);
 }
 
@@ -730,52 +843,127 @@ fn prefab_stats_has_overrides() {
 
 #[test]
 fn prefab_issue_is_critical() {
-    assert!(PrefabIssue::MissingFile { path: PathBuf::from("a.ron") }.is_critical());
-    assert!(PrefabIssue::CyclicReference { path: PathBuf::from("b.ron") }.is_critical());
-    assert!(PrefabIssue::InvalidRootIndex { path: PathBuf::from("c.ron"), index: 5, entity_count: 3 }.is_critical());
-    assert!(!PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("d.ron") }.is_critical());
-    assert!(!PrefabIssue::EmptyPrefab { path: PathBuf::from("e.ron") }.is_critical());
-    assert!(!PrefabIssue::EmptyMapping { prefab: PathBuf::from("f.ron") }.is_critical());
+    assert!(PrefabIssue::MissingFile {
+        path: PathBuf::from("a.ron")
+    }
+    .is_critical());
+    assert!(PrefabIssue::CyclicReference {
+        path: PathBuf::from("b.ron")
+    }
+    .is_critical());
+    assert!(PrefabIssue::InvalidRootIndex {
+        path: PathBuf::from("c.ron"),
+        index: 5,
+        entity_count: 3
+    }
+    .is_critical());
+    assert!(!PrefabIssue::OrphanedEntity {
+        entity: 1,
+        prefab: PathBuf::from("d.ron")
+    }
+    .is_critical());
+    assert!(!PrefabIssue::EmptyPrefab {
+        path: PathBuf::from("e.ron")
+    }
+    .is_critical());
+    assert!(!PrefabIssue::EmptyMapping {
+        prefab: PathBuf::from("f.ron")
+    }
+    .is_critical());
 }
 
 #[test]
 fn prefab_issue_is_file_issue() {
-    assert!(PrefabIssue::MissingFile { path: PathBuf::from("a.ron") }.is_file_issue());
-    assert!(!PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("b.ron") }.is_file_issue());
-    assert!(!PrefabIssue::CyclicReference { path: PathBuf::from("c.ron") }.is_file_issue());
+    assert!(PrefabIssue::MissingFile {
+        path: PathBuf::from("a.ron")
+    }
+    .is_file_issue());
+    assert!(!PrefabIssue::OrphanedEntity {
+        entity: 1,
+        prefab: PathBuf::from("b.ron")
+    }
+    .is_file_issue());
+    assert!(!PrefabIssue::CyclicReference {
+        path: PathBuf::from("c.ron")
+    }
+    .is_file_issue());
 }
 
 #[test]
 fn prefab_issue_is_entity_issue() {
-    assert!(!PrefabIssue::MissingFile { path: PathBuf::from("a.ron") }.is_entity_issue());
-    assert!(PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("b.ron") }.is_entity_issue());
-    assert!(!PrefabIssue::EmptyPrefab { path: PathBuf::from("c.ron") }.is_entity_issue());
+    assert!(!PrefabIssue::MissingFile {
+        path: PathBuf::from("a.ron")
+    }
+    .is_entity_issue());
+    assert!(PrefabIssue::OrphanedEntity {
+        entity: 1,
+        prefab: PathBuf::from("b.ron")
+    }
+    .is_entity_issue());
+    assert!(!PrefabIssue::EmptyPrefab {
+        path: PathBuf::from("c.ron")
+    }
+    .is_entity_issue());
 }
 
 #[test]
 fn prefab_issue_path_always_some() {
     let issues = vec![
-        PrefabIssue::MissingFile { path: PathBuf::from("a.ron") },
-        PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("b.ron") },
-        PrefabIssue::EmptyPrefab { path: PathBuf::from("c.ron") },
-        PrefabIssue::EmptyMapping { prefab: PathBuf::from("d.ron") },
-        PrefabIssue::CyclicReference { path: PathBuf::from("e.ron") },
-        PrefabIssue::InvalidRootIndex { path: PathBuf::from("f.ron"), index: 5, entity_count: 3 },
+        PrefabIssue::MissingFile {
+            path: PathBuf::from("a.ron"),
+        },
+        PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: PathBuf::from("b.ron"),
+        },
+        PrefabIssue::EmptyPrefab {
+            path: PathBuf::from("c.ron"),
+        },
+        PrefabIssue::EmptyMapping {
+            prefab: PathBuf::from("d.ron"),
+        },
+        PrefabIssue::CyclicReference {
+            path: PathBuf::from("e.ron"),
+        },
+        PrefabIssue::InvalidRootIndex {
+            path: PathBuf::from("f.ron"),
+            index: 5,
+            entity_count: 3,
+        },
     ];
     for issue in &issues {
-        assert!(issue.path().is_some(), "path() should be Some for {:?}", issue);
+        assert!(
+            issue.path().is_some(),
+            "path() should be Some for {:?}",
+            issue
+        );
     }
 }
 
 #[test]
 fn prefab_issue_name_nonempty() {
     let issues = vec![
-        PrefabIssue::MissingFile { path: PathBuf::from("a.ron") },
-        PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("b.ron") },
-        PrefabIssue::EmptyPrefab { path: PathBuf::from("c.ron") },
-        PrefabIssue::EmptyMapping { prefab: PathBuf::from("d.ron") },
-        PrefabIssue::CyclicReference { path: PathBuf::from("e.ron") },
-        PrefabIssue::InvalidRootIndex { path: PathBuf::from("f.ron"), index: 5, entity_count: 3 },
+        PrefabIssue::MissingFile {
+            path: PathBuf::from("a.ron"),
+        },
+        PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: PathBuf::from("b.ron"),
+        },
+        PrefabIssue::EmptyPrefab {
+            path: PathBuf::from("c.ron"),
+        },
+        PrefabIssue::EmptyMapping {
+            prefab: PathBuf::from("d.ron"),
+        },
+        PrefabIssue::CyclicReference {
+            path: PathBuf::from("e.ron"),
+        },
+        PrefabIssue::InvalidRootIndex {
+            path: PathBuf::from("f.ron"),
+            index: 5,
+            entity_count: 3,
+        },
     ];
     for issue in &issues {
         assert!(!issue.name().is_empty());
@@ -785,10 +973,21 @@ fn prefab_issue_name_nonempty() {
 #[test]
 fn prefab_issue_icon_nonempty() {
     let issues = vec![
-        PrefabIssue::MissingFile { path: PathBuf::from("a.ron") },
-        PrefabIssue::OrphanedEntity { entity: 1, prefab: PathBuf::from("b.ron") },
-        PrefabIssue::CyclicReference { path: PathBuf::from("c.ron") },
-        PrefabIssue::InvalidRootIndex { path: PathBuf::from("d.ron"), index: 1, entity_count: 0 },
+        PrefabIssue::MissingFile {
+            path: PathBuf::from("a.ron"),
+        },
+        PrefabIssue::OrphanedEntity {
+            entity: 1,
+            prefab: PathBuf::from("b.ron"),
+        },
+        PrefabIssue::CyclicReference {
+            path: PathBuf::from("c.ron"),
+        },
+        PrefabIssue::InvalidRootIndex {
+            path: PathBuf::from("d.ron"),
+            index: 1,
+            entity_count: 0,
+        },
     ];
     for issue in &issues {
         assert!(!issue.icon().is_empty());
@@ -797,14 +996,20 @@ fn prefab_issue_icon_nonempty() {
 
 #[test]
 fn prefab_issue_display_contains_path() {
-    let issue = PrefabIssue::MissingFile { path: PathBuf::from("my_prefab.ron") };
+    let issue = PrefabIssue::MissingFile {
+        path: PathBuf::from("my_prefab.ron"),
+    };
     let d = format!("{}", issue);
     assert!(d.contains("my_prefab.ron"));
 }
 
 #[test]
 fn prefab_issue_display_invalid_root_contains_index() {
-    let issue = PrefabIssue::InvalidRootIndex { path: PathBuf::from("test.ron"), index: 5, entity_count: 3 };
+    let issue = PrefabIssue::InvalidRootIndex {
+        path: PathBuf::from("test.ron"),
+        index: 5,
+        entity_count: 3,
+    };
     let d = format!("{}", issue);
     assert!(d.contains("5"));
     assert!(d.contains("3"));
@@ -830,7 +1035,10 @@ fn entity_overrides_default_empty() {
 
 #[test]
 fn entity_overrides_pose_x_only() {
-    let o = EntityOverrides { pos_x: Some(10), ..Default::default() };
+    let o = EntityOverrides {
+        pos_x: Some(10),
+        ..Default::default()
+    };
     assert!(o.has_pose_override());
     assert!(!o.has_health_override());
     assert!(o.has_any_override());
@@ -839,14 +1047,20 @@ fn entity_overrides_pose_x_only() {
 
 #[test]
 fn entity_overrides_pose_y_only() {
-    let o = EntityOverrides { pos_y: Some(20), ..Default::default() };
+    let o = EntityOverrides {
+        pos_y: Some(20),
+        ..Default::default()
+    };
     assert!(o.has_pose_override());
     assert_eq!(o.override_count(), 1);
 }
 
 #[test]
 fn entity_overrides_health_only() {
-    let o = EntityOverrides { health: Some(50), ..Default::default() };
+    let o = EntityOverrides {
+        health: Some(50),
+        ..Default::default()
+    };
     assert!(!o.has_pose_override());
     assert!(o.has_health_override());
     assert!(o.has_any_override());
@@ -855,7 +1069,10 @@ fn entity_overrides_health_only() {
 
 #[test]
 fn entity_overrides_max_health_only() {
-    let o = EntityOverrides { max_health: Some(200), ..Default::default() };
+    let o = EntityOverrides {
+        max_health: Some(200),
+        ..Default::default()
+    };
     assert!(o.has_health_override());
     assert_eq!(o.override_count(), 1);
 }
@@ -902,12 +1119,7 @@ fn hierarchy_snapshot_add_child() {
 
 #[test]
 fn hierarchy_snapshot_from_iter() {
-    let snap: PrefabHierarchySnapshot = vec![
-        (1, vec![2, 3]),
-        (4, vec![5]),
-    ]
-    .into_iter()
-    .collect();
+    let snap: PrefabHierarchySnapshot = vec![(1, vec![2, 3]), (4, vec![5])].into_iter().collect();
     assert_eq!(snap.children_of(1), &[2, 3]);
     assert_eq!(snap.children_of(4), &[5]);
 }

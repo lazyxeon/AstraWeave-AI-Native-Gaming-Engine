@@ -398,10 +398,10 @@ mod tests {
         let mut panel = AdvancedWidgetsPanel::new();
         panel.initialize_tree_views();
         let count1 = panel.scene_hierarchy.node_count();
-        
+
         panel.initialize_tree_views(); // Should not re-initialize
         let count2 = panel.scene_hierarchy.node_count();
-        
+
         assert_eq!(count1, count2);
     }
 
@@ -409,9 +409,9 @@ mod tests {
     fn test_panel_update_initializes() {
         let mut panel = AdvancedWidgetsPanel::new();
         assert!(!panel.initialized);
-        
+
         panel.update();
-        
+
         assert!(panel.initialized);
     }
 
@@ -585,7 +585,7 @@ mod tests {
         // Check enemies parent
         let enemies = panel.scene_hierarchy.get_node(23);
         assert!(enemies.is_some());
-        
+
         // Check individual enemies
         assert!(panel.scene_hierarchy.get_node(24).is_some()); // Enemy_1
         assert!(panel.scene_hierarchy.get_node(25).is_some()); // Enemy_2
@@ -599,7 +599,7 @@ mod tests {
 
         let npcs = panel.scene_hierarchy.get_node(27);
         assert!(npcs.is_some());
-        
+
         assert!(panel.scene_hierarchy.get_node(28).is_some()); // Merchant
         assert!(panel.scene_hierarchy.get_node(29).is_some()); // Guard
     }
@@ -632,7 +632,7 @@ mod tests {
         let models = panel.asset_browser.get_node(101);
         assert!(models.is_some());
         assert_eq!(models.unwrap().label, "Models");
-        
+
         // Check model files
         assert!(panel.asset_browser.get_node(110).is_some()); // character.fbx
         assert!(panel.asset_browser.get_node(111).is_some()); // weapon.fbx
@@ -646,7 +646,7 @@ mod tests {
         let textures = panel.asset_browser.get_node(102);
         assert!(textures.is_some());
         assert_eq!(textures.unwrap().label, "Textures");
-        
+
         // Check texture files
         assert!(panel.asset_browser.get_node(120).is_some()); // albedo.png
         assert!(panel.asset_browser.get_node(121).is_some()); // normal.png
@@ -660,7 +660,7 @@ mod tests {
         let audio = panel.asset_browser.get_node(103);
         assert!(audio.is_some());
         assert_eq!(audio.unwrap().label, "Audio");
-        
+
         // Check audio files
         assert!(panel.asset_browser.get_node(130).is_some()); // music.ogg
         assert!(panel.asset_browser.get_node(131).is_some()); // sfx_shot.wav
@@ -674,7 +674,7 @@ mod tests {
         let scripts = panel.asset_browser.get_node(104);
         assert!(scripts.is_some());
         assert_eq!(scripts.unwrap().label, "Scripts");
-        
+
         // Check script files
         assert!(panel.asset_browser.get_node(140).is_some()); // player_controller.rs
         assert!(panel.asset_browser.get_node(141).is_some()); // enemy_ai.rs
@@ -685,15 +685,15 @@ mod tests {
     #[test]
     fn test_full_initialization() {
         let mut panel = AdvancedWidgetsPanel::new();
-        
+
         // Before init
         assert!(!panel.initialized);
         assert_eq!(panel.scene_hierarchy.node_count(), 0);
         assert_eq!(panel.asset_browser.node_count(), 0);
-        
+
         // After init
         panel.update();
-        
+
         assert!(panel.initialized);
         assert!(panel.scene_hierarchy.node_count() > 10);
         assert!(panel.asset_browser.node_count() > 10);
@@ -703,13 +703,15 @@ mod tests {
     fn test_node_count_summary() {
         let mut panel = AdvancedWidgetsPanel::new();
         panel.update();
-        
+
         // Scene should have more nodes than just root
         let scene_count = panel.scene_hierarchy.node_count();
         let asset_count = panel.asset_browser.node_count();
-        
+
         assert!(scene_count >= 15, "Scene should have at least 15 nodes");
-        assert!(asset_count >= 10, "Asset browser should have at least 10 nodes");
+        assert!(
+            asset_count >= 10,
+            "Asset browser should have at least 10 nodes"
+        );
     }
 }
-

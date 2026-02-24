@@ -65,7 +65,10 @@ impl BuildTarget {
 
     /// Returns true if this target is a desktop platform
     pub fn is_desktop(&self) -> bool {
-        matches!(self, BuildTarget::Windows | BuildTarget::Linux | BuildTarget::MacOS)
+        matches!(
+            self,
+            BuildTarget::Windows | BuildTarget::Linux | BuildTarget::MacOS
+        )
     }
 
     /// Returns true if this target requires cross-compilation
@@ -152,8 +155,16 @@ impl std::fmt::Display for BuildStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BuildStatus::Idle => write!(f, "⏸ Idle"),
-            BuildStatus::Building { progress, current_step } => {
-                write!(f, "🔨 Building ({:.0}%): {}", progress * 100.0, current_step)
+            BuildStatus::Building {
+                progress,
+                current_step,
+            } => {
+                write!(
+                    f,
+                    "🔨 Building ({:.0}%): {}",
+                    progress * 100.0,
+                    current_step
+                )
             }
             BuildStatus::Success { duration_secs, .. } => {
                 write!(f, "✅ Success ({:.1}s)", duration_secs)
@@ -245,8 +256,16 @@ impl std::fmt::Display for BuildMessage {
             BuildMessage::LogLine(line) => {
                 write!(f, "📝 {}", line)
             }
-            BuildMessage::Complete { output_path, duration_secs } => {
-                write!(f, "✅ Complete: {} ({:.1}s)", output_path.display(), duration_secs)
+            BuildMessage::Complete {
+                output_path,
+                duration_secs,
+            } => {
+                write!(
+                    f,
+                    "✅ Complete: {} ({:.1}s)",
+                    output_path.display(),
+                    duration_secs
+                )
             }
             BuildMessage::Failed { error } => {
                 write!(f, "❌ Failed: {}", error)
@@ -273,7 +292,10 @@ impl BuildMessage {
 
     /// Returns true if this message indicates completion (success or failure)
     pub fn is_terminal(&self) -> bool {
-        matches!(self, BuildMessage::Complete { .. } | BuildMessage::Failed { .. })
+        matches!(
+            self,
+            BuildMessage::Complete { .. } | BuildMessage::Failed { .. }
+        )
     }
 }
 
@@ -929,9 +951,18 @@ mod tests {
     #[test]
     fn test_build_target_cargo_flags() {
         assert!(BuildTarget::Windows.cargo_target().is_none());
-        assert_eq!(BuildTarget::Linux.cargo_target(), Some("x86_64-unknown-linux-gnu"));
-        assert_eq!(BuildTarget::MacOS.cargo_target(), Some("x86_64-apple-darwin"));
-        assert_eq!(BuildTarget::Web.cargo_target(), Some("wasm32-unknown-unknown"));
+        assert_eq!(
+            BuildTarget::Linux.cargo_target(),
+            Some("x86_64-unknown-linux-gnu")
+        );
+        assert_eq!(
+            BuildTarget::MacOS.cargo_target(),
+            Some("x86_64-apple-darwin")
+        );
+        assert_eq!(
+            BuildTarget::Web.cargo_target(),
+            Some("wasm32-unknown-unknown")
+        );
     }
 
     #[test]
@@ -1001,7 +1032,11 @@ mod tests {
             progress: 0.5,
             current_step: "Compiling...".to_string(),
         };
-        if let BuildStatus::Building { progress, current_step } = status {
+        if let BuildStatus::Building {
+            progress,
+            current_step,
+        } = status
+        {
             assert_eq!(progress, 0.5);
             assert_eq!(current_step, "Compiling...");
         } else {
@@ -1015,7 +1050,11 @@ mod tests {
             output_path: PathBuf::from("build/game.exe"),
             duration_secs: 45.5,
         };
-        if let BuildStatus::Success { output_path, duration_secs } = status {
+        if let BuildStatus::Success {
+            output_path,
+            duration_secs,
+        } = status
+        {
             assert_eq!(output_path, PathBuf::from("build/game.exe"));
             assert_eq!(duration_secs, 45.5);
         } else {
@@ -1042,7 +1081,11 @@ mod tests {
             current_step: "Linking...".to_string(),
         };
         let cloned = status.clone();
-        if let BuildStatus::Building { progress, current_step } = cloned {
+        if let BuildStatus::Building {
+            progress,
+            current_step,
+        } = cloned
+        {
             assert_eq!(progress, 0.75);
             assert_eq!(current_step, "Linking...");
         }
@@ -1124,7 +1167,11 @@ mod tests {
             output_path: PathBuf::from("build/out"),
             duration_secs: 30.0,
         };
-        if let BuildMessage::Complete { output_path, duration_secs } = msg {
+        if let BuildMessage::Complete {
+            output_path,
+            duration_secs,
+        } = msg
+        {
             assert_eq!(output_path, PathBuf::from("build/out"));
             assert_eq!(duration_secs, 30.0);
         } else {
@@ -1183,7 +1230,9 @@ mod tests {
     #[test]
     fn test_build_manager_cancel_flag_default() {
         let panel = BuildManagerPanel::new();
-        assert!(!panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(!panel
+            .cancel_requested
+            .load(std::sync::atomic::Ordering::SeqCst));
     }
 
     #[test]
@@ -1216,7 +1265,7 @@ mod tests {
     fn test_build_profile_attributes() {
         let profile = BuildProfile::Debug;
         assert_eq!(profile.name(), "Debug (Fast compile)");
-        
+
         let profile = BuildProfile::Release;
         assert_eq!(profile.name(), "Release (Optimized)");
     }
@@ -1226,16 +1275,30 @@ mod tests {
         let status = BuildStatus::Idle;
         assert!(matches!(status, BuildStatus::Idle));
 
-        let status = BuildStatus::Building { progress: 0.5, current_step: "Test".to_string() };
-        if let BuildStatus::Building { progress, current_step } = status {
+        let status = BuildStatus::Building {
+            progress: 0.5,
+            current_step: "Test".to_string(),
+        };
+        if let BuildStatus::Building {
+            progress,
+            current_step,
+        } = status
+        {
             assert_eq!(progress, 0.5);
             assert_eq!(current_step, "Test");
         } else {
             panic!("Status should be Building");
         }
 
-        let status = BuildStatus::Success { output_path: PathBuf::from("test.exe"), duration_secs: 10.0 };
-        if let BuildStatus::Success { output_path, duration_secs } = status {
+        let status = BuildStatus::Success {
+            output_path: PathBuf::from("test.exe"),
+            duration_secs: 10.0,
+        };
+        if let BuildStatus::Success {
+            output_path,
+            duration_secs,
+        } = status
+        {
             assert_eq!(output_path, PathBuf::from("test.exe"));
             assert_eq!(duration_secs, 10.0);
         } else {
@@ -1295,10 +1358,17 @@ mod tests {
     #[test]
     fn test_cancel_build() {
         let mut panel = BuildManagerPanel::new();
-        assert!(!panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(!panel
+            .cancel_requested
+            .load(std::sync::atomic::Ordering::SeqCst));
         panel.cancel_build();
-        assert!(panel.cancel_requested.load(std::sync::atomic::Ordering::SeqCst));
-        assert!(panel.build_logs.iter().any(|log| log.contains("cancellation")));
+        assert!(panel
+            .cancel_requested
+            .load(std::sync::atomic::Ordering::SeqCst));
+        assert!(panel
+            .build_logs
+            .iter()
+            .any(|log| log.contains("cancellation")));
     }
 
     // ============================================================================
@@ -1574,4 +1644,3 @@ mod tests {
         .is_terminal());
     }
 }
-

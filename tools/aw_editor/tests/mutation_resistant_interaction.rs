@@ -3,11 +3,11 @@
 //! These tests target boundary conditions, comparison operators, and boolean return paths
 //! to achieve high mutation testing kill rates (90%+).
 
-use aw_editor_lib::interaction::{
-    GizmoCommitMetadata, GizmoCancelMetadata, GizmoMeasurement, GizmoOperationKind,
-};
-use aw_editor_lib::gizmo::state::TransformSnapshot;
 use astraweave_core::IVec2;
+use aw_editor_lib::gizmo::state::TransformSnapshot;
+use aw_editor_lib::interaction::{
+    GizmoCancelMetadata, GizmoCommitMetadata, GizmoMeasurement, GizmoOperationKind,
+};
 use glam::{Quat, Vec3};
 
 /// Helper to create IVec2 at origin (astraweave_core::IVec2 has no ZERO const)
@@ -170,10 +170,7 @@ mod gizmo_measurement_tests {
 
     #[test]
     fn test_scale_kind() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 2.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
         assert_eq!(m.kind(), GizmoOperationKind::Scale);
     }
 
@@ -254,28 +251,19 @@ mod gizmo_measurement_tests {
     // Test magnitude() for Scale
     #[test]
     fn test_scale_magnitude_zero() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 1.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 1.0 };
         assert_eq!(m.magnitude(), 0.0);
     }
 
     #[test]
     fn test_scale_magnitude_increase() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 2.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
         assert_eq!(m.magnitude(), 1.0);
     }
 
     #[test]
     fn test_scale_magnitude_decrease() {
-        let m = GizmoMeasurement::Scale {
-            from: 2.0,
-            to: 1.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 2.0, to: 1.0 };
         assert_eq!(m.magnitude(), 1.0); // Absolute value
     }
 
@@ -361,10 +349,7 @@ mod gizmo_measurement_tests {
 
     #[test]
     fn test_summary_scale() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 2.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
         let summary = m.summary();
         assert!(summary.contains("Scaled"));
         assert!(summary.contains("1.00"));
@@ -397,10 +382,7 @@ mod gizmo_measurement_tests {
 
     #[test]
     fn test_display_scale() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 2.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
         let display = format!("{}", m);
         assert!(display.contains("Scale"));
     }

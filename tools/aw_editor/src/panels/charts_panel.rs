@@ -221,7 +221,7 @@ impl ChartStats {
 
         let mut sorted = values.clone();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        
+
         let p50 = sorted[count / 2];
         let p95 = sorted[(count as f64 * 0.95) as usize];
         let p99 = sorted[(count as f64 * 0.99) as usize];
@@ -281,7 +281,9 @@ impl ChartsAction {
     pub fn is_export(&self) -> bool {
         matches!(
             self,
-            ChartsAction::ExportCsv { .. } | ChartsAction::ExportJson { .. } | ChartsAction::ExportPng
+            ChartsAction::ExportCsv { .. }
+                | ChartsAction::ExportJson { .. }
+                | ChartsAction::ExportPng
         )
     }
 }
@@ -293,7 +295,7 @@ pub struct ChartsPanel {
     frame_history: Vec<(f64, f64)>, // (time, frame_time_ms)
     entity_counts: Vec<BarGroup>,
     spatial_data: Vec<PointCluster>,
-    
+
     // New features
     active_chart_type: ChartType,
     active_data_source: DataSource,
@@ -307,7 +309,7 @@ pub struct ChartsPanel {
     memory_history: Vec<(f64, f64)>, // (time, mb)
     cpu_history: Vec<(f64, f64)>,    // (time, percent)
     gpu_history: Vec<(f64, f64)>,    // (time, percent)
-    
+
     // Pending actions for external event handling
     pending_actions: Vec<ChartsAction>,
 }
@@ -339,7 +341,7 @@ impl ChartsPanel {
             memory_history: Vec::new(),
             cpu_history: Vec::new(),
             gpu_history: Vec::new(),
-            
+
             pending_actions: Vec::new(),
         };
 
@@ -522,11 +524,16 @@ impl ChartsPanel {
         ];
 
         // Initialize custom colors
-        self.custom_colors.insert("primary".to_string(), Color32::from_rgb(100, 150, 255));
-        self.custom_colors.insert("secondary".to_string(), Color32::from_rgb(255, 150, 100));
-        self.custom_colors.insert("success".to_string(), Color32::from_rgb(100, 255, 150));
-        self.custom_colors.insert("warning".to_string(), Color32::from_rgb(255, 200, 100));
-        self.custom_colors.insert("danger".to_string(), Color32::from_rgb(255, 100, 100));
+        self.custom_colors
+            .insert("primary".to_string(), Color32::from_rgb(100, 150, 255));
+        self.custom_colors
+            .insert("secondary".to_string(), Color32::from_rgb(255, 150, 100));
+        self.custom_colors
+            .insert("success".to_string(), Color32::from_rgb(100, 255, 150));
+        self.custom_colors
+            .insert("warning".to_string(), Color32::from_rgb(255, 200, 100));
+        self.custom_colors
+            .insert("danger".to_string(), Color32::from_rgb(255, 100, 100));
     }
 
     fn simulate_frame_timing(&mut self) {
@@ -562,14 +569,16 @@ impl ChartsPanel {
 
         // Simulate CPU usage (40-80% with variation)
         let cpu_percent = 60.0 + (elapsed * 1.5).sin() * 20.0 + noise * 5.0;
-        self.cpu_history.push((elapsed, cpu_percent.clamp(0.0, 100.0)));
+        self.cpu_history
+            .push((elapsed, cpu_percent.clamp(0.0, 100.0)));
         if self.cpu_history.len() > self.max_history_size {
             self.cpu_history.remove(0);
         }
 
         // Simulate GPU usage (spiky 50-90%)
         let gpu_percent = 70.0 + (elapsed * 3.0).sin() * 15.0 + spike * 2.0;
-        self.gpu_history.push((elapsed, gpu_percent.clamp(0.0, 100.0)));
+        self.gpu_history
+            .push((elapsed, gpu_percent.clamp(0.0, 100.0)));
         if self.gpu_history.len() > self.max_history_size {
             self.gpu_history.remove(0);
         }
@@ -678,12 +687,14 @@ impl ChartsPanel {
 
             if ui.button("📄 CSV").clicked() {
                 let csv = self.export_to_csv();
-                self.pending_actions.push(ChartsAction::ExportCsv { data: csv });
+                self.pending_actions
+                    .push(ChartsAction::ExportCsv { data: csv });
             }
 
             if ui.button("📦 JSON").clicked() {
                 let json = self.export_to_json();
-                self.pending_actions.push(ChartsAction::ExportJson { data: json });
+                self.pending_actions
+                    .push(ChartsAction::ExportJson { data: json });
             }
 
             if ui.button("📷 PNG").clicked() {
@@ -737,7 +748,7 @@ impl Panel for ChartsPanel {
         self.render_data_source_selector(ui);
         self.render_options(ui);
         self.render_export_buttons(ui);
-        
+
         ui.add_space(10.0);
         ui.separator();
         ui.add_space(10.0);
@@ -1071,7 +1082,10 @@ mod tests {
     fn test_data_source_names() {
         assert_eq!(DataSource::FrameTiming.name(), "Frame Timing");
         assert_eq!(DataSource::EntityCounts.name(), "Entity Counts");
-        assert_eq!(DataSource::SpatialDistribution.name(), "Spatial Distribution");
+        assert_eq!(
+            DataSource::SpatialDistribution.name(),
+            "Spatial Distribution"
+        );
         assert_eq!(DataSource::MemoryUsage.name(), "Memory Usage");
         assert_eq!(DataSource::CpuLoad.name(), "CPU Load");
         assert_eq!(DataSource::GpuUtilization.name(), "GPU Utilization");
@@ -1094,7 +1108,7 @@ mod tests {
         let mut panel = ChartsPanel::new();
         panel.active_data_source = DataSource::EntityCounts;
         let data = panel.get_current_data();
-        
+
         // Should have 4 data points (one per scene)
         assert_eq!(data.len(), 4);
         // First scene should have total of 45+12+8=65 entities
@@ -1243,12 +1257,12 @@ mod tests {
         assert_eq!(panel.max_history_size, 600);
 
         panel.max_history_size = 100;
-        
+
         // Simulate more than max
         for _ in 0..150 {
             panel.simulate_frame_timing();
         }
-        
+
         assert_eq!(panel.frame_history.len(), 100);
     }
 
@@ -1256,7 +1270,7 @@ mod tests {
     fn test_show_grid_toggle() {
         let mut panel = ChartsPanel::new();
         assert!(panel.show_grid);
-        
+
         panel.show_grid = false;
         assert!(!panel.show_grid);
     }
@@ -1265,7 +1279,7 @@ mod tests {
     fn test_show_legend_toggle() {
         let mut panel = ChartsPanel::new();
         assert!(panel.show_legend);
-        
+
         panel.show_legend = false;
         assert!(!panel.show_legend);
     }
@@ -1274,7 +1288,7 @@ mod tests {
     fn test_show_statistics_toggle() {
         let mut panel = ChartsPanel::new();
         assert!(panel.show_statistics);
-        
+
         panel.show_statistics = false;
         assert!(!panel.show_statistics);
     }
@@ -1335,7 +1349,7 @@ mod tests {
     fn test_entity_counts_initialized() {
         let panel = ChartsPanel::new();
         assert_eq!(panel.entity_counts.len(), 4);
-        
+
         for group in &panel.entity_counts {
             assert_eq!(group.bars.len(), 3); // Enemies, Allies, NPCs
         }
@@ -1348,14 +1362,14 @@ mod tests {
         assert_eq!(scene1.category, "Scene 1");
         assert_eq!(scene1.bars[0].value, 45.0); // Enemies
         assert_eq!(scene1.bars[1].value, 12.0); // Allies
-        assert_eq!(scene1.bars[2].value, 8.0);  // NPCs
+        assert_eq!(scene1.bars[2].value, 8.0); // NPCs
     }
 
     #[test]
     fn test_spatial_data_initialized() {
         let panel = ChartsPanel::new();
         assert_eq!(panel.spatial_data.len(), 4);
-        
+
         assert!(panel.spatial_data[0].points.len() >= 5); // Enemies
         assert!(panel.spatial_data[1].points.len() >= 4); // Allies
         assert!(panel.spatial_data[2].points.len() >= 4); // NPCs
@@ -1368,10 +1382,10 @@ mod tests {
     fn test_panel_update_increments_frame_count() {
         let mut panel = ChartsPanel::new();
         assert_eq!(panel.frame_count, 0);
-        
+
         panel.update();
         assert_eq!(panel.frame_count, 1);
-        
+
         panel.update();
         assert_eq!(panel.frame_count, 2);
     }
@@ -1380,7 +1394,7 @@ mod tests {
     fn test_panel_update_adds_history() {
         let mut panel = ChartsPanel::new();
         assert_eq!(panel.frame_history.len(), 0);
-        
+
         panel.update();
         assert_eq!(panel.frame_history.len(), 1);
     }
@@ -1391,11 +1405,11 @@ mod tests {
     fn test_history_overflow_prevention() {
         let mut panel = ChartsPanel::new();
         panel.max_history_size = 10;
-        
+
         for _ in 0..20 {
             panel.simulate_frame_timing();
         }
-        
+
         assert_eq!(panel.frame_history.len(), 10);
         assert_eq!(panel.memory_history.len(), 10);
         assert_eq!(panel.cpu_history.len(), 10);
@@ -1406,10 +1420,10 @@ mod tests {
     fn test_minimal_history_size() {
         let mut panel = ChartsPanel::new();
         panel.max_history_size = 1;
-        
+
         panel.simulate_frame_timing();
         panel.simulate_frame_timing();
-        
+
         assert_eq!(panel.frame_history.len(), 1);
     }
 
@@ -1417,10 +1431,10 @@ mod tests {
     fn test_chart_type_switching() {
         let mut panel = ChartsPanel::new();
         assert_eq!(panel.active_chart_type, ChartType::Line);
-        
+
         panel.active_chart_type = ChartType::Bar;
         assert_eq!(panel.active_chart_type, ChartType::Bar);
-        
+
         panel.active_chart_type = ChartType::Scatter;
         assert_eq!(panel.active_chart_type, ChartType::Scatter);
     }
@@ -1429,7 +1443,7 @@ mod tests {
     fn test_data_source_switching() {
         let mut panel = ChartsPanel::new();
         assert_eq!(panel.active_data_source, DataSource::FrameTiming);
-        
+
         panel.active_data_source = DataSource::MemoryUsage;
         assert_eq!(panel.active_data_source, DataSource::MemoryUsage);
     }
@@ -1480,7 +1494,10 @@ mod tests {
         assert_eq!(format!("{}", DataSource::EntityCounts), "🔢 Entity Counts");
         assert_eq!(format!("{}", DataSource::MemoryUsage), "🧠 Memory Usage");
         assert_eq!(format!("{}", DataSource::CpuLoad), "💻 CPU Load");
-        assert_eq!(format!("{}", DataSource::GpuUtilization), "🎮 GPU Utilization");
+        assert_eq!(
+            format!("{}", DataSource::GpuUtilization),
+            "🎮 GPU Utilization"
+        );
         assert_eq!(format!("{}", DataSource::Custom), "✨ Custom Data");
     }
 

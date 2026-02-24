@@ -6,13 +6,13 @@
 
 use crate::panel_type::PanelType;
 use crate::panels::{
-    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, AudioPanel, BuildManagerPanel,
-    ChartsPanel, CinematicsPanel, ConsolePanel, DialogueEditorPanel, EntityPanel, FoliagePanel,
-    GraphPanel, HierarchyPanel, InputBindingsPanel, LightingPanel, LocalizationPanel,
-    LodConfigPanel, MaterialEditorPanel, NavigationPanel, NetworkingPanel, Panel,
-    ParticleSystemPanel, PcgPanel, PerformancePanel, PhysicsPanel, PostProcessPanel,
-    ProfilerPanel, ProjectSettingsPanel, SceneStatsPanel, SplineEditorPanel, TerrainPanel,
-    ThemeManagerPanel, TransformPanel, UiEditorPanel, WorldPanel,
+    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, AudioPanel, BuildManagerPanel, ChartsPanel,
+    CinematicsPanel, ConsolePanel, DialogueEditorPanel, EntityPanel, FoliagePanel, GraphPanel,
+    HierarchyPanel, InputBindingsPanel, LightingPanel, LocalizationPanel, LodConfigPanel,
+    MaterialEditorPanel, NavigationPanel, NetworkingPanel, Panel, ParticleSystemPanel, PcgPanel,
+    PerformancePanel, PhysicsPanel, PostProcessPanel, ProfilerPanel, ProjectSettingsPanel,
+    SceneStatsPanel, SplineEditorPanel, TerrainPanel, ThemeManagerPanel, TransformPanel,
+    UiEditorPanel, WorldPanel,
 };
 use astraweave_core::World;
 use egui::Ui;
@@ -533,10 +533,7 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
         });
 
         ui.collapsing("AI & Navigation", |ui| {
-            for panel in [
-                PanelType::Navigation,
-                PanelType::Pcg,
-            ] {
+            for panel in [PanelType::Navigation, PanelType::Pcg] {
                 if ui
                     .button(format!("{} {}", panel.icon(), panel.title()))
                     .clicked()
@@ -548,10 +545,7 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
         });
 
         ui.collapsing("Audio & Physics", |ui| {
-            for panel in [
-                PanelType::Audio,
-                PanelType::Physics,
-            ] {
+            for panel in [PanelType::Audio, PanelType::Physics] {
                 if ui
                     .button(format!("{} {}", panel.icon(), panel.title()))
                     .clicked()

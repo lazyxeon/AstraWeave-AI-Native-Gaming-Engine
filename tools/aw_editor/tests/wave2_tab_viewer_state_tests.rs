@@ -19,9 +19,7 @@
 //!   • set_selected_transform — sync detection
 
 use aw_editor_lib::panel_type::PanelType;
-use aw_editor_lib::tab_viewer::{
-    EditorTabViewer, EditorTheme, EntityInfo, PanelEvent,
-};
+use aw_editor_lib::tab_viewer::{EditorTabViewer, EditorTheme, EntityInfo, PanelEvent};
 
 // Helper: make a default EditorTabViewer
 fn make_viewer() -> EditorTabViewer {
@@ -290,7 +288,9 @@ fn check_transform_position_change_above_threshold() {
     v.selected_transform = Some((0.002, 0.0, 0.0, 1.0, 1.0)); // x changed by 0.002 > 0.001
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
 }
 
 #[test]
@@ -303,7 +303,9 @@ fn check_transform_position_change_at_threshold_no_event() {
     v.check_transform_changes();
     let events = v.take_events();
     // 0.001.abs() > 0.001 is false, so no position event
-    assert!(!events.iter().any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
+    assert!(!events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
 }
 
 #[test]
@@ -314,7 +316,9 @@ fn check_transform_rotation_change() {
     v.selected_transform = Some((0.0, 0.0, 0.5, 1.0, 1.0)); // rotation changed
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformRotationChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformRotationChanged { .. })));
 }
 
 #[test]
@@ -325,7 +329,9 @@ fn check_transform_scale_change() {
     v.selected_transform = Some((0.0, 0.0, 0.0, 2.0, 1.0)); // scale_x changed
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
 }
 
 #[test]
@@ -336,9 +342,15 @@ fn check_transform_all_changed() {
     v.selected_transform = Some((1.0, 1.0, 1.0, 2.0, 2.0)); // all changed
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformRotationChanged { .. })));
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformRotationChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
 }
 
 #[test]
@@ -349,7 +361,9 @@ fn check_transform_y_only_change() {
     v.selected_transform = Some((0.0, 5.0, 0.0, 1.0, 1.0)); // y changed
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformPositionChanged { .. })));
 }
 
 #[test]
@@ -360,7 +374,9 @@ fn check_transform_scale_y_only_change() {
     v.selected_transform = Some((0.0, 0.0, 0.0, 1.0, 5.0)); // scale_y changed
     v.check_transform_changes();
     let events = v.take_events();
-    assert!(events.iter().any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::TransformScaleChanged { .. })));
 }
 
 #[test]
@@ -419,8 +435,8 @@ fn update_animation_playing_advances_frame() {
     let mut v = make_viewer();
     v.set_animation_playing(true);
     let _ = v.take_events(); // drain
-    // fps=30 → frame_duration = 1/30 ≈ 0.0333s
-    // delta=0.04 > 0.0333 → should advance
+                             // fps=30 → frame_duration = 1/30 ≈ 0.0333s
+                             // delta=0.04 > 0.0333 → should advance
     v.update_animation(0.04);
     assert!(v.animation_state().current_frame > 0 || v.animation_state().current_frame == 0);
     // With delta >= frame_duration, frame advances by at least 1
@@ -533,7 +549,9 @@ fn set_current_theme_same_no_event() {
     let mut v = make_viewer();
     v.set_current_theme(EditorTheme::Dark); // same as default
     let events = v.take_events();
-    assert!(!events.iter().any(|e| matches!(e, PanelEvent::ThemeChanged(_))));
+    assert!(!events
+        .iter()
+        .any(|e| matches!(e, PanelEvent::ThemeChanged(_))));
 }
 
 #[test]

@@ -67,12 +67,12 @@ impl TrackType {
 
     pub fn color(&self) -> Color32 {
         match self {
-            TrackType::Camera => Color32::from_rgb(100, 149, 237),   // Cornflower blue
+            TrackType::Camera => Color32::from_rgb(100, 149, 237), // Cornflower blue
             TrackType::Animation => Color32::from_rgb(144, 238, 144), // Light green
-            TrackType::Audio => Color32::from_rgb(255, 165, 0),       // Orange
-            TrackType::Fx => Color32::from_rgb(186, 85, 211),         // Medium orchid
-            TrackType::Dialogue => Color32::from_rgb(255, 215, 0),    // Gold
-            TrackType::Event => Color32::from_rgb(220, 20, 60),       // Crimson
+            TrackType::Audio => Color32::from_rgb(255, 165, 0),    // Orange
+            TrackType::Fx => Color32::from_rgb(186, 85, 211),      // Medium orchid
+            TrackType::Dialogue => Color32::from_rgb(255, 215, 0), // Gold
+            TrackType::Event => Color32::from_rgb(220, 20, 60),    // Crimson
         }
     }
 }
@@ -275,12 +275,32 @@ pub struct TrackClip {
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ClipData {
-    Camera { keyframes: Vec<CameraKeyframe> },
-    Animation { target_id: u32, clip_name: String },
-    Audio { file: String, volume: f32, fade_in: f32, fade_out: f32 },
-    Fx { effect_name: String, params: String },
-    Dialogue { speaker: String, text: String, duration: f32 },
-    Event { event_name: String, payload: String },
+    Camera {
+        keyframes: Vec<CameraKeyframe>,
+    },
+    Animation {
+        target_id: u32,
+        clip_name: String,
+    },
+    Audio {
+        file: String,
+        volume: f32,
+        fade_in: f32,
+        fade_out: f32,
+    },
+    Fx {
+        effect_name: String,
+        params: String,
+    },
+    Dialogue {
+        speaker: String,
+        text: String,
+        duration: f32,
+    },
+    Event {
+        event_name: String,
+        payload: String,
+    },
 }
 
 impl std::fmt::Display for ClipData {
@@ -304,7 +324,9 @@ impl ClipData {
 
 impl Default for ClipData {
     fn default() -> Self {
-        ClipData::Camera { keyframes: Vec::new() }
+        ClipData::Camera {
+            keyframes: Vec::new(),
+        }
     }
 }
 
@@ -639,7 +661,14 @@ impl CinematicsPanel {
             if ui.button("◀").clicked() {
                 self.current_time = (self.current_time - 1.0).max(0.0);
             }
-            if ui.button(if self.playback_state == PlaybackState::Playing { "⏸️" } else { "▶️" }).clicked() {
+            if ui
+                .button(if self.playback_state == PlaybackState::Playing {
+                    "⏸️"
+                } else {
+                    "▶️"
+                })
+                .clicked()
+            {
                 self.playback_state = if self.playback_state == PlaybackState::Playing {
                     PlaybackState::Paused
                 } else {
@@ -712,10 +741,7 @@ impl CinematicsPanel {
             ui.separator();
 
             ui.label("Zoom:");
-            ui.add(
-                egui::Slider::new(&mut self.settings.zoom_level, 0.1..=5.0)
-                    .show_value(false),
-            );
+            ui.add(egui::Slider::new(&mut self.settings.zoom_level, 0.1..=5.0).show_value(false));
 
             ui.checkbox(&mut self.settings.snap_to_frame, "Snap");
             ui.checkbox(&mut self.settings.show_markers, "Markers");
@@ -746,22 +772,32 @@ impl CinematicsPanel {
                                 ui.label(track.track_type.icon());
 
                                 // Track name
-                                if ui
-                                    .selectable_label(is_selected, &track.name)
-                                    .clicked()
-                                {
+                                if ui.selectable_label(is_selected, &track.name).clicked() {
                                     self.selected_track = Some(track.id);
                                 }
 
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    // Mute/Solo/Lock buttons
-                                    if ui.small_button(if track.locked { "🔒" } else { "🔓" }).clicked() {
-                                        track.locked = !track.locked;
-                                    }
-                                    if ui.small_button(if track.muted { "🔇" } else { "🔊" }).clicked() {
-                                        track.muted = !track.muted;
-                                    }
-                                });
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        // Mute/Solo/Lock buttons
+                                        if ui
+                                            .small_button(if track.locked {
+                                                "🔒"
+                                            } else {
+                                                "🔓"
+                                            })
+                                            .clicked()
+                                        {
+                                            track.locked = !track.locked;
+                                        }
+                                        if ui
+                                            .small_button(if track.muted { "🔇" } else { "🔊" })
+                                            .clicked()
+                                        {
+                                            track.muted = !track.muted;
+                                        }
+                                    },
+                                );
                             });
                         }
                     }
@@ -785,10 +821,7 @@ impl CinematicsPanel {
 
         // Time ruler
         let ruler_height = 20.0;
-        let ruler_rect = egui::Rect::from_min_size(
-            rect.min,
-            Vec2::new(rect.width(), ruler_height),
-        );
+        let ruler_rect = egui::Rect::from_min_size(rect.min, Vec2::new(rect.width(), ruler_height));
         painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(40, 40, 45));
 
         // Draw time markers
@@ -810,7 +843,10 @@ impl CinematicsPanel {
             // Tick mark
             let tick_height = if (t % 5.0).abs() < 0.01 { 15.0 } else { 8.0 };
             painter.line_segment(
-                [egui::Pos2::new(x, rect.min.y), egui::Pos2::new(x, rect.min.y + tick_height)],
+                [
+                    egui::Pos2::new(x, rect.min.y),
+                    egui::Pos2::new(x, rect.min.y + tick_height),
+                ],
                 egui::Stroke::new(1.0, Color32::GRAY),
             );
 
@@ -831,7 +867,10 @@ impl CinematicsPanel {
         // Draw playhead
         let playhead_x = rect.min.x + (self.current_time / self.settings.duration) * rect.width();
         painter.line_segment(
-            [egui::Pos2::new(playhead_x, rect.min.y), egui::Pos2::new(playhead_x, rect.max.y)],
+            [
+                egui::Pos2::new(playhead_x, rect.min.y),
+                egui::Pos2::new(playhead_x, rect.max.y),
+            ],
             egui::Stroke::new(2.0, Color32::from_rgb(255, 100, 100)),
         );
 
@@ -851,7 +890,8 @@ impl CinematicsPanel {
         if response.clicked() || response.dragged() {
             if let Some(pos) = response.interact_pointer_pos() {
                 let normalized_x = (pos.x - rect.min.x) / rect.width();
-                self.current_time = (normalized_x * self.settings.duration).clamp(0.0, self.settings.duration);
+                self.current_time =
+                    (normalized_x * self.settings.duration).clamp(0.0, self.settings.duration);
 
                 if self.settings.snap_to_frame {
                     let frame = (self.current_time * self.settings.framerate).round();
@@ -865,7 +905,10 @@ impl CinematicsPanel {
             for marker in &self.markers {
                 let x = rect.min.x + (marker.time / self.settings.duration) * rect.width();
                 painter.line_segment(
-                    [egui::Pos2::new(x, rect.min.y + ruler_height), egui::Pos2::new(x, rect.max.y)],
+                    [
+                        egui::Pos2::new(x, rect.min.y + ruler_height),
+                        egui::Pos2::new(x, rect.max.y),
+                    ],
                     egui::Stroke::new(1.0, marker.color),
                 );
             }
@@ -881,7 +924,10 @@ impl CinematicsPanel {
             ui.label("Interpolation:");
             for interp in CameraInterpolation::all() {
                 if ui
-                    .selectable_label(self.camera_interpolation == *interp, format!("{:?}", interp))
+                    .selectable_label(
+                        self.camera_interpolation == *interp,
+                        format!("{:?}", interp),
+                    )
                     .clicked()
                 {
                     self.camera_interpolation = *interp;
@@ -902,7 +948,11 @@ impl CinematicsPanel {
                         time: self.current_time,
                         ..Default::default()
                     });
-                    self.camera_keyframes.sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+                    self.camera_keyframes.sort_by(|a, b| {
+                        a.time
+                            .partial_cmp(&b.time)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
                 }
             });
 
@@ -962,32 +1012,50 @@ impl CinematicsPanel {
 
                     ui.horizontal(|ui| {
                         ui.label("Position:");
-                        ui.add(egui::DragValue::new(&mut keyframe.position.0).speed(0.1).prefix("X: "));
-                        ui.add(egui::DragValue::new(&mut keyframe.position.1).speed(0.1).prefix("Y: "));
-                        ui.add(egui::DragValue::new(&mut keyframe.position.2).speed(0.1).prefix("Z: "));
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.position.0)
+                                .speed(0.1)
+                                .prefix("X: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.position.1)
+                                .speed(0.1)
+                                .prefix("Y: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.position.2)
+                                .speed(0.1)
+                                .prefix("Z: "),
+                        );
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Look At:");
-                        ui.add(egui::DragValue::new(&mut keyframe.look_at.0).speed(0.1).prefix("X: "));
-                        ui.add(egui::DragValue::new(&mut keyframe.look_at.1).speed(0.1).prefix("Y: "));
-                        ui.add(egui::DragValue::new(&mut keyframe.look_at.2).speed(0.1).prefix("Z: "));
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.look_at.0)
+                                .speed(0.1)
+                                .prefix("X: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.look_at.1)
+                                .speed(0.1)
+                                .prefix("Y: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut keyframe.look_at.2)
+                                .speed(0.1)
+                                .prefix("Z: "),
+                        );
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("FOV:");
-                        ui.add(
-                            egui::Slider::new(&mut keyframe.fov, 10.0..=120.0)
-                                .suffix("°"),
-                        );
+                        ui.add(egui::Slider::new(&mut keyframe.fov, 10.0..=120.0).suffix("°"));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Roll:");
-                        ui.add(
-                            egui::Slider::new(&mut keyframe.roll, -180.0..=180.0)
-                                .suffix("°"),
-                        );
+                        ui.add(egui::Slider::new(&mut keyframe.roll, -180.0..=180.0).suffix("°"));
                     });
                 });
             }
@@ -1003,7 +1071,10 @@ impl CinematicsPanel {
         ui.horizontal(|ui| {
             ui.label("Add Track:");
             for track_type in TrackType::all() {
-                if ui.button(format!("{} {:?}", track_type.icon(), track_type)).clicked() {
+                if ui
+                    .button(format!("{} {:?}", track_type.icon(), track_type))
+                    .clicked()
+                {
                     new_track = Some((*track_type, self.settings.duration));
                 }
             }
@@ -1041,36 +1112,47 @@ impl CinematicsPanel {
                                     ui.cursor().min,
                                     Vec2::new(4.0, 20.0),
                                 );
-                                ui.painter().rect_filled(color_rect, 2.0, track.track_type.color());
+                                ui.painter()
+                                    .rect_filled(color_rect, 2.0, track.track_type.color());
                                 ui.add_space(8.0);
 
                                 // Track icon
                                 ui.label(track.track_type.icon());
 
                                 // Track name (editable)
-                                if ui
-                                    .selectable_label(is_selected, &track.name)
-                                    .clicked()
-                                {
+                                if ui.selectable_label(is_selected, &track.name).clicked() {
                                     self.selected_track = Some(track.id);
                                 }
 
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    // Delete button
-                                    if ui.small_button("🗑").clicked() {
-                                        // Mark for deletion
-                                    }
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        // Delete button
+                                        if ui.small_button("🗑").clicked() {
+                                            // Mark for deletion
+                                        }
 
-                                    // Lock button
-                                    if ui.small_button(if track.locked { "🔒" } else { "🔓" }).clicked() {
-                                        track.locked = !track.locked;
-                                    }
+                                        // Lock button
+                                        if ui
+                                            .small_button(if track.locked {
+                                                "🔒"
+                                            } else {
+                                                "🔓"
+                                            })
+                                            .clicked()
+                                        {
+                                            track.locked = !track.locked;
+                                        }
 
-                                    // Mute button
-                                    if ui.small_button(if track.muted { "🔇" } else { "🔊" }).clicked() {
-                                        track.muted = !track.muted;
-                                    }
-                                });
+                                        // Mute button
+                                        if ui
+                                            .small_button(if track.muted { "🔇" } else { "🔊" })
+                                            .clicked()
+                                        {
+                                            track.muted = !track.muted;
+                                        }
+                                    },
+                                );
                             });
 
                             // Track details when selected
@@ -1125,9 +1207,7 @@ impl CinematicsPanel {
                     start_time: 0.0,
                     duration: 5.0,
                     color: Color32::from_rgb(100, 149, 237),
-                    data: ClipData::Camera {
-                        keyframes,
-                    },
+                    data: ClipData::Camera { keyframes },
                 });
             }
         } else {
@@ -1138,7 +1218,11 @@ impl CinematicsPanel {
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
                                 ui.label(&clip.name);
-                                ui.label(format!("{:.1}s - {:.1}s", clip.start_time, clip.start_time + clip.duration));
+                                ui.label(format!(
+                                    "{:.1}s - {:.1}s",
+                                    clip.start_time,
+                                    clip.start_time + clip.duration
+                                ));
                             });
                         });
                     }
@@ -1151,12 +1235,11 @@ impl CinematicsPanel {
         ui.add_space(10.0);
 
         // Preview viewport placeholder
-        let (rect, _) = ui.allocate_exact_size(
-            Vec2::new(ui.available_width(), 200.0),
-            egui::Sense::hover(),
-        );
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 200.0), egui::Sense::hover());
 
-        ui.painter().rect_filled(rect, 5.0, Color32::from_rgb(20, 20, 25));
+        ui.painter()
+            .rect_filled(rect, 5.0, Color32::from_rgb(20, 20, 25));
         ui.painter().text(
             rect.center(),
             egui::Align2::CENTER_CENTER,
@@ -1266,7 +1349,10 @@ impl CinematicsPanel {
                     ui.end_row();
 
                     ui.label("Total Frames:");
-                    ui.label(format!("{}", (self.settings.duration * self.settings.framerate) as u32));
+                    ui.label(format!(
+                        "{}",
+                        (self.settings.duration * self.settings.framerate) as u32
+                    ));
                     ui.end_row();
                 });
         });
@@ -1371,7 +1457,11 @@ impl CinematicsPanel {
 
     pub fn add_camera_keyframe(&mut self, keyframe: CameraKeyframe) {
         self.camera_keyframes.push(keyframe);
-        self.camera_keyframes.sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+        self.camera_keyframes.sort_by(|a, b| {
+            a.time
+                .partial_cmp(&b.time)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
     }
 
     pub fn add_marker(&mut self, time: f32, name: &str, color: Color32) {
@@ -1582,7 +1672,10 @@ mod tests {
     #[test]
     fn test_camera_interpolation_display() {
         assert_eq!(format!("{}", CameraInterpolation::Linear), "Linear");
-        assert_eq!(format!("{}", CameraInterpolation::CatmullRom), "Catmull-Rom");
+        assert_eq!(
+            format!("{}", CameraInterpolation::CatmullRom),
+            "Catmull-Rom"
+        );
         assert_eq!(format!("{}", CameraInterpolation::Bezier), "Bezier");
         assert_eq!(format!("{}", CameraInterpolation::Hermite), "Hermite");
         assert_eq!(format!("{}", CameraInterpolation::Step), "Step");
@@ -1747,22 +1840,122 @@ mod tests {
     // ClipData tests (6 tests)
     #[test]
     fn test_clip_data_display() {
-        assert_eq!(format!("{}", ClipData::Camera { keyframes: Vec::new() }), "Camera");
-        assert_eq!(format!("{}", ClipData::Animation { target_id: 1, clip_name: "test".to_string() }), "Animation");
-        assert_eq!(format!("{}", ClipData::Audio { file: "test.wav".to_string(), volume: 1.0, fade_in: 0.0, fade_out: 0.0 }), "Audio");
-        assert_eq!(format!("{}", ClipData::Fx { effect_name: "fire".to_string(), params: "{}".to_string() }), "VFX");
-        assert_eq!(format!("{}", ClipData::Dialogue { speaker: "NPC".to_string(), text: "Hello".to_string(), duration: 2.0 }), "Dialogue");
-        assert_eq!(format!("{}", ClipData::Event { event_name: "trigger".to_string(), payload: "{}".to_string() }), "Event");
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Camera {
+                    keyframes: Vec::new()
+                }
+            ),
+            "Camera"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Animation {
+                    target_id: 1,
+                    clip_name: "test".to_string()
+                }
+            ),
+            "Animation"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Audio {
+                    file: "test.wav".to_string(),
+                    volume: 1.0,
+                    fade_in: 0.0,
+                    fade_out: 0.0
+                }
+            ),
+            "Audio"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Fx {
+                    effect_name: "fire".to_string(),
+                    params: "{}".to_string()
+                }
+            ),
+            "VFX"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Dialogue {
+                    speaker: "NPC".to_string(),
+                    text: "Hello".to_string(),
+                    duration: 2.0
+                }
+            ),
+            "Dialogue"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                ClipData::Event {
+                    event_name: "trigger".to_string(),
+                    payload: "{}".to_string()
+                }
+            ),
+            "Event"
+        );
     }
 
     #[test]
     fn test_clip_data_name() {
-        assert_eq!(ClipData::Camera { keyframes: Vec::new() }.name(), "Camera");
-        assert_eq!(ClipData::Animation { target_id: 1, clip_name: "walk".to_string() }.name(), "Animation");
-        assert_eq!(ClipData::Audio { file: "music.mp3".to_string(), volume: 0.8, fade_in: 1.0, fade_out: 1.0 }.name(), "Audio");
-        assert_eq!(ClipData::Fx { effect_name: "explosion".to_string(), params: "{}".to_string() }.name(), "VFX");
-        assert_eq!(ClipData::Dialogue { speaker: "Hero".to_string(), text: "..".to_string(), duration: 1.0 }.name(), "Dialogue");
-        assert_eq!(ClipData::Event { event_name: "spawn".to_string(), payload: "{}".to_string() }.name(), "Event");
+        assert_eq!(
+            ClipData::Camera {
+                keyframes: Vec::new()
+            }
+            .name(),
+            "Camera"
+        );
+        assert_eq!(
+            ClipData::Animation {
+                target_id: 1,
+                clip_name: "walk".to_string()
+            }
+            .name(),
+            "Animation"
+        );
+        assert_eq!(
+            ClipData::Audio {
+                file: "music.mp3".to_string(),
+                volume: 0.8,
+                fade_in: 1.0,
+                fade_out: 1.0
+            }
+            .name(),
+            "Audio"
+        );
+        assert_eq!(
+            ClipData::Fx {
+                effect_name: "explosion".to_string(),
+                params: "{}".to_string()
+            }
+            .name(),
+            "VFX"
+        );
+        assert_eq!(
+            ClipData::Dialogue {
+                speaker: "Hero".to_string(),
+                text: "..".to_string(),
+                duration: 1.0
+            }
+            .name(),
+            "Dialogue"
+        );
+        assert_eq!(
+            ClipData::Event {
+                event_name: "spawn".to_string(),
+                payload: "{}".to_string()
+            }
+            .name(),
+            "Event"
+        );
     }
 
     #[test]
@@ -1773,7 +1966,9 @@ mod tests {
 
     #[test]
     fn test_clip_data_camera_variant() {
-        let clip = ClipData::Camera { keyframes: vec![CameraKeyframe::default()] };
+        let clip = ClipData::Camera {
+            keyframes: vec![CameraKeyframe::default()],
+        };
         assert_eq!(clip.name(), "Camera");
         if let ClipData::Camera { keyframes } = clip {
             assert_eq!(keyframes.len(), 1);
@@ -1791,7 +1986,13 @@ mod tests {
             fade_out: 3.0,
         };
         assert_eq!(clip.name(), "Audio");
-        if let ClipData::Audio { file, volume, fade_in, fade_out } = clip {
+        if let ClipData::Audio {
+            file,
+            volume,
+            fade_in,
+            fade_out,
+        } = clip
+        {
             assert_eq!(file, "bgm.ogg");
             assert_eq!(volume, 0.7);
             assert_eq!(fade_in, 2.0);
@@ -1804,12 +2005,32 @@ mod tests {
     #[test]
     fn test_clip_data_all_variants() {
         let variants = vec![
-            ClipData::Camera { keyframes: Vec::new() },
-            ClipData::Animation { target_id: 1, clip_name: String::new() },
-            ClipData::Audio { file: String::new(), volume: 1.0, fade_in: 0.0, fade_out: 0.0 },
-            ClipData::Fx { effect_name: String::new(), params: String::new() },
-            ClipData::Dialogue { speaker: String::new(), text: String::new(), duration: 0.0 },
-            ClipData::Event { event_name: String::new(), payload: String::new() },
+            ClipData::Camera {
+                keyframes: Vec::new(),
+            },
+            ClipData::Animation {
+                target_id: 1,
+                clip_name: String::new(),
+            },
+            ClipData::Audio {
+                file: String::new(),
+                volume: 1.0,
+                fade_in: 0.0,
+                fade_out: 0.0,
+            },
+            ClipData::Fx {
+                effect_name: String::new(),
+                params: String::new(),
+            },
+            ClipData::Dialogue {
+                speaker: String::new(),
+                text: String::new(),
+                duration: 0.0,
+            },
+            ClipData::Event {
+                event_name: String::new(),
+                payload: String::new(),
+            },
         ];
         assert_eq!(variants.len(), 6);
     }
@@ -1886,13 +2107,19 @@ mod tests {
     #[test]
     fn test_cinematics_action_set_speed() {
         let action = CinematicsAction::SetSpeed(PlaybackSpeed::Double);
-        assert!(matches!(action, CinematicsAction::SetSpeed(PlaybackSpeed::Double)));
+        assert!(matches!(
+            action,
+            CinematicsAction::SetSpeed(PlaybackSpeed::Double)
+        ));
     }
 
     #[test]
     fn test_cinematics_action_add_track() {
         let action = CinematicsAction::AddTrack(TrackType::Camera);
-        assert!(matches!(action, CinematicsAction::AddTrack(TrackType::Camera)));
+        assert!(matches!(
+            action,
+            CinematicsAction::AddTrack(TrackType::Camera)
+        ));
     }
 
     #[test]
@@ -1907,8 +2134,15 @@ mod tests {
 
     #[test]
     fn test_cinematics_action_add_clip() {
-        let action = CinematicsAction::AddClip { track_id: 1, start_time: 2.5 };
-        if let CinematicsAction::AddClip { track_id, start_time } = action {
+        let action = CinematicsAction::AddClip {
+            track_id: 1,
+            start_time: 2.5,
+        };
+        if let CinematicsAction::AddClip {
+            track_id,
+            start_time,
+        } = action
+        {
             assert_eq!(track_id, 1);
             assert!((start_time - 2.5).abs() < f32::EPSILON);
         } else {
@@ -1918,7 +2152,10 @@ mod tests {
 
     #[test]
     fn test_cinematics_action_move_clip() {
-        let action = CinematicsAction::MoveClip { clip_id: 5, new_time: 10.0 };
+        let action = CinematicsAction::MoveClip {
+            clip_id: 5,
+            new_time: 10.0,
+        };
         if let CinematicsAction::MoveClip { clip_id, new_time } = action {
             assert_eq!(clip_id, 5);
             assert!((new_time - 10.0).abs() < f32::EPSILON);
@@ -1931,13 +2168,13 @@ mod tests {
     fn test_cinematics_action_camera_keyframe() {
         let add = CinematicsAction::AddCameraKeyframe { time: 3.0 };
         let remove = CinematicsAction::RemoveCameraKeyframe { index: 2 };
-        
+
         if let CinematicsAction::AddCameraKeyframe { time } = add {
             assert!((time - 3.0).abs() < f32::EPSILON);
         } else {
             panic!("Expected AddCameraKeyframe");
         }
-        
+
         if let CinematicsAction::RemoveCameraKeyframe { index } = remove {
             assert_eq!(index, 2);
         } else {
@@ -1948,27 +2185,38 @@ mod tests {
     #[test]
     fn test_cinematics_action_camera_interpolation() {
         let action = CinematicsAction::SetCameraInterpolation(CameraInterpolation::Bezier);
-        assert!(matches!(action, CinematicsAction::SetCameraInterpolation(CameraInterpolation::Bezier)));
+        assert!(matches!(
+            action,
+            CinematicsAction::SetCameraInterpolation(CameraInterpolation::Bezier)
+        ));
     }
 
     #[test]
     fn test_cinematics_action_marker() {
-        let add = CinematicsAction::AddMarker { time: 5.0, name: "Start".to_string() };
+        let add = CinematicsAction::AddMarker {
+            time: 5.0,
+            name: "Start".to_string(),
+        };
         let remove = CinematicsAction::RemoveMarker { index: 0 };
-        
+
         if let CinematicsAction::AddMarker { time, name } = add {
             assert!((time - 5.0).abs() < f32::EPSILON);
             assert_eq!(name, "Start");
         } else {
             panic!("Expected AddMarker");
         }
-        
-        assert!(matches!(remove, CinematicsAction::RemoveMarker { index: 0 }));
+
+        assert!(matches!(
+            remove,
+            CinematicsAction::RemoveMarker { index: 0 }
+        ));
     }
 
     #[test]
     fn test_cinematics_action_export() {
-        let action = CinematicsAction::Export { format: "mp4".to_string() };
+        let action = CinematicsAction::Export {
+            format: "mp4".to_string(),
+        };
         if let CinematicsAction::Export { format } = action {
             assert_eq!(format, "mp4");
         } else {

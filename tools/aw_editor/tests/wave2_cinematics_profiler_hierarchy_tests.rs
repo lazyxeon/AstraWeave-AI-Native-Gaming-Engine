@@ -6,13 +6,13 @@
 //! - hierarchy_panel.rs (768L, 17 inline = 2.2/100L)
 
 use aw_editor_lib::panels::cinematics_panel::{
-    CameraInterpolation, CameraKeyframe, CinematicsPanel, CinematicsTab,
-    ClipData, PlaybackSpeed, PlaybackState, TimelineSettings, TrackEntry, TrackType,
+    CameraInterpolation, CameraKeyframe, CinematicsPanel, CinematicsTab, ClipData, PlaybackSpeed,
+    PlaybackState, TimelineSettings, TrackEntry, TrackType,
 };
+use aw_editor_lib::panels::hierarchy_panel::{HierarchyAction, HierarchyPanel};
 use aw_editor_lib::panels::profiler_panel::{
     FlameNode, GpuMetrics, ProfilerPanel, SubsystemTimings,
 };
-use aw_editor_lib::panels::hierarchy_panel::{HierarchyAction, HierarchyPanel};
 
 // ============================================================================
 // TRACK TYPE
@@ -218,19 +218,37 @@ fn clip_data_names() {
     let camera = ClipData::Camera { keyframes: vec![] };
     assert_eq!(camera.name(), "Camera");
 
-    let animation = ClipData::Animation { target_id: 0, clip_name: "idle".to_string() };
+    let animation = ClipData::Animation {
+        target_id: 0,
+        clip_name: "idle".to_string(),
+    };
     assert_eq!(animation.name(), "Animation");
 
-    let audio = ClipData::Audio { file: "f.wav".to_string(), volume: 1.0, fade_in: 0.0, fade_out: 0.0 };
+    let audio = ClipData::Audio {
+        file: "f.wav".to_string(),
+        volume: 1.0,
+        fade_in: 0.0,
+        fade_out: 0.0,
+    };
     assert_eq!(audio.name(), "Audio");
 
-    let fx = ClipData::Fx { effect_name: "boom".to_string(), params: "{}".to_string() };
+    let fx = ClipData::Fx {
+        effect_name: "boom".to_string(),
+        params: "{}".to_string(),
+    };
     assert_eq!(fx.name(), "VFX");
 
-    let dialogue = ClipData::Dialogue { speaker: "NPC".to_string(), text: "Hello".to_string(), duration: 2.0 };
+    let dialogue = ClipData::Dialogue {
+        speaker: "NPC".to_string(),
+        text: "Hello".to_string(),
+        duration: 2.0,
+    };
     assert_eq!(dialogue.name(), "Dialogue");
 
-    let event = ClipData::Event { event_name: "trigger".to_string(), payload: "{}".to_string() };
+    let event = ClipData::Event {
+        event_name: "trigger".to_string(),
+        payload: "{}".to_string(),
+    };
     assert_eq!(event.name(), "Event");
 }
 
@@ -369,8 +387,12 @@ fn flame_node_total_time_no_children() {
 #[test]
 fn flame_node_total_time_with_children() {
     let mut parent = FlameNode::new("Parent", 2.0, egui::Color32::RED);
-    parent.children.push(FlameNode::new("A", 1.0, egui::Color32::RED));
-    parent.children.push(FlameNode::new("B", 3.0, egui::Color32::RED));
+    parent
+        .children
+        .push(FlameNode::new("A", 1.0, egui::Color32::RED));
+    parent
+        .children
+        .push(FlameNode::new("B", 3.0, egui::Color32::RED));
     // total = 2.0 (self) + 1.0 (A) + 3.0 (B) = 6.0
     assert!((parent.total_time() - 6.0).abs() < 0.001);
 }
@@ -379,7 +401,9 @@ fn flame_node_total_time_with_children() {
 fn flame_node_total_time_nested() {
     let mut root = FlameNode::new("Root", 1.0, egui::Color32::RED);
     let mut child = FlameNode::new("Child", 2.0, egui::Color32::RED);
-    child.children.push(FlameNode::new("Grandchild", 4.0, egui::Color32::RED));
+    child
+        .children
+        .push(FlameNode::new("Grandchild", 4.0, egui::Color32::RED));
     root.children.push(child);
     // total = 1.0 + 2.0 + 4.0 = 7.0
     assert!((root.total_time() - 7.0).abs() < 0.001);
@@ -488,11 +512,23 @@ fn hierarchy_action_names() {
     let e: u32 = 1;
     assert_eq!(HierarchyAction::CreatePrefab(e).name(), "Create Prefab");
     assert_eq!(HierarchyAction::DeleteEntity(e).name(), "Delete Entity");
-    assert_eq!(HierarchyAction::DuplicateEntity(e).name(), "Duplicate Entity");
+    assert_eq!(
+        HierarchyAction::DuplicateEntity(e).name(),
+        "Duplicate Entity"
+    );
     assert_eq!(HierarchyAction::FocusEntity(e).name(), "Focus Entity");
-    assert_eq!(HierarchyAction::BreakPrefabConnection(e).name(), "Break Prefab Connection");
-    assert_eq!(HierarchyAction::ApplyOverridesToPrefab(e).name(), "Apply Overrides");
-    assert_eq!(HierarchyAction::RevertToOriginalPrefab(e).name(), "Revert to Original");
+    assert_eq!(
+        HierarchyAction::BreakPrefabConnection(e).name(),
+        "Break Prefab Connection"
+    );
+    assert_eq!(
+        HierarchyAction::ApplyOverridesToPrefab(e).name(),
+        "Apply Overrides"
+    );
+    assert_eq!(
+        HierarchyAction::RevertToOriginalPrefab(e).name(),
+        "Revert to Original"
+    );
 }
 
 #[test]

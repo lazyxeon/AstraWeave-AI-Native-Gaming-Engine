@@ -920,15 +920,23 @@ mod boolean_path_tests {
     #[test]
     fn blend_mode_all_transparent_paths_tested() {
         // 3 true paths
-        let transparent_true = [BlendMode::Translucent, BlendMode::Additive, BlendMode::Modulate];
+        let transparent_true = [
+            BlendMode::Translucent,
+            BlendMode::Additive,
+            BlendMode::Modulate,
+        ];
         for mode in transparent_true {
             assert!(mode.is_transparent(), "{:?} should be transparent", mode);
         }
-        
+
         // 2 false paths
         let transparent_false = [BlendMode::Opaque, BlendMode::Masked];
         for mode in transparent_false {
-            assert!(!mode.is_transparent(), "{:?} should not be transparent", mode);
+            assert!(
+                !mode.is_transparent(),
+                "{:?} should not be transparent",
+                mode
+            );
         }
     }
 
@@ -937,11 +945,11 @@ mod boolean_path_tests {
         let all_modes = BlendMode::all();
         let transparent: Vec<_> = all_modes.iter().filter(|m| m.is_transparent()).collect();
         let opaque: Vec<_> = all_modes.iter().filter(|m| !m.is_transparent()).collect();
-        
+
         // Verify partition sizes
         assert_eq!(transparent.len(), 3);
         assert_eq!(opaque.len(), 2);
-        
+
         // Verify complete coverage
         assert_eq!(transparent.len() + opaque.len(), all_modes.len());
     }
@@ -1036,8 +1044,16 @@ mod display_consistency {
     fn material_type_display_contains_icon_and_name() {
         for t in MaterialType::all() {
             let display = t.to_string();
-            assert!(display.contains(t.icon()), "{:?} display should contain icon", t);
-            assert!(display.contains(t.name()), "{:?} display should contain name", t);
+            assert!(
+                display.contains(t.icon()),
+                "{:?} display should contain icon",
+                t
+            );
+            assert!(
+                display.contains(t.name()),
+                "{:?} display should contain name",
+                t
+            );
         }
     }
 
@@ -1045,8 +1061,16 @@ mod display_consistency {
     fn blend_mode_display_contains_icon_and_name() {
         for m in BlendMode::all() {
             let display = m.to_string();
-            assert!(display.contains(m.icon()), "{:?} display should contain icon", m);
-            assert!(display.contains(m.name()), "{:?} display should contain name", m);
+            assert!(
+                display.contains(m.icon()),
+                "{:?} display should contain icon",
+                m
+            );
+            assert!(
+                display.contains(m.name()),
+                "{:?} display should contain name",
+                m
+            );
         }
     }
 
@@ -1054,8 +1078,16 @@ mod display_consistency {
     fn preview_lighting_display_contains_icon_and_name() {
         for l in PreviewLighting::all() {
             let display = l.to_string();
-            assert!(display.contains(l.icon()), "{:?} display should contain icon", l);
-            assert!(display.contains(l.name()), "{:?} display should contain name", l);
+            assert!(
+                display.contains(l.icon()),
+                "{:?} display should contain icon",
+                l
+            );
+            assert!(
+                display.contains(l.name()),
+                "{:?} display should contain name",
+                l
+            );
         }
     }
 
@@ -1063,8 +1095,16 @@ mod display_consistency {
     fn material_tab_display_contains_icon_and_name() {
         for t in MaterialTab::all() {
             let display = t.to_string();
-            assert!(display.contains(t.icon()), "{:?} display should contain icon", t);
-            assert!(display.contains(t.name()), "{:?} display should contain name", t);
+            assert!(
+                display.contains(t.icon()),
+                "{:?} display should contain icon",
+                t
+            );
+            assert!(
+                display.contains(t.name()),
+                "{:?} display should contain name",
+                t
+            );
         }
     }
 
@@ -1072,8 +1112,16 @@ mod display_consistency {
     fn texture_channel_display_contains_icon_and_name() {
         for c in TextureChannel::all() {
             let display = c.to_string();
-            assert!(display.contains(c.icon()), "{:?} display should contain icon", c);
-            assert!(display.contains(c.name()), "{:?} display should contain name", c);
+            assert!(
+                display.contains(c.icon()),
+                "{:?} display should contain icon",
+                c
+            );
+            assert!(
+                display.contains(c.name()),
+                "{:?} display should contain name",
+                c
+            );
         }
     }
 }

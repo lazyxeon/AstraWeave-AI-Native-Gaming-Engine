@@ -1318,12 +1318,12 @@ impl ViewportWidget {
                     }
                 }
             }
-            
+
             clipboard_json
         });
 
         if let Some(json) = returned_json {
-             ctx.copy_text(json);
+            ctx.copy_text(json);
         }
 
         // Handle gizmo confirm/cancel
@@ -2085,15 +2085,22 @@ impl ViewportWidget {
         let data = crate::clipboard::ClipboardData::from_entities(world, &entities);
         self.clipboard = Some(data.clone());
         debug!("📋 Copied {} entities to clipboard", entities.len());
-        
+
         data.to_json().ok()
     }
 
     /// Paste entities from clipboard
-    fn paste_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack, clipboard_text: Option<String>) {
+    fn paste_selection(
+        &mut self,
+        world: &mut World,
+        _undo_stack: &mut crate::command::UndoStack,
+        clipboard_text: Option<String>,
+    ) {
         let clipboard = if let Some(text) = clipboard_text {
             // Try parsing OS clipboard first
-            crate::clipboard::ClipboardData::from_json(&text).ok().or_else(|| self.clipboard.clone())
+            crate::clipboard::ClipboardData::from_json(&text)
+                .ok()
+                .or_else(|| self.clipboard.clone())
         } else {
             self.clipboard.clone()
         };
@@ -2155,7 +2162,11 @@ impl ViewportWidget {
     }
 
     /// Delete selected entities
-    pub fn delete_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    pub fn delete_selection(
+        &mut self,
+        world: &mut World,
+        undo_stack: &mut crate::command::UndoStack,
+    ) {
         if self.selected_entities.is_empty() {
             return;
         }

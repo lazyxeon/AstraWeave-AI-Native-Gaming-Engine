@@ -116,7 +116,13 @@ impl ReloadEvent {
 
 impl std::fmt::Display for ReloadEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}: {}", self.icon(), self.type_name(), self.path().display())
+        write!(
+            f,
+            "{} {}: {}",
+            self.icon(),
+            self.type_name(),
+            self.path().display()
+        )
     }
 }
 
@@ -155,7 +161,8 @@ impl WatcherStats {
             (self.prefab_events, "Prefab"),
             (self.model_events, "Model"),
         ];
-        counts.into_iter()
+        counts
+            .into_iter()
             .filter(|(c, _)| *c > 0)
             .max_by_key(|(c, _)| *c)
             .map(|(_, name)| name)
@@ -571,7 +578,10 @@ mod tests {
 
     #[test]
     fn test_reload_event_type_names() {
-        assert_eq!(ReloadEvent::Material(PathBuf::new()).type_name(), "Material");
+        assert_eq!(
+            ReloadEvent::Material(PathBuf::new()).type_name(),
+            "Material"
+        );
         assert_eq!(ReloadEvent::Texture(PathBuf::new()).type_name(), "Texture");
         assert_eq!(ReloadEvent::Prefab(PathBuf::new()).type_name(), "Prefab");
         assert_eq!(ReloadEvent::Model(PathBuf::new()).type_name(), "Model");
@@ -644,18 +654,18 @@ mod tests {
     #[test]
     fn test_watcher_stats_record_event() {
         let mut stats = WatcherStats::default();
-        
+
         stats.record_event(&ReloadEvent::Material(PathBuf::new()));
         assert_eq!(stats.total_events, 1);
         assert_eq!(stats.material_events, 1);
-        
+
         stats.record_event(&ReloadEvent::Texture(PathBuf::new()));
         assert_eq!(stats.total_events, 2);
         assert_eq!(stats.texture_events, 1);
-        
+
         stats.record_event(&ReloadEvent::Prefab(PathBuf::new()));
         assert_eq!(stats.prefab_events, 1);
-        
+
         stats.record_event(&ReloadEvent::Model(PathBuf::new()));
         assert_eq!(stats.model_events, 1);
         assert_eq!(stats.total_events, 4);
@@ -665,32 +675,32 @@ mod tests {
     fn test_watcher_stats_most_common_type() {
         let mut stats = WatcherStats::default();
         assert!(stats.most_common_type().is_none());
-        
+
         stats.material_events = 5;
         stats.texture_events = 3;
         stats.total_events = 8;
-        
+
         assert_eq!(stats.most_common_type(), Some("Material"));
     }
 
     #[test]
     fn test_watcher_stats_type_percentages() {
         let mut stats = WatcherStats::default();
-        
+
         let percentages = stats.type_percentages();
         assert_eq!(percentages, [0.0, 0.0, 0.0, 0.0]);
-        
+
         stats.total_events = 10;
         stats.material_events = 5;
         stats.texture_events = 3;
         stats.prefab_events = 1;
         stats.model_events = 1;
-        
+
         let percentages = stats.type_percentages();
-        assert!((percentages[0] - 50.0).abs() < 0.1);  // Material 50%
-        assert!((percentages[1] - 30.0).abs() < 0.1);  // Texture 30%
-        assert!((percentages[2] - 10.0).abs() < 0.1);  // Prefab 10%
-        assert!((percentages[3] - 10.0).abs() < 0.1);  // Model 10%
+        assert!((percentages[0] - 50.0).abs() < 0.1); // Material 50%
+        assert!((percentages[1] - 30.0).abs() < 0.1); // Texture 30%
+        assert!((percentages[2] - 10.0).abs() < 0.1); // Prefab 10%
+        assert!((percentages[3] - 10.0).abs() < 0.1); // Model 10%
     }
 
     #[test]
@@ -702,9 +712,9 @@ mod tests {
             prefab_events: 1,
             model_events: 1,
         };
-        
+
         stats.reset();
-        
+
         assert_eq!(stats.total_events, 0);
         assert_eq!(stats.material_events, 0);
         assert_eq!(stats.texture_events, 0);

@@ -165,7 +165,10 @@ impl LoadingStyle {
 
     /// Returns true if this style shows a progress indicator.
     pub fn shows_progress(&self) -> bool {
-        matches!(self, LoadingStyle::ProgressBar | LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips)
+        matches!(
+            self,
+            LoadingStyle::ProgressBar | LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips
+        )
     }
 
     /// Returns true if this style is animated.
@@ -175,7 +178,10 @@ impl LoadingStyle {
 
     /// Returns true if this style supports background images.
     pub fn supports_background(&self) -> bool {
-        matches!(self, LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips)
+        matches!(
+            self,
+            LoadingStyle::FullScreen | LoadingStyle::ArtworkWithTips
+        )
     }
 }
 
@@ -567,7 +573,10 @@ mod tests {
         assert_eq!(format!("{}", LoadingStyle::Spinner), "Spinner");
         assert_eq!(format!("{}", LoadingStyle::ProgressBar), "Progress Bar");
         assert_eq!(format!("{}", LoadingStyle::FullScreen), "Full Screen");
-        assert_eq!(format!("{}", LoadingStyle::ArtworkWithTips), "Artwork With Tips");
+        assert_eq!(
+            format!("{}", LoadingStyle::ArtworkWithTips),
+            "Artwork With Tips"
+        );
     }
 
     #[test]
@@ -588,11 +597,11 @@ mod tests {
         assert!(LoadingStyle::ProgressBar.shows_progress());
         assert!(LoadingStyle::FullScreen.shows_progress());
         assert!(!LoadingStyle::Spinner.shows_progress());
-        
+
         assert!(LoadingStyle::Spinner.is_animated());
         assert!(LoadingStyle::Dots.is_animated());
         assert!(!LoadingStyle::FullScreen.is_animated());
-        
+
         assert!(LoadingStyle::FullScreen.supports_background());
         assert!(LoadingStyle::ArtworkWithTips.supports_background());
         assert!(!LoadingStyle::Spinner.supports_background());

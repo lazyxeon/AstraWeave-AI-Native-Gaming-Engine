@@ -94,15 +94,15 @@ impl NodeTemplate {
     /// Create a GraphNode from this template
     pub fn create_node(&self, id: u64, x: f32, y: f32) -> GraphNode {
         let mut node = GraphNode::new(id, &self.name).with_position(x, y);
-        
+
         for (port_id, (name, port_type)) in self.inputs.iter().enumerate() {
             node.add_input(Port::new(port_id, name, *port_type));
         }
-        
+
         for (port_id, (name, port_type)) in self.outputs.iter().enumerate() {
             node.add_output(Port::new(port_id + 100, name, *port_type));
         }
-        
+
         node
     }
 }
@@ -123,26 +123,28 @@ impl GraphStats {
     pub fn from_graph(graph: &NodeGraph) -> Self {
         let nodes = graph.nodes();
         let edges = graph.edges();
-        
+
         let mut input_ports = 0;
         let mut output_ports = 0;
-        
+
         for (_, node) in nodes.iter() {
             input_ports += node.inputs().len();
             output_ports += node.outputs().len();
         }
-        
+
         // Count connected ports
-        let connected_inputs: std::collections::HashSet<_> = edges.iter()
+        let connected_inputs: std::collections::HashSet<_> = edges
+            .iter()
             .map(|e| (e.target_node(), e.target_port()))
             .collect();
-        let connected_outputs: std::collections::HashSet<_> = edges.iter()
+        let connected_outputs: std::collections::HashSet<_> = edges
+            .iter()
             .map(|e| (e.source_node(), e.source_port()))
             .collect();
-        
+
         // Calculate max depth using BFS from root nodes (nodes with no incoming edges)
         let max_depth = Self::calculate_max_depth(nodes, edges);
-        
+
         Self {
             node_count: nodes.len(),
             edge_count: edges.len(),
@@ -160,46 +162,50 @@ impl GraphStats {
         edges: &[GraphEdge],
     ) -> usize {
         use std::collections::{HashMap, HashSet, VecDeque};
-        
+
         if nodes.is_empty() {
             return 0;
         }
-        
+
         // Build adjacency list (source -> targets)
         let mut children: HashMap<u64, Vec<u64>> = HashMap::new();
         let mut has_parent: HashSet<u64> = HashSet::new();
-        
+
         for edge in edges {
-            children.entry(edge.source_node()).or_default().push(edge.target_node());
+            children
+                .entry(edge.source_node())
+                .or_default()
+                .push(edge.target_node());
             has_parent.insert(edge.target_node());
         }
-        
+
         // Find root nodes (nodes with no incoming edges)
-        let roots: Vec<u64> = nodes.keys()
+        let roots: Vec<u64> = nodes
+            .keys()
             .filter(|id| !has_parent.contains(id))
             .copied()
             .collect();
-        
+
         // If no roots found (cyclic graph), use first node as root
         let start_nodes = if roots.is_empty() {
             nodes.keys().take(1).copied().collect()
         } else {
             roots
         };
-        
+
         // BFS to find max depth
         let mut max_depth = 0;
         let mut visited: HashSet<u64> = HashSet::new();
         let mut queue: VecDeque<(u64, usize)> = VecDeque::new();
-        
+
         for root in start_nodes {
             queue.push_back((root, 1));
             visited.insert(root);
         }
-        
+
         while let Some((node_id, depth)) = queue.pop_front() {
             max_depth = max_depth.max(depth);
-            
+
             if let Some(targets) = children.get(&node_id) {
                 for &target in targets {
                     if visited.insert(target) {
@@ -208,7 +214,7 @@ impl GraphStats {
                 }
             }
         }
-        
+
         max_depth
     }
 }
@@ -219,33 +225,33 @@ pub struct GraphPanel {
     behavior_tree_graph: NodeGraph,
     shader_graph: NodeGraph,
     dialogue_graph: NodeGraph,
-    
+
     // State
     initialized: bool,
     active_graph: GraphType,
-    
+
     // View controls
     zoom_level: f32,
     show_grid: bool,
     snap_to_grid: bool,
     grid_size: f32,
     show_minimap: bool,
-    
+
     // Search/filter
     search_query: String,
     filter_by_type: Option<PortType>,
-    
+
     // Node templates
     templates: HashMap<GraphType, Vec<NodeTemplate>>,
     selected_template: Option<usize>,
-    
+
     // Selection
     selected_nodes: Vec<u64>,
     clipboard: Option<Vec<GraphNode>>,
-    
+
     // Stats
     show_stats: bool,
-    
+
     // Next node ID for creation
     next_node_id: u64,
 }
@@ -285,93 +291,100 @@ impl GraphPanel {
     /// Initialize node templates for each graph type
     fn init_templates(&mut self) {
         // Behavior Tree templates
-        self.templates.insert(GraphType::BehaviorTree, vec![
-            NodeTemplate::new("Root", "Control")
-                .with_output("Out", PortType::Exec),
-            NodeTemplate::new("Selector", "Control")
-                .with_input("In", PortType::Exec)
-                .with_output("A", PortType::Exec)
-                .with_output("B", PortType::Exec)
-                .with_output("C", PortType::Exec),
-            NodeTemplate::new("Sequence", "Control")
-                .with_input("In", PortType::Exec)
-                .with_output("Step 1", PortType::Exec)
-                .with_output("Step 2", PortType::Exec),
-            NodeTemplate::new("Condition", "Logic")
-                .with_input("In", PortType::Exec)
-                .with_input("Value", PortType::Bool)
-                .with_output("True", PortType::Exec)
-                .with_output("False", PortType::Exec),
-            NodeTemplate::new("Action", "Leaf")
-                .with_input("In", PortType::Exec)
-                .with_output("Success", PortType::Bool),
-            NodeTemplate::new("Wait", "Leaf")
-                .with_input("In", PortType::Exec)
-                .with_input("Duration", PortType::Number)
-                .with_output("Done", PortType::Exec),
-        ]);
+        self.templates.insert(
+            GraphType::BehaviorTree,
+            vec![
+                NodeTemplate::new("Root", "Control").with_output("Out", PortType::Exec),
+                NodeTemplate::new("Selector", "Control")
+                    .with_input("In", PortType::Exec)
+                    .with_output("A", PortType::Exec)
+                    .with_output("B", PortType::Exec)
+                    .with_output("C", PortType::Exec),
+                NodeTemplate::new("Sequence", "Control")
+                    .with_input("In", PortType::Exec)
+                    .with_output("Step 1", PortType::Exec)
+                    .with_output("Step 2", PortType::Exec),
+                NodeTemplate::new("Condition", "Logic")
+                    .with_input("In", PortType::Exec)
+                    .with_input("Value", PortType::Bool)
+                    .with_output("True", PortType::Exec)
+                    .with_output("False", PortType::Exec),
+                NodeTemplate::new("Action", "Leaf")
+                    .with_input("In", PortType::Exec)
+                    .with_output("Success", PortType::Bool),
+                NodeTemplate::new("Wait", "Leaf")
+                    .with_input("In", PortType::Exec)
+                    .with_input("Duration", PortType::Number)
+                    .with_output("Done", PortType::Exec),
+            ],
+        );
 
         // Shader templates
-        self.templates.insert(GraphType::Shader, vec![
-            NodeTemplate::new("Texture Sample", "Input")
-                .with_output("Color", PortType::Object)
-                .with_output("Alpha", PortType::Number),
-            NodeTemplate::new("Color", "Input")
-                .with_output("RGB", PortType::Object),
-            NodeTemplate::new("Float", "Input")
-                .with_output("Value", PortType::Number),
-            NodeTemplate::new("Add", "Math")
-                .with_input("A", PortType::Number)
-                .with_input("B", PortType::Number)
-                .with_output("Result", PortType::Number),
-            NodeTemplate::new("Multiply", "Math")
-                .with_input("A", PortType::Number)
-                .with_input("B", PortType::Number)
-                .with_output("Result", PortType::Number),
-            NodeTemplate::new("Lerp", "Math")
-                .with_input("A", PortType::Object)
-                .with_input("B", PortType::Object)
-                .with_input("T", PortType::Number)
-                .with_output("Result", PortType::Object),
-            NodeTemplate::new("Material Output", "Output")
-                .with_input("Base Color", PortType::Object)
-                .with_input("Normal", PortType::Object)
-                .with_input("Roughness", PortType::Number)
-                .with_input("Metallic", PortType::Number),
-        ]);
+        self.templates.insert(
+            GraphType::Shader,
+            vec![
+                NodeTemplate::new("Texture Sample", "Input")
+                    .with_output("Color", PortType::Object)
+                    .with_output("Alpha", PortType::Number),
+                NodeTemplate::new("Color", "Input").with_output("RGB", PortType::Object),
+                NodeTemplate::new("Float", "Input").with_output("Value", PortType::Number),
+                NodeTemplate::new("Add", "Math")
+                    .with_input("A", PortType::Number)
+                    .with_input("B", PortType::Number)
+                    .with_output("Result", PortType::Number),
+                NodeTemplate::new("Multiply", "Math")
+                    .with_input("A", PortType::Number)
+                    .with_input("B", PortType::Number)
+                    .with_output("Result", PortType::Number),
+                NodeTemplate::new("Lerp", "Math")
+                    .with_input("A", PortType::Object)
+                    .with_input("B", PortType::Object)
+                    .with_input("T", PortType::Number)
+                    .with_output("Result", PortType::Object),
+                NodeTemplate::new("Material Output", "Output")
+                    .with_input("Base Color", PortType::Object)
+                    .with_input("Normal", PortType::Object)
+                    .with_input("Roughness", PortType::Number)
+                    .with_input("Metallic", PortType::Number),
+            ],
+        );
 
         // Dialogue templates
-        self.templates.insert(GraphType::Dialogue, vec![
-            NodeTemplate::new("Start", "Control")
-                .with_output("Begin", PortType::Exec),
-            NodeTemplate::new("End", "Control")
-                .with_input("Finish", PortType::Exec),
-            NodeTemplate::new("Say", "Dialogue")
-                .with_input("In", PortType::Exec)
-                .with_input("Speaker", PortType::String)
-                .with_input("Text", PortType::String)
-                .with_output("Next", PortType::Exec),
-            NodeTemplate::new("Choice", "Dialogue")
-                .with_input("In", PortType::Exec)
-                .with_output("Option 1", PortType::Exec)
-                .with_output("Option 2", PortType::Exec)
-                .with_output("Option 3", PortType::Exec),
-            NodeTemplate::new("Condition", "Logic")
-                .with_input("In", PortType::Exec)
-                .with_input("Variable", PortType::String)
-                .with_output("True", PortType::Exec)
-                .with_output("False", PortType::Exec),
-            NodeTemplate::new("Set Variable", "Logic")
-                .with_input("In", PortType::Exec)
-                .with_input("Variable", PortType::String)
-                .with_input("Value", PortType::String)
-                .with_output("Next", PortType::Exec),
-        ]);
+        self.templates.insert(
+            GraphType::Dialogue,
+            vec![
+                NodeTemplate::new("Start", "Control").with_output("Begin", PortType::Exec),
+                NodeTemplate::new("End", "Control").with_input("Finish", PortType::Exec),
+                NodeTemplate::new("Say", "Dialogue")
+                    .with_input("In", PortType::Exec)
+                    .with_input("Speaker", PortType::String)
+                    .with_input("Text", PortType::String)
+                    .with_output("Next", PortType::Exec),
+                NodeTemplate::new("Choice", "Dialogue")
+                    .with_input("In", PortType::Exec)
+                    .with_output("Option 1", PortType::Exec)
+                    .with_output("Option 2", PortType::Exec)
+                    .with_output("Option 3", PortType::Exec),
+                NodeTemplate::new("Condition", "Logic")
+                    .with_input("In", PortType::Exec)
+                    .with_input("Variable", PortType::String)
+                    .with_output("True", PortType::Exec)
+                    .with_output("False", PortType::Exec),
+                NodeTemplate::new("Set Variable", "Logic")
+                    .with_input("In", PortType::Exec)
+                    .with_input("Variable", PortType::String)
+                    .with_input("Value", PortType::String)
+                    .with_output("Next", PortType::Exec),
+            ],
+        );
     }
 
     /// Get templates for current graph type
     pub fn current_templates(&self) -> &[NodeTemplate] {
-        self.templates.get(&self.active_graph).map(|v| v.as_slice()).unwrap_or(&[])
+        self.templates
+            .get(&self.active_graph)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 
     /// Get the active graph
@@ -400,7 +413,7 @@ impl GraphPanel {
         if let Some(template) = templates.get(template_index) {
             let id = self.next_node_id;
             self.next_node_id += 1;
-            
+
             let (final_x, final_y) = if self.snap_to_grid {
                 (
                     (x / self.grid_size).round() * self.grid_size,
@@ -409,7 +422,7 @@ impl GraphPanel {
             } else {
                 (x, y)
             };
-            
+
             let node = template.create_node(id, final_x, final_y);
             self.active_graph_mut().add_node(node);
             Some(id)
@@ -429,7 +442,9 @@ impl GraphPanel {
     /// Copy selected nodes to clipboard
     pub fn copy_selected(&mut self) {
         let graph = self.active_graph_ref();
-        let copied: Vec<GraphNode> = self.selected_nodes.iter()
+        let copied: Vec<GraphNode> = self
+            .selected_nodes
+            .iter()
             .filter_map(|&id| graph.get_node(id).cloned())
             .collect();
         if !copied.is_empty() {
@@ -444,17 +459,17 @@ impl GraphPanel {
             for node in nodes {
                 let new_id = self.next_node_id;
                 self.next_node_id += 1;
-                
+
                 let mut new_node = GraphNode::new(new_id, node.label())
                     .with_position(node.x() + offset_x, node.y() + offset_y);
-                
+
                 for port in node.inputs() {
                     new_node.add_input(port.clone());
                 }
                 for port in node.outputs() {
                     new_node.add_output(port.clone());
                 }
-                
+
                 self.active_graph_mut().add_node(new_node);
                 self.selected_nodes.push(new_id);
             }
@@ -600,9 +615,19 @@ impl GraphPanel {
         // ═══════════════════════════════════════════════════════════════════════════
         ui.horizontal(|ui| {
             ui.label("Active Graph:");
-            for graph_type in [GraphType::BehaviorTree, GraphType::Shader, GraphType::Dialogue] {
+            for graph_type in [
+                GraphType::BehaviorTree,
+                GraphType::Shader,
+                GraphType::Dialogue,
+            ] {
                 let selected = self.active_graph == graph_type;
-                if ui.selectable_label(selected, format!("{} {}", graph_type.icon(), graph_type.name())).clicked() {
+                if ui
+                    .selectable_label(
+                        selected,
+                        format!("{} {}", graph_type.icon(), graph_type.name()),
+                    )
+                    .clicked()
+                {
                     self.active_graph = graph_type;
                     self.selected_nodes.clear();
                 }
@@ -617,19 +642,22 @@ impl GraphPanel {
         ui.horizontal(|ui| {
             // View controls
             ui.label("Zoom:");
-            if ui.add(egui::Slider::new(&mut self.zoom_level, 0.25..=4.0).step_by(0.25)).changed() {
+            if ui
+                .add(egui::Slider::new(&mut self.zoom_level, 0.25..=4.0).step_by(0.25))
+                .changed()
+            {
                 // Zoom applied to graph view (future integration)
             }
-            
+
             ui.separator();
-            
+
             ui.checkbox(&mut self.show_grid, "🔲 Grid");
             if self.show_grid {
                 ui.checkbox(&mut self.snap_to_grid, "🧲 Snap");
             }
-            
+
             ui.separator();
-            
+
             ui.checkbox(&mut self.show_minimap, "🗺️ Minimap");
             ui.checkbox(&mut self.show_stats, "📈 Stats");
         });
@@ -647,24 +675,33 @@ impl GraphPanel {
                 };
                 self.active_graph_mut().auto_layout_with_params(params);
             }
-            
+
             ui.separator();
-            
+
             let has_selection = !self.selected_nodes.is_empty();
             let has_clipboard = self.clipboard.is_some();
-            
-            if ui.add_enabled(has_selection, egui::Button::new("📋 Copy")).clicked() {
+
+            if ui
+                .add_enabled(has_selection, egui::Button::new("📋 Copy"))
+                .clicked()
+            {
                 self.copy_selected();
             }
-            if ui.add_enabled(has_clipboard, egui::Button::new("📄 Paste")).clicked() {
+            if ui
+                .add_enabled(has_clipboard, egui::Button::new("📄 Paste"))
+                .clicked()
+            {
                 self.paste(50.0, 50.0);
             }
-            if ui.add_enabled(has_selection, egui::Button::new("🗑️ Delete")).clicked() {
+            if ui
+                .add_enabled(has_selection, egui::Button::new("🗑️ Delete"))
+                .clicked()
+            {
                 self.delete_selected();
             }
-            
+
             ui.separator();
-            
+
             if ui.button("🔙 Reset Graph").clicked() {
                 self.active_graph_mut().clear();
                 self.initialized = false;
@@ -680,23 +717,37 @@ impl GraphPanel {
         // ═══════════════════════════════════════════════════════════════════════════
         ui.horizontal(|ui| {
             ui.label("🔍");
-            ui.add(egui::TextEdit::singleline(&mut self.search_query)
-                .hint_text("Search nodes...")
-                .desired_width(150.0));
-            
+            ui.add(
+                egui::TextEdit::singleline(&mut self.search_query)
+                    .hint_text("Search nodes...")
+                    .desired_width(150.0),
+            );
+
             if !self.search_query.is_empty() && ui.button("✕").clicked() {
                 self.search_query.clear();
             }
-            
+
             ui.separator();
-            
+
             ui.label("Filter:");
-            if ui.selectable_label(self.filter_by_type.is_none(), "All").clicked() {
+            if ui
+                .selectable_label(self.filter_by_type.is_none(), "All")
+                .clicked()
+            {
                 self.filter_by_type = None;
             }
-            for port_type in [PortType::Exec, PortType::Bool, PortType::Number, PortType::String, PortType::Object] {
+            for port_type in [
+                PortType::Exec,
+                PortType::Bool,
+                PortType::Number,
+                PortType::String,
+                PortType::Object,
+            ] {
                 let is_selected = self.filter_by_type == Some(port_type);
-                if ui.selectable_label(is_selected, format!("{:?}", port_type)).clicked() {
+                if ui
+                    .selectable_label(is_selected, format!("{:?}", port_type))
+                    .clicked()
+                {
                     self.filter_by_type = Some(port_type);
                 }
             }
@@ -711,55 +762,63 @@ impl GraphPanel {
             // LEFT SIDEBAR: Templates
             cols[0].set_max_width(200.0);
             cols[0].heading("Node Templates");
-            
-            egui::ScrollArea::vertical().max_height(200.0).show(&mut cols[0], |ui| {
-                let templates = self.current_templates().to_vec();
-                for (idx, template) in templates.iter().enumerate() {
-                    let is_selected = self.selected_template == Some(idx);
-                    
-                    ui.horizontal(|ui| {
-                        if ui.selectable_label(is_selected, &template.name).clicked() {
-                            self.selected_template = Some(idx);
-                        }
-                        ui.label(egui::RichText::new(&template.category).small().weak());
-                    });
-                }
-            });
-            
+
+            egui::ScrollArea::vertical()
+                .max_height(200.0)
+                .show(&mut cols[0], |ui| {
+                    let templates = self.current_templates().to_vec();
+                    for (idx, template) in templates.iter().enumerate() {
+                        let is_selected = self.selected_template == Some(idx);
+
+                        ui.horizontal(|ui| {
+                            if ui.selectable_label(is_selected, &template.name).clicked() {
+                                self.selected_template = Some(idx);
+                            }
+                            ui.label(egui::RichText::new(&template.category).small().weak());
+                        });
+                    }
+                });
+
             cols[0].add_space(8.0);
-            
+
             if let Some(idx) = self.selected_template {
                 if cols[0].button("➕ Add Selected Node").clicked() {
                     // Add node at center of current view
                     self.add_node_from_template(idx, 250.0, 150.0);
                 }
             }
-            
+
             // Stats section
             if self.show_stats {
                 cols[0].add_space(16.0);
                 cols[0].separator();
                 cols[0].heading("Graph Stats");
-                
+
                 let stats = self.current_stats();
                 cols[0].label(format!("📦 Nodes: {}", stats.node_count));
                 cols[0].label(format!("🔗 Edges: {}", stats.edge_count));
                 cols[0].label(format!("⬅️ Inputs: {}", stats.input_ports));
                 cols[0].label(format!("➡️ Outputs: {}", stats.output_ports));
-                
+
                 if stats.unconnected_inputs > 0 || stats.unconnected_outputs > 0 {
                     cols[0].add_space(4.0);
-                    cols[0].label(egui::RichText::new(
-                        format!("⚠️ Unconnected: {} in, {} out", 
-                            stats.unconnected_inputs, 
-                            stats.unconnected_outputs)
-                    ).color(egui::Color32::YELLOW));
+                    cols[0].label(
+                        egui::RichText::new(format!(
+                            "⚠️ Unconnected: {} in, {} out",
+                            stats.unconnected_inputs, stats.unconnected_outputs
+                        ))
+                        .color(egui::Color32::YELLOW),
+                    );
                 }
             }
 
             // RIGHT: Graph View
-            cols[1].heading(format!("{} {}", self.active_graph.icon(), self.active_graph.name()));
-            
+            cols[1].heading(format!(
+                "{} {}",
+                self.active_graph.icon(),
+                self.active_graph.name()
+            ));
+
             // Display current graph description
             let description = match self.active_graph {
                 GraphType::BehaviorTree => "AI behavior: Patrol → Detect Enemy → Attack",
@@ -769,15 +828,23 @@ impl GraphPanel {
             };
             cols[1].label(description);
             cols[1].add_space(4.0);
-            
+
             // Show the graph
             match self.active_graph {
-                GraphType::BehaviorTree => { self.behavior_tree_graph.show(&mut cols[1]); },
-                GraphType::Shader => { self.shader_graph.show(&mut cols[1]); },
-                GraphType::Dialogue => { self.dialogue_graph.show(&mut cols[1]); },
-                _ => { cols[1].label("Graph type not yet implemented"); }
+                GraphType::BehaviorTree => {
+                    self.behavior_tree_graph.show(&mut cols[1]);
+                }
+                GraphType::Shader => {
+                    self.shader_graph.show(&mut cols[1]);
+                }
+                GraphType::Dialogue => {
+                    self.dialogue_graph.show(&mut cols[1]);
+                }
+                _ => {
+                    cols[1].label("Graph type not yet implemented");
+                }
             }
-            
+
             // Port type legend
             cols[1].add_space(8.0);
             cols[1].horizontal(|ui| {
@@ -961,15 +1028,15 @@ mod tests {
     fn test_active_graph_switching() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         assert_eq!(panel.active_graph, GraphType::BehaviorTree);
-        
+
         panel.active_graph = GraphType::Shader;
         assert_eq!(panel.active_graph_ref().nodes().len(), 4);
-        
+
         panel.active_graph = GraphType::Dialogue;
         assert_eq!(panel.active_graph_ref().nodes().len(), 5);
-        
+
         panel.active_graph = GraphType::BehaviorTree;
         assert_eq!(panel.active_graph_ref().nodes().len(), 5);
     }
@@ -993,7 +1060,7 @@ mod tests {
             .with_input("A", PortType::Number)
             .with_input("B", PortType::Number)
             .with_output("Result", PortType::Number);
-        
+
         assert_eq!(template.inputs.len(), 2);
         assert_eq!(template.outputs.len(), 1);
         assert_eq!(template.inputs[0].0, "A");
@@ -1004,9 +1071,8 @@ mod tests {
     #[test]
     fn test_node_template_with_color() {
         let color = egui::Color32::RED;
-        let template = NodeTemplate::new("Red Node", "Colored")
-            .with_color(color);
-        
+        let template = NodeTemplate::new("Red Node", "Colored").with_color(color);
+
         assert_eq!(template.color, Some(color));
     }
 
@@ -1016,9 +1082,9 @@ mod tests {
             .with_input("A", PortType::Number)
             .with_input("B", PortType::Number)
             .with_output("Result", PortType::Number);
-        
+
         let node = template.create_node(42, 100.0, 200.0);
-        
+
         assert_eq!(node.id(), 42);
         assert_eq!(node.label(), "Math Add");
         assert_eq!(node.x(), 100.0);
@@ -1030,15 +1096,15 @@ mod tests {
     #[test]
     fn test_templates_initialized() {
         let panel = GraphPanel::new();
-        
+
         // Check behavior tree templates
         let bt_templates = panel.templates.get(&GraphType::BehaviorTree).unwrap();
         assert!(bt_templates.len() >= 6);
-        
+
         // Check shader templates
         let shader_templates = panel.templates.get(&GraphType::Shader).unwrap();
         assert!(shader_templates.len() >= 7);
-        
+
         // Check dialogue templates
         let dlg_templates = panel.templates.get(&GraphType::Dialogue).unwrap();
         assert!(dlg_templates.len() >= 6);
@@ -1047,13 +1113,13 @@ mod tests {
     #[test]
     fn test_current_templates() {
         let mut panel = GraphPanel::new();
-        
+
         panel.active_graph = GraphType::BehaviorTree;
         assert!(panel.current_templates().len() >= 6);
-        
+
         panel.active_graph = GraphType::Shader;
         assert!(panel.current_templates().len() >= 7);
-        
+
         panel.active_graph = GraphType::Dialogue;
         assert!(panel.current_templates().len() >= 6);
     }
@@ -1065,21 +1131,21 @@ mod tests {
     #[test]
     fn test_graph_stats_from_graph() {
         let mut graph = NodeGraph::new();
-        
+
         let mut node1 = GraphNode::new(1, "Node1").with_position(0.0, 0.0);
         node1.add_input(Port::new(0, "In", PortType::Exec));
         node1.add_output(Port::new(1, "Out", PortType::Exec));
-        
+
         let mut node2 = GraphNode::new(2, "Node2").with_position(100.0, 0.0);
         node2.add_input(Port::new(0, "In", PortType::Exec));
         node2.add_output(Port::new(1, "Out", PortType::Exec));
-        
+
         graph.add_node(node1);
         graph.add_node(node2);
         graph.add_edge(1, 1, 2, 0); // Connect node1 out to node2 in
-        
+
         let stats = GraphStats::from_graph(&graph);
-        
+
         assert_eq!(stats.node_count, 2);
         assert_eq!(stats.edge_count, 1);
         assert_eq!(stats.input_ports, 2);
@@ -1090,12 +1156,12 @@ mod tests {
     fn test_current_stats() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         panel.active_graph = GraphType::BehaviorTree;
         let bt_stats = panel.current_stats();
         assert_eq!(bt_stats.node_count, 5);
         assert_eq!(bt_stats.edge_count, 4);
-        
+
         panel.active_graph = GraphType::Shader;
         let shader_stats = panel.current_stats();
         assert_eq!(shader_stats.node_count, 4);
@@ -1110,9 +1176,9 @@ mod tests {
     fn test_add_node_from_template() {
         let mut panel = GraphPanel::new();
         panel.active_graph = GraphType::BehaviorTree;
-        
+
         let initial_nodes = panel.active_graph_ref().nodes().len();
-        
+
         // Add a node from first template
         let id = panel.add_node_from_template(0, 200.0, 100.0);
         assert!(id.is_some());
@@ -1124,13 +1190,13 @@ mod tests {
         let mut panel = GraphPanel::new();
         panel.snap_to_grid = true;
         panel.grid_size = 20.0;
-        
+
         let id = panel.add_node_from_template(0, 105.0, 45.0).unwrap();
-        
+
         // Find the node and check position is snapped
         let node = panel.active_graph_ref().get_node(id).unwrap();
         assert_eq!(node.x(), 100.0); // 105 snaps to 100
-        assert_eq!(node.y(), 40.0);  // 45 snaps to 40
+        assert_eq!(node.y(), 40.0); // 45 snaps to 40
     }
 
     #[test]
@@ -1144,13 +1210,13 @@ mod tests {
     fn test_delete_selected_nodes() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         // Select first two nodes
         panel.selected_nodes = vec![1, 2];
-        
+
         let initial = panel.behavior_tree_graph.nodes().len();
         panel.delete_selected();
-        
+
         assert!(panel.selected_nodes.is_empty());
         assert_eq!(panel.behavior_tree_graph.nodes().len(), initial - 2);
     }
@@ -1163,7 +1229,7 @@ mod tests {
     fn test_copy_selected_empty() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         // Nothing selected
         panel.copy_selected();
         assert!(panel.clipboard.is_none());
@@ -1173,18 +1239,18 @@ mod tests {
     fn test_copy_and_paste() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         // Select node 1
         panel.selected_nodes = vec![1];
         panel.copy_selected();
-        
+
         assert!(panel.clipboard.is_some());
         assert_eq!(panel.clipboard.as_ref().unwrap().len(), 1);
-        
+
         // Paste with offset
         let initial = panel.behavior_tree_graph.nodes().len();
         panel.paste(50.0, 50.0);
-        
+
         assert_eq!(panel.behavior_tree_graph.nodes().len(), initial + 1);
         assert_eq!(panel.selected_nodes.len(), 1); // Pasted node is selected
     }
@@ -1193,10 +1259,10 @@ mod tests {
     fn test_paste_empty_clipboard() {
         let mut panel = GraphPanel::new();
         panel.init();
-        
+
         let initial = panel.behavior_tree_graph.nodes().len();
         panel.paste(0.0, 0.0);
-        
+
         // Nothing should be pasted
         assert_eq!(panel.behavior_tree_graph.nodes().len(), initial);
     }
@@ -1209,7 +1275,7 @@ mod tests {
     fn test_search_empty_query() {
         let panel = GraphPanel::new();
         let node = GraphNode::new(1, "Test Node").with_position(0.0, 0.0);
-        
+
         assert!(panel.node_matches_search(&node));
     }
 
@@ -1217,10 +1283,10 @@ mod tests {
     fn test_search_matching() {
         let mut panel = GraphPanel::new();
         panel.search_query = "test".to_string();
-        
+
         let matching = GraphNode::new(1, "Test Node").with_position(0.0, 0.0);
         let not_matching = GraphNode::new(2, "Other Node").with_position(0.0, 0.0);
-        
+
         assert!(panel.node_matches_search(&matching));
         assert!(!panel.node_matches_search(&not_matching));
     }
@@ -1229,7 +1295,7 @@ mod tests {
     fn test_search_case_insensitive() {
         let mut panel = GraphPanel::new();
         panel.search_query = "TEST".to_string();
-        
+
         let node = GraphNode::new(1, "test node").with_position(0.0, 0.0);
         assert!(panel.node_matches_search(&node));
     }
@@ -1274,7 +1340,7 @@ mod tests {
         let mut panel = GraphPanel::new();
         let id1 = panel.add_node_from_template(0, 0.0, 0.0).unwrap();
         let id2 = panel.add_node_from_template(0, 50.0, 0.0).unwrap();
-        
+
         assert!(id2 > id1);
     }
 
@@ -1284,7 +1350,10 @@ mod tests {
     fn test_graph_type_display() {
         for graph_type in GraphType::all() {
             let display = format!("{}", graph_type);
-            assert!(display.contains(graph_type.name()), "Display should contain name");
+            assert!(
+                display.contains(graph_type.name()),
+                "Display should contain name"
+            );
         }
     }
 

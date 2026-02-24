@@ -381,16 +381,28 @@ impl std::fmt::Display for LocalizationAction {
             LocalizationAction::RemoveString(id) => write!(f, "Remove string {}", id),
             LocalizationAction::SelectString(id) => write!(f, "Select string {}", id),
             LocalizationAction::DuplicateString(id) => write!(f, "Duplicate string {}", id),
-            LocalizationAction::SetStringKey(id, key) => write!(f, "Set string {} key: {}", id, key),
-            LocalizationAction::SetStringCategory(id, cat) => write!(f, "Set string {} category: {}", id, cat),
-            LocalizationAction::SetStringContext(id, ctx) => write!(f, "Set string {} context: {}", id, ctx),
-            LocalizationAction::SetTranslation(id, lang, _) => write!(f, "Set translation {} for {}", id, lang),
-            LocalizationAction::MarkNeedsReview(id, b) => write!(f, "Mark string {} review: {}", id, b),
+            LocalizationAction::SetStringKey(id, key) => {
+                write!(f, "Set string {} key: {}", id, key)
+            }
+            LocalizationAction::SetStringCategory(id, cat) => {
+                write!(f, "Set string {} category: {}", id, cat)
+            }
+            LocalizationAction::SetStringContext(id, ctx) => {
+                write!(f, "Set string {} context: {}", id, ctx)
+            }
+            LocalizationAction::SetTranslation(id, lang, _) => {
+                write!(f, "Set translation {} for {}", id, lang)
+            }
+            LocalizationAction::MarkNeedsReview(id, b) => {
+                write!(f, "Mark string {} review: {}", id, b)
+            }
             LocalizationAction::AddLanguage(lang) => write!(f, "Add language: {}", lang),
             LocalizationAction::RemoveLanguage(lang) => write!(f, "Remove language: {}", lang),
             LocalizationAction::SetSourceLanguage(lang) => write!(f, "Set source: {}", lang),
             LocalizationAction::SetPreviewLanguage(lang) => write!(f, "Preview: {}", lang),
-            LocalizationAction::ToggleLanguageEnabled(lang, b) => write!(f, "Toggle {} enabled: {}", lang, b),
+            LocalizationAction::ToggleLanguageEnabled(lang, b) => {
+                write!(f, "Toggle {} enabled: {}", lang, b)
+            }
             LocalizationAction::SetFilterText(text) => write!(f, "Filter: {}", text),
             LocalizationAction::SetFilterCategory(cat) => write!(f, "Filter category: {:?}", cat),
             LocalizationAction::ToggleMissingOnly(b) => write!(f, "Missing only: {}", b),
@@ -398,7 +410,9 @@ impl std::fmt::Display for LocalizationAction {
             LocalizationAction::ClearFilters => write!(f, "Clear filters"),
             LocalizationAction::SetExportFormat(fmt) => write!(f, "Export format: {}", fmt),
             LocalizationAction::AddExportLanguage(lang) => write!(f, "Add export lang: {}", lang),
-            LocalizationAction::RemoveExportLanguage(lang) => write!(f, "Remove export lang: {}", lang),
+            LocalizationAction::RemoveExportLanguage(lang) => {
+                write!(f, "Remove export lang: {}", lang)
+            }
             LocalizationAction::Export => write!(f, "Export"),
             LocalizationAction::Import(path) => write!(f, "Import from: {}", path),
             LocalizationAction::SetImportPath(path) => write!(f, "Set import path: {}", path),
@@ -525,8 +539,14 @@ impl LocalizationPanel {
 
         // Dialogue
         let mut translations = HashMap::new();
-        translations.insert(Language::English, "Welcome, traveler! What brings you to our village?".to_string());
-        translations.insert(Language::Spanish, "¡Bienvenido, viajero! ¿Qué te trae a nuestro pueblo?".to_string());
+        translations.insert(
+            Language::English,
+            "Welcome, traveler! What brings you to our village?".to_string(),
+        );
+        translations.insert(
+            Language::Spanish,
+            "¡Bienvenido, viajero! ¿Qué te trae a nuestro pueblo?".to_string(),
+        );
 
         self.strings.push(LocalizedString {
             key: "npc.elder.greeting".to_string(),
@@ -621,7 +641,10 @@ impl LocalizationPanel {
             }
             if needs_review > 0 {
                 ui.separator();
-                ui.label(RichText::new(format!("👁️ {} need review", needs_review)).color(Color32::LIGHT_BLUE));
+                ui.label(
+                    RichText::new(format!("👁️ {} need review", needs_review))
+                        .color(Color32::LIGHT_BLUE),
+                );
             }
         });
 
@@ -676,8 +699,7 @@ impl LocalizationPanel {
                                 format!("{} {:?}", cat.icon(), cat),
                             )
                             .clicked()
-                        {
-                        }
+                        {}
                     }
                 });
 
@@ -706,7 +728,10 @@ impl LocalizationPanel {
                         for (i, s) in self.strings.iter().enumerate() {
                             // Apply filters
                             if !self.filter_text.is_empty()
-                                && !s.key.to_lowercase().contains(&self.filter_text.to_lowercase())
+                                && !s
+                                    .key
+                                    .to_lowercase()
+                                    .contains(&self.filter_text.to_lowercase())
                             {
                                 continue;
                             }
@@ -721,7 +746,10 @@ impl LocalizationPanel {
                                 continue;
                             }
 
-                            let has_missing = self.enabled_languages.iter().any(|l| !s.translations.contains_key(l));
+                            let has_missing = self
+                                .enabled_languages
+                                .iter()
+                                .any(|l| !s.translations.contains_key(l));
 
                             if self.show_missing_only && !has_missing {
                                 continue;
@@ -807,18 +835,16 @@ impl LocalizationPanel {
                             let flag = lang.flag_emoji();
                             let name = lang.name();
 
-                            let has_translation = self.current_string.translations.contains_key(lang);
+                            let has_translation =
+                                self.current_string.translations.contains_key(lang);
                             let status = if has_translation { "✅" } else { "⚠️" };
 
                             ui.horizontal(|ui| {
                                 ui.label(format!("{} {} {}", flag, name, status));
                             });
 
-                            let translation = self
-                                .current_string
-                                .translations
-                                .entry(*lang)
-                                .or_default();
+                            let translation =
+                                self.current_string.translations.entry(*lang).or_default();
 
                             ui.add(egui::TextEdit::multiline(translation).desired_rows(2));
                             ui.add_space(5.0);
@@ -962,11 +988,13 @@ impl LocalizationPanel {
 
                     ui.label("Missing Translations:");
                     let missing = self.count_missing_translations();
-                    ui.label(
-                        RichText::new(format!("{}", missing))
-                            .strong()
-                            .color(if missing > 0 { Color32::YELLOW } else { Color32::GREEN }),
-                    );
+                    ui.label(RichText::new(format!("{}", missing)).strong().color(
+                        if missing > 0 {
+                            Color32::YELLOW
+                        } else {
+                            Color32::GREEN
+                        },
+                    ));
                     ui.end_row();
 
                     ui.label("Needs Review:");
@@ -984,7 +1012,11 @@ impl LocalizationPanel {
 
             for lang in &self.enabled_languages {
                 let total = self.strings.len();
-                let translated = self.strings.iter().filter(|s| s.translations.contains_key(lang)).count();
+                let translated = self
+                    .strings
+                    .iter()
+                    .filter(|s| s.translations.contains_key(lang))
+                    .count();
                 let percent = if total > 0 {
                     100.0 * translated as f32 / total as f32
                 } else {
@@ -1042,9 +1074,17 @@ impl LocalizationPanel {
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut self.export_format, ExportFormat::Csv, "CSV");
                         ui.selectable_value(&mut self.export_format, ExportFormat::Xliff, "XLIFF");
-                        ui.selectable_value(&mut self.export_format, ExportFormat::Po, "PO (gettext)");
+                        ui.selectable_value(
+                            &mut self.export_format,
+                            ExportFormat::Po,
+                            "PO (gettext)",
+                        );
                         ui.selectable_value(&mut self.export_format, ExportFormat::Json, "JSON");
-                        ui.selectable_value(&mut self.export_format, ExportFormat::Resx, "RESX (.NET)");
+                        ui.selectable_value(
+                            &mut self.export_format,
+                            ExportFormat::Resx,
+                            "RESX (.NET)",
+                        );
                     });
             });
 
@@ -1054,7 +1094,10 @@ impl LocalizationPanel {
             for lang in &self.enabled_languages.clone() {
                 let mut selected = self.export_languages.contains(lang);
                 if ui
-                    .checkbox(&mut selected, format!("{} {}", lang.flag_emoji(), lang.name()))
+                    .checkbox(
+                        &mut selected,
+                        format!("{} {}", lang.flag_emoji(), lang.name()),
+                    )
                     .clicked()
                 {
                     if selected {
@@ -1679,7 +1722,10 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(s.translations.len(), 4);
-        assert_eq!(s.translations.get(&Language::Japanese), Some(&"こんにちは".to_string()));
+        assert_eq!(
+            s.translations.get(&Language::Japanese),
+            Some(&"こんにちは".to_string())
+        );
     }
 
     // ===== Language Enum Tests =====
@@ -1756,7 +1802,10 @@ mod tests {
     fn test_export_format_display_format() {
         for format in ExportFormat::all() {
             let display = format!("{}", format);
-            assert!(display.contains(format.name()), "Display should contain name");
+            assert!(
+                display.contains(format.name()),
+                "Display should contain name"
+            );
         }
     }
 
@@ -1833,7 +1882,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 

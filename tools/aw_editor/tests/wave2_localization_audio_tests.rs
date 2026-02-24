@@ -2,11 +2,11 @@
 //! Covers: Language, StringCategory, ExportFormat, LocalizationTab, LocalizedString, PluralForms,
 //!         MusicMood, SpatialPreset, ReverbEnvironment, AudioTab, AudioEmitterInfo
 
+use aw_editor_lib::panels::audio_panel::{
+    AudioEmitterInfo, AudioTab, MusicMood, MusicTrackEntry, ReverbEnvironment, SpatialPreset,
+};
 use aw_editor_lib::panels::localization_panel::{
     ExportFormat, Language, LocalizationTab, LocalizedString, PluralForms, StringCategory,
-};
-use aw_editor_lib::panels::audio_panel::{
-    AudioTab, AudioEmitterInfo, MusicMood, MusicTrackEntry, ReverbEnvironment, SpatialPreset,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -65,7 +65,11 @@ fn language_flag_emojis_non_empty() {
 fn language_display() {
     for lang in Language::all() {
         let s = format!("{}", lang);
-        assert!(s.contains(lang.name()), "Display missing name for {:?}", lang);
+        assert!(
+            s.contains(lang.name()),
+            "Display missing name for {:?}",
+            lang
+        );
     }
 }
 
@@ -357,7 +361,11 @@ fn spatial_preset_is_multichannel() {
 #[test]
 fn spatial_preset_description_non_empty() {
     for preset in SpatialPreset::all() {
-        assert!(!preset.description().is_empty(), "{:?} description empty", preset);
+        assert!(
+            !preset.description().is_empty(),
+            "{:?} description empty",
+            preset
+        );
     }
 }
 

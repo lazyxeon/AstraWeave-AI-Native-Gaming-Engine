@@ -218,7 +218,9 @@ impl std::fmt::Display for DirectorOp {
         match self {
             DirectorOp::Fortify { .. } => write!(f, "Fortify"),
             DirectorOp::Collapse { .. } => write!(f, "Collapse"),
-            DirectorOp::SpawnWave { archetype, count, .. } => {
+            DirectorOp::SpawnWave {
+                archetype, count, ..
+            } => {
                 write!(f, "Spawn Wave ({} x {})", count, archetype)
             }
         }
@@ -251,7 +253,10 @@ impl DirectorOp {
 
     /// Returns true if this operation modifies terrain.
     pub fn is_terrain_op(&self) -> bool {
-        matches!(self, DirectorOp::Fortify { .. } | DirectorOp::Collapse { .. })
+        matches!(
+            self,
+            DirectorOp::Fortify { .. } | DirectorOp::Collapse { .. }
+        )
     }
 
     /// Returns true if this operation spawns entities.
@@ -332,7 +337,9 @@ impl LevelDoc {
 
         // Check for empty biome
         if self.biome.trim().is_empty() {
-            issues.push(LevelValidationIssue::warning("Level has no biome specified"));
+            issues.push(LevelValidationIssue::warning(
+                "Level has no biome specified",
+            ));
         }
 
         // Check for duplicate obstacle IDs
@@ -390,8 +397,8 @@ impl LevelDoc {
     pub fn stats(&self) -> LevelStats {
         let total_npc_count: u32 = self.npcs.iter().map(|n| n.count).sum();
         let trigger_count: usize = self.fate_threads.iter().map(|t| t.triggers.len()).sum();
-        let has_boss = !self.boss.director_budget_script.is_empty()
-            || !self.boss.phase_script.is_empty();
+        let has_boss =
+            !self.boss.director_budget_script.is_empty() || !self.boss.phase_script.is_empty();
 
         LevelStats {
             obstacle_count: self.obstacles.len(),
@@ -469,13 +476,20 @@ mod tests {
     #[test]
     fn test_enum_serialization() {
         let paint = BiomePaint::GrassDense {
-            area: Circle { cx: 10, cz: 20, radius: 5 },
+            area: Circle {
+                cx: 10,
+                cz: 20,
+                radius: 5,
+            },
         };
         let toml_paint = toml::to_string(&paint).expect("serialize paint");
         assert!(toml_paint.contains("grass_dense"));
         assert!(toml_paint.contains("radius = 5"));
 
-        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.0 };
+        let trigger = Trigger::EnterArea {
+            center: [1.0, 2.0, 3.0],
+            radius: 10.0,
+        };
         let toml_trigger = toml::to_string(&trigger).expect("serialize trigger");
         assert!(toml_trigger.contains("enter_area"));
     }
@@ -485,7 +499,10 @@ mod tests {
         let npc = NpcSpawn {
             archetype: "Guard".to_string(),
             count: 3,
-            spawn: Spawn { pos: [0.0, 0.0, 0.0], radius: 10.0 },
+            spawn: Spawn {
+                pos: [0.0, 0.0, 0.0],
+                radius: 10.0,
+            },
             behavior: "Patrol".to_string(),
         };
 
@@ -514,7 +531,7 @@ mod tests {
     fn test_validate_empty_level_has_warnings() {
         let doc = LevelDoc::default();
         let issues = doc.validate();
-        
+
         // Should have warnings for empty title and biome
         assert!(issues.iter().any(|i| i.message.contains("title")));
         assert!(issues.iter().any(|i| i.message.contains("biome")));
@@ -529,8 +546,14 @@ mod tests {
             biome: "Forest".to_string(),
             ..Default::default()
         };
-        doc.obstacles.push(Obstacle { id: "rock".to_string(), ..Default::default() });
-        doc.obstacles.push(Obstacle { id: "rock".to_string(), ..Default::default() });
+        doc.obstacles.push(Obstacle {
+            id: "rock".to_string(),
+            ..Default::default()
+        });
+        doc.obstacles.push(Obstacle {
+            id: "rock".to_string(),
+            ..Default::default()
+        });
 
         let issues = doc.validate();
         let dup_error = issues.iter().find(|i| i.message.contains("Duplicate"));
@@ -566,12 +589,17 @@ mod tests {
         doc.npcs.push(NpcSpawn {
             archetype: "Guard".to_string(),
             count: 5,
-            spawn: Spawn { pos: [0.0, 0.0, 0.0], radius: -5.0 },
+            spawn: Spawn {
+                pos: [0.0, 0.0, 0.0],
+                radius: -5.0,
+            },
             behavior: "Patrol".to_string(),
         });
 
         let issues = doc.validate();
-        let error = issues.iter().find(|i| i.message.contains("negative radius"));
+        let error = issues
+            .iter()
+            .find(|i| i.message.contains("negative radius"));
         assert!(error.is_some());
         assert!(error.unwrap().is_error);
     }
@@ -596,8 +624,14 @@ mod tests {
     #[test]
     fn test_is_valid_with_errors() {
         let mut doc = LevelDoc::default();
-        doc.obstacles.push(Obstacle { id: "dup".to_string(), ..Default::default() });
-        doc.obstacles.push(Obstacle { id: "dup".to_string(), ..Default::default() });
+        doc.obstacles.push(Obstacle {
+            id: "dup".to_string(),
+            ..Default::default()
+        });
+        doc.obstacles.push(Obstacle {
+            id: "dup".to_string(),
+            ..Default::default()
+        });
 
         assert!(!doc.is_valid());
     }
@@ -628,15 +662,25 @@ mod tests {
         let mut doc = LevelDoc::default();
         doc.obstacles.push(Obstacle::default());
         doc.obstacles.push(Obstacle::default());
-        doc.npcs.push(NpcSpawn { count: 5, ..Default::default() });
-        doc.npcs.push(NpcSpawn { count: 3, ..Default::default() });
+        doc.npcs.push(NpcSpawn {
+            count: 5,
+            ..Default::default()
+        });
+        doc.npcs.push(NpcSpawn {
+            count: 3,
+            ..Default::default()
+        });
         doc.fate_threads.push(FateThread {
             name: "Thread1".to_string(),
             triggers: vec![Trigger::default(), Trigger::default()],
             ops: vec![],
         });
         doc.biome_paints.push(BiomePaint::GrassDense {
-            area: Circle { cx: 0, cz: 0, radius: 10 },
+            area: Circle {
+                cx: 0,
+                cz: 0,
+                radius: 10,
+            },
         });
         doc.boss.director_budget_script = "boss_script".to_string();
 
@@ -653,28 +697,28 @@ mod tests {
     #[test]
     fn test_find_obstacles_by_tag() {
         let mut doc = LevelDoc::default();
-        doc.obstacles.push(Obstacle { 
-            id: "rock1".to_string(), 
+        doc.obstacles.push(Obstacle {
+            id: "rock1".to_string(),
             tags: vec!["solid".to_string(), "natural".to_string()],
-            ..Default::default() 
+            ..Default::default()
         });
-        doc.obstacles.push(Obstacle { 
-            id: "rock2".to_string(), 
+        doc.obstacles.push(Obstacle {
+            id: "rock2".to_string(),
             tags: vec!["solid".to_string()],
-            ..Default::default() 
+            ..Default::default()
         });
-        doc.obstacles.push(Obstacle { 
-            id: "tree".to_string(), 
+        doc.obstacles.push(Obstacle {
+            id: "tree".to_string(),
             tags: vec!["natural".to_string()],
-            ..Default::default() 
+            ..Default::default()
         });
 
         let solid = doc.find_obstacles_by_tag("solid");
         assert_eq!(solid.len(), 2);
-        
+
         let natural = doc.find_obstacles_by_tag("natural");
         assert_eq!(natural.len(), 2);
-        
+
         let empty = doc.find_obstacles_by_tag("nonexistent");
         assert!(empty.is_empty());
     }
@@ -682,16 +726,28 @@ mod tests {
     #[test]
     fn test_find_npcs_by_archetype() {
         let mut doc = LevelDoc::default();
-        doc.npcs.push(NpcSpawn { archetype: "Guard".to_string(), count: 2, ..Default::default() });
-        doc.npcs.push(NpcSpawn { archetype: "Archer".to_string(), count: 3, ..Default::default() });
-        doc.npcs.push(NpcSpawn { archetype: "Guard".to_string(), count: 1, ..Default::default() });
+        doc.npcs.push(NpcSpawn {
+            archetype: "Guard".to_string(),
+            count: 2,
+            ..Default::default()
+        });
+        doc.npcs.push(NpcSpawn {
+            archetype: "Archer".to_string(),
+            count: 3,
+            ..Default::default()
+        });
+        doc.npcs.push(NpcSpawn {
+            archetype: "Guard".to_string(),
+            count: 1,
+            ..Default::default()
+        });
 
         let guards = doc.find_npcs_by_archetype("Guard");
         assert_eq!(guards.len(), 2);
-        
+
         let archers = doc.find_npcs_by_archetype("Archer");
         assert_eq!(archers.len(), 1);
-        
+
         let empty = doc.find_npcs_by_archetype("Mage");
         assert!(empty.is_empty());
     }
@@ -700,9 +756,17 @@ mod tests {
 
     #[test]
     fn test_biome_paint_display() {
-        let grass = BiomePaint::GrassDense { area: Circle { cx: 0, cz: 0, radius: 10 } };
-        let moss = BiomePaint::MossPath { polyline: vec![[0, 0], [1, 1]] };
-        
+        let grass = BiomePaint::GrassDense {
+            area: Circle {
+                cx: 0,
+                cz: 0,
+                radius: 10,
+            },
+        };
+        let moss = BiomePaint::MossPath {
+            polyline: vec![[0, 0], [1, 1]],
+        };
+
         assert_eq!(format!("{}", grass), "Grass Dense");
         assert_eq!(format!("{}", moss), "Moss Path");
     }
@@ -717,14 +781,22 @@ mod tests {
 
     #[test]
     fn test_biome_paint_helpers() {
-        let grass = BiomePaint::GrassDense { area: Circle { cx: 0, cz: 0, radius: 10 } };
-        let moss = BiomePaint::MossPath { polyline: vec![[0, 0], [1, 1]] };
-        
+        let grass = BiomePaint::GrassDense {
+            area: Circle {
+                cx: 0,
+                cz: 0,
+                radius: 10,
+            },
+        };
+        let moss = BiomePaint::MossPath {
+            polyline: vec![[0, 0], [1, 1]],
+        };
+
         assert!(grass.is_area());
         assert!(!grass.is_path());
         assert!(!moss.is_area());
         assert!(moss.is_path());
-        
+
         assert_eq!(grass.name(), "Grass Dense");
         assert_eq!(moss.icon(), "🛤️");
     }
@@ -733,7 +805,10 @@ mod tests {
 
     #[test]
     fn test_trigger_display() {
-        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.5 };
+        let trigger = Trigger::EnterArea {
+            center: [1.0, 2.0, 3.0],
+            radius: 10.5,
+        };
         assert!(format!("{}", trigger).contains("Enter Area"));
         assert!(format!("{}", trigger).contains("10.5"));
     }
@@ -747,8 +822,11 @@ mod tests {
 
     #[test]
     fn test_trigger_helpers() {
-        let trigger = Trigger::EnterArea { center: [1.0, 2.0, 3.0], radius: 10.0 };
-        
+        let trigger = Trigger::EnterArea {
+            center: [1.0, 2.0, 3.0],
+            radius: 10.0,
+        };
+
         assert!(trigger.is_spatial());
         assert_eq!(trigger.radius(), Some(10.0));
         assert_eq!(trigger.center(), Some([1.0, 2.0, 3.0]));
@@ -760,10 +838,18 @@ mod tests {
 
     #[test]
     fn test_director_op_display() {
-        let fortify = DirectorOp::Fortify { area: FortRegion { cx: 0, cz: 0, r: 5 } };
-        let collapse = DirectorOp::Collapse { area: FortRegion { cx: 0, cz: 0, r: 5 } };
-        let spawn = DirectorOp::SpawnWave { archetype: "goblin".to_string(), count: 5, scatter: 2.0 };
-        
+        let fortify = DirectorOp::Fortify {
+            area: FortRegion { cx: 0, cz: 0, r: 5 },
+        };
+        let collapse = DirectorOp::Collapse {
+            area: FortRegion { cx: 0, cz: 0, r: 5 },
+        };
+        let spawn = DirectorOp::SpawnWave {
+            archetype: "goblin".to_string(),
+            count: 5,
+            scatter: 2.0,
+        };
+
         assert_eq!(format!("{}", fortify), "Fortify");
         assert_eq!(format!("{}", collapse), "Collapse");
         assert!(format!("{}", spawn).contains("5"));
@@ -781,17 +867,23 @@ mod tests {
 
     #[test]
     fn test_director_op_helpers() {
-        let fortify = DirectorOp::Fortify { area: FortRegion { cx: 0, cz: 0, r: 5 } };
-        let spawn = DirectorOp::SpawnWave { archetype: "goblin".to_string(), count: 5, scatter: 2.0 };
-        
+        let fortify = DirectorOp::Fortify {
+            area: FortRegion { cx: 0, cz: 0, r: 5 },
+        };
+        let spawn = DirectorOp::SpawnWave {
+            archetype: "goblin".to_string(),
+            count: 5,
+            scatter: 2.0,
+        };
+
         assert!(fortify.is_terrain_op());
         assert!(!fortify.is_spawn_op());
         assert_eq!(fortify.spawn_count(), None);
-        
+
         assert!(!spawn.is_terrain_op());
         assert!(spawn.is_spawn_op());
         assert_eq!(spawn.spawn_count(), Some(5));
-        
+
         assert_eq!(fortify.icon(), "🏰");
         assert_eq!(spawn.icon(), "👾");
     }

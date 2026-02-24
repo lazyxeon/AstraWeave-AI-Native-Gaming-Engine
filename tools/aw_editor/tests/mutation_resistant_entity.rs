@@ -4,8 +4,8 @@
 //! to achieve high mutation testing kill rates (90%+).
 
 use aw_editor_lib::entity_manager::{
-    EntityId, EntityManager, EntityMaterial, EntityValidation, MaterialSlot,
-    SelectionSet, EntityManagerValidation, EntityManagerStats, EditorEntity,
+    EditorEntity, EntityId, EntityManager, EntityManagerStats, EntityManagerValidation,
+    EntityMaterial, EntityValidation, MaterialSlot, SelectionSet,
 };
 use glam::{Quat, Vec3, Vec4};
 use std::path::PathBuf;
@@ -242,7 +242,7 @@ mod entity_material_tests {
         let mut mat = EntityMaterial::new();
         // Need length_squared = 0.001, so length = sqrt(0.001) ≈ 0.0316
         mat.emissive = Vec3::new(0.0316, 0.0, 0.0); // length_squared ≈ 0.001
-        // This is at threshold, not above
+                                                    // This is at threshold, not above
         let is_emissive = mat.is_emissive();
         // The boundary check might be exactly at threshold
         assert!(!is_emissive || mat.emissive.length_squared() > 0.001);

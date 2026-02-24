@@ -176,7 +176,11 @@ impl ClipboardStats {
 
 impl std::fmt::Display for ClipboardStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Clipboard: {} entities (v{})", self.entity_count, self.version)
+        write!(
+            f,
+            "Clipboard: {} entities (v{})",
+            self.entity_count, self.version
+        )
     }
 }
 
@@ -203,7 +207,9 @@ impl ClipboardEntityData {
 
     /// Check if entity is rotated
     pub fn is_rotated(&self) -> bool {
-        self.rotation.abs() > 0.001 || self.rotation_x.abs() > 0.001 || self.rotation_z.abs() > 0.001
+        self.rotation.abs() > 0.001
+            || self.rotation_x.abs() > 0.001
+            || self.rotation_z.abs() > 0.001
     }
 
     /// Get position as tuple
@@ -234,7 +240,11 @@ impl ClipboardValidation {
         } else if self.is_valid {
             format!("Valid with {} warnings", self.warnings.len())
         } else {
-            format!("{} errors, {} warnings", self.errors.len(), self.warnings.len())
+            format!(
+                "{} errors, {} warnings",
+                self.errors.len(),
+                self.warnings.len()
+            )
         }
     }
 }
@@ -291,7 +301,7 @@ impl ClipboardData {
                 .cooldowns(entity_id)
                 .map(|cd| cd.map.clone())
                 .unwrap_or_default();
-            
+
             let behavior_graph = world.behavior_graph(entity_id).cloned();
 
             entities.push(ClipboardEntityData {
@@ -309,7 +319,7 @@ impl ClipboardData {
             });
         }
 
-        ClipboardData { 
+        ClipboardData {
             version: CLIPBOARD_SCHEMA_VERSION,
             entities,
         }
@@ -364,10 +374,19 @@ impl ClipboardData {
     /// Get statistics about clipboard contents
     pub fn stats(&self) -> ClipboardStats {
         let total_entities = self.entities.len();
-        let with_behavior_graph = self.entities.iter().filter(|e| e.behavior_graph.is_some()).count();
-        let with_cooldowns = self.entities.iter().filter(|e| !e.cooldowns.is_empty()).count();
+        let with_behavior_graph = self
+            .entities
+            .iter()
+            .filter(|e| e.behavior_graph.is_some())
+            .count();
+        let with_cooldowns = self
+            .entities
+            .iter()
+            .filter(|e| !e.cooldowns.is_empty())
+            .count();
         let total_cooldowns: usize = self.entities.iter().map(|e| e.cooldowns.len()).sum();
-        let teams: std::collections::HashSet<u8> = self.entities.iter().map(|e| e.team_id).collect();
+        let teams: std::collections::HashSet<u8> =
+            self.entities.iter().map(|e| e.team_id).collect();
 
         ClipboardStats {
             entity_count: total_entities,
@@ -387,7 +406,8 @@ impl ClipboardData {
     /// Find entities by name pattern (case-insensitive)
     pub fn find_by_name(&self, pattern: &str) -> Vec<usize> {
         let pattern_lower = pattern.to_lowercase();
-        self.entities.iter()
+        self.entities
+            .iter()
             .enumerate()
             .filter(|(_, e)| e.name.to_lowercase().contains(&pattern_lower))
             .map(|(i, _)| i)
@@ -396,7 +416,10 @@ impl ClipboardData {
 
     /// Get entities belonging to a specific team
     pub fn filter_by_team(&self, team_id: u8) -> Vec<&ClipboardEntityData> {
-        self.entities.iter().filter(|e| e.team_id == team_id).collect()
+        self.entities
+            .iter()
+            .filter(|e| e.team_id == team_id)
+            .collect()
     }
 
     pub fn to_json(&self) -> Result<String> {
@@ -622,7 +645,10 @@ mod tests {
 
         // Verify BehaviorGraph was restored
         let restored_graph = world.behavior_graph(spawned[0]);
-        assert!(restored_graph.is_some(), "BehaviorGraph should be restored after paste");
+        assert!(
+            restored_graph.is_some(),
+            "BehaviorGraph should be restored after paste"
+        );
     }
 
     // ====================================================================
@@ -649,7 +675,7 @@ mod tests {
     fn test_clipboard_validation_add_warning() {
         let mut validation = ClipboardValidation::valid();
         validation.add_warning("Minor issue");
-        
+
         assert!(validation.is_valid); // Warnings don't invalidate
         assert!(validation.warnings.len() == 1);
         assert!(validation.warnings[0].contains("Minor issue"));
@@ -659,7 +685,7 @@ mod tests {
     fn test_clipboard_validation_add_error() {
         let mut validation = ClipboardValidation::valid();
         validation.add_error("Critical issue");
-        
+
         assert!(!validation.is_valid);
         assert_eq!(validation.errors.len(), 1);
     }
@@ -743,7 +769,7 @@ mod tests {
             rotation_x: 0.0,
             rotation_z: 0.0,
             scale: 1.0,
-            hp: -50,  // Warning
+            hp: -50, // Warning
             team_id: 0,
             ammo: -10, // Warning
             cooldowns: HashMap::new(),
@@ -821,7 +847,10 @@ mod tests {
         assert!(!clipboard.is_compatible());
         let validation = clipboard.validate();
         assert!(validation.is_valid); // Still valid, just warning
-        assert!(validation.warnings.iter().any(|w| w.contains("newer version")));
+        assert!(validation
+            .warnings
+            .iter()
+            .any(|w| w.contains("newer version")));
     }
 
     #[test]
@@ -907,8 +936,20 @@ mod tests {
     #[test]
     fn test_clipboard_stats_with_entities() {
         let mut world = World::new();
-        let e1 = world.spawn("E1", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let _e2 = world.spawn("E2", IVec2 { x: 1, y: 1 }, astraweave_core::Team { id: 1 }, 50, 20);
+        let e1 = world.spawn(
+            "E1",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let _e2 = world.spawn(
+            "E2",
+            IVec2 { x: 1, y: 1 },
+            astraweave_core::Team { id: 1 },
+            50,
+            20,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1]);
         let stats = clipboard.stats();
@@ -967,8 +1008,20 @@ mod tests {
     #[test]
     fn test_clipboard_entity_names() {
         let mut world = World::new();
-        let e1 = world.spawn("Alpha", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let e2 = world.spawn("Beta", IVec2 { x: 1, y: 1 }, astraweave_core::Team { id: 0 }, 100, 30);
+        let e1 = world.spawn(
+            "Alpha",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let e2 = world.spawn(
+            "Beta",
+            IVec2 { x: 1, y: 1 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1, e2]);
         let names = clipboard.entity_names();
@@ -986,22 +1039,34 @@ mod tests {
                 ClipboardEntityData {
                     name: "PlayerUnit".to_string(),
                     pos: IVec2 { x: 0, y: 0 },
-                    rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-                    scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-                    cooldowns: HashMap::new(), behavior_graph: None,
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 0,
+                    ammo: 30,
+                    cooldowns: HashMap::new(),
+                    behavior_graph: None,
                 },
                 ClipboardEntityData {
                     name: "EnemyUnit".to_string(),
                     pos: IVec2 { x: 1, y: 1 },
-                    rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-                    scale: 1.0, hp: 100, team_id: 1, ammo: 30,
-                    cooldowns: HashMap::new(), behavior_graph: None,
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 1,
+                    ammo: 30,
+                    cooldowns: HashMap::new(),
+                    behavior_graph: None,
                 },
             ],
         };
 
         let results = clipboard.find_by_name("unit");
-        assert_eq!(results.len(), 2);  // Both match "unit"
+        assert_eq!(results.len(), 2); // Both match "unit"
 
         let results = clipboard.find_by_name("player");
         assert_eq!(results.len(), 1);
@@ -1016,23 +1081,41 @@ mod tests {
                 ClipboardEntityData {
                     name: "Ally1".to_string(),
                     pos: IVec2 { x: 0, y: 0 },
-                    rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-                    scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-                    cooldowns: HashMap::new(), behavior_graph: None,
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 0,
+                    ammo: 30,
+                    cooldowns: HashMap::new(),
+                    behavior_graph: None,
                 },
                 ClipboardEntityData {
                     name: "Enemy1".to_string(),
                     pos: IVec2 { x: 1, y: 1 },
-                    rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-                    scale: 1.0, hp: 100, team_id: 1, ammo: 30,
-                    cooldowns: HashMap::new(), behavior_graph: None,
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 1,
+                    ammo: 30,
+                    cooldowns: HashMap::new(),
+                    behavior_graph: None,
                 },
                 ClipboardEntityData {
                     name: "Ally2".to_string(),
                     pos: IVec2 { x: 2, y: 2 },
-                    rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-                    scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-                    cooldowns: HashMap::new(), behavior_graph: None,
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 1.0,
+                    hp: 100,
+                    team_id: 0,
+                    ammo: 30,
+                    cooldowns: HashMap::new(),
+                    behavior_graph: None,
                 },
             ],
         };
@@ -1137,9 +1220,15 @@ mod tests {
         let without_ai = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(!without_ai.has_ai());
     }
@@ -1149,9 +1238,15 @@ mod tests {
         let mut data = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(!data.has_cooldowns());
         data.cooldowns.insert("attack".to_string(), 1.5);
@@ -1164,18 +1259,30 @@ mod tests {
         let normal = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(!normal.is_scaled());
 
         let scaled = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 2.5, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 2.5,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(scaled.is_scaled());
     }
@@ -1185,18 +1292,30 @@ mod tests {
         let not_rotated = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(!not_rotated.is_rotated());
 
         let rotated = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 0, y: 0 },
-            rotation: 1.57, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 1.57,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert!(rotated.is_rotated());
     }
@@ -1206,9 +1325,15 @@ mod tests {
         let data = ClipboardEntityData {
             name: "Test".to_string(),
             pos: IVec2 { x: 5, y: 10 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         assert_eq!(data.position(), (5, 10));
     }
@@ -1218,9 +1343,15 @@ mod tests {
         let data = ClipboardEntityData {
             name: "Soldier".to_string(),
             pos: IVec2 { x: 5, y: 10 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 75, team_id: 1, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 75,
+            team_id: 1,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         let summary = data.summary();
         assert!(summary.contains("Soldier"));
@@ -1232,9 +1363,15 @@ mod tests {
         let data = ClipboardEntityData {
             name: "Unit".to_string(),
             pos: IVec2 { x: 3, y: 7 },
-            rotation: 0.0, rotation_x: 0.0, rotation_z: 0.0,
-            scale: 1.0, hp: 100, team_id: 0, ammo: 30,
-            cooldowns: HashMap::new(), behavior_graph: None,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+            hp: 100,
+            team_id: 0,
+            ammo: 30,
+            cooldowns: HashMap::new(),
+            behavior_graph: None,
         };
         let display = format!("{}", data);
         assert!(display.contains("Unit"));

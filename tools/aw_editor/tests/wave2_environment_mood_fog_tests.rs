@@ -837,7 +837,10 @@ fn tonemapper_names() {
 #[test]
 fn tonemapper_descriptions() {
     assert_eq!(Tonemapper::None.description(), "No tonemapping (raw HDR)");
-    assert_eq!(Tonemapper::Aces.description(), "Academy standard filmic look");
+    assert_eq!(
+        Tonemapper::Aces.description(),
+        "Academy standard filmic look"
+    );
     assert_eq!(Tonemapper::AgX.description(), "Modern neutral look");
 }
 
@@ -852,72 +855,114 @@ fn tonemapper_default_is_aces() {
 
 #[test]
 fn mood_neutral_tonemapper() {
-    assert_eq!(MoodPreset::Neutral.recommended_tonemapper(), Tonemapper::Khronos);
+    assert_eq!(
+        MoodPreset::Neutral.recommended_tonemapper(),
+        Tonemapper::Khronos
+    );
 }
 
 #[test]
 fn mood_bright_tonemapper() {
-    assert_eq!(MoodPreset::Bright.recommended_tonemapper(), Tonemapper::Reinhard);
+    assert_eq!(
+        MoodPreset::Bright.recommended_tonemapper(),
+        Tonemapper::Reinhard
+    );
 }
 
 #[test]
 fn mood_moody_tonemapper() {
-    assert_eq!(MoodPreset::Moody.recommended_tonemapper(), Tonemapper::Uncharted2);
+    assert_eq!(
+        MoodPreset::Moody.recommended_tonemapper(),
+        Tonemapper::Uncharted2
+    );
 }
 
 #[test]
 fn mood_dramatic_tonemapper() {
-    assert_eq!(MoodPreset::Dramatic.recommended_tonemapper(), Tonemapper::Aces);
+    assert_eq!(
+        MoodPreset::Dramatic.recommended_tonemapper(),
+        Tonemapper::Aces
+    );
 }
 
 #[test]
 fn mood_horror_tonemapper() {
-    assert_eq!(MoodPreset::Horror.recommended_tonemapper(), Tonemapper::Uncharted2);
+    assert_eq!(
+        MoodPreset::Horror.recommended_tonemapper(),
+        Tonemapper::Uncharted2
+    );
 }
 
 #[test]
 fn mood_cinematic_tonemapper() {
-    assert_eq!(MoodPreset::Cinematic.recommended_tonemapper(), Tonemapper::Aces);
+    assert_eq!(
+        MoodPreset::Cinematic.recommended_tonemapper(),
+        Tonemapper::Aces
+    );
 }
 
 #[test]
 fn mood_dreamy_tonemapper() {
-    assert_eq!(MoodPreset::Dreamy.recommended_tonemapper(), Tonemapper::ReinhardExtended);
+    assert_eq!(
+        MoodPreset::Dreamy.recommended_tonemapper(),
+        Tonemapper::ReinhardExtended
+    );
 }
 
 #[test]
 fn mood_vintage_tonemapper() {
-    assert_eq!(MoodPreset::Vintage.recommended_tonemapper(), Tonemapper::AgX);
+    assert_eq!(
+        MoodPreset::Vintage.recommended_tonemapper(),
+        Tonemapper::AgX
+    );
 }
 
 #[test]
 fn mood_cyberpunk_tonemapper() {
-    assert_eq!(MoodPreset::CyberPunk.recommended_tonemapper(), Tonemapper::Aces);
+    assert_eq!(
+        MoodPreset::CyberPunk.recommended_tonemapper(),
+        Tonemapper::Aces
+    );
 }
 
 #[test]
 fn mood_desert_tonemapper() {
-    assert_eq!(MoodPreset::Desert.recommended_tonemapper(), Tonemapper::Aces);
+    assert_eq!(
+        MoodPreset::Desert.recommended_tonemapper(),
+        Tonemapper::Aces
+    );
 }
 
 #[test]
 fn mood_arctic_tonemapper() {
-    assert_eq!(MoodPreset::Arctic.recommended_tonemapper(), Tonemapper::Reinhard);
+    assert_eq!(
+        MoodPreset::Arctic.recommended_tonemapper(),
+        Tonemapper::Reinhard
+    );
 }
 
 #[test]
 fn mood_tropical_tonemapper() {
-    assert_eq!(MoodPreset::Tropical.recommended_tonemapper(), Tonemapper::Aces);
+    assert_eq!(
+        MoodPreset::Tropical.recommended_tonemapper(),
+        Tonemapper::Aces
+    );
 }
 
 #[test]
 fn mood_noir_tonemapper() {
-    assert_eq!(MoodPreset::Noir.recommended_tonemapper(), Tonemapper::Uncharted2);
+    assert_eq!(
+        MoodPreset::Noir.recommended_tonemapper(),
+        Tonemapper::Uncharted2
+    );
 }
 
 #[test]
 fn mood_fantasy_tonemapper() {
-    assert_eq!(MoodPreset::Fantasy.recommended_tonemapper(), Tonemapper::Reinhard);
+    assert_eq!(
+        MoodPreset::Fantasy.recommended_tonemapper(),
+        Tonemapper::Reinhard
+    );
 }
 
 // ============================================================================
@@ -1155,7 +1200,10 @@ fn settings_apply_time_nighttime() {
     let mut s = EnvironmentSettings::default();
     s.apply_time(TimeOfDay::Midnight);
     assert_eq!(s.time_of_day, TimeOfDay::Midnight);
-    assert!((s.sun_intensity - 0.0).abs() < 0.001, "Night should have zero sun");
+    assert!(
+        (s.sun_intensity - 0.0).abs() < 0.001,
+        "Night should have zero sun"
+    );
     assert!((s.ambient_intensity - 0.1).abs() < 0.001);
 }
 
@@ -1184,7 +1232,10 @@ fn settings_apply_weather_attenuates_sun() {
     let mut s = EnvironmentSettings::default();
     s.apply_weather(WeatherCondition::Thunderstorm);
     // Thunderstorm attenuation 0.95 → sun * 0.05
-    assert!(s.sun_intensity < 0.1, "Thunderstorm should dim sun to ~0.05");
+    assert!(
+        s.sun_intensity < 0.1,
+        "Thunderstorm should dim sun to ~0.05"
+    );
 }
 
 // ============================================================================

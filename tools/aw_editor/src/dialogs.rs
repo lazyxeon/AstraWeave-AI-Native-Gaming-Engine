@@ -60,10 +60,8 @@ pub fn shortcut_count() -> usize {
 
 /// Get all unique categories
 pub fn shortcut_categories() -> Vec<&'static str> {
-    let mut categories: Vec<&'static str> = KEYBOARD_SHORTCUTS
-        .iter()
-        .map(|(cat, _, _)| *cat)
-        .collect();
+    let mut categories: Vec<&'static str> =
+        KEYBOARD_SHORTCUTS.iter().map(|(cat, _, _)| *cat).collect();
     categories.dedup();
     categories
 }
@@ -98,7 +96,7 @@ pub fn search_shortcuts(query: &str) -> Vec<(&'static str, &'static str, &'stati
 /// Render keyboard shortcuts as a grid
 pub fn show_shortcuts_grid(ui: &mut egui::Ui) {
     let mut current_category = "";
-    
+
     for (category, shortcut, description) in KEYBOARD_SHORTCUTS {
         if *category != current_category {
             if !current_category.is_empty() {
@@ -107,7 +105,7 @@ pub fn show_shortcuts_grid(ui: &mut egui::Ui) {
             ui.heading(*category);
             current_category = category;
         }
-        
+
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new(*shortcut).monospace().strong());
             ui.add_space(20.0);
@@ -187,7 +185,9 @@ mod tests {
     fn test_search_shortcuts() {
         let results = search_shortcuts("save");
         assert!(!results.is_empty());
-        assert!(results.iter().any(|(_, _, desc)| desc.to_lowercase().contains("save")));
+        assert!(results
+            .iter()
+            .any(|(_, _, desc)| desc.to_lowercase().contains("save")));
     }
 
     #[test]

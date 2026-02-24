@@ -119,12 +119,12 @@ impl LayoutPreset {
     /// Get expected panel count for this preset
     pub fn expected_panel_count(&self) -> usize {
         match self {
-            LayoutPreset::Default => 6,  // Viewport, Inspector, Transform, Console, Profiler, SceneStats
-            LayoutPreset::Wide => 2,     // Viewport, Inspector
-            LayoutPreset::Compact => 8,  // Many panels
+            LayoutPreset::Default => 6, // Viewport, Inspector, Transform, Console, Profiler, SceneStats
+            LayoutPreset::Wide => 2,    // Viewport, Inspector
+            LayoutPreset::Compact => 8, // Many panels
             LayoutPreset::Modeling => 3, // Viewport, Transform, Inspector
             LayoutPreset::Animation => 5, // Viewport, BehaviorGraph, Inspector, Animation, Graph
-            LayoutPreset::Debug => 5,    // Viewport, Performance, SceneStats, Console, Profiler
+            LayoutPreset::Debug => 5,   // Viewport, Performance, SceneStats, Console, Profiler
         }
     }
 
@@ -565,13 +565,22 @@ impl DockLayout {
         let panel_count = visible_panels.len();
         let has_viewport = visible_panels.contains(&PanelType::Viewport);
         let has_debug_panels = visible_panels.iter().any(|p| {
-            matches!(p, PanelType::Console | PanelType::Profiler | PanelType::Performance | PanelType::SceneStats)
+            matches!(
+                p,
+                PanelType::Console
+                    | PanelType::Profiler
+                    | PanelType::Performance
+                    | PanelType::SceneStats
+            )
         });
 
         // Count tab groups (approximate - one per unique position)
-        let tab_group_count = self.dock_state.iter_all_tabs().count().saturating_sub(
-            visible_panels.len().saturating_sub(1)
-        ).max(1);
+        let tab_group_count = self
+            .dock_state
+            .iter_all_tabs()
+            .count()
+            .saturating_sub(visible_panels.len().saturating_sub(1))
+            .max(1);
 
         LayoutStats {
             panel_count,
@@ -595,7 +604,13 @@ impl DockLayout {
     /// Check if any debug panels are visible
     pub fn has_debug_panels(&self) -> bool {
         self.collect_visible_panels().iter().any(|p| {
-            matches!(p, PanelType::Console | PanelType::Profiler | PanelType::Performance | PanelType::SceneStats)
+            matches!(
+                p,
+                PanelType::Console
+                    | PanelType::Profiler
+                    | PanelType::Performance
+                    | PanelType::SceneStats
+            )
         })
     }
 
@@ -608,26 +623,36 @@ impl DockLayout {
     pub fn missing_panels_for_preset(&self, preset: LayoutPreset) -> Vec<PanelType> {
         let current = self.collect_visible_panels();
         let expected = DockLayout::from_preset(preset).collect_visible_panels();
-        expected.into_iter()
+        expected
+            .into_iter()
             .filter(|p| !current.contains(p))
             .collect()
     }
 
     /// Check if current layout matches a preset
     pub fn matches_preset(&self, preset: LayoutPreset) -> bool {
-        let current: std::collections::HashSet<_> = self.collect_visible_panels().into_iter().collect();
-        let expected: std::collections::HashSet<_> = DockLayout::from_preset(preset).collect_visible_panels().into_iter().collect();
+        let current: std::collections::HashSet<_> =
+            self.collect_visible_panels().into_iter().collect();
+        let expected: std::collections::HashSet<_> = DockLayout::from_preset(preset)
+            .collect_visible_panels()
+            .into_iter()
+            .collect();
         current == expected
     }
 
     /// Find which preset best matches current layout
     pub fn closest_preset(&self) -> LayoutPreset {
-        let current: std::collections::HashSet<_> = self.collect_visible_panels().into_iter().collect();
-        
-        LayoutPreset::all().iter().copied()
+        let current: std::collections::HashSet<_> =
+            self.collect_visible_panels().into_iter().collect();
+
+        LayoutPreset::all()
+            .iter()
+            .copied()
             .max_by_key(|&preset| {
-                let preset_panels: std::collections::HashSet<_> = 
-                    DockLayout::from_preset(preset).collect_visible_panels().into_iter().collect();
+                let preset_panels: std::collections::HashSet<_> = DockLayout::from_preset(preset)
+                    .collect_visible_panels()
+                    .into_iter()
+                    .collect();
                 current.intersection(&preset_panels).count()
             })
             .unwrap_or(LayoutPreset::Default)
@@ -808,7 +833,7 @@ mod tests {
     fn test_layout_stats_default() {
         let layout = DockLayout::new();
         let stats = layout.stats();
-        
+
         assert!(stats.panel_count >= 2);
         assert!(stats.has_viewport);
     }
@@ -823,7 +848,7 @@ mod tests {
     fn test_layout_visible_panels() {
         let layout = DockLayout::new();
         let panels = layout.visible_panels();
-        
+
         assert!(panels.contains(&PanelType::Viewport));
     }
 
@@ -843,10 +868,10 @@ mod tests {
     fn test_layout_focused_panel() {
         let mut layout = DockLayout::new();
         assert!(layout.focused_panel().is_none());
-        
+
         layout.set_focused_panel(Some(PanelType::Inspector));
         assert_eq!(layout.focused_panel(), Some(PanelType::Inspector));
-        
+
         layout.set_focused_panel(None);
         assert!(layout.focused_panel().is_none());
     }

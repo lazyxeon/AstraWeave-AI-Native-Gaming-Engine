@@ -10,7 +10,7 @@ use aw_editor_lib::panels::dialogue_editor_panel::{
 use aw_editor_lib::panels::project_settings_panel::{
     AntialiasingMode, AoMode, AudioBackend, AudioSettings, BroadphaseType, BuildConfig,
     CompressionMode, GiMode, InputAction, PhysicsSettings, QualityLevel, ReflectionMode,
-    RendererBackend, RenderingSettings, ShadowMode, SettingsTab, TargetPlatform, TextureQuality,
+    RendererBackend, RenderingSettings, SettingsTab, ShadowMode, TargetPlatform, TextureQuality,
     TonemappingMode,
 };
 
@@ -31,7 +31,18 @@ fn dialogue_node_type_all_returns_7() {
 #[test]
 fn dialogue_node_type_names_unique() {
     let names: Vec<&str> = DialogueNodeType::all().iter().map(|v| v.name()).collect();
-    assert_eq!(names, vec!["Speech", "Choice", "Condition", "Action", "Random Branch", "Jump", "End"]);
+    assert_eq!(
+        names,
+        vec![
+            "Speech",
+            "Choice",
+            "Condition",
+            "Action",
+            "Random Branch",
+            "Jump",
+            "End"
+        ]
+    );
 }
 
 #[test]
@@ -45,7 +56,12 @@ fn dialogue_node_type_icons_nonempty() {
 fn dialogue_node_type_display_contains_icon_and_name() {
     for v in DialogueNodeType::all() {
         let display = format!("{v}");
-        assert!(display.contains(v.name()), "display '{}' missing name '{}'", display, v.name());
+        assert!(
+            display.contains(v.name()),
+            "display '{}' missing name '{}'",
+            display,
+            v.name()
+        );
     }
 }
 
@@ -54,8 +70,13 @@ fn dialogue_node_type_color_unique_per_variant() {
     let colors: Vec<_> = DialogueNodeType::all().iter().map(|v| v.color()).collect();
     for i in 0..colors.len() {
         for j in (i + 1)..colors.len() {
-            assert_ne!(colors[i], colors[j], "duplicate color at {:?} and {:?}",
-                DialogueNodeType::all()[i], DialogueNodeType::all()[j]);
+            assert_ne!(
+                colors[i],
+                colors[j],
+                "duplicate color at {:?} and {:?}",
+                DialogueNodeType::all()[i],
+                DialogueNodeType::all()[j]
+            );
         }
     }
 }
@@ -185,7 +206,10 @@ fn layout_algorithm_all_count() {
 #[test]
 fn layout_algorithm_names() {
     let names: Vec<&str> = LayoutAlgorithm::all().iter().map(|v| v.name()).collect();
-    assert_eq!(names, vec!["Hierarchical", "Radial", "Force Directed", "Tree"]);
+    assert_eq!(
+        names,
+        vec!["Hierarchical", "Radial", "Force Directed", "Tree"]
+    );
 }
 
 #[test]

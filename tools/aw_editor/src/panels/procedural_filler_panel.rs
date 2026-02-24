@@ -43,9 +43,7 @@ pub enum FillerAction {
         area_radius: f32,
     },
     /// Request to apply environment preset
-    ApplyEnvironment {
-        preset: EnvironmentPreset,
-    },
+    ApplyEnvironment { preset: EnvironmentPreset },
     /// Request to generate full scene
     GenerateFullScene {
         seed: u64,
@@ -381,9 +379,7 @@ impl BiomePreset {
     pub fn has_water(&self) -> bool {
         matches!(
             self,
-            BiomePreset::MediterraneanCoast
-                | BiomePreset::Swampland
-                | BiomePreset::TropicalJungle
+            BiomePreset::MediterraneanCoast | BiomePreset::Swampland | BiomePreset::TropicalJungle
         )
     }
 }
@@ -1040,7 +1036,11 @@ impl ProceduralFillerPanel {
 
         ui.horizontal(|ui| {
             ui.label("Width:");
-            ui.add(egui::DragValue::new(&mut self.road_width).range(0.5..=20.0).suffix(" m"));
+            ui.add(
+                egui::DragValue::new(&mut self.road_width)
+                    .range(0.5..=20.0)
+                    .suffix(" m"),
+            );
         });
 
         ui.horizontal(|ui| {
@@ -1057,11 +1057,19 @@ impl ProceduralFillerPanel {
 
         ui.label(format!(
             "Conforms to terrain: {}",
-            if self.road_preset.conforms_to_terrain() { "Yes" } else { "No" }
+            if self.road_preset.conforms_to_terrain() {
+                "Yes"
+            } else {
+                "No"
+            }
         ));
         ui.label(format!(
             "Edge decoration: {}",
-            if self.road_preset.has_edge_decoration() { "Yes" } else { "No" }
+            if self.road_preset.has_edge_decoration() {
+                "Yes"
+            } else {
+                "No"
+            }
         ));
     }
 
@@ -1101,7 +1109,8 @@ impl ProceduralFillerPanel {
         );
         ui.horizontal(|ui| {
             ui.label("Sky Color:");
-            let (rect, _response) = ui.allocate_exact_size(Vec2::new(60.0, 20.0), egui::Sense::hover());
+            let (rect, _response) =
+                ui.allocate_exact_size(Vec2::new(60.0, 20.0), egui::Sense::hover());
             ui.painter().rect_filled(rect, 4.0, sky_color);
         });
 
@@ -1114,7 +1123,8 @@ impl ProceduralFillerPanel {
         );
         ui.horizontal(|ui| {
             ui.label("Fog Color:");
-            let (rect, _response) = ui.allocate_exact_size(Vec2::new(60.0, 20.0), egui::Sense::hover());
+            let (rect, _response) =
+                ui.allocate_exact_size(Vec2::new(60.0, 20.0), egui::Sense::hover());
             ui.painter().rect_filled(rect, 4.0, fog_color);
         });
     }
@@ -1133,7 +1143,11 @@ impl ProceduralFillerPanel {
 
         ui.horizontal(|ui| {
             ui.label("Area Radius:");
-            ui.add(egui::DragValue::new(&mut self.area_radius).range(10.0..=1000.0).suffix(" m"));
+            ui.add(
+                egui::DragValue::new(&mut self.area_radius)
+                    .range(10.0..=1000.0)
+                    .suffix(" m"),
+            );
         });
 
         ui.checkbox(&mut self.preview_enabled, "Show Preview");
@@ -1295,8 +1309,12 @@ mod tests {
 
     #[test]
     fn test_biome_preset_densities() {
-        assert!(BiomePreset::TemperateForest.tree_density() > BiomePreset::DesertDunes.tree_density());
-        assert!(BiomePreset::VolcanicWasteland.rock_density() > BiomePreset::Swampland.rock_density());
+        assert!(
+            BiomePreset::TemperateForest.tree_density() > BiomePreset::DesertDunes.tree_density()
+        );
+        assert!(
+            BiomePreset::VolcanicWasteland.rock_density() > BiomePreset::Swampland.rock_density()
+        );
     }
 
     #[test]
@@ -1320,7 +1338,9 @@ mod tests {
 
     #[test]
     fn test_environment_preset_lighting() {
-        assert!(EnvironmentPreset::SunnyDay.sun_intensity() > EnvironmentPreset::Night.sun_intensity());
+        assert!(
+            EnvironmentPreset::SunnyDay.sun_intensity() > EnvironmentPreset::Night.sun_intensity()
+        );
         assert!(EnvironmentPreset::Foggy.fog_density() > EnvironmentPreset::SunnyDay.fog_density());
     }
 
@@ -1413,7 +1433,10 @@ mod tests {
             area_radius: 100.0,
             settings: vec![],
         };
-        assert!(matches!(scatter_action, FillerAction::GenerateScatter { .. }));
+        assert!(matches!(
+            scatter_action,
+            FillerAction::GenerateScatter { .. }
+        ));
 
         let road_action = FillerAction::GenerateRoad {
             seed: 123,
@@ -1429,7 +1452,10 @@ mod tests {
             biome: BiomePreset::DesertDunes,
             area_radius: 50.0,
         };
-        assert!(matches!(terrain_action, FillerAction::GenerateTerrain { .. }));
+        assert!(matches!(
+            terrain_action,
+            FillerAction::GenerateTerrain { .. }
+        ));
 
         let env_action = FillerAction::ApplyEnvironment {
             preset: EnvironmentPreset::Night,

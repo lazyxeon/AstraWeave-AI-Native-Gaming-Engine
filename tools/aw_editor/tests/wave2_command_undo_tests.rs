@@ -14,12 +14,12 @@
 //! - Push_executed vs execute behavior
 //! - Recent commands / upcoming redos window logic
 
+use astraweave_core::{IVec2, Team, World};
 use aw_editor_lib::command::{
     BatchCommand, EditAmmoCommand, EditHealthCommand, EditTeamCommand, EditorCommand,
     MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack, UndoStackIssue,
     UndoStackStats,
 };
-use astraweave_core::{IVec2, Team, World};
 
 // ============================================================================
 // Helpers
@@ -198,14 +198,20 @@ fn stats_remaining_capacity_arithmetic() {
 fn issue_is_error_only_at_capacity() {
     // Only AtCapacity is an error
     assert!(UndoStackIssue::AtCapacity.is_error());
-    assert!(!UndoStackIssue::NearCapacity { utilization_percent: 90 }.is_error());
+    assert!(!UndoStackIssue::NearCapacity {
+        utilization_percent: 90
+    }
+    .is_error());
     assert!(!UndoStackIssue::AutoMergeDisabled.is_error());
     assert!(!UndoStackIssue::NoHistory.is_error());
 }
 
 #[test]
 fn issue_icons_are_distinct_per_variant() {
-    let near = UndoStackIssue::NearCapacity { utilization_percent: 85 }.icon();
+    let near = UndoStackIssue::NearCapacity {
+        utilization_percent: 85,
+    }
+    .icon();
     let at = UndoStackIssue::AtCapacity.icon();
     let merge = UndoStackIssue::AutoMergeDisabled.icon();
     let no_hist = UndoStackIssue::NoHistory.icon();
@@ -222,9 +228,15 @@ fn issue_icons_are_distinct_per_variant() {
 
 #[test]
 fn issue_display_includes_percentage_for_near_capacity() {
-    let issue = UndoStackIssue::NearCapacity { utilization_percent: 92 };
+    let issue = UndoStackIssue::NearCapacity {
+        utilization_percent: 92,
+    };
     let display = format!("{}", issue);
-    assert!(display.contains("92"), "Should contain the utilization percentage: {}", display);
+    assert!(
+        display.contains("92"),
+        "Should contain the utilization percentage: {}",
+        display
+    );
 }
 
 #[test]
@@ -265,7 +277,12 @@ fn undo_stack_single_execute_increments_cursor() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     assert_eq!(stack.cursor(), 1);
     assert_eq!(stack.len(), 1);
 }
@@ -276,8 +293,18 @@ fn undo_decrements_cursor_by_one() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
     assert_eq!(stack.cursor(), 2);
 
     stack.undo(&mut w).unwrap();
@@ -290,7 +317,12 @@ fn redo_increments_cursor_by_one() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     stack.undo(&mut w).unwrap();
     assert_eq!(stack.cursor(), 0);
 
@@ -314,7 +346,12 @@ fn redo_at_end_is_noop() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     // Cursor is at end, redo should do nothing
     stack.redo(&mut w).unwrap();
     assert_eq!(stack.cursor(), 1);
@@ -326,9 +363,24 @@ fn execute_after_undo_discards_redo_history() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(2, 2), IVec2::new(3, 3)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(2, 2), IVec2::new(3, 3)),
+            &mut w,
+        )
+        .unwrap();
 
     // Undo twice
     stack.undo(&mut w).unwrap();
@@ -337,7 +389,12 @@ fn execute_after_undo_discards_redo_history() {
     assert_eq!(stack.len(), 3); // All 3 still in stack
 
     // Execute new command → discards commands[1] and commands[2]
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(99, 99)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(99, 99)),
+            &mut w,
+        )
+        .unwrap();
     assert_eq!(stack.cursor(), 2);
     assert_eq!(stack.len(), 2); // Old redo history gone
     assert!(!stack.can_redo());
@@ -350,10 +407,12 @@ fn max_size_pruning_removes_oldest() {
     stack.set_auto_merge(false);
 
     for i in 0..5 {
-        stack.execute(
-            MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-            &mut w,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut w,
+            )
+            .unwrap();
     }
 
     // Should be capped at 3
@@ -371,12 +430,25 @@ fn max_size_one_always_keeps_latest() {
     let mut stack = UndoStack::new(1);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
 
     assert_eq!(stack.len(), 1);
     // The latest command should be the Move to (2,2)
-    assert_eq!(stack.undo_description().unwrap(), format!("Move Entity {:?}", e));
+    assert_eq!(
+        stack.undo_description().unwrap(),
+        format!("Move Entity {:?}", e)
+    );
 
     stack.undo(&mut w).unwrap();
     assert_eq!(w.pose(e).unwrap().pos, IVec2::new(1, 1));
@@ -389,10 +461,12 @@ fn undo_count_and_redo_count_are_complementary() {
     stack.set_auto_merge(false);
 
     for i in 0..5 {
-        stack.execute(
-            MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-            &mut w,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut w,
+            )
+            .unwrap();
     }
 
     assert_eq!(stack.undo_count(), 5);
@@ -413,7 +487,9 @@ fn undo_count_and_redo_count_are_complementary() {
 fn validate_empty_stack_reports_no_history() {
     let stack = UndoStack::new(10);
     let issues = stack.validate();
-    assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::NoHistory)));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, UndoStackIssue::NoHistory)));
 }
 
 #[test]
@@ -421,7 +497,9 @@ fn validate_auto_merge_disabled_reports_issue() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
     let issues = stack.validate();
-    assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AutoMergeDisabled)));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, UndoStackIssue::AutoMergeDisabled)));
 }
 
 #[test]
@@ -430,11 +508,23 @@ fn validate_at_full_capacity_reports_at_capacity() {
     let mut stack = UndoStack::new(2);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
 
     let issues = stack.validate();
-    assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::AtCapacity)));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, UndoStackIssue::AtCapacity)));
 }
 
 #[test]
@@ -445,25 +535,33 @@ fn validate_near_capacity_threshold_is_80_percent() {
 
     // Fill to 80% (8 out of 10) — should NOT report NearCapacity yet
     for i in 0..8 {
-        stack.execute(
-            MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-            &mut w,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut w,
+            )
+            .unwrap();
     }
 
     let issues = stack.validate();
     // At 80%, should NOT have NearCapacity (needs > 80)
     // But may have AtCapacity if at full
-    assert!(!issues.iter().any(|i| matches!(i, UndoStackIssue::NearCapacity { .. })));
+    assert!(!issues
+        .iter()
+        .any(|i| matches!(i, UndoStackIssue::NearCapacity { .. })));
 
     // Fill to 90% (9 out of 10) — should report NearCapacity
-    stack.execute(
-        MoveEntityCommand::new(e, IVec2::new(8, 8), IVec2::new(9, 9)),
-        &mut w,
-    ).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(8, 8), IVec2::new(9, 9)),
+            &mut w,
+        )
+        .unwrap();
 
     let issues = stack.validate();
-    assert!(issues.iter().any(|i| matches!(i, UndoStackIssue::NearCapacity { .. })));
+    assert!(issues
+        .iter()
+        .any(|i| matches!(i, UndoStackIssue::NearCapacity { .. })));
 }
 
 #[test]
@@ -471,7 +569,12 @@ fn is_valid_means_no_error_issues() {
     let (mut w, e) = make_world_and_entity();
     let mut stack = UndoStack::new(10);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     assert!(stack.is_valid()); // Has commands, auto-merge on, not at capacity
 }
 
@@ -481,7 +584,12 @@ fn is_valid_false_when_at_capacity() {
     let mut stack = UndoStack::new(1);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     // At capacity → AtCapacity issue → is_error → is_valid returns false
     assert!(!stack.is_valid());
 }
@@ -497,10 +605,12 @@ fn recent_commands_returns_last_n() {
     stack.set_auto_merge(false);
 
     for i in 0..10 {
-        stack.execute(
-            MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-            &mut w,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut w,
+            )
+            .unwrap();
     }
 
     let recent = stack.recent_commands(3);
@@ -524,10 +634,12 @@ fn upcoming_redos_returns_correct_count() {
     stack.set_auto_merge(false);
 
     for i in 0..5 {
-        stack.execute(
-            MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-            &mut w,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(e, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut w,
+            )
+            .unwrap();
     }
 
     // Undo all 5
@@ -552,7 +664,12 @@ fn undo_description_is_none_when_empty() {
 fn redo_description_is_none_when_at_end() {
     let (mut w, e) = make_world_and_entity();
     let mut stack = UndoStack::new(10);
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     assert!(stack.redo_description().is_none());
 }
 
@@ -562,7 +679,12 @@ fn undo_description_returns_last_command_desc() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     let desc = stack.undo_description().unwrap();
     assert!(desc.contains("Move"));
 }
@@ -573,7 +695,12 @@ fn redo_description_returns_next_command_desc() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
     stack.undo(&mut w).unwrap();
 
     let desc = stack.redo_description().unwrap();
@@ -616,9 +743,24 @@ fn move_merge_same_entity_updates_new_pos_keeps_old() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(5, 5)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(5, 5), IVec2::new(10, 10)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(5, 5)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(5, 5), IVec2::new(10, 10)),
+            &mut w,
+        )
+        .unwrap();
 
     // All merged into 1
     assert_eq!(stack.len(), 1);
@@ -635,8 +777,18 @@ fn move_no_merge_different_entities() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.execute(MoveEntityCommand::new(es[0], IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(es[1], IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(es[0], IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(es[1], IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
 
     // Different entities → no merge
     assert_eq!(stack.len(), 2);
@@ -707,8 +859,18 @@ fn rotate_merge_same_entity() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.execute(RotateEntityCommand::new(e, (0.0, 0.0, 0.0), (0.5, 0.5, 0.5)), &mut w).unwrap();
-    stack.execute(RotateEntityCommand::new(e, (0.5, 0.5, 0.5), (1.0, 1.0, 1.0)), &mut w).unwrap();
+    stack
+        .execute(
+            RotateEntityCommand::new(e, (0.0, 0.0, 0.0), (0.5, 0.5, 0.5)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            RotateEntityCommand::new(e, (0.5, 0.5, 0.5), (1.0, 1.0, 1.0)),
+            &mut w,
+        )
+        .unwrap();
 
     assert_eq!(stack.len(), 1); // Merged
 }
@@ -719,8 +881,18 @@ fn rotate_no_merge_different_entities() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.execute(RotateEntityCommand::new(es[0], (0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), &mut w).unwrap();
-    stack.execute(RotateEntityCommand::new(es[1], (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)), &mut w).unwrap();
+    stack
+        .execute(
+            RotateEntityCommand::new(es[0], (0.0, 0.0, 0.0), (1.0, 0.0, 0.0)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            RotateEntityCommand::new(es[1], (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+            &mut w,
+        )
+        .unwrap();
 
     assert_eq!(stack.len(), 2);
 }
@@ -759,9 +931,15 @@ fn scale_merge_same_entity() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.execute(ScaleEntityCommand::new(e, 1.0, 1.5), &mut w).unwrap();
-    stack.execute(ScaleEntityCommand::new(e, 1.5, 2.0), &mut w).unwrap();
-    stack.execute(ScaleEntityCommand::new(e, 2.0, 3.0), &mut w).unwrap();
+    stack
+        .execute(ScaleEntityCommand::new(e, 1.0, 1.5), &mut w)
+        .unwrap();
+    stack
+        .execute(ScaleEntityCommand::new(e, 1.5, 2.0), &mut w)
+        .unwrap();
+    stack
+        .execute(ScaleEntityCommand::new(e, 2.0, 3.0), &mut w)
+        .unwrap();
 
     assert_eq!(stack.len(), 1);
 }
@@ -953,7 +1131,9 @@ fn execute_batch_on_stack_is_one_entry() {
         MoveEntityCommand::new(es[1], IVec2::new(1, 1), IVec2::new(6, 6)),
     ];
 
-    stack.execute_batch(commands, &mut w, "Batch".to_string()).unwrap();
+    stack
+        .execute_batch(commands, &mut w, "Batch".to_string())
+        .unwrap();
     assert_eq!(stack.len(), 1);
 
     stack.undo(&mut w).unwrap();
@@ -966,7 +1146,9 @@ fn execute_batch_empty_does_not_add_to_stack() {
     let mut w = World::new();
     let mut stack = UndoStack::new(10);
 
-    stack.execute_batch(vec![], &mut w, "Empty batch".to_string()).unwrap();
+    stack
+        .execute_batch(vec![], &mut w, "Empty batch".to_string())
+        .unwrap();
     assert_eq!(stack.len(), 0);
 }
 
@@ -982,7 +1164,11 @@ fn push_executed_does_not_re_execute_command() {
 
     let mut stack = UndoStack::new(10);
     // Push a command that says old=(0,0) new=(5,5) but don't execute it
-    stack.push_executed(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(5, 5)));
+    stack.push_executed(MoveEntityCommand::new(
+        e,
+        IVec2::new(0, 0),
+        IVec2::new(5, 5),
+    ));
 
     // Position should still be (5,5) — push_executed doesn't call execute
     assert_eq!(w.pose(e).unwrap().pos, IVec2::new(5, 5));
@@ -998,8 +1184,16 @@ fn push_executed_respects_auto_merge() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(true);
 
-    stack.push_executed(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)));
-    stack.push_executed(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)));
+    stack.push_executed(MoveEntityCommand::new(
+        e,
+        IVec2::new(0, 0),
+        IVec2::new(1, 1),
+    ));
+    stack.push_executed(MoveEntityCommand::new(
+        e,
+        IVec2::new(1, 1),
+        IVec2::new(2, 2),
+    ));
 
     // Should merge since same entity
     assert_eq!(stack.len(), 1);
@@ -1011,15 +1205,29 @@ fn push_executed_truncates_redo_history() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
 
     // Undo once → can redo
     stack.undo(&mut w).unwrap();
     assert!(stack.can_redo());
 
     // push_executed discards redo history
-    stack.push_executed(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(99, 99)));
+    stack.push_executed(MoveEntityCommand::new(
+        e,
+        IVec2::new(1, 1),
+        IVec2::new(99, 99),
+    ));
     assert!(!stack.can_redo());
 }
 
@@ -1068,8 +1276,18 @@ fn clear_resets_everything() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
 
     stack.clear();
     assert!(stack.is_empty());
@@ -1085,9 +1303,24 @@ fn stats_reflect_current_state() {
     let mut stack = UndoStack::new(10);
     stack.set_auto_merge(false);
 
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)), &mut w).unwrap();
-    stack.execute(MoveEntityCommand::new(e, IVec2::new(2, 2), IVec2::new(3, 3)), &mut w).unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(0, 0), IVec2::new(1, 1)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(1, 1), IVec2::new(2, 2)),
+            &mut w,
+        )
+        .unwrap();
+    stack
+        .execute(
+            MoveEntityCommand::new(e, IVec2::new(2, 2), IVec2::new(3, 3)),
+            &mut w,
+        )
+        .unwrap();
 
     stack.undo(&mut w).unwrap();
 

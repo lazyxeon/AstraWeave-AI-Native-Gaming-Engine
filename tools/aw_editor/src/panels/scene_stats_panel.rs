@@ -18,22 +18,22 @@ pub struct SceneStats {
     pub memory_estimate_kb: usize,
     pub scene_path: Option<String>,
     pub is_dirty: bool,
-    
+
     // Week 5 Day 5: Enhanced mesh statistics
     pub mesh_count: usize,
     pub total_triangles: usize,
     pub total_vertices: usize,
     pub mesh_memory_kb: usize,
-    
-    // Texture statistics  
+
+    // Texture statistics
     pub texture_count: usize,
     pub texture_memory_kb: usize,
     pub max_texture_resolution: (u32, u32),
-    
+
     // Material statistics
     pub material_count: usize,
     pub unique_shader_count: usize,
-    
+
     // Performance estimates
     pub estimated_draw_calls: usize,
     pub estimated_state_changes: usize,
@@ -57,40 +57,40 @@ impl SceneStatsPanel {
         self.cached_stats = stats;
         self.last_update = std::time::Instant::now();
     }
-    
+
     /// Generate performance warnings based on current stats
     pub fn generate_performance_warning(&self) -> Option<String> {
         let stats = &self.cached_stats;
         let mut warnings = Vec::new();
-        
+
         if stats.total_triangles > WARN_TRIANGLES {
             warnings.push(format!(
                 "High triangle count ({:.1}M) may impact GPU performance",
                 stats.total_triangles as f64 / 1_000_000.0
             ));
         }
-        
+
         if stats.estimated_draw_calls > WARN_DRAW_CALLS {
             warnings.push(format!(
                 "High draw call count ({}) may impact CPU/driver performance",
                 stats.estimated_draw_calls
             ));
         }
-        
+
         if stats.texture_memory_kb > WARN_TEXTURE_MEMORY_MB * 1024 {
             warnings.push(format!(
                 "High texture memory usage ({} MB) may cause stuttering",
                 stats.texture_memory_kb / 1024
             ));
         }
-        
+
         if warnings.is_empty() {
             None
         } else {
             Some(warnings.join("; "))
         }
     }
-    
+
     /// Format bytes for display
     fn format_memory(bytes_kb: usize) -> String {
         if bytes_kb >= 1024 * 1024 {
@@ -101,7 +101,7 @@ impl SceneStatsPanel {
             format!("{} KB", bytes_kb)
         }
     }
-    
+
     /// Format large numbers with commas
     fn format_number(n: usize) -> String {
         if n >= 1_000_000 {
@@ -127,7 +127,7 @@ impl SceneStatsPanel {
             }
         });
         ui.separator();
-        
+
         // Performance warning banner
         if let Some(warning) = self.generate_performance_warning() {
             ui.horizontal(|ui| {
@@ -169,7 +169,7 @@ impl SceneStatsPanel {
                     ui.end_row();
                 });
         });
-        
+
         // Mesh statistics section
         ui.collapsing("🔷 Meshes", |ui| {
             egui::Grid::new("mesh_stats_grid")
@@ -180,7 +180,7 @@ impl SceneStatsPanel {
                     ui.label("Mesh Count:");
                     ui.label(format!("{}", stats.mesh_count));
                     ui.end_row();
-                    
+
                     ui.label("Triangles:");
                     let tri_text = Self::format_number(stats.total_triangles);
                     let tri_color = if stats.total_triangles > WARN_TRIANGLES {
@@ -190,17 +190,17 @@ impl SceneStatsPanel {
                     };
                     ui.colored_label(tri_color, tri_text);
                     ui.end_row();
-                    
+
                     ui.label("Vertices:");
                     ui.label(Self::format_number(stats.total_vertices));
                     ui.end_row();
-                    
+
                     ui.label("Mesh Memory:");
                     ui.label(Self::format_memory(stats.mesh_memory_kb));
                     ui.end_row();
                 });
         });
-        
+
         // Texture statistics section
         ui.collapsing("🖼️ Textures", |ui| {
             egui::Grid::new("texture_stats_grid")
@@ -211,7 +211,7 @@ impl SceneStatsPanel {
                     ui.label("Texture Count:");
                     ui.label(format!("{}", stats.texture_count));
                     ui.end_row();
-                    
+
                     ui.label("VRAM Usage:");
                     let vram_color = if stats.texture_memory_kb > WARN_TEXTURE_MEMORY_MB * 1024 {
                         egui::Color32::from_rgb(255, 100, 100)
@@ -220,13 +220,16 @@ impl SceneStatsPanel {
                     };
                     ui.colored_label(vram_color, Self::format_memory(stats.texture_memory_kb));
                     ui.end_row();
-                    
+
                     ui.label("Max Resolution:");
-                    ui.label(format!("{}×{}", stats.max_texture_resolution.0, stats.max_texture_resolution.1));
+                    ui.label(format!(
+                        "{}×{}",
+                        stats.max_texture_resolution.0, stats.max_texture_resolution.1
+                    ));
                     ui.end_row();
                 });
         });
-        
+
         // Material statistics section
         ui.collapsing("🎨 Materials", |ui| {
             egui::Grid::new("material_stats_grid")
@@ -237,13 +240,13 @@ impl SceneStatsPanel {
                     ui.label("Materials:");
                     ui.label(format!("{}", stats.material_count));
                     ui.end_row();
-                    
+
                     ui.label("Unique Shaders:");
                     ui.label(format!("{}", stats.unique_shader_count));
                     ui.end_row();
                 });
         });
-        
+
         // Performance estimates section
         ui.collapsing("⚡ Performance Estimates", |ui| {
             egui::Grid::new("perf_stats_grid")
@@ -261,17 +264,21 @@ impl SceneStatsPanel {
                     };
                     ui.colored_label(dc_color, format!("{}", stats.estimated_draw_calls));
                     ui.end_row();
-                    
+
                     ui.label("State Changes:");
                     ui.label(format!("{}", stats.estimated_state_changes));
                     ui.end_row();
-                    
+
                     // Performance grade
-                    let grade = if stats.estimated_draw_calls < 100 && stats.total_triangles < 100_000 {
+                    let grade = if stats.estimated_draw_calls < 100
+                        && stats.total_triangles < 100_000
+                    {
                         ("A+", egui::Color32::from_rgb(100, 255, 100))
                     } else if stats.estimated_draw_calls < 250 && stats.total_triangles < 500_000 {
                         ("A", egui::Color32::from_rgb(150, 255, 100))
-                    } else if stats.estimated_draw_calls < WARN_DRAW_CALLS && stats.total_triangles < WARN_TRIANGLES {
+                    } else if stats.estimated_draw_calls < WARN_DRAW_CALLS
+                        && stats.total_triangles < WARN_TRIANGLES
+                    {
                         ("B", egui::Color32::from_rgb(255, 255, 100))
                     } else {
                         ("C", egui::Color32::from_rgb(255, 100, 100))
@@ -281,7 +288,7 @@ impl SceneStatsPanel {
                     ui.end_row();
                 });
         });
-        
+
         // Undo/Redo section
         ui.collapsing("↩️ Undo History", |ui| {
             egui::Grid::new("undo_stats_grid")
@@ -292,11 +299,11 @@ impl SceneStatsPanel {
                     ui.label("Undo Stack:");
                     ui.label(format!("{}", stats.undo_stack_size));
                     ui.end_row();
-                    
+
                     ui.label("Redo Stack:");
                     ui.label(format!("{}", stats.redo_stack_size));
                     ui.end_row();
-                    
+
                     ui.label("Total Memory:");
                     ui.label(Self::format_memory(stats.memory_estimate_kb));
                     ui.end_row();
@@ -551,7 +558,7 @@ mod tests {
             ..Default::default()
         });
         assert_eq!(panel.cached_stats.entity_count, 100);
-        
+
         panel.update_stats(SceneStats {
             entity_count: 50,
             mesh_count: 25,
@@ -568,20 +575,23 @@ mod tests {
             scene_path: Some("levels/main.scene".into()),
             ..Default::default()
         });
-        assert_eq!(panel.cached_stats.scene_path, Some("levels/main.scene".into()));
+        assert_eq!(
+            panel.cached_stats.scene_path,
+            Some("levels/main.scene".into())
+        );
     }
 
     #[test]
     fn test_stats_update_dirty_flag() {
         let mut panel = SceneStatsPanel::new();
         assert!(!panel.cached_stats.is_dirty);
-        
+
         panel.update_stats(SceneStats {
             is_dirty: true,
             ..Default::default()
         });
         assert!(panel.cached_stats.is_dirty);
-        
+
         panel.update_stats(SceneStats {
             is_dirty: false,
             ..Default::default()
@@ -630,7 +640,7 @@ mod tests {
     // ============================================================
     // PERFORMANCE WARNING TESTS - DRAW CALLS
     // ============================================================
-    
+
     #[test]
     fn test_performance_warning_draw_calls() {
         let mut panel = SceneStatsPanel::new();
@@ -668,7 +678,7 @@ mod tests {
     // ============================================================
     // PERFORMANCE WARNING TESTS - TEXTURE MEMORY
     // ============================================================
-    
+
     #[test]
     fn test_performance_warning_texture_memory() {
         let mut panel = SceneStatsPanel::new();
@@ -706,7 +716,7 @@ mod tests {
     // ============================================================
     // PERFORMANCE WARNING TESTS - COMBINED
     // ============================================================
-    
+
     #[test]
     fn test_no_performance_warning_under_thresholds() {
         let mut panel = SceneStatsPanel::new();
@@ -757,7 +767,7 @@ mod tests {
     // ============================================================
     // FORMAT MEMORY TESTS
     // ============================================================
-    
+
     #[test]
     fn test_format_memory_kb() {
         assert_eq!(SceneStatsPanel::format_memory(0), "0 KB");
@@ -790,7 +800,7 @@ mod tests {
     // ============================================================
     // FORMAT NUMBER TESTS
     // ============================================================
-    
+
     #[test]
     fn test_format_number_small() {
         assert_eq!(SceneStatsPanel::format_number(0), "0");

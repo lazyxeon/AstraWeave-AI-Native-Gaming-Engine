@@ -166,7 +166,6 @@ pub enum PanelType {
     Terrain,
 
     // === New SOTA Panels (Phase 8) ===
-
     /// UI Editor for runtime UI building
     UiEditor,
 
@@ -341,28 +340,52 @@ impl PanelType {
     pub fn category(&self) -> PanelCategory {
         match self {
             // Scene panels
-            Self::Hierarchy | Self::Inspector | Self::Viewport | Self::World |
-            Self::EntityPanel | Self::Transform => PanelCategory::Scene,
-            
+            Self::Hierarchy
+            | Self::Inspector
+            | Self::Viewport
+            | Self::World
+            | Self::EntityPanel
+            | Self::Transform => PanelCategory::Scene,
+
             // Asset panels
             Self::AssetBrowser => PanelCategory::Assets,
-            
+
             // Debug panels
-            Self::Console | Self::Profiler | Self::Performance | Self::SceneStats => PanelCategory::Debug,
-            
+            Self::Console | Self::Profiler | Self::Performance | Self::SceneStats => {
+                PanelCategory::Debug
+            }
+
             // Tool panels
-            Self::Charts | Self::AdvancedWidgets | Self::Graph | Self::Animation |
-            Self::BehaviorGraph | Self::SplineEditor | Self::Navigation => PanelCategory::Tools,
-            
+            Self::Charts
+            | Self::AdvancedWidgets
+            | Self::Graph
+            | Self::Animation
+            | Self::BehaviorGraph
+            | Self::SplineEditor
+            | Self::Navigation => PanelCategory::Tools,
+
             // System panels
-            Self::BuildManager | Self::ThemeManager | Self::ProjectSettings |
-            Self::Localization | Self::Networking | Self::InputBindings => PanelCategory::System,
-            
+            Self::BuildManager
+            | Self::ThemeManager
+            | Self::ProjectSettings
+            | Self::Localization
+            | Self::Networking
+            | Self::InputBindings => PanelCategory::System,
+
             // Content creation panels
-            Self::MaterialEditor | Self::Terrain | Self::UiEditor | Self::Foliage |
-            Self::LodConfig | Self::Audio | Self::Cinematics | Self::DialogueEditor |
-            Self::Lighting | Self::ParticleSystem | Self::Pcg | Self::Physics |
-            Self::PostProcess => PanelCategory::Content,
+            Self::MaterialEditor
+            | Self::Terrain
+            | Self::UiEditor
+            | Self::Foliage
+            | Self::LodConfig
+            | Self::Audio
+            | Self::Cinematics
+            | Self::DialogueEditor
+            | Self::Lighting
+            | Self::ParticleSystem
+            | Self::Pcg
+            | Self::Physics
+            | Self::PostProcess => PanelCategory::Content,
         }
     }
 
@@ -436,7 +459,11 @@ impl PanelType {
 
     /// Get all panels in a specific category
     pub fn in_category(category: PanelCategory) -> Vec<PanelType> {
-        Self::all().iter().copied().filter(|p| p.category() == category).collect()
+        Self::all()
+            .iter()
+            .copied()
+            .filter(|p| p.category() == category)
+            .collect()
     }
 
     /// Returns a list of all available panel types
@@ -629,7 +656,11 @@ mod tests {
     #[test]
     fn test_panel_type_description_not_empty() {
         for panel in PanelType::all() {
-            assert!(!panel.description().is_empty(), "{:?} has empty description", panel);
+            assert!(
+                !panel.description().is_empty(),
+                "{:?} has empty description",
+                panel
+            );
         }
     }
 

@@ -4,7 +4,11 @@ mod tests {
     use crate::panel_type::PanelType;
 
     fn get_tabs(layout: &DockLayout) -> Vec<PanelType> {
-        layout.dock_state().iter_all_tabs().map(|(_, t)| *t).collect()
+        layout
+            .dock_state()
+            .iter_all_tabs()
+            .map(|(_, t)| *t)
+            .collect()
     }
 
     #[test]
@@ -32,8 +36,8 @@ mod tests {
         let layout = DockLayout::from_preset(LayoutPreset::Animation);
         let tabs = get_tabs(&layout);
         assert!(tabs.contains(&PanelType::Animation));
-        assert!(tabs.contains(&PanelType::BehaviorGraph)); 
-        assert!(tabs.contains(&PanelType::Graph)); 
+        assert!(tabs.contains(&PanelType::BehaviorGraph));
+        assert!(tabs.contains(&PanelType::Graph));
         assert!(tabs.contains(&PanelType::Viewport));
     }
 
@@ -43,7 +47,7 @@ mod tests {
         let tabs = get_tabs(&layout);
         assert!(tabs.contains(&PanelType::Console));
         assert!(tabs.contains(&PanelType::Profiler));
-        assert!(tabs.contains(&PanelType::SceneStats)); 
+        assert!(tabs.contains(&PanelType::SceneStats));
     }
 
     #[test]
@@ -62,20 +66,20 @@ mod tests {
         // DockLayout methods to check:
         // Actually DockLayout has add_panel? No, probably handled by UI logic or DockState manipulation.
         // But let's check checking distinct presets.
-        
+
         let l1 = DockLayout::from_preset(LayoutPreset::Default);
         let l2 = DockLayout::from_preset(LayoutPreset::Debug);
-        
-        // They should likely differ in tabs or arrangement. 
+
+        // They should likely differ in tabs or arrangement.
         // DockState comparison might be hard (opaque types), but tab list might differ if debug has unique panels.
         let tabs1 = get_tabs(&l1);
         let tabs2 = get_tabs(&l2);
-        
+
         // Debug might have Profiler which Default might not?
         // Let's verify defaults.
         let _has_profiler_def = tabs1.contains(&PanelType::Profiler);
         let has_profiler_dbg = tabs2.contains(&PanelType::Profiler);
-        
+
         // If Default doesn't have Profiler by default, this is a good test.
         // But if it does, we just ensure Debug has it.
         assert!(has_profiler_dbg);

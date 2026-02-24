@@ -529,9 +529,9 @@ mod tests {
         }
         assert_eq!(stats.frame_time_history.len(), 60);
         assert_eq!(*stats.frame_time_history.last().unwrap(), 69.0);
-        assert_eq!(stats.frame_time_history[0], 10.0); 
+        assert_eq!(stats.frame_time_history[0], 10.0);
     }
-    
+
     #[test]
     fn test_grid_type_default() {
         assert_eq!(GridType::default(), GridType::Infinite);

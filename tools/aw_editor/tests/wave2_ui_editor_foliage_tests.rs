@@ -3,12 +3,12 @@
 //!         FoliageCategory, FoliageType, BrushTool, BrushSettings, DistributionType,
 //!         FoliageLayer, FoliageTab, ProceduralRule
 
-use aw_editor_lib::panels::ui_editor_panel::{
-    AnchorPreset, EasingType, ScaleMode, UiCanvas, UiStyle, UiWidget, WidgetType,
-};
 use aw_editor_lib::panels::foliage_panel::{
     BrushSettings, BrushTool, DistributionType, FoliageCategory, FoliageLayer, FoliageTab,
     FoliageType, ProceduralRule,
+};
+use aw_editor_lib::panels::ui_editor_panel::{
+    AnchorPreset, EasingType, ScaleMode, UiCanvas, UiStyle, UiWidget, WidgetType,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -48,7 +48,11 @@ fn widget_type_icons_non_empty() {
 fn widget_type_display_contains_name() {
     for variant in WidgetType::all() {
         let s = format!("{}", variant);
-        assert!(s.contains(variant.name()), "Display missing name for {:?}", variant);
+        assert!(
+            s.contains(variant.name()),
+            "Display missing name for {:?}",
+            variant
+        );
     }
 }
 
@@ -164,8 +168,14 @@ fn scale_mode_all_count() {
 #[test]
 fn scale_mode_names() {
     assert_eq!(ScaleMode::ConstantPixelSize.name(), "Constant Pixel Size");
-    assert_eq!(ScaleMode::ScaleWithScreenSize.name(), "Scale With Screen Size");
-    assert_eq!(ScaleMode::ConstantPhysicalSize.name(), "Constant Physical Size");
+    assert_eq!(
+        ScaleMode::ScaleWithScreenSize.name(),
+        "Scale With Screen Size"
+    );
+    assert_eq!(
+        ScaleMode::ConstantPhysicalSize.name(),
+        "Constant Physical Size"
+    );
 }
 
 #[test]

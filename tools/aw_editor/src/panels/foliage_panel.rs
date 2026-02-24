@@ -76,7 +76,7 @@ pub struct FoliageType {
     pub enabled: bool,
 
     // Density
-    pub density: f32,          // instances per square meter
+    pub density: f32, // instances per square meter
     pub min_scale: f32,
     pub max_scale: f32,
     pub random_rotation: bool,
@@ -506,42 +506,84 @@ impl std::fmt::Display for FoliageAction {
             FoliageAction::DeselectFoliageType(id) => write!(f, "Deselect type {}", id),
             FoliageAction::SelectAllTypes => write!(f, "Select all types"),
             FoliageAction::DeselectAllTypes => write!(f, "Deselect all types"),
-            FoliageAction::ToggleFoliageTypeEnabled(id, b) => write!(f, "Toggle type {} enabled: {}", id, b),
+            FoliageAction::ToggleFoliageTypeEnabled(id, b) => {
+                write!(f, "Toggle type {} enabled: {}", id, b)
+            }
             FoliageAction::SetFoliageTypeName(id, n) => write!(f, "Set type {} name: {}", id, n),
-            FoliageAction::SetFoliageTypeCategory(id, c) => write!(f, "Set type {} category: {}", id, c),
+            FoliageAction::SetFoliageTypeCategory(id, c) => {
+                write!(f, "Set type {} category: {}", id, c)
+            }
             FoliageAction::SetFoliageTypeMesh(id, m) => write!(f, "Set type {} mesh: {}", id, m),
-            FoliageAction::SetFoliageTypeDensity(id, d) => write!(f, "Set type {} density: {:.1}", id, d),
-            FoliageAction::SetFoliageTypeScaleRange(id, min, max) => write!(f, "Set type {} scale: {:.2}-{:.2}", id, min, max),
-            FoliageAction::ToggleRandomRotation(id, b) => write!(f, "Toggle type {} rotation: {}", id, b),
-            FoliageAction::ToggleAlignToNormal(id, b) => write!(f, "Toggle type {} align: {}", id, b),
-            FoliageAction::SetNormalAlignment(id, v) => write!(f, "Set type {} normal align: {:.2}", id, v),
-            FoliageAction::SetSlopeRange(id, min, max) => write!(f, "Set type {} slope: {:.1}°-{:.1}°", id, min, max),
-            FoliageAction::SetAltitudeRange(id, min, max) => write!(f, "Set type {} altitude: {:.1}-{:.1}", id, min, max),
-            FoliageAction::SetPlacementJitter(id, v) => write!(f, "Set type {} jitter: {:.2}", id, v),
-            FoliageAction::SetExclusionRadius(id, v) => write!(f, "Set type {} exclusion: {:.2}", id, v),
+            FoliageAction::SetFoliageTypeDensity(id, d) => {
+                write!(f, "Set type {} density: {:.1}", id, d)
+            }
+            FoliageAction::SetFoliageTypeScaleRange(id, min, max) => {
+                write!(f, "Set type {} scale: {:.2}-{:.2}", id, min, max)
+            }
+            FoliageAction::ToggleRandomRotation(id, b) => {
+                write!(f, "Toggle type {} rotation: {}", id, b)
+            }
+            FoliageAction::ToggleAlignToNormal(id, b) => {
+                write!(f, "Toggle type {} align: {}", id, b)
+            }
+            FoliageAction::SetNormalAlignment(id, v) => {
+                write!(f, "Set type {} normal align: {:.2}", id, v)
+            }
+            FoliageAction::SetSlopeRange(id, min, max) => {
+                write!(f, "Set type {} slope: {:.1}°-{:.1}°", id, min, max)
+            }
+            FoliageAction::SetAltitudeRange(id, min, max) => {
+                write!(f, "Set type {} altitude: {:.1}-{:.1}", id, min, max)
+            }
+            FoliageAction::SetPlacementJitter(id, v) => {
+                write!(f, "Set type {} jitter: {:.2}", id, v)
+            }
+            FoliageAction::SetExclusionRadius(id, v) => {
+                write!(f, "Set type {} exclusion: {:.2}", id, v)
+            }
             FoliageAction::ToggleLodEnabled(id, b) => write!(f, "Toggle type {} LOD: {}", id, b),
             FoliageAction::SetLodDistances(id, _) => write!(f, "Set type {} LOD distances", id),
             FoliageAction::SetCullDistance(id, d) => write!(f, "Set type {} cull: {:.1}", id, d),
             FoliageAction::ToggleWindEnabled(id, b) => write!(f, "Toggle type {} wind: {}", id, b),
-            FoliageAction::SetWindStrength(id, v) => write!(f, "Set type {} wind strength: {:.2}", id, v),
-            FoliageAction::SetWindFrequency(id, v) => write!(f, "Set type {} wind freq: {:.2}", id, v),
-            FoliageAction::ToggleCollision(id, b) => write!(f, "Toggle type {} collision: {}", id, b),
+            FoliageAction::SetWindStrength(id, v) => {
+                write!(f, "Set type {} wind strength: {:.2}", id, v)
+            }
+            FoliageAction::SetWindFrequency(id, v) => {
+                write!(f, "Set type {} wind freq: {:.2}", id, v)
+            }
+            FoliageAction::ToggleCollision(id, b) => {
+                write!(f, "Toggle type {} collision: {}", id, b)
+            }
             FoliageAction::ToggleCastShadow(id, b) => write!(f, "Toggle type {} shadow: {}", id, b),
-            FoliageAction::ToggleAffectLighting(id, b) => write!(f, "Toggle type {} lighting: {}", id, b),
-            FoliageAction::ToggleAffectNavigation(id, b) => write!(f, "Toggle type {} nav: {}", id, b),
+            FoliageAction::ToggleAffectLighting(id, b) => {
+                write!(f, "Toggle type {} lighting: {}", id, b)
+            }
+            FoliageAction::ToggleAffectNavigation(id, b) => {
+                write!(f, "Toggle type {} nav: {}", id, b)
+            }
             FoliageAction::AddLayer => write!(f, "Add layer"),
             FoliageAction::RemoveLayer(id) => write!(f, "Remove layer {}", id),
             FoliageAction::SelectLayer(id) => write!(f, "Select layer {}", id),
             FoliageAction::SetLayerName(id, n) => write!(f, "Set layer {} name: {}", id, n),
-            FoliageAction::ToggleLayerVisible(id, b) => write!(f, "Toggle layer {} visible: {}", id, b),
-            FoliageAction::ToggleLayerLocked(id, b) => write!(f, "Toggle layer {} locked: {}", id, b),
-            FoliageAction::AddTypeToLayer(lid, tid) => write!(f, "Add type {} to layer {}", tid, lid),
-            FoliageAction::RemoveTypeFromLayer(lid, tid) => write!(f, "Remove type {} from layer {}", tid, lid),
+            FoliageAction::ToggleLayerVisible(id, b) => {
+                write!(f, "Toggle layer {} visible: {}", id, b)
+            }
+            FoliageAction::ToggleLayerLocked(id, b) => {
+                write!(f, "Toggle layer {} locked: {}", id, b)
+            }
+            FoliageAction::AddTypeToLayer(lid, tid) => {
+                write!(f, "Add type {} to layer {}", tid, lid)
+            }
+            FoliageAction::RemoveTypeFromLayer(lid, tid) => {
+                write!(f, "Remove type {} from layer {}", tid, lid)
+            }
             FoliageAction::AddProceduralRule => write!(f, "Add procedural rule"),
             FoliageAction::RemoveProceduralRule(id) => write!(f, "Remove rule {}", id),
             FoliageAction::ToggleProceduralRule(id, b) => write!(f, "Toggle rule {}: {}", id, b),
             FoliageAction::SetRuleName(id, n) => write!(f, "Set rule {} name: {}", id, n),
-            FoliageAction::SetRuleDistribution(id, d) => write!(f, "Set rule {} distribution: {}", id, d),
+            FoliageAction::SetRuleDistribution(id, d) => {
+                write!(f, "Set rule {} distribution: {}", id, d)
+            }
             FoliageAction::SetRuleNoiseSettings(id, _, _) => write!(f, "Set rule {} noise", id),
             FoliageAction::ExecuteProceduralRule(id) => write!(f, "Execute rule {}", id),
             FoliageAction::ExecuteAllRules => write!(f, "Execute all rules"),
@@ -673,7 +715,12 @@ impl FoliagePanel {
         let samples = [
             ("Short Grass", FoliageCategory::Grass, 50.0, [0.4, 0.6, 0.3]),
             ("Tall Grass", FoliageCategory::Grass, 30.0, [0.3, 0.5, 0.2]),
-            ("Wildflowers", FoliageCategory::Flowers, 15.0, [0.8, 0.6, 0.3]),
+            (
+                "Wildflowers",
+                FoliageCategory::Flowers,
+                15.0,
+                [0.8, 0.6, 0.3],
+            ),
             ("Bush Small", FoliageCategory::Shrubs, 2.0, [0.2, 0.4, 0.2]),
             ("Pine Tree", FoliageCategory::Trees, 0.1, [0.15, 0.3, 0.15]),
             ("Rock Small", FoliageCategory::Rocks, 0.5, [0.5, 0.5, 0.5]),
@@ -807,8 +854,13 @@ impl FoliagePanel {
 
                 for tool in tools {
                     let is_selected = self.current_tool == tool;
-                    let button = egui::Button::new(format!("{} {:?}", tool.icon(), tool))
-                        .fill(if is_selected { Color32::from_rgb(80, 120, 180) } else { Color32::from_rgb(50, 50, 55) });
+                    let button = egui::Button::new(format!("{} {:?}", tool.icon(), tool)).fill(
+                        if is_selected {
+                            Color32::from_rgb(80, 120, 180)
+                        } else {
+                            Color32::from_rgb(50, 50, 55)
+                        },
+                    );
 
                     if ui.add(button).clicked() {
                         self.current_tool = tool;
@@ -828,15 +880,23 @@ impl FoliagePanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Radius:");
-                    ui.add(egui::Slider::new(&mut self.brush_settings.radius, 0.5..=50.0).suffix("m"));
+                    ui.add(
+                        egui::Slider::new(&mut self.brush_settings.radius, 0.5..=50.0).suffix("m"),
+                    );
                     ui.end_row();
 
                     ui.label("Falloff:");
-                    ui.add(egui::Slider::new(&mut self.brush_settings.falloff, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.brush_settings.falloff,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Density:");
-                    ui.add(egui::Slider::new(&mut self.brush_settings.density, 0.1..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.brush_settings.density,
+                        0.1..=2.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Flow:");
@@ -864,7 +924,8 @@ impl FoliagePanel {
                 .show(ui, |ui| {
                     for ft in &self.foliage_types {
                         let is_selected = self.selected_types.contains(&ft.id);
-                        let label = format!("{} {} ({})", ft.category.icon(), ft.name, ft.instance_count);
+                        let label =
+                            format!("{} {} ({})", ft.category.icon(), ft.name, ft.instance_count);
 
                         let mut selected = is_selected;
                         if ui.checkbox(&mut selected, label).changed() {
@@ -931,9 +992,10 @@ impl FoliagePanel {
                                 )
                             };
 
-                            let btn = egui::Button::new(format!("{}\n{}", ft.category.icon(), ft.name))
-                                .min_size(Vec2::new(80.0, 60.0))
-                                .fill(button_color);
+                            let btn =
+                                egui::Button::new(format!("{}\n{}", ft.category.icon(), ft.name))
+                                    .min_size(Vec2::new(80.0, 60.0))
+                                    .fill(button_color);
 
                             if ui.add(btn).clicked() {
                                 self.current_type = ft.clone();
@@ -951,7 +1013,14 @@ impl FoliagePanel {
 
         // Current type properties
         ui.group(|ui| {
-            ui.label(RichText::new(format!("{} {}", self.current_type.category.icon(), self.current_type.name)).strong());
+            ui.label(
+                RichText::new(format!(
+                    "{} {}",
+                    self.current_type.category.icon(),
+                    self.current_type.name
+                ))
+                .strong(),
+            );
 
             egui::Grid::new("type_props")
                 .num_columns(2)
@@ -963,10 +1032,18 @@ impl FoliagePanel {
 
                     ui.label("Category:");
                     egui::ComboBox::from_id_salt("type_category")
-                        .selected_text(format!("{} {:?}", self.current_type.category.icon(), self.current_type.category))
+                        .selected_text(format!(
+                            "{} {:?}",
+                            self.current_type.category.icon(),
+                            self.current_type.category
+                        ))
                         .show_ui(ui, |ui| {
                             for cat in FoliageCategory::all() {
-                                ui.selectable_value(&mut self.current_type.category, *cat, format!("{} {:?}", cat.icon(), cat));
+                                ui.selectable_value(
+                                    &mut self.current_type.category,
+                                    *cat,
+                                    format!("{} {:?}", cat.icon(), cat),
+                                );
                             }
                         });
                     ui.end_row();
@@ -1001,13 +1078,24 @@ impl FoliagePanel {
                         .spacing([10.0, 4.0])
                         .show(ui, |ui| {
                             ui.label("Density (per m²):");
-                            ui.add(egui::Slider::new(&mut self.current_type.density, 0.1..=100.0).logarithmic(true));
+                            ui.add(
+                                egui::Slider::new(&mut self.current_type.density, 0.1..=100.0)
+                                    .logarithmic(true),
+                            );
                             ui.end_row();
 
                             ui.label("Scale Range:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_type.min_scale).speed(0.01).prefix("Min:"));
-                                ui.add(egui::DragValue::new(&mut self.current_type.max_scale).speed(0.01).prefix("Max:"));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.min_scale)
+                                        .speed(0.01)
+                                        .prefix("Min:"),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.max_scale)
+                                        .speed(0.01)
+                                        .prefix("Max:"),
+                                );
                             });
                             ui.end_row();
 
@@ -1021,7 +1109,10 @@ impl FoliagePanel {
 
                             if self.current_type.align_to_normal {
                                 ui.label("Normal Weight:");
-                                ui.add(egui::Slider::new(&mut self.current_type.normal_alignment, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_type.normal_alignment,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             }
                         });
@@ -1039,20 +1130,44 @@ impl FoliagePanel {
                         .show(ui, |ui| {
                             ui.label("Slope Range:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_type.min_slope).speed(1.0).suffix("°").prefix("Min:"));
-                                ui.add(egui::DragValue::new(&mut self.current_type.max_slope).speed(1.0).suffix("°").prefix("Max:"));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.min_slope)
+                                        .speed(1.0)
+                                        .suffix("°")
+                                        .prefix("Min:"),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.max_slope)
+                                        .speed(1.0)
+                                        .suffix("°")
+                                        .prefix("Max:"),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Altitude Range:");
                             ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut self.current_type.min_altitude).speed(1.0).prefix("Min:"));
-                                ui.add(egui::DragValue::new(&mut self.current_type.max_altitude).speed(1.0).prefix("Max:"));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.min_altitude)
+                                        .speed(1.0)
+                                        .prefix("Min:"),
+                                );
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.max_altitude)
+                                        .speed(1.0)
+                                        .prefix("Max:"),
+                                );
                             });
                             ui.end_row();
 
                             ui.label("Exclusion Radius:");
-                            ui.add(egui::Slider::new(&mut self.current_type.exclusion_radius, 0.0..=5.0).suffix("m"));
+                            ui.add(
+                                egui::Slider::new(
+                                    &mut self.current_type.exclusion_radius,
+                                    0.0..=5.0,
+                                )
+                                .suffix("m"),
+                            );
                             ui.end_row();
                         });
                 });
@@ -1070,14 +1185,20 @@ impl FoliagePanel {
                             .num_columns(2)
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
-                                for (i, dist) in self.current_type.lod_distances.iter_mut().enumerate() {
+                                for (i, dist) in
+                                    self.current_type.lod_distances.iter_mut().enumerate()
+                                {
                                     ui.label(format!("LOD {} Distance:", i));
                                     ui.add(egui::DragValue::new(dist).speed(1.0).suffix("m"));
                                     ui.end_row();
                                 }
 
                                 ui.label("Cull Distance:");
-                                ui.add(egui::DragValue::new(&mut self.current_type.cull_distance).speed(10.0).suffix("m"));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.current_type.cull_distance)
+                                        .speed(10.0)
+                                        .suffix("m"),
+                                );
                                 ui.end_row();
                             });
                     }
@@ -1097,11 +1218,17 @@ impl FoliagePanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Strength:");
-                                ui.add(egui::Slider::new(&mut self.current_type.wind_strength, 0.0..=2.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_type.wind_strength,
+                                    0.0..=2.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Frequency:");
-                                ui.add(egui::Slider::new(&mut self.current_type.wind_frequency, 0.1..=5.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_type.wind_frequency,
+                                    0.1..=5.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1116,7 +1243,10 @@ impl FoliagePanel {
                     ui.checkbox(&mut self.current_type.collision_enabled, "Enable Collision");
                     ui.checkbox(&mut self.current_type.cast_shadow, "Cast Shadow");
                     ui.checkbox(&mut self.current_type.affect_lighting, "Affect Lighting");
-                    ui.checkbox(&mut self.current_type.affect_navigation, "Affect Navigation");
+                    ui.checkbox(
+                        &mut self.current_type.affect_navigation,
+                        "Affect Navigation",
+                    );
                 });
             });
     }
@@ -1165,10 +1295,26 @@ impl FoliagePanel {
                             egui::ComboBox::from_id_salt(format!("dist_{}", rule.id))
                                 .selected_text(format!("{:?}", rule.distribution_type))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut rule.distribution_type, DistributionType::Random, "Random");
-                                    ui.selectable_value(&mut rule.distribution_type, DistributionType::Uniform, "Uniform");
-                                    ui.selectable_value(&mut rule.distribution_type, DistributionType::Clustered, "Clustered");
-                                    ui.selectable_value(&mut rule.distribution_type, DistributionType::PoissonDisc, "Poisson Disc");
+                                    ui.selectable_value(
+                                        &mut rule.distribution_type,
+                                        DistributionType::Random,
+                                        "Random",
+                                    );
+                                    ui.selectable_value(
+                                        &mut rule.distribution_type,
+                                        DistributionType::Uniform,
+                                        "Uniform",
+                                    );
+                                    ui.selectable_value(
+                                        &mut rule.distribution_type,
+                                        DistributionType::Clustered,
+                                        "Clustered",
+                                    );
+                                    ui.selectable_value(
+                                        &mut rule.distribution_type,
+                                        DistributionType::PoissonDisc,
+                                        "Poisson Disc",
+                                    );
                                 });
                             ui.end_row();
 
@@ -1215,7 +1361,11 @@ impl FoliagePanel {
         for layer in &mut self.layers {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    let vis_icon = if layer.visible { "👁️" } else { "👁️‍🗨️" };
+                    let vis_icon = if layer.visible {
+                        "👁️"
+                    } else {
+                        "👁️‍🗨️"
+                    };
                     if ui.button(vis_icon).clicked() {
                         layer.visible = !layer.visible;
                     }
@@ -1279,9 +1429,12 @@ impl FoliagePanel {
                     for ft in &self.foliage_types {
                         ui.horizontal(|ui| {
                             ui.label(format!("{} {}", ft.category.icon(), ft.name));
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                ui.label(format!("{} instances", ft.instance_count));
-                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.label(format!("{} instances", ft.instance_count));
+                                },
+                            );
                         });
 
                         let fraction = if self.total_instances > 0 {
@@ -2096,7 +2249,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(!display.is_empty(), "Display should not be empty for {:?}", action);
+            assert!(
+                !display.is_empty(),
+                "Display should not be empty for {:?}",
+                action
+            );
         }
     }
 
@@ -2214,7 +2371,10 @@ mod tests {
             assert!(!display.is_empty());
         }
 
-        let name_display = format!("{}", FoliageAction::SetLayerName(0, "Test Layer".to_string()));
+        let name_display = format!(
+            "{}",
+            FoliageAction::SetLayerName(0, "Test Layer".to_string())
+        );
         assert!(name_display.contains("Test Layer"));
     }
 
@@ -2261,7 +2421,11 @@ mod tests {
 
         for action in actions {
             let display = format!("{}", action);
-            assert!(display.contains("true") || display.contains("Toggle"), "Display should contain toggle info: {}", display);
+            assert!(
+                display.contains("true") || display.contains("Toggle"),
+                "Display should contain toggle info: {}",
+                display
+            );
         }
     }
 }

@@ -67,7 +67,10 @@ impl Tonemapper {
     }
 
     pub fn is_cinematic(&self) -> bool {
-        matches!(self, Tonemapper::ACES | Tonemapper::Filmic | Tonemapper::AgX)
+        matches!(
+            self,
+            Tonemapper::ACES | Tonemapper::Filmic | Tonemapper::AgX
+        )
     }
 }
 
@@ -129,11 +132,17 @@ impl AntiAliasing {
     }
 
     pub fn is_msaa(&self) -> bool {
-        matches!(self, AntiAliasing::MSAA2x | AntiAliasing::MSAA4x | AntiAliasing::MSAA8x)
+        matches!(
+            self,
+            AntiAliasing::MSAA2x | AntiAliasing::MSAA4x | AntiAliasing::MSAA8x
+        )
     }
 
     pub fn is_post_process(&self) -> bool {
-        matches!(self, AntiAliasing::FXAA | AntiAliasing::SMAA | AntiAliasing::TAA)
+        matches!(
+            self,
+            AntiAliasing::FXAA | AntiAliasing::SMAA | AntiAliasing::TAA
+        )
     }
 }
 
@@ -355,11 +364,7 @@ impl std::fmt::Display for AoMethod {
 
 impl AoMethod {
     pub fn all() -> &'static [AoMethod] {
-        &[
-            AoMethod::SSAO,
-            AoMethod::HBAO,
-            AoMethod::GTAO,
-        ]
+        &[AoMethod::SSAO, AoMethod::HBAO, AoMethod::GTAO]
     }
 
     pub fn name(&self) -> &'static str {
@@ -532,16 +537,56 @@ pub struct PostProcessPreset {
 impl PostProcessPreset {
     fn presets() -> Vec<PostProcessPreset> {
         vec![
-            PostProcessPreset { name: "Cinematic".to_string(), category: "Film".to_string(), description: "Film-like color grading".to_string() },
-            PostProcessPreset { name: "Noir".to_string(), category: "Film".to_string(), description: "Black and white with high contrast".to_string() },
-            PostProcessPreset { name: "Vintage".to_string(), category: "Film".to_string(), description: "Warm, faded look".to_string() },
-            PostProcessPreset { name: "Horror".to_string(), category: "Game".to_string(), description: "Dark, desaturated, vignette".to_string() },
-            PostProcessPreset { name: "Sci-Fi".to_string(), category: "Game".to_string(), description: "Cool tones, bloom, chromatic".to_string() },
-            PostProcessPreset { name: "Fantasy".to_string(), category: "Game".to_string(), description: "Warm, magical glow".to_string() },
-            PostProcessPreset { name: "Realistic".to_string(), category: "Simulation".to_string(), description: "Natural colors, subtle effects".to_string() },
-            PostProcessPreset { name: "HDR Vivid".to_string(), category: "Simulation".to_string(), description: "Enhanced colors and contrast".to_string() },
-            PostProcessPreset { name: "Performance".to_string(), category: "Technical".to_string(), description: "Minimal effects for speed".to_string() },
-            PostProcessPreset { name: "Quality".to_string(), category: "Technical".to_string(), description: "Maximum visual fidelity".to_string() },
+            PostProcessPreset {
+                name: "Cinematic".to_string(),
+                category: "Film".to_string(),
+                description: "Film-like color grading".to_string(),
+            },
+            PostProcessPreset {
+                name: "Noir".to_string(),
+                category: "Film".to_string(),
+                description: "Black and white with high contrast".to_string(),
+            },
+            PostProcessPreset {
+                name: "Vintage".to_string(),
+                category: "Film".to_string(),
+                description: "Warm, faded look".to_string(),
+            },
+            PostProcessPreset {
+                name: "Horror".to_string(),
+                category: "Game".to_string(),
+                description: "Dark, desaturated, vignette".to_string(),
+            },
+            PostProcessPreset {
+                name: "Sci-Fi".to_string(),
+                category: "Game".to_string(),
+                description: "Cool tones, bloom, chromatic".to_string(),
+            },
+            PostProcessPreset {
+                name: "Fantasy".to_string(),
+                category: "Game".to_string(),
+                description: "Warm, magical glow".to_string(),
+            },
+            PostProcessPreset {
+                name: "Realistic".to_string(),
+                category: "Simulation".to_string(),
+                description: "Natural colors, subtle effects".to_string(),
+            },
+            PostProcessPreset {
+                name: "HDR Vivid".to_string(),
+                category: "Simulation".to_string(),
+                description: "Enhanced colors and contrast".to_string(),
+            },
+            PostProcessPreset {
+                name: "Performance".to_string(),
+                category: "Technical".to_string(),
+                description: "Minimal effects for speed".to_string(),
+            },
+            PostProcessPreset {
+                name: "Quality".to_string(),
+                category: "Technical".to_string(),
+                description: "Maximum visual fidelity".to_string(),
+            },
         ]
     }
 }
@@ -671,7 +716,12 @@ impl PostProcessPanel {
         self.profiles.push(PostProcessProfile {
             id,
             name: "Cinematic".to_string(),
-            bloom: BloomSettings { enabled: true, intensity: 0.8, threshold: 0.8, ..Default::default() },
+            bloom: BloomSettings {
+                enabled: true,
+                intensity: 0.8,
+                threshold: 0.8,
+                ..Default::default()
+            },
             color_grading: ColorGradingSettings {
                 enabled: true,
                 contrast: 0.1,
@@ -679,8 +729,16 @@ impl PostProcessPanel {
                 temperature: -5.0,
                 ..Default::default()
             },
-            vignette: VignetteSettings { enabled: true, intensity: 0.4, ..Default::default() },
-            film_grain: FilmGrainSettings { enabled: true, intensity: 0.15, ..Default::default() },
+            vignette: VignetteSettings {
+                enabled: true,
+                intensity: 0.4,
+                ..Default::default()
+            },
+            film_grain: FilmGrainSettings {
+                enabled: true,
+                intensity: 0.15,
+                ..Default::default()
+            },
             ..Default::default()
         });
         self.next_id += 1;
@@ -691,9 +749,19 @@ impl PostProcessPanel {
             id,
             name: "Performance".to_string(),
             anti_aliasing: AntiAliasing::FXAA,
-            bloom: BloomSettings { enabled: true, intensity: 0.3, ..Default::default() },
-            ao: AmbientOcclusionSettings { enabled: false, ..Default::default() },
-            ssr: SsrSettings { enabled: false, ..Default::default() },
+            bloom: BloomSettings {
+                enabled: true,
+                intensity: 0.3,
+                ..Default::default()
+            },
+            ao: AmbientOcclusionSettings {
+                enabled: false,
+                ..Default::default()
+            },
+            ssr: SsrSettings {
+                enabled: false,
+                ..Default::default()
+            },
             ..Default::default()
         });
         self.next_id += 1;
@@ -761,7 +829,14 @@ impl PostProcessPanel {
                 .selected_text(&self.current_profile.name)
                 .show_ui(ui, |ui| {
                     for profile in &self.profiles.clone() {
-                        if ui.selectable_value(&mut self.selected_profile, Some(profile.id), &profile.name).clicked() {
+                        if ui
+                            .selectable_value(
+                                &mut self.selected_profile,
+                                Some(profile.id),
+                                &profile.name,
+                            )
+                            .clicked()
+                        {
                             self.current_profile = profile.clone();
                         }
                     }
@@ -810,7 +885,11 @@ impl PostProcessPanel {
                                 .selected_text(format!("{:?}", self.current_profile.tonemapper))
                                 .show_ui(ui, |ui| {
                                     for tm in Tonemapper::all() {
-                                        ui.selectable_value(&mut self.current_profile.tonemapper, *tm, format!("{:?}", tm));
+                                        ui.selectable_value(
+                                            &mut self.current_profile.tonemapper,
+                                            *tm,
+                                            format!("{:?}", tm),
+                                        );
                                     }
                                 });
                             ui.end_row();
@@ -819,13 +898,41 @@ impl PostProcessPanel {
                             egui::ComboBox::from_id_salt("aa")
                                 .selected_text(format!("{:?}", self.current_profile.anti_aliasing))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::None, "None");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::FXAA, "FXAA");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::SMAA, "SMAA");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::TAA, "TAA");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::MSAA2x, "MSAA 2x");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::MSAA4x, "MSAA 4x");
-                                    ui.selectable_value(&mut self.current_profile.anti_aliasing, AntiAliasing::MSAA8x, "MSAA 8x");
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::None,
+                                        "None",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::FXAA,
+                                        "FXAA",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::SMAA,
+                                        "SMAA",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::TAA,
+                                        "TAA",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::MSAA2x,
+                                        "MSAA 2x",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::MSAA4x,
+                                        "MSAA 4x",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.current_profile.anti_aliasing,
+                                        AntiAliasing::MSAA8x,
+                                        "MSAA 8x",
+                                    );
                                 });
                             ui.end_row();
                         });
@@ -839,19 +946,32 @@ impl PostProcessPanel {
 
                     let effects = [
                         ("✨ Bloom", self.current_profile.bloom.enabled),
-                        ("📷 Depth of Field", self.current_profile.dof.mode != DofMode::Disabled),
+                        (
+                            "📷 Depth of Field",
+                            self.current_profile.dof.mode != DofMode::Disabled,
+                        ),
                         ("💨 Motion Blur", self.current_profile.motion_blur.enabled),
-                        ("🎨 Color Grading", self.current_profile.color_grading.enabled),
+                        (
+                            "🎨 Color Grading",
+                            self.current_profile.color_grading.enabled,
+                        ),
                         ("🌑 Ambient Occlusion", self.current_profile.ao.enabled),
                         ("🪞 SSR", self.current_profile.ssr.enabled),
                         ("⭕ Vignette", self.current_profile.vignette.enabled),
-                        ("🌈 Chromatic Aberration", self.current_profile.chromatic_aberration.enabled),
+                        (
+                            "🌈 Chromatic Aberration",
+                            self.current_profile.chromatic_aberration.enabled,
+                        ),
                         ("🎬 Film Grain", self.current_profile.film_grain.enabled),
                     ];
 
                     for (name, enabled) in effects {
                         ui.horizontal(|ui| {
-                            let color = if enabled { Color32::GREEN } else { Color32::GRAY };
+                            let color = if enabled {
+                                Color32::GREEN
+                            } else {
+                                Color32::GRAY
+                            };
                             ui.label(RichText::new(if enabled { "●" } else { "○" }).color(color));
                             ui.label(name);
                         });
@@ -874,19 +994,31 @@ impl PostProcessPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.bloom.intensity, 0.0..=2.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.bloom.intensity,
+                        0.0..=2.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Threshold:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.bloom.threshold, 0.0..=5.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.bloom.threshold,
+                        0.0..=5.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Soft Threshold:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.bloom.soft_threshold, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.bloom.soft_threshold,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Radius:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.bloom.radius, 1.0..=10.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.bloom.radius,
+                        1.0..=10.0,
+                    ));
                     ui.end_row();
                 });
 
@@ -894,12 +1026,18 @@ impl PostProcessPanel {
 
             // Dirt mask
             ui.group(|ui| {
-                ui.checkbox(&mut self.current_profile.bloom.dirt_mask_enabled, "Dirt Mask");
+                ui.checkbox(
+                    &mut self.current_profile.bloom.dirt_mask_enabled,
+                    "Dirt Mask",
+                );
 
                 if self.current_profile.bloom.dirt_mask_enabled {
                     ui.horizontal(|ui| {
                         ui.label("Intensity:");
-                        ui.add(egui::Slider::new(&mut self.current_profile.bloom.dirt_mask_intensity, 0.0..=5.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.current_profile.bloom.dirt_mask_intensity,
+                            0.0..=5.0,
+                        ));
                     });
 
                     ui.horizontal(|ui| {
@@ -921,10 +1059,22 @@ impl PostProcessPanel {
         egui::ComboBox::from_id_salt("dof_mode")
             .selected_text(format!("{:?}", self.current_profile.dof.mode))
             .show_ui(ui, |ui| {
-                ui.selectable_value(&mut self.current_profile.dof.mode, DofMode::Disabled, "Disabled");
-                ui.selectable_value(&mut self.current_profile.dof.mode, DofMode::Gaussian, "Gaussian");
+                ui.selectable_value(
+                    &mut self.current_profile.dof.mode,
+                    DofMode::Disabled,
+                    "Disabled",
+                );
+                ui.selectable_value(
+                    &mut self.current_profile.dof.mode,
+                    DofMode::Gaussian,
+                    "Gaussian",
+                );
                 ui.selectable_value(&mut self.current_profile.dof.mode, DofMode::Bokeh, "Bokeh");
-                ui.selectable_value(&mut self.current_profile.dof.mode, DofMode::CircleOfConfusion, "Circle of Confusion");
+                ui.selectable_value(
+                    &mut self.current_profile.dof.mode,
+                    DofMode::CircleOfConfusion,
+                    "Circle of Confusion",
+                );
             });
 
         if self.current_profile.dof.mode != DofMode::Disabled {
@@ -935,19 +1085,34 @@ impl PostProcessPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Focus Distance:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.dof.focus_distance, 0.1..=100.0).logarithmic(true));
+                    ui.add(
+                        egui::Slider::new(
+                            &mut self.current_profile.dof.focus_distance,
+                            0.1..=100.0,
+                        )
+                        .logarithmic(true),
+                    );
                     ui.end_row();
 
                     ui.label("Aperture (f-stop):");
-                    ui.add(egui::Slider::new(&mut self.current_profile.dof.aperture, 1.0..=22.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.dof.aperture,
+                        1.0..=22.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Focal Length (mm):");
-                    ui.add(egui::Slider::new(&mut self.current_profile.dof.focal_length, 10.0..=200.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.dof.focal_length,
+                        10.0..=200.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Max Blur:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.dof.max_blur, 0.0..=3.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.dof.max_blur,
+                        0.0..=3.0,
+                    ));
                     ui.end_row();
                 });
 
@@ -958,12 +1123,18 @@ impl PostProcessPanel {
 
                     ui.horizontal(|ui| {
                         ui.label("Blade Count:");
-                        ui.add(egui::Slider::new(&mut self.current_profile.dof.blade_count, 3..=12));
+                        ui.add(egui::Slider::new(
+                            &mut self.current_profile.dof.blade_count,
+                            3..=12,
+                        ));
                     });
 
                     ui.horizontal(|ui| {
                         ui.label("Blade Curvature:");
-                        ui.add(egui::Slider::new(&mut self.current_profile.dof.blade_curvature, 0.0..=1.0));
+                        ui.add(egui::Slider::new(
+                            &mut self.current_profile.dof.blade_curvature,
+                            0.0..=1.0,
+                        ));
                     });
                 });
             }
@@ -984,22 +1155,37 @@ impl PostProcessPanel {
                 .spacing([10.0, 4.0])
                 .show(ui, |ui| {
                     ui.label("Intensity:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.motion_blur.intensity, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.motion_blur.intensity,
+                        0.0..=1.0,
+                    ));
                     ui.end_row();
 
                     ui.label("Sample Count:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.motion_blur.sample_count, 4..=32));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.motion_blur.sample_count,
+                        4..=32,
+                    ));
                     ui.end_row();
 
                     ui.label("Max Velocity:");
-                    ui.add(egui::Slider::new(&mut self.current_profile.motion_blur.max_velocity, 100.0..=2000.0));
+                    ui.add(egui::Slider::new(
+                        &mut self.current_profile.motion_blur.max_velocity,
+                        100.0..=2000.0,
+                    ));
                     ui.end_row();
                 });
 
             ui.add_space(10.0);
 
-            ui.checkbox(&mut self.current_profile.motion_blur.camera_motion_blur, "Camera Motion Blur");
-            ui.checkbox(&mut self.current_profile.motion_blur.object_motion_blur, "Object Motion Blur");
+            ui.checkbox(
+                &mut self.current_profile.motion_blur.camera_motion_blur,
+                "Camera Motion Blur",
+            );
+            ui.checkbox(
+                &mut self.current_profile.motion_blur.object_motion_blur,
+                "Object Motion Blur",
+            );
         }
     }
 
@@ -1022,11 +1208,17 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Temperature:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.temperature, -100.0..=100.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.temperature,
+                                    -100.0..=100.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Tint:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.tint, -100.0..=100.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.tint,
+                                    -100.0..=100.0,
+                                ));
                                 ui.end_row();
                             });
                     });
@@ -1042,23 +1234,41 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Exposure:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.exposure, -5.0..=5.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.exposure,
+                                    -5.0..=5.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Contrast:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.contrast, -1.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.contrast,
+                                    -1.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Saturation:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.saturation, -1.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.saturation,
+                                    -1.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Vibrance:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.vibrance, -1.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.vibrance,
+                                    -1.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Hue Shift:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.hue_shift, -180.0..=180.0).suffix("°"));
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut self.current_profile.color_grading.hue_shift,
+                                        -180.0..=180.0,
+                                    )
+                                    .suffix("°"),
+                                );
                                 ui.end_row();
                             });
                     });
@@ -1074,15 +1284,24 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Lift:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.lift, -1.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.lift,
+                                    -1.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Gamma:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.gamma, 0.1..=3.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.gamma,
+                                    0.1..=3.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Gain:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.gain, 0.0..=3.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.gain,
+                                    0.0..=3.0,
+                                ));
                                 ui.end_row();
                             });
                     });
@@ -1096,7 +1315,9 @@ impl PostProcessPanel {
                         if self.current_profile.color_grading.lut_enabled {
                             ui.horizontal(|ui| {
                                 ui.label("Path:");
-                                ui.text_edit_singleline(&mut self.current_profile.color_grading.lut_path);
+                                ui.text_edit_singleline(
+                                    &mut self.current_profile.color_grading.lut_path,
+                                );
                                 if ui.button("📂").clicked() {
                                     // Open file dialog
                                 }
@@ -1104,7 +1325,10 @@ impl PostProcessPanel {
 
                             ui.horizontal(|ui| {
                                 ui.label("Contribution:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.color_grading.lut_contribution, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.color_grading.lut_contribution,
+                                    0.0..=1.0,
+                                ));
                             });
                         }
                     });
@@ -1121,7 +1345,10 @@ impl PostProcessPanel {
             .show(ui, |ui| {
                 // Ambient Occlusion
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_profile.ao.enabled, RichText::new("🌑 Ambient Occlusion").strong());
+                    ui.checkbox(
+                        &mut self.current_profile.ao.enabled,
+                        RichText::new("🌑 Ambient Occlusion").strong(),
+                    );
 
                     if self.current_profile.ao.enabled {
                         egui::Grid::new("ao_settings")
@@ -1132,22 +1359,43 @@ impl PostProcessPanel {
                                 egui::ComboBox::from_id_salt("ao_method")
                                     .selected_text(format!("{:?}", self.current_profile.ao.method))
                                     .show_ui(ui, |ui| {
-                                        ui.selectable_value(&mut self.current_profile.ao.method, AoMethod::SSAO, "SSAO");
-                                        ui.selectable_value(&mut self.current_profile.ao.method, AoMethod::HBAO, "HBAO");
-                                        ui.selectable_value(&mut self.current_profile.ao.method, AoMethod::GTAO, "GTAO");
+                                        ui.selectable_value(
+                                            &mut self.current_profile.ao.method,
+                                            AoMethod::SSAO,
+                                            "SSAO",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.current_profile.ao.method,
+                                            AoMethod::HBAO,
+                                            "HBAO",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.current_profile.ao.method,
+                                            AoMethod::GTAO,
+                                            "GTAO",
+                                        );
                                     });
                                 ui.end_row();
 
                                 ui.label("Intensity:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ao.intensity, 0.0..=2.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ao.intensity,
+                                    0.0..=2.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Radius:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ao.radius, 0.1..=2.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ao.radius,
+                                    0.1..=2.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Samples:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ao.samples, 4..=64));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ao.samples,
+                                    4..=64,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1157,7 +1405,10 @@ impl PostProcessPanel {
 
                 // SSR
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_profile.ssr.enabled, RichText::new("🪞 Screen-Space Reflections").strong());
+                    ui.checkbox(
+                        &mut self.current_profile.ssr.enabled,
+                        RichText::new("🪞 Screen-Space Reflections").strong(),
+                    );
 
                     if self.current_profile.ssr.enabled {
                         egui::Grid::new("ssr_settings")
@@ -1165,15 +1416,24 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Max Distance:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ssr.max_distance, 10.0..=500.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ssr.max_distance,
+                                    10.0..=500.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Resolution:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ssr.resolution, 0.25..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ssr.resolution,
+                                    0.25..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Max Roughness:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.ssr.max_roughness, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.ssr.max_roughness,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1183,7 +1443,10 @@ impl PostProcessPanel {
 
                 // Vignette
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_profile.vignette.enabled, RichText::new("⭕ Vignette").strong());
+                    ui.checkbox(
+                        &mut self.current_profile.vignette.enabled,
+                        RichText::new("⭕ Vignette").strong(),
+                    );
 
                     if self.current_profile.vignette.enabled {
                         egui::Grid::new("vignette_settings")
@@ -1191,15 +1454,24 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Intensity:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.vignette.intensity, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.vignette.intensity,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Smoothness:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.vignette.smoothness, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.vignette.smoothness,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Roundness:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.vignette.roundness, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.vignette.roundness,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1209,12 +1481,18 @@ impl PostProcessPanel {
 
                 // Chromatic Aberration
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_profile.chromatic_aberration.enabled, RichText::new("🌈 Chromatic Aberration").strong());
+                    ui.checkbox(
+                        &mut self.current_profile.chromatic_aberration.enabled,
+                        RichText::new("🌈 Chromatic Aberration").strong(),
+                    );
 
                     if self.current_profile.chromatic_aberration.enabled {
                         ui.horizontal(|ui| {
                             ui.label("Intensity:");
-                            ui.add(egui::Slider::new(&mut self.current_profile.chromatic_aberration.intensity, 0.0..=1.0));
+                            ui.add(egui::Slider::new(
+                                &mut self.current_profile.chromatic_aberration.intensity,
+                                0.0..=1.0,
+                            ));
                         });
                     }
                 });
@@ -1223,7 +1501,10 @@ impl PostProcessPanel {
 
                 // Film Grain
                 ui.group(|ui| {
-                    ui.checkbox(&mut self.current_profile.film_grain.enabled, RichText::new("🎬 Film Grain").strong());
+                    ui.checkbox(
+                        &mut self.current_profile.film_grain.enabled,
+                        RichText::new("🎬 Film Grain").strong(),
+                    );
 
                     if self.current_profile.film_grain.enabled {
                         egui::Grid::new("grain_settings")
@@ -1231,11 +1512,17 @@ impl PostProcessPanel {
                             .spacing([10.0, 4.0])
                             .show(ui, |ui| {
                                 ui.label("Intensity:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.film_grain.intensity, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.film_grain.intensity,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
 
                                 ui.label("Response:");
-                                ui.add(egui::Slider::new(&mut self.current_profile.film_grain.response, 0.0..=1.0));
+                                ui.add(egui::Slider::new(
+                                    &mut self.current_profile.film_grain.response,
+                                    0.0..=1.0,
+                                ));
                                 ui.end_row();
                             });
                     }
@@ -1261,20 +1548,32 @@ impl PostProcessPanel {
                 let mut current_category = String::new();
 
                 for preset in &self.presets {
-                    if !self.preset_filter.is_empty() &&
-                       !preset.name.to_lowercase().contains(&self.preset_filter.to_lowercase()) {
+                    if !self.preset_filter.is_empty()
+                        && !preset
+                            .name
+                            .to_lowercase()
+                            .contains(&self.preset_filter.to_lowercase())
+                    {
                         continue;
                     }
 
                     if preset.category != current_category {
                         current_category = preset.category.clone();
                         ui.add_space(5.0);
-                        ui.label(RichText::new(&current_category).strong().color(Color32::from_rgb(150, 150, 200)));
+                        ui.label(
+                            RichText::new(&current_category)
+                                .strong()
+                                .color(Color32::from_rgb(150, 150, 200)),
+                        );
                     }
 
                     ui.horizontal(|ui| {
                         ui.label(&preset.name);
-                        ui.label(RichText::new(&preset.description).small().color(Color32::GRAY));
+                        ui.label(
+                            RichText::new(&preset.description)
+                                .small()
+                                .color(Color32::GRAY),
+                        );
 
                         if ui.button("Apply").clicked() {
                             // Apply preset

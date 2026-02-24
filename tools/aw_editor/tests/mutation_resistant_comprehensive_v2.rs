@@ -22,20 +22,20 @@
 //! - TranslateGizmo constrained snapping and numeric
 //! - CameraController defaults, view presets, zoom
 
-use aw_editor_lib::distribution::{DistributionConfig, DistributionFormat, format_bytes};
-use aw_editor_lib::runtime::RuntimeIssue;
-use aw_editor_lib::{EditorRuntime, RuntimeState, RuntimeStats};
+use astraweave_core::IVec2;
 use aw_editor_lib::clipboard::{
     ClipboardEntityData, ClipboardStats, ClipboardValidation, CLIPBOARD_SCHEMA_VERSION,
 };
-use aw_editor_lib::scene_serialization::SceneValidationIssue;
-use aw_editor_lib::{EntityData, SceneData};
+use aw_editor_lib::distribution::{format_bytes, DistributionConfig, DistributionFormat};
 use aw_editor_lib::gizmo::{
-    AxisConstraint, CameraController, GizmoHandle, GizmoPicker, Ray,
-    ScaleGizmo, SnappingConfig, TranslateGizmo,
+    AxisConstraint, CameraController, GizmoHandle, GizmoPicker, Ray, ScaleGizmo, SnappingConfig,
+    TranslateGizmo,
 };
+use aw_editor_lib::runtime::RuntimeIssue;
+use aw_editor_lib::scene_serialization::SceneValidationIssue;
+use aw_editor_lib::{EditorRuntime, RuntimeState, RuntimeStats};
+use aw_editor_lib::{EntityData, SceneData};
 use glam::{Quat, Vec2, Vec3};
-use astraweave_core::IVec2;
 use std::collections::HashMap;
 
 // =============================================================================
@@ -90,12 +90,18 @@ mod distribution_format_name_tests {
 
     #[test]
     fn windows_installer_name() {
-        assert_eq!(DistributionFormat::WindowsInstaller.name(), "Windows Installer");
+        assert_eq!(
+            DistributionFormat::WindowsInstaller.name(),
+            "Windows Installer"
+        );
     }
 
     #[test]
     fn windows_portable_name() {
-        assert_eq!(DistributionFormat::WindowsPortable.name(), "Windows Portable");
+        assert_eq!(
+            DistributionFormat::WindowsPortable.name(),
+            "Windows Portable"
+        );
     }
 
     #[test]
@@ -1256,7 +1262,10 @@ mod clipboard_entity_validate_tests {
         let e = make_entity("test", 1000.0, 100, 30);
         let v = e.validate();
         // scale > 1000.0 is warning, scale at 1000 is ok
-        let has_scale_warning = v.warnings.iter().any(|w| w.to_lowercase().contains("scale"));
+        let has_scale_warning = v
+            .warnings
+            .iter()
+            .any(|w| w.to_lowercase().contains("scale"));
         assert!(!has_scale_warning, "warnings: {:?}", v.warnings);
     }
 
