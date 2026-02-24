@@ -876,4 +876,34 @@ mod tests {
         assert!(score < 50, "very long sentences should score low, got {}", score);
         assert!(score > 0, "score should be positive, got {}", score);
     }
+
+    #[test]
+    fn test_calculate_complexity_exact_score_kills_arithmetic_and_branch_mutants() {
+        // Remediation: kills 6 MISSED mutants in calculate_complexity:
+        //   - helpers.rs:390  var_count * 5 → / 5
+        //   - helpers.rs:397  delete '{' match arm
+        //   - helpers.rs:398  current_depth += 1 → -= 1 / *= 1
+        //   - helpers.rs:401  delete '}' match arm
+        //   - helpers.rs:405  max_depth * 3 → / 3
+        //
+        // Prompt "{a}{b}" (len=6):
+        //   length factor:  6/100 = 0
+        //   var_count = 2:  2*5 = 10
+        //   nesting depth:  max_depth=1 → 1*3 = 3
+        //   line count:     1/10 = 0
+        //   total = 13
+        let score = PromptAnalyzer::calculate_complexity("{a}{b}");
+        assert_eq!(
+            score, 13,
+            "complexity of '{{a}}{{b}}' must be exactly 13 (var=10 + nest=3)"
+        );
+
+        // Second assertion: a prompt with NO braces has zero nesting contribution.
+        // This pins the nesting factor independently.
+        let flat_score = PromptAnalyzer::calculate_complexity("hello world");
+        assert_eq!(
+            flat_score, 0,
+            "short flat prompt must have complexity 0"
+        );
+    }
 }
