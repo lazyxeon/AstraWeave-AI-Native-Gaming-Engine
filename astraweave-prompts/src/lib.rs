@@ -1743,13 +1743,156 @@ mod tests {
     #[test]
     fn test_age_seconds_returns_nonzero_for_past_created_at() {
         // Kills: replace TemplateMetadata::age_seconds -> u64 with 0
-        // Create metadata with created_at far in the past, so age_seconds must be > 0.
         let mut meta = TemplateMetadata::new("age_test");
-        meta.created_at = 1_000_000; // ~Jan 12, 1970 — guaranteed to be in the past
+        meta.created_at = 1_000_000;
         let age = meta.age_seconds();
-        // current_timestamp() is well past 1_000_000, so age must be large
         assert!(age > 1_000_000, "age_seconds must be > 1M for a very old timestamp, got {age}");
-        // With the mutation (→ 0), this assert fails
+    }
+
+    #[test]
+    fn test_age_display_kills_all_branch_and_boundary_mutants() {
+        // Kills 10 mutants:
+        //   507:9  age_display → "xyzzy"
+        //   508:17 < → ==, < → >, < → <=   (secs < 60 boundary)
+        //   510:24 < → ==, < → >, < → <=   (secs < 3600 boundary)
+        //   512:24 < → ==, < → >, < → <=   (secs < 86400 boundary)
+        let now = current_timestamp();
+        let mut m = TemplateMetadata::new("t");
+
+        // Branch 1: secs ≈ 30 → "Xs ago" (seconds format)
+        // Kills < → > at 508 (30 > 60 = false → minutes branch → "0m ago")
+        m.created_at = now.saturating_sub(30);
+        let d = m.age_display();
+        assert!(d.ends_with("s ago"), "age≈30 must be seconds, got: {d}");
+
+        // Boundary at 60: secs ≈ 60 → "1m ago" (NOT "60s ago")
+        // Kills < → == at 508 (60 == 60 = true → "60s ago")
+        // Kills < → <= at 508 (60 <= 60 = true → "60s ago")
+        m.created_at = now.saturating_sub(60);
+        let d = m.age_display();
+        assert!(d.ends_with("m ago"), "age≈60 must be minutes, got: {d}");
+
+        // Branch 2: secs ≈ 120 → "2m ago"
+        // Kills < → > at 510 (120 > 3600 = false → hours branch → "0h ago")
+        m.created_at = now.saturating_sub(120);
+        let d = m.age_display();
+        assert!(d.ends_with("m ago"), "age≈120 must be minutes, got: {d}");
+
+        // Boundary at 3600: secs ≈ 3600 → "1h ago" (NOT "60m ago")
+        // Kills < → == at 510, < → <= at 510
+        m.created_at = now.saturating_sub(3600);
+        let d = m.age_display();
+        assert!(d.ends_with("h ago"), "age≈3600 must be hours, got: {d}");
+
+        // Branch 3: secs ≈ 7200 → "2h ago"
+        // Kills < → > at 512 (7200 > 86400 = false → days branch → "0d ago")
+        m.created_at = now.saturating_sub(7200);
+        let d = m.age_display();
+        assert!(d.ends_with("h ago"), "age≈7200 must be hours, got: {d}");
+
+        // Boundary at 86400: secs ≈ 86400 → "1d ago" (NOT "24h ago")
+        // Kills < → == at 512, < → <= at 512
+        m.created_at = now.saturating_sub(86400);
+        let d = m.age_display();
+        assert!(d.ends_with("d ago"), "age≈86400 must be days, got: {d}");
+
+        // Branch 4: secs ≈ 172800 → "2d ago" (kills → "xyzzy")
+        m.created_at = now.saturating_sub(172800);
+        let d = m.age_display();
+        assert!(d.ends_with("d ago"), "age≈172800 must be days, got: {d}");
+        assert_ne!(d, "xyzzy", "age_display must not return sentinel");
+    }
+
+    #[test]
+    fn test_is_recently_updated_kills_all_mutants() {
+        // Kills 5 mutants:
+        //   521:9  → true, → false
+        //   521:61 < → ==, < → >, < → <=
+        let now = current_timestamp();
+        let mut m = TemplateMetadata::new("t");
+
+        // Just updated → recently updated (kills → false)
+        m.updated_at = now;
+        assert!(m.is_recently_updated(), "just updated should be recent");
+
+        // 100s ago → recently updated (kills < → > : 100 > 86400 = false → returns false)
+        m.updated_at = now.saturating_sub(100);
+        assert!(m.is_recently_updated(), "100s old should be recent");
+
+        // Very old → NOT recently updated (kills → true)
+        m.updated_at = 1_000_000;
+        assert!(!m.is_recently_updated(), "1970 timestamp should not be recent");
+
+        // Exactly 86400s → NOT recent (kills < → ==: 86400 == 86400 = true, < → <=: 86400 <= 86400 = true)
+        m.updated_at = now.saturating_sub(86400);
+        assert!(!m.is_recently_updated(), "exactly 24h should not be recent");
+    }
+
+    #[test]
+    fn test_touch_updates_timestamp() {
+        // Kills: replace TemplateMetadata::touch with ()
+        let mut m = TemplateMetadata::new("t");
+        m.updated_at = 0;
+        m.touch();
+        let now = current_timestamp();
+        assert!(m.updated_at >= now.saturating_sub(1), "touch must set updated_at to ~now, got {}", m.updated_at);
+    }
+
+    #[test]
+    fn test_default_version_via_serde() {
+        // Kills: default_version → String::new(), → "xyzzy"
+        // default_version() is only invoked as #[serde(default = "default_version")]
+        let json = r#"{"name": "test"}"#;
+        let meta: TemplateMetadata = serde_json::from_str(json).unwrap();
+        assert_eq!(meta.version, "0.1.0", "serde default version must be '0.1.0'");
+    }
+
+    #[test]
+    fn test_template_category_description_not_xyzzy() {
+        // Kills: TemplateCategory::description → "xyzzy"
+        // Each variant must return a meaningful description, not "xyzzy"
+        let cats = [
+            TemplateCategory::Dialogue,
+            TemplateCategory::Behavior,
+            TemplateCategory::Narrative,
+            TemplateCategory::Combat,
+            TemplateCategory::System,
+            TemplateCategory::Conversation,
+            TemplateCategory::WorldBuilding,
+            TemplateCategory::TerrainGeneration,
+            TemplateCategory::Custom,
+        ];
+        for cat in cats {
+            let desc = cat.description();
+            assert_ne!(desc, "xyzzy", "{cat:?} description must not be sentinel");
+            assert!(desc.len() > 10, "{cat:?} description too short: {desc}");
+        }
+        // Spot-check specific content
+        assert!(TemplateCategory::Dialogue.description().contains("dialogue"), "Dialogue desc wrong");
+        assert!(TemplateCategory::Combat.description().contains("ombat"), "Combat desc wrong");
+    }
+
+    #[test]
+    fn test_template_category_use_case_not_xyzzy() {
+        // Kills: TemplateCategory::use_case → "xyzzy"
+        let cats = [
+            TemplateCategory::Dialogue,
+            TemplateCategory::Behavior,
+            TemplateCategory::Narrative,
+            TemplateCategory::Combat,
+            TemplateCategory::System,
+            TemplateCategory::Conversation,
+            TemplateCategory::WorldBuilding,
+            TemplateCategory::TerrainGeneration,
+            TemplateCategory::Custom,
+        ];
+        for cat in cats {
+            let uc = cat.use_case();
+            assert_ne!(uc, "xyzzy", "{cat:?} use_case must not be sentinel");
+            assert!(uc.len() > 5, "{cat:?} use_case too short: {uc}");
+        }
+        assert!(TemplateCategory::Dialogue.use_case().contains("NPC"), "Dialogue use_case wrong");
+        assert!(TemplateCategory::Combat.use_case().contains("combat"), "Combat use_case wrong");
     }
 
     #[test]
