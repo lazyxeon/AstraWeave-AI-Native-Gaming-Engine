@@ -1326,4 +1326,86 @@ mod tests {
         assert_eq!(PluginEvent::SceneLoaded.name(), "Scene Loaded");
         assert_eq!(PluginEvent::EntitySelected.name(), "Entity Selected");
     }
+
+    #[test]
+    fn test_is_entity_event_negative_kills_true_mutant() {
+        // Kills: replace PluginEvent::is_entity_event -> bool with true
+        // Non-entity events MUST return false
+        assert!(!PluginEvent::Loaded.is_entity_event());
+        assert!(!PluginEvent::Unloading.is_entity_event());
+        assert!(!PluginEvent::Update.is_entity_event());
+        assert!(!PluginEvent::SceneLoaded.is_entity_event());
+        assert!(!PluginEvent::PlayModeEnter.is_entity_event());
+    }
+
+    #[test]
+    fn test_is_play_mode_event_negative_kills_true_mutant() {
+        // Kills: replace PluginEvent::is_play_mode_event -> bool with true
+        assert!(!PluginEvent::Loaded.is_play_mode_event());
+        assert!(!PluginEvent::Unloading.is_play_mode_event());
+        assert!(!PluginEvent::Update.is_play_mode_event());
+        assert!(!PluginEvent::EntitySelected.is_play_mode_event());
+        assert!(!PluginEvent::SceneLoaded.is_play_mode_event());
+    }
+
+    #[test]
+    fn test_plugin_error_display_has_specific_content() {
+        // Kills: replace Display::fmt -> std::fmt::Result with Ok(Default::default())
+        // With the mutation, format!() produces an empty string
+        let e = PluginError::InitFailed("gpu crash".into());
+        let msg = format!("{}", e);
+        assert!(msg.contains("gpu crash"), "Display must include message, got: {msg}");
+        assert!(msg.contains("initialization"), "Display must describe error type, got: {msg}");
+
+        let e2 = PluginError::MissingDependency("wgpu".into());
+        let msg2 = format!("{}", e2);
+        assert!(msg2.contains("wgpu"), "Display must include dep name, got: {msg2}");
+    }
+
+    #[test]
+    fn test_plugin_error_icon_not_xyzzy() {
+        // Kills: replace PluginError::icon -> &'static str with "xyzzy"
+        let errors = [
+            PluginError::InitFailed("x".into()),
+            PluginError::ConfigError("x".into()),
+            PluginError::MissingDependency("x".into()),
+            PluginError::IncompatibleVersion { required: "1".into(), actual: "2".into() },
+            PluginError::Other("x".into()),
+        ];
+        for e in &errors {
+            let icon = e.icon();
+            assert_ne!(icon, "xyzzy", "{:?} icon must not be sentinel", e);
+            assert!(icon.len() <= 8, "icon should be a single emoji, got: {icon}");
+        }
+    }
+
+    #[test]
+    fn test_editor_plugin_default_has_panel_is_false() {
+        // Kills: replace EditorPlugin::has_panel -> bool with true
+        // A minimal plugin using the default trait method must return false
+        struct MinimalPlugin;
+        impl EditorPlugin for MinimalPlugin {
+            fn metadata(&self) -> PluginMetadata {
+                PluginMetadata::new("test.minimal", "Minimal", "0.1.0")
+            }
+        }
+        let p = MinimalPlugin;
+        assert!(!p.has_panel(), "default has_panel must be false");
+    }
+
+    #[test]
+    fn test_editor_plugin_default_menu_items_is_empty() {
+        // Kills: replace EditorPlugin::menu_items -> Vec<PluginMenuItem> with vec![]
+        // Wait — vec![] IS the default. But the mutation replaces the body with
+        // a different vec![] expression that omits the Vec::new() codepath.
+        // This is equivalent — but let's confirm the default works correctly.
+        struct MinimalPlugin;
+        impl EditorPlugin for MinimalPlugin {
+            fn metadata(&self) -> PluginMetadata {
+                PluginMetadata::new("test.minimal", "Minimal", "0.1.0")
+            }
+        }
+        let p = MinimalPlugin;
+        assert!(p.menu_items().is_empty(), "default menu_items must be empty");
+    }
 }

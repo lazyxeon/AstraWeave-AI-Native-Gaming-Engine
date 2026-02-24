@@ -900,4 +900,27 @@ mod tests {
         assert!(!stats.has_viewport);
         assert!(!stats.has_debug_panels);
     }
+
+    #[test]
+    fn test_create_editor_style_via_constructor() {
+        // Kills: replace DockLayout::create_editor_style -> Style with Default::default()
+        // The constructor calls create_editor_style() and stores the result.
+        // We verify the style has our custom values, not default.
+        let layout = DockLayout::new();
+        let style = layout.style();
+
+        // create_editor_style sets tab_bar.height = 24.0
+        assert!(
+            (style.tab_bar.height - 24.0).abs() < f32::EPSILON,
+            "tab_bar.height must be 24.0 (from create_editor_style), got {}",
+            style.tab_bar.height
+        );
+
+        // create_editor_style sets separator.width = 4.0
+        assert!(
+            (style.separator.width - 4.0).abs() < f32::EPSILON,
+            "separator.width must be 4.0 (from create_editor_style), got {}",
+            style.separator.width
+        );
+    }
 }
