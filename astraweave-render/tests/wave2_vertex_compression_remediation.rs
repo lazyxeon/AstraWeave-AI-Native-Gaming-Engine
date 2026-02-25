@@ -68,10 +68,17 @@ fn oct_upper_hemisphere_sweep() {
         let phi = i as f32 * std::f32::consts::TAU / 16.0;
         for j in 1..5 {
             let theta = j as f32 * std::f32::consts::FRAC_PI_2 / 5.0;
-            let n = Vec3::new(theta.sin() * phi.cos(), theta.sin() * phi.sin(), theta.cos())
-                .normalize();
+            let n = Vec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
+            .normalize();
             let error = OctahedralEncoder::encoding_error(n);
-            assert!(error < MAX_ANGULAR_ERROR, "upper sweep ({i},{j}) error={error}");
+            assert!(
+                error < MAX_ANGULAR_ERROR,
+                "upper sweep ({i},{j}) error={error}"
+            );
         }
     }
 }
@@ -81,15 +88,15 @@ fn oct_lower_hemisphere_sweep() {
     for i in 0..16 {
         let phi = i as f32 * std::f32::consts::TAU / 16.0;
         for j in 1..5 {
-            let theta = std::f32::consts::FRAC_PI_2
-                + j as f32 * std::f32::consts::FRAC_PI_2 / 5.0;
-            let n = Vec3::new(theta.sin() * phi.cos(), theta.sin() * phi.sin(), theta.cos())
-                .normalize();
+            let theta = std::f32::consts::FRAC_PI_2 + j as f32 * std::f32::consts::FRAC_PI_2 / 5.0;
+            let n = Vec3::new(
+                theta.sin() * phi.cos(),
+                theta.sin() * phi.sin(),
+                theta.cos(),
+            )
+            .normalize();
             let error = OctahedralEncoder::encoding_error(n);
-            assert!(
-                error < 0.03,
-                "lower sweep ({i},{j}) error={error}, n={n:?}"
-            );
+            assert!(error < 0.03, "lower sweep ({i},{j}) error={error}, n={n:?}");
         }
     }
 }
@@ -142,7 +149,13 @@ fn oct_encoded_values_range() {
 
 #[test]
 fn oct_decoded_is_normalized() {
-    let test_encoded = [[0i16, 32767], [-32767, 0], [16000, 16000], [0, 0], [-10000, 20000]];
+    let test_encoded = [
+        [0i16, 32767],
+        [-32767, 0],
+        [16000, 16000],
+        [0, 0],
+        [-10000, 20000],
+    ];
     for enc in &test_encoded {
         let dec = OctahedralEncoder::decode(*enc);
         assert!(
@@ -237,7 +250,10 @@ fn half_encode_uv_typical_range() {
         let v = i as f32 * 0.1;
         let enc = HalfFloatEncoder::encode(v);
         let dec = HalfFloatEncoder::decode(enc);
-        assert!((dec - v).abs() < 0.001, "UV value {v} roundtripped to {dec}");
+        assert!(
+            (dec - v).abs() < 0.001,
+            "UV value {v} roundtripped to {dec}"
+        );
     }
 }
 
@@ -332,7 +348,11 @@ fn compress_batch_single() {
 fn compress_batch_preserves_ordering() {
     let positions = vec![Vec3::X, Vec3::Y, Vec3::Z];
     let normals = vec![Vec3::Z, Vec3::Z, Vec3::Z];
-    let uvs = vec![Vec2::new(0.1, 0.0), Vec2::new(0.2, 0.0), Vec2::new(0.3, 0.0)];
+    let uvs = vec![
+        Vec2::new(0.1, 0.0),
+        Vec2::new(0.2, 0.0),
+        Vec2::new(0.3, 0.0),
+    ];
     let batch = VertexCompressor::compress_batch(&positions, &normals, &uvs);
     assert_eq!(batch.len(), 3);
     for (i, cv) in batch.iter().enumerate() {
@@ -417,6 +437,7 @@ fn compressed_vertex_struct_size() {
 
 #[test]
 fn compressed_vertex_reduction_matches_sizes() {
-    let expected = 1.0 - (CompressedVertex::COMPRESSED_SIZE as f32 / CompressedVertex::STANDARD_SIZE as f32);
+    let expected =
+        1.0 - (CompressedVertex::COMPRESSED_SIZE as f32 / CompressedVertex::STANDARD_SIZE as f32);
     assert!((expected - CompressedVertex::MEMORY_REDUCTION).abs() < 0.001);
 }

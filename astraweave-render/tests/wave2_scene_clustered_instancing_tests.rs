@@ -3,18 +3,20 @@
 //!
 //! Targets the highest-mutant-count APIs not covered by existing wave2 files.
 
-use astraweave_render::scene_environment::{SceneEnvironment, SceneEnvironmentUBO};
-use astraweave_render::effects::WeatherKind;
-use astraweave_render::environment::TimeOfDay;
 use astraweave_render::biome_transition::BiomeVisuals;
 use astraweave_render::clustered::{bin_lights_cpu, ClusterDims, CpuLight};
 use astraweave_render::clustered_forward::{ClusterConfig, GpuLight};
-use astraweave_render::types;
-use astraweave_render::instancing::{Instance, InstanceBatch, InstanceManager, InstancePatternBuilder, InstanceRaw};
 use astraweave_render::decals::{Decal, DecalBlendMode};
+use astraweave_render::effects::WeatherKind;
+use astraweave_render::environment::TimeOfDay;
 use astraweave_render::gi::voxelization_pipeline::{
-    VoxelVertex, VoxelMaterial, VoxelizationConfig, VoxelizationMesh,
+    VoxelMaterial, VoxelVertex, VoxelizationConfig, VoxelizationMesh,
 };
+use astraweave_render::instancing::{
+    Instance, InstanceBatch, InstanceManager, InstancePatternBuilder, InstanceRaw,
+};
+use astraweave_render::scene_environment::{SceneEnvironment, SceneEnvironmentUBO};
+use astraweave_render::types;
 use astraweave_terrain::biome::BiomeType;
 use glam::{Mat4, Quat, Vec3};
 use std::f32::consts::PI;
@@ -279,17 +281,14 @@ fn bin_lights_cpu_single_center_light() {
         radius: 5.0,
     }];
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let (counts, indices, _offsets) = bin_lights_cpu(
-        &lights,
-        dims,
-        (800, 600),
-        0.1,
-        100.0,
-        PI / 3.0,
-    );
+    let (counts, indices, _offsets) =
+        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, PI / 3.0);
     // At least one cluster should contain the light
     let total_assigned: u32 = counts.iter().sum();
-    assert!(total_assigned > 0, "Light should be assigned to at least one cluster");
+    assert!(
+        total_assigned > 0,
+        "Light should be assigned to at least one cluster"
+    );
     assert_eq!(indices.len(), total_assigned as usize);
     // All indices should be 0 (only one light)
     assert!(indices.iter().all(|i| *i == 0));
@@ -318,13 +317,17 @@ fn bin_lights_cpu_far_light_excluded() {
 #[test]
 fn bin_lights_cpu_multi_light_indices_correct() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 },
-        CpuLight { pos: Vec3::new(0.0, 0.0, 50.0), radius: 2.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 2.0,
+        },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 50.0),
+            radius: 2.0,
+        },
     ];
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let (counts, indices, _) = bin_lights_cpu(
-        &lights, dims, (800, 600), 0.1, 100.0, PI / 3.0,
-    );
+    let (counts, indices, _) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, PI / 3.0);
     let total: u32 = counts.iter().sum();
     assert!(total >= 2, "Both lights should be binned");
     // Indices should contain both 0 and 1
@@ -338,9 +341,7 @@ fn bin_lights_cpu_offsets_exclusive_scan() {
         radius: 30.0,
     }];
     let dims = ClusterDims { x: 2, y: 2, z: 2 };
-    let (counts, _, offsets) = bin_lights_cpu(
-        &lights, dims, (800, 600), 0.1, 100.0, PI / 3.0,
-    );
+    let (counts, _, offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, PI / 3.0);
     // offsets[0] should be 0 (exclusive scan starts at 0)
     assert_eq!(offsets[0], 0);
     // offsets[i+1] = offsets[i] + counts[i]
@@ -544,7 +545,14 @@ fn instance_manager_add_instance_increments() {
 #[test]
 fn instance_manager_add_instances_bulk() {
     let mut mgr = InstanceManager::new();
-    mgr.add_instances(1, vec![Instance::identity(), Instance::identity(), Instance::identity()]);
+    mgr.add_instances(
+        1,
+        vec![
+            Instance::identity(),
+            Instance::identity(),
+            Instance::identity(),
+        ],
+    );
     assert_eq!(mgr.total_instances(), 3);
     assert_eq!(mgr.batch_count(), 1);
 }
@@ -562,7 +570,10 @@ fn instance_manager_multi_mesh_batches() {
 #[test]
 fn instance_manager_get_batch_returns_correct() {
     let mut mgr = InstanceManager::new();
-    mgr.add_instance(42, Instance::new(Vec3::new(1.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE));
+    mgr.add_instance(
+        42,
+        Instance::new(Vec3::new(1.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE),
+    );
     let batch = mgr.get_batch(42);
     assert!(batch.is_some());
     assert_eq!(batch.unwrap().instance_count(), 1);
@@ -653,7 +664,12 @@ fn pattern_default() {
 
 #[test]
 fn decal_new_defaults() {
-    let d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     assert_eq!(d.albedo_tint, [1.0, 1.0, 1.0, 1.0]);
     assert_eq!(d.normal_strength, 1.0);
     assert_eq!(d.roughness, 0.5);
@@ -665,7 +681,12 @@ fn decal_new_defaults() {
 
 #[test]
 fn decal_update_permanent_returns_true() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     // fade_duration=0 means permanent
     assert!(d.update(1.0));
     assert!(d.update(100.0));
@@ -673,16 +694,26 @@ fn decal_update_permanent_returns_true() {
 
 #[test]
 fn decal_update_fading_decreases_alpha() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 2.0;
     assert!(d.update(0.5)); // Not expired
-    // fade_alpha = 1.0 - (0.5 / 2.0) = 0.75
+                            // fade_alpha = 1.0 - (0.5 / 2.0) = 0.75
     assert!((d.albedo_tint[3] - 0.75).abs() < 1e-5);
 }
 
 #[test]
 fn decal_update_fading_halfway() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 4.0;
     assert!(d.update(2.0));
     // fade_alpha = 1.0 - (2.0 / 4.0) = 0.5
@@ -691,7 +722,12 @@ fn decal_update_fading_halfway() {
 
 #[test]
 fn decal_update_expired_returns_false() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 1.0;
     assert!(!d.update(2.0)); // Past fade duration
 }
@@ -706,13 +742,26 @@ fn decal_to_gpu_has_inv_projection() {
     );
     let gpu = d.to_gpu();
     // inv_projection should not be all zeros (it's the inverse of a transform)
-    let flat: Vec<f32> = gpu.inv_projection.iter().flat_map(|row| row.iter()).copied().collect();
-    assert!(flat.iter().any(|v| *v != 0.0), "inv_projection shouldn't be all zeros");
+    let flat: Vec<f32> = gpu
+        .inv_projection
+        .iter()
+        .flat_map(|row| row.iter())
+        .copied()
+        .collect();
+    assert!(
+        flat.iter().any(|v| *v != 0.0),
+        "inv_projection shouldn't be all zeros"
+    );
 }
 
 #[test]
 fn decal_to_gpu_packs_blend_mode() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.blend_mode = DecalBlendMode::Additive;
     let gpu = d.to_gpu();
     assert_eq!(gpu.params[3], 1.0); // Additive = 1
@@ -720,7 +769,12 @@ fn decal_to_gpu_packs_blend_mode() {
 
 #[test]
 fn decal_to_gpu_packs_atlas_uv() {
-    let d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.25, 0.5], [0.125, 0.125]));
+    let d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.25, 0.5], [0.125, 0.125]),
+    );
     let gpu = d.to_gpu();
     assert_eq!(gpu.atlas_uv[0], 0.25);
     assert_eq!(gpu.atlas_uv[1], 0.5);
@@ -837,11 +891,7 @@ fn types_instance_from_pos_scale_color() {
 
 #[test]
 fn types_instance_raw_normal_matrix_computed() {
-    let inst = types::Instance::from_pos_scale_color(
-        Vec3::ZERO,
-        Vec3::ONE,
-        [1.0, 1.0, 1.0, 1.0],
-    );
+    let inst = types::Instance::from_pos_scale_color(Vec3::ZERO, Vec3::ONE, [1.0, 1.0, 1.0, 1.0]);
     let raw = inst.raw();
     // Identity transform → normal matrix should be identity
     assert!((raw.normal_matrix[0][0] - 1.0).abs() < 1e-5);

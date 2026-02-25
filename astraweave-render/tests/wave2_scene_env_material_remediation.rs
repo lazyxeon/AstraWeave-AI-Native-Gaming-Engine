@@ -15,8 +15,8 @@ use astraweave_render::clustered_forward::{ClusterConfig, GpuLight};
 use astraweave_render::effects::WeatherKind;
 use astraweave_render::environment::TimeOfDay;
 use astraweave_render::material_extended::{
-    MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY, MATERIAL_FLAG_CLEARCOAT,
-    MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_TRANSMISSION,
+    MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY, MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN,
+    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_TRANSMISSION,
 };
 use astraweave_render::scene_environment::{SceneEnvironment, SceneEnvironmentUBO};
 use astraweave_terrain::biome::BiomeType;

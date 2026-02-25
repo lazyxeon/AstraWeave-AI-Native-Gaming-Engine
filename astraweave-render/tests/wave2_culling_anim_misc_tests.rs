@@ -4,19 +4,21 @@
 //! Pins exact numeric constants and exercises pure-computation functions
 //! that don't require GPU access.
 
-use astraweave_render::culling::{
-    BatchId, DrawIndirectCommand, FrustumPlanes, InstanceAABB, cpu_frustum_cull,
-};
 use astraweave_render::animation::{
-    Transform, AnimationState, JointPalette, skin_vertex_cpu, MAX_JOINTS,
+    skin_vertex_cpu, AnimationState, JointPalette, Transform, MAX_JOINTS,
 };
-use astraweave_render::vertex_compression::{CompressedVertex, OctahedralEncoder, HalfFloatEncoder};
-use astraweave_render::lod_generator::LODConfig;
-use astraweave_render::transparency::{BlendMode, TransparencyManager, create_blend_state};
+use astraweave_render::biome_detector::BiomeDetectorConfig;
+use astraweave_render::culling::{
+    cpu_frustum_cull, BatchId, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
+};
 use astraweave_render::gpu_memory::{GpuMemoryBudget, MemoryCategory};
 use astraweave_render::hdri_catalog::DayPeriod;
-use astraweave_render::biome_detector::BiomeDetectorConfig;
+use astraweave_render::lod_generator::LODConfig;
 use astraweave_render::post::BloomConfig;
+use astraweave_render::transparency::{create_blend_state, BlendMode, TransparencyManager};
+use astraweave_render::vertex_compression::{
+    CompressedVertex, HalfFloatEncoder, OctahedralEncoder,
+};
 use astraweave_render::water::WaterUniforms;
 use glam::{Mat4, Quat, Vec3};
 
@@ -82,8 +84,8 @@ fn cpu_frustum_cull_origin_box_visible() {
 }
 #[test]
 fn cpu_frustum_cull_far_box_culled() {
-    let vp = Mat4::perspective_rh(1.0, 1.0, 0.1, 10.0)
-        * Mat4::look_to_rh(Vec3::ZERO, -Vec3::Z, Vec3::Y);
+    let vp =
+        Mat4::perspective_rh(1.0, 1.0, 0.1, 10.0) * Mat4::look_to_rh(Vec3::ZERO, -Vec3::Z, Vec3::Y);
     let frustum = FrustumPlanes::from_view_proj(&vp);
     let instances = vec![InstanceAABB::new(Vec3::new(0.0, 0.0, -100.0), Vec3::ONE, 0)];
     let visible = cpu_frustum_cull(&instances, &frustum);
@@ -382,20 +384,35 @@ fn day_period_from_str_loose_day() {
 }
 #[test]
 fn day_period_from_str_loose_morning_variants() {
-    assert_eq!(DayPeriod::from_str_loose("morning"), Some(DayPeriod::Morning));
-    assert_eq!(DayPeriod::from_str_loose("sunrise"), Some(DayPeriod::Morning));
+    assert_eq!(
+        DayPeriod::from_str_loose("morning"),
+        Some(DayPeriod::Morning)
+    );
+    assert_eq!(
+        DayPeriod::from_str_loose("sunrise"),
+        Some(DayPeriod::Morning)
+    );
     assert_eq!(DayPeriod::from_str_loose("dawn"), Some(DayPeriod::Morning));
 }
 #[test]
 fn day_period_from_str_loose_evening_variants() {
-    assert_eq!(DayPeriod::from_str_loose("evening"), Some(DayPeriod::Evening));
-    assert_eq!(DayPeriod::from_str_loose("sunset"), Some(DayPeriod::Evening));
+    assert_eq!(
+        DayPeriod::from_str_loose("evening"),
+        Some(DayPeriod::Evening)
+    );
+    assert_eq!(
+        DayPeriod::from_str_loose("sunset"),
+        Some(DayPeriod::Evening)
+    );
     assert_eq!(DayPeriod::from_str_loose("dusk"), Some(DayPeriod::Evening));
 }
 #[test]
 fn day_period_from_str_loose_night_variants() {
     assert_eq!(DayPeriod::from_str_loose("night"), Some(DayPeriod::Night));
-    assert_eq!(DayPeriod::from_str_loose("midnight"), Some(DayPeriod::Night));
+    assert_eq!(
+        DayPeriod::from_str_loose("midnight"),
+        Some(DayPeriod::Night)
+    );
 }
 #[test]
 fn day_period_from_game_hours() {
@@ -418,7 +435,10 @@ fn day_period_from_game_hours_boundaries() {
 // ═══════════════════════════════════════════════════════════════════════
 #[test]
 fn biome_detector_config_default_distance() {
-    assert_eq!(BiomeDetectorConfig::default().sample_distance_threshold, 2.0);
+    assert_eq!(
+        BiomeDetectorConfig::default().sample_distance_threshold,
+        2.0
+    );
 }
 #[test]
 fn biome_detector_config_default_hysteresis() {
@@ -448,22 +468,34 @@ fn bloom_config_validate_ok() {
 }
 #[test]
 fn bloom_config_validate_threshold_too_high() {
-    let c = BloomConfig { threshold: 11.0, ..Default::default() };
+    let c = BloomConfig {
+        threshold: 11.0,
+        ..Default::default()
+    };
     assert!(c.validate().is_err());
 }
 #[test]
 fn bloom_config_validate_intensity_too_high() {
-    let c = BloomConfig { intensity: 1.5, ..Default::default() };
+    let c = BloomConfig {
+        intensity: 1.5,
+        ..Default::default()
+    };
     assert!(c.validate().is_err());
 }
 #[test]
 fn bloom_config_validate_mip_count_zero() {
-    let c = BloomConfig { mip_count: 0, ..Default::default() };
+    let c = BloomConfig {
+        mip_count: 0,
+        ..Default::default()
+    };
     assert!(c.validate().is_err());
 }
 #[test]
 fn bloom_config_validate_mip_count_too_high() {
-    let c = BloomConfig { mip_count: 9, ..Default::default() };
+    let c = BloomConfig {
+        mip_count: 9,
+        ..Default::default()
+    };
     assert!(c.validate().is_err());
 }
 
@@ -485,7 +517,10 @@ fn water_uniforms_default_water_color_deep() {
 }
 #[test]
 fn water_uniforms_default_water_color_shallow() {
-    assert_eq!(WaterUniforms::default().water_color_shallow, [0.1, 0.4, 0.5]);
+    assert_eq!(
+        WaterUniforms::default().water_color_shallow,
+        [0.1, 0.4, 0.5]
+    );
 }
 #[test]
 fn water_uniforms_default_foam_color() {

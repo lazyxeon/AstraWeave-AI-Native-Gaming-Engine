@@ -276,28 +276,43 @@ fn weather_map_grassland_exact_weights() {
 #[test]
 fn weather_pick_tundra_low_roll_is_none() {
     // roll=0.0 → first bucket (None, weight=0.25)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Tundra, 0.0), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Tundra, 0.0),
+        WeatherKind::None
+    );
 }
 #[test]
 fn weather_pick_tundra_mid_roll_is_snow() {
     // After None(0.25), next is Snow(0.50) → roll at 0.3 should be Snow
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Tundra, 0.3), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Tundra, 0.3),
+        WeatherKind::Snow
+    );
 }
 #[test]
 fn weather_pick_desert_sandstorm_range() {
     // None=0.60, Sandstorm=0.25, so Sandstorm range is [0.60, 0.85)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Desert, 0.7), WeatherKind::Sandstorm);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Desert, 0.7),
+        WeatherKind::Sandstorm
+    );
 }
 #[test]
 fn weather_pick_swamp_rain_dominant() {
     // Swamp: None=0.20, Rain=0.55 → Rain is at [0.20, 0.75)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Swamp, 0.5), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Swamp, 0.5),
+        WeatherKind::Rain
+    );
 }
 #[test]
 fn weather_pick_forest_last_bucket() {
     // Forest: None=0.45, Rain=0.35, WindTrails=0.15, Snow=0.05
     // Snow range: [0.95, 1.0)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Forest, 0.96), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Forest, 0.96),
+        WeatherKind::Snow
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -305,19 +320,31 @@ fn weather_pick_forest_last_bucket() {
 // ═══════════════════════════════════════════════════════════════════════
 #[test]
 fn weather_most_likely_swamp_is_rain() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Swamp), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Swamp),
+        WeatherKind::Rain
+    );
 }
 #[test]
 fn weather_most_likely_tundra_is_snow() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Tundra), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Tundra),
+        WeatherKind::Snow
+    );
 }
 #[test]
 fn weather_most_likely_desert_is_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Desert), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Desert),
+        WeatherKind::None
+    );
 }
 #[test]
 fn weather_most_likely_beach_is_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Beach), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Beach),
+        WeatherKind::None
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -325,15 +352,22 @@ fn weather_most_likely_beach_is_none() {
 // ═══════════════════════════════════════════════════════════════════════
 #[test]
 fn weather_probability_tundra_snow() {
-    assert!((BiomeWeatherMap::probability(BiomeType::Tundra, WeatherKind::Snow) - 0.50).abs() < 0.01);
+    assert!(
+        (BiomeWeatherMap::probability(BiomeType::Tundra, WeatherKind::Snow) - 0.50).abs() < 0.01
+    );
 }
 #[test]
 fn weather_probability_desert_sandstorm() {
-    assert!((BiomeWeatherMap::probability(BiomeType::Desert, WeatherKind::Sandstorm) - 0.25).abs() < 0.01);
+    assert!(
+        (BiomeWeatherMap::probability(BiomeType::Desert, WeatherKind::Sandstorm) - 0.25).abs()
+            < 0.01
+    );
 }
 #[test]
 fn weather_probability_forest_snow_small() {
-    assert!((BiomeWeatherMap::probability(BiomeType::Forest, WeatherKind::Snow) - 0.05).abs() < 0.01);
+    assert!(
+        (BiomeWeatherMap::probability(BiomeType::Forest, WeatherKind::Snow) - 0.05).abs() < 0.01
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -466,8 +500,7 @@ fn wind_effective_strength_gusty_negative_sin_clamps() {
     let w = BiomeWindProfile::for_biome(BiomeType::Desert);
     // At sin(phase)<0, max(0,sin)=0, so effective = base_strength
     // phase=3*PI/2 → time = 3*PI/2 / (0.3*TAU)
-    let neg_time =
-        3.0 * std::f32::consts::FRAC_PI_2 / (w.gust_frequency * std::f32::consts::TAU);
+    let neg_time = 3.0 * std::f32::consts::FRAC_PI_2 / (w.gust_frequency * std::f32::consts::TAU);
     let strength = w.effective_strength(neg_time);
     assert!((strength - w.base_strength).abs() < 0.01);
 }

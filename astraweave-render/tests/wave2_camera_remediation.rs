@@ -30,7 +30,11 @@ fn default_camera() -> Camera {
 #[test]
 fn dir_yaw0_pitch0_is_positive_x() {
     let d = Camera::dir(0.0, 0.0);
-    assert!((d.x - 1.0).abs() < 0.001, "dir(0,0).x should be ~1.0, got {}", d.x);
+    assert!(
+        (d.x - 1.0).abs() < 0.001,
+        "dir(0,0).x should be ~1.0, got {}",
+        d.x
+    );
     assert!(d.y.abs() < 0.001, "dir(0,0).y should be ~0, got {}", d.y);
     assert!(d.z.abs() < 0.001, "dir(0,0).z should be ~0, got {}", d.z);
 }
@@ -145,7 +149,10 @@ fn proj_matrix_clamps_aspect_to_min() {
     let mut c = default_camera();
     c.aspect = 0.0; // Would cause division by zero without clamp
     let pm = c.proj_matrix();
-    assert!(!pm.is_nan(), "Zero aspect should be clamped, not produce NaN");
+    assert!(
+        !pm.is_nan(),
+        "Zero aspect should be clamped, not produce NaN"
+    );
 }
 
 #[test]
@@ -316,7 +323,11 @@ fn scroll_freefly_fov_clamped_min() {
     for _ in 0..100 {
         ctrl.process_scroll(&mut cam, 10.0);
     }
-    assert!(cam.fovy >= 0.1, "FOV should be clamped to min 0.1, got {}", cam.fovy);
+    assert!(
+        cam.fovy >= 0.1,
+        "FOV should be clamped to min 0.1, got {}",
+        cam.fovy
+    );
 }
 
 #[test]
@@ -327,7 +338,11 @@ fn scroll_freefly_fov_clamped_max() {
     for _ in 0..100 {
         ctrl.process_scroll(&mut cam, -10.0);
     }
-    assert!(cam.fovy <= 3.0, "FOV should be clamped to max 3.0, got {}", cam.fovy);
+    assert!(
+        cam.fovy <= 3.0,
+        "FOV should be clamped to max 3.0, got {}",
+        cam.fovy
+    );
 }
 
 #[test]
@@ -478,7 +493,10 @@ fn mouse_deadzone_filters_small_deltas() {
     // Delta smaller than deadzone (0.25)
     ctrl.process_mouse_delta(&mut cam, Vec2::new(0.1, 0.1));
     ctrl.update_camera(&mut cam, 0.016);
-    assert_eq!(cam.yaw, 0.0, "Small delta within deadzone should have no effect");
+    assert_eq!(
+        cam.yaw, 0.0,
+        "Small delta within deadzone should have no effect"
+    );
 }
 
 #[test]
@@ -511,7 +529,10 @@ fn set_orbit_target_updates_position_in_orbit_mode() {
     ctrl.toggle_mode(&mut cam);
     let pos_before = cam.position;
     ctrl.set_orbit_target(Vec3::new(10.0, 10.0, 10.0), &mut cam);
-    assert_ne!(cam.position, pos_before, "Setting orbit target should move camera");
+    assert_ne!(
+        cam.position, pos_before,
+        "Setting orbit target should move camera"
+    );
 }
 
 #[test]
@@ -520,7 +541,10 @@ fn set_orbit_target_no_effect_in_freefly() {
     let mut cam = default_camera();
     let pos_before = cam.position;
     ctrl.set_orbit_target(Vec3::new(10.0, 10.0, 10.0), &mut cam);
-    assert_eq!(cam.position, pos_before, "FreeFly mode: orbit target shouldn't move camera");
+    assert_eq!(
+        cam.position, pos_before,
+        "FreeFly mode: orbit target shouldn't move camera"
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

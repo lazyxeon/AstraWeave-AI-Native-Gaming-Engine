@@ -6,15 +6,15 @@
 //! - terrain.rs (84 mutants): biome_to_id, vegetation_type_to_id, TerrainRenderer
 //! - material_extended.rs (86 mutants): feature flags, presets, TOML to_gpu
 
+use astraweave_render::material_extended::{
+    MaterialDefinitionExtended, MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY,
+    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
+    MATERIAL_FLAG_TRANSMISSION,
+};
 #[cfg(feature = "ssao")]
 use astraweave_render::ssao::{SsaoConfig, SsaoKernel, SsaoQuality};
+use astraweave_render::terrain::{generate_terrain_preview, TerrainRenderer};
 use astraweave_render::texture::TextureUsage;
-use astraweave_render::material_extended::{
-    MaterialDefinitionExtended, MaterialGpuExtended,
-    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_ANISOTROPY,
-    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_TRANSMISSION,
-};
-use astraweave_render::terrain::{TerrainRenderer, generate_terrain_preview};
 use astraweave_terrain::WorldConfig;
 use glam::Vec3;
 
@@ -65,12 +65,22 @@ fn ssao_quality_blur_kernel_parity() {
 #[cfg(feature = "ssao")]
 #[test]
 fn ssao_quality_blur_sizes_increasing() {
-    let sizes: Vec<u32> = [SsaoQuality::Low, SsaoQuality::Medium, SsaoQuality::High, SsaoQuality::Ultra]
-        .iter()
-        .map(|q| q.blur_kernel_size())
-        .collect();
+    let sizes: Vec<u32> = [
+        SsaoQuality::Low,
+        SsaoQuality::Medium,
+        SsaoQuality::High,
+        SsaoQuality::Ultra,
+    ]
+    .iter()
+    .map(|q| q.blur_kernel_size())
+    .collect();
     for pair in sizes.windows(2) {
-        assert!(pair[1] > pair[0], "Blur sizes not increasing: {} -> {}", pair[0], pair[1]);
+        assert!(
+            pair[1] > pair[0],
+            "Blur sizes not increasing: {} -> {}",
+            pair[0],
+            pair[1]
+        );
     }
 }
 
@@ -102,7 +112,13 @@ fn ssao_kernel_samples_in_hemisphere() {
             let s = kernel.samples[i];
             assert!(s[2] >= 0.0, "Sample {} z < 0 for n={}", i, n);
             let len = (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]).sqrt();
-            assert!(len <= 1.0 + 1e-5, "Sample {} len {} > 1 for n={}", i, len, n);
+            assert!(
+                len <= 1.0 + 1e-5,
+                "Sample {} len {} > 1 for n={}",
+                i,
+                len,
+                n
+            );
             assert!(len > 0.0, "Sample {} zero-length for n={}", i, n);
         }
     }
@@ -113,8 +129,12 @@ fn ssao_kernel_samples_in_hemisphere() {
 fn ssao_kernel_unused_samples_zeroed() {
     let kernel = SsaoKernel::generate(16);
     for i in 16..64 {
-        assert_eq!(kernel.samples[i], [0.0, 0.0, 0.0, 0.0],
-            "Unused sample {} not zeroed", i);
+        assert_eq!(
+            kernel.samples[i],
+            [0.0, 0.0, 0.0, 0.0],
+            "Unused sample {} not zeroed",
+            i
+        );
     }
 }
 
@@ -139,7 +159,12 @@ fn ssao_kernel_scale_increases_with_index() {
         let s = kernel.samples[31];
         (s[0] * s[0] + s[1] * s[1] + s[2] * s[2]).sqrt()
     };
-    assert!(len_last > len_first, "Last {} should be farther than first {}", len_last, len_first);
+    assert!(
+        len_last > len_first,
+        "Last {} should be farther than first {}",
+        len_last,
+        len_first
+    );
 }
 
 #[cfg(feature = "ssao")]
@@ -159,17 +184,26 @@ fn ssao_kernel_different_sample_counts_different() {
 
 #[test]
 fn texture_usage_albedo_srgb() {
-    assert_eq!(TextureUsage::Albedo.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
+    assert_eq!(
+        TextureUsage::Albedo.format(),
+        wgpu::TextureFormat::Rgba8UnormSrgb
+    );
 }
 
 #[test]
 fn texture_usage_emissive_srgb() {
-    assert_eq!(TextureUsage::Emissive.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
+    assert_eq!(
+        TextureUsage::Emissive.format(),
+        wgpu::TextureFormat::Rgba8UnormSrgb
+    );
 }
 
 #[test]
 fn texture_usage_normal_linear() {
-    assert_eq!(TextureUsage::Normal.format(), wgpu::TextureFormat::Rgba8Unorm);
+    assert_eq!(
+        TextureUsage::Normal.format(),
+        wgpu::TextureFormat::Rgba8Unorm
+    );
 }
 
 #[test]
@@ -179,7 +213,10 @@ fn texture_usage_mra_linear() {
 
 #[test]
 fn texture_usage_height_linear() {
-    assert_eq!(TextureUsage::Height.format(), wgpu::TextureFormat::Rgba8Unorm);
+    assert_eq!(
+        TextureUsage::Height.format(),
+        wgpu::TextureFormat::Rgba8Unorm
+    );
 }
 
 #[test]
@@ -218,10 +255,17 @@ fn texture_usage_descriptions_unique() {
         TextureUsage::MRA,
         TextureUsage::Emissive,
         TextureUsage::Height,
-    ].iter().map(|u| u.description()).collect();
+    ]
+    .iter()
+    .map(|u| u.description())
+    .collect();
     for i in 0..descs.len() {
         for j in (i + 1)..descs.len() {
-            assert_ne!(descs[i], descs[j], "Descriptions {} and {} are identical", i, j);
+            assert_ne!(
+                descs[i], descs[j],
+                "Descriptions {} and {} are identical",
+                i, j
+            );
         }
     }
 }
@@ -328,8 +372,14 @@ fn terrain_mesh_indices_valid() {
 fn terrain_mesh_indices_multiple_of_three() {
     let config = WorldConfig::default();
     let mut renderer = TerrainRenderer::new(config);
-    let mesh = renderer.get_or_generate_chunk_mesh(astraweave_terrain::ChunkId::new(0, 0)).unwrap();
-    assert_eq!(mesh.indices.len() % 3, 0, "Triangle mesh should have indices divisible by 3");
+    let mesh = renderer
+        .get_or_generate_chunk_mesh(astraweave_terrain::ChunkId::new(0, 0))
+        .unwrap();
+    assert_eq!(
+        mesh.indices.len() % 3,
+        0,
+        "Triangle mesh should have indices divisible by 3"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -396,7 +446,8 @@ fn material_skin_has_subsurface() {
     let mat = MaterialGpuExtended::skin(
         Vec3::new(0.95, 0.8, 0.7),
         Vec3::new(0.9, 0.3, 0.3),
-        1.5, 0.7,
+        1.5,
+        0.7,
     );
     assert!(mat.has_feature(MATERIAL_FLAG_SUBSURFACE));
     assert_eq!(mat.metallic_factor, 0.0);
@@ -407,11 +458,7 @@ fn material_skin_has_subsurface() {
 
 #[test]
 fn material_velvet_has_sheen() {
-    let mat = MaterialGpuExtended::velvet(
-        Vec3::new(0.5, 0.0, 0.1),
-        Vec3::new(1.0, 0.9, 0.8),
-        0.3,
-    );
+    let mat = MaterialGpuExtended::velvet(Vec3::new(0.5, 0.0, 0.1), Vec3::new(1.0, 0.9, 0.8), 0.3);
     assert!(mat.has_feature(MATERIAL_FLAG_SHEEN));
     assert_eq!(mat.sheen_roughness, 0.3);
     assert_eq!(mat.sheen_color[0], 1.0);
@@ -420,10 +467,8 @@ fn material_velvet_has_sheen() {
 
 #[test]
 fn material_glass_has_transmission() {
-    let mat = MaterialGpuExtended::glass(
-        Vec3::ONE, 0.05, 0.95, 1.5,
-        Vec3::new(0.9, 1.0, 0.9), 10.0,
-    );
+    let mat =
+        MaterialGpuExtended::glass(Vec3::ONE, 0.05, 0.95, 1.5, Vec3::new(0.9, 1.0, 0.9), 10.0);
     assert!(mat.has_feature(MATERIAL_FLAG_TRANSMISSION));
     assert_eq!(mat.transmission_factor, 0.95);
     assert_eq!(mat.ior, 1.5);
@@ -446,7 +491,9 @@ fn material_enable_disable_features() {
 #[test]
 fn material_multiple_features_independent() {
     let mut mat = MaterialGpuExtended::default();
-    mat.enable_feature(MATERIAL_FLAG_CLEARCOAT | MATERIAL_FLAG_ANISOTROPY | MATERIAL_FLAG_SUBSURFACE);
+    mat.enable_feature(
+        MATERIAL_FLAG_CLEARCOAT | MATERIAL_FLAG_ANISOTROPY | MATERIAL_FLAG_SUBSURFACE,
+    );
     assert!(mat.has_feature(MATERIAL_FLAG_CLEARCOAT));
     assert!(mat.has_feature(MATERIAL_FLAG_ANISOTROPY));
     assert!(mat.has_feature(MATERIAL_FLAG_SUBSURFACE));
@@ -463,7 +510,11 @@ fn material_flags_are_distinct_powers_of_two() {
         MATERIAL_FLAG_TRANSMISSION,
     ];
     for i in 0..flags.len() {
-        assert!(flags[i].is_power_of_two(), "Flag {} is not power of two", flags[i]);
+        assert!(
+            flags[i].is_power_of_two(),
+            "Flag {} is not power of two",
+            flags[i]
+        );
         for j in (i + 1)..flags.len() {
             assert_ne!(flags[i], flags[j], "Flags {} and {} are identical", i, j);
         }
@@ -474,24 +525,26 @@ fn material_flags_are_distinct_powers_of_two() {
 fn material_toml_to_gpu_sets_flags_automatically() {
     let def = MaterialDefinitionExtended {
         name: "test".to_string(),
-        albedo: None, normal: None, orm: None,
+        albedo: None,
+        normal: None,
+        orm: None,
         base_color_factor: [1.0; 4],
         metallic_factor: 0.5,
         roughness_factor: 0.5,
         occlusion_strength: 1.0,
         emissive_factor: [0.0; 3],
-        clearcoat_strength: 0.8,    // > 0 → CLEARCOAT flag
+        clearcoat_strength: 0.8, // > 0 → CLEARCOAT flag
         clearcoat_roughness: 0.03,
         clearcoat_normal: None,
-        anisotropy_strength: 0.5,   // > 0.001 → ANISOTROPY flag
+        anisotropy_strength: 0.5, // > 0.001 → ANISOTROPY flag
         anisotropy_rotation: 0.0,
         subsurface_color: [1.0; 3],
-        subsurface_scale: 0.3,      // > 0 → SUBSURFACE flag
+        subsurface_scale: 0.3, // > 0 → SUBSURFACE flag
         subsurface_radius: 1.0,
         thickness_map: None,
         sheen_color: [0.5, 0.5, 0.5], // max > 0 → SHEEN flag
         sheen_roughness: 0.5,
-        transmission_factor: 0.9,   // > 0 → TRANSMISSION flag
+        transmission_factor: 0.9, // > 0 → TRANSMISSION flag
         ior: 1.5,
         attenuation_color: [1.0; 3],
         attenuation_distance: 1.0,
@@ -508,7 +561,9 @@ fn material_toml_to_gpu_sets_flags_automatically() {
 fn material_toml_to_gpu_no_flags_when_zeroed() {
     let def = MaterialDefinitionExtended {
         name: "zero".to_string(),
-        albedo: None, normal: None, orm: None,
+        albedo: None,
+        normal: None,
+        orm: None,
         base_color_factor: [1.0; 4],
         metallic_factor: 0.0,
         roughness_factor: 0.5,
@@ -538,7 +593,9 @@ fn material_toml_to_gpu_no_flags_when_zeroed() {
 fn material_toml_preserves_texture_indices() {
     let def = MaterialDefinitionExtended {
         name: "indices_test".to_string(),
-        albedo: None, normal: None, orm: None,
+        albedo: None,
+        normal: None,
+        orm: None,
         base_color_factor: [1.0; 4],
         metallic_factor: 0.0,
         roughness_factor: 0.5,

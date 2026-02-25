@@ -30,8 +30,14 @@ fn empty_lights_all_zero() {
 #[test]
 fn offsets_are_exclusive_prefix_sum() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 5.0 },
-        CpuLight { pos: Vec3::new(3.0, 3.0, 20.0), radius: 3.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 5.0,
+        },
+        CpuLight {
+            pos: Vec3::new(3.0, 3.0, 20.0),
+            radius: 3.0,
+        },
     ];
     let (counts, _indices, offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
 
@@ -40,8 +46,12 @@ fn offsets_are_exclusive_prefix_sum() {
 
     // offsets[i+1] = offsets[i] + counts[i]
     for i in 0..counts.len() {
-        assert_eq!(offsets[i + 1], offsets[i] + counts[i],
-            "Prefix sum mismatch at cluster {}", i);
+        assert_eq!(
+            offsets[i + 1],
+            offsets[i] + counts[i],
+            "Prefix sum mismatch at cluster {}",
+            i
+        );
     }
 
     // Total indices = last offset
@@ -52,9 +62,18 @@ fn offsets_are_exclusive_prefix_sum() {
 #[test]
 fn total_indices_equals_sum_of_counts() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 5.0), radius: 2.0 },
-        CpuLight { pos: Vec3::new(-2.0, 1.0, 15.0), radius: 4.0 },
-        CpuLight { pos: Vec3::new(1.0, -1.0, 50.0), radius: 10.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 5.0),
+            radius: 2.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-2.0, 1.0, 15.0),
+            radius: 4.0,
+        },
+        CpuLight {
+            pos: Vec3::new(1.0, -1.0, 50.0),
+            radius: 10.0,
+        },
     ];
     let (counts, indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let total: u32 = counts.iter().sum();
@@ -73,7 +92,11 @@ fn single_light_at_center_hits_at_least_one_cluster() {
     }];
     let (counts, _indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let total: u32 = counts.iter().sum();
-    assert!(total >= 1, "Center light should hit at least 1 cluster, got {}", total);
+    assert!(
+        total >= 1,
+        "Center light should hit at least 1 cluster, got {}",
+        total
+    );
 }
 
 #[test]
@@ -86,21 +109,28 @@ fn large_radius_light_hits_many_clusters() {
     let hit_clusters: usize = counts.iter().filter(|&&c| c > 0).count();
     let total_clusters = (DIMS.x * DIMS.y * DIMS.z) as usize;
     // A massive light should cover most/all clusters
-    assert!(hit_clusters > total_clusters / 2,
-        "Large light should hit >50% of clusters, got {}/{}", hit_clusters, total_clusters);
+    assert!(
+        hit_clusters > total_clusters / 2,
+        "Large light should hit >50% of clusters, got {}/{}",
+        hit_clusters,
+        total_clusters
+    );
 }
 
 #[test]
 fn small_radius_light_hits_few_clusters() {
     let lights = vec![CpuLight {
         pos: Vec3::new(0.0, 0.0, 50.0), // Far away
-        radius: 0.5,                       // Small
+        radius: 0.5,                    // Small
     }];
     let (counts, _indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let hit_clusters: usize = counts.iter().filter(|&&c| c > 0).count();
     // Small distant light should only hit a few clusters
-    assert!(hit_clusters <= 8,
-        "Small distant light should hit ≤8 clusters, got {}", hit_clusters);
+    assert!(
+        hit_clusters <= 8,
+        "Small distant light should hit ≤8 clusters, got {}",
+        hit_clusters
+    );
 }
 
 // ============================================================================
@@ -129,7 +159,10 @@ fn light_at_far_boundary_may_be_included() {
     let (counts, _indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let total: u32 = counts.iter().sum();
     // z=100 - radius=2 = 98 < far=100, so should be included
-    assert!(total >= 1, "Light at far boundary with radius reaching inside should be included");
+    assert!(
+        total >= 1,
+        "Light at far boundary with radius reaching inside should be included"
+    );
 }
 
 #[test]
@@ -141,7 +174,10 @@ fn light_just_beyond_far_plus_radius() {
     }];
     let (counts, _indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let total: u32 = counts.iter().sum();
-    assert_eq!(total, 0, "Light with z-radius > far should be fully rejected");
+    assert_eq!(
+        total, 0,
+        "Light with z-radius > far should be fully rejected"
+    );
 }
 
 #[test]
@@ -162,8 +198,14 @@ fn light_near_plane_included() {
 #[test]
 fn indices_contain_correct_light_ids() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 1.0 },
-        CpuLight { pos: Vec3::new(5.0, 5.0, 30.0), radius: 2.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 1.0,
+        },
+        CpuLight {
+            pos: Vec3::new(5.0, 5.0, 30.0),
+            radius: 2.0,
+        },
     ];
     let (_counts, indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
 
@@ -176,16 +218,28 @@ fn indices_contain_correct_light_ids() {
 #[test]
 fn each_light_appears_in_indices() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 5.0 },
-        CpuLight { pos: Vec3::new(-3.0, 2.0, 20.0), radius: 3.0 },
-        CpuLight { pos: Vec3::new(2.0, -1.0, 40.0), radius: 8.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 5.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-3.0, 2.0, 20.0),
+            radius: 3.0,
+        },
+        CpuLight {
+            pos: Vec3::new(2.0, -1.0, 40.0),
+            radius: 8.0,
+        },
     ];
     let (_counts, indices, _offsets) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
 
     // Each light should appear at least once
     for li in 0..lights.len() {
-        assert!(indices.contains(&(li as u32)),
-            "Light {} should appear in indices", li);
+        assert!(
+            indices.contains(&(li as u32)),
+            "Light {} should appear in indices",
+            li
+        );
     }
 }
 
@@ -197,8 +251,14 @@ fn each_light_appears_in_indices() {
 fn single_cluster_captures_everything() {
     let dims = ClusterDims { x: 1, y: 1, z: 1 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 1.0 },
-        CpuLight { pos: Vec3::new(3.0, -2.0, 50.0), radius: 5.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 1.0,
+        },
+        CpuLight {
+            pos: Vec3::new(3.0, -2.0, 50.0),
+            radius: 5.0,
+        },
     ];
     let (counts, indices, _offsets) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     assert_eq!(counts.len(), 1);
@@ -210,7 +270,11 @@ fn single_cluster_captures_everything() {
 
 #[test]
 fn high_resolution_clusters_still_work() {
-    let dims = ClusterDims { x: 16, y: 16, z: 16 };
+    let dims = ClusterDims {
+        x: 16,
+        y: 16,
+        z: 16,
+    };
     let lights = vec![CpuLight {
         pos: Vec3::new(0.0, 0.0, 10.0),
         radius: 3.0,
@@ -231,8 +295,14 @@ fn high_resolution_clusters_still_work() {
 #[test]
 fn binning_is_deterministic() {
     let lights = vec![
-        CpuLight { pos: Vec3::new(1.0, 2.0, 15.0), radius: 3.0 },
-        CpuLight { pos: Vec3::new(-4.0, 0.5, 30.0), radius: 5.0 },
+        CpuLight {
+            pos: Vec3::new(1.0, 2.0, 15.0),
+            radius: 3.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-4.0, 0.5, 30.0),
+            radius: 5.0,
+        },
     ];
     let (c1, i1, o1) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);
     let (c2, i2, o2) = bin_lights_cpu(&lights, DIMS, SCREEN, NEAR, FAR, FOV_Y);

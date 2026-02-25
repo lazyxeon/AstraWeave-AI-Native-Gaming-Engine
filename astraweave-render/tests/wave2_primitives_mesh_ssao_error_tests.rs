@@ -3,18 +3,18 @@
 //!
 //! Targets remaining high-mutant-count CPU-testable APIs.
 
+use astraweave_render::biome_audio::{BiomeAmbientMap, DEFAULT_AMBIENT_CROSSFADE};
+use astraweave_render::debug_quad::create_screen_quad;
+use astraweave_render::effects::WeatherKind;
+use astraweave_render::error::{RenderError, RenderResult};
+use astraweave_render::mesh::{compute_tangents, CpuMesh, MeshVertex};
+use astraweave_render::msaa::MsaaMode;
 use astraweave_render::primitives;
-use astraweave_render::mesh::{CpuMesh, MeshVertex, compute_tangents};
+#[cfg(feature = "ssao")]
+use astraweave_render::ssao::{SsaoConfig, SsaoKernel, SsaoQuality};
 use astraweave_render::terrain_material::{
     TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };
-use astraweave_render::biome_audio::{BiomeAmbientMap, DEFAULT_AMBIENT_CROSSFADE};
-use astraweave_render::msaa::MsaaMode;
-#[cfg(feature = "ssao")]
-use astraweave_render::ssao::{SsaoConfig, SsaoKernel, SsaoQuality};
-use astraweave_render::error::{RenderError, RenderResult};
-use astraweave_render::effects::WeatherKind;
-use astraweave_render::debug_quad::create_screen_quad;
 use astraweave_terrain::biome::BiomeType;
 use glam::{Vec2, Vec3, Vec4};
 use std::path::PathBuf;
@@ -59,7 +59,11 @@ fn cube_face_normals_consistent() {
         let base = face * 4;
         let n = verts[base].normal;
         for i in 1..4 {
-            assert_eq!(verts[base + i].normal, n, "Face {face} vertex {i} normal mismatch");
+            assert_eq!(
+                verts[base + i].normal,
+                n,
+                "Face {face} vertex {i} normal mismatch"
+            );
         }
     }
 }
@@ -224,9 +228,24 @@ fn cpu_mesh_aabb_multi_vertex() {
 fn compute_tangents_triangle() {
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::new(Vec3::new(0.0, 0.0, 0.0), Vec3::Y, Vec4::ZERO, Vec2::new(0.0, 0.0)),
-            MeshVertex::new(Vec3::new(1.0, 0.0, 0.0), Vec3::Y, Vec4::ZERO, Vec2::new(1.0, 0.0)),
-            MeshVertex::new(Vec3::new(0.0, 0.0, 1.0), Vec3::Y, Vec4::ZERO, Vec2::new(0.0, 1.0)),
+            MeshVertex::new(
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::Y,
+                Vec4::ZERO,
+                Vec2::new(0.0, 0.0),
+            ),
+            MeshVertex::new(
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::Y,
+                Vec4::ZERO,
+                Vec2::new(1.0, 0.0),
+            ),
+            MeshVertex::new(
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::Y,
+                Vec4::ZERO,
+                Vec2::new(0.0, 1.0),
+            ),
         ],
         indices: vec![0, 1, 2],
     };
@@ -476,9 +495,14 @@ fn biome_ambient_map_get_forest() {
 fn biome_ambient_map_all_biomes_have_tracks() {
     let map = BiomeAmbientMap::default();
     for b in [
-        BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-        BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-        BiomeType::Beach, BiomeType::River,
+        BiomeType::Forest,
+        BiomeType::Desert,
+        BiomeType::Grassland,
+        BiomeType::Mountain,
+        BiomeType::Tundra,
+        BiomeType::Swamp,
+        BiomeType::Beach,
+        BiomeType::River,
     ] {
         assert!(map.get(b).is_some(), "Missing track for {:?}", b);
     }
@@ -488,7 +512,10 @@ fn biome_ambient_map_all_biomes_have_tracks() {
 fn biome_ambient_map_set_override() {
     let mut map = BiomeAmbientMap::new();
     map.set(BiomeType::Forest, "custom/night_forest.wav");
-    assert_eq!(map.get(BiomeType::Forest).unwrap(), "custom/night_forest.wav");
+    assert_eq!(
+        map.get(BiomeType::Forest).unwrap(),
+        "custom/night_forest.wav"
+    );
 }
 
 #[test]

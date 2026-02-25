@@ -158,18 +158,29 @@ fn print_banner() {
 }
 
 #[cfg(not(feature = "visual"))]
-fn print_hud(state: &GameState, player_hp: f32, max_hp: f32, enemies_alive: u32, metrics: &TelemetryMetrics) {
+fn print_hud(
+    state: &GameState,
+    player_hp: f32,
+    max_hp: f32,
+    enemies_alive: u32,
+    metrics: &TelemetryMetrics,
+) {
     // Clear screen + home cursor
     print!("\x1b[2J\x1b[H");
 
     // Header
     println!("{BG_BLACK}{BOLD}{MAGENTA}  ╔══════════════════════════════════════════════════════╗{RESET}");
-    println!("{BG_BLACK}{BOLD}{MAGENTA}  ║          VEILWEAVER  ·  AI-NATIVE  ENGINE           ║{RESET}");
+    println!(
+        "{BG_BLACK}{BOLD}{MAGENTA}  ║          VEILWEAVER  ·  AI-NATIVE  ENGINE           ║{RESET}"
+    );
     println!("{BG_BLACK}{BOLD}{MAGENTA}  ╚══════════════════════════════════════════════════════╝{RESET}");
     println!();
 
     // Zone
-    println!("  {CYAN}{BOLD}Zone:{RESET} {WHITE}{}{RESET}", state.current_zone);
+    println!(
+        "  {CYAN}{BOLD}Zone:{RESET} {WHITE}{}{RESET}",
+        state.current_zone
+    );
     if let Some(ref phase) = state.boss_phase {
         println!("  {RED}{BOLD}BOSS:{RESET} {YELLOW}{phase}{RESET}");
     }
@@ -202,7 +213,13 @@ fn print_hud(state: &GameState, player_hp: f32, max_hp: f32, enemies_alive: u32,
     // Telemetry
     let fps = metrics.fps;
     let ft = metrics.frame_time.as_secs_f32() * 1000.0;
-    let fps_color = if fps >= 58.0 { GREEN } else if fps >= 30.0 { YELLOW } else { RED };
+    let fps_color = if fps >= 58.0 {
+        GREEN
+    } else if fps >= 30.0 {
+        YELLOW
+    } else {
+        RED
+    };
     println!(
         "  {DIM}Telemetry{RESET}  FPS: {fps_color}{BOLD}{fps:.0}{RESET}  Frame: {DIM}{ft:.2}ms{RESET}  Tick: {DIM}{:.0}{RESET}",
         state.frame_count,
@@ -211,7 +228,11 @@ fn print_hud(state: &GameState, player_hp: f32, max_hp: f32, enemies_alive: u32,
 
     // Event log (last 6)
     println!("  {DIM}─── Event Log ───────────────────────────────────────{RESET}");
-    let start = if state.events.len() > 6 { state.events.len() - 6 } else { 0 };
+    let start = if state.events.len() > 6 {
+        state.events.len() - 6
+    } else {
+        0
+    };
     for ev in &state.events[start..] {
         println!("  {DIM}│{RESET} {ev}");
     }
@@ -232,20 +253,28 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
     };
     if new_zone != state.current_zone {
         state.current_zone = new_zone.to_string();
-        state.events.push(format!("{CYAN}>> Entered {new_zone}{RESET}"));
+        state
+            .events
+            .push(format!("{CYAN}>> Entered {new_zone}{RESET}"));
     }
 
     // Companion events
     match elapsed as u32 {
         3 if !state.events.iter().any(|e| e.contains("Aria")) => {
-            state.events.push(format!("{GREEN}Aria casts Thread Ward — shields up!{RESET}"));
+            state.events.push(format!(
+                "{GREEN}Aria casts Thread Ward — shields up!{RESET}"
+            ));
         }
         8 if !state.events.iter().any(|e| e.contains("Lyra")) => {
-            state.events.push(format!("{GREEN}Lyra senses memory echo nearby{RESET}"));
+            state
+                .events
+                .push(format!("{GREEN}Lyra senses memory echo nearby{RESET}"));
             state.echoes_collected += 1;
         }
         14 if !state.events.iter().any(|e| e.contains("Kael")) => {
-            state.events.push(format!("{GREEN}Kael engages flanking maneuver{RESET}"));
+            state
+                .events
+                .push(format!("{GREEN}Kael engages flanking maneuver{RESET}"));
         }
         _ => {}
     }
@@ -253,7 +282,9 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
     // Combat events
     match elapsed as u32 {
         4 if !state.events.iter().any(|e| e.contains("Void wraith")) => {
-            state.events.push(format!("{RED}Void wraith attacks! -15 HP{RESET}"));
+            state
+                .events
+                .push(format!("{RED}Void wraith attacks! -15 HP{RESET}"));
             if let Some(pe) = state.player_entity {
                 if let Some(h) = app.world.get_mut::<Health>(pe) {
                     h.take_damage(15.0);
@@ -261,7 +292,9 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
             }
         }
         10 if !state.events.iter().any(|e| e.contains("Thread spider")) => {
-            state.events.push(format!("{RED}Thread spider swarm! -20 HP{RESET}"));
+            state
+                .events
+                .push(format!("{RED}Thread spider swarm! -20 HP{RESET}"));
             if let Some(pe) = state.player_entity {
                 if let Some(h) = app.world.get_mut::<Health>(pe) {
                     h.take_damage(20.0);
@@ -270,7 +303,9 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
             state.thread_stability -= 10.0;
         }
         16 if !state.events.iter().any(|e| e.contains("Echo Potion")) => {
-            state.events.push(format!("{GREEN}Found Echo Potion — +25 HP{RESET}"));
+            state
+                .events
+                .push(format!("{GREEN}Found Echo Potion — +25 HP{RESET}"));
             if let Some(pe) = state.player_entity {
                 if let Some(h) = app.world.get_mut::<Health>(pe) {
                     h.current = (h.current + 25.0).min(h.max);
@@ -281,9 +316,11 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
     }
 
     // Enemy defeat
-    let alive_before: usize = state.enemy_entities.iter().filter(|&&e| {
-        app.world.get::<Health>(e).map_or(false, |h| h.is_alive())
-    }).count();
+    let alive_before: usize = state
+        .enemy_entities
+        .iter()
+        .filter(|&&e| app.world.get::<Health>(e).map_or(false, |h| h.is_alive()))
+        .count();
     if elapsed > 6.0 && alive_before > 0 {
         // Defeat one enemy every ~5 seconds after zone 2 starts
         let defeat_index = ((elapsed - 6.0) / 5.0).floor() as usize;
@@ -292,7 +329,10 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
             if let Some(h) = app.world.get_mut::<Health>(eid) {
                 if h.is_alive() {
                     h.current = 0.0;
-                    state.events.push(format!("{YELLOW}Enemy defeated! ({} remain){RESET}", alive_before - 1));
+                    state.events.push(format!(
+                        "{YELLOW}Enemy defeated! ({} remain){RESET}",
+                        alive_before - 1
+                    ));
                 }
             }
         }
@@ -301,13 +341,17 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
     // Boss encounter (final zone)
     if elapsed >= 24.0 && state.boss_phase.is_none() {
         state.boss_phase = Some("Phase 1 — Thread Weaver Awakens".to_string());
-        state.events.push(format!("{MAGENTA}{BOLD}>>> BOSS: Thread Weaver Awakens <<<{RESET}"));
+        state.events.push(format!(
+            "{MAGENTA}{BOLD}>>> BOSS: Thread Weaver Awakens <<<{RESET}"
+        ));
     }
     if elapsed >= 27.0 {
         if let Some(ref p) = state.boss_phase {
             if p.contains("Phase 1") {
                 state.boss_phase = Some("Phase 2 — Unraveling Fury".to_string());
-                state.events.push(format!("{MAGENTA}Boss enters Phase 2!{RESET}"));
+                state
+                    .events
+                    .push(format!("{MAGENTA}Boss enters Phase 2!{RESET}"));
                 state.thread_stability -= 15.0;
             }
         }
@@ -315,7 +359,13 @@ pub(crate) fn simulate_events(state: &mut GameState, elapsed: f32, app: &mut App
 }
 
 #[cfg(not(feature = "visual"))]
-fn print_recap(state: &GameState, total_frames: u64, total_secs: f32, avg_fps: f32, stats: &telemetry_hud::TelemetryStats) {
+fn print_recap(
+    state: &GameState,
+    total_frames: u64,
+    total_secs: f32,
+    avg_fps: f32,
+    stats: &telemetry_hud::TelemetryStats,
+) {
     print!("\x1b[2J\x1b[H");
     println!();
     println!("{BG_BLACK}{BOLD}{MAGENTA}  ╔══════════════════════════════════════════════════════╗{RESET}");
@@ -327,16 +377,29 @@ fn print_recap(state: &GameState, total_frames: u64, total_secs: f32, avg_fps: f
     println!("  Total frames : {CYAN}{total_frames}{RESET}");
     println!("  Runtime      : {CYAN}{total_secs:.2}s{RESET}");
     println!("  Average FPS  : {CYAN}{avg_fps:.1}{RESET}");
-    println!("  FPS (p50/p95): {CYAN}{:.1}{RESET} / {CYAN}{:.1}{RESET}", stats.fps_p50, stats.fps_p95);
-    println!("  Frame  (avg) : {CYAN}{:.2}ms{RESET}", stats.frame_time_avg);
-    println!("  Frame  (p95) : {CYAN}{:.2}ms{RESET}", stats.frame_time_p95);
+    println!(
+        "  FPS (p50/p95): {CYAN}{:.1}{RESET} / {CYAN}{:.1}{RESET}",
+        stats.fps_p50, stats.fps_p95
+    );
+    println!(
+        "  Frame  (avg) : {CYAN}{:.2}ms{RESET}",
+        stats.frame_time_avg
+    );
+    println!(
+        "  Frame  (p95) : {CYAN}{:.2}ms{RESET}",
+        stats.frame_time_p95
+    );
     println!();
     println!("  {BOLD}{WHITE}World State{RESET}");
     println!("  {DIM}──────────────────────────────────────────────{RESET}");
     println!("  Final zone   : {CYAN}{}{RESET}", state.current_zone);
     println!("  Companions   : {GREEN}{}{RESET}", state.companions_active);
     println!("  Echoes found : {BLUE}{}{RESET}", state.echoes_collected);
-    println!("  Stability    : {}{:.0}%{RESET}", hp_color(state.thread_stability / 100.0), state.thread_stability);
+    println!(
+        "  Stability    : {}{:.0}%{RESET}",
+        hp_color(state.thread_stability / 100.0),
+        state.thread_stability
+    );
     println!();
     println!("  {BOLD}{WHITE}Acceptance Criteria{RESET}");
     println!("  {DIM}──────────────────────────────────────────────{RESET}");
@@ -344,12 +407,20 @@ fn print_recap(state: &GameState, total_frames: u64, total_secs: f32, avg_fps: f
     let ft_pass = stats.frame_time_p95 <= 16.67;
     println!(
         "  60 FPS p95    : {} {DIM}(actual: {:.1}){RESET}",
-        if p95_pass { format!("{GREEN}PASS{RESET}") } else { format!("{RED}FAIL{RESET}") },
+        if p95_pass {
+            format!("{GREEN}PASS{RESET}")
+        } else {
+            format!("{RED}FAIL{RESET}")
+        },
         stats.fps_p95,
     );
     println!(
         "  Frame <16.7ms : {} {DIM}(actual: {:.2}ms){RESET}",
-        if ft_pass { format!("{GREEN}PASS{RESET}") } else { format!("{RED}FAIL{RESET}") },
+        if ft_pass {
+            format!("{GREEN}PASS{RESET}")
+        } else {
+            format!("{RED}FAIL{RESET}")
+        },
         stats.frame_time_p95,
     );
     println!("  Zero crashes  : {GREEN}PASS{RESET}");
@@ -464,13 +535,17 @@ fn run_headless_demo() -> Result<()> {
         simulate_events(&mut game_state, elapsed, &mut app);
 
         // Gather HP / enemy counts
-        let player_hp = game_state.player_entity
+        let player_hp = game_state
+            .player_entity
             .and_then(|e| app.world.get::<Health>(e))
             .map_or(0.0, |h| h.current);
-        let player_max = game_state.player_entity
+        let player_max = game_state
+            .player_entity
             .and_then(|e| app.world.get::<Health>(e))
             .map_or(100.0, |h| h.max);
-        let enemies_alive = game_state.enemy_entities.iter()
+        let enemies_alive = game_state
+            .enemy_entities
+            .iter()
             .filter(|&&e| app.world.get::<Health>(e).map_or(false, |h| h.is_alive()))
             .count() as u32;
 
@@ -508,7 +583,13 @@ fn run_headless_demo() -> Result<()> {
         .context("Failed to export telemetry")?;
 
     // Show recap
-    print_recap(&game_state, frame_count, total_time.as_secs_f32(), avg_fps, &stats);
+    print_recap(
+        &game_state,
+        frame_count,
+        total_time.as_secs_f32(),
+        avg_fps,
+        &stats,
+    );
 
     Ok(())
 }

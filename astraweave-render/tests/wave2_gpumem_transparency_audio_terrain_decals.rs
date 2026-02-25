@@ -2,15 +2,13 @@
 //!
 //! Targets pure CPU functions with exact golden values to kill arithmetic mutations.
 
-use astraweave_render::gpu_memory::{
-    BudgetEvent, CategoryBudget, GpuMemoryBudget, MemoryCategory,
-};
-use astraweave_render::transparency::{BlendMode, TransparencyManager};
 use astraweave_render::biome_audio::{BiomeAmbientMap, DEFAULT_AMBIENT_CROSSFADE};
+use astraweave_render::decals::{Decal, DecalBlendMode, GpuDecal};
+use astraweave_render::gpu_memory::{BudgetEvent, CategoryBudget, GpuMemoryBudget, MemoryCategory};
 use astraweave_render::terrain_material::{
     TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };
-use astraweave_render::decals::{Decal, DecalBlendMode, GpuDecal};
+use astraweave_render::transparency::{BlendMode, TransparencyManager};
 
 use astraweave_terrain::biome::BiomeType;
 use glam::{Quat, Vec3};
@@ -121,7 +119,10 @@ fn with_total_budget_textures_get_40_percent() {
         .unwrap();
     // Textures hard limit = total * 0.4
     let expected = (total as f64 * 0.4) as u64;
-    assert_eq!(tex.2, expected, "textures hard limit should be 40% of total");
+    assert_eq!(
+        tex.2, expected,
+        "textures hard limit should be 40% of total"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -251,7 +252,10 @@ fn hard_limit_blocked_event_fires() {
         }
     }));
     b.try_allocate(MemoryCategory::Geometry, 100); // fills to hard limit
-    assert!(!fired.load(Ordering::SeqCst), "should not fire at exactly hard limit");
+    assert!(
+        !fired.load(Ordering::SeqCst),
+        "should not fire at exactly hard limit"
+    );
     b.try_allocate(MemoryCategory::Geometry, 1); // over hard limit → blocked
     assert!(fired.load(Ordering::SeqCst));
 }
@@ -264,8 +268,12 @@ fn multiple_callbacks_all_fire() {
     let c2 = Arc::new(AtomicU32::new(0));
     let c1c = c1.clone();
     let c2c = c2.clone();
-    b.on_event(Arc::new(move |_| { c1c.fetch_add(1, Ordering::SeqCst); }));
-    b.on_event(Arc::new(move |_| { c2c.fetch_add(1, Ordering::SeqCst); }));
+    b.on_event(Arc::new(move |_| {
+        c1c.fetch_add(1, Ordering::SeqCst);
+    }));
+    b.on_event(Arc::new(move |_| {
+        c2c.fetch_add(1, Ordering::SeqCst);
+    }));
     b.try_allocate(MemoryCategory::Staging, 50); // triggers soft limit
     assert!(c1.load(Ordering::SeqCst) > 0);
     assert!(c2.load(Ordering::SeqCst) > 0);
@@ -301,9 +309,9 @@ fn transparency_clear_resets() {
 fn transparency_sorted_back_to_front() {
     let mut mgr = TransparencyManager::new();
     // Camera at origin, instances along -Z
-    mgr.add_instance(10, Vec3::new(0.0, 0.0, -2.0), BlendMode::Alpha);  // near
+    mgr.add_instance(10, Vec3::new(0.0, 0.0, -2.0), BlendMode::Alpha); // near
     mgr.add_instance(20, Vec3::new(0.0, 0.0, -10.0), BlendMode::Alpha); // far
-    mgr.add_instance(30, Vec3::new(0.0, 0.0, -5.0), BlendMode::Alpha);  // mid
+    mgr.add_instance(30, Vec3::new(0.0, 0.0, -5.0), BlendMode::Alpha); // mid
     mgr.update(Vec3::ZERO);
     let sorted: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
     // Back-to-front: furthest first
@@ -315,14 +323,17 @@ fn transparency_sorted_updates_on_camera_move() {
     let mut mgr = TransparencyManager::new();
     mgr.add_instance(1, Vec3::new(10.0, 0.0, 0.0), BlendMode::Alpha);
     mgr.add_instance(2, Vec3::new(-10.0, 0.0, 0.0), BlendMode::Alpha);
-    
+
     // Camera at origin: instance 1 and 2 equidistant
     mgr.update(Vec3::ZERO);
-    
+
     // Move camera to (20, 0, 0): instance 2 is now far, instance 1 is near
     mgr.update(Vec3::new(20.0, 0.0, 0.0));
     let sorted: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
-    assert_eq!(sorted[0], 2, "instance 2 should be furthest from camera(20,0,0)");
+    assert_eq!(
+        sorted[0], 2,
+        "instance 2 should be furthest from camera(20,0,0)"
+    );
     assert_eq!(sorted[1], 1, "instance 1 should be nearest");
 }
 
@@ -334,10 +345,14 @@ fn transparency_instances_by_blend_mode() {
     mgr.add_instance(2, Vec3::ZERO, BlendMode::Alpha);
     mgr.add_instance(3, Vec3::ZERO, BlendMode::Multiplicative);
     mgr.update(Vec3::ZERO);
-    
+
     assert_eq!(mgr.instances_by_blend_mode(BlendMode::Alpha).count(), 2);
     assert_eq!(mgr.instances_by_blend_mode(BlendMode::Additive).count(), 1);
-    assert_eq!(mgr.instances_by_blend_mode(BlendMode::Multiplicative).count(), 1);
+    assert_eq!(
+        mgr.instances_by_blend_mode(BlendMode::Multiplicative)
+            .count(),
+        1
+    );
 }
 
 #[test]
@@ -347,7 +362,11 @@ fn transparency_camera_distance_calculated() {
     mgr.update(Vec3::ZERO);
     let inst = mgr.sorted_instances().next().unwrap();
     // distance should be 5.0 (3-4-5 triangle)
-    assert!((inst.camera_distance - 5.0).abs() < 1e-4, "dist={}", inst.camera_distance);
+    assert!(
+        (inst.camera_distance - 5.0).abs() < 1e-4,
+        "dist={}",
+        inst.camera_distance
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -404,7 +423,10 @@ fn biome_audio_default_paths_pattern() {
     let map = BiomeAmbientMap::new();
     for biome in BiomeType::all() {
         let path = map.get(*biome).expect(&format!("missing {:?}", biome));
-        assert!(path.starts_with("assets/audio/ambient/"), "bad path: {path}");
+        assert!(
+            path.starts_with("assets/audio/ambient/"),
+            "bad path: {path}"
+        );
         assert!(path.ends_with(".ogg"), "bad ext: {path}");
     }
 }
@@ -412,13 +434,19 @@ fn biome_audio_default_paths_pattern() {
 #[test]
 fn biome_audio_forest_path_golden() {
     let map = BiomeAmbientMap::new();
-    assert_eq!(map.get(BiomeType::Forest).unwrap(), "assets/audio/ambient/forest.ogg");
+    assert_eq!(
+        map.get(BiomeType::Forest).unwrap(),
+        "assets/audio/ambient/forest.ogg"
+    );
 }
 
 #[test]
 fn biome_audio_desert_path_golden() {
     let map = BiomeAmbientMap::new();
-    assert_eq!(map.get(BiomeType::Desert).unwrap(), "assets/audio/ambient/desert.ogg");
+    assert_eq!(
+        map.get(BiomeType::Desert).unwrap(),
+        "assets/audio/ambient/desert.ogg"
+    );
 }
 
 #[test]
@@ -572,33 +600,51 @@ fn forest_factory_golden() {
 
 #[test]
 fn normal_blend_linear_is_0() {
-    let d = TerrainMaterialDesc { normal_blend_method: "linear".into(), ..Default::default() };
+    let d = TerrainMaterialDesc {
+        normal_blend_method: "linear".into(),
+        ..Default::default()
+    };
     assert_eq!(d.normal_blend_to_gpu(), 0);
 }
 
 #[test]
 fn normal_blend_rnm_is_1() {
-    let d = TerrainMaterialDesc { normal_blend_method: "rnm".into(), ..Default::default() };
+    let d = TerrainMaterialDesc {
+        normal_blend_method: "rnm".into(),
+        ..Default::default()
+    };
     assert_eq!(d.normal_blend_to_gpu(), 1);
 }
 
 #[test]
 fn normal_blend_udn_is_2() {
-    let d = TerrainMaterialDesc { normal_blend_method: "udn".into(), ..Default::default() };
+    let d = TerrainMaterialDesc {
+        normal_blend_method: "udn".into(),
+        ..Default::default()
+    };
     assert_eq!(d.normal_blend_to_gpu(), 2);
 }
 
 #[test]
 fn normal_blend_case_insensitive() {
-    let d = TerrainMaterialDesc { normal_blend_method: "LINEAR".into(), ..Default::default() };
+    let d = TerrainMaterialDesc {
+        normal_blend_method: "LINEAR".into(),
+        ..Default::default()
+    };
     assert_eq!(d.normal_blend_to_gpu(), 0);
-    let d2 = TerrainMaterialDesc { normal_blend_method: "UDN".into(), ..Default::default() };
+    let d2 = TerrainMaterialDesc {
+        normal_blend_method: "UDN".into(),
+        ..Default::default()
+    };
     assert_eq!(d2.normal_blend_to_gpu(), 2);
 }
 
 #[test]
 fn normal_blend_invalid_fallback_rnm() {
-    let d = TerrainMaterialDesc { normal_blend_method: "garbage".into(), ..Default::default() };
+    let d = TerrainMaterialDesc {
+        normal_blend_method: "garbage".into(),
+        ..Default::default()
+    };
     assert_eq!(d.normal_blend_to_gpu(), 1);
 }
 
@@ -622,9 +668,7 @@ fn to_gpu_grassland_properties() {
 fn to_gpu_layer_transfer() {
     let desc = TerrainMaterialDesc::grassland();
     let counter = std::sync::atomic::AtomicU32::new(0);
-    let resolver = |_: &std::path::PathBuf| -> u32 {
-        counter.fetch_add(1, Ordering::SeqCst)
-    };
+    let resolver = |_: &std::path::PathBuf| -> u32 { counter.fetch_add(1, Ordering::SeqCst) };
     let gpu = desc.to_gpu(&resolver);
     // First layer (grass) has albedo, normal, orm, height → 4 texture indices
     // They should be sequential: 0, 1, 2, 3 (then splat=4, or was it called first?)
@@ -668,7 +712,12 @@ fn gpu_decal_size() {
 
 #[test]
 fn decal_new_defaults() {
-    let d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     assert_eq!(d.albedo_tint, [1.0, 1.0, 1.0, 1.0]);
     assert!((d.normal_strength - 1.0).abs() < 1e-6);
     assert!((d.roughness - 0.5).abs() < 1e-6);
@@ -680,40 +729,69 @@ fn decal_new_defaults() {
 
 #[test]
 fn decal_update_permanent_stays_alive() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     // fade_duration = 0 means permanent
     assert!(d.update(100.0), "permanent decal should always return true");
 }
 
 #[test]
 fn decal_update_fade_progression() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 2.0;
     assert!(d.update(0.5)); // 0.5s into 2.0s fade → alive
-    // alpha should be 1.0 - (0.5/2.0) = 0.75
-    assert!((d.albedo_tint[3] - 0.75).abs() < 1e-4, "alpha={}", d.albedo_tint[3]);
+                            // alpha should be 1.0 - (0.5/2.0) = 0.75
+    assert!(
+        (d.albedo_tint[3] - 0.75).abs() < 1e-4,
+        "alpha={}",
+        d.albedo_tint[3]
+    );
 }
 
 #[test]
 fn decal_update_fade_complete() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 1.0;
-    assert!(d.update(0.5));  // alive at 0.5s
+    assert!(d.update(0.5)); // alive at 0.5s
     assert!(!d.update(0.6)); // dead at 1.1s ≥ 1.0s
 }
 
 #[test]
 fn decal_update_fade_alpha_at_half() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.fade_duration = 4.0;
     d.update(2.0); // exactly halfway
-    // alpha = 1.0 - (2.0/4.0) = 0.5
+                   // alpha = 1.0 - (2.0/4.0) = 0.5
     assert!((d.albedo_tint[3] - 0.5).abs() < 1e-4);
 }
 
 #[test]
 fn decal_to_gpu_params() {
-    let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let mut d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     d.normal_strength = 0.8;
     d.roughness = 0.3;
     d.metallic = 0.1;
@@ -722,7 +800,10 @@ fn decal_to_gpu_params() {
     assert!((gpu.params[0] - 0.8).abs() < 1e-6, "normal_strength");
     assert!((gpu.params[1] - 0.3).abs() < 1e-6, "roughness");
     assert!((gpu.params[2] - 0.1).abs() < 1e-6, "metallic");
-    assert!((gpu.params[3] - 1.0).abs() < 1e-6, "blend_mode (Additive=1)");
+    assert!(
+        (gpu.params[3] - 1.0).abs() < 1e-6,
+        "blend_mode (Additive=1)"
+    );
 }
 
 #[test]
@@ -742,7 +823,12 @@ fn decal_to_gpu_atlas_uv() {
 
 #[test]
 fn decal_to_gpu_identity_transform_inv() {
-    let d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+    let d = Decal::new(
+        Vec3::ZERO,
+        Quat::IDENTITY,
+        Vec3::ONE,
+        ([0.0, 0.0], [1.0, 1.0]),
+    );
     let gpu = d.to_gpu();
     // Identity transform → inverse should also be ≈ identity
     // Check diagonal elements [col][row] — column-major

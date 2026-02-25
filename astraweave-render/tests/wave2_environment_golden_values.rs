@@ -63,7 +63,11 @@ fn sun_position_midnight_y_golden() {
 fn sun_position_sunrise_horizon_branch() {
     let tod = TimeOfDay::new(6.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.x, -1.0, 0.02), "Expected x≈−1 at sunrise, got {}", s.x);
+    assert!(
+        approx(s.x, -1.0, 0.02),
+        "Expected x≈−1 at sunrise, got {}",
+        s.x
+    );
     assert!(s.y.abs() < 0.02, "Expected y≈0 at sunrise, got {}", s.y);
     assert!(s.z.abs() < 0.02, "Expected z≈0 at sunrise, got {}", s.z);
 }
@@ -74,7 +78,11 @@ fn sun_position_sunrise_horizon_branch() {
 fn sun_position_sunset_horizon_branch() {
     let tod = TimeOfDay::new(18.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.x, 1.0, 0.02), "Expected x≈1 at sunset, got {}", s.x);
+    assert!(
+        approx(s.x, 1.0, 0.02),
+        "Expected x≈1 at sunset, got {}",
+        s.x
+    );
     assert!(s.y.abs() < 0.02, "Expected y≈0 at sunset, got {}", s.y);
 }
 
@@ -87,8 +95,16 @@ fn sun_position_sunset_horizon_branch() {
 fn sun_position_9am_golden() {
     let tod = TimeOfDay::new(9.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.y, 0.924, 0.02), "Expected y≈0.924 at 9am, got {}", s.y);
-    assert!(s.x < 0.0, "Expected x<0 at 9am (pre-noon azimuth), got {}", s.x);
+    assert!(
+        approx(s.y, 0.924, 0.02),
+        "Expected y≈0.924 at 9am, got {}",
+        s.y
+    );
+    assert!(
+        s.x < 0.0,
+        "Expected x<0 at 9am (pre-noon azimuth), got {}",
+        s.x
+    );
     assert!(s.z > 0.0, "Expected z>0 at 9am, got {}", s.z);
 }
 
@@ -99,8 +115,16 @@ fn sun_position_9am_golden() {
 fn sun_position_3pm_golden() {
     let tod = TimeOfDay::new(15.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.y, 0.924, 0.02), "Expected y≈0.924 at 3pm, got {}", s.y);
-    assert!(s.x > 0.0, "Expected x>0 at 3pm (post-noon azimuth), got {}", s.x);
+    assert!(
+        approx(s.y, 0.924, 0.02),
+        "Expected y≈0.924 at 3pm, got {}",
+        s.y
+    );
+    assert!(
+        s.x > 0.0,
+        "Expected x>0 at 3pm (post-noon azimuth), got {}",
+        s.x
+    );
 }
 
 /// At 3am, sun_angle = −π/4, sin = −0.7071.
@@ -111,7 +135,11 @@ fn sun_position_3pm_golden() {
 fn sun_position_3am_golden() {
     let tod = TimeOfDay::new(3.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.y, -0.924, 0.02), "Expected y≈−0.924 at 3am, got {}", s.y);
+    assert!(
+        approx(s.y, -0.924, 0.02),
+        "Expected y≈−0.924 at 3am, got {}",
+        s.y
+    );
 }
 
 /// At 21:00, sun_angle = 5π/4, sin ≈ −0.7071
@@ -119,7 +147,11 @@ fn sun_position_3am_golden() {
 fn sun_position_21h_golden() {
     let tod = TimeOfDay::new(21.0, 1.0);
     let s = tod.get_sun_position();
-    assert!(approx(s.y, -0.924, 0.02), "Expected y≈−0.924 at 21:00, got {}", s.y);
+    assert!(
+        approx(s.y, -0.924, 0.02),
+        "Expected y≈−0.924 at 21:00, got {}",
+        s.y
+    );
     assert!(s.x > 0.0, "Expected x>0 at 21:00 (azimuth=3π/4)");
 }
 
@@ -132,7 +164,14 @@ fn sun_y_monotone_morning() {
         .map(|&h| TimeOfDay::new(h, 1.0).get_sun_position().y)
         .collect();
     for i in 1..ys.len() {
-        assert!(ys[i] > ys[i - 1], "Sun y should increase morning: y[{}]={} <= y[{}]={}", i, ys[i], i-1, ys[i-1]);
+        assert!(
+            ys[i] > ys[i - 1],
+            "Sun y should increase morning: y[{}]={} <= y[{}]={}",
+            i,
+            ys[i],
+            i - 1,
+            ys[i - 1]
+        );
     }
 }
 
@@ -145,7 +184,14 @@ fn sun_y_monotone_afternoon() {
         .map(|&h| TimeOfDay::new(h, 1.0).get_sun_position().y)
         .collect();
     for i in 1..ys.len() {
-        assert!(ys[i] < ys[i - 1], "Sun y should decrease afternoon: y[{}]={} >= y[{}]={}", i, ys[i], i-1, ys[i-1]);
+        assert!(
+            ys[i] < ys[i - 1],
+            "Sun y should decrease afternoon: y[{}]={} >= y[{}]={}",
+            i,
+            ys[i],
+            i - 1,
+            ys[i - 1]
+        );
     }
 }
 
@@ -156,14 +202,22 @@ fn moon_at_midnight_golden() {
     let tod = TimeOfDay::new(0.0, 1.0);
     let m = tod.get_moon_position();
     // Moon = −sun; sun.y ≈ −0.995 → moon.y ≈ 0.995
-    assert!(approx(m.y, 0.995, 0.01), "Moon y at midnight ≈ 0.995, got {}", m.y);
+    assert!(
+        approx(m.y, 0.995, 0.01),
+        "Moon y at midnight ≈ 0.995, got {}",
+        m.y
+    );
 }
 
 #[test]
 fn moon_at_noon_below_horizon() {
     let tod = TimeOfDay::new(12.0, 1.0);
     let m = tod.get_moon_position();
-    assert!(m.y < -0.9, "Moon at noon should be below horizon, got y={}", m.y);
+    assert!(
+        m.y < -0.9,
+        "Moon at noon should be below horizon, got y={}",
+        m.y
+    );
 }
 
 #[test]
@@ -218,7 +272,11 @@ fn light_direction_threshold_at_boundary() {
     assert!(sh > 0.1, "Sanity: sun_height at 6.4 should be >0.1");
     let d = tod.get_light_direction();
     // Since sun.y > 0.1, d = -sun
-    assert!(d.y < -0.05, "At t=6.4 (barely day), light should come from above: d.y={}", d.y);
+    assert!(
+        d.y < -0.05,
+        "At t=6.4 (barely day), light should come from above: d.y={}",
+        d.y
+    );
     let _ = sun; // suppress unused
 }
 
@@ -267,13 +325,13 @@ fn light_color_day_channel_ordering() {
 /// Day branch: intensity factor increases with sun height
 #[test]
 fn light_color_day_brightness_increases_with_height() {
-    let c8  = TimeOfDay::new(8.0,  1.0).get_light_color();
+    let c8 = TimeOfDay::new(8.0, 1.0).get_light_color();
     let c10 = TimeOfDay::new(10.0, 1.0).get_light_color();
     let c12 = TimeOfDay::new(12.0, 1.0).get_light_color();
     // Luminance approximation
     let lum = |v: glam::Vec3| v.x + v.y + v.z;
     assert!(lum(c12) > lum(c10), "Noon brighter than 10am");
-    assert!(lum(c10) > lum(c8),  "10am brighter than 8am");
+    assert!(lum(c10) > lum(c8), "10am brighter than 8am");
 }
 
 // ─── get_light_color: TWILIGHT branch (−0.2 < sun_height ≤ 0.2) ────────────
@@ -310,14 +368,26 @@ fn light_color_twilight_intensity_range() {
     let tod = TimeOfDay::new(6.60, 1.0);
     let c = tod.get_light_color();
     // Should be in twilight branch (orange-ish)
-    assert!(c.x > 0.3, "R in twilight near day boundary > 0.3, got {}", c.x);
-    assert!(c.x < 0.9, "R in twilight near day boundary < 0.9, got {}", c.x);
+    assert!(
+        c.x > 0.3,
+        "R in twilight near day boundary > 0.3, got {}",
+        c.x
+    );
+    assert!(
+        c.x < 0.9,
+        "R in twilight near day boundary < 0.9, got {}",
+        c.x
+    );
 
     // Near night boundary — use t=5.45 where normalized sun.y ≈ −0.15 (still twilight)
     let tod2 = TimeOfDay::new(5.45, 1.0);
     let c2 = tod2.get_light_color();
     // Should still be in twilight branch (orange, but dimmer)
-    assert!(c2.x > 0.2, "R in twilight near night boundary > 0.2, got {}", c2.x);
+    assert!(
+        c2.x > 0.2,
+        "R in twilight near night boundary > 0.2, got {}",
+        c2.x
+    );
     assert!(c2.y < c2.x, "Twilight: G < R near night boundary: {:?}", c2);
 }
 
@@ -360,9 +430,17 @@ fn light_color_night_blue_dominant() {
 fn light_color_night_multiplier_exact() {
     let c = TimeOfDay::new(0.0, 1.0).get_light_color();
     // Pinpoint: 0.3 × 0.15 = 0.045 (R)
-    assert!(c.x > 0.03 && c.x < 0.07, "Night R in [0.03, 0.07], got {}", c.x);
+    assert!(
+        c.x > 0.03 && c.x < 0.07,
+        "Night R in [0.03, 0.07], got {}",
+        c.x
+    );
     // Pinpoint: 0.8 × 0.15 = 0.12 (B)
-    assert!(c.z > 0.09 && c.z < 0.16, "Night B in [0.09, 0.16], got {}", c.z);
+    assert!(
+        c.z > 0.09 && c.z < 0.16,
+        "Night B in [0.09, 0.16], got {}",
+        c.z
+    );
 }
 
 // ─── get_ambient_color ──────────────────────────────────────────────────────
@@ -372,9 +450,21 @@ fn light_color_night_multiplier_exact() {
 #[test]
 fn ambient_color_noon_golden() {
     let c = TimeOfDay::new(12.0, 1.0).get_ambient_color();
-    assert!(approx(c.x, 0.28, 0.03), "Ambient R≈0.28 at noon, got {}", c.x);
-    assert!(approx(c.y, 0.42, 0.03), "Ambient G≈0.42 at noon, got {}", c.y);
-    assert!(approx(c.z, 0.70, 0.03), "Ambient B≈0.70 at noon, got {}", c.z);
+    assert!(
+        approx(c.x, 0.28, 0.03),
+        "Ambient R≈0.28 at noon, got {}",
+        c.x
+    );
+    assert!(
+        approx(c.y, 0.42, 0.03),
+        "Ambient G≈0.42 at noon, got {}",
+        c.y
+    );
+    assert!(
+        approx(c.z, 0.70, 0.03),
+        "Ambient B≈0.70 at noon, got {}",
+        c.z
+    );
 }
 
 /// Night ambient: sun_height ≤ 0 → vec3(0.1, 0.15, 0.3) × 0.1
@@ -382,9 +472,21 @@ fn ambient_color_noon_golden() {
 #[test]
 fn ambient_color_midnight_golden() {
     let c = TimeOfDay::new(0.0, 1.0).get_ambient_color();
-    assert!(approx(c.x, 0.01, 0.005), "Night ambient R≈0.01, got {}", c.x);
-    assert!(approx(c.y, 0.015, 0.005), "Night ambient G≈0.015, got {}", c.y);
-    assert!(approx(c.z, 0.03, 0.005), "Night ambient B≈0.03, got {}", c.z);
+    assert!(
+        approx(c.x, 0.01, 0.005),
+        "Night ambient R≈0.01, got {}",
+        c.x
+    );
+    assert!(
+        approx(c.y, 0.015, 0.005),
+        "Night ambient G≈0.015, got {}",
+        c.y
+    );
+    assert!(
+        approx(c.z, 0.03, 0.005),
+        "Night ambient B≈0.03, got {}",
+        c.z
+    );
 }
 
 /// Day ambient: B > G > R (blue sky)
@@ -407,11 +509,11 @@ fn ambient_color_night_blue_dominant() {
 #[test]
 fn ambient_intensity_increases_morning() {
     let lum = |v: glam::Vec3| v.x + v.y + v.z;
-    let c7  = TimeOfDay::new(7.0,  1.0).get_ambient_color();
-    let c9  = TimeOfDay::new(9.0,  1.0).get_ambient_color();
+    let c7 = TimeOfDay::new(7.0, 1.0).get_ambient_color();
+    let c9 = TimeOfDay::new(9.0, 1.0).get_ambient_color();
     let c12 = TimeOfDay::new(12.0, 1.0).get_ambient_color();
-    assert!(lum(c12) > lum(c9),  "Noon ambient > 9am");
-    assert!(lum(c9)  > lum(c7),  "9am ambient > 7am");
+    assert!(lum(c12) > lum(c9), "Noon ambient > 9am");
+    assert!(lum(c9) > lum(c7), "9am ambient > 7am");
 }
 
 /// Day ambient: the 0.4 multiplier on intensity means even at low sun_height
@@ -431,7 +533,9 @@ fn ambient_color_day_floor() {
 /// is_day: true when sun_position.y > 0.0
 #[test]
 fn is_day_true_at_various_day_hours() {
-    for hour in [7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0] {
+    for hour in [
+        7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0,
+    ] {
         let tod = TimeOfDay::new(hour, 1.0);
         assert!(tod.is_day(), "Should be day at hour={hour}");
     }
@@ -452,7 +556,10 @@ fn is_night_true_when_deep_below_horizon() {
     assert!(TimeOfDay::new(0.0, 1.0).is_night(), "0am should be night");
     assert!(TimeOfDay::new(3.0, 1.0).is_night(), "3am should be night");
     // At 19:00: sin(13PI/12) ≈ −0.259 → night
-    assert!(TimeOfDay::new(19.0, 1.0).is_night(), "19:00 should be night");
+    assert!(
+        TimeOfDay::new(19.0, 1.0).is_night(),
+        "19:00 should be night"
+    );
 }
 
 /// is_night: false when sun is above −0.1
@@ -467,15 +574,27 @@ fn is_night_false_at_noon_and_near_horizon() {
 #[test]
 fn is_twilight_at_sunrise_sunset() {
     // 6am: sun_height=0 → in [-0.1, 0.1] → twilight
-    assert!(TimeOfDay::new(6.0, 1.0).is_twilight(), "6am should be twilight");
-    // 18pm: sun_height=sin(PI)≈0 → twilight  
-    assert!(TimeOfDay::new(18.0, 1.0).is_twilight(), "18:00 should be twilight");
+    assert!(
+        TimeOfDay::new(6.0, 1.0).is_twilight(),
+        "6am should be twilight"
+    );
+    // 18pm: sun_height=sin(PI)≈0 → twilight
+    assert!(
+        TimeOfDay::new(18.0, 1.0).is_twilight(),
+        "18:00 should be twilight"
+    );
 }
 
 #[test]
 fn is_twilight_false_at_noon_and_midnight() {
-    assert!(!TimeOfDay::new(12.0, 1.0).is_twilight(), "Noon is not twilight");
-    assert!(!TimeOfDay::new(0.0, 1.0).is_twilight(), "Midnight is not twilight");
+    assert!(
+        !TimeOfDay::new(12.0, 1.0).is_twilight(),
+        "Noon is not twilight"
+    );
+    assert!(
+        !TimeOfDay::new(0.0, 1.0).is_twilight(),
+        "Midnight is not twilight"
+    );
 }
 
 /// Verify mutual exclusivity: at any given time at most one of is_day/is_night
@@ -531,7 +650,10 @@ fn update_zero_scale_no_change() {
     let before = tod.current_time;
     tod.update();
     // With scale=0, game_hours ≈ 0, so time shouldn't change
-    assert!((tod.current_time - before).abs() < 0.01, "Zero scale = no time change");
+    assert!(
+        (tod.current_time - before).abs() < 0.01,
+        "Zero scale = no time change"
+    );
 }
 
 /// update() doesn't replace body with () — after update, time is still reasonable
@@ -541,7 +663,7 @@ fn update_does_not_noop() {
     // succession. Even if elapsed is tiny, with huge scale the delta should
     // be non-trivial after a few calls.
     let mut tod = TimeOfDay::new(12.0, 3_600_000.0); // extreme scale
-    // Multiple updates to accumulate even tiny elapsed times
+                                                     // Multiple updates to accumulate even tiny elapsed times
     for _ in 0..100 {
         tod.update();
     }
@@ -572,8 +694,12 @@ fn update_respects_time_scale() {
     // fast should have advanced more (or at least equal) to slow
     // This catches mutations that remove the time_scale multiplication
     // Note: with very small elapsed, both might be ≈0, but the delta should differ
-    assert!(fast.current_time >= slow.current_time,
-        "High scale should advance faster: fast={} slow={}", fast.current_time, slow.current_time);
+    assert!(
+        fast.current_time >= slow.current_time,
+        "High scale should advance faster: fast={} slow={}",
+        fast.current_time,
+        slow.current_time
+    );
 }
 
 /// Verify division by 3600.0 (seconds→hours conversion)
@@ -586,7 +712,11 @@ fn update_uses_hours_conversion() {
     tod.update();
     // 5ms × 3600 / 3600 = 0.005 hours
     // With %, it would be 5ms × 3600 = 18 % 3600 = 18 → totally wrong
-    assert!(tod.current_time < 1.0, "Should be small increment, got {}", tod.current_time);
+    assert!(
+        tod.current_time < 1.0,
+        "Should be small increment, got {}",
+        tod.current_time
+    );
 }
 
 // ─── SkyConfig defaults ─────────────────────────────────────────────────────

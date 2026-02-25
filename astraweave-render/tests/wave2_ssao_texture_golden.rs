@@ -263,10 +263,7 @@ fn texture_normal_linear_format() {
 
 #[test]
 fn texture_mra_linear_format() {
-    assert_eq!(
-        TextureUsage::MRA.format(),
-        wgpu::TextureFormat::Rgba8Unorm
-    );
+    assert_eq!(TextureUsage::MRA.format(), wgpu::TextureFormat::Rgba8Unorm);
 }
 
 #[test]

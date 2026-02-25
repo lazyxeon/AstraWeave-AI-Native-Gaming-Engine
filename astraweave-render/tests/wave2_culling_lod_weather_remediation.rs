@@ -4,12 +4,12 @@
 //! weather_system.rs (162 mutants — integration tests complementing existing unit tests)
 
 use astraweave_render::culling::{
-    BatchId, DrawBatch, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
-    batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull,
+    batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId, DrawBatch,
+    DrawIndirectCommand, FrustumPlanes, InstanceAABB,
 };
+use astraweave_render::effects::WeatherKind;
 use astraweave_render::lod_generator::{LODConfig, LODGenerator, SimplificationMesh};
 use astraweave_render::weather_system::{BiomeWeatherMap, BiomeWindProfile, WeatherTransition};
-use astraweave_render::effects::WeatherKind;
 use astraweave_terrain::biome::BiomeType;
 use glam::{Mat4, Vec3};
 
@@ -66,9 +66,21 @@ fn aabb_from_scale_transform() {
     let local_max = Vec3::new(1.0, 1.0, 1.0);
     let aabb = InstanceAABB::from_transform(&transform, local_min, local_max, 0);
 
-    assert!((aabb.extent[0] - 2.0).abs() < 0.01, "Scaled extent X should be 2.0, got {}", aabb.extent[0]);
-    assert!((aabb.extent[1] - 3.0).abs() < 0.01, "Scaled extent Y should be 3.0, got {}", aabb.extent[1]);
-    assert!((aabb.extent[2] - 4.0).abs() < 0.01, "Scaled extent Z should be 4.0, got {}", aabb.extent[2]);
+    assert!(
+        (aabb.extent[0] - 2.0).abs() < 0.01,
+        "Scaled extent X should be 2.0, got {}",
+        aabb.extent[0]
+    );
+    assert!(
+        (aabb.extent[1] - 3.0).abs() < 0.01,
+        "Scaled extent Y should be 3.0, got {}",
+        aabb.extent[1]
+    );
+    assert!(
+        (aabb.extent[2] - 4.0).abs() < 0.01,
+        "Scaled extent Z should be 4.0, got {}",
+        aabb.extent[2]
+    );
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -129,14 +141,20 @@ fn cull_empty_instances_returns_empty() {
 fn cull_visible_instances_returned() {
     let frustum = make_ortho_frustum();
     let instances = vec![
-        InstanceAABB::new(Vec3::ZERO, Vec3::splat(1.0), 0),           // visible
+        InstanceAABB::new(Vec3::ZERO, Vec3::splat(1.0), 0), // visible
         InstanceAABB::new(Vec3::new(0.0, 0.0, 500.0), Vec3::splat(0.5), 1), // behind camera
-        InstanceAABB::new(Vec3::new(1.0, 0.0, 0.0), Vec3::splat(1.0), 2),   // visible
+        InstanceAABB::new(Vec3::new(1.0, 0.0, 0.0), Vec3::splat(1.0), 2), // visible
     ];
     let visible = cpu_frustum_cull(&instances, &frustum);
     assert!(visible.contains(&0), "Instance at origin should be visible");
-    assert!(!visible.contains(&1), "Instance behind camera should not be visible");
-    assert!(visible.contains(&2), "Instance slightly to right should be visible");
+    assert!(
+        !visible.contains(&1),
+        "Instance behind camera should not be visible"
+    );
+    assert!(
+        visible.contains(&2),
+        "Instance slightly to right should be visible"
+    );
 }
 
 #[test]
@@ -222,11 +240,7 @@ fn draw_indirect_command_new() {
 
 #[test]
 fn batch_visible_empty() {
-    let batches = batch_visible_instances(
-        &[],
-        |_| BatchId::new(0, 0),
-        |_| (36, 0),
-    );
+    let batches = batch_visible_instances(&[], |_| BatchId::new(0, 0), |_| (36, 0));
     assert!(batches.is_empty());
 }
 
@@ -235,9 +249,19 @@ fn batch_visible_groups_by_batch_id() {
     // Instances 0,1 → mesh 0, instance 2 → mesh 1
     let batches = batch_visible_instances(
         &[0, 1, 2],
-        |idx| if idx < 2 { BatchId::new(0, 0) } else { BatchId::new(1, 0) },
+        |idx| {
+            if idx < 2 {
+                BatchId::new(0, 0)
+            } else {
+                BatchId::new(1, 0)
+            }
+        },
         |batch_id| {
-            if batch_id.mesh_id == 0 { (36, 0) } else { (24, 36) }
+            if batch_id.mesh_id == 0 {
+                (36, 0)
+            } else {
+                (24, 36)
+            }
         },
     );
 
@@ -322,7 +346,11 @@ fn simplify_no_reduction_needed() {
     let gen = LODGenerator::new(config);
     let mesh = make_test_mesh();
     let simplified = gen.simplify(&mesh, 10); // target > vertex count
-    assert_eq!(simplified.vertex_count(), mesh.vertex_count(), "Should not reduce when target >= vertex count");
+    assert_eq!(
+        simplified.vertex_count(),
+        mesh.vertex_count(),
+        "Should not reduce when target >= vertex count"
+    );
 }
 
 #[test]
@@ -337,7 +365,10 @@ fn simplify_reduces_vertex_count() {
     let simplified = gen.simplify(&mesh, 40);
     assert!(simplified.vertex_count() <= 81, "Should reduce vertices");
     // Some vertices should be removed
-    assert!(simplified.vertex_count() < 81, "Grid mesh should have fewer vertices after simplify");
+    assert!(
+        simplified.vertex_count() < 81,
+        "Grid mesh should have fewer vertices after simplify"
+    );
 }
 
 #[test]
@@ -352,11 +383,19 @@ fn simplify_preserves_valid_indices() {
     let simplified = gen.simplify(&mesh, 12);
     // All indices should be valid
     for &idx in &simplified.indices {
-        assert!((idx as usize) < simplified.vertex_count(),
-            "Index {} out of bounds for {} vertices", idx, simplified.vertex_count());
+        assert!(
+            (idx as usize) < simplified.vertex_count(),
+            "Index {} out of bounds for {} vertices",
+            idx,
+            simplified.vertex_count()
+        );
     }
     // indices count should be divisible by 3
-    assert_eq!(simplified.indices.len() % 3, 0, "Indices should be triangle list");
+    assert_eq!(
+        simplified.indices.len() % 3,
+        0,
+        "Indices should be triangle list"
+    );
 }
 
 #[test]
@@ -384,8 +423,11 @@ fn generate_lods_decreasing_vertices() {
     let lods = gen.generate_lods(&mesh);
     // Each LOD should have fewer vertices than original
     for (i, lod) in lods.iter().enumerate() {
-        assert!(lod.vertex_count() <= mesh.vertex_count(),
-            "LOD{} should have fewer vertices than original", i);
+        assert!(
+            lod.vertex_count() <= mesh.vertex_count(),
+            "LOD{} should have fewer vertices than original",
+            i
+        );
     }
 }
 
@@ -395,7 +437,10 @@ fn calculate_reduction_zero_for_same() {
     let gen = LODGenerator::new(config);
     let mesh = make_test_mesh();
     let reduction = gen.calculate_reduction(&mesh, &mesh);
-    assert!((reduction - 0.0).abs() < 0.01, "Same mesh should have 0% reduction");
+    assert!(
+        (reduction - 0.0).abs() < 0.01,
+        "Same mesh should have 0% reduction"
+    );
 }
 
 #[test]
@@ -403,7 +448,7 @@ fn calculate_reduction_correct_value() {
     let config = LODConfig::default();
     let gen = LODGenerator::new(config);
     let original = make_grid_mesh(4); // 25 vertices
-    // Create a "simplified" mesh with 12 vertices
+                                      // Create a "simplified" mesh with 12 vertices
     let simplified = SimplificationMesh::new(
         vec![Vec3::ZERO; 12],
         vec![Vec3::Y; 12],
@@ -412,7 +457,10 @@ fn calculate_reduction_correct_value() {
     );
     let reduction = gen.calculate_reduction(&original, &simplified);
     let expected = 1.0 - (12.0 / 25.0);
-    assert!((reduction - expected).abs() < 0.01, "Expected {expected}, got {reduction}");
+    assert!(
+        (reduction - expected).abs() < 0.01,
+        "Expected {expected}, got {reduction}"
+    );
 }
 
 #[test]
@@ -485,14 +533,20 @@ fn weather_transition_eased_progress_smooth() {
     // Smoothstep should be symmetric around t=0.5
     wt.update(2.0); // linear progress = 0.5
     let eased_mid = wt.eased_progress();
-    assert!((eased_mid - 0.5).abs() < 0.01, "Smoothstep at 0.5 should be 0.5, got {eased_mid}");
+    assert!(
+        (eased_mid - 0.5).abs() < 0.01,
+        "Smoothstep at 0.5 should be 0.5, got {eased_mid}"
+    );
 
     // At low t, eased should be less than linear
     let mut wt2 = WeatherTransition::new(4.0);
     wt2.start(WeatherKind::None, WeatherKind::Snow);
     wt2.update(1.0); // linear = 0.25
     let eased_low = wt2.eased_progress();
-    assert!(eased_low < 0.25 + 0.01, "Smoothstep at 0.25 should be < 0.25");
+    assert!(
+        eased_low < 0.25 + 0.01,
+        "Smoothstep at 0.25 should be < 0.25"
+    );
 }
 
 #[test]
@@ -510,7 +564,10 @@ fn weather_transition_complete_forces_finish() {
 fn weather_transition_set_duration_clamped() {
     let mut wt = WeatherTransition::new(1.0);
     wt.set_duration(-10.0);
-    assert!(wt.duration() >= 0.01, "Duration should be clamped to min 0.01");
+    assert!(
+        wt.duration() >= 0.01,
+        "Duration should be clamped to min 0.01"
+    );
 }
 
 // ═════════════════════════════════════════════════════════════════════════
@@ -531,8 +588,11 @@ fn biome_weather_map_pick_all_biomes_valid() {
         for roll in [0.0_f32, 0.25, 0.5, 0.75, 0.99] {
             let kind = BiomeWeatherMap::pick(biome, roll);
             let table = BiomeWeatherMap::weights(biome);
-            assert!(table.iter().any(|w| w.kind == kind),
-                "pick({:?}, {roll}) returned invalid WeatherKind", biome);
+            assert!(
+                table.iter().any(|w| w.kind == kind),
+                "pick({:?}, {roll}) returned invalid WeatherKind",
+                biome
+            );
         }
     }
 }
@@ -541,27 +601,46 @@ fn biome_weather_map_pick_all_biomes_valid() {
 fn biome_weather_map_probability_sums_to_one() {
     for &biome in BiomeType::all() {
         let kinds = [
-            WeatherKind::None, WeatherKind::Rain, WeatherKind::Snow,
-            WeatherKind::Sandstorm, WeatherKind::WindTrails,
+            WeatherKind::None,
+            WeatherKind::Rain,
+            WeatherKind::Snow,
+            WeatherKind::Sandstorm,
+            WeatherKind::WindTrails,
         ];
-        let sum: f32 = kinds.iter().map(|&k| BiomeWeatherMap::probability(biome, k)).sum();
-        assert!((sum - 1.0).abs() < 0.02, "{:?} probabilities sum to {sum}", biome);
+        let sum: f32 = kinds
+            .iter()
+            .map(|&k| BiomeWeatherMap::probability(biome, k))
+            .sum();
+        assert!(
+            (sum - 1.0).abs() < 0.02,
+            "{:?} probabilities sum to {sum}",
+            biome
+        );
     }
 }
 
 #[test]
 fn biome_weather_map_most_likely_tundra_snow() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Tundra), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Tundra),
+        WeatherKind::Snow
+    );
 }
 
 #[test]
 fn biome_weather_map_most_likely_desert_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Desert), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Desert),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn biome_weather_map_most_likely_swamp_rain() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Swamp), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Swamp),
+        WeatherKind::Rain
+    );
 }
 
 #[test]
@@ -579,7 +658,11 @@ fn biome_weather_map_pick_desert_sandstorm_range() {
 fn wind_profile_all_biomes_positive_strength() {
     for &biome in BiomeType::all() {
         let profile = BiomeWindProfile::for_biome(biome);
-        assert!(profile.base_strength >= 0.0, "{:?} has negative base_strength", biome);
+        assert!(
+            profile.base_strength >= 0.0,
+            "{:?} has negative base_strength",
+            biome
+        );
     }
 }
 
@@ -588,8 +671,13 @@ fn wind_profile_mountain_strongest() {
     let mountain = BiomeWindProfile::for_biome(BiomeType::Mountain);
     for &biome in BiomeType::all() {
         let other = BiomeWindProfile::for_biome(biome);
-        assert!(mountain.base_strength >= other.base_strength,
-            "Mountain ({}) should be >= {:?} ({})", mountain.base_strength, biome, other.base_strength);
+        assert!(
+            mountain.base_strength >= other.base_strength,
+            "Mountain ({}) should be >= {:?} ({})",
+            mountain.base_strength,
+            biome,
+            other.base_strength
+        );
     }
 }
 
@@ -599,7 +687,13 @@ fn wind_profile_effective_strength_non_negative() {
         let profile = BiomeWindProfile::for_biome(biome);
         for i in 0..20 {
             let s = profile.effective_strength(i as f32 * 0.5);
-            assert!(s >= 0.0, "{:?} at t={} has negative strength {}", biome, i, s);
+            assert!(
+                s >= 0.0,
+                "{:?} at t={} has negative strength {}",
+                biome,
+                i,
+                s
+            );
         }
     }
 }
@@ -611,8 +705,13 @@ fn wind_profile_effective_direction_normalized() {
         for t in [0.0_f32, 1.0, 5.0, 10.0, 20.0] {
             let dir = profile.effective_direction(t);
             let len = dir.length();
-            assert!((len - 1.0).abs() < 0.02,
-                "{:?} direction not normalized at t={}: len={}", biome, t, len);
+            assert!(
+                (len - 1.0).abs() < 0.02,
+                "{:?} direction not normalized at t={}: len={}",
+                biome,
+                t,
+                len
+            );
         }
     }
 }
@@ -628,7 +727,10 @@ fn wind_profile_gusty_varies_strength() {
         min_s = min_s.min(s);
         max_s = max_s.max(s);
     }
-    assert!(max_s > min_s + 0.1, "Gusty wind should vary strength: min={min_s}, max={max_s}");
+    assert!(
+        max_s > min_s + 0.1,
+        "Gusty wind should vary strength: min={min_s}, max={max_s}"
+    );
 }
 
 #[test]
@@ -637,5 +739,8 @@ fn wind_profile_calm_constant_direction() {
     assert!(!swamp.gusty);
     let d0 = swamp.effective_direction(0.0);
     let d1 = swamp.effective_direction(100.0);
-    assert!((d0 - d1).length() < 0.001, "Non-gusty biome should have stable direction");
+    assert!(
+        (d0 - d1).length() < 0.001,
+        "Non-gusty biome should have stable direction"
+    );
 }

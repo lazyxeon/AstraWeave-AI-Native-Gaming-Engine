@@ -84,7 +84,11 @@ fn oct_encode_diagonal_golden() {
     let enc = OctahedralEncoder::encode(n);
     // 1/√3 / (3/√3) = 1/3 → 0.33333 * 32767 = 10922.33 → 10922 as i16
     assert_eq!(enc[0], enc[1], "Symmetric diagonal should have equal x,y");
-    assert!((enc[0] - 10922).abs() <= 1, "x should be ~10922, got {}", enc[0]);
+    assert!(
+        (enc[0] - 10922).abs() <= 1,
+        "x should be ~10922, got {}",
+        enc[0]
+    );
 }
 
 // Lower hemisphere diagonal: (1/√3, 1/√3, -1/√3) → z < 0, triggers wrapping
@@ -98,7 +102,11 @@ fn oct_encode_lower_hemisphere_diagonal_golden() {
     // x = (2/3 * 32767) ≈ 21844.67 → 21844 or 21845
     assert!(enc[0] > 0, "Positive x in lower hemisphere");
     assert!(enc[1] > 0, "Positive y in lower hemisphere");
-    assert!((enc[0] - 21845).abs() <= 1, "x should be ~21845, got {}", enc[0]);
+    assert!(
+        (enc[0] - 21845).abs() <= 1,
+        "x should be ~21845, got {}",
+        enc[0]
+    );
     assert_eq!(enc[0], enc[1], "Symmetric: x == y");
 }
 
@@ -176,14 +184,23 @@ fn oct_encoding_error_axis_is_near_zero() {
 fn oct_encoding_error_is_nonnegative() {
     // acos returns [0, π], so error is always >= 0
     let normals = [
-        Vec3::X, Vec3::Y, Vec3::Z,
-        Vec3::NEG_X, Vec3::NEG_Y, Vec3::NEG_Z,
+        Vec3::X,
+        Vec3::Y,
+        Vec3::Z,
+        Vec3::NEG_X,
+        Vec3::NEG_Y,
+        Vec3::NEG_Z,
         Vec3::new(0.3, 0.5, 0.8).normalize(),
         Vec3::new(-0.7, 0.2, -0.3).normalize(),
     ];
     for n in normals {
         let err = OctahedralEncoder::encoding_error(n);
-        assert!(err >= 0.0, "Error should be non-negative for {:?}, got {}", n, err);
+        assert!(
+            err >= 0.0,
+            "Error should be non-negative for {:?}, got {}",
+            n,
+            err
+        );
     }
 }
 
@@ -192,7 +209,11 @@ fn oct_encoding_error_off_axis_is_small_but_nonzero() {
     let n = Vec3::new(0.3, 0.5, 0.8).normalize();
     let err = OctahedralEncoder::encoding_error(n);
     assert!(err > 0.0, "Off-axis should have nonzero quantization error");
-    assert!(err < 0.02, "Error should be small (< 0.02 rad), got {}", err);
+    assert!(
+        err < 0.02,
+        "Error should be small (< 0.02 rad), got {}",
+        err
+    );
 }
 
 #[test]
@@ -207,7 +228,10 @@ fn oct_encoding_error_below_one_degree_for_all_octants() {
                 assert!(
                     err < 0.02,
                     "Error {} > 1 deg for ({}, {}, {})",
-                    err, sx, sy, sz
+                    err,
+                    sx,
+                    sy,
+                    sz
                 );
             }
         }
@@ -221,9 +245,9 @@ fn oct_encoding_error_below_one_degree_for_all_octants() {
 #[test]
 fn oct_roundtrip_all_axes_exact() {
     let cases: &[(Vec3, [i16; 2])] = &[
-        (Vec3::X,     [32767, 0]),
-        (Vec3::Y,     [0, 32767]),
-        (Vec3::Z,     [0, 0]),
+        (Vec3::X, [32767, 0]),
+        (Vec3::Y, [0, 32767]),
+        (Vec3::Z, [0, 0]),
         (Vec3::NEG_X, [-32767, 0]),
         (Vec3::NEG_Y, [0, -32767]),
         (Vec3::NEG_Z, [32767, 32767]),
@@ -235,7 +259,9 @@ fn oct_roundtrip_all_axes_exact() {
         assert!(
             (dec - normal).length() < 0.01,
             "Decode {:?} → {:?}, expected {:?}",
-            enc, dec, normal
+            enc,
+            dec,
+            normal
         );
     }
 }
@@ -351,14 +377,22 @@ fn compress_position_is_exact() {
 fn compress_normal_uses_octahedral() {
     let normal = Vec3::X;
     let cv = VertexCompressor::compress(Vec3::ZERO, normal, Vec2::ZERO);
-    assert_eq!(cv.normal_oct, [32767, 0], "Normal should use octahedral encoding");
+    assert_eq!(
+        cv.normal_oct,
+        [32767, 0],
+        "Normal should use octahedral encoding"
+    );
 }
 
 #[test]
 fn compress_uv_uses_half_float() {
     let uv = Vec2::new(0.5, 1.0);
     let cv = VertexCompressor::compress(Vec3::ZERO, Vec3::Y, uv);
-    assert_eq!(cv.uv_half, [0x3800, 0x3C00], "UV should use half-float encoding");
+    assert_eq!(
+        cv.uv_half,
+        [0x3800, 0x3C00],
+        "UV should use half-float encoding"
+    );
 }
 
 #[test]
@@ -516,8 +550,16 @@ fn oct_encode_near_zero_normal_z_axis() {
     // Normal with very small x, y components — should encode to near [0, 0]
     let n = Vec3::new(0.001, 0.001, 1.0).normalize();
     let enc = OctahedralEncoder::encode(n);
-    assert!(enc[0].abs() < 100, "Near +Z should have small x, got {}", enc[0]);
-    assert!(enc[1].abs() < 100, "Near +Z should have small y, got {}", enc[1]);
+    assert!(
+        enc[0].abs() < 100,
+        "Near +Z should have small x, got {}",
+        enc[0]
+    );
+    assert!(
+        enc[1].abs() < 100,
+        "Near +Z should have small y, got {}",
+        enc[1]
+    );
 }
 
 #[test]
@@ -526,7 +568,10 @@ fn oct_encode_exactly_on_seam() {
     let n = Vec3::new(1.0, 0.0, 0.0);
     let enc = OctahedralEncoder::encode(n);
     let dec = OctahedralEncoder::decode(enc);
-    assert!((dec - n).length() < 0.01, "Seam normal should round-trip cleanly");
+    assert!(
+        (dec - n).length() < 0.01,
+        "Seam normal should round-trip cleanly"
+    );
 }
 
 #[test]
@@ -546,7 +591,12 @@ fn half_float_subnormal() {
     let enc = HalfFloatEncoder::encode(val);
     let dec = HalfFloatEncoder::decode(enc);
     // Subnormal precision is limited, but value should be close-ish
-    assert!((dec - val).abs() < 0.0001, "Subnormal roundtrip: {} vs {}", dec, val);
+    assert!(
+        (dec - val).abs() < 0.0001,
+        "Subnormal roundtrip: {} vs {}",
+        dec,
+        val
+    );
 }
 
 #[test]
@@ -579,8 +629,12 @@ fn batch_roundtrip_positions_exact() {
 #[test]
 fn batch_roundtrip_normals_close() {
     let normals: Vec<Vec3> = [
-        Vec3::X, Vec3::Y, Vec3::Z,
-        Vec3::NEG_X, Vec3::NEG_Y, Vec3::NEG_Z,
+        Vec3::X,
+        Vec3::Y,
+        Vec3::Z,
+        Vec3::NEG_X,
+        Vec3::NEG_Y,
+        Vec3::NEG_Z,
     ]
     .to_vec();
     let n = normals.len();
@@ -592,7 +646,9 @@ fn batch_roundtrip_normals_close() {
         assert!(
             (dec_n - normals[i]).length() < 0.02,
             "Normal {} roundtrip error too high: {:?} vs {:?}",
-            i, dec_n, normals[i]
+            i,
+            dec_n,
+            normals[i]
         );
     }
 }

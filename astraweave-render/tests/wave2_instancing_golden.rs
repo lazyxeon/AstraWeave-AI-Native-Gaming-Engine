@@ -80,9 +80,15 @@ fn instance_raw_rotation_90_y() {
     let raw = InstanceRaw::from_transform(Vec3::ZERO, q, Vec3::ONE);
     // Column 0: local X → world (0, 0, -1), i.e. -Z
     assert!((raw.model[0][0]).abs() < 1e-5, "c0r0 should be ~0");
-    assert!((raw.model[0][2] + 1.0).abs() < 1e-5, "c0r2 should be ~-1 (-sin)");
+    assert!(
+        (raw.model[0][2] + 1.0).abs() < 1e-5,
+        "c0r2 should be ~-1 (-sin)"
+    );
     // Column 2: local Z → world (1, 0, 0), i.e. +X
-    assert!((raw.model[2][0] - 1.0).abs() < 1e-5, "c2r0 should be ~1 (sin)");
+    assert!(
+        (raw.model[2][0] - 1.0).abs() < 1e-5,
+        "c2r0 should be ~1 (sin)"
+    );
     assert!((raw.model[2][2]).abs() < 1e-5, "c2r2 should be ~0");
     // Y axis unchanged
     assert!((raw.model[1][1] - 1.0).abs() < 1e-5, "c1r1 should be ~1");
@@ -194,7 +200,11 @@ fn manager_add_multiple_meshes() {
 #[test]
 fn manager_add_instances_bulk() {
     let mut m = InstanceManager::new();
-    let insts = vec![Instance::identity(), Instance::identity(), Instance::identity()];
+    let insts = vec![
+        Instance::identity(),
+        Instance::identity(),
+        Instance::identity(),
+    ];
     m.add_instances(42, insts);
     assert_eq!(m.total_instances(), 3);
     assert_eq!(m.batch_count(), 1);
@@ -313,7 +323,13 @@ fn circle_all_at_radius() {
     let instances = InstancePatternBuilder::new().circle(16, r).build();
     for (idx, inst) in instances.iter().enumerate() {
         let dist = inst.position.length();
-        assert!((dist - r).abs() < 0.01, "Instance {} dist={}, expected {}", idx, dist, r);
+        assert!(
+            (dist - r).abs() < 0.01,
+            "Instance {} dist={}, expected {}",
+            idx,
+            dist,
+            r
+        );
     }
 }
 

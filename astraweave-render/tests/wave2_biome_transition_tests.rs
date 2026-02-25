@@ -32,7 +32,10 @@ fn transition_config_default_duration() {
 }
 #[test]
 fn transition_config_default_easing() {
-    assert_eq!(TransitionConfig::default().easing, EasingFunction::SmoothStep);
+    assert_eq!(
+        TransitionConfig::default().easing,
+        EasingFunction::SmoothStep
+    );
 }
 #[test]
 fn transition_config_default_blend_fog() {
@@ -160,7 +163,13 @@ fn easing_all_one_at_one() {
 // ═══════════════════════════════════════════════════════════════════════
 #[test]
 fn visuals_default_fog_color() {
-    assert_vec3(BiomeVisuals::default().fog_color, 0.7, 0.75, 0.8, "fog_color");
+    assert_vec3(
+        BiomeVisuals::default().fog_color,
+        0.7,
+        0.75,
+        0.8,
+        "fog_color",
+    );
 }
 #[test]
 fn visuals_default_fog_density() {
@@ -176,7 +185,13 @@ fn visuals_default_fog_end() {
 }
 #[test]
 fn visuals_default_ambient_color() {
-    assert_vec3(BiomeVisuals::default().ambient_color, 0.4, 0.45, 0.5, "ambient_color");
+    assert_vec3(
+        BiomeVisuals::default().ambient_color,
+        0.4,
+        0.45,
+        0.5,
+        "ambient_color",
+    );
 }
 #[test]
 fn visuals_default_ambient_intensity() {
@@ -230,9 +245,21 @@ fn visuals_forest_sky() {
     assert_vec3(v.sky_day_top, 0.25, 0.55, 0.85, "forest.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.6, 0.8, 0.7, "forest.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.6, 0.35, 0.2, "forest.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 0.85, 0.55, 0.3, "forest.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        0.85,
+        0.55,
+        0.3,
+        "forest.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.02, 0.08, "forest.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.05, 0.08, 0.12, "forest.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.05,
+        0.08,
+        0.12,
+        "forest.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_forest_water() {
@@ -272,9 +299,21 @@ fn visuals_desert_sky() {
     assert_vec3(v.sky_day_top, 0.35, 0.6, 0.95, "desert.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.95, 0.9, 0.8, "desert.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.9, 0.45, 0.15, "desert.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 1.0, 0.7, 0.35, "desert.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        1.0,
+        0.7,
+        0.35,
+        "desert.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.02, 0.0, 0.12, "desert.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.12, 0.08, 0.18, "desert.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.12,
+        0.08,
+        0.18,
+        "desert.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_desert_water() {
@@ -312,11 +351,29 @@ fn visuals_grassland_ambient() {
 fn visuals_grassland_sky() {
     let v = BiomeVisuals::for_biome(BiomeType::Grassland);
     assert_vec3(v.sky_day_top, 0.3, 0.6, 1.0, "grassland.sky_day_top");
-    assert_vec3(v.sky_day_horizon, 0.8, 0.9, 1.0, "grassland.sky_day_horizon");
+    assert_vec3(
+        v.sky_day_horizon,
+        0.8,
+        0.9,
+        1.0,
+        "grassland.sky_day_horizon",
+    );
     assert_vec3(v.sky_sunset_top, 0.8, 0.4, 0.2, "grassland.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 1.0, 0.6, 0.3, "grassland.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        1.0,
+        0.6,
+        0.3,
+        "grassland.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.0, 0.1, "grassland.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.1, 0.1, 0.2, "grassland.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.1,
+        0.1,
+        0.2,
+        "grassland.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_grassland_water() {
@@ -354,11 +411,29 @@ fn visuals_mountain_ambient() {
 fn visuals_mountain_sky() {
     let v = BiomeVisuals::for_biome(BiomeType::Mountain);
     assert_vec3(v.sky_day_top, 0.2, 0.5, 0.95, "mountain.sky_day_top");
-    assert_vec3(v.sky_day_horizon, 0.7, 0.82, 0.95, "mountain.sky_day_horizon");
+    assert_vec3(
+        v.sky_day_horizon,
+        0.7,
+        0.82,
+        0.95,
+        "mountain.sky_day_horizon",
+    );
     assert_vec3(v.sky_sunset_top, 0.7, 0.35, 0.25, "mountain.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 0.95, 0.6, 0.4, "mountain.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        0.95,
+        0.6,
+        0.4,
+        "mountain.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.0, 0.12, "mountain.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.08, 0.08, 0.2, "mountain.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.08,
+        0.08,
+        0.2,
+        "mountain.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_mountain_water() {
@@ -398,9 +473,21 @@ fn visuals_tundra_sky() {
     assert_vec3(v.sky_day_top, 0.4, 0.65, 0.95, "tundra.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.85, 0.92, 1.0, "tundra.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.75, 0.4, 0.3, "tundra.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 1.0, 0.65, 0.45, "tundra.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        1.0,
+        0.65,
+        0.45,
+        "tundra.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.01, 0.1, "tundra.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.1, 0.12, 0.22, "tundra.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.1,
+        0.12,
+        0.22,
+        "tundra.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_tundra_water() {
@@ -440,9 +527,21 @@ fn visuals_swamp_sky() {
     assert_vec3(v.sky_day_top, 0.25, 0.45, 0.65, "swamp.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.55, 0.6, 0.5, "swamp.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.55, 0.3, 0.2, "swamp.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 0.75, 0.45, 0.25, "swamp.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        0.75,
+        0.45,
+        0.25,
+        "swamp.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.02, 0.05, "swamp.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.05, 0.06, 0.08, "swamp.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.05,
+        0.06,
+        0.08,
+        "swamp.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_swamp_water() {
@@ -482,9 +581,21 @@ fn visuals_beach_sky() {
     assert_vec3(v.sky_day_top, 0.3, 0.65, 1.0, "beach.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.85, 0.93, 1.0, "beach.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.85, 0.45, 0.15, "beach.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 1.0, 0.7, 0.35, "beach.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        1.0,
+        0.7,
+        0.35,
+        "beach.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.01, 0.1, "beach.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.08, 0.1, 0.2, "beach.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.08,
+        0.1,
+        0.2,
+        "beach.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_beach_water() {
@@ -524,9 +635,21 @@ fn visuals_river_sky() {
     assert_vec3(v.sky_day_top, 0.3, 0.6, 0.95, "river.sky_day_top");
     assert_vec3(v.sky_day_horizon, 0.75, 0.85, 0.95, "river.sky_day_horizon");
     assert_vec3(v.sky_sunset_top, 0.75, 0.4, 0.2, "river.sky_sunset_top");
-    assert_vec3(v.sky_sunset_horizon, 0.95, 0.6, 0.3, "river.sky_sunset_horizon");
+    assert_vec3(
+        v.sky_sunset_horizon,
+        0.95,
+        0.6,
+        0.3,
+        "river.sky_sunset_horizon",
+    );
     assert_vec3(v.sky_night_top, 0.0, 0.01, 0.08, "river.sky_night_top");
-    assert_vec3(v.sky_night_horizon, 0.08, 0.1, 0.18, "river.sky_night_horizon");
+    assert_vec3(
+        v.sky_night_horizon,
+        0.08,
+        0.1,
+        0.18,
+        "river.sky_night_horizon",
+    );
 }
 #[test]
 fn visuals_river_water() {

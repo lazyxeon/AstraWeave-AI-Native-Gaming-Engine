@@ -13,13 +13,13 @@ use glam::Vec3;
 fn cube_mesh() -> SimplificationMesh {
     let positions = vec![
         Vec3::new(-1.0, -1.0, -1.0), // 0: left-bottom-back
-        Vec3::new( 1.0, -1.0, -1.0), // 1: right-bottom-back
-        Vec3::new( 1.0,  1.0, -1.0), // 2: right-top-back
-        Vec3::new(-1.0,  1.0, -1.0), // 3: left-top-back
-        Vec3::new(-1.0, -1.0,  1.0), // 4: left-bottom-front
-        Vec3::new( 1.0, -1.0,  1.0), // 5: right-bottom-front
-        Vec3::new( 1.0,  1.0,  1.0), // 6: right-top-front
-        Vec3::new(-1.0,  1.0,  1.0), // 7: left-top-front
+        Vec3::new(1.0, -1.0, -1.0),  // 1: right-bottom-back
+        Vec3::new(1.0, 1.0, -1.0),   // 2: right-top-back
+        Vec3::new(-1.0, 1.0, -1.0),  // 3: left-top-back
+        Vec3::new(-1.0, -1.0, 1.0),  // 4: left-bottom-front
+        Vec3::new(1.0, -1.0, 1.0),   // 5: right-bottom-front
+        Vec3::new(1.0, 1.0, 1.0),    // 6: right-top-front
+        Vec3::new(-1.0, 1.0, 1.0),   // 7: left-top-front
     ];
     let normals = vec![Vec3::Y; 8];
     let uvs = vec![[0.0, 0.0]; 8];
@@ -121,7 +121,10 @@ fn config_default_reduction_targets_count_and_values() {
 #[test]
 fn config_default_max_error_exact() {
     let c = LODConfig::default();
-    assert!((c.max_error - 0.01).abs() < f32::EPSILON, "max_error should be 0.01");
+    assert!(
+        (c.max_error - 0.01).abs() < f32::EPSILON,
+        "max_error should be 0.01"
+    );
 }
 
 #[test]
@@ -193,8 +196,14 @@ fn generate_lods_vertices_monotonically_decrease() {
     let lods = gen.generate_lods(&cube);
     let counts: Vec<usize> = lods.iter().map(|m| m.vertex_count()).collect();
     for (i, w) in counts.windows(2).enumerate() {
-        assert!(w[1] <= w[0], "LOD{} ({}) should have ≤ LOD{} ({}) vertices",
-            i+1, w[0], i+2, w[1]);
+        assert!(
+            w[1] <= w[0],
+            "LOD{} ({}) should have ≤ LOD{} ({}) vertices",
+            i + 1,
+            w[0],
+            i + 2,
+            w[1]
+        );
     }
 }
 
@@ -204,11 +213,20 @@ fn generate_lods_all_have_valid_indices() {
     for mesh in [cube_mesh(), grid_3x3_flat(), l_shape_mesh()] {
         let lods = gen.generate_lods(&mesh);
         for (i, lod) in lods.iter().enumerate() {
-            assert_eq!(lod.indices.len() % 3, 0,
-                "LOD{} indices must be divisible by 3", i);
+            assert_eq!(
+                lod.indices.len() % 3,
+                0,
+                "LOD{} indices must be divisible by 3",
+                i
+            );
             for &idx in &lod.indices {
-                assert!((idx as usize) < lod.vertex_count(),
-                    "LOD{} index {} ≥ vertex_count {}", i, idx, lod.vertex_count());
+                assert!(
+                    (idx as usize) < lod.vertex_count(),
+                    "LOD{} index {} ≥ vertex_count {}",
+                    i,
+                    idx,
+                    lod.vertex_count()
+                );
             }
         }
     }
@@ -223,8 +241,14 @@ fn generate_lods_no_degenerate_triangles() {
             let i0 = lod.indices[tri * 3];
             let i1 = lod.indices[tri * 3 + 1];
             let i2 = lod.indices[tri * 3 + 2];
-            assert!(i0 != i1 && i1 != i2 && i2 != i0,
-                "LOD{} has degenerate triangle ({}, {}, {})", level, i0, i1, i2);
+            assert!(
+                i0 != i1 && i1 != i2 && i2 != i0,
+                "LOD{} has degenerate triangle ({}, {}, {})",
+                level,
+                i0,
+                i1,
+                i2
+            );
         }
     }
 }
@@ -272,9 +296,11 @@ fn generate_lods_ceiling_not_floor() {
     let lods = gen.generate_lods(&grid);
     // target = ceil(9 * 0.75) = ceil(6.75) = 7
     // So LOD should have ≤ 7 vertices (simplifier removes at least 2)
-    assert!(lods[0].vertex_count() <= 7,
+    assert!(
+        lods[0].vertex_count() <= 7,
         "With 9 verts and 0.75 target, should aim for ≤7 verts, got {}",
-        lods[0].vertex_count());
+        lods[0].vertex_count()
+    );
 }
 
 // ─── simplify ───────────────────────────────────────────────────────────────
@@ -306,10 +332,16 @@ fn simplify_reduces_vertices() {
     let result = gen.simplify(&grid, 5);
     // The simplifier tries to reach target but stale heap entries may cause
     // fewer actual collapses. Verify SOME reduction happened.
-    assert!(result.vertex_count() < 9,
-        "Should have fewer than 9 vertices, got {}", result.vertex_count());
-    assert!(result.vertex_count() <= 8,
-        "Should have attempted at least 1 collapse, got {}", result.vertex_count());
+    assert!(
+        result.vertex_count() < 9,
+        "Should have fewer than 9 vertices, got {}",
+        result.vertex_count()
+    );
+    assert!(
+        result.vertex_count() <= 8,
+        "Should have attempted at least 1 collapse, got {}",
+        result.vertex_count()
+    );
 }
 
 #[test]
@@ -320,10 +352,16 @@ fn simplify_preserves_normal_uv_counts() {
     });
     let grid = grid_3x3_flat();
     let result = gen.simplify(&grid, 5);
-    assert_eq!(result.normals.len(), result.vertex_count(),
-        "Normals count should match vertex count");
-    assert_eq!(result.uvs.len(), result.vertex_count(),
-        "UVs count should match vertex count");
+    assert_eq!(
+        result.normals.len(),
+        result.vertex_count(),
+        "Normals count should match vertex count"
+    );
+    assert_eq!(
+        result.uvs.len(),
+        result.vertex_count(),
+        "UVs count should match vertex count"
+    );
 }
 
 #[test]
@@ -335,8 +373,12 @@ fn simplify_indices_always_divisible_by_3() {
     for target in [7, 5, 4, 3] {
         let grid = grid_3x3_flat();
         let result = gen.simplify(&grid, target);
-        assert_eq!(result.indices.len() % 3, 0,
-            "Indices must be divisible by 3 at target={}", target);
+        assert_eq!(
+            result.indices.len() % 3,
+            0,
+            "Indices must be divisible by 3 at target={}",
+            target
+        );
     }
 }
 
@@ -351,10 +393,13 @@ fn simplify_max_error_stops_early() {
     let cube = cube_mesh();
     // With max_error=0, all collapses should exceed threshold (none are free)
     let result = gen.simplify(&cube, 3); // Aggressive target
-    // Should NOT reduce much because max_error blocks collapses
-    // (Exact behavior depends on Quadric errors — non-coplanar cube has non-zero errors)
-    assert!(result.vertex_count() > 3,
-        "max_error=0 should prevent most collapses, got {} vertices", result.vertex_count());
+                                         // Should NOT reduce much because max_error blocks collapses
+                                         // (Exact behavior depends on Quadric errors — non-coplanar cube has non-zero errors)
+    assert!(
+        result.vertex_count() > 3,
+        "max_error=0 should prevent most collapses, got {} vertices",
+        result.vertex_count()
+    );
 }
 
 /// simplify on a coplanar mesh — all collapses have ~zero error
@@ -365,13 +410,15 @@ fn simplify_coplanar_mesh_allows_full_reduction() {
         ..LODConfig::default()
     });
     let grid = grid_3x3_flat(); // All vertices on y=0 plane
-    // For coplanar mesh, quadric errors should be ~0, allowing reduction.
-    // Stale heap entries may prevent reaching exact target, but SOME
-    // reduction must occur (even with tight max_error).
+                                // For coplanar mesh, quadric errors should be ~0, allowing reduction.
+                                // Stale heap entries may prevent reaching exact target, but SOME
+                                // reduction must occur (even with tight max_error).
     let result = gen.simplify(&grid, 3);
-    assert!(result.vertex_count() < 9,
+    assert!(
+        result.vertex_count() < 9,
         "Coplanar mesh should allow some reduction, got {} vertices",
-        result.vertex_count());
+        result.vertex_count()
+    );
 }
 
 /// Verify edges are collapsed in order of increasing error (lowest first).
@@ -384,13 +431,16 @@ fn simplify_prefers_low_error_collapses() {
         ..LODConfig::default()
     });
     let grid = grid_3x3_flat(); // 9 vertices, center (4) is most collapsible
-    
+
     // Remove just 1 vertex
     let result = gen.simplify(&grid, 8);
     // The result should have valid mesh — the removed vertex should have been
     // the one with lowest quadric error (likely an interior or edge vertex)
     assert!(result.vertex_count() <= 8);
-    assert!(result.triangle_count() > 0, "Should still have triangles after 1 collapse");
+    assert!(
+        result.triangle_count() > 0,
+        "Should still have triangles after 1 collapse"
+    );
 }
 
 // ─── calculate_reduction ────────────────────────────────────────────────────
@@ -400,8 +450,11 @@ fn calculate_reduction_identity() {
     let gen = LODGenerator::new(LODConfig::default());
     let mesh = cube_mesh();
     let reduction = gen.calculate_reduction(&mesh, &mesh);
-    assert!((reduction - 0.0).abs() < f32::EPSILON,
-        "Same mesh should have 0% reduction, got {}", reduction);
+    assert!(
+        (reduction - 0.0).abs() < f32::EPSILON,
+        "Same mesh should have 0% reduction, got {}",
+        reduction
+    );
 }
 
 #[test]
@@ -417,8 +470,10 @@ fn calculate_reduction_half() {
     let r = gen.calculate_reduction(&original, &half_mesh);
     // 1.0 - (4/9) = 0.5556
     let expected = 1.0 - 4.0 / 9.0;
-    assert!((r - expected).abs() < 0.01,
-        "Expected reduction ≈ {expected}, got {r}");
+    assert!(
+        (r - expected).abs() < 0.01,
+        "Expected reduction ≈ {expected}, got {r}"
+    );
 }
 
 #[test]
@@ -427,7 +482,11 @@ fn calculate_reduction_full() {
     let original = cube_mesh();
     let empty = SimplificationMesh::new(vec![], vec![], vec![], vec![]);
     let r = gen.calculate_reduction(&original, &empty);
-    assert!((r - 1.0).abs() < f32::EPSILON, "Empty LOD = 100% reduction, got {}", r);
+    assert!(
+        (r - 1.0).abs() < f32::EPSILON,
+        "Empty LOD = 100% reduction, got {}",
+        r
+    );
 }
 
 #[test]
@@ -440,8 +499,12 @@ fn calculate_reduction_values_in_0_1() {
     let lods = gen.generate_lods(&original);
     for (i, lod) in lods.iter().enumerate() {
         let r = gen.calculate_reduction(&original, lod);
-        assert!(r >= 0.0 && r <= 1.0,
-            "Reduction should be in [0,1], LOD{} got {}", i, r);
+        assert!(
+            r >= 0.0 && r <= 1.0,
+            "Reduction should be in [0,1], LOD{} got {}",
+            i,
+            r
+        );
     }
 }
 
@@ -450,7 +513,7 @@ fn calculate_reduction_operator_sensitivity() {
     // Verify that the formula is 1.0 - (lod/original), not other combinations
     let gen = LODGenerator::new(LODConfig::default());
     let original = grid_3x3_flat(); // 9 vertices
-    // Create a mesh with exactly 3 vertices
+                                    // Create a mesh with exactly 3 vertices
     let small_mesh = SimplificationMesh::new(
         vec![Vec3::ZERO, Vec3::X, Vec3::Z],
         vec![Vec3::Y; 3],
@@ -459,8 +522,11 @@ fn calculate_reduction_operator_sensitivity() {
     );
     let r = gen.calculate_reduction(&original, &small_mesh);
     // 1.0 - (3/9) = 1.0 - 0.333 = 0.667
-    assert!(r > 0.6 && r < 0.7,
-        "Expected reduction ≈ 0.667 (3/9), got {}", r);
+    assert!(
+        r > 0.6 && r < 0.7,
+        "Expected reduction ≈ 0.667 (3/9), got {}",
+        r
+    );
     // If formula were (lod/original) without subtraction: 0.333
     assert!(r > 0.5, "Must be > 0.5 (catches missing 1.0- subtraction)");
 }
@@ -477,15 +543,37 @@ fn simplify_cube_preserves_approximate_bounds() {
     let cube = cube_mesh();
     let result = gen.simplify(&cube, 5); // Aggressive reduction
 
-    let min_x = result.positions.iter().map(|p| p.x).fold(f32::INFINITY, f32::min);
-    let max_x = result.positions.iter().map(|p| p.x).fold(f32::NEG_INFINITY, f32::max);
-    let min_y = result.positions.iter().map(|p| p.y).fold(f32::INFINITY, f32::min);
-    let max_y = result.positions.iter().map(|p| p.y).fold(f32::NEG_INFINITY, f32::max);
+    let min_x = result
+        .positions
+        .iter()
+        .map(|p| p.x)
+        .fold(f32::INFINITY, f32::min);
+    let max_x = result
+        .positions
+        .iter()
+        .map(|p| p.x)
+        .fold(f32::NEG_INFINITY, f32::max);
+    let min_y = result
+        .positions
+        .iter()
+        .map(|p| p.y)
+        .fold(f32::INFINITY, f32::min);
+    let max_y = result
+        .positions
+        .iter()
+        .map(|p| p.y)
+        .fold(f32::NEG_INFINITY, f32::max);
 
     // The bounding box should still roughly span the cube
     // (midpoint positions from quadric collapses may not reach extremes)
-    assert!(min_x < 0.0 && max_x > 0.0, "X range should span 0: [{min_x}, {max_x}]");
-    assert!(min_y < 0.0 && max_y > 0.0, "Y range should span 0: [{min_y}, {max_y}]");
+    assert!(
+        min_x < 0.0 && max_x > 0.0,
+        "X range should span 0: [{min_x}, {max_x}]"
+    );
+    assert!(
+        min_y < 0.0 && max_y > 0.0,
+        "Y range should span 0: [{min_y}, {max_y}]"
+    );
 }
 
 /// Quadric errors for coplanar vertices should be very small (near zero).
@@ -500,9 +588,11 @@ fn quadric_error_coplanar_allows_easy_simplification() {
     let result = gen.simplify(&grid, 3);
     // Coplanar mesh should allow reduction even with tight max_error
     // because midpoint of coplanar edge still lies on the plane → error ≈ 0
-    assert!(result.vertex_count() < 9,
+    assert!(
+        result.vertex_count() < 9,
         "Coplanar mesh should reduce even with tight error, got {} vertices",
-        result.vertex_count());
+        result.vertex_count()
+    );
 }
 
 /// Non-coplanar mesh (cube) should have higher quadric errors.
@@ -523,9 +613,12 @@ fn quadric_error_noncoplanar_restricts_simplification() {
     let loose_result = loose_gen.simplify(&cube, 3);
 
     // Tight error threshold should preserve more vertices
-    assert!(tight_result.vertex_count() >= loose_result.vertex_count(),
+    assert!(
+        tight_result.vertex_count() >= loose_result.vertex_count(),
         "Tight max_error ({}) should preserve ≥ loose vertices ({})",
-        tight_result.vertex_count(), loose_result.vertex_count());
+        tight_result.vertex_count(),
+        loose_result.vertex_count()
+    );
 }
 
 // ─── Edge cases ─────────────────────────────────────────────────────────────
@@ -543,9 +636,9 @@ fn simplify_single_triangle_cannot_reduce_below_3() {
         vec![0, 1, 2],
     );
     let result = gen.simplify(&tri, 1); // Try to go below minimum
-    // Should have at least 3 vertices (can't simplify below a triangle)
-    // or could be 2 if a collapse happened and the triangle became degenerate
-    // The implementation should handle this gracefully
+                                        // Should have at least 3 vertices (can't simplify below a triangle)
+                                        // or could be 2 if a collapse happened and the triangle became degenerate
+                                        // The implementation should handle this gracefully
     assert!(result.indices.len() % 3 == 0);
 }
 
@@ -598,14 +691,18 @@ fn simplify_at_multiple_targets_caps_correctly() {
         ..LODConfig::default()
     });
     let grid = grid_3x3_flat(); // 9 vertices
-    // Simplify attempts to reach target but stale heap entries may leave
-    // more vertices than requested.  Verify monotonic decrease.
+                                // Simplify attempts to reach target but stale heap entries may leave
+                                // more vertices than requested.  Verify monotonic decrease.
     let mut prev_count = grid.vertex_count();
     for target in [8, 6, 4, 3] {
         let result = gen.simplify(&grid, target);
-        assert!(result.vertex_count() <= prev_count,
+        assert!(
+            result.vertex_count() <= prev_count,
             "simplify(target={}) should have ≤ {} vertices, got {}",
-            target, prev_count, result.vertex_count());
+            target,
+            prev_count,
+            result.vertex_count()
+        );
         prev_count = result.vertex_count();
     }
     // Final result should be strictly reduced from original 9

@@ -8,9 +8,9 @@
 //! Pin to_gpu's flag computation boundaries (>0.0, abs()>0.001, fold/max).
 
 use astraweave_render::material_extended::{
-    MaterialDefinitionExtended, MaterialGpuExtended,
-    MATERIAL_FLAG_ANISOTROPY, MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN,
-    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_TRANSMISSION,
+    MaterialDefinitionExtended, MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY,
+    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
+    MATERIAL_FLAG_TRANSMISSION,
 };
 use glam::Vec3;
 
@@ -82,12 +82,7 @@ fn skin_field_values_golden() {
 
 #[test]
 fn skin_subsurface_color_xyz_order() {
-    let m = MaterialGpuExtended::skin(
-        Vec3::ONE,
-        Vec3::new(0.1, 0.2, 0.3),
-        1.0,
-        1.0,
-    );
+    let m = MaterialGpuExtended::skin(Vec3::ONE, Vec3::new(0.1, 0.2, 0.3), 1.0, 1.0);
     assert_eq!(m.subsurface_color[0], 0.1, "x → [0]");
     assert_eq!(m.subsurface_color[1], 0.2, "y → [1]");
     assert_eq!(m.subsurface_color[2], 0.3, "z → [2]");
@@ -102,11 +97,7 @@ fn skin_radius_vs_scale_not_swapped() {
 
 #[test]
 fn velvet_field_values_golden() {
-    let m = MaterialGpuExtended::velvet(
-        Vec3::new(0.5, 0.0, 0.1),
-        Vec3::new(1.0, 0.8, 0.9),
-        0.3,
-    );
+    let m = MaterialGpuExtended::velvet(Vec3::new(0.5, 0.0, 0.1), Vec3::new(1.0, 0.8, 0.9), 0.3);
     assert_eq!(m.base_color_factor, [0.5, 0.0, 0.1, 1.0]);
     assert_eq!(m.metallic_factor, 0.0);
     assert_eq!(m.roughness_factor, 0.8); // Velvet is rough
@@ -127,11 +118,11 @@ fn velvet_sheen_color_xyz_order() {
 fn glass_field_values_golden() {
     let m = MaterialGpuExtended::glass(
         Vec3::new(0.9, 0.95, 1.0), // tint
-        0.05,                        // roughness
-        0.95,                        // transmission
-        1.5,                         // ior
+        0.05,                      // roughness
+        0.95,                      // transmission
+        1.5,                       // ior
         Vec3::new(0.9, 1.0, 0.9),  // attenuation_color
-        10.0,                        // attenuation_distance
+        10.0,                      // attenuation_distance
     );
     assert_eq!(m.base_color_factor, [0.9, 0.95, 1.0, 1.0]);
     assert_eq!(m.metallic_factor, 0.0);
@@ -150,7 +141,10 @@ fn glass_param_order_not_swapped() {
     assert_eq!(m.roughness_factor, 0.1, "2nd param = roughness");
     assert_eq!(m.transmission_factor, 0.2, "3rd param = transmission");
     assert_eq!(m.ior, 0.3, "4th param = ior");
-    assert_eq!(m.attenuation_distance, 0.4, "6th param = attenuation_distance");
+    assert_eq!(
+        m.attenuation_distance, 0.4,
+        "6th param = attenuation_distance"
+    );
 }
 
 // ============================================================================
@@ -303,14 +297,20 @@ fn to_gpu_anisotropy_flag_also_for_negative() {
     // abs() allows negative anisotropy to set the flag
     let d = make_def(|d| d.anisotropy_strength = -0.5);
     let g = d.to_gpu(0, 0, 0, 0, 0);
-    assert!(g.has_feature(MATERIAL_FLAG_ANISOTROPY), "Negative anisotropy should set flag via abs()");
+    assert!(
+        g.has_feature(MATERIAL_FLAG_ANISOTROPY),
+        "Negative anisotropy should set flag via abs()"
+    );
 }
 
 #[test]
 fn to_gpu_anisotropy_flag_off_when_near_zero() {
     let d = make_def(|d| d.anisotropy_strength = 0.0005); // Below 0.001 threshold
     let g = d.to_gpu(0, 0, 0, 0, 0);
-    assert!(!g.has_feature(MATERIAL_FLAG_ANISOTROPY), "Below threshold → no flag");
+    assert!(
+        !g.has_feature(MATERIAL_FLAG_ANISOTROPY),
+        "Below threshold → no flag"
+    );
 }
 
 #[test]
@@ -346,14 +346,20 @@ fn to_gpu_sheen_flag_off_when_all_channels_zero() {
 fn to_gpu_sheen_flag_first_channel_only() {
     let d = make_def(|d| d.sheen_color = [0.5, 0.0, 0.0]);
     let g = d.to_gpu(0, 0, 0, 0, 0);
-    assert!(g.has_feature(MATERIAL_FLAG_SHEEN), "First channel alone should set flag");
+    assert!(
+        g.has_feature(MATERIAL_FLAG_SHEEN),
+        "First channel alone should set flag"
+    );
 }
 
 #[test]
 fn to_gpu_sheen_flag_second_channel_only() {
     let d = make_def(|d| d.sheen_color = [0.0, 0.5, 0.0]);
     let g = d.to_gpu(0, 0, 0, 0, 0);
-    assert!(g.has_feature(MATERIAL_FLAG_SHEEN), "Second channel alone should set flag");
+    assert!(
+        g.has_feature(MATERIAL_FLAG_SHEEN),
+        "Second channel alone should set flag"
+    );
 }
 
 #[test]
@@ -385,7 +391,11 @@ fn to_gpu_all_features_combined() {
         | MATERIAL_FLAG_SUBSURFACE
         | MATERIAL_FLAG_SHEEN
         | MATERIAL_FLAG_TRANSMISSION;
-    assert_eq!(g.flags, all_flags, "All features enabled → 0x{:02X}", all_flags);
+    assert_eq!(
+        g.flags, all_flags,
+        "All features enabled → 0x{:02X}",
+        all_flags
+    );
 }
 
 // ============================================================================

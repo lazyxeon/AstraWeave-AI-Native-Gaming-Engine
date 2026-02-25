@@ -160,7 +160,11 @@ fn update_speed_multiplies_dt() {
         ..Default::default()
     };
     s.update(0.5, 10.0);
-    assert!((s.time - 1.0).abs() < 1e-6, "speed=2 × dt=0.5 → time=1.0, got {}", s.time);
+    assert!(
+        (s.time - 1.0).abs() < 1e-6,
+        "speed=2 × dt=0.5 → time=1.0, got {}",
+        s.time
+    );
 }
 
 #[test]
@@ -173,7 +177,10 @@ fn update_negative_speed_goes_backward() {
         ..Default::default()
     };
     s.update(1.0, 10.0);
-    assert!((s.time - 4.0).abs() < 1e-6, "time should decrease with negative speed");
+    assert!(
+        (s.time - 4.0).abs() < 1e-6,
+        "time should decrease with negative speed"
+    );
 }
 
 #[test]
@@ -186,7 +193,11 @@ fn update_looping_wraps_around() {
         ..Default::default()
     };
     s.update(1.0, 10.0); // 9.5 + 1.0 = 10.5 → wraps to 0.5
-    assert!((s.time - 0.5).abs() < 1e-3, "looping wrap: expected ~0.5, got {}", s.time);
+    assert!(
+        (s.time - 0.5).abs() < 1e-3,
+        "looping wrap: expected ~0.5, got {}",
+        s.time
+    );
     assert!(s.playing, "looping should stay playing");
 }
 
@@ -214,7 +225,11 @@ fn update_looping_negative_wraps() {
         ..Default::default()
     };
     s.update(1.0, 10.0); // 0.5 - 1.0 = -0.5 → wraps to 9.5
-    assert!((s.time - 9.5).abs() < 0.1, "negative wrap: expected ~9.5, got {}", s.time);
+    assert!(
+        (s.time - 9.5).abs() < 0.1,
+        "negative wrap: expected ~9.5, got {}",
+        s.time
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -231,21 +246,32 @@ fn play_sets_playing_true() {
 
 #[test]
 fn pause_sets_playing_false() {
-    let mut s = AnimationState { playing: true, ..Default::default() };
+    let mut s = AnimationState {
+        playing: true,
+        ..Default::default()
+    };
     s.pause();
     assert!(!s.playing);
 }
 
 #[test]
 fn pause_preserves_time() {
-    let mut s = AnimationState { playing: true, time: 3.5, ..Default::default() };
+    let mut s = AnimationState {
+        playing: true,
+        time: 3.5,
+        ..Default::default()
+    };
     s.pause();
     assert_eq!(s.time, 3.5, "pause should keep current time");
 }
 
 #[test]
 fn stop_resets_time_and_stops() {
-    let mut s = AnimationState { playing: true, time: 5.0, ..Default::default() };
+    let mut s = AnimationState {
+        playing: true,
+        time: 5.0,
+        ..Default::default()
+    };
     s.stop();
     assert!(!s.playing);
     assert_eq!(s.time, 0.0);
@@ -253,7 +279,11 @@ fn stop_resets_time_and_stops() {
 
 #[test]
 fn restart_resets_time_and_plays() {
-    let mut s = AnimationState { playing: false, time: 5.0, ..Default::default() };
+    let mut s = AnimationState {
+        playing: false,
+        time: 5.0,
+        ..Default::default()
+    };
     s.restart();
     assert!(s.playing);
     assert_eq!(s.time, 0.0);
@@ -309,7 +339,10 @@ fn sample_translation_linear_midpoint() {
         }],
     };
     let t = clip.sample(1.0, &skel);
-    assert!((t[0].translation.x - 5.0).abs() < 1e-5, "midpoint should be 5.0");
+    assert!(
+        (t[0].translation.x - 5.0).abs() < 1e-5,
+        "midpoint should be 5.0"
+    );
 }
 
 #[test]
@@ -331,9 +364,17 @@ fn sample_translation_step_no_interpolation() {
     };
     let t = clip.sample(0.5, &skel);
     // Step: should return value at idx0 (0.0)
-    assert_eq!(t[0].translation, Vec3::ZERO, "step interp should use keyframe[0]");
+    assert_eq!(
+        t[0].translation,
+        Vec3::ZERO,
+        "step interp should use keyframe[0]"
+    );
     let t2 = clip.sample(1.5, &skel);
-    assert_eq!(t2[0].translation, Vec3::new(10.0, 0.0, 0.0), "step should jump to keyframe[1]");
+    assert_eq!(
+        t2[0].translation,
+        Vec3::new(10.0, 0.0, 0.0),
+        "step should jump to keyframe[1]"
+    );
 }
 
 #[test]
@@ -390,7 +431,11 @@ fn sample_out_of_range_joint_index_ignored() {
     // Should not panic
     let t = clip.sample(0.5, &skel);
     assert_eq!(t.len(), 1);
-    assert_eq!(t[0].translation, Vec3::ZERO, "invalid joint → fallback to bind pose");
+    assert_eq!(
+        t[0].translation,
+        Vec3::ZERO,
+        "invalid joint → fallback to bind pose"
+    );
 }
 
 #[test]
@@ -415,7 +460,10 @@ fn sample_multiple_channels_compose() {
         ],
     };
     let t = clip.sample(0.5, &skel);
-    assert!((t[0].translation.x - 2.5).abs() < 1e-5, "translation channel at 0.5");
+    assert!(
+        (t[0].translation.x - 2.5).abs() < 1e-5,
+        "translation channel at 0.5"
+    );
     assert!((t[0].scale.x - 1.5).abs() < 1e-5, "scale channel at 0.5");
 }
 
@@ -511,7 +559,10 @@ fn joint_palette_default_joints_are_identity() {
     let p = JointPalette::default();
     let id = Mat4::IDENTITY.to_cols_array_2d();
     for i in 0..MAX_JOINTS {
-        assert_eq!(p.joints[i].matrix, id, "default joint {i} should be identity");
+        assert_eq!(
+            p.joints[i].matrix, id,
+            "default joint {i} should be identity"
+        );
     }
 }
 
@@ -675,7 +726,10 @@ fn sample_at_time_zero() {
         channels: vec![AnimationChannel {
             target_joint_index: 0,
             times: vec![0.0, 1.0],
-            data: ChannelData::Translation(vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(2.0, 0.0, 0.0)]),
+            data: ChannelData::Translation(vec![
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 0.0),
+            ]),
             interpolation: Interpolation::Linear,
         }],
     };
@@ -692,7 +746,10 @@ fn sample_at_duration() {
         channels: vec![AnimationChannel {
             target_joint_index: 0,
             times: vec![0.0, 1.0],
-            data: ChannelData::Translation(vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(2.0, 0.0, 0.0)]),
+            data: ChannelData::Translation(vec![
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 0.0),
+            ]),
             interpolation: Interpolation::Linear,
         }],
     };
@@ -709,7 +766,10 @@ fn sample_before_first_keyframe() {
         channels: vec![AnimationChannel {
             target_joint_index: 0,
             times: vec![0.5, 1.5],
-            data: ChannelData::Translation(vec![Vec3::new(3.0, 0.0, 0.0), Vec3::new(7.0, 0.0, 0.0)]),
+            data: ChannelData::Translation(vec![
+                Vec3::new(3.0, 0.0, 0.0),
+                Vec3::new(7.0, 0.0, 0.0),
+            ]),
             interpolation: Interpolation::Linear,
         }],
     };
@@ -727,7 +787,10 @@ fn sample_after_last_keyframe() {
         channels: vec![AnimationChannel {
             target_joint_index: 0,
             times: vec![0.0, 1.0],
-            data: ChannelData::Translation(vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(9.0, 0.0, 0.0)]),
+            data: ChannelData::Translation(vec![
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(9.0, 0.0, 0.0),
+            ]),
             interpolation: Interpolation::Linear,
         }],
     };

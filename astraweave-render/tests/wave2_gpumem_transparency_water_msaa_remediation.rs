@@ -15,14 +15,10 @@ use std::sync::Arc;
 
 use glam::Vec3;
 
-use astraweave_render::gpu_memory::{
-    BudgetEvent, CategoryBudget, GpuMemoryBudget, MemoryCategory,
-};
-use astraweave_render::transparency::{
-    create_blend_state, BlendMode, TransparencyManager,
-};
-use astraweave_render::water::{WaterUniforms, WaterVertex};
+use astraweave_render::gpu_memory::{BudgetEvent, CategoryBudget, GpuMemoryBudget, MemoryCategory};
 use astraweave_render::msaa::MsaaMode;
+use astraweave_render::transparency::{create_blend_state, BlendMode, TransparencyManager};
+use astraweave_render::water::{WaterUniforms, WaterVertex};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MemoryCategory
@@ -129,7 +125,10 @@ fn budget_with_total_1gb_textures_get_30pct_soft_40pct_hard() {
         .unwrap();
     // Texture soft = total * 0.3, hard = total * 0.4
     let expected_hard = (total as f64 * 0.4) as u64;
-    assert_eq!(tex.2, expected_hard, "textures hard limit should be 40% of total");
+    assert_eq!(
+        tex.2, expected_hard,
+        "textures hard limit should be 40% of total"
+    );
 }
 
 #[test]
@@ -311,7 +310,10 @@ fn budget_multiple_callbacks_all_fire() {
     // Trigger soft limit
     b.try_allocate(MemoryCategory::Textures, 100);
     // Both callbacks should have fired (at least soft limit event)
-    assert!(count.load(Ordering::SeqCst) >= 2, "both callbacks should fire");
+    assert!(
+        count.load(Ordering::SeqCst) >= 2,
+        "both callbacks should fire"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -324,8 +326,14 @@ fn budget_snapshot_reflects_allocations() {
     b.try_allocate(MemoryCategory::Textures, 999);
     b.try_allocate(MemoryCategory::Geometry, 333);
     let snap = b.snapshot();
-    let tex = snap.iter().find(|(c, _, _)| *c == MemoryCategory::Textures).unwrap();
-    let geo = snap.iter().find(|(c, _, _)| *c == MemoryCategory::Geometry).unwrap();
+    let tex = snap
+        .iter()
+        .find(|(c, _, _)| *c == MemoryCategory::Textures)
+        .unwrap();
+    let geo = snap
+        .iter()
+        .find(|(c, _, _)| *c == MemoryCategory::Geometry)
+        .unwrap();
     assert_eq!(tex.1, 999);
     assert_eq!(geo.1, 333);
 }
@@ -335,7 +343,10 @@ fn budget_snapshot_includes_hard_limits() {
     let b = GpuMemoryBudget::new();
     b.set_category_budget(MemoryCategory::Shadows, 100, 500);
     let snap = b.snapshot();
-    let shad = snap.iter().find(|(c, _, _)| *c == MemoryCategory::Shadows).unwrap();
+    let shad = snap
+        .iter()
+        .find(|(c, _, _)| *c == MemoryCategory::Shadows)
+        .unwrap();
     assert_eq!(shad.2, 500, "hard limit should be 500");
 }
 
@@ -386,7 +397,11 @@ fn transparency_sort_back_to_front() {
     mgr.add_instance(2, Vec3::new(0.0, 0.0, -5.0), BlendMode::Alpha); // 5 units
     mgr.update(Vec3::ZERO);
     let sorted: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
-    assert_eq!(sorted, vec![1, 2, 0], "back-to-front: furthest (10) first, closest (2) last");
+    assert_eq!(
+        sorted,
+        vec![1, 2, 0],
+        "back-to-front: furthest (10) first, closest (2) last"
+    );
 }
 
 #[test]
@@ -395,10 +410,14 @@ fn transparency_sort_updates_with_camera_move() {
     // Place instances along X axis
     mgr.add_instance(0, Vec3::new(0.0, 0.0, 0.0), BlendMode::Alpha); // at origin
     mgr.add_instance(1, Vec3::new(10.0, 0.0, 0.0), BlendMode::Alpha); // at x=10
-    // Camera at x=-5 → instance 1 is further
+                                                                      // Camera at x=-5 → instance 1 is further
     mgr.update(Vec3::new(-5.0, 0.0, 0.0));
     let sorted1: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
-    assert_eq!(sorted1, vec![1, 0], "instance 1 further from camera at x=-5");
+    assert_eq!(
+        sorted1,
+        vec![1, 0],
+        "instance 1 further from camera at x=-5"
+    );
     // Move camera to x=20 → instance 0 is now further
     mgr.update(Vec3::new(20.0, 0.0, 0.0));
     let sorted2: Vec<u32> = mgr.sorted_instances().map(|i| i.instance_index).collect();
@@ -429,7 +448,10 @@ fn transparency_add_instance_calculates_distance() {
     mgr.add_instance(0, Vec3::new(3.0, 4.0, 0.0), BlendMode::Alpha);
     mgr.update(Vec3::ZERO);
     let inst = mgr.sorted_instances().next().unwrap();
-    assert!((inst.camera_distance - 5.0).abs() < 0.01, "distance from (0,0,0) to (3,4,0) = 5");
+    assert!(
+        (inst.camera_distance - 5.0).abs() < 0.01,
+        "distance from (0,0,0) to (3,4,0) = 5"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

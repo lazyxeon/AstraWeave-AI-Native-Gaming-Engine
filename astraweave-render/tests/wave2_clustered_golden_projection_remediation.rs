@@ -113,14 +113,34 @@ fn golden_x_not_in_mutation_columns() {
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
     // *fx→/fx shifts projection left to columns 10-11
-    assert!(!cols.contains(&10), "*fx→/fx mutation shifts to col 10; got {:?}", cols);
-    assert!(!cols.contains(&11), "*fx→/fx mutation adds col 11; got {:?}", cols);
+    assert!(
+        !cols.contains(&10),
+        "*fx→/fx mutation shifts to col 10; got {:?}",
+        cols
+    );
+    assert!(
+        !cols.contains(&11),
+        "*fx→/fx mutation adds col 11; got {:?}",
+        cols
+    );
     // *width→+width shifts projection far-right to col 15
-    assert!(!cols.contains(&15), "*width→+width mutation shifts to 15; got {:?}", cols);
+    assert!(
+        !cols.contains(&15),
+        "*width→+width mutation shifts to 15; got {:?}",
+        cols
+    );
     // *0.5→+0.5 doubles rpx_x, expanding to col 14
-    assert!(!cols.contains(&14), "*0.5→+0.5 mutation expands to 14; got {:?}", cols);
+    assert!(
+        !cols.contains(&14),
+        "*0.5→+0.5 mutation expands to 14; got {:?}",
+        cols
+    );
     // Column 0 is far from the projection
-    assert!(!cols.contains(&0), "Should not hit column 0; got {:?}", cols);
+    assert!(
+        !cols.contains(&0),
+        "Should not hit column 0; got {:?}",
+        cols
+    );
 }
 
 #[test]
@@ -133,7 +153,11 @@ fn golden_x_small_radius_tight_span() {
     }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
-    assert!(cols.len() <= 2, "r=0.5 at z=10 should span ≤2 columns, got {:?}", cols);
+    assert!(
+        cols.len() <= 2,
+        "r=0.5 at z=10 should span ≤2 columns, got {:?}",
+        cols
+    );
 }
 
 // ================================================================
@@ -195,7 +219,11 @@ fn golden_y_row_span_bounded() {
     }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let rows = hit_y_rows(&counts, &dims);
-    assert!(rows.len() <= 4, "r=0.5 at z=10 should span ≤4 rows, got {:?}", rows);
+    assert!(
+        rows.len() <= 4,
+        "r=0.5 at z=10 should span ≤4 rows, got {:?}",
+        rows
+    );
 }
 
 // ================================================================
@@ -223,8 +251,16 @@ fn golden_negative_x_column_2_3() {
         cols,
     );
     // Should not appear in the right half
-    assert!(!cols.contains(&6), "Should not hit column 6; got {:?}", cols);
-    assert!(!cols.contains(&12), "Should not hit column 12; got {:?}", cols);
+    assert!(
+        !cols.contains(&6),
+        "Should not hit column 6; got {:?}",
+        cols
+    );
+    assert!(
+        !cols.contains(&12),
+        "Should not hit column 12; got {:?}",
+        cols
+    );
 }
 
 #[test]
@@ -237,7 +273,11 @@ fn golden_negative_x_not_in_mutation_shifted() {
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
     // *fx→/fx : shifts right to columns 4-5
-    assert!(!cols.contains(&5), "Mutation /fx would shift to col 5; got {:?}", cols);
+    assert!(
+        !cols.contains(&5),
+        "Mutation /fx would shift to col 5; got {:?}",
+        cols
+    );
 }
 
 // ================================================================
@@ -251,8 +291,14 @@ fn golden_two_lights_separate_indices() {
     // Z-slices: L0 in iz=0, L1 in iz=1 — no overlap anywhere.
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(5.0, 0.0, 10.0), radius: 0.5 },
-        CpuLight { pos: Vec3::new(-5.0, 0.0, 30.0), radius: 0.5 },
+        CpuLight {
+            pos: Vec3::new(5.0, 0.0, 10.0),
+            radius: 0.5,
+        },
+        CpuLight {
+            pos: Vec3::new(-5.0, 0.0, 30.0),
+            radius: 0.5,
+        },
     ];
     let (counts, indices, offsets) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
 
@@ -289,9 +335,18 @@ fn golden_two_lights_separate_indices() {
 fn golden_index_validity_all_clusters() {
     let dims = ClusterDims { x: 16, y: 16, z: 4 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(3.0, 2.0, 10.0), radius: 1.0 },
-        CpuLight { pos: Vec3::new(-4.0, -3.0, 20.0), radius: 2.0 },
-        CpuLight { pos: Vec3::new(0.0, 0.0, 50.0), radius: 5.0 },
+        CpuLight {
+            pos: Vec3::new(3.0, 2.0, 10.0),
+            radius: 1.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-4.0, -3.0, 20.0),
+            radius: 2.0,
+        },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 50.0),
+            radius: 5.0,
+        },
     ];
     let (counts, indices, offsets) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let n = (dims.x * dims.y * dims.z) as usize;
@@ -302,7 +357,12 @@ fn golden_index_validity_all_clusters() {
         let end = start + count;
         assert!(end <= indices.len(), "OOB for cluster {}", ci);
         for &li in &indices[start..end] {
-            assert!(li < lights.len() as u32, "Bad light index {} in cluster {}", li, ci);
+            assert!(
+                li < lights.len() as u32,
+                "Bad light index {} in cluster {}",
+                li,
+                ci
+            );
         }
     }
 }
@@ -314,8 +374,14 @@ fn golden_index_validity_all_clusters() {
 #[test]
 fn golden_symmetric_lights_same_column_count() {
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
-    let left = vec![CpuLight { pos: Vec3::new(-3.0, 0.0, 15.0), radius: 1.0 }];
-    let right = vec![CpuLight { pos: Vec3::new(3.0, 0.0, 15.0), radius: 1.0 }];
+    let left = vec![CpuLight {
+        pos: Vec3::new(-3.0, 0.0, 15.0),
+        radius: 1.0,
+    }];
+    let right = vec![CpuLight {
+        pos: Vec3::new(3.0, 0.0, 15.0),
+        radius: 1.0,
+    }];
     let (c_l, _, _) = bin_lights_cpu(&left, dims, SCREEN, NEAR, FAR, FOV_Y);
     let (c_r, _, _) = bin_lights_cpu(&right, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols_l = hit_x_columns(&c_l, &dims);
@@ -358,8 +424,14 @@ fn golden_center_light_symmetric_columns() {
 #[test]
 fn golden_radius_determines_column_spread() {
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
-    let small = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.5 }];
-    let large = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 3.0 }];
+    let small = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 0.5,
+    }];
+    let large = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 3.0,
+    }];
     let (c_s, _, _) = bin_lights_cpu(&small, dims, SCREEN, NEAR, FAR, FOV_Y);
     let (c_l, _, _) = bin_lights_cpu(&large, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols_s = hit_x_columns(&c_s, &dims);
@@ -376,8 +448,14 @@ fn golden_radius_determines_column_spread() {
 fn golden_radius_proportional_spread() {
     // Doubling radius doubles pixel spread → more columns.
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
-    let r2 = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 20.0), radius: 2.0 }];
-    let r4 = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 20.0), radius: 4.0 }];
+    let r2 = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 20.0),
+        radius: 2.0,
+    }];
+    let r4 = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 20.0),
+        radius: 4.0,
+    }];
     let (c2, _, _) = bin_lights_cpu(&r2, dims, SCREEN, NEAR, FAR, FOV_Y);
     let (c4, _, _) = bin_lights_cpu(&r4, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols_r2 = hit_x_columns(&c2, &dims);
@@ -402,9 +480,17 @@ fn golden_large_radius_precise_span() {
     }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
-    assert!(cols.len() >= 10, "Large close light ≥10 columns, got {:?}", cols);
+    assert!(
+        cols.len() >= 10,
+        "Large close light ≥10 columns, got {:?}",
+        cols
+    );
     let min_col = *cols.iter().next().unwrap();
-    assert!(min_col >= 1, "Column 0 should not be hit with correct radius math, got {:?}", cols);
+    assert!(
+        min_col >= 1,
+        "Column 0 should not be hit with correct radius math, got {:?}",
+        cols
+    );
 }
 
 // ================================================================
@@ -417,11 +503,22 @@ fn golden_z_slice_near_plane_light() {
     // iz0 = ((0.4)/99.9)*4 ≈ 0.016 → 0
     // iz1 = ((1.4)/99.9)*4 ≈ 0.056 → 0
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let lights = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 1.0), radius: 0.5 }];
+    let lights = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 1.0),
+        radius: 0.5,
+    }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let slices = hit_z_slices(&counts, &dims);
-    assert!(slices.contains(&0), "Near light should be in z-slice 0, got {:?}", slices);
-    assert!(!slices.contains(&3), "Near light NOT in z-slice 3, got {:?}", slices);
+    assert!(
+        slices.contains(&0),
+        "Near light should be in z-slice 0, got {:?}",
+        slices
+    );
+    assert!(
+        !slices.contains(&3),
+        "Near light NOT in z-slice 3, got {:?}",
+        slices
+    );
 }
 
 #[test]
@@ -430,11 +527,22 @@ fn golden_z_slice_far_plane_light() {
     // iz0 = ((84.9)/99.9)*4 ≈ 3.40 → 3
     // iz1 = ((94.9)/99.9)*4 ≈ 3.80 → 3
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let lights = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 90.0), radius: 5.0 }];
+    let lights = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 90.0),
+        radius: 5.0,
+    }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let slices = hit_z_slices(&counts, &dims);
-    assert!(slices.contains(&3), "Far light should be in z-slice 3, got {:?}", slices);
-    assert!(!slices.contains(&0), "Far light NOT in z-slice 0, got {:?}", slices);
+    assert!(
+        slices.contains(&3),
+        "Far light should be in z-slice 3, got {:?}",
+        slices
+    );
+    assert!(
+        !slices.contains(&0),
+        "Far light NOT in z-slice 0, got {:?}",
+        slices
+    );
 }
 
 #[test]
@@ -443,7 +551,10 @@ fn golden_z_slice_mid_range_light() {
     // iz0 = ((49.4)/99.9)*4 ≈ 1.978 → 1
     // iz1 = ((50.4)/99.9)*4 ≈ 2.018 → 2
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let lights = vec![CpuLight { pos: Vec3::new(0.0, 0.0, 50.0), radius: 0.5 }];
+    let lights = vec![CpuLight {
+        pos: Vec3::new(0.0, 0.0, 50.0),
+        radius: 0.5,
+    }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let slices = hit_z_slices(&counts, &dims);
     assert!(
@@ -462,20 +573,34 @@ fn golden_z_slice_mid_range_light() {
 fn golden_positive_x_in_right_half() {
     // Positive x projects to right side (columns ≥8 in 16-col grid).
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
-    let lights = vec![CpuLight { pos: Vec3::new(3.0, 0.0, 10.0), radius: 0.5 }];
+    let lights = vec![CpuLight {
+        pos: Vec3::new(3.0, 0.0, 10.0),
+        radius: 0.5,
+    }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
     let max_col = *cols.iter().last().unwrap();
-    assert!(max_col >= 8, "Positive x light should be in right half (≥8), got {:?}", cols);
+    assert!(
+        max_col >= 8,
+        "Positive x light should be in right half (≥8), got {:?}",
+        cols
+    );
 }
 
 #[test]
 fn golden_negative_x_in_left_half() {
     // Negative x projects to left side (columns ≤7 in 16-col grid).
     let dims = ClusterDims { x: 16, y: 4, z: 4 };
-    let lights = vec![CpuLight { pos: Vec3::new(-3.0, 0.0, 10.0), radius: 0.5 }];
+    let lights = vec![CpuLight {
+        pos: Vec3::new(-3.0, 0.0, 10.0),
+        radius: 0.5,
+    }];
     let (counts, _, _) = bin_lights_cpu(&lights, dims, SCREEN, NEAR, FAR, FOV_Y);
     let cols = hit_x_columns(&counts, &dims);
     let min_col = *cols.iter().next().unwrap();
-    assert!(min_col <= 7, "Negative x light should be in left half (≤7), got {:?}", cols);
+    assert!(
+        min_col <= 7,
+        "Negative x light should be in left half (≤7), got {:?}",
+        cols
+    );
 }

@@ -121,28 +121,46 @@ fn parse_day_uppercase() {
 
 #[test]
 fn parse_morning_aliases() {
-    assert_eq!(DayPeriod::from_str_loose("morning"), Some(DayPeriod::Morning));
-    assert_eq!(DayPeriod::from_str_loose("sunrise"), Some(DayPeriod::Morning));
+    assert_eq!(
+        DayPeriod::from_str_loose("morning"),
+        Some(DayPeriod::Morning)
+    );
+    assert_eq!(
+        DayPeriod::from_str_loose("sunrise"),
+        Some(DayPeriod::Morning)
+    );
     assert_eq!(DayPeriod::from_str_loose("dawn"), Some(DayPeriod::Morning));
 }
 
 #[test]
 fn parse_evening_aliases() {
-    assert_eq!(DayPeriod::from_str_loose("evening"), Some(DayPeriod::Evening));
-    assert_eq!(DayPeriod::from_str_loose("sunset"), Some(DayPeriod::Evening));
+    assert_eq!(
+        DayPeriod::from_str_loose("evening"),
+        Some(DayPeriod::Evening)
+    );
+    assert_eq!(
+        DayPeriod::from_str_loose("sunset"),
+        Some(DayPeriod::Evening)
+    );
     assert_eq!(DayPeriod::from_str_loose("dusk"), Some(DayPeriod::Evening));
 }
 
 #[test]
 fn parse_night_aliases() {
     assert_eq!(DayPeriod::from_str_loose("night"), Some(DayPeriod::Night));
-    assert_eq!(DayPeriod::from_str_loose("midnight"), Some(DayPeriod::Night));
+    assert_eq!(
+        DayPeriod::from_str_loose("midnight"),
+        Some(DayPeriod::Night)
+    );
 }
 
 #[test]
 fn parse_whitespace_trimmed() {
     assert_eq!(DayPeriod::from_str_loose("  day  "), Some(DayPeriod::Day));
-    assert_eq!(DayPeriod::from_str_loose("\tnight\n"), Some(DayPeriod::Night));
+    assert_eq!(
+        DayPeriod::from_str_loose("\tnight\n"),
+        Some(DayPeriod::Night)
+    );
 }
 
 #[test]

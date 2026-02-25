@@ -54,8 +54,18 @@ fn dir_yaw0_pitch_pi4_looks_up() {
     let d = Camera::dir(0.0, FRAC_PI_4);
     let expected_x = FRAC_PI_4.cos(); // ~0.7071
     let expected_y = FRAC_PI_4.sin(); // ~0.7071
-    assert!((d.x - expected_x).abs() < 0.01, "x={}, expected {}", d.x, expected_x);
-    assert!((d.y - expected_y).abs() < 0.01, "y={}, expected {}", d.y, expected_y);
+    assert!(
+        (d.x - expected_x).abs() < 0.01,
+        "x={}, expected {}",
+        d.x,
+        expected_x
+    );
+    assert!(
+        (d.y - expected_y).abs() < 0.01,
+        "y={}, expected {}",
+        d.y,
+        expected_y
+    );
     assert!(d.z.abs() < 0.001);
 }
 
@@ -69,8 +79,12 @@ fn dir_yaw0_negative_pitch_looks_down() {
 #[test]
 fn dir_is_always_normalized() {
     let cases = [
-        (0.0, 0.0), (1.0, 0.5), (2.0, -0.3),
-        (PI, 1.0), (-1.5, -1.5), (3.0, 0.1),
+        (0.0, 0.0),
+        (1.0, 0.5),
+        (2.0, -0.3),
+        (PI, 1.0),
+        (-1.5, -1.5),
+        (3.0, 0.1),
     ];
     for (yaw, pitch) in cases {
         let d = Camera::dir(yaw, pitch);
@@ -78,7 +92,9 @@ fn dir_is_always_normalized() {
         assert!(
             (len - 1.0).abs() < 0.001,
             "Dir should be normalized for yaw={}, pitch={}: len={}",
-            yaw, pitch, len
+            yaw,
+            pitch,
+            len
         );
     }
 }
@@ -93,7 +109,10 @@ fn dir_pitch_component_is_sin_pitch() {
         assert!(
             (d.y - expected_y).abs() < 0.01,
             "pitch={}: y={}, expected sin({})={}",
-            pitch, d.y, pitch, expected_y
+            pitch,
+            d.y,
+            pitch,
+            expected_y
         );
     }
 }
@@ -118,7 +137,12 @@ fn view_matrix_is_finite() {
     let m = c.view_matrix();
     for col in 0..4 {
         for row in 0..4 {
-            assert!(m.col(col)[row].is_finite(), "View matrix has non-finite at [{},{}]", col, row);
+            assert!(
+                m.col(col)[row].is_finite(),
+                "View matrix has non-finite at [{},{}]",
+                col,
+                row
+            );
         }
     }
 }
@@ -145,7 +169,10 @@ fn vp_equals_proj_times_view() {
             assert!(
                 diff.col(col)[row] < 1e-5,
                 "vp() != proj * view at [{},{}]: {} vs {}",
-                col, row, vp.col(col)[row], expected.col(col)[row]
+                col,
+                row,
+                vp.col(col)[row],
+                expected.col(col)[row]
             );
         }
     }
@@ -177,7 +204,12 @@ fn proj_matrix_clamps_aspect_to_min_001() {
     // Should be finite (clamped aspect prevents divide by zero)
     for col in 0..4 {
         for row in 0..4 {
-            assert!(p.col(col)[row].is_finite(), "Non-finite at [{},{}] with aspect=0", col, row);
+            assert!(
+                p.col(col)[row].is_finite(),
+                "Non-finite at [{},{}] with aspect=0",
+                col,
+                row
+            );
         }
     }
 }
@@ -211,7 +243,10 @@ fn keyboard_w_sets_fwd() {
     let mut cam = make_camera();
     let start = cam.position;
     ctrl.update_camera(&mut cam, 0.5);
-    assert!(cam.position.x > start.x, "W key should move forward along look dir (initially +X)");
+    assert!(
+        cam.position.x > start.x,
+        "W key should move forward along look dir (initially +X)"
+    );
 }
 
 #[test]
@@ -232,7 +267,10 @@ fn keyboard_release_stops_movement() {
     let mut cam = make_camera();
     let start = cam.position;
     ctrl.update_camera(&mut cam, 0.5);
-    assert_eq!(cam.position, start, "Released key should not cause movement");
+    assert_eq!(
+        cam.position, start,
+        "Released key should not cause movement"
+    );
 }
 
 // ============================================================================
@@ -261,7 +299,8 @@ fn sprint_doubles_effective_speed() {
     assert!(
         (sprint_dist / normal_dist - 2.0).abs() < 0.1,
         "Sprint should be ~2x: normal={}, sprint={}",
-        normal_dist, sprint_dist
+        normal_dist,
+        sprint_dist
     );
 }
 
@@ -285,7 +324,8 @@ fn precision_quarters_effective_speed() {
     assert!(
         (precision_dist / normal_dist - 0.25).abs() < 0.05,
         "Precision should be ~0.25x: normal={}, precision={}",
-        normal_dist, precision_dist
+        normal_dist,
+        precision_dist
     );
 }
 
@@ -310,7 +350,8 @@ fn sprint_and_precision_stack() {
     assert!(
         (combo_dist / normal_dist - 0.5).abs() < 0.1,
         "Sprint+Precision should be ~0.5x: normal={}, combo={}",
-        normal_dist, combo_dist
+        normal_dist,
+        combo_dist
     );
 }
 
@@ -330,7 +371,11 @@ fn pitch_clamped_during_update() {
     for _ in 0..1000 {
         ctrl.update_camera(&mut cam, 0.1);
     }
-    assert!(cam.pitch <= 1.54 + 0.001, "Pitch should be clamped to ≤1.54, got {}", cam.pitch);
+    assert!(
+        cam.pitch <= 1.54 + 0.001,
+        "Pitch should be clamped to ≤1.54, got {}",
+        cam.pitch
+    );
 }
 
 #[test]
@@ -342,7 +387,11 @@ fn pitch_clamped_negative_during_update() {
     for _ in 0..1000 {
         ctrl.update_camera(&mut cam, 0.1);
     }
-    assert!(cam.pitch >= -1.54 - 0.001, "Pitch should be clamped to ≥-1.54, got {}", cam.pitch);
+    assert!(
+        cam.pitch >= -1.54 - 0.001,
+        "Pitch should be clamped to ≥-1.54, got {}",
+        cam.pitch
+    );
 }
 
 // ============================================================================
@@ -365,7 +414,11 @@ fn scroll_freefly_fov_clamped_low() {
     for _ in 0..1000 {
         ctrl.process_scroll(&mut cam, 10.0);
     }
-    assert!(cam.fovy >= 0.1, "FOV should not go below 0.1, got {}", cam.fovy);
+    assert!(
+        cam.fovy >= 0.1,
+        "FOV should not go below 0.1, got {}",
+        cam.fovy
+    );
 }
 
 #[test]
@@ -375,7 +428,11 @@ fn scroll_freefly_fov_clamped_high() {
     for _ in 0..1000 {
         ctrl.process_scroll(&mut cam, -10.0);
     }
-    assert!(cam.fovy <= 3.0, "FOV should not exceed 3.0, got {}", cam.fovy);
+    assert!(
+        cam.fovy <= 3.0,
+        "FOV should not exceed 3.0, got {}",
+        cam.fovy
+    );
 }
 
 #[test]
@@ -424,7 +481,8 @@ fn toggle_freefly_to_orbit_sets_target() {
     assert!(
         (ctrl.orbit_target - expected_target).length() < 0.01,
         "Orbit target should be set: {:?} vs {:?}",
-        ctrl.orbit_target, expected_target
+        ctrl.orbit_target,
+        expected_target
     );
 }
 
@@ -493,7 +551,10 @@ fn mouse_delta_above_deadzone_applied() {
     ctrl.process_mouse_button(winit::event::MouseButton::Right, true);
     ctrl.process_mouse_delta(&mut cam, Vec2::new(10.0, 0.0));
     ctrl.update_camera(&mut cam, 0.5);
-    assert!(cam.yaw.abs() > 1e-6, "Above-deadzone delta should change yaw");
+    assert!(
+        cam.yaw.abs() > 1e-6,
+        "Above-deadzone delta should change yaw"
+    );
 }
 
 // ============================================================================
@@ -508,8 +569,8 @@ fn begin_frame_allows_new_input() {
     // Process a delta (sets raw_used_this_frame = true)
     ctrl.process_mouse_delta(&mut cam, Vec2::new(10.0, 0.0));
     ctrl.begin_frame(); // Reset the flag
-    // Should accept mouse_move now since raw_used is reset
-    // (This validates that begin_frame properly resets raw_used_this_frame)
+                        // Should accept mouse_move now since raw_used is reset
+                        // (This validates that begin_frame properly resets raw_used_this_frame)
     ctrl.process_mouse_move(&mut cam, Vec2::new(100.0, 100.0));
     // last_mouse is None, so this updates last_mouse but doesn't change targets
     // But it doesn't early-return due to raw_used_this_frame being reset

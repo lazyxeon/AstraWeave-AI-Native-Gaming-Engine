@@ -55,11 +55,7 @@ fn frustum_from_ortho_matrix_produces_valid_planes() {
     let f = Frustum::from_matrix(ortho);
     for (i, plane) in f.planes.iter().enumerate() {
         let len = Vec3::new(plane.x, plane.y, plane.z).length();
-        assert!(
-            len > 0.0,
-            "Ortho plane {} should have non-zero normal",
-            i
-        );
+        assert!(len > 0.0, "Ortho plane {} should have non-zero normal", i);
     }
 }
 
@@ -77,7 +73,10 @@ fn aabb_at_origin_inside_perspective() {
     let f = identity_frustum();
     // Small box centered at z=-5 (in front of camera looking -Z in RH)
     let inside = f.test_aabb(Vec3::new(-1.0, -1.0, -6.0), Vec3::new(1.0, 1.0, -4.0));
-    assert!(inside, "Small AABB in front of camera should be inside frustum");
+    assert!(
+        inside,
+        "Small AABB in front of camera should be inside frustum"
+    );
 }
 
 #[cfg(feature = "nanite")]
@@ -94,10 +93,7 @@ fn aabb_behind_camera_outside_perspective() {
 fn aabb_far_away_outside_perspective() {
     let f = identity_frustum();
     // Box beyond far plane (far=100)
-    let outside = f.test_aabb(
-        Vec3::new(-1.0, -1.0, -200.0),
-        Vec3::new(1.0, 1.0, -150.0),
-    );
+    let outside = f.test_aabb(Vec3::new(-1.0, -1.0, -200.0), Vec3::new(1.0, 1.0, -150.0));
     assert!(!outside, "AABB beyond far plane should be outside frustum");
 }
 
@@ -107,7 +103,10 @@ fn aabb_straddling_near_plane_is_inside() {
     let f = identity_frustum();
     // Box that straddles the near plane
     let inside = f.test_aabb(Vec3::new(-0.5, -0.5, -0.5), Vec3::new(0.5, 0.5, 0.5));
-    assert!(inside, "AABB straddling near plane should be considered inside");
+    assert!(
+        inside,
+        "AABB straddling near plane should be considered inside"
+    );
 }
 
 #[cfg(feature = "nanite")]
@@ -115,7 +114,10 @@ fn aabb_straddling_near_plane_is_inside() {
 fn aabb_huge_box_enclosing_frustum_is_inside() {
     let f = identity_frustum();
     let inside = f.test_aabb(Vec3::splat(-1000.0), Vec3::splat(1000.0));
-    assert!(inside, "Huge AABB enclosing entire frustum should be inside");
+    assert!(
+        inside,
+        "Huge AABB enclosing entire frustum should be inside"
+    );
 }
 
 #[cfg(feature = "nanite")]
@@ -124,10 +126,7 @@ fn aabb_left_of_frustum_is_outside() {
     let f = identity_frustum();
     // 90° FOV → half-angle 45°. At z=-10, left edge is x=-10.
     // Place box well to the left.
-    let outside = f.test_aabb(
-        Vec3::new(-100.0, -1.0, -10.0),
-        Vec3::new(-50.0, 1.0, -9.0),
-    );
+    let outside = f.test_aabb(Vec3::new(-100.0, -1.0, -10.0), Vec3::new(-50.0, 1.0, -9.0));
     assert!(!outside, "AABB far to the left should be outside frustum");
 }
 
@@ -135,10 +134,7 @@ fn aabb_left_of_frustum_is_outside() {
 #[test]
 fn aabb_right_of_frustum_is_outside() {
     let f = identity_frustum();
-    let outside = f.test_aabb(
-        Vec3::new(50.0, -1.0, -10.0),
-        Vec3::new(100.0, 1.0, -9.0),
-    );
+    let outside = f.test_aabb(Vec3::new(50.0, -1.0, -10.0), Vec3::new(100.0, 1.0, -9.0));
     assert!(!outside, "AABB far to the right should be outside frustum");
 }
 
@@ -146,10 +142,7 @@ fn aabb_right_of_frustum_is_outside() {
 #[test]
 fn aabb_above_frustum_is_outside() {
     let f = identity_frustum();
-    let outside = f.test_aabb(
-        Vec3::new(-1.0, 50.0, -10.0),
-        Vec3::new(1.0, 100.0, -9.0),
-    );
+    let outside = f.test_aabb(Vec3::new(-1.0, 50.0, -10.0), Vec3::new(1.0, 100.0, -9.0));
     assert!(!outside, "AABB far above should be outside frustum");
 }
 
@@ -157,10 +150,7 @@ fn aabb_above_frustum_is_outside() {
 #[test]
 fn aabb_below_frustum_is_outside() {
     let f = identity_frustum();
-    let outside = f.test_aabb(
-        Vec3::new(-1.0, -100.0, -10.0),
-        Vec3::new(1.0, -50.0, -9.0),
-    );
+    let outside = f.test_aabb(Vec3::new(-1.0, -100.0, -10.0), Vec3::new(1.0, -50.0, -9.0));
     assert!(!outside, "AABB far below should be outside frustum");
 }
 
@@ -204,7 +194,10 @@ fn sphere_beyond_far_plane_outside() {
 fn sphere_with_zero_radius_inside() {
     let f = identity_frustum();
     let inside = f.test_sphere(Vec3::new(0.0, 0.0, -5.0), 0.0);
-    assert!(inside, "Zero-radius sphere at visible point should be inside");
+    assert!(
+        inside,
+        "Zero-radius sphere at visible point should be inside"
+    );
 }
 
 #[cfg(feature = "nanite")]
@@ -253,7 +246,10 @@ fn frustum_with_view_transform_culls_correctly() {
     let f = Frustum::from_matrix(vp);
 
     // Object at origin (5 units away, well within far=100)
-    assert!(f.test_sphere(Vec3::ZERO, 1.0), "Origin should be visible from (0,0,5)");
+    assert!(
+        f.test_sphere(Vec3::ZERO, 1.0),
+        "Origin should be visible from (0,0,5)"
+    );
 
     // Object behind the camera
     assert!(
@@ -272,7 +268,10 @@ fn frustum_rotated_camera_culls_sideways() {
     let f = Frustum::from_matrix(vp);
 
     // Object at (10, 0, 0) should be inside
-    assert!(f.test_sphere(Vec3::new(10.0, 0.0, 0.0), 1.0), "+X should be visible");
+    assert!(
+        f.test_sphere(Vec3::new(10.0, 0.0, 0.0), 1.0),
+        "+X should be visible"
+    );
 
     // Object at (-10, 0, 0) should be outside (behind)
     assert!(
@@ -298,7 +297,10 @@ fn lod_selector_close_object_is_lod_0() {
     let sel = LODSelector::new(1080.0, std::f32::consts::FRAC_PI_4);
     // Object 1 unit away with radius 1 fills most of screen → LOD 0
     let lod = sel.select_lod(Vec3::new(0.0, 0.0, -1.0), 1.0, 2.0, Vec3::ZERO, 4);
-    assert_eq!(lod, 0, "Close large object should use LOD 0 (highest detail)");
+    assert_eq!(
+        lod, 0,
+        "Close large object should use LOD 0 (highest detail)"
+    );
 }
 
 #[cfg(feature = "nanite")]
@@ -308,20 +310,18 @@ fn lod_selector_far_object_higher_lod() {
     // Object very far away with small error threshold → should pick higher LOD
     let lod = sel.select_lod(Vec3::new(0.0, 0.0, -1000.0), 0.1, 0.001, Vec3::ZERO, 4);
     // At 1000 units, projected size is very small → LOD > 0
-    assert!(lod > 0, "Distant tiny object should use higher LOD, got {}", lod);
+    assert!(
+        lod > 0,
+        "Distant tiny object should use higher LOD, got {}",
+        lod
+    );
 }
 
 #[cfg(feature = "nanite")]
 #[test]
 fn lod_selector_max_lod_clamped() {
     let sel = LODSelector::new(1080.0, std::f32::consts::FRAC_PI_4);
-    let lod = sel.select_lod(
-        Vec3::new(0.0, 0.0, -100000.0),
-        0.01,
-        0.0001,
-        Vec3::ZERO,
-        3,
-    );
+    let lod = sel.select_lod(Vec3::new(0.0, 0.0, -100000.0), 0.01, 0.0001, Vec3::ZERO, 3);
     assert!(lod <= 3, "LOD should be clamped to max_lod=3, got {}", lod);
 }
 
@@ -419,7 +419,10 @@ fn gpu_meshlet_zeroed_is_all_zeros() {
         material_id: 0,
     };
     let bytes: &[u8] = bytemuck::bytes_of(&m);
-    assert!(bytes.iter().all(|&b| b == 0), "Zeroed GpuMeshlet should be all zero bytes");
+    assert!(
+        bytes.iter().all(|&b| b == 0),
+        "Zeroed GpuMeshlet should be all zero bytes"
+    );
 }
 
 #[cfg(feature = "nanite")]

@@ -37,9 +37,17 @@ fn easing_linear_golden() {
 fn easing_smoothstep_golden() {
     let e = EasingFunction::SmoothStep;
     assert!((e.apply(0.0)).abs() < 1e-6);
-    assert!((e.apply(0.25) - 0.15625).abs() < 1e-5, "SS(0.25) = {}", e.apply(0.25));
+    assert!(
+        (e.apply(0.25) - 0.15625).abs() < 1e-5,
+        "SS(0.25) = {}",
+        e.apply(0.25)
+    );
     assert!((e.apply(0.5) - 0.5).abs() < 1e-6);
-    assert!((e.apply(0.75) - 0.84375).abs() < 1e-5, "SS(0.75) = {}", e.apply(0.75));
+    assert!(
+        (e.apply(0.75) - 0.84375).abs() < 1e-5,
+        "SS(0.75) = {}",
+        e.apply(0.75)
+    );
     assert!((e.apply(1.0) - 1.0).abs() < 1e-6);
 }
 
@@ -51,9 +59,17 @@ fn easing_smoothstep_golden() {
 fn easing_smoother_step_golden() {
     let e = EasingFunction::SmootherStep;
     assert!((e.apply(0.0)).abs() < 1e-6);
-    assert!((e.apply(0.25) - 0.103516).abs() < 0.001, "SMS(0.25) = {}", e.apply(0.25));
+    assert!(
+        (e.apply(0.25) - 0.103516).abs() < 0.001,
+        "SMS(0.25) = {}",
+        e.apply(0.25)
+    );
     assert!((e.apply(0.5) - 0.5).abs() < 1e-5);
-    assert!((e.apply(0.75) - 0.896484).abs() < 0.001, "SMS(0.75) = {}", e.apply(0.75));
+    assert!(
+        (e.apply(0.75) - 0.896484).abs() < 0.001,
+        "SMS(0.75) = {}",
+        e.apply(0.75)
+    );
     assert!((e.apply(1.0) - 1.0).abs() < 1e-6);
 }
 
@@ -76,7 +92,11 @@ fn easing_ease_in_golden() {
 fn easing_ease_out_golden() {
     let e = EasingFunction::EaseOut;
     assert!((e.apply(0.0)).abs() < 1e-6);
-    assert!((e.apply(0.25) - 0.4375).abs() < 1e-5, "EO(0.25) = {}", e.apply(0.25));
+    assert!(
+        (e.apply(0.25) - 0.4375).abs() < 1e-5,
+        "EO(0.25) = {}",
+        e.apply(0.25)
+    );
     assert!((e.apply(0.5) - 0.75).abs() < 1e-5);
     assert!((e.apply(0.75) - 0.9375).abs() < 1e-5);
     assert!((e.apply(1.0) - 1.0).abs() < 1e-6);
@@ -90,9 +110,17 @@ fn easing_ease_out_golden() {
 fn easing_ease_in_out_golden() {
     let e = EasingFunction::EaseInOut;
     assert!((e.apply(0.0)).abs() < 1e-6);
-    assert!((e.apply(0.25) - 0.125).abs() < 1e-5, "EIO(0.25) = {}", e.apply(0.25));
+    assert!(
+        (e.apply(0.25) - 0.125).abs() < 1e-5,
+        "EIO(0.25) = {}",
+        e.apply(0.25)
+    );
     assert!((e.apply(0.5) - 0.5).abs() < 1e-5);
-    assert!((e.apply(0.75) - 0.875).abs() < 1e-5, "EIO(0.75) = {}", e.apply(0.75));
+    assert!(
+        (e.apply(0.75) - 0.875).abs() < 1e-5,
+        "EIO(0.75) = {}",
+        e.apply(0.75)
+    );
     assert!((e.apply(1.0) - 1.0).abs() < 1e-6);
 }
 
@@ -162,7 +190,10 @@ fn easing_monotonically_increasing() {
             assert!(
                 val >= prev - 1e-6,
                 "{:?} not monotonic at t={}: {} < {}",
-                e, t, val, prev
+                e,
+                t,
+                val,
+                prev
             );
             prev = val;
         }
@@ -186,7 +217,9 @@ fn ease_in_out_symmetric_around_half() {
     assert!(
         (low + high - 1.0).abs() < 1e-5,
         "EaseInOut should be symmetric: f(0.25)={} + f(0.75)={} = {}",
-        low, high, low + high
+        low,
+        high,
+        low + high
     );
 }
 
@@ -194,14 +227,24 @@ fn ease_in_out_symmetric_around_half() {
 fn ease_in_slower_start_than_linear() {
     let ei = EasingFunction::EaseIn.apply(0.25);
     let lin = EasingFunction::Linear.apply(0.25);
-    assert!(ei < lin, "EaseIn should be slower at start: {} >= {}", ei, lin);
+    assert!(
+        ei < lin,
+        "EaseIn should be slower at start: {} >= {}",
+        ei,
+        lin
+    );
 }
 
 #[test]
 fn ease_out_faster_start_than_linear() {
     let eo = EasingFunction::EaseOut.apply(0.25);
     let lin = EasingFunction::Linear.apply(0.25);
-    assert!(eo > lin, "EaseOut should be faster at start: {} <= {}", eo, lin);
+    assert!(
+        eo > lin,
+        "EaseOut should be faster at start: {} <= {}",
+        eo,
+        lin
+    );
 }
 
 // ============================================================================
@@ -212,45 +255,80 @@ fn ease_out_faster_start_than_linear() {
 fn forest_fog_denser_than_desert() {
     let f = BiomeVisuals::for_biome(BiomeType::Forest);
     let d = BiomeVisuals::for_biome(BiomeType::Desert);
-    assert!(f.fog_density > d.fog_density,
-        "Forest fog ({}) should be denser than desert ({})", f.fog_density, d.fog_density);
+    assert!(
+        f.fog_density > d.fog_density,
+        "Forest fog ({}) should be denser than desert ({})",
+        f.fog_density,
+        d.fog_density
+    );
 }
 
 #[test]
 fn desert_fog_start_farther_than_forest() {
     let f = BiomeVisuals::for_biome(BiomeType::Forest);
     let d = BiomeVisuals::for_biome(BiomeType::Desert);
-    assert!(d.fog_start > f.fog_start,
-        "Desert fog_start ({}) > forest ({})", d.fog_start, f.fog_start);
+    assert!(
+        d.fog_start > f.fog_start,
+        "Desert fog_start ({}) > forest ({})",
+        d.fog_start,
+        f.fog_start
+    );
 }
 
 #[test]
 fn swamp_has_densest_fog() {
     let biomes = [
-        BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-        BiomeType::Mountain, BiomeType::Tundra, BiomeType::Beach, BiomeType::River,
+        BiomeType::Forest,
+        BiomeType::Desert,
+        BiomeType::Grassland,
+        BiomeType::Mountain,
+        BiomeType::Tundra,
+        BiomeType::Beach,
+        BiomeType::River,
     ];
     let swamp = BiomeVisuals::for_biome(BiomeType::Swamp);
     for b in biomes {
         let v = BiomeVisuals::for_biome(b);
-        assert!(swamp.fog_density >= v.fog_density,
-            "Swamp fog ({}) should be >= {:?} ({})", swamp.fog_density, b, v.fog_density);
+        assert!(
+            swamp.fog_density >= v.fog_density,
+            "Swamp fog ({}) should be >= {:?} ({})",
+            swamp.fog_density,
+            b,
+            v.fog_density
+        );
     }
 }
 
 #[test]
 fn all_biomes_have_positive_fog_density() {
     let biomes = [
-        BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-        BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-        BiomeType::Beach, BiomeType::River,
+        BiomeType::Forest,
+        BiomeType::Desert,
+        BiomeType::Grassland,
+        BiomeType::Mountain,
+        BiomeType::Tundra,
+        BiomeType::Swamp,
+        BiomeType::Beach,
+        BiomeType::River,
     ];
     for b in biomes {
         let v = BiomeVisuals::for_biome(b);
-        assert!(v.fog_density > 0.0, "{:?} fog_density should be positive", b);
+        assert!(
+            v.fog_density > 0.0,
+            "{:?} fog_density should be positive",
+            b
+        );
         assert!(v.fog_start > 0.0, "{:?} fog_start should be positive", b);
-        assert!(v.fog_end > v.fog_start, "{:?} fog_end should exceed fog_start", b);
-        assert!(v.ambient_intensity > 0.0, "{:?} ambient_intensity should be positive", b);
+        assert!(
+            v.fog_end > v.fog_start,
+            "{:?} fog_end should exceed fog_start",
+            b
+        );
+        assert!(
+            v.ambient_intensity > 0.0,
+            "{:?} ambient_intensity should be positive",
+            b
+        );
     }
 }
 
@@ -334,7 +412,10 @@ fn transition_none_from_uses_to() {
     // from=None → defaults to Desert, but Desert == Desert would be noop?
     // Actually: from.unwrap_or(to) → Desert. from_biome == to && from.is_some() → false!
     // So it activates.
-    assert!(te.is_active(), "None from should still activate (from.is_some() is false)");
+    assert!(
+        te.is_active(),
+        "None from should still activate (from.is_some() is false)"
+    );
 }
 
 #[test]
@@ -345,7 +426,11 @@ fn transition_update_advances_progress() {
     });
     te.start(Some(BiomeType::Forest), BiomeType::Desert);
     te.update(0.5); // 0.5s / 2.0s = 25% progress
-    assert!((te.raw_progress() - 0.25).abs() < 0.001, "Progress: {}", te.raw_progress());
+    assert!(
+        (te.raw_progress() - 0.25).abs() < 0.001,
+        "Progress: {}",
+        te.raw_progress()
+    );
     assert!(te.is_active());
 }
 
@@ -425,11 +510,12 @@ fn tint_alpha_peaks_at_midpoint() {
     });
     te.start(Some(BiomeType::Forest), BiomeType::Desert);
     te.update(1.0); // t = 0.5 (midpoint)
-    // Formula: peak * 4 * t * (1-t) = 0.15 * 4 * 0.5 * 0.5 = 0.15
+                    // Formula: peak * 4 * t * (1-t) = 0.15 * 4 * 0.5 * 0.5 = 0.15
     assert!(
         (te.tint_alpha() - 0.15).abs() < 0.001,
         "Peak tint_alpha at midpoint should be {}, got {}",
-        0.15, te.tint_alpha()
+        0.15,
+        te.tint_alpha()
     );
 }
 
@@ -443,12 +529,13 @@ fn tint_alpha_bell_curve_quarter() {
     });
     te.start(Some(BiomeType::Forest), BiomeType::Desert);
     te.update(1.0); // t = 0.25
-    // Formula: 0.2 * 4 * 0.25 * 0.75 = 0.2 * 0.75 = 0.15
+                    // Formula: 0.2 * 4 * 0.25 * 0.75 = 0.2 * 0.75 = 0.15
     let expected = 0.2 * 4.0 * 0.25 * 0.75;
     assert!(
         (te.tint_alpha() - expected).abs() < 0.001,
         "tint_alpha at t=0.25: expected {}, got {}",
-        expected, te.tint_alpha()
+        expected,
+        te.tint_alpha()
     );
 }
 
@@ -464,8 +551,12 @@ fn tint_color_is_average_of_ambient_colors() {
     let forest = BiomeVisuals::for_biome(BiomeType::Forest);
     let desert = BiomeVisuals::for_biome(BiomeType::Desert);
     let expected = (forest.ambient_color + desert.ambient_color) * 0.5;
-    assert!((color - expected).length() < 0.001,
-        "Tint color should be avg of ambient: {:?} vs {:?}", color, expected);
+    assert!(
+        (color - expected).length() < 0.001,
+        "Tint color should be avg of ambient: {:?} vs {:?}",
+        color,
+        expected
+    );
 }
 
 // ============================================================================
@@ -529,6 +620,7 @@ fn lerp_at_half_is_midpoint() {
     assert!(
         (result.fog_density - expected_density).abs() < 1e-6,
         "Midpoint fog_density: {} vs {}",
-        result.fog_density, expected_density
+        result.fog_density,
+        expected_density
     );
 }

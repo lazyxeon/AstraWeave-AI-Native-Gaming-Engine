@@ -6,19 +6,19 @@
 //! GpuMemoryBudget snapshot/set, LODGenerator, BiomeDetector, DayPeriod::all.
 
 use astraweave_render::animation::{
-    AnimationState, AnimationClip, AnimationChannel, ChannelData, Interpolation,
-    Transform, Skeleton, Joint, JointPalette, compute_joint_matrices,
+    compute_joint_matrices, AnimationChannel, AnimationClip, AnimationState, ChannelData,
+    Interpolation, Joint, JointPalette, Skeleton, Transform,
 };
-use astraweave_render::transparency::{BlendMode, TransparencyManager};
-use astraweave_render::culling::{
-    DrawBatch, BatchId, build_indirect_commands_cpu, batch_visible_instances,
-    FrustumPlanes, InstanceAABB,
-};
-use astraweave_render::vertex_compression::{VertexCompressor, CompressedVertex};
-use astraweave_render::gpu_memory::{GpuMemoryBudget, MemoryCategory, CategoryBudget};
-use astraweave_render::lod_generator::{LODGenerator, LODConfig, SimplificationMesh};
 use astraweave_render::biome_detector::{BiomeDetector, BiomeDetectorConfig};
+use astraweave_render::culling::{
+    batch_visible_instances, build_indirect_commands_cpu, BatchId, DrawBatch, FrustumPlanes,
+    InstanceAABB,
+};
+use astraweave_render::gpu_memory::{CategoryBudget, GpuMemoryBudget, MemoryCategory};
 use astraweave_render::hdri_catalog::DayPeriod;
+use astraweave_render::lod_generator::{LODConfig, LODGenerator, SimplificationMesh};
+use astraweave_render::transparency::{BlendMode, TransparencyManager};
+use astraweave_render::vertex_compression::{CompressedVertex, VertexCompressor};
 use astraweave_terrain::biome::BiomeType;
 use glam::{Mat4, Quat, Vec2, Vec3};
 
@@ -180,10 +180,13 @@ fn anim_clip_sample_step_interpolation() {
 #[test]
 fn compute_joint_matrices_identity() {
     let skeleton = make_test_skeleton();
-    let local_transforms = vec![Transform::default(), Transform {
-        translation: Vec3::new(0.0, 1.0, 0.0),
-        ..Default::default()
-    }];
+    let local_transforms = vec![
+        Transform::default(),
+        Transform {
+            translation: Vec3::new(0.0, 1.0, 0.0),
+            ..Default::default()
+        },
+    ];
     let result = compute_joint_matrices(&skeleton, &local_transforms);
     assert!(result.is_ok());
     let matrices = result.unwrap();
@@ -301,7 +304,7 @@ fn batch_visible_instances_groups_by_batch() {
     let batches = batch_visible_instances(
         &visible,
         |idx| BatchId::new(idx / 2, 0), // 0,1 → batch(0,0); 2,3 → batch(1,0)
-        |bid| (36, bid.mesh_id * 36),  // (vertex_count, first_vertex)
+        |bid| (36, bid.mesh_id * 36),   // (vertex_count, first_vertex)
     );
     assert_eq!(batches.len(), 2);
 }
@@ -318,8 +321,8 @@ fn frustum_test_aabb_inside_visible() {
 }
 #[test]
 fn frustum_test_aabb_outside_invisible() {
-    let vp = Mat4::perspective_rh(1.0, 1.0, 0.1, 10.0)
-        * Mat4::look_to_rh(Vec3::ZERO, -Vec3::Z, Vec3::Y);
+    let vp =
+        Mat4::perspective_rh(1.0, 1.0, 0.1, 10.0) * Mat4::look_to_rh(Vec3::ZERO, -Vec3::Z, Vec3::Y);
     let frustum = FrustumPlanes::from_view_proj(&vp);
     assert!(!frustum.test_aabb(Vec3::new(0.0, 0.0, -200.0), Vec3::ONE));
 }
@@ -400,7 +403,10 @@ fn gpu_memory_set_category_budget() {
     let b = GpuMemoryBudget::new();
     b.set_category_budget(MemoryCategory::Textures, 100, 200);
     let snap = b.snapshot();
-    let tex = snap.iter().find(|(c, _, _)| *c == MemoryCategory::Textures).unwrap();
+    let tex = snap
+        .iter()
+        .find(|(c, _, _)| *c == MemoryCategory::Textures)
+        .unwrap();
     assert_eq!(tex.2, 200); // hard_limit
 }
 
@@ -410,20 +416,24 @@ fn gpu_memory_set_category_budget() {
 fn make_cube_mesh() -> SimplificationMesh {
     // Simple cube: 8 vertices, 12 triangles
     let positions = vec![
-        Vec3::new(-1.0, -1.0, -1.0), Vec3::new( 1.0, -1.0, -1.0),
-        Vec3::new( 1.0,  1.0, -1.0), Vec3::new(-1.0,  1.0, -1.0),
-        Vec3::new(-1.0, -1.0,  1.0), Vec3::new( 1.0, -1.0,  1.0),
-        Vec3::new( 1.0,  1.0,  1.0), Vec3::new(-1.0,  1.0,  1.0),
+        Vec3::new(-1.0, -1.0, -1.0),
+        Vec3::new(1.0, -1.0, -1.0),
+        Vec3::new(1.0, 1.0, -1.0),
+        Vec3::new(-1.0, 1.0, -1.0),
+        Vec3::new(-1.0, -1.0, 1.0),
+        Vec3::new(1.0, -1.0, 1.0),
+        Vec3::new(1.0, 1.0, 1.0),
+        Vec3::new(-1.0, 1.0, 1.0),
     ];
     let normals = vec![Vec3::Y; 8];
     let uvs = vec![[0.0_f32, 0.0]; 8];
     let indices = vec![
-        0,1,2, 2,3,0,  // front
-        1,5,6, 6,2,1,  // right
-        5,4,7, 7,6,5,  // back
-        4,0,3, 3,7,4,  // left
-        3,2,6, 6,7,3,  // top
-        4,5,1, 1,0,4,  // bottom
+        0, 1, 2, 2, 3, 0, // front
+        1, 5, 6, 6, 2, 1, // right
+        5, 4, 7, 7, 6, 5, // back
+        4, 0, 3, 3, 7, 4, // left
+        3, 2, 6, 6, 7, 3, // top
+        4, 5, 1, 1, 0, 4, // bottom
     ];
     SimplificationMesh::new(positions, normals, uvs, indices)
 }
