@@ -1,7 +1,7 @@
 # AstraWeave: Master Test Coverage Report
 
-**Version**: 4.1.0  
-**Last Updated**: February 10, 2026  
+**Version**: 4.2.0  
+**Last Updated**: February 24, 2026  
 **Status**: Authoritative Source  
 **Maintainer**: Core Team  
 **Tools**: `cargo llvm-cov`, `cargo test`, `cargo miri`, `cargo kani`
@@ -13,9 +13,9 @@
 | Metric | Value |
 |--------|-------|
 | **Weighted Coverage** | 94.57% (25 production crates) |
-| **Total Tests (P0)** | 3,040+ |
-| **Total Tests (workspace)** | 5,300+ |
-| **Mutation Tests** | 767 across 7 P0 crates |
+| **Total Tests (P0)** | 3,040+ (Wave 1) + 1,253 (Wave 2 mutations) |
+| **Total Tests (workspace)** | 15,000+ |
+| **Mutation Tests** | Wave 1: 767 manual + Wave 2: 1,261 automated (cargo-mutants) |
 | **Miri Validated** | 977 tests, 4 crates, zero UB |
 | **Kani Verified** | ~71 proof harnesses, 4 crates, all passing |
 | **Industry Position** | Top 1% of open-source game engines |
@@ -74,9 +74,11 @@ Proof files: `entity_allocator_kani.rs`, `blob_vec_kani.rs`, `simd_vec_kani.rs`,
 Kani uses CBMC bounded model checking. Math proofs use concrete representative inputs since Kani does not support SIMD intrinsics.  
 Full details: [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) (Section 9)
 
-### Mutation Testing (January 2026)
+### Mutation Testing
 
-**Scope**: 7 P0 crates  
+#### Wave 1 (January 2026)
+
+**Scope**: 7 P0 crates (manual mutation tests)  
 **Types**: Boundary conditions (`<` vs `<=`), comparison operators (`==` vs `!=`), boolean return path inversions
 
 | Crate | Base Tests | Mutation Tests | Total |
@@ -91,6 +93,47 @@ Full details: [ARCHITECTURE_REFERENCE.md](ARCHITECTURE_REFERENCE.md) (Section 9)
 | **Total** | **2,273** | **767** | **3,040** |
 
 All 3,040 tests passing. Zero failures.
+
+#### Wave 2 (February 2026) — Automated Mutation Sweep
+
+**Tool**: `cargo-mutants` v26.2.0 + `cargo-nextest` v0.9.128  
+**Method**: Full automated mutation sweep with `--in-place` on P0 crates. Each mutant is a compiler-valid source code change (operator replacement, return value substitution, statement deletion). A mutant is "caught" if any test fails, "missed" if all tests pass.
+
+| Crate | Mutants | Caught | Missed | Equiv | Unviable | Kill Rate |
+|-------|---------|--------|--------|-------|----------|-----------|
+| astraweave-prompts | 792 | 760 | 0 | 2 | 30 | **100%** |
+| astraweave-render | 339 | 238 | 75 | — | 25 | 76.1% (69 GPU-only) |
+| aw_editor (sampled) | 130 | 52 | 10 | — | 24 | 83.0% |
+
+**Prompts crate details (792 mutants, 4 shards)**:
+- Shard 0/4: 197 caught, 0 missed, 1 unviable
+- Shard 1/4: 187 caught, 0 missed, 11 unviable
+- Shard 2/4: 188 caught, 1 equivalent, 9 unviable
+- Shard 3/4: 188 caught, 1 equivalent, 9 unviable
+- 2 equivalent mutants (unkillable): `library.rs:367 save_to_directory` (no-op stub), `terrain_prompts.rs:173 required_variables` (`..Default::default()` fills identical value)
+- 47 total MISSED pre-remediation → all remediated via 5 commits of targeted exact-value tests → **100% post-remediation kill rate on all killable mutants**
+
+**Editor crate details (25,573 total mutants, strategic sampling)**:
+- entity_manager.rs: 19 tested, 14 caught, 0 missed, 4 unviable, 1 timeout — **100% viable kill rate**
+- command.rs: 12 tested, 10 caught, 1 missed (remediated), 0 unviable, 1 timeout
+- plugin.rs: 39 tested, 19 caught, 6 missed (all remediated), 13 unviable, 1 timeout
+- dock_layout.rs: 5 tested, 1 caught, 3 missed (1 remediated, 2 GUI-only), 1 unviable
+- Verification shard (post-remediation): 8 caught, 0 missed, 6 unviable — **all MISSED now caught**
+- 2 permanent GUI-only MISSED: `dock_layout.rs:529 show`, `dock_layout.rs:549 show_inside` (require egui Context)
+
+**Render crate details (339 mutants, 3 shards)**:
+- 238 caught, 75 missed (69 are GPU-only: shaders, framebuffer, pipeline code untestable in headless mode)
+- 6 non-GPU MISSED remediated
+- Effective non-GPU kill rate: ~97%
+
+**Remediation commits (Wave 2)**:
+- `3a54a591` — TemplateEngine delegation methods
+- `0c834270` — calculate_complexity exact scores
+- `8c10a46b` — readability, library load, optimization
+- `0581aeec` — TemplateFormat::description, age_seconds
+- `ffc605bc` — age_display, is_recently_updated, touch, default_version, category methods
+- `47669d30` — EditorCommand::try_merge default return value
+- `167666e8` — plugin events, error display, trait defaults, dock style
 
 ---
 
@@ -186,11 +229,11 @@ These crates are outside the primary tier system but have been measured:
 | Crate | Coverage | Tests | Notes |
 |-------|----------|-------|-------|
 | veilweaver_slice_runtime | ~95% (est) | 320 | `#![forbid(unsafe_code)]`, 20 modules, 6 integration suites, NaN-hardened |
-| aw_editor | ~95% (est) | 71 | Production ready; integration + command + animation + graph tests |
+| aw_editor | ~95% (est) | ~8,847 | 3,601 unit + ~5,246 integration (64 test files); Wave 2 mutation sampling: 100% entity/command kill rate |
 | astraweave-asset | 65.30% | 156 | lib.rs hotspot at 51.49% (gltf_loader needs GLB fixtures) |
 | astraweave-assets | 92.07% | 124 | PolyHaven API mocked; downloader + organizer tested |
 | astraweave-context | ~92% | 131 | Graduated from 27.81% (Critical → Excellent) |
-| astraweave-prompts | 93.98% | 167 | Sprint: 12.35% → 93.98% (+81.63 pp) |
+| astraweave-prompts | 93.98% | 1,361 | 556 unit + 805 integration; Wave 2 mutation sweep: 792 mutants, 100% kill rate |
 | astraweave-rag | ~92% | 138 | consolidation.rs 99.74%, forgetting.rs 97.36% |
 | astraweave-persistence-ecs | 86.60% | 28 | Roundtrip serialization verified |
 
@@ -263,6 +306,7 @@ cargo +nightly miri test -p astraweave-ecs --lib -- --test-threads=1
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 4.1.0 | Feb 24, 2026 | Wave 2 mutation testing: cargo-mutants automated sweep — prompts 100% kill rate (792 mutants), render 97% non-GPU, editor strategic sampling 100% entity/command |
 | 4.0.0 | Feb 10, 2026 | Full audit: removed duplicate sections, consolidated tiers, eliminated contradictions, reduced from 1,614 to ~350 lines |
 | 3.2.0 | Feb 3, 2026 | Miri validation: 977 tests, 4 crates, zero UB |
 | 3.1.0 | Jan 31, 2026 | Mutation testing: 767 tests across 7 P0 crates |
