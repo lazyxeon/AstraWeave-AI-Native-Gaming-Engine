@@ -187,7 +187,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let kd = (vec3<f32>(1.0,1.0,1.0) - F) * (1.0 - metallic);
     let diffuse = kd * base_color / 3.14159;
 
-    let radiance = vec3<f32>(1.0, 0.98, 0.9); // dir light color
+    let radiance = vec3<f32>(2.0, 1.96, 1.8); // sun radiance (HDR, ACES compresses)
         // Shadow sampling
         // Cascaded shadow mapping (2 cascades)
     let dist = length(input.world_pos);
@@ -293,7 +293,8 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
 @fragment
 fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0);
-    var color = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b));
+    let exposure = 1.35;
+    var color = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b) * exposure);
     // Screen-space tint overlay from biome transitions
     color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
     return vec4<f32>(color, 1.0);
@@ -350,7 +351,10 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let ao_strength = 0.6;
     let gi_strength = 0.2;
     let comp = hdr * (1.0 - ao * ao_strength) + gi * gi_strength;
-    var color = aces_tonemap(comp);
+    // Exposure boost before ACES gives the tonemapper proper HDR range,
+    // producing richer contrast and more vivid highlights.
+    let exposure = 1.35;
+    var color = aces_tonemap(comp * exposure);
     // Screen-space tint overlay from biome transitions
     color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
     return vec4<f32>(color, 1.0);
@@ -804,7 +808,11 @@ impl Renderer {
         // artefact that occurs when the HDR scene texture is sampled as AO input.
         let postfx_dummy_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("postfx dummy black"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -825,10 +833,14 @@ impl Renderer {
                 bytes_per_row: Some(8),
                 rows_per_image: None,
             },
-            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
         );
-        let postfx_dummy_view = postfx_dummy_tex
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let postfx_dummy_view =
+            postfx_dummy_tex.create_view(&wgpu::TextureViewDescriptor::default());
 
         #[cfg(feature = "postfx")]
         let hdr_aux = device.create_texture(&wgpu::TextureDescriptor {
@@ -2030,7 +2042,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let specular = numerator / denom;
     let kd = (vec3<f32>(1.0,1.0,1.0) - F) * (1.0 - metallic);
     let diffuse = kd * base_color / 3.14159;
-    let radiance = vec3<f32>(1.0, 0.98, 0.9);
+    let radiance = vec3<f32>(2.0, 1.96, 1.8); // sun radiance (HDR, ACES compresses)
     // Cascaded shadow sampling (same as static path)
     let dist = length(input.world_pos);
     let use_c0 = dist < uLight.splits.x;
@@ -3536,6 +3548,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     sp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
                 }
             }
+            // Named models (terrain, etc.) cast shadows too
+            for model in self.models.values() {
+                if model.instance_count > 0 {
+                    sp.set_vertex_buffer(0, model.mesh.vertex_buf.slice(..));
+                    sp.set_index_buffer(model.mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    sp.set_vertex_buffer(1, model.instance_buf.slice(..));
+                    sp.draw_indexed(0..model.mesh.index_count, 0, 0..model.instance_count);
+                }
+            }
         }
         // After rendering shadow layers, restore full light buffer for main pass usage
         {
@@ -3900,6 +3921,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 sp.set_vertex_buffer(1, ibuf.slice(..));
                 if self.ext_inst_count > 0 {
                     sp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
+                }
+            }
+            // Named models (terrain, etc.) cast shadows too
+            for model in self.models.values() {
+                if model.instance_count > 0 {
+                    sp.set_vertex_buffer(0, model.mesh.vertex_buf.slice(..));
+                    sp.set_index_buffer(model.mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    sp.set_vertex_buffer(1, model.instance_buf.slice(..));
+                    sp.draw_indexed(0..model.mesh.index_count, 0, 0..model.instance_count);
                 }
             }
         }

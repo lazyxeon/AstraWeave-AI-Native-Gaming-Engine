@@ -11,9 +11,9 @@
 
 use astraweave_render::asset_index::AssetIndex;
 use astraweave_render::biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
-use astraweave_render::DayPeriod;
 #[cfg(feature = "skinning-gpu")]
 use astraweave_render::skinning_gpu::SkinnedVertex;
+use astraweave_render::DayPeriod;
 use astraweave_terrain::biome::BiomeType;
 use std::path::PathBuf;
 
@@ -345,7 +345,7 @@ fn biome_system_needs_transition_after_load() {
     let mut sys = BiomeMaterialSystem::new(BiomeMaterialConfig::default());
     sys.mark_loaded(BiomeType::Forest, None);
     assert!(!sys.needs_transition(BiomeType::Forest)); // same biome
-    assert!(sys.needs_transition(BiomeType::Desert));  // different
+    assert!(sys.needs_transition(BiomeType::Desert)); // different
 }
 
 #[test]

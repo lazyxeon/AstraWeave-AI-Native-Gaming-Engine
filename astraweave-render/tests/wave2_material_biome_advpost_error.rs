@@ -2,16 +2,16 @@
 //!
 //! Targets pure CPU functions with golden values for mutation killing.
 
+use astraweave_render::advanced_post::{
+    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
+};
+use astraweave_render::biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
+use astraweave_render::error::{RenderError, RenderResult};
+use astraweave_render::hdri_catalog::DayPeriod;
 use astraweave_render::material::{
     validate_array_layout, validate_material_pack, ArrayLayout, MaterialGpu, MaterialLayerDesc,
     MaterialLoadStats, MaterialManager, MaterialPackDesc,
 };
-use astraweave_render::biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
-use astraweave_render::advanced_post::{
-    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-};
-use astraweave_render::error::{RenderError, RenderResult};
-use astraweave_render::hdri_catalog::DayPeriod;
 use astraweave_terrain::biome::BiomeType;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -356,7 +356,10 @@ fn biome_material_dir_for_all_biomes() {
 #[test]
 fn biome_material_terrain_fallback_dir() {
     let sys = BiomeMaterialSystem::new(BiomeMaterialConfig::default());
-    assert_eq!(sys.terrain_fallback_dir(), PathBuf::from("assets/materials/terrain"));
+    assert_eq!(
+        sys.terrain_fallback_dir(),
+        PathBuf::from("assets/materials/terrain")
+    );
 }
 
 #[test]

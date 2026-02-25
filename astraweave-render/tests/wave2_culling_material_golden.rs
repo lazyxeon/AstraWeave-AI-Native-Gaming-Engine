@@ -61,7 +61,12 @@ fn aabb_from_identity_center() {
     );
     // Center should be (0, 0, 0) — midpoint of [-1,-2,-3] and [1,2,3]
     for i in 0..3 {
-        assert!((aabb.center[i]).abs() < 1e-5, "center[{}] = {}", i, aabb.center[i]);
+        assert!(
+            (aabb.center[i]).abs() < 1e-5,
+            "center[{}] = {}",
+            i,
+            aabb.center[i]
+        );
     }
 }
 
@@ -98,7 +103,12 @@ fn aabb_from_translation_same_extent() {
     let aabb = InstanceAABB::from_transform(&t, Vec3::new(-1.0, -1.0, -1.0), Vec3::ONE, 0);
     // extent = half-size of unit cube = (1, 1, 1)
     for i in 0..3 {
-        assert!((aabb.extent[i] - 1.0).abs() < 1e-5, "extent[{}] = {}", i, aabb.extent[i]);
+        assert!(
+            (aabb.extent[i] - 1.0).abs() < 1e-5,
+            "extent[{}] = {}",
+            i,
+            aabb.extent[i]
+        );
     }
 }
 
@@ -112,7 +122,12 @@ fn aabb_from_uniform_scale_doubles_extent() {
     let aabb = InstanceAABB::from_transform(&s, Vec3::new(-1.0, -1.0, -1.0), Vec3::ONE, 0);
     // scaled extent = 2 * original extent = (2, 2, 2)
     for i in 0..3 {
-        assert!((aabb.extent[i] - 2.0).abs() < 1e-4, "extent[{}] = {}", i, aabb.extent[i]);
+        assert!(
+            (aabb.extent[i] - 2.0).abs() < 1e-4,
+            "extent[{}] = {}",
+            i,
+            aabb.extent[i]
+        );
     }
 }
 
@@ -192,7 +207,11 @@ fn cpu_cull_empty_instances() {
 fn cpu_cull_one_visible() {
     let vp = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
     let fp = FrustumPlanes::from_view_proj(&vp);
-    let instances = [InstanceAABB::new(Vec3::new(0.0, 0.0, -5.0), Vec3::splat(1.0), 7)];
+    let instances = [InstanceAABB::new(
+        Vec3::new(0.0, 0.0, -5.0),
+        Vec3::splat(1.0),
+        7,
+    )];
     let visible = cpu_frustum_cull(&instances, &fp);
     assert_eq!(visible, vec![7]);
 }
@@ -201,7 +220,11 @@ fn cpu_cull_one_visible() {
 fn cpu_cull_one_outside() {
     let vp = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
     let fp = FrustumPlanes::from_view_proj(&vp);
-    let instances = [InstanceAABB::new(Vec3::new(0.0, 0.0, -200.0), Vec3::splat(1.0), 3)];
+    let instances = [InstanceAABB::new(
+        Vec3::new(0.0, 0.0, -200.0),
+        Vec3::splat(1.0),
+        3,
+    )];
     let visible = cpu_frustum_cull(&instances, &fp);
     assert!(visible.is_empty());
 }
@@ -211,10 +234,10 @@ fn cpu_cull_mixed_visibility() {
     let vp = Mat4::orthographic_rh(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
     let fp = FrustumPlanes::from_view_proj(&vp);
     let instances = [
-        InstanceAABB::new(Vec3::new(0.0, 0.0, -5.0), Vec3::splat(1.0), 0),   // visible
-        InstanceAABB::new(Vec3::new(100.0, 0.0, -5.0), Vec3::splat(1.0), 1),  // culled
-        InstanceAABB::new(Vec3::new(5.0, 5.0, -50.0), Vec3::splat(1.0), 2),   // visible
-        InstanceAABB::new(Vec3::new(0.0, 0.0, -200.0), Vec3::splat(1.0), 3),  // culled
+        InstanceAABB::new(Vec3::new(0.0, 0.0, -5.0), Vec3::splat(1.0), 0), // visible
+        InstanceAABB::new(Vec3::new(100.0, 0.0, -5.0), Vec3::splat(1.0), 1), // culled
+        InstanceAABB::new(Vec3::new(5.0, 5.0, -50.0), Vec3::splat(1.0), 2), // visible
+        InstanceAABB::new(Vec3::new(0.0, 0.0, -200.0), Vec3::splat(1.0), 3), // culled
     ];
     let visible = cpu_frustum_cull(&instances, &fp);
     assert_eq!(visible, vec![0, 2]);

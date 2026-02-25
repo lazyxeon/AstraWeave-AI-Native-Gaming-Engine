@@ -10,14 +10,14 @@
 //!   - primitives::cube() face normal direction signs
 //!   - primitives::plane() y=0 constraint
 
-use astraweave_render::types::{
-    cluster_index, ClusterDims, Instance, InstanceRaw, Material, Vertex,
-};
 use astraweave_render::culling::{
     batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId, DrawBatch,
     DrawIndirectCommand, FrustumPlanes, InstanceAABB,
 };
 use astraweave_render::primitives;
+use astraweave_render::types::{
+    cluster_index, ClusterDims, Instance, InstanceRaw, Material, Vertex,
+};
 use glam::{Mat4, Quat, Vec3};
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -112,9 +112,21 @@ fn instance_raw_non_uniform_scale_normal_matrix() {
         material_id: 0,
     };
     let raw = inst.raw();
-    assert!((raw.normal_matrix[0][0] - 0.5).abs() < 1e-4, "x: {}", raw.normal_matrix[0][0]);
-    assert!((raw.normal_matrix[1][1] - 1.0).abs() < 1e-4, "y: {}", raw.normal_matrix[1][1]);
-    assert!((raw.normal_matrix[2][2] - 1.0).abs() < 1e-4, "z: {}", raw.normal_matrix[2][2]);
+    assert!(
+        (raw.normal_matrix[0][0] - 0.5).abs() < 1e-4,
+        "x: {}",
+        raw.normal_matrix[0][0]
+    );
+    assert!(
+        (raw.normal_matrix[1][1] - 1.0).abs() < 1e-4,
+        "y: {}",
+        raw.normal_matrix[1][1]
+    );
+    assert!(
+        (raw.normal_matrix[2][2] - 1.0).abs() < 1e-4,
+        "z: {}",
+        raw.normal_matrix[2][2]
+    );
 }
 
 #[test]
@@ -231,7 +243,10 @@ fn frustum_ortho_left_right_planes_oppose() {
     // Left and right plane normals should point in opposite x directions
     let left_nx = f.planes[0][0];
     let right_nx = f.planes[1][0];
-    assert!(left_nx * right_nx < 0.0, "left/right should oppose: {left_nx} vs {right_nx}");
+    assert!(
+        left_nx * right_nx < 0.0,
+        "left/right should oppose: {left_nx} vs {right_nx}"
+    );
 }
 
 #[test]
@@ -240,7 +255,10 @@ fn frustum_ortho_bottom_top_planes_oppose() {
     let f = FrustumPlanes::from_view_proj(&vp);
     let bottom_ny = f.planes[2][1];
     let top_ny = f.planes[3][1];
-    assert!(bottom_ny * top_ny < 0.0, "bottom/top should oppose: {bottom_ny} vs {top_ny}");
+    assert!(
+        bottom_ny * top_ny < 0.0,
+        "bottom/top should oppose: {bottom_ny} vs {top_ny}"
+    );
 }
 
 #[test]
@@ -249,7 +267,10 @@ fn frustum_ortho_near_far_planes_oppose() {
     let f = FrustumPlanes::from_view_proj(&vp);
     let near_nz = f.planes[4][2];
     let far_nz = f.planes[5][2];
-    assert!(near_nz * far_nz < 0.0, "near/far should oppose: {near_nz} vs {far_nz}");
+    assert!(
+        near_nz * far_nz < 0.0,
+        "near/far should oppose: {near_nz} vs {far_nz}"
+    );
 }
 
 #[test]
@@ -376,7 +397,11 @@ fn aabb_from_transform_scale() {
     );
     // Scale 2 → extent doubles from 1 to 2
     for i in 0..3 {
-        assert!((aabb.extent[i] - 2.0).abs() < 1e-3, "extent[{i}]={}", aabb.extent[i]);
+        assert!(
+            (aabb.extent[i] - 2.0).abs() < 1e-3,
+            "extent[{i}]={}",
+            aabb.extent[i]
+        );
     }
 }
 
@@ -390,9 +415,21 @@ fn aabb_from_transform_90_rotation_y() {
         0,
     );
     // Original extent: (2, 1, 3). After 90° Y rotation: x-extent≈3, z-extent≈2
-    assert!((aabb.extent[0] - 3.0).abs() < 0.1, "rotated x extent: {}", aabb.extent[0]);
-    assert!((aabb.extent[1] - 1.0).abs() < 0.1, "y unchanged: {}", aabb.extent[1]);
-    assert!((aabb.extent[2] - 2.0).abs() < 0.1, "rotated z extent: {}", aabb.extent[2]);
+    assert!(
+        (aabb.extent[0] - 3.0).abs() < 0.1,
+        "rotated x extent: {}",
+        aabb.extent[0]
+    );
+    assert!(
+        (aabb.extent[1] - 1.0).abs() < 0.1,
+        "y unchanged: {}",
+        aabb.extent[1]
+    );
+    assert!(
+        (aabb.extent[2] - 2.0).abs() < 0.1,
+        "rotated z extent: {}",
+        aabb.extent[2]
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -451,11 +488,7 @@ fn build_indirect_commands_gpu_layout() {
 #[test]
 fn batch_visible_instances_single_group() {
     let visible = vec![10, 20, 30];
-    let batches = batch_visible_instances(
-        &visible,
-        |_| BatchId::new(5, 3),
-        |_| (100, 0),
-    );
+    let batches = batch_visible_instances(&visible, |_| BatchId::new(5, 3), |_| (100, 0));
     assert_eq!(batches.len(), 1);
     assert_eq!(batches[0].instance_count(), 3);
     assert_eq!(batches[0].instances, vec![10, 20, 30]);
@@ -586,20 +619,38 @@ fn sphere_index_count_formula() {
 fn sphere_poles_at_correct_position() {
     let (verts, _) = primitives::sphere(8, 8, 2.0);
     // Top pole: i=0 (phi=0) → y=radius, x=z=0
-    assert!((verts[0].position[1] - 2.0).abs() < 1e-4, "top pole y={}", verts[0].position[1]);
-    assert!(verts[0].position[0].abs() < 1e-4, "top pole x={}", verts[0].position[0]);
-    assert!(verts[0].position[2].abs() < 1e-4, "top pole z={}", verts[0].position[2]);
+    assert!(
+        (verts[0].position[1] - 2.0).abs() < 1e-4,
+        "top pole y={}",
+        verts[0].position[1]
+    );
+    assert!(
+        verts[0].position[0].abs() < 1e-4,
+        "top pole x={}",
+        verts[0].position[0]
+    );
+    assert!(
+        verts[0].position[2].abs() < 1e-4,
+        "top pole z={}",
+        verts[0].position[2]
+    );
 
     // Bottom pole: i=stacks (last stack, j=0)
     let bottom = &verts[8 * (8 + 1)]; // i=8, j=0
-    assert!((bottom.position[1] + 2.0).abs() < 1e-4, "bottom pole y={}", bottom.position[1]);
+    assert!(
+        (bottom.position[1] + 2.0).abs() < 1e-4,
+        "bottom pole y={}",
+        bottom.position[1]
+    );
 }
 
 #[test]
 fn sphere_all_normals_unit_length() {
     let (verts, _) = primitives::sphere(10, 10, 3.0);
     for (i, v) in verts.iter().enumerate() {
-        let len = (v.normal[0] * v.normal[0] + v.normal[1] * v.normal[1] + v.normal[2] * v.normal[2]).sqrt();
+        let len =
+            (v.normal[0] * v.normal[0] + v.normal[1] * v.normal[1] + v.normal[2] * v.normal[2])
+                .sqrt();
         assert!((len - 1.0).abs() < 1e-4, "vertex {i}: normal length={len}");
     }
 }
@@ -647,7 +698,11 @@ fn sphere_equator_x_vertex() {
     // nx = sin(PI/2)*cos(0) = 1, ny = cos(PI/2) = 0, nz = sin(PI/2)*sin(0) = 0
     let equator_idx = 4 * (8 + 1); // i=4, j=0
     let v = &verts[equator_idx];
-    assert!((v.position[0] - 1.0).abs() < 1e-4, "equator x: {}", v.position[0]);
+    assert!(
+        (v.position[0] - 1.0).abs() < 1e-4,
+        "equator x: {}",
+        v.position[0]
+    );
     assert!(v.position[1].abs() < 1e-4, "equator y: {}", v.position[1]);
     assert!(v.position[2].abs() < 1e-4, "equator z: {}", v.position[2]);
 }
@@ -668,7 +723,9 @@ fn sphere_no_degenerate_triangles() {
 
 #[test]
 fn material_clone_preserves_color() {
-    let m = Material { color: [0.1, 0.2, 0.3, 0.4] };
+    let m = Material {
+        color: [0.1, 0.2, 0.3, 0.4],
+    };
     let m2 = m.clone();
     assert_eq!(m.color, m2.color);
 }

@@ -124,8 +124,12 @@ fn cube_uv_corners_per_face() {
 fn cube_all_tangents_are_positive_x() {
     let (v, _) = cube();
     for (idx, vert) in v.iter().enumerate() {
-        assert_eq!(vert.tangent, [1.0, 0.0, 0.0, 1.0],
-            "All cube tangents should be (+X, +1 handedness) at v[{}]", idx);
+        assert_eq!(
+            vert.tangent,
+            [1.0, 0.0, 0.0, 1.0],
+            "All cube tangents should be (+X, +1 handedness) at v[{}]",
+            idx
+        );
     }
 }
 
@@ -133,7 +137,12 @@ fn cube_all_tangents_are_positive_x() {
 fn cube_indices_all_in_bounds() {
     let (v, i) = cube();
     for &idx in &i {
-        assert!((idx as usize) < v.len(), "Index {} out of bounds ({})", idx, v.len());
+        assert!(
+            (idx as usize) < v.len(),
+            "Index {} out of bounds ({})",
+            idx,
+            v.len()
+        );
     }
 }
 
@@ -231,9 +240,17 @@ fn sphere_north_pole_golden() {
     for j in 0..5 {
         let vert = &v[j];
         assert!((vert.position[0]).abs() < 1e-5, "North pole x at col {}", j);
-        assert!((vert.position[1] - r).abs() < 1e-5, "North pole y at col {}", j);
+        assert!(
+            (vert.position[1] - r).abs() < 1e-5,
+            "North pole y at col {}",
+            j
+        );
         assert!((vert.position[2]).abs() < 1e-5, "North pole z at col {}", j);
-        assert!((vert.normal[1] - 1.0).abs() < 1e-5, "North pole ny at col {}", j);
+        assert!(
+            (vert.normal[1] - 1.0).abs() < 1e-5,
+            "North pole ny at col {}",
+            j
+        );
     }
 }
 
@@ -242,12 +259,16 @@ fn sphere_south_pole_golden() {
     let r = 2.0;
     let (v, _) = sphere(4, 4, r);
     let row = 5; // slices+1
-    // Last row (stack 4) at south pole: phi=PI, sin_phi≈0, cos_phi=-1
+                 // Last row (stack 4) at south pole: phi=PI, sin_phi≈0, cos_phi=-1
     let base = 4 * row;
     for j in 0..5 {
         let vert = &v[base + j];
         assert!((vert.position[0]).abs() < 1e-4, "South pole x at col {}", j);
-        assert!((vert.position[1] + r).abs() < 1e-4, "South pole y at col {}", j);
+        assert!(
+            (vert.position[1] + r).abs() < 1e-4,
+            "South pole y at col {}",
+            j
+        );
         assert!((vert.position[2]).abs() < 1e-4, "South pole z at col {}", j);
     }
 }
@@ -261,10 +282,20 @@ fn sphere_equator_radius() {
     let base = 4 * row;
     for j in 0..=8 {
         let vert = &v[base + j];
-        let dist = (vert.position[0].powi(2) + vert.position[1].powi(2) + vert.position[2].powi(2)).sqrt();
-        assert!((dist - r).abs() < 1e-4, "Equator vertex {} dist={}", j, dist);
+        let dist =
+            (vert.position[0].powi(2) + vert.position[1].powi(2) + vert.position[2].powi(2)).sqrt();
+        assert!(
+            (dist - r).abs() < 1e-4,
+            "Equator vertex {} dist={}",
+            j,
+            dist
+        );
         // y should be ~0 at equator
-        assert!(vert.position[1].abs() < 1e-4, "Equator y should be ~0, got {}", vert.position[1]);
+        assert!(
+            vert.position[1].abs() < 1e-4,
+            "Equator y should be ~0, got {}",
+            vert.position[1]
+        );
     }
 }
 
@@ -273,7 +304,12 @@ fn sphere_all_normals_unit_length() {
     let (v, _) = sphere(8, 8, 1.0);
     for (idx, vert) in v.iter().enumerate() {
         let len = (vert.normal[0].powi(2) + vert.normal[1].powi(2) + vert.normal[2].powi(2)).sqrt();
-        assert!((len - 1.0).abs() < 1e-4, "Normal at {} has length {}", idx, len);
+        assert!(
+            (len - 1.0).abs() < 1e-4,
+            "Normal at {} has length {}",
+            idx,
+            len
+        );
     }
 }
 
@@ -282,8 +318,15 @@ fn sphere_all_vertices_at_radius() {
     let r = 5.0;
     let (v, _) = sphere(10, 10, r);
     for (idx, vert) in v.iter().enumerate() {
-        let dist = (vert.position[0].powi(2) + vert.position[1].powi(2) + vert.position[2].powi(2)).sqrt();
-        assert!((dist - r).abs() < 0.01, "Vertex {} dist={}, expected {}", idx, dist, r);
+        let dist =
+            (vert.position[0].powi(2) + vert.position[1].powi(2) + vert.position[2].powi(2)).sqrt();
+        assert!(
+            (dist - r).abs() < 0.01,
+            "Vertex {} dist={}, expected {}",
+            idx,
+            dist,
+            r
+        );
     }
 }
 
@@ -294,7 +337,12 @@ fn sphere_normals_point_outward() {
         let dot = vert.normal[0] * vert.position[0]
             + vert.normal[1] * vert.position[1]
             + vert.normal[2] * vert.position[2];
-        assert!(dot > 0.99, "Normal at {} should point outward, dot={}", idx, dot);
+        assert!(
+            dot > 0.99,
+            "Normal at {} should point outward, dot={}",
+            idx,
+            dot
+        );
     }
 }
 
@@ -302,8 +350,18 @@ fn sphere_normals_point_outward() {
 fn sphere_uvs_in_range() {
     let (v, _) = sphere(8, 8, 1.0);
     for (idx, vert) in v.iter().enumerate() {
-        assert!(vert.uv[0] >= 0.0 && vert.uv[0] <= 1.0, "UV.x at {} = {}", idx, vert.uv[0]);
-        assert!(vert.uv[1] >= 0.0 && vert.uv[1] <= 1.0, "UV.y at {} = {}", idx, vert.uv[1]);
+        assert!(
+            vert.uv[0] >= 0.0 && vert.uv[0] <= 1.0,
+            "UV.x at {} = {}",
+            idx,
+            vert.uv[0]
+        );
+        assert!(
+            vert.uv[1] >= 0.0 && vert.uv[1] <= 1.0,
+            "UV.y at {} = {}",
+            idx,
+            vert.uv[1]
+        );
     }
 }
 
@@ -311,13 +369,21 @@ fn sphere_uvs_in_range() {
 fn sphere_uv_v_decreases_with_stack() {
     let (v, _) = sphere(8, 8, 1.0);
     let row = 9; // slices+1
-    // UV.y (stored as 1-v) should decrease from top (stack 0) to bottom (stack 8)
-    // Actually uv = [u, 1.0 - v], so at stack 0 (v=0), uv.y = 1.0
-    // At stack 8 (v=1), uv.y = 0.0
+                 // UV.y (stored as 1-v) should decrease from top (stack 0) to bottom (stack 8)
+                 // Actually uv = [u, 1.0 - v], so at stack 0 (v=0), uv.y = 1.0
+                 // At stack 8 (v=1), uv.y = 0.0
     let top_uv_y = v[0].uv[1];
     let bottom_uv_y = v[8 * row].uv[1];
-    assert!((top_uv_y - 1.0).abs() < 1e-5, "Top UV.y should be 1.0, got {}", top_uv_y);
-    assert!((bottom_uv_y).abs() < 1e-5, "Bottom UV.y should be 0.0, got {}", bottom_uv_y);
+    assert!(
+        (top_uv_y - 1.0).abs() < 1e-5,
+        "Top UV.y should be 1.0, got {}",
+        top_uv_y
+    );
+    assert!(
+        (bottom_uv_y).abs() < 1e-5,
+        "Bottom UV.y should be 0.0, got {}",
+        bottom_uv_y
+    );
 }
 
 #[test]
@@ -338,7 +404,11 @@ fn sphere_indices_form_triangles() {
 fn sphere_tangent_handedness_positive() {
     let (v, _) = sphere(8, 8, 1.0);
     for (idx, vert) in v.iter().enumerate() {
-        assert_eq!(vert.tangent[3], 1.0, "Tangent handedness at {} should be +1", idx);
+        assert_eq!(
+            vert.tangent[3], 1.0,
+            "Tangent handedness at {} should be +1",
+            idx
+        );
     }
 }
 

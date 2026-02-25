@@ -46,13 +46,21 @@ mod camera_tests {
     #[test]
     fn dir_pitch_up_has_positive_y() {
         let d = Camera::dir(0.0, std::f32::consts::FRAC_PI_4);
-        assert!(d.y > 0.5, "y should be positive when pitch > 0, got {}", d.y);
+        assert!(
+            d.y > 0.5,
+            "y should be positive when pitch > 0, got {}",
+            d.y
+        );
     }
 
     #[test]
     fn dir_pitch_down_has_negative_y() {
         let d = Camera::dir(0.0, -std::f32::consts::FRAC_PI_4);
-        assert!(d.y < -0.5, "y should be negative when pitch < 0, got {}", d.y);
+        assert!(
+            d.y < -0.5,
+            "y should be negative when pitch < 0, got {}",
+            d.y
+        );
     }
 
     #[test]
@@ -149,11 +157,7 @@ mod camera_tests {
         // The view matrix should be look_to_rh(pos, dir, -Y)
         let cam = make_camera();
         let v = cam.view_matrix();
-        let expected = Mat4::look_to_rh(
-            cam.position,
-            Camera::dir(cam.yaw, cam.pitch),
-            -Vec3::Y,
-        );
+        let expected = Mat4::look_to_rh(cam.position, Camera::dir(cam.yaw, cam.pitch), -Vec3::Y);
         for i in 0..4 {
             for j in 0..4 {
                 assert!(
@@ -446,7 +450,12 @@ mod decal_tests {
 
     #[test]
     fn decal_permanent_never_expires() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         // fade_duration = 0 means permanent
         for _ in 0..100 {
             assert!(d.update(1.0), "permanent decal should never expire");
@@ -456,10 +465,15 @@ mod decal_tests {
 
     #[test]
     fn decal_fade_halfway_alpha() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         d.fade_duration = 4.0;
         assert!(d.update(2.0)); // 50% through
-        // alpha should be 1.0 - (2.0/4.0) = 0.5
+                                // alpha should be 1.0 - (2.0/4.0) = 0.5
         assert!(
             (d.albedo_tint[3] - 0.5).abs() < 0.01,
             "alpha at 50% should be ~0.5, got {}",
@@ -469,7 +483,12 @@ mod decal_tests {
 
     #[test]
     fn decal_fade_near_end_low_alpha() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         d.fade_duration = 2.0;
         assert!(d.update(1.5)); // 75%
         assert!(
@@ -481,7 +500,12 @@ mod decal_tests {
 
     #[test]
     fn decal_fade_expired_returns_false() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         d.fade_duration = 1.0;
         assert!(d.update(0.5)); // Still alive
         assert!(!d.update(0.6)); // expired (total 1.1 > 1.0)
@@ -489,7 +513,12 @@ mod decal_tests {
 
     #[test]
     fn decal_fade_exact_duration_expires() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         d.fade_duration = 2.0;
         // Exactly at duration (fade_time == fade_duration)
         assert!(!d.update(2.0), "decal at exact duration should expire");
@@ -559,7 +588,12 @@ mod decal_tests {
 
     #[test]
     fn decal_to_gpu_blend_mode_in_params_w() {
-        let mut d = Decal::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE, ([0.0, 0.0], [1.0, 1.0]));
+        let mut d = Decal::new(
+            Vec3::ZERO,
+            Quat::IDENTITY,
+            Vec3::ONE,
+            ([0.0, 0.0], [1.0, 1.0]),
+        );
         d.blend_mode = DecalBlendMode::Additive;
         let gpu = d.to_gpu();
         assert_eq!(gpu.params[3], 1.0, "Additive should be 1.0 in params.w");
@@ -594,23 +628,38 @@ mod hdri_catalog_tests {
 
     #[test]
     fn from_str_loose_morning_aliases() {
-        assert_eq!(DayPeriod::from_str_loose("morning"), Some(DayPeriod::Morning));
-        assert_eq!(DayPeriod::from_str_loose("sunrise"), Some(DayPeriod::Morning));
+        assert_eq!(
+            DayPeriod::from_str_loose("morning"),
+            Some(DayPeriod::Morning)
+        );
+        assert_eq!(
+            DayPeriod::from_str_loose("sunrise"),
+            Some(DayPeriod::Morning)
+        );
         assert_eq!(DayPeriod::from_str_loose("dawn"), Some(DayPeriod::Morning));
         assert_eq!(DayPeriod::from_str_loose("DAWN"), Some(DayPeriod::Morning));
     }
 
     #[test]
     fn from_str_loose_evening_aliases() {
-        assert_eq!(DayPeriod::from_str_loose("evening"), Some(DayPeriod::Evening));
-        assert_eq!(DayPeriod::from_str_loose("sunset"), Some(DayPeriod::Evening));
+        assert_eq!(
+            DayPeriod::from_str_loose("evening"),
+            Some(DayPeriod::Evening)
+        );
+        assert_eq!(
+            DayPeriod::from_str_loose("sunset"),
+            Some(DayPeriod::Evening)
+        );
         assert_eq!(DayPeriod::from_str_loose("dusk"), Some(DayPeriod::Evening));
     }
 
     #[test]
     fn from_str_loose_night_aliases() {
         assert_eq!(DayPeriod::from_str_loose("night"), Some(DayPeriod::Night));
-        assert_eq!(DayPeriod::from_str_loose("midnight"), Some(DayPeriod::Night));
+        assert_eq!(
+            DayPeriod::from_str_loose("midnight"),
+            Some(DayPeriod::Night)
+        );
     }
 
     #[test]
@@ -715,12 +764,18 @@ mod hdri_catalog_tests {
     #[test]
     fn from_game_hours_wraps_negative() {
         // rem_euclid handles negative hours
-        assert_eq!(DayPeriod::from_game_hours(-1.0), DayPeriod::from_game_hours(23.0));
+        assert_eq!(
+            DayPeriod::from_game_hours(-1.0),
+            DayPeriod::from_game_hours(23.0)
+        );
     }
 
     #[test]
     fn from_game_hours_wraps_over_24() {
-        assert_eq!(DayPeriod::from_game_hours(30.0), DayPeriod::from_game_hours(6.0));
+        assert_eq!(
+            DayPeriod::from_game_hours(30.0),
+            DayPeriod::from_game_hours(6.0)
+        );
     }
 }
 
@@ -754,7 +809,10 @@ mod types_tests {
         let dims = ClusterDims { x: 4, y: 4, z: 8 };
         let idx1 = cluster_index(200, 200, 800, 800, 5.0, 0.1, 100.0, dims);
         let idx2 = cluster_index(200, 200, 800, 800, 50.0, 0.1, 100.0, dims);
-        assert!(idx2 > idx1, "deeper pixel should have higher z-slice → higher index");
+        assert!(
+            idx2 > idx1,
+            "deeper pixel should have higher z-slice → higher index"
+        );
     }
 
     #[test]
@@ -787,7 +845,10 @@ mod types_tests {
         // Same y and depth, different x → different sx component
         let sx_left = idx_left % dims.x;
         let sx_right = idx_right % dims.x;
-        assert_ne!(sx_left, sx_right, "different x coords should map to different tiles");
+        assert_ne!(
+            sx_left, sx_right,
+            "different x coords should map to different tiles"
+        );
     }
 
     #[test]
@@ -795,7 +856,10 @@ mod types_tests {
         let dims = ClusterDims { x: 4, y: 8, z: 4 };
         let idx_top = cluster_index(200, 0, 800, 800, 10.0, 0.1, 100.0, dims);
         let idx_bottom = cluster_index(200, 799, 800, 800, 10.0, 0.1, 100.0, dims);
-        assert_ne!(idx_top, idx_bottom, "different y coords should map to different tiles");
+        assert_ne!(
+            idx_top, idx_bottom,
+            "different y coords should map to different tiles"
+        );
     }
 
     // --- Instance tests ---
@@ -942,9 +1006,14 @@ mod biome_audio_tests {
         let m = BiomeAmbientMap::default();
         assert_eq!(m.len(), 8);
         for &biome in &[
-            BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-            BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-            BiomeType::Beach, BiomeType::River,
+            BiomeType::Forest,
+            BiomeType::Desert,
+            BiomeType::Grassland,
+            BiomeType::Mountain,
+            BiomeType::Tundra,
+            BiomeType::Swamp,
+            BiomeType::Beach,
+            BiomeType::River,
         ] {
             assert!(m.get(biome).is_some(), "missing {:?}", biome);
         }
@@ -954,12 +1023,20 @@ mod biome_audio_tests {
     fn default_paths_format_consistent() {
         let m = BiomeAmbientMap::default();
         for &biome in &[
-            BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-            BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-            BiomeType::Beach, BiomeType::River,
+            BiomeType::Forest,
+            BiomeType::Desert,
+            BiomeType::Grassland,
+            BiomeType::Mountain,
+            BiomeType::Tundra,
+            BiomeType::Swamp,
+            BiomeType::Beach,
+            BiomeType::River,
         ] {
             let path = m.get(biome).unwrap();
-            assert!(path.starts_with("assets/audio/ambient/"), "path prefix wrong: {path}");
+            assert!(
+                path.starts_with("assets/audio/ambient/"),
+                "path prefix wrong: {path}"
+            );
             assert!(path.ends_with(".ogg"), "path suffix wrong: {path}");
         }
     }
@@ -1005,7 +1082,11 @@ mod biome_audio_tests {
     fn set_crossfade_sec_clamps_negative() {
         let mut m = BiomeAmbientMap::new();
         m.set_crossfade_sec(-100.0);
-        assert!(m.crossfade_sec() >= 0.01, "should clamp to >= 0.01, got {}", m.crossfade_sec());
+        assert!(
+            m.crossfade_sec() >= 0.01,
+            "should clamp to >= 0.01, got {}",
+            m.crossfade_sec()
+        );
     }
 
     #[test]
@@ -1019,9 +1100,14 @@ mod biome_audio_tests {
     fn is_empty_after_clear() {
         let mut m = BiomeAmbientMap::new();
         for &biome in &[
-            BiomeType::Forest, BiomeType::Desert, BiomeType::Grassland,
-            BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-            BiomeType::Beach, BiomeType::River,
+            BiomeType::Forest,
+            BiomeType::Desert,
+            BiomeType::Grassland,
+            BiomeType::Mountain,
+            BiomeType::Tundra,
+            BiomeType::Swamp,
+            BiomeType::Beach,
+            BiomeType::River,
         ] {
             m.remove(biome);
         }
@@ -1034,11 +1120,11 @@ mod biome_audio_tests {
 //  SceneEnvironment — UBO layout, weather multipliers, biome lookups
 // ═══════════════════════════════════════════════════════════════════════
 mod scene_env_tests {
+    use astraweave_render::biome_transition::BiomeVisuals;
+    use astraweave_render::effects::WeatherKind;
     use astraweave_render::scene_environment::{
         SceneEnvironment, SceneEnvironmentUBO, WGSL_FOG_FUNCTIONS, WGSL_SCENE_ENVIRONMENT,
     };
-    use astraweave_render::biome_transition::BiomeVisuals;
-    use astraweave_render::effects::WeatherKind;
     use astraweave_terrain::biome::BiomeType;
 
     #[test]
@@ -1057,14 +1143,22 @@ mod scene_env_tests {
     #[test]
     fn ubo_for_biome_matches_visuals() {
         for &biome in &[
-            BiomeType::Grassland, BiomeType::Desert, BiomeType::Forest,
-            BiomeType::Mountain, BiomeType::Tundra, BiomeType::Swamp,
-            BiomeType::Beach, BiomeType::River,
+            BiomeType::Grassland,
+            BiomeType::Desert,
+            BiomeType::Forest,
+            BiomeType::Mountain,
+            BiomeType::Tundra,
+            BiomeType::Swamp,
+            BiomeType::Beach,
+            BiomeType::River,
         ] {
             let ubo = SceneEnvironmentUBO::for_biome(biome);
             let v = BiomeVisuals::for_biome(biome);
             assert_eq!(ubo.fog_density, v.fog_density, "fog mismatch for {biome:?}");
-            assert_eq!(ubo.ambient_intensity, v.ambient_intensity, "ambient mismatch for {biome:?}");
+            assert_eq!(
+                ubo.ambient_intensity, v.ambient_intensity,
+                "ambient mismatch for {biome:?}"
+            );
             assert_eq!(ubo.blend_factor, 0.0);
             assert_eq!(ubo.tint_alpha, 0.0);
         }
@@ -1250,7 +1344,7 @@ mod clustered_forward_tests {
 // ═══════════════════════════════════════════════════════════════════════
 mod shadow_csm_tests {
     use astraweave_render::shadow_csm::{
-        CASCADE_COUNT, CASCADE_RESOLUTION, ATLAS_RESOLUTION, DEPTH_BIAS,
+        ATLAS_RESOLUTION, CASCADE_COUNT, CASCADE_RESOLUTION, DEPTH_BIAS,
     };
 
     #[test]
@@ -1278,7 +1372,12 @@ mod shadow_csm_tests {
     #[test]
     fn cascade_splits_monotonic_various_ranges() {
         let lambda = 0.5f32;
-        for &(near, far) in &[(0.1f32, 100.0f32), (0.1, 1000.0), (1.0, 50.0), (0.01, 10000.0)] {
+        for &(near, far) in &[
+            (0.1f32, 100.0f32),
+            (0.1, 1000.0),
+            (1.0, 50.0),
+            (0.01, 10000.0),
+        ] {
             let mut splits = [0.0f32; CASCADE_COUNT + 1];
             splits[0] = near;
             splits[CASCADE_COUNT] = far;
@@ -1290,7 +1389,10 @@ mod shadow_csm_tests {
                 splits[i] = lambda * log_split + (1.0 - lambda) * uni_split;
             }
             for pair in splits.windows(2) {
-                assert!(pair[0] < pair[1], "splits must be monotonic for near={near}, far={far}");
+                assert!(
+                    pair[0] < pair[1],
+                    "splits must be monotonic for near={near}, far={far}"
+                );
             }
         }
     }

@@ -4,18 +4,16 @@
 //! TaaConfig/MotionBlurConfig/DofConfig/ColorGradingConfig defaults, BloomConfig,
 //! MaterialGpuExtended defaults and factory methods, material flags.
 
-use astraweave_render::{
-    SkyConfig, TimeOfDay,
-    Camera, CameraController,
-    TaaConfig, MotionBlurConfig, DofConfig, ColorGradingConfig,
-};
-use astraweave_render::material_extended::{
-    MaterialGpuExtended,
-    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_ANISOTROPY,
-    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_TRANSMISSION,
-};
 use astraweave_render::material::MaterialGpu;
-use glam::{Vec3, vec3};
+use astraweave_render::material_extended::{
+    MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY, MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN,
+    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_TRANSMISSION,
+};
+use astraweave_render::{
+    Camera, CameraController, ColorGradingConfig, DofConfig, MotionBlurConfig, SkyConfig,
+    TaaConfig, TimeOfDay,
+};
+use glam::{vec3, Vec3};
 
 // ═══════════════════════════════════════════════════════════════════════
 // SkyConfig defaults
@@ -35,7 +33,10 @@ fn sky_config_default_sunset_color_top() {
 }
 #[test]
 fn sky_config_default_sunset_color_horizon() {
-    assert_eq!(SkyConfig::default().sunset_color_horizon, vec3(1.0, 0.6, 0.3));
+    assert_eq!(
+        SkyConfig::default().sunset_color_horizon,
+        vec3(1.0, 0.6, 0.3)
+    );
 }
 #[test]
 fn sky_config_default_night_color_top() {
@@ -43,7 +44,10 @@ fn sky_config_default_night_color_top() {
 }
 #[test]
 fn sky_config_default_night_color_horizon() {
-    assert_eq!(SkyConfig::default().night_color_horizon, vec3(0.1, 0.1, 0.2));
+    assert_eq!(
+        SkyConfig::default().night_color_horizon,
+        vec3(0.1, 0.1, 0.2)
+    );
 }
 #[test]
 fn sky_config_default_cloud_coverage() {
@@ -114,7 +118,11 @@ fn sun_position_is_normalized() {
     for h in [0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0] {
         let tod = TimeOfDay::new(h, 1.0);
         let pos = tod.get_sun_position();
-        assert!((pos.length() - 1.0).abs() < 0.01, "Not unit at h={h}: {:?}", pos);
+        assert!(
+            (pos.length() - 1.0).abs() < 0.01,
+            "Not unit at h={h}: {:?}",
+            pos
+        );
     }
 }
 #[test]
@@ -205,12 +213,22 @@ fn camera_vp_not_identity() {
 #[test]
 fn camera_proj_aspect_affects_output() {
     let cam1 = Camera {
-        position: Vec3::ZERO, yaw: 0.0, pitch: 0.0,
-        fovy: 1.0, aspect: 1.0, znear: 0.1, zfar: 100.0,
+        position: Vec3::ZERO,
+        yaw: 0.0,
+        pitch: 0.0,
+        fovy: 1.0,
+        aspect: 1.0,
+        znear: 0.1,
+        zfar: 100.0,
     };
     let cam2 = Camera {
-        position: Vec3::ZERO, yaw: 0.0, pitch: 0.0,
-        fovy: 1.0, aspect: 2.0, znear: 0.1, zfar: 100.0,
+        position: Vec3::ZERO,
+        yaw: 0.0,
+        pitch: 0.0,
+        fovy: 1.0,
+        aspect: 2.0,
+        znear: 0.1,
+        zfar: 100.0,
     };
     assert!(cam1.proj_matrix() != cam2.proj_matrix());
 }
@@ -375,7 +393,10 @@ fn mat_ext_default_occlusion_strength() {
 }
 #[test]
 fn mat_ext_default_emissive_factor() {
-    assert_eq!(MaterialGpuExtended::default().emissive_factor, [0.0, 0.0, 0.0]);
+    assert_eq!(
+        MaterialGpuExtended::default().emissive_factor,
+        [0.0, 0.0, 0.0]
+    );
 }
 #[test]
 fn mat_ext_default_clearcoat_strength() {
@@ -395,7 +416,10 @@ fn mat_ext_default_anisotropy_rotation() {
 }
 #[test]
 fn mat_ext_default_subsurface_color() {
-    assert_eq!(MaterialGpuExtended::default().subsurface_color, [1.0, 1.0, 1.0]);
+    assert_eq!(
+        MaterialGpuExtended::default().subsurface_color,
+        [1.0, 1.0, 1.0]
+    );
 }
 #[test]
 fn mat_ext_default_subsurface_scale() {
@@ -423,7 +447,10 @@ fn mat_ext_default_ior() {
 }
 #[test]
 fn mat_ext_default_attenuation_color() {
-    assert_eq!(MaterialGpuExtended::default().attenuation_color, [1.0, 1.0, 1.0]);
+    assert_eq!(
+        MaterialGpuExtended::default().attenuation_color,
+        [1.0, 1.0, 1.0]
+    );
 }
 #[test]
 fn mat_ext_default_attenuation_distance() {
@@ -450,12 +477,7 @@ fn mat_ext_brushed_metal_metallic() {
 }
 #[test]
 fn mat_ext_skin_subsurface() {
-    let m = MaterialGpuExtended::skin(
-        vec3(0.8, 0.6, 0.5),
-        vec3(0.9, 0.4, 0.3),
-        2.0,
-        0.8,
-    );
+    let m = MaterialGpuExtended::skin(vec3(0.8, 0.6, 0.5), vec3(0.9, 0.4, 0.3), 2.0, 0.8);
     assert_eq!(m.metallic_factor, 0.0);
     assert_eq!(m.roughness_factor, 0.5);
     assert_eq!(m.subsurface_color, [0.9, 0.4, 0.3]);
@@ -464,11 +486,7 @@ fn mat_ext_skin_subsurface() {
 }
 #[test]
 fn mat_ext_velvet_sheen() {
-    let m = MaterialGpuExtended::velvet(
-        vec3(0.5, 0.0, 0.5),
-        vec3(0.8, 0.2, 0.8),
-        0.6,
-    );
+    let m = MaterialGpuExtended::velvet(vec3(0.5, 0.0, 0.5), vec3(0.8, 0.2, 0.8), 0.6);
     assert_eq!(m.metallic_factor, 0.0);
     assert_eq!(m.roughness_factor, 0.8);
     assert_eq!(m.sheen_color, [0.8, 0.2, 0.8]);
@@ -515,7 +533,14 @@ fn mat_ext_sheen_flag() {
 }
 #[test]
 fn mat_ext_transmission_flag() {
-    let m = MaterialGpuExtended::glass(vec3(1.0, 1.0, 1.0), 0.05, 0.9, 1.5, vec3(0.9, 0.9, 1.0), 0.5);
+    let m = MaterialGpuExtended::glass(
+        vec3(1.0, 1.0, 1.0),
+        0.05,
+        0.9,
+        1.5,
+        vec3(0.9, 0.9, 1.0),
+        0.5,
+    );
     assert!(m.has_feature(MATERIAL_FLAG_TRANSMISSION));
 }
 #[test]
@@ -535,10 +560,10 @@ fn mat_ext_default_no_flags() {
 fn material_gpu_neutral_factors() {
     let m = MaterialGpu::neutral(0);
     // factors: metallic=0, roughness=0.5, ao=1, alpha=1
-    assert_eq!(m.factors[0], 0.0);  // metallic
-    assert_eq!(m.factors[1], 0.5);  // roughness
-    assert_eq!(m.factors[2], 1.0);  // ao
-    assert_eq!(m.factors[3], 1.0);  // alpha
+    assert_eq!(m.factors[0], 0.0); // metallic
+    assert_eq!(m.factors[1], 0.5); // roughness
+    assert_eq!(m.factors[2], 1.0); // ao
+    assert_eq!(m.factors[3], 1.0); // alpha
 }
 #[test]
 fn material_gpu_neutral_tiling() {

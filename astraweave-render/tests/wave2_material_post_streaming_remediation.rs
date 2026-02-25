@@ -12,14 +12,14 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use astraweave_render::advanced_post::{
+    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
+};
 use astraweave_render::material::{
     validate_array_layout, validate_material_pack, ArrayLayout, MaterialGpu, MaterialLayerDesc,
     MaterialLoadStats, MaterialPackDesc,
 };
 use astraweave_render::post::BloomConfig;
-use astraweave_render::advanced_post::{
-    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-};
 use astraweave_render::texture_streaming::TextureStreamingManager;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -52,10 +52,22 @@ fn material_gpu_neutral_layer_large_texture_indices() {
 fn material_gpu_neutral_tiling_triplanar() {
     let m = MaterialGpu::neutral(0);
     let eps = 1e-6;
-    assert!((m.tiling_triplanar[0] - 1.0).abs() < eps, "u_tile should be 1.0");
-    assert!((m.tiling_triplanar[1] - 1.0).abs() < eps, "v_tile should be 1.0");
-    assert!((m.tiling_triplanar[2] - 16.0).abs() < eps, "triplanar_scale should be 16.0");
-    assert!((m.tiling_triplanar[3] - 0.0).abs() < eps, "unused should be 0.0");
+    assert!(
+        (m.tiling_triplanar[0] - 1.0).abs() < eps,
+        "u_tile should be 1.0"
+    );
+    assert!(
+        (m.tiling_triplanar[1] - 1.0).abs() < eps,
+        "v_tile should be 1.0"
+    );
+    assert!(
+        (m.tiling_triplanar[2] - 16.0).abs() < eps,
+        "triplanar_scale should be 16.0"
+    );
+    assert!(
+        (m.tiling_triplanar[3] - 0.0).abs() < eps,
+        "unused should be 0.0"
+    );
 }
 
 #[test]
@@ -493,7 +505,11 @@ fn validate_layout_duplicate_index_error_message() {
         "should mention duplicate: {}",
         err
     );
-    assert!(err.contains("2"), "should mention the duplicate index: {}", err);
+    assert!(
+        err.contains("2"),
+        "should mention the duplicate index: {}",
+        err
+    );
 }
 
 #[test]
@@ -610,7 +626,11 @@ fn concise_summary_starts_with_materials_tag() {
         ..Default::default()
     };
     let s = stats.concise_summary();
-    assert!(s.starts_with("[materials]"), "should start with [materials] tag, got: {}", s);
+    assert!(
+        s.starts_with("[materials]"),
+        "should start with [materials] tag, got: {}",
+        s
+    );
 }
 
 #[test]

@@ -234,11 +234,7 @@ fn ssao_kernel_scale_increases_with_index() {
 fn ssao_kernel_w_component_always_zero() {
     let kernel = SsaoKernel::generate(64);
     for i in 0..64 {
-        assert_eq!(
-            kernel.samples[i][3], 0.0,
-            "Sample {} w should be 0.0",
-            i
-        );
+        assert_eq!(kernel.samples[i][3], 0.0, "Sample {} w should be 0.0", i);
     }
 }
 
@@ -282,23 +278,13 @@ fn mesh_vertex_size_48_bytes() {
 
 #[test]
 fn mesh_vertex_new_stores_position() {
-    let v = MeshVertex::new(
-        Vec3::new(1.0, 2.0, 3.0),
-        Vec3::ZERO,
-        Vec4::ZERO,
-        Vec2::ZERO,
-    );
+    let v = MeshVertex::new(Vec3::new(1.0, 2.0, 3.0), Vec3::ZERO, Vec4::ZERO, Vec2::ZERO);
     assert_eq!(v.position, [1.0, 2.0, 3.0]);
 }
 
 #[test]
 fn mesh_vertex_new_stores_normal() {
-    let v = MeshVertex::new(
-        Vec3::ZERO,
-        Vec3::new(0.0, 1.0, 0.0),
-        Vec4::ZERO,
-        Vec2::ZERO,
-    );
+    let v = MeshVertex::new(Vec3::ZERO, Vec3::new(0.0, 1.0, 0.0), Vec4::ZERO, Vec2::ZERO);
     assert_eq!(v.normal, [0.0, 1.0, 0.0]);
 }
 
@@ -321,7 +307,12 @@ fn mesh_vertex_new_stores_uv() {
 
 #[test]
 fn mesh_vertex_from_arrays_roundtrip() {
-    let v = MeshVertex::from_arrays([4.0, 5.0, 6.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.25, 0.5]);
+    let v = MeshVertex::from_arrays(
+        [4.0, 5.0, 6.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0],
+        [0.25, 0.5],
+    );
     assert_eq!(v.position, [4.0, 5.0, 6.0]);
     assert_eq!(v.normal, [0.0, 0.0, 1.0]);
     assert_eq!(v.tangent, [0.0, 1.0, 0.0, 1.0]);
@@ -651,7 +642,11 @@ fn octahedral_neg_z_vector() {
 fn octahedral_encoding_error_below_1_degree() {
     let normal = Vec3::new(0.5, 0.7, 0.2).normalize();
     let error = OctahedralEncoder::encoding_error(normal);
-    assert!(error < 0.018, "Error {} should be < 1 degree (0.017 rad)", error);
+    assert!(
+        error < 0.018,
+        "Error {} should be < 1 degree (0.017 rad)",
+        error
+    );
 }
 
 #[test]

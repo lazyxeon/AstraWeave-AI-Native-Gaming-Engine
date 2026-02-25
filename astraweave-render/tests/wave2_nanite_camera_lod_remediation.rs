@@ -94,30 +94,21 @@ fn aabb_partially_inside_ortho() {
 fn aabb_just_outside_left_ortho() {
     let f = ortho_frustum();
     // AABB completely left of -10
-    assert!(!f.test_aabb(
-        Vec3::new(-20.0, -1.0, -1.0),
-        Vec3::new(-11.0, 1.0, 1.0)
-    ));
+    assert!(!f.test_aabb(Vec3::new(-20.0, -1.0, -1.0), Vec3::new(-11.0, 1.0, 1.0)));
 }
 
 #[test]
 fn aabb_outside_on_multiple_axes() {
     let f = ortho_frustum();
     // Outside on both X and Y simultaneously
-    assert!(!f.test_aabb(
-        Vec3::new(15.0, 15.0, -5.0),
-        Vec3::new(20.0, 20.0, -3.0)
-    ));
+    assert!(!f.test_aabb(Vec3::new(15.0, 15.0, -5.0), Vec3::new(20.0, 20.0, -3.0)));
 }
 
 #[test]
 fn aabb_beyond_far_plane() {
     let f = ortho_frustum();
     // Beyond the far plane
-    assert!(!f.test_aabb(
-        Vec3::new(-1.0, -1.0, -200.0),
-        Vec3::new(1.0, 1.0, -150.0)
-    ));
+    assert!(!f.test_aabb(Vec3::new(-1.0, -1.0, -200.0), Vec3::new(1.0, 1.0, -150.0)));
 }
 
 #[test]
@@ -132,15 +123,9 @@ fn aabb_min_max_axes_independent() {
     let f = ortho_frustum();
     // Each axis boundary checked independently
     // Outside on X but inside on Y and Z — should fail
-    assert!(!f.test_aabb(
-        Vec3::new(20.0, -1.0, -1.0),
-        Vec3::new(30.0, 1.0, 1.0)
-    ));
+    assert!(!f.test_aabb(Vec3::new(20.0, -1.0, -1.0), Vec3::new(30.0, 1.0, 1.0)));
     // Inside on X but outside on Y — should fail
-    assert!(!f.test_aabb(
-        Vec3::new(-1.0, 20.0, -1.0),
-        Vec3::new(1.0, 30.0, 1.0)
-    ));
+    assert!(!f.test_aabb(Vec3::new(-1.0, 20.0, -1.0), Vec3::new(1.0, 30.0, 1.0)));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -330,10 +315,7 @@ fn gpu_meshlet_field_values() {
 fn frustum_identity_matrix() {
     let f = Frustum::from_matrix(Mat4::IDENTITY);
     // With identity VP matrix, points at origin should be inside
-    assert!(f.test_aabb(
-        Vec3::new(-0.5, -0.5, -0.5),
-        Vec3::new(0.5, 0.5, 0.5)
-    ));
+    assert!(f.test_aabb(Vec3::new(-0.5, -0.5, -0.5), Vec3::new(0.5, 0.5, 0.5)));
 }
 
 #[test]

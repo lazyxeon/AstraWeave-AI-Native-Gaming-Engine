@@ -358,8 +358,14 @@ fn asset_index_validate_paths_messages_contain_names() {
     // Check that error messages reference the biome/texture/hdri names
     let all_text = missing.join("\n");
     assert!(all_text.contains("forest"), "Should mention forest");
-    assert!(all_text.contains("grass_01") || all_text.contains("grass"), "Should mention grass texture");
-    assert!(all_text.contains("forest_day") || all_text.contains("hdri"), "Should mention HDRI");
+    assert!(
+        all_text.contains("grass_01") || all_text.contains("grass"),
+        "Should mention grass texture"
+    );
+    assert!(
+        all_text.contains("forest_day") || all_text.contains("hdri"),
+        "Should mention HDRI"
+    );
 }
 
 // ── Invalid TOML parsing ───────────────────────────────────────────
@@ -372,7 +378,8 @@ fn asset_index_parse_invalid_toml() {
 
 #[test]
 fn asset_index_parse_missing_index_section() {
-    let result = AssetIndex::parse_str("[[material_set]]\nbiome = \"x\"\ndir = \"y\"\nlayers = 1\n");
+    let result =
+        AssetIndex::parse_str("[[material_set]]\nbiome = \"x\"\ndir = \"y\"\nlayers = 1\n");
     assert!(result.is_err());
 }
 
@@ -486,7 +493,10 @@ fn camera_view_matrix_not_nan() {
 fn camera_view_matrix_determinant_nonzero() {
     let cam = make_camera();
     let det = cam.view_matrix().determinant();
-    assert!(det.abs() > 1e-6, "View matrix should be invertible, det={det}");
+    assert!(
+        det.abs() > 1e-6,
+        "View matrix should be invertible, det={det}"
+    );
 }
 
 #[test]
@@ -495,7 +505,7 @@ fn camera_view_matrix_uses_negative_y_up() {
     // with up=-Y, the view matrix should flip Y coordinates.
     let cam = make_camera();
     let view = cam.view_matrix();
-    // Transform a point at (0, 1, 0) world space — with -Y up, 
+    // Transform a point at (0, 1, 0) world space — with -Y up,
     // this should appear at negative Y in view space
     let world_up = view.transform_vector3(Vec3::Y);
     // With -Y up convention, world Y should map to negative view Y
@@ -516,7 +526,10 @@ fn camera_proj_matrix_not_nan() {
 fn camera_proj_matrix_determinant_nonzero() {
     let cam = make_camera();
     let det = cam.proj_matrix().determinant();
-    assert!(det.abs() > 1e-10, "Proj matrix should be invertible, det={det}");
+    assert!(
+        det.abs() > 1e-10,
+        "Proj matrix should be invertible, det={det}"
+    );
 }
 
 #[test]
@@ -528,7 +541,10 @@ fn camera_proj_matrix_aspect_clamped() {
     };
     let proj = cam.proj_matrix();
     let flat = proj.to_cols_array();
-    assert!(flat.iter().all(|v| !v.is_nan()), "Zero aspect should not produce NaN");
+    assert!(
+        flat.iter().all(|v| !v.is_nan()),
+        "Zero aspect should not produce NaN"
+    );
 }
 
 // ── Camera::vp() ───────────────────────────────────────────────────
@@ -641,7 +657,10 @@ fn instance_raw_from_transform_rotation_90_y() {
     // After 90° Y rotation: X axis maps to -Z, Z axis maps to X
     // Column 0 (original X basis) should point in -Z direction
     assert!(raw.model[0][0].abs() < 1e-4, "col0[0] should be ~0");
-    assert!((raw.model[0][2] - (-1.0)).abs() < 1e-4, "col0[2] should be ~-1");
+    assert!(
+        (raw.model[0][2] - (-1.0)).abs() < 1e-4,
+        "col0[2] should be ~-1"
+    );
 }
 
 #[test]
@@ -662,10 +681,7 @@ fn instance_raw_from_transform_combined() {
 #[test]
 fn instance_raw_from_matrix_preserves_values() {
     let mat = Mat4::from_cols_array(&[
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 2.0, 0.0, 0.0,
-        0.0, 0.0, 3.0, 0.0,
-        4.0, 5.0, 6.0, 1.0,
+        1.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 5.0, 6.0, 1.0,
     ]);
     let raw = InstanceRaw::from_matrix(mat);
     assert_eq!(raw.model[0][0], 1.0);
@@ -1108,14 +1124,21 @@ fn biome_material_material_dir_for_all_biomes() {
 #[test]
 fn biome_material_terrain_fallback_dir() {
     let sys = BiomeMaterialSystem::new(BiomeMaterialConfig::default());
-    assert_eq!(sys.terrain_fallback_dir(), PathBuf::from("assets/materials/terrain"));
+    assert_eq!(
+        sys.terrain_fallback_dir(),
+        PathBuf::from("assets/materials/terrain")
+    );
 }
 
 #[test]
 fn biome_material_needs_transition_initially() {
     let sys = BiomeMaterialSystem::new(BiomeMaterialConfig::default());
     for biome in BiomeType::all() {
-        assert!(sys.needs_transition(*biome), "Should need transition for {:?}", biome);
+        assert!(
+            sys.needs_transition(*biome),
+            "Should need transition for {:?}",
+            biome
+        );
     }
 }
 
@@ -1130,7 +1153,10 @@ fn biome_material_needs_transition_after_load() {
 #[test]
 fn biome_material_mark_loaded_updates_current_biome() {
     let mut sys = BiomeMaterialSystem::new(BiomeMaterialConfig::default());
-    sys.mark_loaded(BiomeType::Mountain, Some(PathBuf::from("hdri/mountain.hdr")));
+    sys.mark_loaded(
+        BiomeType::Mountain,
+        Some(PathBuf::from("hdri/mountain.hdr")),
+    );
     assert_eq!(sys.current_biome(), Some(BiomeType::Mountain));
 }
 
@@ -1192,5 +1218,10 @@ fn biome_material_validate_dirs_nonexistent_root() {
     let sys = BiomeMaterialSystem::new(config);
     let missing = sys.validate_material_dirs();
     // All 8 biomes should be missing
-    assert_eq!(missing.len(), 8, "All biomes should be missing: {:?}", missing);
+    assert_eq!(
+        missing.len(),
+        8,
+        "All biomes should be missing: {:?}",
+        missing
+    );
 }

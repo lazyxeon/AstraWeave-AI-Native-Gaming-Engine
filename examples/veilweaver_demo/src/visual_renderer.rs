@@ -45,11 +45,11 @@ struct TerrainSystem {
 
 impl TerrainSystem {
     fn new() -> Self {
-        let resolution = 128;
+        let resolution = 256;
         let mut ts = Self {
             island_center: (0.0, 0.0),
             island_radius: 150.0,
-            max_height: 25.0,
+            max_height: 30.0,
             resolution,
             heightmap: vec![0.0; (resolution * resolution) as usize],
         };
@@ -83,12 +83,13 @@ impl TerrainSystem {
         }
         let falloff = 0.5 * (1.0 + (std::f32::consts::PI * normalized_dist).cos());
         // Multi-octave noise scaled for larger island
-        let noise1 = (x * 0.04).sin() * (z * 0.05).cos() * 4.0;
-        let noise2 = (x * 0.09 + 1.5).sin() * (z * 0.11 + 0.7).cos() * 2.0;
-        let noise3 = (x * 0.22 + 3.0).sin() * (z * 0.25 + 2.0).cos() * 0.8;
-        let noise4 = (x * 0.5 + 5.5).sin() * (z * 0.6 + 4.2).cos() * 0.3;
+        let noise1 = (x * 0.04).sin() * (z * 0.05).cos() * 5.0;
+        let noise2 = (x * 0.09 + 1.5).sin() * (z * 0.11 + 0.7).cos() * 2.5;
+        let noise3 = (x * 0.22 + 3.0).sin() * (z * 0.25 + 2.0).cos() * 1.2;
+        let noise4 = (x * 0.5 + 5.5).sin() * (z * 0.6 + 4.2).cos() * 0.5;
+        let noise5 = (x * 1.1 + 7.3).sin() * (z * 0.9 + 6.1).cos() * 0.15;
         let base_height = self.max_height * falloff * falloff;
-        (base_height + noise1 + noise2 + noise3 + noise4).max(0.2)
+        (base_height + noise1 + noise2 + noise3 + noise4 + noise5).max(0.3)
     }
 
     fn height_at(&self, x: f32, z: f32) -> f32 {
@@ -159,22 +160,20 @@ impl TerrainSystem {
         }
 
         use wgpu::util::DeviceExt;
-        let vertex_buf =
-            renderer
-                .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("vw-terrain-vertex"),
-                    contents: bytemuck::cast_slice(&vertices),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
-        let index_buf =
-            renderer
-                .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("vw-terrain-index"),
-                    contents: bytemuck::cast_slice(&indices),
-                    usage: wgpu::BufferUsages::INDEX,
-                });
+        let vertex_buf = renderer
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("vw-terrain-vertex"),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+        let index_buf = renderer
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("vw-terrain-index"),
+                contents: bytemuck::cast_slice(&indices),
+                usage: wgpu::BufferUsages::INDEX,
+            });
 
         let terrain_mesh = Mesh {
             vertex_buf,
@@ -183,7 +182,7 @@ impl TerrainSystem {
         };
 
         let terrain_instance =
-            Instance::from_pos_scale_color(vec3(0.0, 0.0, 0.0), Vec3::ONE, [0.35, 0.55, 0.2, 1.0]);
+            Instance::from_pos_scale_color(vec3(0.0, 0.0, 0.0), Vec3::ONE, [0.45, 0.65, 0.3, 1.0]);
         renderer.add_model("terrain", terrain_mesh, &[terrain_instance]);
     }
 }
@@ -220,10 +219,7 @@ fn build_entity_instances(app: &App, state: &GameState, terrain: &TerrainSystem)
     // Companion spheres
     for (i, &ce) in state.companion_entities.iter().enumerate() {
         if let Some(pos) = app.world.get::<Position>(ce) {
-            let alive = app
-                .world
-                .get::<Health>(ce)
-                .map_or(false, |h| h.is_alive());
+            let alive = app.world.get::<Health>(ce).map_or(false, |h| h.is_alive());
             let color = if alive {
                 COMPANION_COLORS[i % COMPANION_COLORS.len()]
             } else {
@@ -241,10 +237,7 @@ fn build_entity_instances(app: &App, state: &GameState, terrain: &TerrainSystem)
     // Enemy spheres
     for &ee in &state.enemy_entities {
         if let Some(pos) = app.world.get::<Position>(ee) {
-            let alive = app
-                .world
-                .get::<Health>(ee)
-                .map_or(false, |h| h.is_alive());
+            let alive = app.world.get::<Health>(ee).map_or(false, |h| h.is_alive());
             let color = if alive { ENEMY_COLOR } else { DEAD_COLOR };
             let scale = if alive { 1.8 } else { 0.8 };
             let y = terrain.height_at(pos.value.x, pos.value.z) + 0.6;
@@ -263,221 +256,249 @@ fn build_entity_instances(app: &App, state: &GameState, terrain: &TerrainSystem)
 //  egui HUD overlay
 // ═══════════════════════════════════════════════════════════════
 
+// ── Theme constants ──────────────────────────────────────────────────
+const HUD_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(10, 10, 18, 210);
+const HUD_BORDER: egui::Color32 = egui::Color32::from_rgba_premultiplied(90, 60, 180, 120);
+const ACCENT_PURPLE: egui::Color32 = egui::Color32::from_rgb(160, 100, 255);
+const ACCENT_CYAN: egui::Color32 = egui::Color32::from_rgb(80, 200, 255);
+const ACCENT_GREEN: egui::Color32 = egui::Color32::from_rgb(60, 220, 120);
+const ACCENT_RED: egui::Color32 = egui::Color32::from_rgb(255, 70, 70);
+const ACCENT_GOLD: egui::Color32 = egui::Color32::from_rgb(245, 200, 60);
+const TEXT_DIM: egui::Color32 = egui::Color32::from_rgb(140, 140, 160);
+const BAR_BG: egui::Color32 = egui::Color32::from_rgb(30, 28, 38);
+
+/// Helper: draw a themed panel frame with a subtle border accent.
+fn themed_frame() -> egui::Frame {
+    egui::Frame::new()
+        .fill(HUD_BG)
+        .corner_radius(6.0)
+        .inner_margin(14.0)
+        .stroke(egui::Stroke::new(1.0, HUD_BORDER))
+}
+
+/// Helper: draw a smooth gradient HP/status bar.
+fn draw_bar(ui: &mut egui::Ui, width: f32, height: f32, frac: f32, color: egui::Color32) {
+    let (_, bar_rect) = ui.allocate_space(egui::vec2(width, height));
+    ui.painter().rect_filled(bar_rect, 3.0, BAR_BG);
+    let filled = egui::Rect::from_min_max(
+        bar_rect.left_top(),
+        egui::pos2(
+            bar_rect.left() + bar_rect.width() * frac.clamp(0.0, 1.0),
+            bar_rect.bottom(),
+        ),
+    );
+    ui.painter().rect_filled(filled, 3.0, color);
+    // Bright edge highlight on the filled portion
+    let edge = egui::Rect::from_min_max(
+        egui::pos2(filled.right() - 2.0, filled.top()),
+        filled.right_bottom(),
+    );
+    ui.painter()
+        .rect_filled(edge, 0.0, egui::Color32::from_white_alpha(40));
+}
+
 fn draw_hud(ctx: &egui::Context, state: &GameState, app: &App, metrics: &TelemetryMetrics) {
-    // Top-left: Zone + Boss
+    // ── Top-center: Title banner with glow ──────────────────────────────
+    egui::Area::new(egui::Id::new("title_banner"))
+        .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 8.0))
+        .show(ctx, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.label(
+                    egui::RichText::new("V E I L W E A V E R")
+                        .size(20.0)
+                        .color(ACCENT_PURPLE)
+                        .strong(),
+                );
+                ui.label(
+                    egui::RichText::new("AI-Native Vertical Slice")
+                        .size(10.0)
+                        .color(TEXT_DIM),
+                );
+            });
+        });
+
+    // ── Top-left: Zone / Boss panel ─────────────────────────────────────
     egui::Area::new(egui::Id::new("zone_panel"))
-        .fixed_pos(egui::pos2(16.0, 16.0))
+        .fixed_pos(egui::pos2(16.0, 50.0))
         .show(ctx, |ui| {
-            egui::Frame::new()
-                .fill(egui::Color32::from_black_alpha(180))
-                .corner_radius(8.0)
-                .inner_margin(12.0)
-                .show(ui, |ui| {
+            themed_frame().show(ui, |ui| {
+                ui.set_min_width(220.0);
+                ui.label(egui::RichText::new("◈  ZONE").color(TEXT_DIM).size(11.0));
+                ui.label(
+                    egui::RichText::new(&state.current_zone)
+                        .color(ACCENT_CYAN)
+                        .size(16.0)
+                        .strong(),
+                );
+                if let Some(ref phase) = state.boss_phase {
+                    ui.add_space(4.0);
                     ui.label(
-                        egui::RichText::new("Zone")
-                            .color(egui::Color32::GRAY)
-                            .size(12.0),
-                    );
-                    ui.heading(
-                        egui::RichText::new(&state.current_zone)
-                            .color(egui::Color32::from_rgb(100, 200, 255))
+                        egui::RichText::new(format!("⚠  {phase}"))
+                            .color(ACCENT_RED)
+                            .size(13.0)
                             .strong(),
                     );
-                    if let Some(ref phase) = state.boss_phase {
-                        ui.label(
-                            egui::RichText::new(format!("BOSS: {phase}"))
-                                .color(egui::Color32::from_rgb(255, 80, 80))
-                                .strong(),
-                        );
-                    }
-                });
+                }
+            });
         });
 
-    // Top-right: Telemetry
+    // ── Top-right: Engine telemetry ─────────────────────────────────────
     egui::Area::new(egui::Id::new("telemetry_panel"))
-        .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-16.0, 16.0))
+        .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-16.0, 50.0))
         .show(ctx, |ui| {
-            egui::Frame::new()
-                .fill(egui::Color32::from_black_alpha(180))
-                .corner_radius(8.0)
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    let fps = metrics.fps;
-                    let fps_color = if fps >= 58.0 {
-                        egui::Color32::from_rgb(80, 220, 80)
-                    } else if fps >= 30.0 {
-                        egui::Color32::from_rgb(220, 200, 40)
-                    } else {
-                        egui::Color32::from_rgb(220, 60, 60)
-                    };
+            themed_frame().show(ui, |ui| {
+                let fps = metrics.fps;
+                let fps_color = if fps >= 58.0 {
+                    ACCENT_GREEN
+                } else if fps >= 30.0 {
+                    ACCENT_GOLD
+                } else {
+                    ACCENT_RED
+                };
+                ui.horizontal(|ui| {
                     ui.label(
-                        egui::RichText::new(format!("FPS: {fps:.0}"))
+                        egui::RichText::new(format!("{fps:.0}"))
                             .color(fps_color)
+                            .size(18.0)
                             .strong(),
                     );
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "Frame: {:.2}ms",
-                            metrics.frame_time.as_secs_f32() * 1000.0
-                        ))
-                        .color(egui::Color32::GRAY),
-                    );
-                    ui.label(
-                        egui::RichText::new(format!("Tick: {}", state.frame_count))
-                            .color(egui::Color32::GRAY),
-                    );
+                    ui.label(egui::RichText::new("FPS").color(TEXT_DIM).size(11.0));
                 });
+                ui.label(
+                    egui::RichText::new(format!(
+                        "{:.2} ms  ·  tick {}",
+                        metrics.frame_time.as_secs_f32() * 1000.0,
+                        state.frame_count,
+                    ))
+                    .color(TEXT_DIM)
+                    .size(11.0),
+                );
+            });
         });
 
-    // Bottom-left: Player + companion status bars
+    // ── Bottom-left: Player + companion status ──────────────────────────
     egui::Area::new(egui::Id::new("status_panel"))
         .anchor(egui::Align2::LEFT_BOTTOM, egui::vec2(16.0, -16.0))
         .show(ctx, |ui| {
-            egui::Frame::new()
-                .fill(egui::Color32::from_black_alpha(180))
-                .corner_radius(8.0)
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    // Player HP
-                    let (hp, max_hp) = state
-                        .player_entity
-                        .and_then(|e| app.world.get::<Health>(e))
-                        .map(|h| (h.current, h.max))
-                        .unwrap_or((0.0, 100.0));
-                    let frac = hp / max_hp;
-                    let hp_color = if frac > 0.6 {
-                        egui::Color32::from_rgb(80, 220, 80)
-                    } else if frac > 0.3 {
-                        egui::Color32::from_rgb(220, 200, 40)
-                    } else {
-                        egui::Color32::from_rgb(220, 60, 60)
-                    };
+            themed_frame().show(ui, |ui| {
+                ui.set_min_width(240.0);
+
+                // Player HP
+                let (hp, max_hp) = state
+                    .player_entity
+                    .and_then(|e| app.world.get::<Health>(e))
+                    .map(|h| (h.current, h.max))
+                    .unwrap_or((0.0, 100.0));
+                let frac = hp / max_hp;
+                let hp_color = if frac > 0.6 {
+                    ACCENT_GREEN
+                } else if frac > 0.3 {
+                    ACCENT_GOLD
+                } else {
+                    ACCENT_RED
+                };
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("HP").color(TEXT_DIM).size(11.0));
                     ui.label(
-                        egui::RichText::new(format!("Player HP: {hp:.0}/{max_hp:.0}"))
+                        egui::RichText::new(format!("{hp:.0}"))
                             .color(hp_color)
+                            .size(14.0)
                             .strong(),
                     );
-                    let bar_resp = ui.allocate_space(egui::vec2(200.0, 12.0));
-                    let bar_rect = bar_resp.1;
-                    ui.painter()
-                        .rect_filled(bar_rect, 4.0, egui::Color32::from_gray(40));
-                    let filled_rect = egui::Rect::from_min_max(
-                        bar_rect.left_top(),
-                        egui::pos2(
-                            bar_rect.left() + bar_rect.width() * frac,
-                            bar_rect.bottom(),
-                        ),
-                    );
-                    ui.painter().rect_filled(filled_rect, 4.0, hp_color);
-
-                    ui.add_space(6.0);
-
-                    // Thread stability
-                    let stab = state.thread_stability / 100.0;
-                    let stab_color = if stab > 0.6 {
-                        egui::Color32::from_rgb(100, 160, 255)
-                    } else if stab > 0.3 {
-                        egui::Color32::from_rgb(200, 140, 40)
-                    } else {
-                        egui::Color32::from_rgb(200, 60, 60)
-                    };
                     ui.label(
-                        egui::RichText::new(format!(
-                            "Thread Stability: {:.0}%",
-                            state.thread_stability
-                        ))
-                        .color(stab_color),
-                    );
-                    let bar2_resp = ui.allocate_space(egui::vec2(200.0, 8.0));
-                    let bar2_rect = bar2_resp.1;
-                    ui.painter()
-                        .rect_filled(bar2_rect, 3.0, egui::Color32::from_gray(40));
-                    let filled2 = egui::Rect::from_min_max(
-                        bar2_rect.left_top(),
-                        egui::pos2(
-                            bar2_rect.left() + bar2_rect.width() * stab,
-                            bar2_rect.bottom(),
-                        ),
-                    );
-                    ui.painter().rect_filled(filled2, 3.0, stab_color);
-
-                    ui.add_space(6.0);
-
-                    // Companion / enemy / echo counts
-                    let enemy_count = state
-                        .enemy_entities
-                        .iter()
-                        .filter(|&&e| app.world.get::<Health>(e).map_or(false, |h| h.is_alive()))
-                        .count();
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(format!(
-                                "Companions: {}",
-                                state.companions_active
-                            ))
-                            .color(egui::Color32::from_rgb(80, 220, 100)),
-                        );
-                        ui.label(
-                            egui::RichText::new(format!("Enemies: {enemy_count}"))
-                                .color(egui::Color32::from_rgb(220, 80, 80)),
-                        );
-                    });
-                    ui.label(
-                        egui::RichText::new(format!("Echoes: {}", state.echoes_collected))
-                            .color(egui::Color32::from_rgb(100, 140, 255)),
+                        egui::RichText::new(format!("/ {max_hp:.0}"))
+                            .color(TEXT_DIM)
+                            .size(11.0),
                     );
                 });
+                draw_bar(ui, 220.0, 10.0, frac, hp_color);
+
+                ui.add_space(6.0);
+
+                // Thread stability
+                let stab = state.thread_stability / 100.0;
+                let stab_color = if stab > 0.6 {
+                    ACCENT_CYAN
+                } else if stab > 0.3 {
+                    ACCENT_GOLD
+                } else {
+                    ACCENT_RED
+                };
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("THREAD").color(TEXT_DIM).size(11.0));
+                    ui.label(
+                        egui::RichText::new(format!("{:.0}%", state.thread_stability))
+                            .color(stab_color)
+                            .size(13.0)
+                            .strong(),
+                    );
+                });
+                draw_bar(ui, 220.0, 6.0, stab, stab_color);
+
+                ui.add_space(8.0);
+
+                // Counts row
+                let enemy_count = state
+                    .enemy_entities
+                    .iter()
+                    .filter(|&&e| app.world.get::<Health>(e).map_or(false, |h| h.is_alive()))
+                    .count();
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(format!("● {} Allies", state.companions_active))
+                            .color(ACCENT_GREEN)
+                            .size(12.0),
+                    );
+                    ui.add_space(8.0);
+                    ui.label(
+                        egui::RichText::new(format!("▲ {} Hostiles", enemy_count))
+                            .color(ACCENT_RED)
+                            .size(12.0),
+                    );
+                });
+                ui.label(
+                    egui::RichText::new(format!("◆ {} Echoes", state.echoes_collected))
+                        .color(ACCENT_PURPLE)
+                        .size(12.0),
+                );
+            });
         });
 
-    // Bottom-right: Event log (last 5)
+    // ── Bottom-right: Event log ─────────────────────────────────────────
     egui::Area::new(egui::Id::new("event_log"))
         .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -16.0))
         .show(ctx, |ui| {
-            egui::Frame::new()
-                .fill(egui::Color32::from_black_alpha(180))
-                .corner_radius(8.0)
-                .inner_margin(12.0)
-                .show(ui, |ui| {
-                    ui.label(
-                        egui::RichText::new("Event Log")
-                            .color(egui::Color32::WHITE)
-                            .strong(),
-                    );
-                    ui.separator();
-                    let start = if state.events.len() > 5 {
-                        state.events.len() - 5
-                    } else {
-                        0
-                    };
-                    for ev in &state.events[start..] {
-                        // Strip ANSI codes for egui display
-                        let clean = strip_ansi(ev);
-                        ui.label(
-                            egui::RichText::new(clean)
-                                .color(egui::Color32::from_rgb(200, 200, 200))
-                                .size(12.0),
-                        );
-                    }
-                    if state.events.is_empty() {
-                        ui.label(
-                            egui::RichText::new("Awaiting first event...")
-                                .color(egui::Color32::GRAY)
-                                .italics(),
-                        );
-                    }
-                });
-        });
+            themed_frame().show(ui, |ui| {
+                ui.set_min_width(280.0);
+                ui.label(
+                    egui::RichText::new("◉  EVENT LOG")
+                        .color(TEXT_DIM)
+                        .size(11.0),
+                );
+                ui.add_space(2.0);
+                // Thin separator line
+                let (_, sep_rect) = ui.allocate_space(egui::vec2(260.0, 1.0));
+                ui.painter().rect_filled(sep_rect, 0.0, HUD_BORDER);
+                ui.add_space(2.0);
 
-    // Center banner (title)
-    egui::Area::new(egui::Id::new("title_banner"))
-        .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 10.0))
-        .show(ctx, |ui| {
-            ui.label(
-                egui::RichText::new("VEILWEAVER")
-                    .size(24.0)
-                    .color(egui::Color32::from_rgba_premultiplied(180, 120, 255, 200))
-                    .strong(),
-            );
+                let start = state.events.len().saturating_sub(6);
+                for ev in &state.events[start..] {
+                    let clean = strip_ansi(ev);
+                    ui.label(
+                        egui::RichText::new(clean)
+                            .color(egui::Color32::from_rgb(190, 190, 200))
+                            .size(11.0),
+                    );
+                }
+                if state.events.is_empty() {
+                    ui.label(
+                        egui::RichText::new("Awaiting first event...")
+                            .color(TEXT_DIM)
+                            .italics()
+                            .size(11.0),
+                    );
+                }
+            });
         });
 }
 
@@ -565,8 +586,8 @@ impl VeilweaverApp {
         let terrain = TerrainSystem::new();
         terrain.upload_to_renderer(&mut renderer);
 
-        // Material (white so instance colors and texture show through)
-        renderer.set_material_params([1.0, 1.0, 1.0, 1.0], 0.0, 0.8);
+        // Material — neutral white so instance color × texture show through cleanly
+        renderer.set_material_params([1.0, 1.0, 1.0, 1.0], 0.0, 0.85);
 
         // Load grass texture for terrain detail
         let grass_path = "assets/textures/grass_bermuda_01_diff_1k.jpg";
@@ -574,59 +595,83 @@ impl VeilweaverApp {
             renderer.set_smoke_test_texture(grass_path);
         }
 
+        // ── Scene Environment ────────────────────────────────────────────
+        // Configure fog for atmospheric perspective (distant edges fade to sky)
+        {
+            let env = renderer.scene_environment_mut();
+            env.visuals.fog_color = glam::Vec3::new(0.72, 0.78, 0.85);
+            env.visuals.fog_density = 0.004;
+            env.visuals.fog_start = 80.0;
+            env.visuals.fog_end = 400.0;
+            // Bright ambient to match the HDRI sky lighting
+            env.visuals.ambient_color = glam::Vec3::new(0.55, 0.6, 0.7);
+            env.visuals.ambient_intensity = 0.65;
+
+            // Tropical island water — vibrant teal/cyan tones
+            env.visuals.water_deep = glam::Vec3::new(0.04, 0.15, 0.35);
+            env.visuals.water_shallow = glam::Vec3::new(0.15, 0.55, 0.6);
+            env.visuals.water_foam = glam::Vec3::new(1.0, 1.0, 1.0);
+        }
+
+        // Shadow tuning — soft PCF, low bias for terrain detail
+        renderer.set_shadow_filter(2.0, 0.0005, 0.0);
+
+        // Apply time-of-day lighting ONCE at init.
+        // DO NOT call tick_environment() per frame — apply_time_of_day()
+        // compounds ambient_intensity multiplicatively, causing exponential
+        // lighting decay that produces a dark / negative-filter appearance.
+        renderer.tick_environment(0.01);
+
         // Water — use Rgba16Float to match the HDR render pass when bloom is enabled
-        let water = WaterRenderer::new(
+        let mut water = WaterRenderer::new(
             renderer.device(),
             wgpu::TextureFormat::Rgba16Float,
             wgpu::TextureFormat::Depth32Float,
         );
+        // Apply the island water colors directly so the first frame is correct
+        water.set_water_colors(
+            glam::Vec3::new(0.04, 0.15, 0.35), // deep
+            glam::Vec3::new(0.15, 0.55, 0.6),  // shallow
+            glam::Vec3::new(1.0, 1.0, 1.0),    // foam
+        );
         renderer.set_water_renderer(water);
 
         // Try loading trees (optional — graceful fallback)
-        if let Ok(tree_mesh) =
-            load_glb_mesh(renderer.device(), "assets/models/tree_default.glb")
-        {
+        if let Ok(tree_mesh) = load_glb_mesh(renderer.device(), "assets/models/tree_default.glb") {
             renderer.set_external_mesh(tree_mesh);
-            let tree_spots: Vec<(f32, f32, f32)> = vec![
-                // Inner ring — near player spawn
-                (10.0, 15.0, 3.5),
-                (-12.0, 10.0, 4.0),
-                (5.0, -8.0, 3.2),
-                (-6.0, -14.0, 3.8),
-                // Mid ring
-                (35.0, 20.0, 5.0),
-                (-30.0, 25.0, 4.5),
-                (40.0, -15.0, 5.5),
-                (-35.0, -20.0, 4.8),
-                (20.0, 40.0, 5.2),
-                (-25.0, -35.0, 4.6),
-                (15.0, -40.0, 5.0),
-                (-20.0, 45.0, 4.2),
-                // Outer ring
-                (60.0, 10.0, 6.0),
-                (-55.0, 15.0, 5.5),
-                (50.0, -40.0, 6.5),
-                (-60.0, -30.0, 5.8),
-                (30.0, 60.0, 6.0),
-                (-35.0, -55.0, 5.5),
-                (70.0, -10.0, 5.0),
-                (-65.0, 20.0, 5.2),
-                (10.0, 70.0, 5.8),
-                (-15.0, -65.0, 5.0),
-                (55.0, 45.0, 5.5),
-                (-50.0, 50.0, 4.8),
-            ];
-            let tree_instances: Vec<Instance> = tree_spots
-                .iter()
-                .map(|(x, z, scale)| {
-                    let y = terrain.height_at(*x, *z);
-                    Instance::from_pos_scale_color(
-                        vec3(*x, y, *z),
-                        Vec3::splat(*scale),
-                        [0.25, 0.6, 0.25, 1.0],
-                    )
-                })
-                .collect();
+            // Procedurally scatter ~80 trees across the island using golden-angle
+            // spiral, then jitter for a natural look. Only place above waterline.
+            let mut tree_instances: Vec<Instance> = Vec::with_capacity(80);
+            let golden_angle = std::f32::consts::PI * (3.0 - 5.0_f32.sqrt()); // ~2.399 rad
+            let max_trees = 80u32;
+            let island_r = 130.0_f32; // stay within island radius (150 - fringe)
+            for i in 0..max_trees {
+                let t = i as f32 / max_trees as f32;
+                let r = island_r * t.sqrt(); // sqrt for uniform area distribution
+                let theta = golden_angle * i as f32;
+                // Deterministic jitter using simple hash
+                let jx = ((i * 7 + 13) % 37) as f32 / 37.0 * 8.0 - 4.0;
+                let jz = ((i * 11 + 3) % 41) as f32 / 41.0 * 8.0 - 4.0;
+                let x = r * theta.cos() + jx;
+                let z = r * theta.sin() + jz;
+                let y = terrain.height_at(x, z);
+                // Skip trees below waterline or too close to the player spawn
+                if y < 3.0 || (x * x + z * z) < 100.0 {
+                    continue;
+                }
+                // Size variation: smaller near edges, bigger in mid-range
+                let base_scale = 3.5 + t * 3.0; // 3.5..6.5
+                let size_jitter = ((i * 17 + 5) % 29) as f32 / 29.0 * 1.5;
+                let scale = base_scale + size_jitter;
+                // Slight colour variation per tree (warm/cool greens)
+                let g_var = 0.85 + ((i * 23 + 7) % 19) as f32 / 19.0 * 0.3; // 0.85..1.15
+                let r_var = 0.6 + ((i * 31 + 2) % 13) as f32 / 13.0 * 0.2; // 0.6..0.8
+                tree_instances.push(Instance::from_pos_scale_color(
+                    vec3(x, y, z),
+                    Vec3::splat(scale),
+                    [r_var, g_var, 0.5, 1.0],
+                ));
+            }
             renderer.set_external_instances(&tree_instances);
         }
 
@@ -668,9 +713,7 @@ impl VeilweaverApp {
 
         // Spawn player at island center
         let player = ecs_app.world.spawn();
-        ecs_app
-            .world
-            .insert(player, Position { value: Vec3::ZERO });
+        ecs_app.world.insert(player, Position { value: Vec3::ZERO });
         ecs_app.world.insert(player, Health::new(100.0));
         ecs_app.world.insert(player, Faction::Player);
         game_state.player_entity = Some(player);
@@ -780,8 +823,7 @@ impl VeilweaverApp {
     fn update(&mut self, dt: f32) {
         // Camera ALWAYS updates — even after simulation finishes —
         // so the player can keep flying around the scene.
-        self.camera_controller
-            .update_camera(&mut self.camera, dt);
+        self.camera_controller.update_camera(&mut self.camera, dt);
         self.renderer.update_camera(&self.camera);
 
         // Water animation continues regardless of sim state
@@ -789,7 +831,8 @@ impl VeilweaverApp {
         let view_proj = self.camera.vp();
         self.renderer
             .update_water(view_proj, self.camera.position, elapsed);
-        self.renderer.tick_environment(dt);
+        // NOTE: DO NOT call tick_environment() here — it compounds
+        // ambient_intensity every frame. Called once at init instead.
 
         if self.finished {
             return;
@@ -878,44 +921,43 @@ impl VeilweaverApp {
 
         let egui_renderer = &self.egui_renderer;
 
-        let result =
-            self.renderer
-                .render_with(|view, encoder, device, queue, _size| {
-                    egui_renderer.borrow_mut().update_buffers(
-                        device,
-                        queue,
-                        encoder,
+        let result = self
+            .renderer
+            .render_with(|view, encoder, device, queue, _size| {
+                egui_renderer.borrow_mut().update_buffers(
+                    device,
+                    queue,
+                    encoder,
+                    &paint_jobs,
+                    &screen_descriptor,
+                );
+
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("egui_pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+
+                    // SAFETY: The render pass doesn't outlive the encoder scope.
+                    let render_pass_static: &mut wgpu::RenderPass<'static> =
+                        unsafe { std::mem::transmute(&mut render_pass) };
+                    egui_renderer.borrow_mut().render(
+                        render_pass_static,
                         &paint_jobs,
                         &screen_descriptor,
                     );
-
-                    {
-                        let mut render_pass =
-                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                label: Some("egui_pass"),
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Load,
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                })],
-                                depth_stencil_attachment: None,
-                                timestamp_writes: None,
-                                occlusion_query_set: None,
-                            });
-
-                        // SAFETY: The render pass doesn't outlive the encoder scope.
-                        let render_pass_static: &mut wgpu::RenderPass<'static> =
-                            unsafe { std::mem::transmute(&mut render_pass) };
-                        egui_renderer.borrow_mut().render(
-                            render_pass_static,
-                            &paint_jobs,
-                            &screen_descriptor,
-                        );
-                    }
-                });
+                }
+            });
 
         for id in &full_output.textures_delta.free {
             self.egui_renderer.borrow_mut().free_texture(id);
@@ -1045,8 +1087,7 @@ impl ApplicationHandler for VeilweaverHandler {
                 if app.mouse_captured {
                     let sens = 0.004;
                     app.camera.yaw -= delta.0 as f32 * sens;
-                    app.camera.pitch =
-                        (app.camera.pitch + delta.1 as f32 * sens).clamp(-1.5, 1.5);
+                    app.camera.pitch = (app.camera.pitch + delta.1 as f32 * sens).clamp(-1.5, 1.5);
                 }
             }
         }

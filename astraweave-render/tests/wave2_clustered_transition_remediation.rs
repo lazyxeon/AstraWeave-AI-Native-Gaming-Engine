@@ -3,10 +3,10 @@
 //! Targets: bin_lights_cpu (251 mutants), TransitionEffect + EasingFunction +
 //! BiomeVisuals (130 mutants).
 
-use astraweave_render::clustered::{bin_lights_cpu, ClusterDims, CpuLight};
 use astraweave_render::biome_transition::{
     BiomeVisuals, EasingFunction, TransitionConfig, TransitionEffect,
 };
+use astraweave_render::clustered::{bin_lights_cpu, ClusterDims, CpuLight};
 use astraweave_terrain::biome::BiomeType;
 use glam::Vec3;
 
@@ -37,7 +37,11 @@ fn clustered_single_light_center_screen() {
     }];
     let (counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
-    assert!(total >= 1, "Single centered light should hit at least 1 cluster, got {}", total);
+    assert!(
+        total >= 1,
+        "Single centered light should hit at least 1 cluster, got {}",
+        total
+    );
     assert_eq!(indices.len(), total as usize);
     // All indices should be 0 (the only light)
     for &idx in &indices {
@@ -54,8 +58,7 @@ fn clustered_light_beyond_far_excluded() {
         pos: Vec3::new(0.0, 0.0, far + 50.0), // 150m, well past far
         radius: 2.0,
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, far, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, far, 1.0);
     let total: u32 = counts.iter().sum();
     assert_eq!(total, 0, "Light beyond far plane should not be binned");
 }
@@ -69,8 +72,7 @@ fn clustered_light_at_near_plane_included() {
         pos: Vec3::new(0.0, 0.0, near + 0.5),
         radius: 1.0,
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), near, 100.0, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), near, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
     assert!(total >= 1, "Light at near plane should be binned");
 }
@@ -83,28 +85,40 @@ fn clustered_large_light_covers_many_clusters() {
         pos: Vec3::new(0.0, 0.0, 50.0),
         radius: 50.0, // Huge radius
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
     // Many clusters should be hit
-    assert!(total >= 16, "Large light should cover many clusters, got {}", total);
+    assert!(
+        total >= 16,
+        "Large light should cover many clusters, got {}",
+        total
+    );
 }
 
 #[test]
 fn clustered_offsets_are_exclusive_scan() {
     let dims = ClusterDims { x: 2, y: 2, z: 2 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 3.0 },
-        CpuLight { pos: Vec3::new(0.0, 0.0, 50.0), radius: 3.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 3.0,
+        },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 50.0),
+            radius: 3.0,
+        },
     ];
-    let (counts, indices, offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (counts, indices, offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     let clusters = (2 * 2 * 2) as usize;
     assert_eq!(offsets.len(), clusters + 1);
     assert_eq!(offsets[0], 0);
     for i in 0..clusters {
-        assert_eq!(offsets[i + 1], offsets[i] + counts[i],
-            "Exclusive scan violated at cluster {}", i);
+        assert_eq!(
+            offsets[i + 1],
+            offsets[i] + counts[i],
+            "Exclusive scan violated at cluster {}",
+            i
+        );
     }
     // Total indices should match last offset
     assert_eq!(indices.len(), offsets[clusters] as usize);
@@ -114,12 +128,20 @@ fn clustered_offsets_are_exclusive_scan() {
 fn clustered_indices_contain_valid_light_ids() {
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 5.0 },
-        CpuLight { pos: Vec3::new(5.0, 5.0, 30.0), radius: 10.0 },
-        CpuLight { pos: Vec3::new(-3.0, -2.0, 60.0), radius: 8.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 5.0,
+        },
+        CpuLight {
+            pos: Vec3::new(5.0, 5.0, 30.0),
+            radius: 10.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-3.0, -2.0, 60.0),
+            radius: 8.0,
+        },
     ];
-    let (_counts, indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (_counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     for &idx in &indices {
         assert!(idx < lights.len() as u32, "Index {} out of bounds", idx);
     }
@@ -129,16 +151,27 @@ fn clustered_indices_contain_valid_light_ids() {
 fn clustered_multiple_lights_all_binned() {
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
     let lights = vec![
-        CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 5.0 },
-        CpuLight { pos: Vec3::new(2.0, 0.0, 20.0), radius: 5.0 },
-        CpuLight { pos: Vec3::new(-2.0, 1.0, 40.0), radius: 5.0 },
+        CpuLight {
+            pos: Vec3::new(0.0, 0.0, 10.0),
+            radius: 5.0,
+        },
+        CpuLight {
+            pos: Vec3::new(2.0, 0.0, 20.0),
+            radius: 5.0,
+        },
+        CpuLight {
+            pos: Vec3::new(-2.0, 1.0, 40.0),
+            radius: 5.0,
+        },
     ];
-    let (_counts, indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (_counts, indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     // Each light should appear at least once
     for li in 0..3u32 {
-        assert!(indices.contains(&li),
-            "Light {} should appear in at least one cluster", li);
+        assert!(
+            indices.contains(&li),
+            "Light {} should appear in at least one cluster",
+            li
+        );
     }
 }
 
@@ -149,12 +182,14 @@ fn clustered_tiny_radius_light_hits_few_clusters() {
         pos: Vec3::new(0.0, 0.0, 50.0),
         radius: 0.1, // Tiny
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (1920, 1080), 0.1, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
     // Should only hit 1-2 clusters
-    assert!(total >= 1 && total <= 8,
-        "Tiny light should hit few clusters, got {}", total);
+    assert!(
+        total >= 1 && total <= 8,
+        "Tiny light should hit few clusters, got {}",
+        total
+    );
 }
 
 #[test]
@@ -169,15 +204,18 @@ fn clustered_symmetry_x_positive_negative() {
         pos: Vec3::new(-5.0, 0.0, 20.0),
         radius: 3.0,
     }];
-    let (counts_pos, _, _) =
-        bin_lights_cpu(&lights_pos, dims, (800, 800), 0.1, 100.0, 1.0);
-    let (counts_neg, _, _) =
-        bin_lights_cpu(&lights_neg, dims, (800, 800), 0.1, 100.0, 1.0);
+    let (counts_pos, _, _) = bin_lights_cpu(&lights_pos, dims, (800, 800), 0.1, 100.0, 1.0);
+    let (counts_neg, _, _) = bin_lights_cpu(&lights_neg, dims, (800, 800), 0.1, 100.0, 1.0);
     let total_pos: u32 = counts_pos.iter().sum();
     let total_neg: u32 = counts_neg.iter().sum();
     // Should be very similar (ideally identical for symmetric dims+screen)
     let diff = (total_pos as i32 - total_neg as i32).unsigned_abs();
-    assert!(diff <= 2, "Symmetric lights should have similar coverage: {} vs {}", total_pos, total_neg);
+    assert!(
+        diff <= 2,
+        "Symmetric lights should have similar coverage: {} vs {}",
+        total_pos,
+        total_neg
+    );
 }
 
 #[test]
@@ -189,8 +227,7 @@ fn clustered_z_far_fraction_in_last_slice() {
         pos: Vec3::new(0.0, 0.0, far - 1.0),
         radius: 2.0,
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, far, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, far, 1.0);
     // The last z-slice (cluster 3) should have the light
     assert!(counts[3] >= 1, "Light near far should be in last z-slice");
 }
@@ -204,9 +241,11 @@ fn clustered_z_near_fraction_in_first_slice() {
         pos: Vec3::new(0.0, 0.0, near + 1.0),
         radius: 0.5,
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), near, 100.0, 1.0);
-    assert!(counts[0] >= 1, "Light near near-plane should be in first z-slice");
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), near, 100.0, 1.0);
+    assert!(
+        counts[0] >= 1,
+        "Light near near-plane should be in first z-slice"
+    );
 }
 
 #[test]
@@ -216,8 +255,7 @@ fn clustered_dims_match_output_sizes() {
         pos: Vec3::new(0.0, 0.0, 20.0),
         radius: 5.0,
     }];
-    let (counts, _indices, offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (counts, _indices, offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     let expected_clusters = (3 * 5 * 2) as usize;
     assert_eq!(counts.len(), expected_clusters);
     assert_eq!(offsets.len(), expected_clusters + 1);
@@ -231,8 +269,7 @@ fn clustered_light_zero_radius_near_zero_coverage() {
         pos: Vec3::new(0.0, 0.0, 50.0),
         radius: 0.0,
     }];
-    let (counts, _indices, _offsets) =
-        bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
+    let (counts, _indices, _offsets) = bin_lights_cpu(&lights, dims, (800, 600), 0.1, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
     // zmin = z, zmax = z → zmin >= zmax → skip
     assert_eq!(total, 0, "Zero-radius light should be skipped");
@@ -242,26 +279,31 @@ fn clustered_light_zero_radius_near_zero_coverage() {
 fn clustered_wide_fov_more_coverage() {
     // Wider FOV should cover more clusters for the same light
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let light = CpuLight { pos: Vec3::new(3.0, 0.0, 10.0), radius: 3.0 };
-    let (counts_narrow, _, _) =
-        bin_lights_cpu(&[light], dims, (800, 600), 0.1, 100.0, 0.5); // narrow fov
-    let (counts_wide, _, _) =
-        bin_lights_cpu(&[light], dims, (800, 600), 0.1, 100.0, 2.0); // wide fov
+    let light = CpuLight {
+        pos: Vec3::new(3.0, 0.0, 10.0),
+        radius: 3.0,
+    };
+    let (counts_narrow, _, _) = bin_lights_cpu(&[light], dims, (800, 600), 0.1, 100.0, 0.5); // narrow fov
+    let (counts_wide, _, _) = bin_lights_cpu(&[light], dims, (800, 600), 0.1, 100.0, 2.0); // wide fov
     let total_narrow: u32 = counts_narrow.iter().sum();
     let total_wide: u32 = counts_wide.iter().sum();
     // Different FOVs should give different cluster coverage
-    assert!(total_narrow >= 1 && total_wide >= 1, "Both should bin the light");
+    assert!(
+        total_narrow >= 1 && total_wide >= 1,
+        "Both should bin the light"
+    );
 }
 
 #[test]
 fn clustered_identity_cluster_count_matches_total() {
     let dims = ClusterDims { x: 4, y: 4, z: 4 };
-    let lights: Vec<CpuLight> = (0..5).map(|i| CpuLight {
-        pos: Vec3::new(i as f32 * 2.0, 0.0, 10.0 + i as f32 * 15.0),
-        radius: 4.0,
-    }).collect();
-    let (counts, indices, offsets) =
-        bin_lights_cpu(&lights, dims, (1024, 768), 0.1, 100.0, 1.0);
+    let lights: Vec<CpuLight> = (0..5)
+        .map(|i| CpuLight {
+            pos: Vec3::new(i as f32 * 2.0, 0.0, 10.0 + i as f32 * 15.0),
+            radius: 4.0,
+        })
+        .collect();
+    let (counts, indices, offsets) = bin_lights_cpu(&lights, dims, (1024, 768), 0.1, 100.0, 1.0);
     let total: u32 = counts.iter().sum();
     assert_eq!(indices.len(), total as usize);
     assert_eq!(offsets.last().copied(), Some(total));
@@ -279,7 +321,8 @@ fn x_tiles_hit(
     far: f32,
     fov_y: f32,
 ) -> Vec<u32> {
-    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    let (counts, _, _) =
+        bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
     let mut xs = std::collections::BTreeSet::new();
     for z in 0..dims.z {
         for y in 0..dims.y {
@@ -303,7 +346,8 @@ fn y_tiles_hit(
     far: f32,
     fov_y: f32,
 ) -> Vec<u32> {
-    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    let (counts, _, _) =
+        bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
     let mut ys = std::collections::BTreeSet::new();
     for z in 0..dims.z {
         for y in 0..dims.y {
@@ -325,11 +369,18 @@ fn clustered_projection_x_mul_not_add() {
     // places it near center-right (tile 4 for 8-wide grid).
     // The + mutation shifts it much further right (tile 6+) because ndc_x = 0.2+fx ≈ 0.61
     // instead of 0.2*fx ≈ 0.08.
-    let light = CpuLight { pos: Vec3::new(2.0, 0.0, 10.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(2.0, 0.0, 10.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 8, y: 6, z: 4 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Correct: ndc_x ≈ 0.2 * tan(0.5)/aspect ≈ 0.08, px ≈ 432, tile ~4
-    assert!(xs.contains(&4), "Light at x=2 z=10 should be in tile x=4, tiles hit: {:?}", xs);
+    assert!(
+        xs.contains(&4),
+        "Light at x=2 z=10 should be in tile x=4, tiles hit: {:?}",
+        xs
+    );
     // The + mutation would put it at tile 6+ which shouldn't overlap 4 (tiny radius)
 }
 
@@ -339,19 +390,24 @@ fn clustered_projection_x_mul_not_div() {
     // fov_y=1.0 → fy=1/tan(0.5)=1.83, fx=fy/aspect=1.83/1.333=1.373
     // At x=5, z=10: correct ndc_x = 0.5*1.373 = 0.687, px = 674, tile 6
     // Mutated: ndc_x = 0.5/1.373 = 0.364, px = 545, tile 5
-    let light = CpuLight { pos: Vec3::new(5.0, 0.0, 10.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(5.0, 0.0, 10.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 8, y: 6, z: 4 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Correct: tile 6-7 (fx=1.373 makes projection wider than center)
     assert!(
         xs.contains(&6),
-        "Light at x=5 z=10 should project to tile 6, got tiles: {:?}", xs
+        "Light at x=5 z=10 should project to tile 6, got tiles: {:?}",
+        xs
     );
     // The / mutation shifts projection LEFT (ndc_x smaller: 0.364 vs 0.687)
     // so tile 5 would be hit instead. Verify we don't ONLY hit tile 5.
     assert!(
         !xs.iter().all(|&x| x <= 5),
-        "Light should NOT only be in tile ≤5 (that's the / mutation result), got {:?}", xs
+        "Light should NOT only be in tile ≤5 (that's the / mutation result), got {:?}",
+        xs
     );
 }
 
@@ -360,11 +416,18 @@ fn clustered_projection_y_mul_not_add() {
     // Kill mutation: (l.pos.y / z) * fy → (l.pos.y / z) + fy
     // Light at y=1, z=10: correct ndc_y = 0.1*fy ≈ 0.055, py ≈ 316, tile ~3
     // Mutated: ndc_y = 0.1+fy ≈ 0.646, py ≈ 494, tile ~4
-    let light = CpuLight { pos: Vec3::new(0.0, 1.0, 10.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 1.0, 10.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 8, y: 6, z: 4 };
     let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Correct: tile 3 (near center)
-    assert!(ys.contains(&3), "Light at y=1 z=10 should hit tile y=3, tiles hit: {:?}", ys);
+    assert!(
+        ys.contains(&3),
+        "Light at y=1 z=10 should hit tile y=3, tiles hit: {:?}",
+        ys
+    );
 }
 
 #[test]
@@ -372,14 +435,22 @@ fn clustered_projection_small_x_stays_near_center() {
     // Additional precision test: x=0.5, z=20, radius=0.5 → very tight cluster
     // Correct: ndc_x = (0.5/20)*fx ≈ 0.025*0.41 ≈ 0.01, px ≈ 404, tile 4
     // + mutation: ndc_x = 0.025 + 0.41 ≈ 0.435, px ≈ 574, tile 5-6
-    let light = CpuLight { pos: Vec3::new(0.5, 0.0, 20.0), radius: 0.5 };
+    let light = CpuLight {
+        pos: Vec3::new(0.5, 0.0, 20.0),
+        radius: 0.5,
+    };
     let dims = ClusterDims { x: 8, y: 8, z: 4 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
-    assert!(xs.contains(&4), "Tiny x offset should still be in center tile, got: {:?}", xs);
+    assert!(
+        xs.contains(&4),
+        "Tiny x offset should still be in center tile, got: {:?}",
+        xs
+    );
     // Should NOT be only in tiles 5+ (that's the + mutation result)
     assert!(
         !xs.iter().all(|&x| x >= 6),
-        "Should not all be in tile 6+ ({:?})", xs
+        "Should not all be in tile 6+ ({:?})",
+        xs
     );
 }
 
@@ -387,13 +458,17 @@ fn clustered_projection_small_x_stays_near_center() {
 fn clustered_projection_negative_x_goes_left() {
     // x=-3, z=10: correct ndc_x = -0.3*fx ≈ -0.123, px ≈ (−0.123*0.5+0.5)*800 ≈ 350, tile 3
     // + mutation: ndc_x = -0.3+fx ≈ 0.11, px ≈ (0.11*0.5+0.5)*800 ≈ 444, tile 4-5
-    let light = CpuLight { pos: Vec3::new(-3.0, 0.0, 10.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(-3.0, 0.0, 10.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 8, y: 6, z: 4 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Should be in left half (tile ≤ 3)
     assert!(
         xs.iter().any(|&x| x <= 3),
-        "Negative x light should be in left tiles (≤3), got: {:?}", xs
+        "Negative x light should be in left tiles (≤3), got: {:?}",
+        xs
     );
 }
 
@@ -412,7 +487,8 @@ fn total_clusters_hit(
     far: f32,
     fov_y: f32,
 ) -> usize {
-    let (counts, _, _) = bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
+    let (counts, _, _) =
+        bin_lights_cpu(std::slice::from_ref(light), dims, screen, near, far, fov_y);
     counts.iter().filter(|&&c| c > 0).count()
 }
 
@@ -423,7 +499,10 @@ fn clustered_rpx_tiny_radius_tight_tile_coverage() {
     // Mutated +: rpx_x = 0.01*0.41*(800+0.5) ≈ 0.01*0.41*800.5 ≈ 3.28 → ~1 tile still (close)
     // Mutated /: rpx_x = 0.01*0.41*(800/0.5) ≈ 0.01*0.41*1600 ≈ 6.56 → ~1-2 tiles
     // Use an even smaller radius to exaggerate differences:
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.05 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 0.05,
+    };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let xs = x_tiles_hit(&light, dims, (1920, 1080), 0.1, 100.0, 1.0);
     let ys = y_tiles_hit(&light, dims, (1920, 1080), 0.1, 100.0, 1.0);
@@ -431,8 +510,18 @@ fn clustered_rpx_tiny_radius_tight_tile_coverage() {
     // Mutated /: rpx = (0.005*0.41)*(1920/0.5) ≈ 0.005*0.41*3840 ≈ 7.87px → ~1 tile still
     // Need wider grid to make tiles smaller (tile_w = 1920/16 = 120px).
     // Actually the pixel radius is so tiny that it stays in 1 tile regardless. Let me try bigger radius.
-    assert!(xs.len() <= 3, "tiny radius should hit ≤3 x-tiles, got {}: {:?}", xs.len(), xs);
-    assert!(ys.len() <= 3, "tiny radius should hit ≤3 y-tiles, got {}: {:?}", ys.len(), ys);
+    assert!(
+        xs.len() <= 3,
+        "tiny radius should hit ≤3 x-tiles, got {}: {:?}",
+        xs.len(),
+        xs
+    );
+    assert!(
+        ys.len() <= 3,
+        "tiny radius should hit ≤3 y-tiles, got {}: {:?}",
+        ys.len(),
+        ys
+    );
 }
 
 #[test]
@@ -442,14 +531,18 @@ fn clustered_rpx_moderate_radius_bounded_x_spread() {
     // tile_w = 800/16 = 50px → ~4.4 tiles radius, ~6 total x-tiles
     // Mutated *→+: rpx_x = 0.2*1.373*(800+0.5) = 219.8px → ~10 tiles
     // Mutated *→/: rpx_x = 0.2*1.373*(800/0.5) = 439.7px → ~16 tiles
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 2.0,
+    };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Correct: ~6 tiles. Mutated+: ~10, Mutated/: ~16.
     assert!(
         xs.len() <= 8,
         "radius=2 at z=10 should hit ≤8 x-tiles (tile_w=50px), got {}: {:?}",
-        xs.len(), xs
+        xs.len(),
+        xs
     );
 }
 
@@ -459,13 +552,17 @@ fn clustered_rpx_moderate_radius_bounded_y_spread() {
     // Correct rpx_y = (2/10)*1.8305*(600*0.5) = 0.2*1.8305*300 = 109.8px → ~6 tiles
     // Mutated+: rpx_y = 0.2*1.8305*(600+0.5) = 219.7px → ~10 tiles
     // Mutated/: rpx_y = 0.2*1.8305*(600/0.5) = 439.3px → ~16 tiles
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 2.0 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 2.0,
+    };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     assert!(
         ys.len() <= 8,
         "radius=2 at z=10 should hit ≤8 y-tiles (tile_h=50px), got {}: {:?}",
-        ys.len(), ys
+        ys.len(),
+        ys
     );
 }
 
@@ -473,7 +570,10 @@ fn clustered_rpx_moderate_radius_bounded_y_spread() {
 fn clustered_rpx_total_clusters_bounded_for_small_light() {
     // Small light covering few clusters. Correct: ~2-8 clusters.
     // Mutated /: screen radius 4×, so ~32+ clusters.
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 15.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 15.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 16, y: 12, z: 8 };
     let total = total_clusters_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     // Correct: radius=1 at z=15: rpx_x ≈ (1/15)*0.41*400 ≈ 10.9px, tile_w=50
@@ -493,7 +593,10 @@ fn clustered_rpx_wide_screen_more_pixels_per_tile() {
     // Correct rpx_x = (1/20)*0.41*(3840*0.5) = 0.05*0.41*1920 ≈ 39.4px → <1 tile
     // Mutated +: rpx_x = 0.05*0.41*(3840+0.5) ≈ 78.7px → ~1 tile
     // Mutated /: rpx_x = 0.05*0.41*(3840/0.5) ≈ 157.4px → ~1-2 tiles
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 20.0), radius: 1.0 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 20.0),
+        radius: 1.0,
+    };
     let dims = ClusterDims { x: 32, y: 18, z: 8 };
     let xs = x_tiles_hit(&light, dims, (3840, 2160), 0.1, 100.0, 1.0);
     // With correct math: ≤2 tiles in X. With / mutation: ≤3 tiles.
@@ -501,7 +604,8 @@ fn clustered_rpx_wide_screen_more_pixels_per_tile() {
     assert!(
         xs.len() <= 4,
         "r=1 z=20 on 4K with 32-wide grid should hit ≤4 x-tiles, got {}: {:?}",
-        xs.len(), xs
+        xs.len(),
+        xs
     );
 }
 
@@ -515,7 +619,10 @@ fn clustered_rpx_narrow_tiles_detect_radius_inflation() {
     // Correct rpx_x = (0.5/10)*1.373*(800*0.5) = 0.05*1.373*400 = 27.5px → ~2 tiles radius, ~6 total
     // Mutated +: rpx_x = 0.05*1.373*(800+0.5) = 54.95px → ~10 tiles
     // Mutated /: rpx_x = 0.05*1.373*(800/0.5) = 109.8px → ~16 tiles
-    let light = CpuLight { pos: Vec3::new(0.0, 0.0, 10.0), radius: 0.5 };
+    let light = CpuLight {
+        pos: Vec3::new(0.0, 0.0, 10.0),
+        radius: 0.5,
+    };
     let dims = ClusterDims { x: 64, y: 48, z: 8 };
     let xs = x_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
     let ys = y_tiles_hit(&light, dims, (800, 600), 0.1, 100.0, 1.0);
@@ -523,12 +630,14 @@ fn clustered_rpx_narrow_tiles_detect_radius_inflation() {
     assert!(
         xs.len() <= 8,
         "narrow tiles: r=0.5 z=10 should hit ≤8 x-tiles (12.5px/tile), got {}: {:?}",
-        xs.len(), xs
+        xs.len(),
+        xs
     );
     assert!(
         ys.len() <= 8,
         "narrow tiles: r=0.5 z=10 should hit ≤8 y-tiles, got {}: {:?}",
-        ys.len(), ys
+        ys.len(),
+        ys
     );
 }
 
@@ -555,7 +664,11 @@ fn easing_smoothstep_endpoints_and_symmetry() {
     for i in 1..10 {
         let t = i as f32 / 10.0;
         let sum = e.apply(t) + e.apply(1.0 - t);
-        assert!((sum - 1.0).abs() < 1e-4, "SmoothStep symmetry broken at t={}", t);
+        assert!(
+            (sum - 1.0).abs() < 1e-4,
+            "SmoothStep symmetry broken at t={}",
+            t
+        );
     }
 }
 
@@ -621,7 +734,11 @@ fn easing_all_clamp_out_of_range() {
         // t < 0 → 0
         assert!((e.apply(-1.0)).abs() < 1e-6, "{:?} didn't clamp t=-1", e);
         // t > 1 → 1
-        assert!((e.apply(2.0) - 1.0).abs() < 1e-6, "{:?} didn't clamp t=2", e);
+        assert!(
+            (e.apply(2.0) - 1.0).abs() < 1e-6,
+            "{:?} didn't clamp t=2",
+            e
+        );
     }
 }
 
@@ -640,7 +757,14 @@ fn easing_all_monotonic() {
         for i in 0..=100 {
             let t = i as f32 / 100.0;
             let v = e.apply(t);
-            assert!(v >= prev - 1e-6, "{:?} not monotonic at t={}: {} < {}", e, t, v, prev);
+            assert!(
+                v >= prev - 1e-6,
+                "{:?} not monotonic at t={}: {} < {}",
+                e,
+                t,
+                v,
+                prev
+            );
             prev = v;
         }
     }
@@ -664,7 +788,11 @@ fn biome_visuals_all_biomes_have_reasonable_fog() {
 fn biome_visuals_all_have_positive_ambient() {
     for &biome in BiomeType::all() {
         let v = BiomeVisuals::for_biome(biome);
-        assert!(v.ambient_intensity > 0.0, "{:?} ambient_intensity <= 0", biome);
+        assert!(
+            v.ambient_intensity > 0.0,
+            "{:?} ambient_intensity <= 0",
+            biome
+        );
     }
 }
 
@@ -672,10 +800,17 @@ fn biome_visuals_all_have_positive_ambient() {
 fn biome_visuals_swamp_is_foggiest() {
     let swamp = BiomeVisuals::for_biome(BiomeType::Swamp);
     for &biome in BiomeType::all() {
-        if biome == BiomeType::Swamp { continue; }
+        if biome == BiomeType::Swamp {
+            continue;
+        }
         let other = BiomeVisuals::for_biome(biome);
-        assert!(swamp.fog_density >= other.fog_density,
-            "{:?} foggier than Swamp: {} > {}", biome, other.fog_density, swamp.fog_density);
+        assert!(
+            swamp.fog_density >= other.fog_density,
+            "{:?} foggier than Swamp: {} > {}",
+            biome,
+            other.fog_density,
+            swamp.fog_density
+        );
     }
 }
 
@@ -770,7 +905,10 @@ fn transition_start_sets_biomes() {
 fn transition_same_biome_noop() {
     let mut effect = TransitionEffect::default();
     effect.start(Some(BiomeType::Forest), BiomeType::Forest);
-    assert!(!effect.is_active(), "Same biome should not start transition");
+    assert!(
+        !effect.is_active(),
+        "Same biome should not start transition"
+    );
 }
 
 #[test]
@@ -972,8 +1110,12 @@ fn biome_visuals_sky_colors_valid() {
 fn biome_visuals_cloud_coverage_in_range() {
     for &biome in BiomeType::all() {
         let v = BiomeVisuals::for_biome(biome);
-        assert!(v.cloud_coverage >= 0.0 && v.cloud_coverage <= 1.0,
-            "{:?} cloud_coverage out of range: {}", biome, v.cloud_coverage);
+        assert!(
+            v.cloud_coverage >= 0.0 && v.cloud_coverage <= 1.0,
+            "{:?} cloud_coverage out of range: {}",
+            biome,
+            v.cloud_coverage
+        );
         assert!(v.cloud_speed > 0.0, "{:?} cloud_speed should be > 0", biome);
     }
 }
@@ -982,8 +1124,11 @@ fn biome_visuals_cloud_coverage_in_range() {
 fn biome_visuals_weather_particle_positive() {
     for &biome in BiomeType::all() {
         let v = BiomeVisuals::for_biome(biome);
-        assert!(v.weather_particle_density > 0.0,
-            "{:?} weather_particle_density should be > 0", biome);
+        assert!(
+            v.weather_particle_density > 0.0,
+            "{:?} weather_particle_density should be > 0",
+            biome
+        );
     }
 }
 

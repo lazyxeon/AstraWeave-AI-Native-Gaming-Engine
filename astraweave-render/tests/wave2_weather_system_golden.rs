@@ -30,7 +30,7 @@ fn eased_progress_at_quarter() {
     let mut wt = WeatherTransition::new(4.0);
     wt.start(WeatherKind::None, WeatherKind::Rain);
     wt.update(1.0); // 25% linear
-    // smoothstep(0.25) = 0.25² * (3 - 2*0.25) = 0.0625 * 2.5 = 0.15625
+                    // smoothstep(0.25) = 0.25² * (3 - 2*0.25) = 0.0625 * 2.5 = 0.15625
     let ep = wt.eased_progress();
     assert!(
         (ep - 0.15625).abs() < 0.001,
@@ -45,7 +45,11 @@ fn eased_progress_at_half() {
     wt.start(WeatherKind::None, WeatherKind::Rain);
     wt.update(1.0); // 50%
     let ep = wt.eased_progress();
-    assert!((ep - 0.5).abs() < 0.001, "eased at 50% should be 0.5, got {}", ep);
+    assert!(
+        (ep - 0.5).abs() < 0.001,
+        "eased at 50% should be 0.5, got {}",
+        ep
+    );
 }
 
 #[test]
@@ -53,7 +57,7 @@ fn eased_progress_at_three_quarters() {
     let mut wt = WeatherTransition::new(4.0);
     wt.start(WeatherKind::None, WeatherKind::Rain);
     wt.update(3.0); // 75% linear
-    // smoothstep(0.75) = 0.75² * (3 - 1.5) = 0.5625 * 1.5 = 0.84375
+                    // smoothstep(0.75) = 0.75² * (3 - 1.5) = 0.5625 * 1.5 = 0.84375
     let ep = wt.eased_progress();
     assert!(
         (ep - 0.84375).abs() < 0.001,
@@ -94,7 +98,11 @@ fn multipliers_none_to_sandstorm_complete() {
     let (fog, ambient) = wt.current_multipliers();
     // Sandstorm: fog=4.0, ambient=0.4
     assert!((fog - 4.0).abs() < 0.01, "sandstorm fog = {}", fog);
-    assert!((ambient - 0.4).abs() < 0.01, "sandstorm ambient = {}", ambient);
+    assert!(
+        (ambient - 0.4).abs() < 0.01,
+        "sandstorm ambient = {}",
+        ambient
+    );
 }
 
 #[test]
@@ -114,7 +122,7 @@ fn particle_density_none_to_rain_midpoint() {
     let mut wt = WeatherTransition::new(2.0);
     wt.start(WeatherKind::None, WeatherKind::Rain);
     wt.update(1.0); // 50%
-    // None density=0, Rain density=1.0 → midpoint = 0.5
+                    // None density=0, Rain density=1.0 → midpoint = 0.5
     let pd = wt.current_particle_density();
     assert!((pd - 0.5).abs() < 0.05, "particle density mid: {}", pd);
 }
@@ -130,7 +138,10 @@ fn particle_fade_outgoing_and_incoming_sum_to_one() {
         assert!(
             (out + inc - 1.0).abs() < 0.001,
             "Step {}: out+inc = {} + {} = {}",
-            i, out, inc, out + inc
+            i,
+            out,
+            inc,
+            out + inc
         );
     }
 }
@@ -183,63 +194,96 @@ fn default_duration_3s() {
 // Forest: [None=0.45, Rain=0.35, WindTrails=0.15, Snow=0.05]
 #[test]
 fn pick_forest_none_at_zero() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Forest, 0.0), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Forest, 0.0),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn pick_forest_rain_at_046() {
     // Cumulative: 0.45 → 0.46 falls in Rain range [0.45, 0.80)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Forest, 0.46), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Forest, 0.46),
+        WeatherKind::Rain
+    );
 }
 
 #[test]
 fn pick_forest_wind_at_085() {
     // Rain ends at 0.80, WindTrails [0.80, 0.95)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Forest, 0.85), WeatherKind::WindTrails);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Forest, 0.85),
+        WeatherKind::WindTrails
+    );
 }
 
 #[test]
 fn pick_forest_snow_at_096() {
     // WindTrails ends at 0.95, Snow [0.95, 1.0)
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Forest, 0.96), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Forest, 0.96),
+        WeatherKind::Snow
+    );
 }
 
 // Desert: [None=0.60, Sandstorm=0.25, WindTrails=0.12, Rain=0.03]
 #[test]
 fn pick_desert_none_at_050() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Desert, 0.50), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Desert, 0.50),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn pick_desert_sandstorm_at_070() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Desert, 0.70), WeatherKind::Sandstorm);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Desert, 0.70),
+        WeatherKind::Sandstorm
+    );
 }
 
 #[test]
 fn pick_desert_windtrails_at_090() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Desert, 0.90), WeatherKind::WindTrails);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Desert, 0.90),
+        WeatherKind::WindTrails
+    );
 }
 
 // Tundra: [None=0.25, Snow=0.50, WindTrails=0.20, Rain=0.05]
 #[test]
 fn pick_tundra_snow_at_030() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Tundra, 0.30), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Tundra, 0.30),
+        WeatherKind::Snow
+    );
 }
 
 #[test]
 fn pick_tundra_wind_at_080() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Tundra, 0.80), WeatherKind::WindTrails);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Tundra, 0.80),
+        WeatherKind::WindTrails
+    );
 }
 
 // Swamp: [None=0.20, Rain=0.55, WindTrails=0.15, Snow=0.10]
 #[test]
 fn pick_swamp_rain_at_030() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Swamp, 0.30), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Swamp, 0.30),
+        WeatherKind::Rain
+    );
 }
 
 #[test]
 fn pick_swamp_wind_at_080() {
-    assert_eq!(BiomeWeatherMap::pick(BiomeType::Swamp, 0.80), WeatherKind::WindTrails);
+    assert_eq!(
+        BiomeWeatherMap::pick(BiomeType::Swamp, 0.80),
+        WeatherKind::WindTrails
+    );
 }
 
 // ============================================================================
@@ -278,27 +322,42 @@ fn probability_missing_kind_is_zero() {
 
 #[test]
 fn most_likely_forest_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Forest), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Forest),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn most_likely_grassland_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Grassland), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Grassland),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn most_likely_beach_none() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Beach), WeatherKind::None);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Beach),
+        WeatherKind::None
+    );
 }
 
 #[test]
 fn most_likely_swamp_rain() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Swamp), WeatherKind::Rain);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Swamp),
+        WeatherKind::Rain
+    );
 }
 
 #[test]
 fn most_likely_tundra_snow() {
-    assert_eq!(BiomeWeatherMap::most_likely(BiomeType::Tundra), WeatherKind::Snow);
+    assert_eq!(
+        BiomeWeatherMap::most_likely(BiomeType::Tundra),
+        WeatherKind::Snow
+    );
 }
 
 // ============================================================================
@@ -378,8 +437,12 @@ fn wind_default_golden() {
 fn effective_strength_swamp_constant() {
     let w = BiomeWindProfile::for_biome(BiomeType::Swamp);
     for t in [0.0, 1.0, 5.0, 100.0] {
-        assert_eq!(w.effective_strength(t), w.base_strength,
-            "Swamp (non-gusty) should always be base_strength at t={}", t);
+        assert_eq!(
+            w.effective_strength(t),
+            w.base_strength,
+            "Swamp (non-gusty) should always be base_strength at t={}",
+            t
+        );
     }
 }
 
@@ -397,9 +460,18 @@ fn effective_strength_bounded() {
     let w = BiomeWindProfile::for_biome(BiomeType::Mountain);
     for i in 0..200 {
         let s = w.effective_strength(i as f32 * 0.05);
-        assert!(s >= w.base_strength, "strength {} < base {}", s, w.base_strength);
-        assert!(s <= w.base_strength + w.gust_variance + 0.01,
-            "strength {} > base+var {}", s, w.base_strength + w.gust_variance);
+        assert!(
+            s >= w.base_strength,
+            "strength {} < base {}",
+            s,
+            w.base_strength
+        );
+        assert!(
+            s <= w.base_strength + w.gust_variance + 0.01,
+            "strength {} > base+var {}",
+            s,
+            w.base_strength + w.gust_variance
+        );
     }
 }
 
@@ -425,7 +497,9 @@ fn effective_direction_always_normalized() {
             assert!(
                 (len - 1.0).abs() < 0.01,
                 "{:?} direction length {} at t={}",
-                biome, len, i as f32 * 0.5
+                biome,
+                len,
+                i as f32 * 0.5
             );
         }
     }
@@ -439,7 +513,11 @@ fn effective_direction_always_normalized() {
 fn all_biomes_have_weights() {
     for biome in BiomeType::all() {
         let w = BiomeWeatherMap::weights(*biome);
-        assert!(!w.is_empty(), "{:?} should have at least one weather weight", biome);
+        assert!(
+            !w.is_empty(),
+            "{:?} should have at least one weather weight",
+            biome
+        );
     }
 }
 
@@ -447,7 +525,12 @@ fn all_biomes_have_weights() {
 fn weights_all_positive() {
     for biome in BiomeType::all() {
         for entry in BiomeWeatherMap::weights(*biome) {
-            assert!(entry.weight > 0.0, "{:?} has zero weight for {:?}", biome, entry.kind);
+            assert!(
+                entry.weight > 0.0,
+                "{:?} has zero weight for {:?}",
+                biome,
+                entry.kind
+            );
         }
     }
 }

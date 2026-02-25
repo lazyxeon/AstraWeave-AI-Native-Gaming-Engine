@@ -188,7 +188,11 @@ fn manager_add_instance_tracks_total() {
 #[test]
 fn manager_add_instances_bulk() {
     let mut m = InstanceManager::new();
-    let batch = vec![Instance::identity(), Instance::identity(), Instance::identity()];
+    let batch = vec![
+        Instance::identity(),
+        Instance::identity(),
+        Instance::identity(),
+    ];
     m.add_instances(42, batch);
     assert_eq!(m.total_instances(), 3);
     assert_eq!(m.batch_count(), 1);
@@ -302,7 +306,10 @@ fn circle_pattern_radius() {
     let instances = InstancePatternBuilder::new().circle(8, 10.0).build();
     for i in &instances {
         let dist = (i.position.x * i.position.x + i.position.z * i.position.z).sqrt();
-        assert!((dist - 10.0).abs() < 0.01, "distance={dist}, expected ~10.0");
+        assert!(
+            (dist - 10.0).abs() < 0.01,
+            "distance={dist}, expected ~10.0"
+        );
     }
 }
 

@@ -270,9 +270,9 @@ fn simplify_max_error_stops_early() {
     });
     let mesh = grid_mesh(10);
     let result = gen.simplify(&mesh, 1); // Request extreme reduction
-    // With max_error=0, shouldn't actually collapse anything (all collapses have nonzero error)
-    // But flat mesh has zero error for coplanar collapses, so some might happen.
-    // At least it shouldn't panic.
+                                         // With max_error=0, shouldn't actually collapse anything (all collapses have nonzero error)
+                                         // But flat mesh has zero error for coplanar collapses, so some might happen.
+                                         // At least it shouldn't panic.
     assert!(result.vertex_count() > 0);
 }
 

@@ -31,7 +31,7 @@ fn easing_smoothstep_golden_values() {
     assert_eq!(e.apply(0.0), 0.0);
     assert_eq!(e.apply(1.0), 1.0);
     assert!((e.apply(0.5) - 0.5).abs() < 1e-6); // 0.25 * 2.0 = 0.5
-    // at 0.25: 0.0625 * 2.5 = 0.15625
+                                                // at 0.25: 0.0625 * 2.5 = 0.15625
     assert!((e.apply(0.25) - 0.15625).abs() < 1e-5);
     // at 0.75: 0.5625 * 1.5 = 0.84375
     assert!((e.apply(0.75) - 0.84375).abs() < 1e-5);
@@ -322,13 +322,20 @@ fn for_biome_all_distinct_fog_density() {
         BiomeType::Beach,
         BiomeType::River,
     ];
-    let densities: Vec<f32> = biomes.iter().map(|b| BiomeVisuals::for_biome(*b).fog_density).collect();
+    let densities: Vec<f32> = biomes
+        .iter()
+        .map(|b| BiomeVisuals::for_biome(*b).fog_density)
+        .collect();
     // Multiple biomes share the same fog_density (Mountain=Tundra=0.002), so check
     // that there are at least 5 distinct values
     let mut unique = densities.clone();
     unique.sort_by(|a, b| a.partial_cmp(b).unwrap());
     unique.dedup();
-    assert!(unique.len() >= 5, "Expected at least 5 distinct fog densities, got {:?}", unique);
+    assert!(
+        unique.len() >= 5,
+        "Expected at least 5 distinct fog densities, got {:?}",
+        unique
+    );
 }
 
 // ============================================================================
@@ -437,7 +444,7 @@ fn visuals_lerp_t05_midpoint() {
 
 #[test]
 fn visuals_lerp_cloud_coverage() {
-    let a = BiomeVisuals::for_biome(BiomeType::Swamp);   // 0.7
+    let a = BiomeVisuals::for_biome(BiomeType::Swamp); // 0.7
     let b = BiomeVisuals::for_biome(BiomeType::Desert); // 0.1
     let result = a.lerp(&b, 0.5);
     let expected = (0.7 + 0.1) / 2.0; // 0.4
@@ -675,7 +682,11 @@ fn time_of_day_sun_noon_above_horizon() {
 fn time_of_day_sun_midnight_below_horizon() {
     let tod = TimeOfDay::new(0.0, 1.0);
     let sun = tod.get_sun_position();
-    assert!(sun.y < 0.0, "Sun at midnight should be below horizon, got y={}", sun.y);
+    assert!(
+        sun.y < 0.0,
+        "Sun at midnight should be below horizon, got y={}",
+        sun.y
+    );
 }
 
 #[test]
@@ -724,7 +735,10 @@ fn time_of_day_light_color_midnight_dim() {
 fn time_of_day_ambient_daytime_bright() {
     let tod = TimeOfDay::new(12.0, 1.0);
     let ambient = tod.get_ambient_color();
-    assert!(ambient.x > 0.1, "Daytime ambient should have significant value");
+    assert!(
+        ambient.x > 0.1,
+        "Daytime ambient should have significant value"
+    );
     assert!(ambient.z > ambient.x, "Daytime ambient should be bluish");
 }
 

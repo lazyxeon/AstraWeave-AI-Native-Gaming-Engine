@@ -172,11 +172,7 @@ fn aabb_two_vertices_golden() {
 #[test]
 fn aabb_three_vertices_mixed() {
     let mut mesh = CpuMesh::default();
-    let positions = [
-        [1.0, -5.0, 3.0],
-        [-2.0, 10.0, -7.0],
-        [4.0, 0.0, 1.0],
-    ];
+    let positions = [[1.0, -5.0, 3.0], [-2.0, 10.0, -7.0], [4.0, 0.0, 1.0]];
     for p in &positions {
         mesh.vertices
             .push(MeshVertex::from_arrays(*p, [0.0; 3], [0.0; 4], [0.0; 2]));
@@ -260,8 +256,16 @@ fn compute_tangents_xz_plane_gives_unit_tangent() {
         let ty = v.tangent[1];
         let tz = v.tangent[2];
         let len = (tx * tx + ty * ty + tz * tz).sqrt();
-        assert!((len - 1.0).abs() < 1e-4, "Tangent should be unit length, got {}", len);
-        assert!(tx > 0.9, "Tangent x should be ~1.0 for +X direction, got {}", tx);
+        assert!(
+            (len - 1.0).abs() < 1e-4,
+            "Tangent should be unit length, got {}",
+            len
+        );
+        assert!(
+            tx > 0.9,
+            "Tangent x should be ~1.0 for +X direction, got {}",
+            tx
+        );
     }
 }
 
@@ -365,7 +369,12 @@ fn mesh_vertex_zeroable() {
 
 #[test]
 fn mesh_vertex_pod_roundtrip() {
-    let v = MeshVertex::from_arrays([1.0, 2.0, 3.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.5, 0.75]);
+    let v = MeshVertex::from_arrays(
+        [1.0, 2.0, 3.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.5, 0.75],
+    );
     let bytes = bytemuck::bytes_of(&v);
     assert_eq!(bytes.len(), 48);
     let v2: &MeshVertex = bytemuck::from_bytes(bytes);

@@ -2,11 +2,13 @@
 //! Targets: compute_tangents math, AABB boundary, Instance transforms,
 //! InstanceManager stats, InstancePatternBuilder geometry, BiomeDetector edge cases.
 
-use astraweave_render::mesh::{compute_tangents, CpuMesh, MeshVertex};
-use astraweave_render::instancing::{Instance, InstanceBatch, InstanceManager, InstancePatternBuilder, InstanceRaw};
 use astraweave_render::biome_detector::{BiomeDetector, BiomeDetectorConfig};
-use astraweave_terrain::BiomeType;
+use astraweave_render::instancing::{
+    Instance, InstanceBatch, InstanceManager, InstancePatternBuilder, InstanceRaw,
+};
+use astraweave_render::mesh::{compute_tangents, CpuMesh, MeshVertex};
 use astraweave_terrain::climate::{ClimateConfig, ClimateMap};
+use astraweave_terrain::BiomeType;
 use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use std::f32::consts::PI;
 
@@ -67,7 +69,10 @@ fn cpu_mesh_aabb_empty_is_none() {
 fn cpu_mesh_aabb_single_vertex() {
     let mut m = CpuMesh::default();
     m.vertices.push(MeshVertex::from_arrays(
-        [5.0, -3.0, 7.0], [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0],
+        [5.0, -3.0, 7.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0],
     ));
     let (min, max) = m.aabb().unwrap();
     assert_eq!(min, Vec3::new(5.0, -3.0, 7.0));
@@ -78,7 +83,12 @@ fn cpu_mesh_aabb_single_vertex() {
 fn cpu_mesh_aabb_negative_coords() {
     let mut m = CpuMesh::default();
     for p in [[-10.0, -20.0, -30.0], [10.0, 20.0, 30.0]] {
-        m.vertices.push(MeshVertex::from_arrays(p, [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0]));
+        m.vertices.push(MeshVertex::from_arrays(
+            p,
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
     }
     let (min, max) = m.aabb().unwrap();
     assert_eq!(min, Vec3::new(-10.0, -20.0, -30.0));
@@ -89,7 +99,12 @@ fn cpu_mesh_aabb_negative_coords() {
 fn cpu_mesh_aabb_all_same_position() {
     let mut m = CpuMesh::default();
     for _ in 0..5 {
-        m.vertices.push(MeshVertex::from_arrays([1.0, 1.0, 1.0], [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0]));
+        m.vertices.push(MeshVertex::from_arrays(
+            [1.0, 1.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
     }
     let (min, max) = m.aabb().unwrap();
     assert_eq!(min, max);
@@ -100,9 +115,24 @@ fn cpu_mesh_aabb_all_same_position() {
 fn cpu_mesh_aabb_many_vertices_extremes() {
     let mut m = CpuMesh::default();
     // The min/max should be determined by the extremes mixed across vertices
-    m.vertices.push(MeshVertex::from_arrays([0.0, 100.0, 0.0], [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0]));
-    m.vertices.push(MeshVertex::from_arrays([100.0, 0.0, 0.0], [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0]));
-    m.vertices.push(MeshVertex::from_arrays([0.0, 0.0, 100.0], [0.0,1.0,0.0], [1.0,0.0,0.0,1.0], [0.0,0.0]));
+    m.vertices.push(MeshVertex::from_arrays(
+        [0.0, 100.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0],
+    ));
+    m.vertices.push(MeshVertex::from_arrays(
+        [100.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0],
+    ));
+    m.vertices.push(MeshVertex::from_arrays(
+        [0.0, 0.0, 100.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0],
+    ));
     let (min, max) = m.aabb().unwrap();
     assert_eq!(min, Vec3::ZERO);
     assert_eq!(max, Vec3::new(100.0, 100.0, 100.0));
@@ -113,9 +143,24 @@ fn cpu_mesh_aabb_many_vertices_extremes() {
 fn compute_tangents_xz_plane_tangent_direction() {
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0,0.0,0.0,1.0], [0.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0,0.0,0.0,1.0], [1.0,0.0]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0,0.0,0.0,1.0], [0.0,1.0]),
+            MeshVertex::from_arrays(
+                [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0],
+            ),
+            MeshVertex::from_arrays(
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+                [1.0, 0.0],
+            ),
+            MeshVertex::from_arrays(
+                [0.0, 0.0, 1.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+                [0.0, 1.0],
+            ),
         ],
         indices: vec![0, 1, 2],
     };
@@ -134,9 +179,9 @@ fn compute_tangents_xz_plane_tangent_direction() {
 fn compute_tangents_handedness_positive() {
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [1.0,0.0]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [0.0,1.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 0.0]),
+            MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [1.0, 0.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 1.0]),
         ],
         indices: vec![0, 1, 2],
     };
@@ -154,18 +199,18 @@ fn compute_tangents_flipped_uv_flips_handedness() {
     // Standard winding
     let mut mesh_a = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [1.0,0.0]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [0.0,1.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 0.0]),
+            MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [1.0, 0.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 1.0]),
         ],
         indices: vec![0, 1, 2],
     };
     // Reversed UV-v
     let mut mesh_b = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.0,1.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [1.0,1.0]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [0.0,0.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 1.0]),
+            MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [1.0, 1.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 0.0]),
         ],
         indices: vec![0, 1, 2],
     };
@@ -182,8 +227,18 @@ fn compute_tangents_incomplete_indices_noop() {
     let original_tangent = [0.42, 0.42, 0.42, 0.42];
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], original_tangent, [0.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], original_tangent, [1.0,0.0]),
+            MeshVertex::from_arrays(
+                [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                original_tangent,
+                [0.0, 0.0],
+            ),
+            MeshVertex::from_arrays(
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                original_tangent,
+                [1.0, 0.0],
+            ),
         ],
         indices: vec![0, 1], // NOT divisible by 3
     };
@@ -197,16 +252,19 @@ fn compute_tangents_incomplete_indices_noop() {
 fn compute_tangents_degenerate_uv_finite() {
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.5,0.5]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.5,0.5]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [0.5,0.5]),
+            MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.5, 0.5]),
+            MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.5, 0.5]),
+            MeshVertex::from_arrays([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [0.5, 0.5]),
         ],
         indices: vec![0, 1, 2],
     };
     compute_tangents(&mut mesh);
     for v in &mesh.vertices {
         for &c in &v.tangent {
-            assert!(c.is_finite(), "degenerate UV should still produce finite tangent");
+            assert!(
+                c.is_finite(),
+                "degenerate UV should still produce finite tangent"
+            );
         }
     }
 }
@@ -216,10 +274,10 @@ fn compute_tangents_degenerate_uv_finite() {
 fn compute_tangents_quad_consistent() {
     let mut mesh = CpuMesh {
         vertices: vec![
-            MeshVertex::from_arrays([0.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [0.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,0.0], [0.0,1.0,0.0], [0.0;4], [1.0,0.0]),
-            MeshVertex::from_arrays([1.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [1.0,1.0]),
-            MeshVertex::from_arrays([0.0,0.0,1.0], [0.0,1.0,0.0], [0.0;4], [0.0,1.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 0.0]),
+            MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0; 4], [1.0, 0.0]),
+            MeshVertex::from_arrays([1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [1.0, 1.0]),
+            MeshVertex::from_arrays([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0; 4], [0.0, 1.0]),
         ],
         indices: vec![0, 1, 2, 0, 2, 3],
     };
@@ -255,7 +313,8 @@ fn instance_raw_from_identity() {
             let expected = if i == j { 1.0 } else { 0.0 };
             assert!(
                 (raw.model[i][j] - expected).abs() < 1e-6,
-                "model[{i}][{j}] = {} expected {expected}", raw.model[i][j]
+                "model[{i}][{j}] = {} expected {expected}",
+                raw.model[i][j]
             );
         }
     }
@@ -407,7 +466,11 @@ fn instance_manager_add_multiple_meshes() {
 #[test]
 fn instance_manager_add_instances_bulk() {
     let mut mgr = InstanceManager::new();
-    let batch = vec![Instance::identity(), Instance::identity(), Instance::identity()];
+    let batch = vec![
+        Instance::identity(),
+        Instance::identity(),
+        Instance::identity(),
+    ];
     mgr.add_instances(10, batch);
     assert_eq!(mgr.total_instances(), 3);
     assert_eq!(mgr.get_batch(10).unwrap().instance_count(), 3);
@@ -531,7 +594,7 @@ fn biome_detector_stationary_no_extra_transitions() {
         hysteresis_count: 3,
     });
     let _ = det.update(&climate, 0.0, 0.0, 50.0); // first
-    // Same position many times
+                                                  // Same position many times
     for _ in 0..20 {
         let t = det.update(&climate, 0.0, 0.0, 50.0);
         assert!(t.is_none(), "Same position = same biome, no transition");
@@ -575,7 +638,8 @@ fn biome_detector_classify_scored_mild() {
     let biome = BiomeDetector::classify_scored(25.0, 0.5, 0.5);
     assert!(
         biome == BiomeType::Grassland || biome == BiomeType::Forest,
-        "Expected grassland or forest, got {:?}", biome
+        "Expected grassland or forest, got {:?}",
+        biome
     );
 }
 
@@ -619,7 +683,10 @@ fn biome_detector_reset_allows_reinitialize() {
     det.reset();
     // After reset, next update should act as first sample
     let t = det.update(&climate, 500.0, 500.0, 10.0);
-    assert!(t.is_some(), "After reset, first update should trigger transition");
+    assert!(
+        t.is_some(),
+        "After reset, first update should trigger transition"
+    );
 }
 
 #[test]
@@ -647,7 +714,9 @@ fn biome_detector_transition_info_has_correct_coords() {
         sample_distance_threshold: 0.0,
         hysteresis_count: 1,
     });
-    let t = det.update(&climate, 42.5, 99.0, 33.0).expect("first update");
+    let t = det
+        .update(&climate, 42.5, 99.0, 33.0)
+        .expect("first update");
     assert_eq!(t.x, 42.5);
     assert_eq!(t.z, 99.0);
     assert_eq!(t.height, 33.0);

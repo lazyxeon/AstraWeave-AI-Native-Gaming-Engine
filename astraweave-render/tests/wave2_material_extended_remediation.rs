@@ -12,8 +12,8 @@
 use glam::Vec3;
 
 use astraweave_render::material_extended::{
-    MaterialGpuExtended, MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_ANISOTROPY,
-    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_TRANSMISSION,
+    MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY, MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN,
+    MATERIAL_FLAG_SUBSURFACE, MATERIAL_FLAG_TRANSMISSION,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

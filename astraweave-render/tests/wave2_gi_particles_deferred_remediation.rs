@@ -14,13 +14,13 @@
 
 use glam::Vec3;
 
-use astraweave_render::gi::{
-    VoxelMaterial, VoxelVertex, VoxelizationConfig, VoxelizationMesh, VoxelizationStats,
-    VxgiConfig, VoxelRadiance,
-};
-use astraweave_render::gi::HybridGiConfig;
-use astraweave_render::gpu_particles::{GpuParticle, EmitterParams};
 use astraweave_render::deferred::GBufferFormats;
+use astraweave_render::gi::HybridGiConfig;
+use astraweave_render::gi::{
+    VoxelMaterial, VoxelRadiance, VoxelVertex, VoxelizationConfig, VoxelizationMesh,
+    VoxelizationStats, VxgiConfig,
+};
+use astraweave_render::gpu_particles::{EmitterParams, GpuParticle};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  VxgiConfig
@@ -268,11 +268,7 @@ fn voxelization_mesh_triangle_count_one_tri() {
 #[test]
 fn voxelization_mesh_triangle_count_two_tris() {
     let v = VoxelVertex::new(Vec3::ZERO, Vec3::Y);
-    let mesh = VoxelizationMesh::new(
-        vec![v; 4],
-        vec![0, 1, 2, 0, 2, 3],
-        VoxelMaterial::default(),
-    );
+    let mesh = VoxelizationMesh::new(vec![v; 4], vec![0, 1, 2, 0, 2, 3], VoxelMaterial::default());
     assert_eq!(mesh.triangle_count(), 2);
 }
 

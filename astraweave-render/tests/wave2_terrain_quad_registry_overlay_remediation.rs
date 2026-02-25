@@ -190,16 +190,32 @@ fn debug_quad_vertex_zeroed() {
 #[test]
 fn create_screen_quad_has_6_vertices() {
     let quad = create_screen_quad();
-    assert_eq!(quad.len(), 6, "Full-screen quad should be 2 triangles = 6 vertices");
+    assert_eq!(
+        quad.len(),
+        6,
+        "Full-screen quad should be 2 triangles = 6 vertices"
+    );
 }
 
 #[test]
 fn create_screen_quad_covers_ndc_range() {
     let quad = create_screen_quad();
-    let min_x = quad.iter().map(|v| v.position[0]).fold(f32::INFINITY, f32::min);
-    let max_x = quad.iter().map(|v| v.position[0]).fold(f32::NEG_INFINITY, f32::max);
-    let min_y = quad.iter().map(|v| v.position[1]).fold(f32::INFINITY, f32::min);
-    let max_y = quad.iter().map(|v| v.position[1]).fold(f32::NEG_INFINITY, f32::max);
+    let min_x = quad
+        .iter()
+        .map(|v| v.position[0])
+        .fold(f32::INFINITY, f32::min);
+    let max_x = quad
+        .iter()
+        .map(|v| v.position[0])
+        .fold(f32::NEG_INFINITY, f32::max);
+    let min_y = quad
+        .iter()
+        .map(|v| v.position[1])
+        .fold(f32::INFINITY, f32::min);
+    let max_y = quad
+        .iter()
+        .map(|v| v.position[1])
+        .fold(f32::NEG_INFINITY, f32::max);
     assert_eq!(min_x, -1.0, "Quad should reach NDC left edge");
     assert_eq!(max_x, 1.0, "Quad should reach NDC right edge");
     assert_eq!(min_y, -1.0, "Quad should reach NDC bottom edge");
@@ -218,8 +234,16 @@ fn create_screen_quad_all_z_zero() {
 fn create_screen_quad_uvs_in_0_1_range() {
     let quad = create_screen_quad();
     for v in &quad {
-        assert!((0.0..=1.0).contains(&v.uv[0]), "U out of [0,1]: {}", v.uv[0]);
-        assert!((0.0..=1.0).contains(&v.uv[1]), "V out of [0,1]: {}", v.uv[1]);
+        assert!(
+            (0.0..=1.0).contains(&v.uv[0]),
+            "U out of [0,1]: {}",
+            v.uv[0]
+        );
+        assert!(
+            (0.0..=1.0).contains(&v.uv[1]),
+            "V out of [0,1]: {}",
+            v.uv[1]
+        );
     }
 }
 
@@ -304,7 +328,11 @@ fn weather_kind_variants_distinguishable() {
     ];
     for i in 0..kinds.len() {
         for j in (i + 1)..kinds.len() {
-            assert_ne!(kinds[i], kinds[j], "Variants {:?} and {:?} should differ", kinds[i], kinds[j]);
+            assert_ne!(
+                kinds[i], kinds[j],
+                "Variants {:?} and {:?} should differ",
+                kinds[i], kinds[j]
+            );
         }
     }
 }
@@ -372,7 +400,12 @@ fn gpu_light_cf_size_is_32_bytes() {
 
 #[test]
 fn gpu_light_cf_new_stores_fields() {
-    let light = GpuLight::new(Vec3::new(1.0, 2.0, 3.0), 5.0, Vec3::new(0.5, 0.6, 0.7), 10.0);
+    let light = GpuLight::new(
+        Vec3::new(1.0, 2.0, 3.0),
+        5.0,
+        Vec3::new(0.5, 0.6, 0.7),
+        10.0,
+    );
     assert_eq!(light.position[0], 1.0);
     assert_eq!(light.position[1], 2.0);
     assert_eq!(light.position[2], 3.0);

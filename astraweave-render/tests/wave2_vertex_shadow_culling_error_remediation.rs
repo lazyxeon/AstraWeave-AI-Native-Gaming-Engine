@@ -14,17 +14,17 @@
 
 use glam::{Mat4, Vec2, Vec3};
 
+use astraweave_render::clustered_megalights::{ClusterBounds, GpuLight};
+use astraweave_render::error::RenderError;
+#[cfg(feature = "nanite")]
+use astraweave_render::nanite_gpu_culling::{CullStats, GpuCamera};
+use astraweave_render::shadow_csm::{
+    GpuShadowCascade, ShadowCascade, ATLAS_RESOLUTION, CASCADE_COUNT, CASCADE_RESOLUTION,
+    DEPTH_BIAS,
+};
 use astraweave_render::vertex_compression::{
     CompressedVertex, HalfFloatEncoder, OctahedralEncoder, VertexCompressor,
 };
-use astraweave_render::shadow_csm::{
-    GpuShadowCascade, ShadowCascade, CASCADE_COUNT, CASCADE_RESOLUTION, ATLAS_RESOLUTION,
-    DEPTH_BIAS,
-};
-#[cfg(feature = "nanite")]
-use astraweave_render::nanite_gpu_culling::{CullStats, GpuCamera};
-use astraweave_render::clustered_megalights::{ClusterBounds, GpuLight};
-use astraweave_render::error::RenderError;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CompressedVertex constants
@@ -101,7 +101,12 @@ fn octahedral_encode_diagonal_normalized() {
 
 #[test]
 fn octahedral_decode_produces_unit_vector() {
-    for &n in &[Vec3::X, Vec3::Y, Vec3::Z, Vec3::new(0.3, 0.5, 0.8).normalize()] {
+    for &n in &[
+        Vec3::X,
+        Vec3::Y,
+        Vec3::Z,
+        Vec3::new(0.3, 0.5, 0.8).normalize(),
+    ] {
         let enc = OctahedralEncoder::encode(n);
         let dec = OctahedralEncoder::decode(enc);
         let len = dec.length();
@@ -310,7 +315,10 @@ fn gpu_shadow_cascade_from_shadow_cascade() {
     assert!((gpu.split_distances[0] - 0.1).abs() < 1e-6, "near");
     assert!((gpu.split_distances[1] - 10.0).abs() < 1e-6, "far");
     assert!((gpu.split_distances[2] - 0.0).abs() < 1e-6, "pad0");
-    assert!((gpu.atlas_transform[1] - 0.5).abs() < 1e-6, "atlas offset y");
+    assert!(
+        (gpu.atlas_transform[1] - 0.5).abs() < 1e-6,
+        "atlas offset y"
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -430,14 +438,14 @@ fn gpu_light_megalights_zeroed() {
 #[test]
 fn gpu_light_megalights_pod_roundtrip() {
     let l = GpuLight {
-        position: [1.0, 2.0, 3.0, 5.0],   // xyz=pos, w=radius
-        color: [1.0, 0.8, 0.6, 100.0],      // rgb=color, a=intensity
+        position: [1.0, 2.0, 3.0, 5.0], // xyz=pos, w=radius
+        color: [1.0, 0.8, 0.6, 100.0],  // rgb=color, a=intensity
     };
     let bytes = bytemuck::bytes_of(&l);
     assert_eq!(bytes.len(), 32);
     let back: &GpuLight = bytemuck::from_bytes(bytes);
-    assert_eq!(back.position[3], 5.0);     // radius
-    assert_eq!(back.color[3], 100.0);       // intensity
+    assert_eq!(back.position[3], 5.0); // radius
+    assert_eq!(back.color[3], 100.0); // intensity
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
