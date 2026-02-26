@@ -36,22 +36,25 @@ Built in Rust, designed for massive-scale intelligent worlds with production-gra
 
 ---
 
-### 🔍 Engine Health Status (February 3, 2026) 🎉
+### 🔍 Engine Health Status (February 26, 2026)
 
-✅ **MIRI MEMORY SAFETY VALIDATION COMPLETE** — [Full Report](docs/current/MIRI_VALIDATION_REPORT.md)
+✅ **MIRI + KANI FORMAL VERIFICATION COMPLETE** — [Miri Report](docs/current/MIRI_VALIDATION_REPORT.md) | [Coverage Report](docs/current/MASTER_COVERAGE_REPORT.md)
 
-**🏆 World-Class Achievement**: AstraWeave achieves **94.57% test coverage** across **25 production crates** with **3,040+ passing tests** — placing it in the **top 1% of open-source game engines** for test quality. All unsafe code is now **Miri-validated** for memory safety.
+**🏆 Production-Grade Quality**: AstraWeave has **~27,000+ passing tests** across **49 production crates** (28 measured via LLVM source-based coverage) with **59.3% weighted coverage** — 14 crates at 85%+ including ECS (96.39%), Physics (94.38%), and Nav (93.11%). All unsafe code is **Miri-validated** and **Kani-verified** for memory safety.
 
 | Metric | Status | Details |
 |--------|--------|---------|
-| **Coverage** | ✅ **94.57%** (P0: 95.22%, P1: 94.68%, P2: 90.71%) | **25/25 crates measured** |
-| **Tests** | ✅ **3,040+ passing** | 16/25 crates @ 95%+ (64% exceptional density) |
+| **Coverage** | ✅ **59.3% weighted** (P0: 55.4%, P1: 58.9%, P2: 73.9%) | **28 crates measured** via `cargo llvm-cov` |
+| **Tests** | ✅ **~27,000+ passing** | 14/28 crates ≥ 85% coverage |
 | **Memory Safety** | ✅ **Miri-Validated** | 977 tests, **0 undefined behavior** across 4 crates |
-| **Mutation Testing** | ✅ **767 tests** | All 7 P0 crates validated (3 mutation types) |
+| **Formal Verification** | ✅ **Kani-Verified** | 69 proof harnesses across 4 crates |
+| **Mutation Testing** | ✅ **2,028+ tests** | Wave 1: 767 manual + Wave 2: 1,261+ automated (100% kill rate) |
 | **Determinism** | ✅ **100% bit-identical** | Replay validation, 5-run consistency |
-| **Health Grade** | ✅ **A+ (98/100)** | Production ready, world-class quality |
+| **Health Grade** | ✅ **B+** | Strong quality, GPU/async code lowers weighted average |
 
-**Latest Achievement (Feb 3, 2026)**: Miri validation complete — astraweave-ecs (386 tests), astraweave-math (109 tests), astraweave-core (465 tests), astraweave-sdk (17 tests) — **ZERO undefined behavior detected** | [MIRI_VALIDATION_REPORT](docs/current/MIRI_VALIDATION_REPORT.md)
+> **Why 59.3%?** Previous reports claimed 94.57% using manual source-file filtering. The v5.0 methodology uses `cargo llvm-cov --lib --summary-only` which instruments all compiled code including inlined dependency generics. Large GPU-only and async code paths (rendering: 37,035 lines, terrain: 18,826 lines, audio: 11,662 lines) are untestable in headless mode. See [MASTER_COVERAGE_REPORT](docs/current/MASTER_COVERAGE_REPORT.md) for full analysis.
+
+**Miri Validated**: astraweave-ecs (386 tests), astraweave-math (109 tests), astraweave-core (465 tests), astraweave-sdk (17 tests) — **ZERO undefined behavior** | [MIRI_VALIDATION_REPORT](docs/current/MIRI_VALIDATION_REPORT.md)
 
 **Unsafe Code Validated**: BlobVec, SparseSet, EntityAllocator, SIMD intrinsics (SSE2), C ABI FFI functions — all memory-safe ✅
 
@@ -75,7 +78,7 @@ cargo run -p hello_companion --release
 cargo run -p unified_showcase --release
 ```
 
-**Note**: Editor (`aw_editor`) is currently in integration testing with 500+ passing tests. See workflow tests in `tools/aw_editor/tests`.
+**Note**: Editor (`aw_editor`) has 6,100+ tests. See workflow tests in `tools/aw_editor/tests`.
 
 ---
 
@@ -168,24 +171,28 @@ flowchart TB
 
 ## 📊 Project Status
 
-**Overall Status**: Phase 8 (Game Engine Readiness) - ~90% Production Ready.
+**Overall Status**: Phase 8 (Game Engine Readiness) — Phase 8.8 Physics Robustness in progress.
 
 | Component | Status | Notes |
 | :--- | :--- | :--- |
-| **Core ECS** | ✅ Production Ready | 300 tests, 96.67% coverage, rock solid. |
-| **Rendering** | ✅ Production Ready | 521 tests, feature complete AAA pipeline. |
-| **Physics/Nav** | ✅ Production Ready | 750 tests (560 physics + 190 nav), highly optimized. |
-| **AI Orchestration** | ✅ Production Ready | 244 tests, validated at scale. |
-| **Scripting** | ⚠️ Alpha | 60 tests, functional Rhai integration, expanding API. |
-| **Editor** | ✅ Production Ready | 3,592 tests passing, UI automation via `egui_kittest`. |
-| **UI Framework** | ✅ Production Ready | 320 tests, comprehensive coverage. |
-| **LLM Support** | ✅ Production Ready | 618 tests, robust inference pipeline. |
+| **Core ECS** | ✅ Production Ready | 330 tests, 96.39% coverage, Miri + Kani validated. |
+| **Rendering** | ✅ Production Ready | 806 tests, feature complete AAA pipeline. |
+| **Physics/Nav** | ✅ Production Ready | 1,460 tests (1,244 physics + 216 nav), highly optimized. |
+| **AI Orchestration** | ✅ Production Ready | 268 tests, validated at scale. |
+| **Fluids** | ✅ Production Ready | 4,907 tests, SPH/FLIP simulation with caustics and foam. |
+| **Prompts** | ✅ Production Ready | 1,931 tests, 100% mutation kill rate (792 mutants). |
+| **Scripting** | ⚠️ Alpha | 179 tests, functional Rhai integration, expanding API. |
+| **Editor** | ✅ Production Ready | 6,100+ tests passing, UI automation via `egui_kittest`. |
+| **UI Framework** | ✅ Production Ready | 331 tests, functional coverage. |
+| **LLM Support** | ✅ Production Ready | 16,776 lines, robust inference pipeline. |
 | **AI Generation** | 🧪 Experimental | Prototype asset generation pipeline. |
 
 ### 🏆 Quality Metrics
--   **Test Coverage**: 94.57% (25/25 crates validated)
--   **Mutation Testing**: 767 mutation-killing tests (3,040+ total)
--   **Memory Safety**: Miri-validated (977 tests, 0 undefined behavior)
+-   **Test Coverage**: 59.3% weighted via `cargo llvm-cov` (28 crates measured, 14 at 85%+)
+-   **Total Tests**: ~27,000+ passing across 128 workspace packages
+-   **Mutation Testing**: Wave 1: 767 manual + Wave 2: 1,261+ automated (100% kill rate on prompts)
+-   **Memory Safety**: Miri-validated (977 tests, 0 undefined behavior across 4 crates)
+-   **Formal Verification**: Kani-verified (69 proof harnesses across 4 crates)
 -   **Performance**: 60 FPS @ 12,700 agents (benchmarked on HP Pavilion Gaming Laptop — see [full spec sheet](docs/masters/MASTER_BENCHMARK_REPORT.md#benchmark-hardware))
 -   **Security**: A- (92/100)
 
@@ -193,7 +200,7 @@ flowchart TB
 
 ## 📦 Crate Ecosystem
 
-AstraWeave is a modular workspace of **49 production crates** organized into 7 functional domains. Each crate is designed for composability, testability, and production deployment.
+AstraWeave is a modular workspace of **49 production crates** organized into 7 functional domains, plus 17 tool/utility packages (128 total workspace members). Each crate is designed for composability, testability, and production deployment.
 
 ### 🏗️ Core Engine (8 crates)
 -   **`astraweave-core`**: Foundation framework with WorldSnapshot, PlanIntent schemas, and tool registry system
@@ -205,8 +212,9 @@ AstraWeave is a modular workspace of **49 production crates** organized into 7 f
 -   **`astraweave-observability`**: Production telemetry, logging, and crash reporting
 -   **`astraweave-optimization`**: LLM performance optimization (batching, caching, token compression)
 
-### 🧠 AI & Intelligence (14 crates)
+### 🧠 AI & Intelligence (15 crates)
 -   **`astraweave-ai`**: Core loop orchestration with GOAP planner and async LLM executor
+-   **`astraweave-ai-gen`**: Experimental AI-powered asset generation pipeline
 -   **`astraweave-llm`**: Production LLM integration (Phi-3/Hermes2, Ollama, prompt caching, circuit breaker)
 -   **`astraweave-llm-eval`**: Automated LLM evaluation with multi-metric scoring
 -   **`astraweave-behavior`**: Behavior trees, HTN planning, GOAP with LRU plan caching
@@ -258,7 +266,7 @@ AstraWeave is a modular workspace of **49 production crates** organized into 7 f
 -   **`astraweave-stress-test`**: Comprehensive stress testing and benchmarking framework
 
 ### 🔧 Additional Components
--   **Tools**: `aw_editor` (production-ready with 3,592 tests), `aw_asset_cli`, `aw_texture_gen`, `aw_save_cli`, and 10+ build/debugging utilities
+-   **Tools**: `aw_editor` (production-ready with 6,100+ tests), `aw_asset_cli`, `aw_texture_gen`, `aw_save_cli`, and 15+ build/debugging utilities
 -   **Examples**: 40+ working examples including `hello_companion` (6 AI modes), `unified_showcase` (rendering), `biome_showcase`, `adaptive_boss`, and physics/fluids demos
 
 ---
@@ -268,10 +276,10 @@ AstraWeave is a modular workspace of **49 production crates** organized into 7 f
 AstraWeave is an experimental project built **100% by AI** to prove AI's capability to create production-grade systems.
 
 **Current Development Status:**
--   **49 production crates** with 94.57% test coverage (3,040+ tests)
--   **Editor**: Production-ready with 3,592 passing tests
+-   **49 production crates** with 59.3% weighted LLVM coverage (~27,000+ tests)
+-   **Editor**: Production-ready with 6,100+ passing tests
 -   **Experimental**: `astraweave-coordination` (multi-agent scaffolding)
--   **Active Phases**: Physics robustness upgrades, scripting API expansion
+-   **Active Phases**: Phase 8.8 Physics robustness, scripting API expansion
 
 See `CONTRIBUTING.md` and `docs/masters/MASTER_ROADMAP.md` for detailed roadmap and contribution guidelines.
 
