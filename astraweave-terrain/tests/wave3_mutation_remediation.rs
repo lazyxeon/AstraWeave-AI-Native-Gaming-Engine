@@ -110,6 +110,23 @@ mod whittaker_boundary {
             "t=0.5, m=0.4 must be Grassland (m > 0.4 is strict)");
     }
 
+    // Kill mutation: t > 0.6 && m > 0.6 → t > 0.6 || m > 0.6
+    // Kill mutation: t > 0.6 → t < 0.6 in guard (t < 0.6 && m > 0.6 captures this wrongly)
+    // t=0.3, m=0.7: must NOT be Forest (only m qualifies, t doesn't)
+    #[test]
+    fn grassland_low_t_high_m_not_forest() {
+        assert_eq!(classify_whittaker_biome(0.3, 0.7), BiomeType::Grassland,
+            "t=0.3, m=0.7 must be Grassland — t > 0.6 guard must use && not ||");
+    }
+
+    // Kill mutation: m > 0.6 → m < 0.6 in guard (t > 0.6 && m < 0.6 captures this wrongly)
+    // t=0.65, m=0.1: must NOT be Forest (only t qualifies, m doesn't)
+    #[test]
+    fn grassland_high_t_low_m_not_forest() {
+        assert_eq!(classify_whittaker_biome(0.65, 0.1), BiomeType::Grassland,
+            "t=0.65, m=0.1 must be Grassland — m > 0.6 guard must not become m < 0.6");
+    }
+
     // Default fallthrough
     #[test]
     fn grassland_fallthrough() {
