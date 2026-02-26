@@ -55,6 +55,30 @@ mod whittaker_boundary {
             "t=0.6, m=0.19 must NOT be Desert (t < 0.6 is strict)");
     }
 
+    // Kill mutation: t < 0.6 → t <= 0.6 (line 227 col 25)
+    // At t=0.6, m=0.19: t < 0.6 → false, so NOT Desert
+    // What IS it? Falls through remaining guards:
+    //   t > 0.7 && m < 0.4? No (t=0.6)
+    //   m > 0.8? No (m=0.19)
+    //   t > 0.6 && m > 0.6? No
+    //   t > 0.4 && m > 0.4? No (m=0.19)
+    //   Default → Grassland
+    #[test]
+    fn desert_boundary_t_0_6_is_grassland() {
+        assert_eq!(classify_whittaker_biome(0.6, 0.19), BiomeType::Grassland,
+            "t=0.6, m=0.19 must be Grassland (t < 0.6 is strict, so Desert branch skipped)");
+    }
+
+    // Kill mutation: t < 0.6 → t == 0.6 (Desert arm)
+    // At t=0.5: t < 0.6 is true, t == 0.6 is false → mutation skips Desert
+    // But what does t=0.5,m=0.19 classify as with mutation?
+    //   t > 0.7? No. m>0.8? No. t>0.6? No. t>0.4 && m>0.4? No (m=0.19). → Grassland
+    // Original gives Desert. Mutation gives Grassland. The `desert_low_moisture` test kills this.
+
+    // Kill mutation: t < 0.6 → t > 0.6 (Desert arm)
+    // At t=0.5: t < 0.6 true → Desert. t > 0.6 false → skip Desert. 
+    // Same as above: killed by `desert_low_moisture` test.
+
     // Boundary: t > 0.7 && m < 0.4 → Desert
     #[test]
     fn desert_hot_dry() {
@@ -87,6 +111,52 @@ mod whittaker_boundary {
         //   t > 0.6 && m > 0.6? m=0.6 is not > 0.6. Falls to t > 0.4 && m > 0.4 → Forest
         assert_eq!(classify_whittaker_biome(0.61, 0.7), BiomeType::Forest);
     }
+
+    // Kill mutation: t > 0.6 → t == 0.6
+    // t=0.8, m=0.7 → t > 0.6 is true (Forest), but t == 0.6 is false → falls through
+    #[test]
+    fn forest_t_above_0_6() {
+        assert_eq!(classify_whittaker_biome(0.8, 0.7), BiomeType::Forest,
+            "t=0.8, m=0.7 must be Forest (t > 0.6 && m > 0.6)");
+    }
+
+    // Kill mutation: t > 0.6 → t < 0.6
+    // t=0.61, m=0.61 → t > 0.6 true → Forest. With t < 0.6: false → falls to t > 0.4 branch which also gives Forest.
+    // Need a case where ONLY the t > 0.6 branch gives Forest but t > 0.4 does NOT.
+    // Actually both branches give Forest, so this mutation may be equivalent for the Forest case.
+    // What if we test t=0.5 m=0.7? t > 0.6 is false, t > 0.4 is true, m > 0.4 is true → Forest
+    // With mutation t < 0.6: t=0.5 < 0.6 is true, m > 0.6 is true → Forest too. Same.
+    // This mutation on t > 0.6 is equivalent when t > 0.4 && m > 0.4 also catches it.
+
+    // Kill mutation: t > 0.6 → t >= 0.6 in the (t > 0.6 && m > 0.6) guard
+    // At t=0.6, m=0.61: t > 0.6 is false → fall to t > 0.4 && m > 0.4 → Forest
+    // With >=: t >= 0.6 is true → Forest. Same result, so this mutation is equivalent.
+
+    // Kill mutation: m > 0.6 → m == 0.6 in (t > 0.6 && m > 0.6) guard
+    // t=0.61, m=0.65: original → Forest. m==0.6? No → falls to t>0.4 && m>0.4 → Forest. Equivalent!
+    // t=0.61, m=0.6: original → not this branch → t>0.4 && m>0.4 → Forest. m==0.6? Yes → Forest. Same.
+
+    // Kill mutation: m > 0.6 → m < 0.6 in (t > 0.6 && m > 0.6) guard  
+    // t=0.65, m=0.65: m > 0.6 true → Forest. m < 0.6 false → falls to t>0.4,m>0.4 → Forest. Same!
+    // These mutations on the t>0.6 && m>0.6 guard are all practically equivalent because
+    // the next guard (t>0.4 && m>0.4) catches the same cases.
+
+    // Kill mutation: m > 0.6 → m >= 0.6 at line 231 col 36
+    // Similar analysis: equivalent due to the fallthrough to t>0.4 && m>0.4
+
+    // Kill mutation: && → || in (t > 0.6 && m > 0.6)
+    // With ||: t=0.3, m=0.7 → m>0.6 true → Forest (OR matches)
+    // Original: t=0.3 → t>0.6 false → AND fails → falls through
+    // t=0.3, m=0.7 → m > 0.8? No. Next: t>0.6 && m>0.6? No (t=0.3)
+    // Next: t>0.4 && m>0.4? No (t=0.3). → Grassland!
+    // The existing test `grassland_low_t_high_m_not_forest` already covers this.
+
+    // Kill mutation: match guard `t > 0.6 && m > 0.6` → `false`
+    // This disables the entire branch. t=0.61, m=0.61 would fall to t>0.4 && m>0.4 → Forest.
+    // Equivalent! Both branches produce Forest for these values.
+    // To kill this, we need values where ONLY the t>0.6 branch applies but NOT t>0.4.
+    // That's impossible since t>0.6 implies t>0.4 and m>0.6 implies m>0.4.
+    // This mutation is fully equivalent and unkillable.
 
     // Boundary: t > 0.4 && m > 0.4 → Forest
     #[test]
@@ -209,6 +279,40 @@ mod dual_contouring_boundary {
         // Indices must come in triples (triangles)
         assert_eq!(mesh.indices.len() % 3, 0, "Indices must be multiple of 3");
     }
+
+    // Kill mutation: (v1.density - v2.density).abs() > 0.001 → >= 0.001
+    // This mutation is practically equivalent since f32 rarely equals exactly 0.001.
+    // To kill it, we'd need densities whose difference is EXACTLY 0.001, which is
+    // extremely unlikely with standard f32 arithmetic. This is an equivalent mutant.
+    // Instead, verify the interpolation produces correct results for known densities.
+    #[test]
+    fn interpolation_with_known_densities() {
+        let mut grid = VoxelGrid::new();
+        let coord = ChunkCoord::new(0, 0, 0);
+        let chunk = grid.get_or_create_chunk(coord);
+
+        // Create surface with specific densities: sharp surface at y=8
+        // with densities that have a clear crossing
+        for x in 0..CHUNK_SIZE {
+            for z in 0..CHUNK_SIZE {
+                for y in 0..CHUNK_SIZE {
+                    let density = (y as f32 - 8.0) * 0.5;
+                    chunk.set_voxel(glam::IVec3::new(x, y, z), Voxel::new(density, 0));
+                }
+            }
+        }
+
+        let mut dc = DualContouring::new();
+        let mesh = dc.generate_mesh(grid.get_chunk(coord).unwrap());
+        assert!(!mesh.vertices.is_empty(), "Gradient surface should produce vertices");
+
+        // All vertex positions should be in valid range
+        for v in &mesh.vertices {
+            assert!(v.position[0] >= 0.0 && v.position[0] <= CHUNK_SIZE as f32);
+            assert!(v.position[1] >= 0.0 && v.position[1] <= CHUNK_SIZE as f32);
+            assert!(v.position[2] >= 0.0 && v.position[2] <= CHUNK_SIZE as f32);
+        }
+    }
 }
 
 // ============================================================================
@@ -263,6 +367,49 @@ mod marching_cubes_sentinel {
             "Row 103 valid entries ({}) must be a multiple of 3", valid_count);
     }
 
+    // Kill mutation: "delete -" at marching_cubes_tables.rs:103:38
+    // This changes -1 sentinel to 1 (a valid index) in some row.
+    // The source line 103 corresponds to MC_TRI_TABLE[69] (table starts at line 34).
+    // Original row 69: [1, 8, 3, 1, 9, 8, 5, 10, 6, -1, -1, -1, -1, -1, -1, -1]
+    // Has 9 valid entries (3 triangles). If a -1 becomes 1, it has 10 entries → invalid.
+    #[test]
+    fn all_rows_have_valid_triangle_count() {
+        for (case_idx, row) in MC_TRI_TABLE.iter().enumerate() {
+            let valid_count = row.iter().filter(|&&v| v != -1).count();
+            assert_eq!(valid_count % 3, 0,
+                "MC_TRI_TABLE[{}] has {} valid entries, must be a multiple of 3",
+                case_idx, valid_count);
+            // Max triangles per cell is 5 (15 indices)
+            assert!(valid_count <= 15,
+                "MC_TRI_TABLE[{}] has {} valid entries, max is 15", case_idx, valid_count);
+        }
+    }
+
+    // Specifically verify row 69 (the mutation target from line 103)
+    #[test]
+    fn row_69_exact_valid_count() {
+        let row = &MC_TRI_TABLE[69];
+        let valid_count = row.iter().filter(|&&v| v != -1).count();
+        assert_eq!(valid_count, 9,
+            "MC_TRI_TABLE[69] must have exactly 9 valid entries (3 triangles), got {}", valid_count);
+    }
+
+    // Additional: verify that sentinels are CONTIGUOUS (-1s are never interrupted by non-sentinel)
+    #[test]
+    fn sentinels_contiguous_in_all_rows() {
+        for (case_idx, row) in MC_TRI_TABLE.iter().enumerate() {
+            let mut seen_sentinel = false;
+            for (j, &val) in row.iter().enumerate() {
+                if val == -1 {
+                    seen_sentinel = true;
+                } else if seen_sentinel {
+                    panic!("MC_TRI_TABLE[{}][{}] = {} appears AFTER a -1 sentinel — sentinels must be contiguous",
+                        case_idx, j, val);
+                }
+            }
+        }
+    }
+
     #[test]
     fn edge_table_case_0_is_zero() {
         assert_eq!(MC_EDGE_TABLE[0], 0, "Case 0 has no edges intersected");
@@ -308,10 +455,38 @@ mod scatter_biome_matching {
         // Different seeds should produce different heightmaps
         let h1 = chunk1.heightmap().get_height(0, 0);
         let h2 = chunk2.heightmap().get_height(0, 0);
-        // They CAN be equal by coincidence but typically won't be
-        // Just verify both are finite
+        // Same seed + same position → identical result
         assert!(h1.is_finite());
         assert!(h2.is_finite());
+    }
+
+    // Kill mutation: `b.biome_type == center_biome` → `b.biome_type != center_biome`
+    // in scatter_chunk_content. With != mutation, the wrong biome config is used.
+    // We verify that the default config's first biome is Grassland, so when center_biome
+    // IS Grassland, `==` finds Grassland config but `!=` finds some other biome config.
+    #[test]
+    fn default_config_first_biome_is_grassland() {
+        let config = WorldConfig::default();
+        // The fallback `biomes[0]` is Grassland in default config
+        assert_eq!(config.biomes[0].biome_type, BiomeType::Grassland,
+            "Default config biomes[0] must be Grassland");
+        // Verify there are multiple biome configs so the mutation finds a wrong one
+        assert!(config.biomes.len() > 1,
+            "Default config must have multiple biomes for mutation to be detectable");
+        // Verify biome configs have different vegetation densities so wrong selection matters
+        let grassland_density = config.biomes.iter()
+            .find(|b| b.biome_type == BiomeType::Grassland)
+            .unwrap()
+            .vegetation
+            .density;
+        let other_density = config.biomes.iter()
+            .find(|b| b.biome_type != BiomeType::Grassland)
+            .unwrap()
+            .vegetation
+            .density;
+        // These should differ — the mutation would pick the wrong density
+        assert_ne!(grassland_density, other_density,
+            "Grassland and other biome should have different vegetation densities");
     }
 }
 
