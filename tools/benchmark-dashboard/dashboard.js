@@ -5,10 +5,31 @@
 
 // ─── DATA SOURCES ────────────────────────────────────────────────────────────
 const DATA_SOURCES = [
-    'benchmark-data/history.jsonl',              // LOCAL: relative path (served from tools/benchmark-dashboard/)
+    'benchmark-data/history.jsonl',              // Primary: relative path (works on GH Pages and local server)
     'static-data/history.jsonl',                 // Fallback: shipped static snapshot
-    '/benchmark-data/history.jsonl',             // gh-pages hosted path
+    './benchmark-data/history.jsonl',            // Explicit relative fallback
+    './static-data/history.jsonl',               // Explicit relative fallback (static)
+    'https://raw.githubusercontent.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/main/tools/benchmark-dashboard/benchmark-data/history.jsonl',
+    'https://raw.githubusercontent.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/main/tools/benchmark-dashboard/static-data/history.jsonl',
     '../../target/benchmark-data/history.jsonl', // Local dev (from criterion benchmarks)
+];
+
+// ─── INLINE FALLBACK DATA ─────────────────────────────────────────────────────
+// Embedded static snapshot (12 entries) so the dashboard always renders something
+// even when no server hosts the JSONL files (e.g. first-time GH Pages deploy).
+const INLINE_FALLBACK_JSONL = [
+  '{"group":"ecs_benchmarks","display_name":"ECS World Creation","unit":"ns","git_sha":"8b3c1a0d","crate":"astraweave-core","git_branch":"main","stddev":0.31,"timestamp":"2025-11-10T15:00:00Z","name":"world_creation","benchmark_name":"astraweave-core::ecs_benchmarks/world_creation","git_dirty":false,"value":25.83,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"ecs_benchmarks","display_name":"ECS World Creation","unit":"ns","git_sha":"4f71cbb1","crate":"astraweave-core","git_branch":"main","stddev":0.27,"timestamp":"2025-11-12T15:00:00Z","name":"world_creation","benchmark_name":"astraweave-core::ecs_benchmarks/world_creation","git_dirty":false,"value":25.64,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"ecs_benchmarks","display_name":"ECS World Creation","unit":"ns","git_sha":"2a9bd055","crate":"astraweave-core","git_branch":"main","stddev":0.29,"timestamp":"2025-11-14T15:00:00Z","name":"world_creation","benchmark_name":"astraweave-core::ecs_benchmarks/world_creation","git_dirty":false,"value":25.59,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"ai_core_loop","display_name":"AI Orchestrator Update","unit":"ns","git_sha":"8b3c1a0d","crate":"astraweave-ai","git_branch":"main","stddev":0.8,"timestamp":"2025-11-10T15:05:00Z","name":"update_orchestrator","benchmark_name":"astraweave-ai::ai_core_loop/update_orchestrator","git_dirty":false,"value":184.22,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"ai_core_loop","display_name":"AI Orchestrator Update","unit":"ns","git_sha":"4f71cbb1","crate":"astraweave-ai","git_branch":"main","stddev":0.74,"timestamp":"2025-11-12T15:05:00Z","name":"update_orchestrator","benchmark_name":"astraweave-ai::ai_core_loop/update_orchestrator","git_dirty":false,"value":182.11,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"ai_core_loop","display_name":"AI Orchestrator Update","unit":"ns","git_sha":"2a9bd055","crate":"astraweave-ai","git_branch":"main","stddev":0.69,"timestamp":"2025-11-14T15:05:00Z","name":"update_orchestrator","benchmark_name":"astraweave-ai::ai_core_loop/update_orchestrator","git_dirty":false,"value":181.67,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"character_controller","display_name":"Physics Character Controller","unit":"us","git_sha":"8b3c1a0d","crate":"astraweave-physics","git_branch":"main","stddev":0.05,"timestamp":"2025-11-10T15:10:00Z","name":"full_tick","benchmark_name":"astraweave-physics::character_controller/full_tick","git_dirty":false,"value":6.54,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"character_controller","display_name":"Physics Character Controller","unit":"us","git_sha":"4f71cbb1","crate":"astraweave-physics","git_branch":"main","stddev":0.04,"timestamp":"2025-11-12T15:10:00Z","name":"full_tick","benchmark_name":"astraweave-physics::character_controller/full_tick","git_dirty":false,"value":6.52,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"character_controller","display_name":"Physics Character Controller","unit":"us","git_sha":"2a9bd055","crate":"astraweave-physics","git_branch":"main","stddev":0.05,"timestamp":"2025-11-14T15:10:00Z","name":"full_tick","benchmark_name":"astraweave-physics::character_controller/full_tick","git_dirty":false,"value":6.49,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"mesh_optimization","display_name":"Vertex Compression","unit":"ns","git_sha":"8b3c1a0d","crate":"astraweave-render","git_branch":"main","stddev":0.11,"timestamp":"2025-11-10T15:15:00Z","name":"vertex_compression","benchmark_name":"astraweave-render::mesh_optimization/vertex_compression","git_dirty":false,"value":21.18,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"mesh_optimization","display_name":"Vertex Compression","unit":"ns","git_sha":"4f71cbb1","crate":"astraweave-render","git_branch":"main","stddev":0.09,"timestamp":"2025-11-12T15:15:00Z","name":"vertex_compression","benchmark_name":"astraweave-render::mesh_optimization/vertex_compression","git_dirty":false,"value":20.98,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
+  '{"group":"mesh_optimization","display_name":"Vertex Compression","unit":"ns","git_sha":"2a9bd055","crate":"astraweave-render","git_branch":"main","stddev":0.1,"timestamp":"2025-11-14T15:15:00Z","name":"vertex_compression","benchmark_name":"astraweave-render::mesh_optimization/vertex_compression","git_dirty":false,"value":20.88,"hardware_id":"aed36a43","hardware_label":"HP Pavilion Gaming Laptop 16-a0xxx (Intel i5-10300H, 32GB)"}',
 ];
 
 // ─── HP PAVILION BASELINE HARDWARE ID ────────────────────────────────────────
@@ -236,7 +257,13 @@ async function loadBenchmarkData() {
             } catch (err) { errors.push(`${source}: ${err.message}`); }
         }
         if (!lines || lines.length === 0) {
-            throw new Error(`No benchmark data found.\nTried:\n${errors.join('\n')}\n\nRun: .\\scripts\\run_benchmark_dashboard.ps1`);
+            // Use embedded inline fallback data
+            console.warn('All fetch sources failed, using inline fallback data');
+            lines = INLINE_FALLBACK_JSONL;
+            sourceUsed = 'inline-fallback';
+            if (!lines || lines.length === 0) {
+                throw new Error(`No benchmark data found.\nTried:\n${errors.join('\n')}\n\nRun: .\\scripts\\run_benchmark_dashboard.ps1`);
+            }
         }
 
         benchmarkData = lines.map(line => {
@@ -264,6 +291,7 @@ async function loadBenchmarkData() {
         console.log(`Loaded: ${benchmarkData.length} entries, ${hardwareProfiles.size} hardware(s) from ${sourceUsed}`);
         updateFilters();
         restoreFiltersFromURL();
+        autoAdjustTimeRange();
         renderDashboard();
         const loadTime = (performance.now() - PERF.loadStart).toFixed(0);
         console.log(`Dashboard ready in ${loadTime}ms`);
@@ -345,6 +373,41 @@ function restoreFiltersFromURL() {
     if (p.has('b')) { currentFilters.benchmark = p.get('b'); document.getElementById('benchmark-select').value = currentFilters.benchmark; }
     if (p.has('hw')) { currentFilters.hardware = p.get('hw'); const el = document.getElementById('hardware-filter'); if (el) el.value = currentFilters.hardware; }
     if (p.get('ind') === '0') { currentFilters.showIndustry = false; const el = document.getElementById('industry-toggle'); if (el) el.checked = false; }
+}
+
+// Auto-adjust time range: if the default/selected range yields 0 results,
+// progressively widen until data is found, then fall back to "All Time".
+function autoAdjustTimeRange() {
+    const now = new Date();
+    const tr = currentFilters.timeRange;
+    if (tr === 'all') return; // already showing everything
+
+    const cutoff = new Date(now.getTime() - parseInt(tr) * 86400000);
+    const hasData = benchmarkData.some(d => d.timestamp >= cutoff);
+    if (hasData) return; // current range has data
+
+    // Try progressively wider ranges
+    const wider = ['30', '60', '90', '180', '365', 'all'];
+    for (const w of wider) {
+        if (w === 'all') {
+            currentFilters.timeRange = 'all';
+            break;
+        }
+        const wCutoff = new Date(now.getTime() - parseInt(w) * 86400000);
+        if (benchmarkData.some(d => d.timestamp >= wCutoff)) {
+            currentFilters.timeRange = w;
+            break;
+        }
+    }
+    // Update the dropdown to reflect the auto-adjusted value
+    const sel = document.getElementById('time-range');
+    if (sel) {
+        // If the computed range isn't an option, fall back to "all"
+        const opts = Array.from(sel.options).map(o => o.value);
+        if (!opts.includes(currentFilters.timeRange)) currentFilters.timeRange = 'all';
+        sel.value = currentFilters.timeRange;
+    }
+    console.log(`Auto-adjusted time range to '${currentFilters.timeRange}' (original '${tr}' had no data)`);
 }
 
 function applyFilters() {
@@ -588,12 +651,30 @@ function renderChart() {
         chartSeries = series.filter(s => s.rawName === currentFilters.benchmark);
 
     const title = document.getElementById('chart-title');
-    title.textContent = (currentFilters.benchmark && currentFilters.benchmark !== 'all')
-        ? currentFilters.benchmark : `All Benchmarks (${chartSeries.length} series)`;
 
-    const margin = { top: 20, right: 140, bottom: 60, left: 80 };
+    // Limit series when showing "all" to keep the chart readable
+    const MAX_VISIBLE_SERIES = 25;
+    let hiddenCount = 0;
+    if ((!currentFilters.benchmark || currentFilters.benchmark === 'all') && chartSeries.length > MAX_VISIBLE_SERIES) {
+        // Sort by latest value descending and keep top N
+        chartSeries.sort((a, b) => {
+            const aLast = a.values[a.values.length - 1]?.value || 0;
+            const bLast = b.values[b.values.length - 1]?.value || 0;
+            return bLast - aLast;
+        });
+        hiddenCount = chartSeries.length - MAX_VISIBLE_SERIES;
+        chartSeries = chartSeries.slice(0, MAX_VISIBLE_SERIES);
+    }
+
+    title.textContent = (currentFilters.benchmark && currentFilters.benchmark !== 'all')
+        ? currentFilters.benchmark
+        : hiddenCount > 0
+            ? `Top ${MAX_VISIBLE_SERIES} Benchmarks by Value (${hiddenCount} more hidden — use filters)`
+            : `All Benchmarks (${chartSeries.length} series)`;
+
+    const margin = { top: 24, right: 160, bottom: 70, left: 100 };
     const width = div.clientWidth - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
+    const height = 620 - margin.top - margin.bottom;
 
     const svg = d3.select(div).append('svg')
         .attr('width', width + margin.left + margin.right)
@@ -629,10 +710,14 @@ function renderChart() {
 
     // Axes
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${height})`)
-        .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat('%m/%d')));
-    svg.append('g').attr('class', 'axis').call(d3.axisLeft(yScale).ticks(8).tickFormat(d => formatNumber(d)));
-    svg.append('text').attr('transform', 'rotate(-90)').attr('y', -60).attr('x', -height / 2)
-        .attr('text-anchor', 'middle').attr('fill', '#a0a0a0').style('font-size', '14px').text('Time (ns)');
+        .call(d3.axisBottom(xScale).ticks(8).tickFormat(d3.timeFormat('%b %d')))
+        .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
+    svg.append('g').attr('class', 'axis').call(d3.axisLeft(yScale).ticks(8).tickFormat(d => formatNumber(d)))
+        .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
+    svg.append('text').attr('transform', 'rotate(-90)').attr('y', -75).attr('x', -height / 2)
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '15px').style('font-weight', '500').text('Time (ns)');
+    svg.append('text').attr('x', width / 2).attr('y', height + 55)
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '14px').text('Date');
 
     // Industry standard lines
     industryLines.forEach(il => {
@@ -649,11 +734,11 @@ function renderChart() {
     const lineGen = d3.line().x(d => xScale(d.timestamp)).y(d => yScale(d.value)).curve(d3.curveMonotoneX);
     chartSeries.forEach(s => {
         svg.append('path').datum(s.values).attr('class', 'line').attr('d', lineGen)
-            .attr('stroke', s.color).attr('stroke-width', s.isBaseline ? 3 : 2)
-            .attr('stroke-dasharray', s.isBaseline ? 'none' : '6,3').attr('opacity', s.isBaseline ? 1 : 0.8);
+            .attr('stroke', s.color).attr('stroke-width', s.isBaseline ? 3.5 : 2.5)
+            .attr('stroke-dasharray', s.isBaseline ? 'none' : '8,4').attr('opacity', s.isBaseline ? 1 : 0.85);
         svg.selectAll(null).data(s.values).enter().append('circle')
             .attr('cx', d => xScale(d.timestamp)).attr('cy', d => yScale(d.value))
-            .attr('r', 3).attr('fill', s.color).attr('opacity', 0.7);
+            .attr('r', 4).attr('fill', s.color).attr('opacity', 0.8);
     });
 
     // Tooltip
@@ -720,8 +805,8 @@ function renderIndustryComparisonSection() {
     }
     comparisons.sort((a, b) => (a.ourValue / a.industryAvg) - (b.ourValue / b.industryAvg));
 
-    const margin = { top: 20, right: 20, bottom: 40, left: 260 };
-    const barH = 28, gap = 6;
+    const margin = { top: 24, right: 30, bottom: 50, left: 300 };
+    const barH = 36, gap = 8;
     const totalH = (barH + gap) * comparisons.length + margin.top + margin.bottom;
     const svgW = c.clientWidth || 800;
     const w = svgW - margin.left - margin.right;
@@ -743,22 +828,23 @@ function renderIndustryComparisonSection() {
         svg.append('rect').attr('x', 0).attr('y', y + barH / 2).attr('width', x(comp.ourValue))
             .attr('height', barH / 2).attr('fill', col).attr('opacity', 0.8).attr('rx', 3);
         // Label
-        svg.append('text').attr('x', -8).attr('y', y + barH / 2 + 2).attr('text-anchor', 'end')
-            .attr('fill', '#e0e0e0').style('font-size', '11px').text(comp.displayName.substring(0, 40));
+        svg.append('text').attr('x', -10).attr('y', y + barH / 2 + 3).attr('text-anchor', 'end')
+            .attr('fill', '#e0e0e0').style('font-size', '13px').style('font-weight', '400')
+            .text(comp.displayName.substring(0, 50));
         // Values
         const ratio = ((comp.ourValue / comp.industryAvg) * 100).toFixed(0);
-        svg.append('text').attr('x', Math.max(x(comp.ourValue), x(comp.industryAvg)) + 8)
-            .attr('y', y + barH / 2 + 4).attr('fill', col).style('font-size', '10px')
+        svg.append('text').attr('x', Math.max(x(comp.ourValue), x(comp.industryAvg)) + 10)
+            .attr('y', y + barH / 2 + 5).attr('fill', col).style('font-size', '12px').style('font-weight', '500')
             .text(`${formatNumber(comp.ourValue)} vs ${formatNumber(comp.industryAvg)} (${ratio}%)`);
     });
 
     // Legend
-    svg.append('rect').attr('x', w - 200).attr('y', -16).attr('width', 12).attr('height', 8)
-        .attr('fill', INDUSTRY_LINE_COLOR).attr('opacity', 0.6);
-    svg.append('text').attr('x', w - 184).attr('y', -9).attr('fill', '#a0a0a0').style('font-size', '10px').text('Industry Avg');
-    svg.append('rect').attr('x', w - 110).attr('y', -16).attr('width', 12).attr('height', 8)
-        .attr('fill', '#43e97b').attr('opacity', 0.8);
-    svg.append('text').attr('x', w - 94).attr('y', -9).attr('fill', '#a0a0a0').style('font-size', '10px').text('AstraWeave');
+    svg.append('rect').attr('x', w - 220).attr('y', -18).attr('width', 14).attr('height', 10)
+        .attr('fill', INDUSTRY_LINE_COLOR).attr('opacity', 0.6).attr('rx', 2);
+    svg.append('text').attr('x', w - 202).attr('y', -9).attr('fill', '#c0c0c0').style('font-size', '12px').text('Industry Avg');
+    svg.append('rect').attr('x', w - 110).attr('y', -18).attr('width', 14).attr('height', 10)
+        .attr('fill', '#43e97b').attr('opacity', 0.8).attr('rx', 2);
+    svg.append('text').attr('x', w - 92).attr('y', -9).attr('fill', '#c0c0c0').style('font-size', '12px').text('AstraWeave');
 }
 
 // ─── HISTOGRAM ───────────────────────────────────────────────────────────────
@@ -769,9 +855,9 @@ function renderHistogram(series) {
     if (series.length === 0) return;
 
     const vals = series.map(s => ({ name: s.name, value: s.values[s.values.length - 1].value, color: s.color }));
-    const margin = { top: 10, right: 12, bottom: 30, left: 60 };
+    const margin = { top: 16, right: 20, bottom: 50, left: 70 };
     const w = div.clientWidth - margin.left - margin.right;
-    const h = 160 - margin.top - margin.bottom;
+    const h = 300 - margin.top - margin.bottom;
 
     const svg = d3.select(div).append('svg')
         .attr('width', w + margin.left + margin.right).attr('height', h + margin.top + margin.bottom)
@@ -781,13 +867,37 @@ function renderHistogram(series) {
     const bins = d3.bin().thresholds(20).value(d => d.value)(vals);
     const y = d3.scaleLinear().range([h, 0]).domain([0, d3.max(bins, d => d.length)]);
 
+    // Tooltip for histogram bars
+    const tooltip = d3.select('.tooltip');
     svg.selectAll('rect').data(bins).enter().append('rect')
         .attr('x', d => x(d.x0)).attr('y', d => y(d.length))
-        .attr('width', d => Math.max(1, x(d.x1) - x(d.x0) - 1))
-        .attr('height', d => h - y(d.length)).attr('fill', '#4facfe').attr('opacity', 0.8);
+        .attr('width', d => Math.max(2, x(d.x1) - x(d.x0) - 2))
+        .attr('height', d => h - y(d.length)).attr('fill', '#4facfe').attr('opacity', 0.75)
+        .attr('rx', 2)
+        .on('mouseenter', function(event, d) {
+            d3.select(this).attr('opacity', 1).attr('fill', '#00f2fe');
+            const names = d.map(v => v.name).slice(0, 5).join('<br>');
+            const more = d.length > 5 ? `<br>+${d.length - 5} more` : '';
+            tooltip.style('left', (event.pageX + 12) + 'px').style('top', (event.pageY - 20) + 'px')
+                .classed('visible', true)
+                .html(`<strong>${d.length} benchmark${d.length > 1 ? 's' : ''}</strong><br>Range: ${formatNumber(d.x0)} – ${formatNumber(d.x1)}<br>${names}${more}`);
+        })
+        .on('mouseleave', function() {
+            d3.select(this).attr('opacity', 0.75).attr('fill', '#4facfe');
+            tooltip.classed('visible', false);
+        });
 
-    svg.append('g').attr('transform', `translate(0,${h})`).call(d3.axisBottom(x).ticks(6).tickFormat(d => formatNumber(d)));
-    svg.append('g').call(d3.axisLeft(y).ticks(4));
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${h})`)
+        .call(d3.axisBottom(x).ticks(8).tickFormat(d => formatNumber(d)))
+        .selectAll('text').style('font-size', '12px');
+    svg.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(6))
+        .selectAll('text').style('font-size', '12px');
+
+    // Axis labels
+    svg.append('text').attr('x', w / 2).attr('y', h + 42)
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Benchmark Value');
+    svg.append('text').attr('transform', 'rotate(-90)').attr('y', -52).attr('x', -h / 2)
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Count');
 }
 
 // ─── SPARKLINES ──────────────────────────────────────────────────────────────
@@ -796,23 +906,57 @@ function renderSparklines(series) {
     const container = document.getElementById('sparklines');
     container.innerHTML = '';
     if (series.length === 0) return;
-    series.slice(0, 64).forEach(s => {
+    series.slice(0, 64).forEach((s, idx) => {
         const box = document.createElement('div');
-        box.style.cssText = 'background:rgba(255,255,255,0.03);border-radius:6px;padding:8px;min-height:64px;display:flex;flex-direction:column;justify-content:center;';
+        box.className = 'sparkline-cell';
+        box.title = 'Click to enlarge';
+        box.addEventListener('click', () => enlargeSparkline(s));
+
         const label = document.createElement('div');
-        label.style.cssText = 'color:#a0a0a0;font-size:12px;';
+        label.className = 'spark-label';
         label.textContent = s.name;
         box.appendChild(label);
+
+        // Show latest value
+        const latestVal = s.values[s.values.length - 1];
+        const valDiv = document.createElement('div');
+        valDiv.className = 'spark-value';
+        valDiv.textContent = latestVal ? formatDuration(latestVal.value) : '';
+        box.appendChild(valDiv);
+
+        // Enlarge hint icon
+        const hint = document.createElement('div');
+        hint.className = 'spark-enlarge-hint';
+        hint.textContent = '🔍';
+        box.appendChild(hint);
+
         const spark = document.createElement('div');
         box.appendChild(spark);
 
-        const sparkSvg = d3.select(spark).append('svg').attr('width', '100%').attr('height', 48).append('g');
-        const w = spark.clientWidth || 200, h = 48;
+        const sparkH = 72;
+        const sparkSvg = d3.select(spark).append('svg').attr('width', '100%').attr('height', sparkH).append('g');
+        const w = 240, h = sparkH;
         const xs = d3.scaleTime().domain(d3.extent(s.values, d => d.timestamp)).range([0, w]);
-        const ys = d3.scaleLinear().domain([d3.min(s.values, d => d.value), d3.max(s.values, d => d.value)]).range([h - 4, 4]);
+        const yMin = d3.min(s.values, d => d.value);
+        const yMax = d3.max(s.values, d => d.value);
+        const ys = d3.scaleLinear().domain([yMin, yMax]).range([h - 6, 6]);
         const line = d3.line().x(d => xs(d.timestamp)).y(d => ys(d.value)).curve(d3.curveBasis);
+
+        // Area fill under curve
+        const area = d3.area().x(d => xs(d.timestamp)).y0(h).y1(d => ys(d.value)).curve(d3.curveBasis);
+        sparkSvg.append('path').datum(s.values).attr('d', area)
+            .attr('fill', s.color).attr('opacity', 0.08);
+
         sparkSvg.append('path').datum(s.values).attr('d', line)
-            .attr('stroke', s.color).attr('stroke-width', 1.5).attr('fill', 'none');
+            .attr('stroke', s.color).attr('stroke-width', 2).attr('fill', 'none');
+
+        // End dot
+        if (latestVal) {
+            sparkSvg.append('circle')
+                .attr('cx', xs(latestVal.timestamp)).attr('cy', ys(latestVal.value))
+                .attr('r', 3).attr('fill', s.color).attr('opacity', 0.9);
+        }
+
         container.appendChild(box);
     });
 }
@@ -887,7 +1031,9 @@ function renderBenchTable() {
 function renderLegend(series, industryLines = []) {
     const div = document.getElementById('legend');
     div.innerHTML = '';
-    series.slice(0, 10).forEach(s => {
+    const LEGEND_SHOW = 20;
+    const visible = series.slice(0, LEGEND_SHOW);
+    visible.forEach(s => {
         const item = document.createElement('div'); item.className = 'legend-item';
         const color = document.createElement('div'); color.className = 'legend-color';
         color.style.backgroundColor = s.color;
@@ -895,6 +1041,31 @@ function renderLegend(series, industryLines = []) {
         const label = document.createElement('span'); label.textContent = s.name;
         item.appendChild(color); item.appendChild(label); div.appendChild(item);
     });
+    if (series.length > LEGEND_SHOW) {
+        const more = document.createElement('div');
+        more.className = 'legend-item';
+        more.style.cssText = 'color:#a0a0a0;font-style:italic;font-size:0.85em;cursor:pointer;';
+        more.textContent = `+ ${series.length - LEGEND_SHOW} more (use filters to narrow)`;
+        more.addEventListener('click', () => {
+            // Toggle showing all
+            if (more.dataset.expanded === 'true') {
+                more.dataset.expanded = 'false';
+                more.textContent = `+ ${series.length - LEGEND_SHOW} more (click to show)`;
+                div.querySelectorAll('.legend-extra').forEach(el => el.remove());
+            } else {
+                more.dataset.expanded = 'true';
+                more.textContent = '− collapse';
+                series.slice(LEGEND_SHOW).forEach(s => {
+                    const item = document.createElement('div'); item.className = 'legend-item legend-extra';
+                    const color = document.createElement('div'); color.className = 'legend-color';
+                    color.style.backgroundColor = s.color;
+                    const label = document.createElement('span'); label.textContent = s.name;
+                    item.appendChild(color); item.appendChild(label); div.appendChild(item);
+                });
+            }
+        });
+        div.appendChild(more);
+    }
     if (industryLines.length > 0 && currentFilters.showIndustry) {
         const item = document.createElement('div'); item.className = 'legend-item';
         const color = document.createElement('div'); color.className = 'legend-color';
@@ -1031,6 +1202,135 @@ function showLoadingSkeleton() {
     ['production-health', 'regression-alerts', 'chart', 'industry-comparison', 'benchmark-table'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '<div class="skeleton" style="height:80px;margin:8px 0;"></div>';
+    });
+}
+
+// ─── LIGHTBOX / ENLARGE FUNCTIONS ────────────────────────────────────────────
+
+function openLightbox(title, contentFn) {
+    const overlay = document.getElementById('chart-lightbox');
+    const titleEl = document.getElementById('lb-title');
+    const body = document.getElementById('lb-body');
+    titleEl.textContent = title;
+    body.innerHTML = '';
+    contentFn(body);
+    overlay.classList.add('active');
+    // Close on Escape
+    document.addEventListener('keydown', _lightboxEscHandler);
+}
+
+function closeLightbox(event) {
+    if (event && event.target && !event.target.closest('.chart-lightbox-content') && event.target !== document.getElementById('chart-lightbox')) {
+        // clicked outside but not on overlay itself — ignore
+    }
+    const overlay = document.getElementById('chart-lightbox');
+    overlay.classList.remove('active');
+    document.removeEventListener('keydown', _lightboxEscHandler);
+}
+
+function _lightboxEscHandler(e) {
+    if (e.key === 'Escape') closeLightbox();
+}
+
+function enlargeImage(imgEl) {
+    openLightbox(imgEl.alt || 'Graph', (body) => {
+        const clone = imgEl.cloneNode(true);
+        clone.style.cssText = 'max-width:100%;max-height:75vh;height:auto;border-radius:8px;';
+        clone.className = '';
+        body.appendChild(clone);
+    });
+}
+
+function enlargeSparkline(seriesData) {
+    openLightbox(seriesData.name, (body) => {
+        const chartDiv = document.createElement('div');
+        chartDiv.style.cssText = 'width:min(860px, 85vw);height:380px;';
+        body.appendChild(chartDiv);
+
+        const margin = { top: 20, right: 30, bottom: 50, left: 80 };
+        const w = Math.min(860, window.innerWidth * 0.82) - margin.left - margin.right;
+        const h = 380 - margin.top - margin.bottom;
+
+        const svg = d3.select(chartDiv).append('svg')
+            .attr('width', w + margin.left + margin.right)
+            .attr('height', h + margin.top + margin.bottom)
+            .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+        const xs = d3.scaleTime().domain(d3.extent(seriesData.values, d => d.timestamp)).range([0, w]);
+        const yMin = d3.min(seriesData.values, d => d.value) * 0.95;
+        const yMax = d3.max(seriesData.values, d => d.value) * 1.05;
+        const ys = d3.scaleLinear().domain([yMin, yMax]).range([h, 0]);
+
+        // Grid
+        svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${h})`)
+            .call(d3.axisBottom(xs).tickSize(-h).tickFormat(''));
+        svg.append('g').attr('class', 'grid').call(d3.axisLeft(ys).tickSize(-w).tickFormat(''));
+
+        // Axes
+        svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${h})`)
+            .call(d3.axisBottom(xs).ticks(8).tickFormat(d3.timeFormat('%b %d')))
+            .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
+        svg.append('g').attr('class', 'axis').call(d3.axisLeft(ys).ticks(8).tickFormat(d => formatNumber(d)))
+            .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
+
+        // Area
+        const area = d3.area().x(d => xs(d.timestamp)).y0(h).y1(d => ys(d.value)).curve(d3.curveMonotoneX);
+        svg.append('path').datum(seriesData.values).attr('d', area)
+            .attr('fill', seriesData.color).attr('opacity', 0.12);
+
+        // Line
+        const line = d3.line().x(d => xs(d.timestamp)).y(d => ys(d.value)).curve(d3.curveMonotoneX);
+        svg.append('path').datum(seriesData.values).attr('d', line)
+            .attr('stroke', seriesData.color).attr('stroke-width', 2.5).attr('fill', 'none');
+
+        // Data points
+        svg.selectAll('circle').data(seriesData.values).enter().append('circle')
+            .attr('cx', d => xs(d.timestamp)).attr('cy', d => ys(d.value))
+            .attr('r', 4).attr('fill', seriesData.color).attr('opacity', 0.85)
+            .attr('stroke', '#fff').attr('stroke-width', 1);
+
+        // Tooltip
+        const tooltip = d3.select('.tooltip');
+        svg.append('rect').attr('width', w).attr('height', h)
+            .attr('fill', 'none').attr('pointer-events', 'all')
+            .on('mousemove', function(event) {
+                const [mx] = d3.pointer(event);
+                const x0 = xs.invert(mx);
+                let closest = null, closestD = Infinity;
+                seriesData.values.forEach(d => { const dist = Math.abs(d.timestamp - x0); if (dist < closestD) { closestD = dist; closest = d; } });
+                if (closest) {
+                    tooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px')
+                        .classed('visible', true)
+                        .html(`<strong>${closest.display_name || closest.benchmark_name}</strong><br>Value: ${formatDuration(closest.value)}<br>Date: ${d3.timeFormat('%Y-%m-%d %H:%M')(closest.timestamp)}`);                }
+            })
+            .on('mouseleave', () => tooltip.classed('visible', false));
+
+        // Axis labels
+        svg.append('text').attr('x', w / 2).attr('y', h + 42)
+            .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Date');
+        svg.append('text').attr('transform', 'rotate(-90)').attr('y', -60).attr('x', -h / 2)
+            .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Value');
+
+        // Stats summary below chart
+        const stats = document.createElement('div');
+        stats.style.cssText = 'margin-top:16px;display:flex;gap:24px;flex-wrap:wrap;color:#c0c0c0;font-size:13px;';
+        const allV = seriesData.values.map(d => d.value);
+        const latest = allV[allV.length - 1];
+        const min = Math.min(...allV);
+        const max = Math.max(...allV);
+        const avg = allV.reduce((a, b) => a + b, 0) / allV.length;
+        const p50 = percentile(allV, 50);
+        const cv = coefficientOfVariation(allV);
+        stats.innerHTML = [
+            `Latest: <strong style="color:#4facfe">${formatNumber(latest)}</strong>`,
+            `Min: <strong>${formatNumber(min)}</strong>`,
+            `Max: <strong>${formatNumber(max)}</strong>`,
+            `Avg: <strong>${formatNumber(avg)}</strong>`,
+            `p50: <strong>${formatNumber(p50)}</strong>`,
+            `CV: <strong style="color:${cv < 5 ? '#43e97b' : cv < 15 ? '#feca57' : '#ff6b6b'}">${cv.toFixed(1)}%</strong>`,
+            `Samples: <strong>${allV.length}</strong>`,
+        ].map(s => `<span>${s}</span>`).join('');
+        body.appendChild(stats);
     });
 }
 

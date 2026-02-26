@@ -433,6 +433,132 @@
             z-index: 1000;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* ─── CHART READABILITY IMPROVEMENTS ──────────────────────────── */
+
+        /* Bigger axis text across all charts */
+        .axis text { fill: #c0c0c0 !important; font-size: 13px !important; }
+        .axis path, .axis line { stroke: rgba(255,255,255,0.25) !important; }
+        .grid line { stroke: rgba(255,255,255,0.08) !important; }
+
+        /* ─── SPARKLINE IMPROVEMENTS ──────────────────────────────────── */
+        .sparkline-cell {
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 10px 12px;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+        .sparkline-cell:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 24px rgba(79,172,254,0.15);
+            background: rgba(255,255,255,0.07);
+            border-color: rgba(79,172,254,0.3);
+            z-index: 2;
+        }
+        .sparkline-cell .spark-label {
+            color: #c8c8c8;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sparkline-cell .spark-value {
+            color: #4facfe;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .sparkline-cell .spark-enlarge-hint {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 10px;
+            color: rgba(79,172,254,0);
+            transition: color 0.2s;
+        }
+        .sparkline-cell:hover .spark-enlarge-hint {
+            color: rgba(79,172,254,0.6);
+        }
+
+        /* ─── ENLARGE OVERLAY (Lightbox) ──────────────────────────────── */
+        .chart-lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            cursor: zoom-out;
+        }
+        .chart-lightbox-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .chart-lightbox-content {
+            background: rgba(15,12,41,0.97);
+            border: 1px solid rgba(79,172,254,0.3);
+            border-radius: 16px;
+            padding: 28px 32px;
+            max-width: 92vw;
+            max-height: 88vh;
+            overflow: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .chart-lightbox-content .lb-title {
+            font-size: 1.15em;
+            color: #4facfe;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .chart-lightbox-content .lb-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            color: #a0a0a0;
+            font-size: 1.4em;
+            cursor: pointer;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+        }
+        .chart-lightbox-content .lb-close:hover { color: #ff6b6b; }
+
+        /* ─── STATIC IMAGE IMPROVEMENTS ───────────────────────────────── */
+        .static-graph-img {
+            height: 200px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06);
+            cursor: zoom-in;
+            transition: transform 0.2s, box-shadow 0.2s;
+            object-fit: contain;
+        }
+        .static-graph-img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 32px rgba(79,172,254,0.2);
+        }
+
+        /* ─── HISTOGRAM IMPROVEMENTS ──────────────────────────────────── */
+        #histogram svg rect { transition: opacity 0.2s; }
+        #histogram svg rect:hover { opacity: 1 !important; }
+
+        /* ─── INDUSTRY COMPARISON IMPROVEMENTS ────────────────────────── */
+        #industry-comparison text { font-family: 'Segoe UI', Tahoma, sans-serif !important; }
     </style>
 </head>
 <body>
@@ -468,9 +594,9 @@
                 <select id="time-range">
                     <option value="7">Last 7 Days</option>
                     <option value="14">Last 14 Days</option>
-                    <option value="30" selected>Last 30 Days</option>
+                    <option value="30">Last 30 Days</option>
                     <option value="60">Last 60 Days</option>
-                    <option value="all">All Time</option>
+                    <option value="all" selected>All Time</option>
                 </select>
             </div>
             
@@ -533,15 +659,15 @@
         <div class="chart-container">
             <div class="chart-title">Latest Snapshot Distribution</div>
             <div id="histogram"></div>
-            <div style="margin-top: 12px; text-align: center; color: #a0a0a0;">Or view static graph:</div>
-            <div style="display:flex; gap: 12px; justify-content:center; margin-top: 8px;">
-                <img id="static-top-series" src="graphs/top_series_time.png" alt="Top series" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
-                <img id="static-distribution" src="graphs/distribution_latest.png" alt="Distribution" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
-                <img id="static-heatmap" src="graphs/heatmap.png" alt="Heatmap" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
+            <div style="margin-top: 16px; text-align: center; color: #a0a0a0; font-size: 0.95em;">Static Pre-rendered Graphs <span style="font-size:0.8em;color:#666;">(click to enlarge)</span></div>
+            <div style="display:flex; gap: 16px; justify-content:center; margin-top: 10px; flex-wrap: wrap;">
+                <img id="static-top-series" src="graphs/top_series_time.png" alt="Top series over time" class="static-graph-img" style="display:none;" onclick="enlargeImage(this)" />
+                <img id="static-distribution" src="graphs/distribution_latest.png" alt="Distribution of latest values" class="static-graph-img" style="display:none;" onclick="enlargeImage(this)" />
+                <img id="static-heatmap" src="graphs/heatmap.png" alt="Performance heatmap" class="static-graph-img" style="display:none;" onclick="enlargeImage(this)" />
             </div>
-            <div style="height: 20px;"></div>
-            <div class="chart-title">Small Multiples (Sparklines)</div>
-            <div id="sparklines" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); grid-gap: 12px;"></div>
+            <div style="height: 24px;"></div>
+            <div class="chart-title">Small Multiples (Sparklines) <span style="font-size:0.6em;color:#666;font-weight:400;">click any to enlarge</span></div>
+            <div id="sparklines" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); grid-gap: 14px;"></div>
         </div>
         
         <div class="chart-container" id="industry-comparison-container" style="margin-bottom: 30px;">
@@ -551,7 +677,7 @@
 
         <div class="chart-container">
             <div class="chart-title">Benchmark List</div>
-            <div id="benchmark-table" style="overflow:auto; max-height: 360px; padding-right: 8px;">
+            <div id="benchmark-table" style="overflow:auto; max-height: 520px; padding-right: 8px;">
                 <!-- Table is rendered by dashboard.js -->
             </div>
         </div>
@@ -562,6 +688,13 @@
         </footer>
     </div>
     
+    <div class="chart-lightbox-overlay" id="chart-lightbox" onclick="closeLightbox(event)">
+        <div class="chart-lightbox-content" onclick="event.stopPropagation()">
+            <button class="lb-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+            <div class="lb-title" id="lb-title"></div>
+            <div id="lb-body"></div>
+        </div>
+    </div>
     <div class="tooltip" role="tooltip" aria-hidden="true"></div>
     <div class="toast" id="toast"></div>
     
