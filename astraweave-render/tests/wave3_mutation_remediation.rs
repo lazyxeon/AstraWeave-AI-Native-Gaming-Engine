@@ -181,6 +181,17 @@ mod weather_exact_values {
         assert!((mod_color.y - 0.8).abs() < 0.01);
         assert!((mod_color.z - 0.9).abs() < 0.01);
     }
+
+    // Kill mutation: transition_duration <= 0.0 → transition_duration > 0.0
+    // Instant transition (duration=0) must apply weather BEFORE update() is called
+    #[test]
+    fn set_weather_instant_applies_without_update() {
+        let mut ws = WeatherSystem::new();
+        // Don't call update() — instant transition must apply immediately
+        ws.set_weather(WeatherType::Rain, 0.0);
+        assert_eq!(ws.get_light_attenuation(), 0.5,
+            "set_weather with duration=0.0 must apply instantly (Rain attenuation=0.5)");
+    }
 }
 
 // ============================================================================
@@ -481,6 +492,21 @@ mod camera_exact {
                 assert!(!vp.col(i)[j].is_nan(), "VP matrix should not contain NaN");
             }
         }
+    }
+
+    // Kill mutation: sy * cp → sy / cp at line 34 col 35
+    // Requires both yaw ≠ 0 and pitch ≠ 0 so sy ≠ 0 and cp ≠ 1
+    #[test]
+    fn camera_dir_yaw_pitch_45deg() {
+        use std::f32::consts::FRAC_PI_4;
+        let dir = Camera::dir(FRAC_PI_4, FRAC_PI_4);
+        // cy=cos(π/4)=0.707, sy=sin(π/4)=0.707, cp=cos(π/4)=0.707, sp=sin(π/4)=0.707
+        // Before normalize: (0.5, 0.707, 0.5), length = 1.0
+        // x and z must be equal since cos(π/4) == sin(π/4)
+        assert!((dir.x - dir.z).abs() < 0.01,
+            "At yaw=π/4, pitch=π/4: dir.x should equal dir.z, got x={} z={}", dir.x, dir.z);
+        assert!(dir.z > 0.45 && dir.z < 0.55,
+            "dir.z should be ~0.5, got {}", dir.z);
     }
 }
 
