@@ -697,7 +697,7 @@ function renderChart() {
     title.textContent = (currentFilters.benchmark && currentFilters.benchmark !== 'all')
         ? currentFilters.benchmark
         : isSinglePoint
-            ? `Single Snapshot — ${chartSeries.length} Benchmarks (bar chart)`
+            ? `Single Snapshot — ${chartSeries.length} Benchmarks (grouped by magnitude)`
             : hiddenCount > 0
                 ? `Top ${MAX_VISIBLE_SERIES} Benchmarks by Value (${hiddenCount} more hidden — use filters)`
                 : `All Benchmarks (${chartSeries.length} series)`;
@@ -803,12 +803,13 @@ function renderChart() {
     renderSparklines(chartSeries);
 }
 
-// ─── SINGLE-SNAPSHOT BAR CHART ───────────────────────────────────────────────
-// Renders a horizontal bar chart when only one data point (timestamp) exists.
-// Fixes the "floating dot" problem identified in visual audit.
+// ─── TIERED SINGLE-SNAPSHOT BAR CHART ─────────────────────────────────────────
+// Renders benchmarks grouped by magnitude tier (ns / µs / ms / s), each with
+// its own independent linear scale.  This makes all bars readable regardless
+// of the data spanning many orders of magnitude (e.g. 12 ns → 4.4 ms).
 
 function renderSingleSnapshotBars(div, chartSeries, industryLines, useLog, yMax, valMin) {
-    // Extract latest value per series
+    // ── 1. Collect items ────────────────────────────────────────────────────
     const items = chartSeries.map(s => {
         const latest = s.values[s.values.length - 1];
         return {
@@ -823,110 +824,176 @@ function renderSingleSnapshotBars(div, chartSeries, industryLines, useLog, yMax,
             stddev: latest.stddev
         };
     });
-    items.sort((a, b) => b.value - a.value);
 
-    const labelWidth = 240;
-    const barHeight = Math.min(30, Math.max(18, 500 / items.length));
-    const gap = 4;
-    const chartH = (barHeight + gap) * items.length;
-    const margin = { top: 24, right: 120, bottom: 60, left: labelWidth + 20 };
-    const totalWidth = div.clientWidth || 800;
+    // ── 2. Build magnitude tiers ────────────────────────────────────────────
+    const tierDefs = [
+        { key: 'ns',  label: 'Nanosecond Scale',  unit: 'ns', lo: 0,    hi: 1e3,  divisor: 1,   fmt: 'ns' },
+        { key: 'us',  label: 'Microsecond Scale',  unit: 'µs', lo: 1e3,  hi: 1e6,  divisor: 1e3, fmt: 'µs' },
+        { key: 'ms',  label: 'Millisecond Scale',  unit: 'ms', lo: 1e6,  hi: 1e9,  divisor: 1e6, fmt: 'ms' },
+        { key: 's',   label: 'Second Scale',        unit: 's',  lo: 1e9,  hi: Infinity, divisor: 1e9, fmt: 's'  }
+    ];
+
+    const tiers = tierDefs.map(td => ({
+        ...td,
+        items: items.filter(it => it.value >= td.lo && it.value < td.hi)
+                     .sort((a, b) => b.value - a.value)
+    })).filter(t => t.items.length > 0);
+
+    // ── 3. Layout constants ─────────────────────────────────────────────────
+    const labelWidth   = 240;
+    const barHeight    = 24;
+    const gap          = 4;
+    const tierGap      = 28;          // vertical space between tier sections
+    const tierHeaderH  = 32;          // height of tier header row
+    const tierAxisH    = 36;          // space for each tier's X-axis
+    const margin       = { top: 16, right: 120, bottom: 24, left: labelWidth + 20 };
+    const totalWidth   = div.clientWidth || 800;
     const barAreaWidth = totalWidth - margin.left - margin.right;
-    const totalHeight = chartH + margin.top + margin.bottom;
 
+    // Pre-calculate total SVG height
+    let totalHeight = margin.top;
+    tiers.forEach((t, ti) => {
+        totalHeight += tierHeaderH;
+        totalHeight += (barHeight + gap) * t.items.length;
+        totalHeight += tierAxisH;
+        if (ti < tiers.length - 1) totalHeight += tierGap;
+    });
+    totalHeight += margin.bottom + 24; // extra for legend
+
+    // ── 4. Create SVG ───────────────────────────────────────────────────────
     const svg = d3.select(div).append('svg')
         .attr('width', totalWidth)
         .attr('height', totalHeight)
         .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Value scale (horizontal) — log or linear
-    const xVal = useLog
-        ? d3.scaleSymlog().constant(Math.max(valMin * 0.1, 0.1)).domain([0, yMax]).range([0, barAreaWidth])
-        : d3.scaleLinear().domain([0, yMax]).range([0, barAreaWidth]);
-
-    // X-axis (value axis at bottom)
-    const xAxisGen = useLog
-        ? d3.axisBottom(xVal).ticks(8).tickFormat(d => d === 0 ? '0' : formatNumber(d))
-        : d3.axisBottom(xVal).ticks(8).tickFormat(d => formatNumber(d));
-    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${chartH + 8})`)
-        .call(xAxisGen).selectAll('text').style('font-size', '12px').attr('fill', '#c0c0c0');
-
-    // Grid lines
-    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${chartH + 8})`)
-        .call(d3.axisBottom(xVal).tickSize(-chartH - 8).tickFormat(''))
-        .selectAll('line').attr('stroke', 'rgba(255,255,255,0.06)');
-
-    // Axis label
-    svg.append('text').attr('x', barAreaWidth / 2).attr('y', chartH + 48)
-        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px')
-        .text(useLog ? 'Value (log scale)' : 'Value');
-
-    // Build industry lookup map
+    const tooltip = d3.select('.tooltip');
     const indMap = new Map();
     industryLines.forEach(il => indMap.set(il.name, il));
 
-    const tooltip = d3.select('.tooltip');
+    // Tier accent colors (subtle left-border accent)
+    const tierColors = { ns: '#43e97b', us: '#38f9d7', ms: '#f7971e', s: '#ff6b6b' };
 
-    // Render bars
-    items.forEach((item, i) => {
-        const y = i * (barHeight + gap);
-        const barW = Math.max(xVal(item.value), 2);
+    // ── 5. Render each tier ─────────────────────────────────────────────────
+    let cursorY = 0;
 
-        // Bar
+    tiers.forEach((tier, ti) => {
+        const tierMaxRaw = d3.max(tier.items, d => d.value) || 1;
+        const tierMax    = tierMaxRaw * 1.15;                     // 15% headroom
+        const scaledMax  = tierMax / tier.divisor;
+
+        // Independent linear scale for this tier (in tier-native units)
+        const xScale = d3.scaleLinear().domain([0, scaledMax]).range([0, barAreaWidth]);
+
+        // ── Tier header ─────────────────────────────────────────────────────
+        const accentColor = tierColors[tier.key] || '#ccc';
+
+        // Accent bar on left
         svg.append('rect')
-            .attr('x', 0).attr('y', y)
-            .attr('width', barW).attr('height', barHeight)
-            .attr('fill', item.color).attr('opacity', 0.8).attr('rx', 3)
-            .on('mouseenter', function(event) {
-                d3.select(this).attr('opacity', 1).attr('stroke', '#fff').attr('stroke-width', 1);
-                const sys = detectSystem(item.crate);
-                const ref = findIndustryStandard(item.rawName, sys);
-                let indLine = '';
-                if (ref && currentFilters.showIndustry) {
-                    const ratio = ((item.value / ref.average) * 100).toFixed(0);
-                    indLine = `<br/><span style="color:${INDUSTRY_LINE_COLOR}">Industry avg: ${formatDuration(ref.average)} (${ratio}%)</span>`;
+            .attr('x', -labelWidth - 16).attr('y', cursorY)
+            .attr('width', 4).attr('height', tierHeaderH - 4)
+            .attr('fill', accentColor).attr('rx', 2);
+
+        // Tier title
+        svg.append('text')
+            .attr('x', -labelWidth - 6).attr('y', cursorY + tierHeaderH / 2 + 5)
+            .attr('fill', accentColor).style('font-size', '14px').style('font-weight', '700')
+            .style('letter-spacing', '0.5px')
+            .text(`${tier.label}  (${tier.items.length})`);
+
+        // Subtle horizontal rule
+        svg.append('line')
+            .attr('x1', -labelWidth - 16).attr('x2', barAreaWidth)
+            .attr('y1', cursorY + tierHeaderH - 2).attr('y2', cursorY + tierHeaderH - 2)
+            .attr('stroke', 'rgba(255,255,255,0.08)').attr('stroke-width', 1);
+
+        cursorY += tierHeaderH;
+
+        // ── Bars for this tier ──────────────────────────────────────────────
+        tier.items.forEach((item, idx) => {
+            const y = cursorY + idx * (barHeight + gap);
+            const scaledVal = item.value / tier.divisor;
+            const barW = Math.max(xScale(scaledVal), 3);
+
+            // Bar
+            svg.append('rect')
+                .attr('x', 0).attr('y', y)
+                .attr('width', barW).attr('height', barHeight)
+                .attr('fill', item.color).attr('opacity', 0.85).attr('rx', 3)
+                .on('mouseenter', function(event) {
+                    d3.select(this).attr('opacity', 1).attr('stroke', '#fff').attr('stroke-width', 1);
+                    const sys = detectSystem(item.crate);
+                    const ref = findIndustryStandard(item.rawName, sys);
+                    let indLine = '';
+                    if (ref && currentFilters.showIndustry) {
+                        const ratio = ((item.value / ref.average) * 100).toFixed(0);
+                        indLine = `<br/><span style="color:${INDUSTRY_LINE_COLOR}">Industry avg: ${formatDuration(ref.average)} (${ratio}%)</span>`;
+                    }
+                    const sdLine = item.stddev ? `<br/>\u00b1${formatNumber(item.stddev)} (\u03c3)` : '';
+                    tooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px')
+                        .classed('visible', true)
+                        .html(`<strong>${item.name}</strong><br/>Value: ${formatDuration(item.value)}${sdLine}<br/>Tier: ${tier.label}<br/>Hardware: ${item.isBaseline ? '🏠 Baseline' : '🖥️ User'}${indLine}`);
+                })
+                .on('mouseleave', function() {
+                    d3.select(this).attr('opacity', 0.85).attr('stroke', 'none');
+                    tooltip.classed('visible', false);
+                });
+
+            // Industry standard marker (vertical line)
+            const ind = indMap.get(item.rawName);
+            if (ind && currentFilters.showIndustry) {
+                const indScaled = ind.value / tier.divisor;
+                if (indScaled <= scaledMax) {
+                    const indX = xScale(indScaled);
+                    svg.append('line')
+                        .attr('x1', indX).attr('x2', indX)
+                        .attr('y1', y - 2).attr('y2', y + barHeight + 2)
+                        .attr('stroke', INDUSTRY_LINE_COLOR).attr('stroke-width', 2.5)
+                        .attr('opacity', 0.9);
                 }
-                const sdLine = item.stddev ? `<br/>\u00b1${formatNumber(item.stddev)} (\u03c3)` : '';
-                tooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px')
-                    .classed('visible', true)
-                    .html(`<strong>${item.name}</strong><br/>Value: ${formatDuration(item.value)}${sdLine}<br/>Hardware: ${item.isBaseline ? '🏠 Baseline' : '🖥️ User'}${indLine}`);
-            })
-            .on('mouseleave', function() {
-                d3.select(this).attr('opacity', 0.8).attr('stroke', 'none');
-                tooltip.classed('visible', false);
-            });
+            }
 
-        // Industry standard marker
-        const ind = indMap.get(item.rawName);
-        if (ind && currentFilters.showIndustry) {
-            const indX = xVal(ind.value);
-            svg.append('line')
-                .attr('x1', indX).attr('x2', indX)
-                .attr('y1', y - 2).attr('y2', y + barHeight + 2)
-                .attr('stroke', INDUSTRY_LINE_COLOR).attr('stroke-width', 2.5)
-                .attr('opacity', 0.9);
-        }
+            // Value label (right of bar)
+            svg.append('text')
+                .attr('x', barW + 8).attr('y', y + barHeight / 2 + 4)
+                .attr('fill', '#c0c0c0').style('font-size', '11px').style('font-weight', '500')
+                .text(formatDuration(item.value));
 
-        // Value label (right of bar)
-        svg.append('text')
-            .attr('x', barW + 8).attr('y', y + barHeight / 2 + 4)
-            .attr('fill', '#c0c0c0').style('font-size', '11px').style('font-weight', '500')
-            .text(formatDuration(item.value));
+            // Benchmark name label (left of bar)
+            svg.append('text')
+                .attr('x', -8).attr('y', y + barHeight / 2 + 4)
+                .attr('text-anchor', 'end').attr('fill', '#e0e0e0')
+                .style('font-size', '12px').style('font-weight', '400')
+                .text(item.name);
+        });
 
-        // Benchmark name label (left of bar)
-        svg.append('text')
-            .attr('x', -8).attr('y', y + barHeight / 2 + 4)
-            .attr('text-anchor', 'end').attr('fill', '#e0e0e0')
-            .style('font-size', '11px').style('font-weight', '400')
-            .text(item.name);
+        cursorY += (barHeight + gap) * tier.items.length;
+
+        // ── Tier X-axis (in native units) ───────────────────────────────────
+        const xAxisGen = d3.axisBottom(xScale).ticks(6)
+            .tickFormat(d => d === 0 ? '0' : d3.format('.4~g')(d) + ' ' + tier.fmt);
+        svg.append('g').attr('class', 'axis')
+            .attr('transform', `translate(0,${cursorY + 4})`)
+            .call(xAxisGen)
+            .selectAll('text').style('font-size', '11px').attr('fill', '#999');
+
+        // Grid lines for this tier
+        svg.append('g').attr('class', 'grid')
+            .attr('transform', `translate(0,${cursorY + 4})`)
+            .call(d3.axisBottom(xScale)
+                .tickSize(-(barHeight + gap) * tier.items.length - 4)
+                .tickFormat(''))
+            .selectAll('line').attr('stroke', 'rgba(255,255,255,0.04)');
+
+        cursorY += tierAxisH;
+        if (ti < tiers.length - 1) cursorY += tierGap;
     });
 
-    // Legend note for industry markers
+    // ── 6. Industry legend ──────────────────────────────────────────────────
     if (industryLines.length > 0 && currentFilters.showIndustry) {
         svg.append('line').attr('x1', 0).attr('x2', 20)
-            .attr('y1', chartH + 32).attr('y2', chartH + 32)
+            .attr('y1', cursorY + 8).attr('y2', cursorY + 8)
             .attr('stroke', INDUSTRY_LINE_COLOR).attr('stroke-width', 2.5);
-        svg.append('text').attr('x', 26).attr('y', chartH + 36)
+        svg.append('text').attr('x', 26).attr('y', cursorY + 12)
             .attr('fill', INDUSTRY_LINE_COLOR).style('font-size', '11px').text('Industry Standard');
     }
 }
