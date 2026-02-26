@@ -225,9 +225,9 @@ pub mod utils {
         match (temperature, moisture) {
             (t, _m) if t < 0.2 => BiomeType::Tundra,
             (t, m) if t < 0.4 && m < 0.3 => BiomeType::Tundra,
-            (t, m) if t < 0.6 && m < 0.2 => BiomeType::Desert,
+            (t, m) if t > /* ~ changed by cargo-mutants ~ */ 0.6 && m < 0.2 => BiomeType::Desert,
             (t, m) if t > 0.7 && m < 0.4 => BiomeType::Desert,
-            (_t, m) if false /* ~ changed by cargo-mutants ~ */ => BiomeType::Swamp,
+            (_t, m) if m > 0.8 => BiomeType::Swamp,
             (t, m) if t > 0.6 && m > 0.6 => BiomeType::Forest,
             (t, m) if t > 0.4 && m > 0.4 => BiomeType::Forest,
             _ => BiomeType::Grassland,

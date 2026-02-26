@@ -37,6 +37,10 @@ mod whittaker_boundary {
         // At boundary m=0.3, should NOT be Tundra
         assert_ne!(classify_whittaker_biome(0.39, 0.3), BiomeType::Tundra,
             "t=0.39, m=0.3 must NOT be Tundra (m < 0.3 is strict)");
+        // At boundary t=0.4 with qualifying m, should NOT be Tundra
+        // Kills mutation: t < 0.4 → t <= 0.4
+        assert_ne!(classify_whittaker_biome(0.4, 0.29), BiomeType::Tundra,
+            "t=0.4, m=0.29 must NOT be Tundra (t < 0.4 is strict)");
     }
 
     // Boundary: t < 0.6 && m < 0.2 → Desert
@@ -45,6 +49,10 @@ mod whittaker_boundary {
         assert_eq!(classify_whittaker_biome(0.5, 0.19), BiomeType::Desert);
         assert_ne!(classify_whittaker_biome(0.5, 0.2), BiomeType::Desert,
             "t=0.5, m=0.2 must NOT be Desert (m < 0.2 is strict)");
+        // At boundary t=0.6 with qualifying m, should NOT be Desert
+        // Kills mutation: t < 0.6 → t <= 0.6 (Desert arm)
+        assert_ne!(classify_whittaker_biome(0.6, 0.19), BiomeType::Desert,
+            "t=0.6, m=0.19 must NOT be Desert (t < 0.6 is strict)");
     }
 
     // Boundary: t > 0.7 && m < 0.4 → Desert
@@ -53,6 +61,10 @@ mod whittaker_boundary {
         assert_eq!(classify_whittaker_biome(0.71, 0.39), BiomeType::Desert);
         assert_ne!(classify_whittaker_biome(0.7, 0.39), BiomeType::Desert,
             "t=0.7 must NOT be Desert (t > 0.7 is strict)");
+        // At boundary m=0.4 with qualifying t, should NOT be Desert
+        // Kills mutation: m < 0.4 → m <= 0.4
+        assert_ne!(classify_whittaker_biome(0.71, 0.4), BiomeType::Desert,
+            "t=0.71, m=0.4 must NOT be Desert (m < 0.4 is strict)");
     }
 
     // Boundary: m > 0.8 → Swamp
