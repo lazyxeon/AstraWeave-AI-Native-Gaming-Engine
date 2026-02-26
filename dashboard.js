@@ -666,23 +666,10 @@ function renderChart() {
         chartSeries = chartSeries.slice(0, MAX_VISIBLE_SERIES);
     }
 
-    title.textContent = (currentFilters.benchmark && currentFilters.benchmark !== 'all')
-        ? currentFilters.benchmark
-        : hiddenCount > 0
-            ? `Top ${MAX_VISIBLE_SERIES} Benchmarks by Value (${hiddenCount} more hidden — use filters)`
-            : `All Benchmarks (${chartSeries.length} series)`;
-
-    const margin = { top: 24, right: 160, bottom: 70, left: 100 };
-    const width = div.clientWidth - margin.left - margin.right;
-    const height = 620 - margin.top - margin.bottom;
-
-    const svg = d3.select(div).append('svg')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
-        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-
     const allVals = chartSeries.flatMap(s => s.values);
-    const xScale = d3.scaleTime().domain(d3.extent(allVals, d => d.timestamp)).range([0, width]);
+    const allTimestamps = [...new Set(allVals.map(d => d.timestamp.getTime()))];
+    const isSinglePoint = allTimestamps.length <= 1;
+
     let yMax = d3.max(allVals, d => d.value) * 1.15;
 
     // Industry lines
@@ -701,7 +688,43 @@ function renderChart() {
         });
     }
 
-    const yScale = d3.scaleLinear().domain([0, yMax]).range([height, 0]);
+    // Auto-detect if log scale is needed (value range > 100×)
+    const allValsPositive = allVals.filter(d => d.value > 0);
+    const valMin = allValsPositive.length > 0 ? d3.min(allValsPositive, d => d.value) : 1;
+    const valMax = d3.max(allVals, d => d.value) || 1;
+    const useLog = (valMax / Math.max(valMin, 1e-10)) > 100;
+
+    title.textContent = (currentFilters.benchmark && currentFilters.benchmark !== 'all')
+        ? currentFilters.benchmark
+        : isSinglePoint
+            ? `Single Snapshot — ${chartSeries.length} Benchmarks (bar chart)`
+            : hiddenCount > 0
+                ? `Top ${MAX_VISIBLE_SERIES} Benchmarks by Value (${hiddenCount} more hidden — use filters)`
+                : `All Benchmarks (${chartSeries.length} series)`;
+
+    // ── SINGLE-SNAPSHOT: render bar chart instead of line chart ──
+    if (isSinglePoint) {
+        renderSingleSnapshotBars(div, chartSeries, industryLines, useLog, yMax, valMin);
+        renderLegend(chartSeries, industryLines);
+        renderHistogram(chartSeries);
+        renderSparklines(chartSeries);
+        return;
+    }
+
+    // ── MULTI-POINT LINE CHART ──
+    const margin = { top: 24, right: 160, bottom: 70, left: 100 };
+    const width = div.clientWidth - margin.left - margin.right;
+    const height = 620 - margin.top - margin.bottom;
+
+    const svg = d3.select(div).append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const xScale = d3.scaleTime().domain(d3.extent(allVals, d => d.timestamp)).range([0, width]);
+    const yScale = useLog
+        ? d3.scaleSymlog().constant(Math.max(valMin * 0.1, 0.1)).domain([0, yMax]).range([height, 0])
+        : d3.scaleLinear().domain([0, yMax]).range([height, 0]);
 
     // Grid
     svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${height})`)
@@ -712,10 +735,14 @@ function renderChart() {
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${height})`)
         .call(d3.axisBottom(xScale).ticks(8).tickFormat(d3.timeFormat('%b %d')))
         .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
-    svg.append('g').attr('class', 'axis').call(d3.axisLeft(yScale).ticks(8).tickFormat(d => formatNumber(d)))
+    const yAxisGen = useLog
+        ? d3.axisLeft(yScale).ticks(10).tickFormat(d => d === 0 ? '0' : formatNumber(d))
+        : d3.axisLeft(yScale).ticks(8).tickFormat(d => formatNumber(d));
+    svg.append('g').attr('class', 'axis').call(yAxisGen)
         .selectAll('text').style('font-size', '13px').attr('fill', '#c0c0c0');
     svg.append('text').attr('transform', 'rotate(-90)').attr('y', -75).attr('x', -height / 2)
-        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '15px').style('font-weight', '500').text('Time (ns)');
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '15px').style('font-weight', '500')
+        .text(useLog ? 'Value (log scale)' : 'Time (ns)');
     svg.append('text').attr('x', width / 2).attr('y', height + 55)
         .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '14px').text('Date');
 
@@ -776,6 +803,134 @@ function renderChart() {
     renderSparklines(chartSeries);
 }
 
+// ─── SINGLE-SNAPSHOT BAR CHART ───────────────────────────────────────────────
+// Renders a horizontal bar chart when only one data point (timestamp) exists.
+// Fixes the "floating dot" problem identified in visual audit.
+
+function renderSingleSnapshotBars(div, chartSeries, industryLines, useLog, yMax, valMin) {
+    // Extract latest value per series
+    const items = chartSeries.map(s => {
+        const latest = s.values[s.values.length - 1];
+        return {
+            name: (latest.display_name || s.rawName).substring(0, 50),
+            value: latest.value,
+            unit: latest.unit,
+            color: s.color,
+            isBaseline: s.isBaseline,
+            hardwareId: s.hardwareId,
+            crate: latest.crate,
+            rawName: s.rawName,
+            stddev: latest.stddev
+        };
+    });
+    items.sort((a, b) => b.value - a.value);
+
+    const labelWidth = 240;
+    const barHeight = Math.min(30, Math.max(18, 500 / items.length));
+    const gap = 4;
+    const chartH = (barHeight + gap) * items.length;
+    const margin = { top: 24, right: 120, bottom: 60, left: labelWidth + 20 };
+    const totalWidth = div.clientWidth || 800;
+    const barAreaWidth = totalWidth - margin.left - margin.right;
+    const totalHeight = chartH + margin.top + margin.bottom;
+
+    const svg = d3.select(div).append('svg')
+        .attr('width', totalWidth)
+        .attr('height', totalHeight)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Value scale (horizontal) — log or linear
+    const xVal = useLog
+        ? d3.scaleSymlog().constant(Math.max(valMin * 0.1, 0.1)).domain([0, yMax]).range([0, barAreaWidth])
+        : d3.scaleLinear().domain([0, yMax]).range([0, barAreaWidth]);
+
+    // X-axis (value axis at bottom)
+    const xAxisGen = useLog
+        ? d3.axisBottom(xVal).ticks(8).tickFormat(d => d === 0 ? '0' : formatNumber(d))
+        : d3.axisBottom(xVal).ticks(8).tickFormat(d => formatNumber(d));
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${chartH + 8})`)
+        .call(xAxisGen).selectAll('text').style('font-size', '12px').attr('fill', '#c0c0c0');
+
+    // Grid lines
+    svg.append('g').attr('class', 'grid').attr('transform', `translate(0,${chartH + 8})`)
+        .call(d3.axisBottom(xVal).tickSize(-chartH - 8).tickFormat(''))
+        .selectAll('line').attr('stroke', 'rgba(255,255,255,0.06)');
+
+    // Axis label
+    svg.append('text').attr('x', barAreaWidth / 2).attr('y', chartH + 48)
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px')
+        .text(useLog ? 'Value (log scale)' : 'Value');
+
+    // Build industry lookup map
+    const indMap = new Map();
+    industryLines.forEach(il => indMap.set(il.name, il));
+
+    const tooltip = d3.select('.tooltip');
+
+    // Render bars
+    items.forEach((item, i) => {
+        const y = i * (barHeight + gap);
+        const barW = Math.max(xVal(item.value), 2);
+
+        // Bar
+        svg.append('rect')
+            .attr('x', 0).attr('y', y)
+            .attr('width', barW).attr('height', barHeight)
+            .attr('fill', item.color).attr('opacity', 0.8).attr('rx', 3)
+            .on('mouseenter', function(event) {
+                d3.select(this).attr('opacity', 1).attr('stroke', '#fff').attr('stroke-width', 1);
+                const sys = detectSystem(item.crate);
+                const ref = findIndustryStandard(item.rawName, sys);
+                let indLine = '';
+                if (ref && currentFilters.showIndustry) {
+                    const ratio = ((item.value / ref.average) * 100).toFixed(0);
+                    indLine = `<br/><span style="color:${INDUSTRY_LINE_COLOR}">Industry avg: ${formatDuration(ref.average)} (${ratio}%)</span>`;
+                }
+                const sdLine = item.stddev ? `<br/>\u00b1${formatNumber(item.stddev)} (\u03c3)` : '';
+                tooltip.style('left', (event.pageX + 15) + 'px').style('top', (event.pageY - 28) + 'px')
+                    .classed('visible', true)
+                    .html(`<strong>${item.name}</strong><br/>Value: ${formatDuration(item.value)}${sdLine}<br/>Hardware: ${item.isBaseline ? '🏠 Baseline' : '🖥️ User'}${indLine}`);
+            })
+            .on('mouseleave', function() {
+                d3.select(this).attr('opacity', 0.8).attr('stroke', 'none');
+                tooltip.classed('visible', false);
+            });
+
+        // Industry standard marker
+        const ind = indMap.get(item.rawName);
+        if (ind && currentFilters.showIndustry) {
+            const indX = xVal(ind.value);
+            svg.append('line')
+                .attr('x1', indX).attr('x2', indX)
+                .attr('y1', y - 2).attr('y2', y + barHeight + 2)
+                .attr('stroke', INDUSTRY_LINE_COLOR).attr('stroke-width', 2.5)
+                .attr('opacity', 0.9);
+        }
+
+        // Value label (right of bar)
+        svg.append('text')
+            .attr('x', barW + 8).attr('y', y + barHeight / 2 + 4)
+            .attr('fill', '#c0c0c0').style('font-size', '11px').style('font-weight', '500')
+            .text(formatDuration(item.value));
+
+        // Benchmark name label (left of bar)
+        svg.append('text')
+            .attr('x', -8).attr('y', y + barHeight / 2 + 4)
+            .attr('text-anchor', 'end').attr('fill', '#e0e0e0')
+            .style('font-size', '11px').style('font-weight', '400')
+            .text(item.name);
+    });
+
+    // Legend note for industry markers
+    if (industryLines.length > 0 && currentFilters.showIndustry) {
+        svg.append('line').attr('x1', 0).attr('x2', 20)
+            .attr('y1', chartH + 32).attr('y2', chartH + 32)
+            .attr('stroke', INDUSTRY_LINE_COLOR).attr('stroke-width', 2.5);
+        svg.append('text').attr('x', 26).attr('y', chartH + 36)
+            .attr('fill', INDUSTRY_LINE_COLOR).style('font-size', '11px').text('Industry Standard');
+    }
+}
+
 // ─── INDUSTRY COMPARISON SECTION ─────────────────────────────────────────────
 
 function renderIndustryComparisonSection() {
@@ -816,7 +971,11 @@ function renderIndustryComparisonSection() {
         .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     const maxV = d3.max(comparisons, d => Math.max(d.ourValue, d.industryAvg)) * 1.2;
-    const x = d3.scaleLinear().domain([0, maxV]).range([0, w]);
+    const minVInd = d3.min(comparisons.filter(d => d.ourValue > 0 && d.industryAvg > 0), d => Math.min(d.ourValue, d.industryAvg)) || 1;
+    const indUseLog = (maxV / Math.max(minVInd, 1e-10)) > 100;
+    const x = indUseLog
+        ? d3.scaleSymlog().constant(Math.max(minVInd * 0.1, 0.1)).domain([0, maxV]).range([0, w])
+        : d3.scaleLinear().domain([0, maxV]).range([0, w]);
 
     comparisons.forEach((comp, i) => {
         const y = i * (barH + gap);
@@ -863,8 +1022,23 @@ function renderHistogram(series) {
         .attr('width', w + margin.left + margin.right).attr('height', h + margin.top + margin.bottom)
         .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    const x = d3.scaleLinear().domain([0, d3.max(vals, d => d.value) * 1.05]).range([0, w]);
-    const bins = d3.bin().thresholds(20).value(d => d.value)(vals);
+    const histMaxVal = d3.max(vals, d => d.value);
+    const histPositive = vals.filter(v => v.value > 0);
+    const histMinVal = histPositive.length > 0 ? d3.min(histPositive, d => d.value) : 1;
+    const histUseLog = (histMaxVal / Math.max(histMinVal, 1e-10)) > 100;
+
+    let x, bins;
+    if (histUseLog) {
+        x = d3.scaleSymlog().constant(Math.max(histMinVal * 0.1, 0.1)).domain([0, histMaxVal * 1.05]).range([0, w]);
+        // Generate log-spaced thresholds for meaningful bins
+        const logMin = Math.log10(Math.max(histMinVal * 0.5, 0.1));
+        const logMax = Math.log10(histMaxVal * 1.05);
+        const thresholds = d3.range(logMin, logMax, (logMax - logMin) / 20).map(d => Math.pow(10, d));
+        bins = d3.bin().thresholds(thresholds).value(d => d.value)(vals);
+    } else {
+        x = d3.scaleLinear().domain([0, histMaxVal * 1.05]).range([0, w]);
+        bins = d3.bin().thresholds(20).value(d => d.value)(vals);
+    }
     const y = d3.scaleLinear().range([h, 0]).domain([0, d3.max(bins, d => d.length)]);
 
     // Tooltip for histogram bars
@@ -887,15 +1061,19 @@ function renderHistogram(series) {
             tooltip.classed('visible', false);
         });
 
+    const histXAxisGen = histUseLog
+        ? d3.axisBottom(x).ticks(8).tickFormat(d => d === 0 ? '0' : formatNumber(d))
+        : d3.axisBottom(x).ticks(8).tickFormat(d => formatNumber(d));
     svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${h})`)
-        .call(d3.axisBottom(x).ticks(8).tickFormat(d => formatNumber(d)))
+        .call(histXAxisGen)
         .selectAll('text').style('font-size', '12px');
     svg.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(6))
         .selectAll('text').style('font-size', '12px');
 
     // Axis labels
     svg.append('text').attr('x', w / 2).attr('y', h + 42)
-        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Benchmark Value');
+        .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px')
+        .text(histUseLog ? 'Benchmark Value (log scale)' : 'Benchmark Value');
     svg.append('text').attr('transform', 'rotate(-90)').attr('y', -52).attr('x', -h / 2)
         .attr('text-anchor', 'middle').attr('fill', '#b0b0b0').style('font-size', '13px').text('Count');
 }
@@ -936,25 +1114,50 @@ function renderSparklines(series) {
         const sparkH = 72;
         const sparkSvg = d3.select(spark).append('svg').attr('width', '100%').attr('height', sparkH).append('g');
         const w = 240, h = sparkH;
-        const xs = d3.scaleTime().domain(d3.extent(s.values, d => d.timestamp)).range([0, w]);
-        const yMin = d3.min(s.values, d => d.value);
-        const yMax = d3.max(s.values, d => d.value);
-        const ys = d3.scaleLinear().domain([yMin, yMax]).range([h - 6, 6]);
-        const line = d3.line().x(d => xs(d.timestamp)).y(d => ys(d.value)).curve(d3.curveBasis);
 
-        // Area fill under curve
-        const area = d3.area().x(d => xs(d.timestamp)).y0(h).y1(d => ys(d.value)).curve(d3.curveBasis);
-        sparkSvg.append('path').datum(s.values).attr('d', area)
-            .attr('fill', s.color).attr('opacity', 0.08);
+        // Single data point: render a mini bar instead of a line
+        if (s.values.length <= 1) {
+            const barWidth = w * 0.6;
+            sparkSvg.append('rect')
+                .attr('x', (w - barWidth) / 2).attr('y', h * 0.2)
+                .attr('width', barWidth).attr('height', h * 0.5)
+                .attr('fill', s.color).attr('opacity', 0.25).attr('rx', 4);
+            sparkSvg.append('rect')
+                .attr('x', (w - barWidth) / 2).attr('y', h * 0.2)
+                .attr('width', barWidth).attr('height', h * 0.5)
+                .attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 1.5).attr('rx', 4);
+            sparkSvg.append('text')
+                .attr('x', w / 2).attr('y', h * 0.52)
+                .attr('text-anchor', 'middle').attr('fill', s.color)
+                .style('font-size', '13px').style('font-weight', '600')
+                .text(formatNumber(latestVal ? latestVal.value : 0));
+            sparkSvg.append('text')
+                .attr('x', w / 2).attr('y', h * 0.85)
+                .attr('text-anchor', 'middle').attr('fill', '#888')
+                .style('font-size', '9px')
+                .text('single snapshot');
+        } else {
+            // Multiple points: normal sparkline
+            const xs = d3.scaleTime().domain(d3.extent(s.values, d => d.timestamp)).range([0, w]);
+            const yMin = d3.min(s.values, d => d.value);
+            const yMax = d3.max(s.values, d => d.value);
+            const ys = d3.scaleLinear().domain([yMin, yMax]).range([h - 6, 6]);
+            const line = d3.line().x(d => xs(d.timestamp)).y(d => ys(d.value)).curve(d3.curveBasis);
 
-        sparkSvg.append('path').datum(s.values).attr('d', line)
-            .attr('stroke', s.color).attr('stroke-width', 2).attr('fill', 'none');
+            // Area fill under curve
+            const area = d3.area().x(d => xs(d.timestamp)).y0(h).y1(d => ys(d.value)).curve(d3.curveBasis);
+            sparkSvg.append('path').datum(s.values).attr('d', area)
+                .attr('fill', s.color).attr('opacity', 0.08);
 
-        // End dot
-        if (latestVal) {
-            sparkSvg.append('circle')
-                .attr('cx', xs(latestVal.timestamp)).attr('cy', ys(latestVal.value))
-                .attr('r', 3).attr('fill', s.color).attr('opacity', 0.9);
+            sparkSvg.append('path').datum(s.values).attr('d', line)
+                .attr('stroke', s.color).attr('stroke-width', 2).attr('fill', 'none');
+
+            // End dot
+            if (latestVal) {
+                sparkSvg.append('circle')
+                    .attr('cx', xs(latestVal.timestamp)).attr('cy', ys(latestVal.value))
+                    .attr('r', 3).attr('fill', s.color).attr('opacity', 0.9);
+            }
         }
 
         container.appendChild(box);
@@ -1171,10 +1374,38 @@ function renderProductionHealthSummary() {
 
 function updateGeneratedTime() {
     document.getElementById('generated-time').textContent = new Date().toLocaleString();
-    ['top-series', 'distribution', 'heatmap'].forEach(id => {
+    // Check static pre-rendered images and hide entire section if none exist
+    const imgIds = ['top-series', 'distribution', 'heatmap'];
+    let loadedCount = 0;
+    let checkedCount = 0;
+    imgIds.forEach(id => {
         const img = document.getElementById('static-' + id);
-        if (!img) return;
-        fetch(img.src, { method: 'HEAD' }).then(r => { img.style.display = r.ok ? 'inline-block' : 'none'; }).catch(() => { img.style.display = 'none'; });
+        if (!img) { checkedCount++; return; }
+        fetch(img.src, { method: 'HEAD' }).then(r => {
+            img.style.display = r.ok ? 'inline-block' : 'none';
+            if (r.ok) loadedCount++;
+            checkedCount++;
+            // Once all checked, hide the entire static section if nothing loaded
+            if (checkedCount >= imgIds.length) {
+                const staticWrapper = img.closest('div')?.parentElement;
+                const staticLabel = staticWrapper?.querySelector('[style*="Static Pre-rendered"]') ||
+                    Array.from(staticWrapper?.querySelectorAll('div') || []).find(el => el.textContent.includes('Static Pre-rendered'));
+                if (loadedCount === 0) {
+                    // Hide the label and the image container
+                    if (staticLabel) staticLabel.style.display = 'none';
+                    imgIds.forEach(sid => { const im = document.getElementById('static-' + sid); if (im) im.parentElement.style.display = 'none'; });
+                }
+            }
+        }).catch(() => {
+            img.style.display = 'none';
+            checkedCount++;
+            if (checkedCount >= imgIds.length && loadedCount === 0) {
+                const staticWrapper = img.closest('div')?.parentElement;
+                const staticLabel = Array.from(staticWrapper?.querySelectorAll('div') || []).find(el => el.textContent.includes('Static Pre-rendered'));
+                if (staticLabel) staticLabel.style.display = 'none';
+                imgIds.forEach(sid => { const im = document.getElementById('static-' + sid); if (im) im.parentElement.style.display = 'none'; });
+            }
+        });
     });
 }
 
