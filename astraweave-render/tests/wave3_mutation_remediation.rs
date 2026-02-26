@@ -139,6 +139,21 @@ mod time_of_day_exact {
         assert!((dir.x + sun.x).abs() < 0.01, "Day light dir X = -sun.x");
         assert!((dir.y + sun.y).abs() < 0.01, "Day light dir Y = -sun.y");
     }
+
+    // Kill mutation: PI / 12.0 → PI % 12.0 or PI * 12.0 in azimuth calc
+    // Tests x/z components at mid-morning where azimuth matters
+    #[test]
+    fn sun_azimuth_at_9am() {
+        let t = tod(9.0);
+        let sun = t.get_sun_position();
+        // At 9:00: sun_azimuth = (9-12) * PI/12 = -PI/4
+        // sun is in the eastern sky: x should be negative, z positive
+        assert!(sun.x < -0.1, "9am sun X should be negative (east), got {}", sun.x);
+        assert!(sun.z > 0.1, "9am sun Z should be positive, got {}", sun.z);
+        // x and z should be approximately equal magnitude (sin/cos of PI/4)
+        assert!((sun.x.abs() - sun.z.abs()).abs() < 0.05,
+            "At 9am, |x| ≈ |z| since azimuth=-π/4, got x={} z={}", sun.x, sun.z);
+    }
 }
 
 // ============================================================================
