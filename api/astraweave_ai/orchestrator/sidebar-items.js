@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["make_system_orchestrator"],"struct":["GoapOrchestrator","RuleOrchestrator","SystemOrchestratorConfig","UtilityOrchestrator"],"trait":["Orchestrator","OrchestratorAsync"]};

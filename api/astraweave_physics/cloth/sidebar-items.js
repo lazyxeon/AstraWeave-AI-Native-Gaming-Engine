@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ClothCollider"],"struct":["Cloth","ClothConfig","ClothId","ClothManager","ClothParticle","DistanceConstraint"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["CLUSTERED_LIGHTING_SHADER"],"struct":["ClusterConfig","ClusteredForwardRenderer","GpuCluster","GpuLight"]};

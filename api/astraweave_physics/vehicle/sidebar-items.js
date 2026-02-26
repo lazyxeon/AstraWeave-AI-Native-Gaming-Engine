@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["DrivetrainType","WheelPosition"],"struct":["EngineConfig","FrictionCurve","TransmissionConfig","Vehicle","VehicleConfig","VehicleInput","VehicleManager","WheelConfig","WheelState"],"type":["VehicleId"]};

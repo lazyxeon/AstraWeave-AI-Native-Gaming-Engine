@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["capture_state","replay_state"]};

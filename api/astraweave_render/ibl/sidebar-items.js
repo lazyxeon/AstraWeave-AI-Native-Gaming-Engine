@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["IblQuality","SkyMode"],"struct":["IblManager","IblResources"]};

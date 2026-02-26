@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["voxelization_pipeline","vxgi"],"struct":["HybridGiConfig"]};

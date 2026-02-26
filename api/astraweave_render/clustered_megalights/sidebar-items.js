@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["ClusterBounds","GpuLight","MegaLightsRenderer"]};

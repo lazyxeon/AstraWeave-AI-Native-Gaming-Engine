@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["GravityZoneShape"],"struct":["BodyGravitySettings","GravityManager","GravityZone"],"type":["BodyGravityId","GravityZoneId"]};

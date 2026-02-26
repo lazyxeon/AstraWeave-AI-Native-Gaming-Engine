@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["BlendMode"],"fn":["create_blend_state"],"struct":["TransparencyManager","TransparentInstance"]};

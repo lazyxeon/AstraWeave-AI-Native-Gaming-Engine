@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["DECAL_SHADER"],"enum":["DecalBlendMode"],"struct":["Decal","DecalAtlas","DecalSystem","GpuDecal"]};

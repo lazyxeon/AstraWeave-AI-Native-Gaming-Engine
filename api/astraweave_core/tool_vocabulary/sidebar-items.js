@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_tool_schema","get_all_tools","get_categories","get_tools_by_category"],"struct":["ToolMetadata","ToolParameter"]};

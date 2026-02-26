@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["gauge","global_metrics","histogram","increment"],"struct":["MetricsRegistry"]};

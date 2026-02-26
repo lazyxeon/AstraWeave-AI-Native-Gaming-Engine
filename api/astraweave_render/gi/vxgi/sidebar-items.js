@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["CONE_TRACING_SHADER"],"struct":["VoxelRadiance","VxgiConfig","VxgiRenderer"]};

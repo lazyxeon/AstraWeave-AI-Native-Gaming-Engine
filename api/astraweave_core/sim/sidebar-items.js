@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["step"],"struct":["SimConfig"]};

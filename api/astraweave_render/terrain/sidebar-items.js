@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_terrain_preview"],"struct":["TerrainMesh","TerrainRenderer","TerrainVertex","VegetationRenderInstance"]};

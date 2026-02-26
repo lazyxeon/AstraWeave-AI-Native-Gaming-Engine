@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["TextureHandle","TextureStreamingManager","TextureStreamingStats"],"type":["AssetId"]};

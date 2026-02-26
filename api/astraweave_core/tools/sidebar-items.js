@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Tool"],"fn":["astar_path","find_cover_positions","glam_to_schema","los_clear","path_exists","schema_to_glam"],"struct":["Poi","ToolCtx"]};

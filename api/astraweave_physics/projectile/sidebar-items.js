@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["FalloffCurve","ProjectileKind"],"fn":["predict_trajectory"],"struct":["ExplosionConfig","ExplosionResult","Projectile","ProjectileConfig","ProjectileHit","ProjectileManager"],"type":["ProjectileId"]};

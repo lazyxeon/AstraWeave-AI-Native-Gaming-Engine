@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["AiPlannedEvent","AiPlanningFailedEvent","EventReader","EventWriter","Events","HealthChangedEvent","MovedEvent","ToolValidationFailedEvent"]};

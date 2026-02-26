@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["default_tool_registry"],"mod":["capture_replay","ecs_adapter","ecs_bridge","ecs_components","ecs_events","metrics","perception","schema","sim","tool_sandbox","tool_vocabulary","tools","util","validation","world"]};

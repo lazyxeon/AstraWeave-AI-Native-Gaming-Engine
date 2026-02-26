@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ToolError","ToolVerb","ValidationCategory"],"fn":["validate_tool_action"],"struct":["ValidationContext"]};
