@@ -1,0 +1,1 @@
+astraweave-terrain/src/climate.rs:225:9: replace utils::classify_whittaker_biome -> BiomeType with Default::default()

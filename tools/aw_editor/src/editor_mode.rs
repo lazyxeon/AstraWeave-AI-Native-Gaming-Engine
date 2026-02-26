@@ -73,11 +73,7 @@ impl EditorMode {
 
     /// Get all valid transition targets from current mode
     pub fn valid_transitions(&self) -> Vec<EditorMode> {
-        match self {
-            EditorMode::Edit => vec![EditorMode::Play],
-            EditorMode::Play => vec![EditorMode::Edit, EditorMode::Paused],
-            EditorMode::Paused => vec![EditorMode::Edit, EditorMode::Play],
-        }
+        vec![Default::default()] /* ~ changed by cargo-mutants ~ */
     }
 
     /// Get the icon for this mode

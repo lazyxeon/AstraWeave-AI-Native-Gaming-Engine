@@ -91,7 +91,19 @@ jobs:
           mkdir -p gh-pages
           cp tools/benchmark-dashboard/index.html gh-pages/
           cp tools/benchmark-dashboard/dashboard.js gh-pages/
+          
+          # Copy static-data snapshot (inline fallback for first deploy)
+          mkdir -p gh-pages/static-data
+          if [ -d tools/benchmark-dashboard/static-data ]; then
+            cp -r tools/benchmark-dashboard/static-data/* gh-pages/static-data/ 2>/dev/null || true
+          fi
+          
+          # Copy pre-existing graph images from repo
           mkdir -p gh-pages/graphs
+          if [ -d tools/benchmark-dashboard/graphs ]; then
+            cp -r tools/benchmark-dashboard/graphs/* gh-pages/graphs/ 2>/dev/null || true
+          fi
+          # Also copy any CI-generated graphs (overwrite stale ones)
           if [ -d gh-pages/graphs ]; then
             echo 'Copying generated graphs to GH Pages folder' && ls -la gh-pages/graphs || true
           fi
@@ -100,14 +112,19 @@ jobs:
           mkdir -p gh-pages/benchmark-data
           if [ -f target/benchmark-data/history.jsonl ]; then
             cp target/benchmark-data/history.jsonl gh-pages/benchmark-data/
+          elif [ -f tools/benchmark-dashboard/benchmark-data/history.jsonl ]; then
+            # Fall back to the checked-in benchmark data
+            cp tools/benchmark-dashboard/benchmark-data/history.jsonl gh-pages/benchmark-data/
           fi
-          # Copy static graphs if present
-          if [ -d gh-pages/graphs ]; then
-            cp -r gh-pages/graphs gh-pages/
+          if [ -f tools/benchmark-dashboard/benchmark-data/metadata.json ]; then
+            cp tools/benchmark-dashboard/benchmark-data/metadata.json gh-pages/benchmark-data/
           fi
 
-      - name: Verify static graphs present
+      - name: Verify deployed assets
         run: |
+          echo "=== gh-pages contents ==="
+          find gh-pages -type f | head -30
+          echo ""
           if [ -d gh-pages/graphs ]; then
             COUNT=$(ls gh-pages/graphs | wc -l)
             if [ "$COUNT" -gt 0 ]; then
@@ -117,6 +134,17 @@ jobs:
             fi
           else
             echo "Warning: gh-pages/graphs directory not found";
+          fi
+          if [ -f gh-pages/benchmark-data/history.jsonl ]; then
+            LINES=$(wc -l < gh-pages/benchmark-data/history.jsonl)
+            echo "benchmark-data/history.jsonl: $LINES entries"
+          else
+            echo "Warning: No benchmark-data/history.jsonl"
+          fi
+          if [ -f gh-pages/static-data/history.jsonl ]; then
+            echo "static-data/history.jsonl: present"
+          else
+            echo "Warning: No static-data/history.jsonl"
           fi
           
           # Create README for gh-pages
@@ -145,8 +173,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages
           publish_branch: gh-pages
-          keep_files: true
-          destination_dir: benchmarks
+          keep_files: false
           commit_message: 'Update benchmark dashboard: ${{ github.sha }}'
       
       - name: Create Regression Issue (if needed)
