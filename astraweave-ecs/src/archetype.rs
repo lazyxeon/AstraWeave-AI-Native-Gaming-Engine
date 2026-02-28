@@ -584,17 +584,7 @@ impl ArchetypeStorage {
     /// Uses an inverted index (`component_to_archetypes`) for O(1) lookup
     /// instead of scanning every archetype.
     pub fn archetypes_with_component(&self, ty: TypeId) -> impl Iterator<Item = &Archetype> {
-        #[cfg(feature = "profiling")]
-        span!("ECS::Archetype::archetypes_with_component");
-
-        // Empty slice fallback avoids an Option branch in the iterator chain.
-        let ids = self
-            .component_to_archetypes
-            .get(&ty)
-            .map(|v| v.as_slice())
-            .unwrap_or(&[]);
-
-        ids.iter().filter_map(move |id| self.archetypes.get(id))
+        ::std::iter::empty() /* ~ changed by cargo-mutants ~ */
     }
 }
 
