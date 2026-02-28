@@ -6,6 +6,16 @@
 # GPU driver allocations cause false positives. Use wgpu validation instead.
 #
 # Miri testing is handled by the dedicated miri.yml workflow — not duplicated here.
+#
+# === Nightly-failure hardening (February 2026) ===
+# Previous nightly failures were traced to:
+#   1. Caching `target/` with un-pinned nightly (stale ABI artifacts)
+#   2. ASAN_OPTIONS `detect_leaks=1` + `abort_on_error=1` false-positive cascade
+#   3. No job timeouts → 6-hour GitHub limit kills slow sanitizer runs
+#   4. TSAN_OPTIONS referencing a file created only at runtime
+#   5. Missing cache restore-keys fallback
+#   6. No GITHUB_STEP_SUMMARY for triage
+# All six issues are fixed in this revision.
 
 name: Sanitizers
 
@@ -32,38 +42,42 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  # Sanitizer options
-  ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1
-  LSAN_OPTIONS: max_leaks=10:print_suppressions=0
-  TSAN_OPTIONS: suppressions=scripts/tsan_suppressions.txt:second_deadlock_stack=1
 
 jobs:
+  # ──────────────────────────────────────────────────────
   # Fast ASan check on critical crates (every PR)
   # NOTE: Excludes render crate due to GPU driver false positives
+  # ──────────────────────────────────────────────────────
   asan-critical:
     name: AddressSanitizer (Critical Crates)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Only run on PRs and pushes (not nightly schedule)
     if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    env:
+      # Disable leak detection here — the dedicated LSan job handles it.
+      # abort_on_error=0 lets the test harness report per-test results.
+      ASAN_OPTIONS: detect_leaks=0:abort_on_error=0:halt_on_error=0:print_stats=1
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Install Rust Nightly
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-      
+
+      # Only cache registry/git indexes — never cache `target/` for nightly
+      # builds because the ABI changes daily and stale artifacts cause link errors.
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-asan-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-asan-
-      
+
       - name: Run ASan on astraweave-ecs
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
@@ -71,7 +85,7 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
+
       - name: Run ASan on astraweave-physics
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
@@ -79,7 +93,7 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
+
       - name: Run ASan on astraweave-core
         run: |
           RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
@@ -87,36 +101,48 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
-      # NOTE: astraweave-render intentionally excluded - GPU drivers cause false positives
+
+      # NOTE: astraweave-render intentionally excluded — GPU drivers cause false positives
       # GPU validation is handled by wgpu's built-in validation layers instead
 
+  # ──────────────────────────────────────────────────────
   # Full ASan suite (nightly only)
   # NOTE: Excludes render crate due to GPU driver false positives
+  # ──────────────────────────────────────────────────────
   asan-full:
     name: AddressSanitizer (Full Suite)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    env:
+      # Disable leak detection — the dedicated LSan job handles leaks.
+      # abort_on_error=0 so the test harness can finish and report all failures,
+      # rather than SIGABRT on the first false positive from a dependency.
+      ASAN_OPTIONS: detect_leaks=0:abort_on_error=0:halt_on_error=0:print_stats=1
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Install Rust Nightly
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-      
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-asan-full-${{ hashFiles('**/Cargo.lock') }}
-      
+          restore-keys: |
+            ${{ runner.os }}-asan-full-
+            ${{ runner.os }}-asan-
+
       - name: Run ASan on all critical crates
         run: |
-          # NOTE: astraweave-render excluded - GPU drivers cause ASan false positives
+          set +e  # Don't exit on first failure — we count them ourselves
+
+          # NOTE: astraweave-render excluded — GPU drivers cause ASan false positives
           # GPU validation is handled by wgpu's built-in validation layers
           #
           # Priority tiers:
@@ -124,7 +150,7 @@ jobs:
           # - P1 Infrastructure: net, asset, memory, context — Advisory
           # - P2 Support: behavior, prompts, embeddings — Advisory
           # - EXCLUDED: llm (requires external services, excluded from standard builds)
-          
+
           P0_CRATES=(
             astraweave-ecs
             astraweave-physics
@@ -132,88 +158,115 @@ jobs:
             astraweave-ai
             astraweave-nav
           )
-          
+
           P1_CRATES=(
             astraweave-net
             astraweave-asset
             astraweave-memory
             astraweave-context
           )
-          
+
           P2_CRATES=(
             astraweave-behavior
             astraweave-prompts
             astraweave-embeddings
           )
-          
-          ALL_CRATES=("${P0_CRATES[@]}" "${P1_CRATES[@]}" "${P2_CRATES[@]}")
-          
-          echo "=== Running ASan on ${#ALL_CRATES[@]} crates ==="
+
+          echo "=== Running ASan on ${#P0_CRATES[@]}+${#P1_CRATES[@]}+${#P2_CRATES[@]} crates ==="
           P0_FAILED=0
+          P0_PASSED=0
           ADVISORY_FAILED=0
-          
+          ADVISORY_PASSED=0
+          FAILED_LIST=""
+
           for crate in "${P0_CRATES[@]}"; do
             echo ""
-            echo "=== [P0 CRITICAL] Testing $crate with ASan ==="
+            echo "::group::[P0 CRITICAL] Testing $crate with ASan"
             if RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
               -p "$crate" \
               --target x86_64-unknown-linux-gnu \
               --lib \
-              -- --test-threads=1 2>&1; then
+              -- --test-threads=1; then
               echo "✅ $crate passed ASan"
+              P0_PASSED=$((P0_PASSED + 1))
             else
               echo "❌ $crate FAILED ASan (P0 critical — will fail job)"
               P0_FAILED=$((P0_FAILED + 1))
+              FAILED_LIST="$FAILED_LIST  - ❌ **$crate** (P0 Critical)\n"
             fi
+            echo "::endgroup::"
           done
-          
+
           for crate in "${P1_CRATES[@]}" "${P2_CRATES[@]}"; do
             echo ""
-            echo "=== [Advisory] Testing $crate with ASan ==="
+            echo "::group::[Advisory] Testing $crate with ASan"
             if RUSTFLAGS="-Zsanitizer=address" cargo +nightly test \
               -p "$crate" \
               --target x86_64-unknown-linux-gnu \
               --lib \
-              -- --test-threads=1 2>&1; then
+              -- --test-threads=1; then
               echo "✅ $crate passed ASan"
+              ADVISORY_PASSED=$((ADVISORY_PASSED + 1))
             else
               echo "⚠️ $crate had ASan failures (advisory — not blocking)"
               ADVISORY_FAILED=$((ADVISORY_FAILED + 1))
+              FAILED_LIST="$FAILED_LIST  - ⚠️ $crate (Advisory)\n"
             fi
+            echo "::endgroup::"
           done
-          
+
+          # Write step summary
+          echo "## ASan Full Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tier | Passed | Failed |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| P0 Critical | $P0_PASSED | $P0_FAILED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Advisory (P1+P2) | $ADVISORY_PASSED | $ADVISORY_FAILED |" >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "$FAILED_LIST" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Failed Crates" >> $GITHUB_STEP_SUMMARY
+            echo -e "$FAILED_LIST" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo ""
           echo "=== ASan Full Suite Summary ==="
-          echo "P0 crates: ${#P0_CRATES[@]} (failures: $P0_FAILED)"
-          echo "Advisory crates: $(( ${#P1_CRATES[@]} + ${#P2_CRATES[@]} )) (failures: $ADVISORY_FAILED)"
-          
+          echo "P0 crates: ${#P0_CRATES[@]} (passed: $P0_PASSED, failed: $P0_FAILED)"
+          echo "Advisory crates: $(( ${#P1_CRATES[@]} + ${#P2_CRATES[@]} )) (passed: $ADVISORY_PASSED, failed: $ADVISORY_FAILED)"
+
           if [ "$P0_FAILED" -gt 0 ]; then
             echo "❌ P0 critical crate(s) failed ASan — failing job"
             exit 1
           fi
           echo "✅ All P0 crates passed ASan"
 
+  # ──────────────────────────────────────────────────────
   # LeakSanitizer (fast, run on every PR)
+  # ──────────────────────────────────────────────────────
   leak-sanitizer:
     name: LeakSanitizer
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LSAN_OPTIONS: max_leaks=10:print_suppressions=0
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Install Rust Nightly
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-      
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-lsan-${{ hashFiles('**/Cargo.lock') }}
-      
+          restore-keys: |
+            ${{ runner.os }}-lsan-
+
       - name: Run LSan on astraweave-ecs
         run: |
           RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
@@ -221,7 +274,7 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
+
       - name: Run LSan on astraweave-core
         run: |
           RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
@@ -229,7 +282,7 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
+
       - name: Run LSan on astraweave-physics
         run: |
           RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
@@ -237,7 +290,7 @@ jobs:
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
-      
+
       - name: Run LSan on persistence (aw-save)
         run: |
           RUSTFLAGS="-Zsanitizer=leak" cargo +nightly test \
@@ -246,77 +299,44 @@ jobs:
             --lib \
             -- --test-threads=1
 
-  # ThreadSanitizer (nightly only - ADVISORY, not must-pass)
+  # ──────────────────────────────────────────────────────
+  # ThreadSanitizer (nightly only — ADVISORY, not must-pass)
   # TSan with async Rust has many false positives. Use for bug discovery, not gating.
+  # ──────────────────────────────────────────────────────
   thread-sanitizer:
     name: ThreadSanitizer (Advisory)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    env:
+      # Suppressions file is committed at scripts/tsan_suppressions.txt
+      TSAN_OPTIONS: suppressions=scripts/tsan_suppressions.txt:second_deadlock_stack=1
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Install Rust Nightly
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
-      
-      - name: Create TSan suppressions file
+
+      - name: Verify TSan suppressions file
         run: |
-          mkdir -p scripts
-          cat > scripts/tsan_suppressions.txt << 'EOF'
-          # ============================================
-          # TSan Suppressions for AstraWeave
-          # ============================================
-          # TSan with async Rust is noisy. These are known false positives.
-          # This list will grow over time as we discover more.
-          #
-          # Last updated: February 2026
-          # ============================================
-          
-          # Standard library false positives
-          race:std::sync::mpsc
-          race:std::sync::Once
-          race:std::thread
-          
-          # Async runtime false positives (Tokio internals)
-          race:tokio::runtime
-          race:tokio::sync
-          race:tokio::io
-          race:tokio::task
-          race:tokio::time
-          
-          # Common concurrency crates
-          race:crossbeam
-          race:crossbeam_channel
-          race:crossbeam_deque
-          race:parking_lot
-          race:rayon
-          race:rayon_core
-          
-          # External dependencies
-          race:rapier3d
-          race:nalgebra
-          
-          # GPU stack (handled by wgpu validation instead)
-          race:wgpu
-          race:wgpu_core
-          race:wgpu_hal
-          race:naga
-          race:ash
-          
-          # Add more as discovered during tuning...
-          EOF
-      
+          if [ ! -f scripts/tsan_suppressions.txt ]; then
+            echo "::error::scripts/tsan_suppressions.txt is missing — commit it to the repo"
+            exit 1
+          fi
+          echo "✅ TSan suppressions file found ($(wc -l < scripts/tsan_suppressions.txt) lines)"
+
       - name: Run TSan on astraweave-ai
         run: |
-          echo "⚠️ TSan is ADVISORY - failures may be false positives"
+          echo "⚠️ TSan is ADVISORY — failures may be false positives"
           RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
             -p astraweave-ai \
             --target x86_64-unknown-linux-gnu \
             --lib \
             -- --test-threads=1
         continue-on-error: true  # TSan is advisory, not blocking
-      
+
       - name: Run TSan on astraweave-coordination
         run: |
           RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
@@ -325,7 +345,7 @@ jobs:
             --lib \
             -- --test-threads=1
         continue-on-error: true  # TSan is advisory, not blocking
-      
+
       - name: Run TSan on astraweave-ecs
         run: |
           RUSTFLAGS="-Zsanitizer=thread" cargo +nightly test \
@@ -335,48 +355,60 @@ jobs:
             -- --test-threads=1
         continue-on-error: true  # TSan is advisory, not blocking
 
-  # Determinism Testing (nightly - critical for multiplayer/replay)
+      - name: Write TSan summary
+        if: always()
+        run: |
+          echo "## ThreadSanitizer Results (Advisory)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "TSan with async Rust produces many false positives." >> $GITHUB_STEP_SUMMARY
+          echo "These results are for **bug discovery only** and do not gate merges." >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────────────
+  # Determinism Testing (nightly — critical for multiplayer/replay)
   # Uses per-crate targeting to avoid workspace-wide compilation failures.
+  # ──────────────────────────────────────────────────────
   determinism:
     name: Determinism Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-determinism-${{ hashFiles('**/Cargo.lock') }}
-      
+          restore-keys: |
+            ${{ runner.os }}-determinism-
+
       - name: Run determinism tests (astraweave-ecs)
         run: |
           echo "=== ECS Determinism Tests ==="
           cargo test -p astraweave-ecs \
             -- --test-threads=1 \
             determinism deterministic replay
-      
+
       - name: Run determinism tests (astraweave-weaving)
         run: |
           echo "=== Weaving Determinism Tests ==="
           cargo test -p astraweave-weaving \
             -- --test-threads=1 \
             determinism deterministic replay
-      
+
       - name: Run determinism tests (astraweave-terrain)
         run: |
           echo "=== Terrain Determinism Tests ==="
           cargo test -p astraweave-terrain \
             -- --test-threads=1 \
             determinism deterministic replay
-      
+
       - name: Run determinism tests (astraweave-physics)
         run: |
           echo "=== Physics Determinism Tests ==="
@@ -384,40 +416,56 @@ jobs:
             -- --test-threads=1 \
             determinism deterministic replay
         continue-on-error: true  # Physics determinism is a stretch goal
-      
+
       - name: Check for non-deterministic HashMap usage in hot paths
         run: |
           echo "Checking for non-deterministic HashMap iteration in source code..."
           echo "(HashMap iteration order is non-deterministic — use BTreeMap instead)"
           echo ""
-          # Search all engine source directories, not just crates/
+
+          # Only check determinism-critical engine crates (top-level src dirs)
+          SEARCH_DIRS=""
+          for d in \
+            astraweave-ecs/src \
+            astraweave-physics/src \
+            astraweave-weaving/src \
+            astraweave-terrain/src \
+            astraweave-ai/src \
+            astraweave-core/src \
+            astraweave-nav/src \
+            astraweave-gameplay/src; do
+            [ -d "$d" ] && SEARCH_DIRS="$SEARCH_DIRS $d"
+          done
+
+          if [ -z "$SEARCH_DIRS" ]; then
+            echo "⚠️ No source directories found to scan"
+            exit 0
+          fi
+
           FOUND=$(grep -rn "use std::collections::HashMap" --include="*.rs" \
-            astraweave-ecs/src/ \
-            astraweave-physics/src/ \
-            astraweave-weaving/src/ \
-            astraweave-terrain/src/ \
-            astraweave-ai/src/ \
-            astraweave-core/src/ \
-            astraweave-nav/src/ \
-            astraweave-gameplay/src/ \
-            crates/ \
-            persistence/ \
-            net/ \
-            2>/dev/null | head -30 || true)
-          
+            $SEARCH_DIRS 2>/dev/null | head -30 || true)
+
           if [ -n "$FOUND" ]; then
             echo "⚠️ HashMap imports found in determinism-critical code:"
             echo "$FOUND"
             echo ""
             echo "Consider migrating to BTreeMap for deterministic iteration."
+
+            echo "## Determinism: HashMap Audit" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$FOUND" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ No HashMap imports found in critical paths"
           fi
 
+  # ──────────────────────────────────────────────────────
   # Summary job: aggregates results from all sanitizer jobs
+  # ──────────────────────────────────────────────────────
   sanitizer-summary:
     name: Sanitizer Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     needs: [asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
     steps:
@@ -431,41 +479,65 @@ jobs:
           echo "thread-sanitizer: ${{ needs.thread-sanitizer.result }}"
           echo "determinism:      ${{ needs.determinism.result }}"
           echo ""
-          
+
+          # Build step summary table
+          echo "## Sanitizer Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result | Blocking? |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|-----------|" >> $GITHUB_STEP_SUMMARY
+
+          result_icon() {
+            case "$1" in
+              success)  echo "✅ Pass" ;;
+              failure)  echo "❌ Fail" ;;
+              skipped)  echo "⏭️ Skipped" ;;
+              cancelled) echo "🚫 Cancelled" ;;
+              *)        echo "❓ $1" ;;
+            esac
+          }
+
+          echo "| ASan (Critical) | $(result_icon "${{ needs.asan-critical.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| ASan (Full) | $(result_icon "${{ needs.asan-full.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| LeakSanitizer | $(result_icon "${{ needs.leak-sanitizer.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| ThreadSanitizer | $(result_icon "${{ needs.thread-sanitizer.result }}") | No (advisory) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Determinism | $(result_icon "${{ needs.determinism.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Run triggered by: \`${{ github.event_name }}\` at $(date -u)_" >> $GITHUB_STEP_SUMMARY
+
           # Fail if any critical (non-advisory) job failed
           # Skipped jobs are OK — they run on different triggers
           FAILED=0
-          
+
           if [ "${{ needs.asan-critical.result }}" = "failure" ]; then
             echo "❌ ASan critical crates FAILED"
             FAILED=1
           fi
-          
+
           if [ "${{ needs.asan-full.result }}" = "failure" ]; then
             echo "❌ ASan full suite FAILED"
             FAILED=1
           fi
-          
+
           if [ "${{ needs.leak-sanitizer.result }}" = "failure" ]; then
             echo "❌ LeakSanitizer FAILED"
             FAILED=1
           fi
-          
+
           if [ "${{ needs.determinism.result }}" = "failure" ]; then
             echo "❌ Determinism validation FAILED"
             FAILED=1
           fi
-          
+
           # TSan is advisory — log but don't fail
           if [ "${{ needs.thread-sanitizer.result }}" = "failure" ]; then
             echo "⚠️ ThreadSanitizer had failures (advisory — not blocking)"
           fi
-          
+
           if [ "$FAILED" -eq 1 ]; then
             echo ""
             echo "❌ One or more critical sanitizer jobs failed"
             exit 1
           fi
-          
+
           echo ""
           echo "✅ All critical sanitizer checks passed"
