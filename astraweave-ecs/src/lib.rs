@@ -323,7 +323,7 @@ impl World {
         span!("ECS::World::get");
 
         // Validate entity is alive
-        if !self.is_alive(e) {
+        if  /* ~ changed by cargo-mutants ~ */self.is_alive(e) {
             return None;
         }
 
