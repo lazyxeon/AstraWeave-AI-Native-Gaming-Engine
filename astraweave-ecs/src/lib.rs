@@ -57,6 +57,9 @@ mod property_tests;
 #[cfg(test)]
 mod mutation_tests;
 
+#[cfg(test)]
+mod mutation_resistance_tests;
+
 // Kani formal verification proofs
 #[cfg(kani)]
 mod blob_vec_kani;
