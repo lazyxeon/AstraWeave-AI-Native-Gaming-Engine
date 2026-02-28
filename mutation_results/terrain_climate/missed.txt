@@ -1,9 +1,0 @@
-astraweave-terrain/src/climate.rs:231:23: replace match guard t > 0.6 && m > 0.6 with false in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:227:25: replace < with <= in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:31: replace && with || in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:25: replace > with == in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:25: replace > with < in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:25: replace > with >= in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:36: replace > with == in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:36: replace > with < in utils::classify_whittaker_biome
-astraweave-terrain/src/climate.rs:231:36: replace > with >= in utils::classify_whittaker_biome

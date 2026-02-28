@@ -126,7 +126,8 @@ mod benchmarks {
         let goap = Box::new(BenchGoap);
         let bt = Box::new(BenchBT);
 
-        AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(999999.0) // Prevent LLM requests
+        AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(999999.0)
+        // Prevent LLM requests
     }
 
     /// Create arbiter in ExecutingLLM mode with a plan

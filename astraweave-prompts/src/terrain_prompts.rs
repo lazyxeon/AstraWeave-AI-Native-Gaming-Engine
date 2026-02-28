@@ -6,7 +6,7 @@
 //! # Overview
 //!
 //! These templates are designed to work with the TerrainGenerationRequest
-//! schema defined in astraweave-core, enabling Hermes 2 Pro LLM to generate
+//! schema defined in astraweave-core, enabling Qwen3-8B LLM to generate
 //! structured terrain modification requests.
 
 use crate::{PromptTemplate, TemplateCategory, TemplateMetadata};

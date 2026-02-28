@@ -131,7 +131,7 @@ fn create_test_arbiter(llm_delay_ms: u64) -> AIArbiter {
     });
     let bt = Box::new(MockBT);
 
-    AIArbiter::new(llm_executor, goap, bt)
+    AIArbiter::with_single_executor(llm_executor, goap, bt)
 }
 
 // ============================================================================

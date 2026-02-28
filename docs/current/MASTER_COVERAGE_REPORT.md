@@ -1,6 +1,6 @@
 # AstraWeave Master Test Coverage Report
 
-> **Version**: 5.0.0 | **Date**: 2026-02-25 | **Grade**: B+ | **Tool**: `cargo llvm-cov` (LLVM source-based)
+> **Version**: 5.1.0 | **Date**: 2026-02-27 | **Grade**: B+ | **Tool**: `cargo llvm-cov` (LLVM source-based)
 
 ---
 
@@ -8,14 +8,14 @@
 
 | Metric | Value |
 |--------|-------|
-| **Measured Crates** | 28 production crates |
-| **Total Tests** | ~18,200+ (measured crates) / ~27,000+ (workspace) |
+| **Workspace Crates** | 128 total (29 measured for coverage) |
+| **Total Tests** | ~21,900 (measured crates) / ~39,000+ (workspace) |
 | **Primary Tool** | `cargo llvm-cov` (LLVM source-based instrumentation) |
-| **Overall Line Coverage** | 59.3% weighted (all measured crates) |
+| **Overall Line Coverage** | 59.3% weighted (measured crates, last run 2026-02-25) |
 | **High-Coverage Crates (≥85%)** | 14 of 28 (50%) |
 | **Miri Validated** | 977 tests, 4 crates, zero UB |
 | **Kani Verified** | ~71 proof harnesses, 4 crates, all passing |
-| **Mutation Testing** | Wave 1: 767 manual + Wave 2: 1,261+ automated |
+| **Mutation Testing** | Wave 1: 767 manual + Wave 2: 1,261 automated + Wave 3: 489 targeted |
 
 ### Tier Overview (Line Coverage, Weighted by LOC)
 
@@ -25,14 +25,16 @@
 | **P1 — Important Systems** | 5 | 80% | **58.9%** | Below target |
 | **P2 — Support** | 6 | 75% | **73.9%** | Approaching target |
 
+> **Note**: Line coverage percentages were last measured via `cargo llvm-cov` on 2026-02-25. Test counts have been re-audited against current source on 2026-02-27 via `#[test]` marker scanning. Coverage percentages have not been re-measured and may differ from current state due to tests added between Feb 25–27.
+
 ### Context: Why Coverage Numbers Changed Since v4.2
 
-The previous report (v4.2.0) claimed 94.57% weighted coverage. This audit reveals **significant discrepancies** caused by:
+The v4.2.0 report (2026-02-24) claimed 94.57% weighted coverage. The v5.0.0 audit (2026-02-25) revealed **significant discrepancies** caused by:
 
-1. **Aggressive crate growth**: Many crates doubled or tripled in size since last measurement (e.g., astraweave-ai: 2,455 → 7,768 lines). New code was added without proportional test coverage.
-2. **Dependency code inflation**: `cargo llvm-cov --lib --summary-only` instruments all compiled code including inlined generics from workspace dependencies. Crates like `astraweave-audio` (11,662 measured lines vs ~3,000 actual source lines) and `astraweave-rag` (9,957 measured lines) include substantial dependency footprint.
+1. **Aggressive crate growth**: Many crates doubled or tripled in size since last measurement (e.g., astraweave-ai: 2,455 → 7,768 instrumented lines). New code was added without proportional test coverage.
+2. **Dependency code inflation**: `cargo llvm-cov --lib --summary-only` instruments all compiled code including inlined generics from workspace dependencies. Crates like `astraweave-audio` (11,662 instrumented lines vs ~4,200 actual source lines) and `astraweave-rag` (9,957 instrumented lines vs ~3,200 actual) include substantial dependency footprint.
 3. **GPU/async untestable code**: Rendering (37,035 lines), terrain (18,826 lines), and audio subsystems contain large GPU-only or async code paths that cannot be exercised in headless `cargo test`.
-4. **Prior "source-only" filtering**: The v4.2 report used manual file-level analysis for some crates. This audit uses raw `cargo llvm-cov` output for full reproducibility.
+4. **Prior "source-only" filtering**: The v4.2 report used manual file-level analysis for some crates. The v5.0+ methodology uses raw `cargo llvm-cov` output for full reproducibility.
 
 **Bottom line**: The codebase quality is strong (14 crates at 85–99%), but the overall weighted average is pulled down by large rendering/terrain/gameplay modules with substantial untestable or newly-added code.
 
@@ -40,7 +42,7 @@ The previous report (v4.2.0) claimed 94.57% weighted coverage. This audit reveal
 
 ## Measurement Hardware & Tools
 
-All measurements in this report were taken on **2026-02-25** on the following system:
+Coverage percentages in this report were measured on **2026-02-25**. Test counts and mutation results audited on **2026-02-27**. All data collected on the following system:
 
 | Component | Specification |
 |-----------|---------------|
@@ -48,124 +50,130 @@ All measurements in this report were taken on **2026-02-25** on the following sy
 | **CPU** | Intel Core i5-10300H @ 2.50 GHz (4 cores / 8 threads) |
 | **RAM** | 32 GB DDR4 @ 3200 MHz |
 | **OS** | Microsoft Windows 11 Home (Build 26200, 64-bit) |
-| **Rust Toolchain** | 1.89.0 (stable, x86_64-pc-windows-msvc) |
+| **Rust Toolchain** | rustc 1.89.0 (29483883e 2025-08-04) |
 | **Coverage Tool** | `cargo-llvm-cov` (LLVM source-based instrumentation) |
 | **Mutation Tool** | `cargo-mutants` v26.2.0 + `cargo-nextest` v0.9.128 |
 | **Memory Safety** | Miri (rustc 1.86.0-nightly, 2025-02-01) |
 | **Formal Verification** | Kani (CBMC bounded model checking) |
 | **Test Framework** | Standard `#[test]` + `cargo-nextest` |
 
-### Measurement Command
+### Measurement Commands
 
 ```powershell
+# Coverage measurement (line/region/function)
 cargo llvm-cov --no-cfg-coverage --lib -p <crate> --summary-only
+
+# Test count verification (source-of-truth: #[test] marker scanning)
+Get-ChildItem "<crate>/src" -Recurse -Filter *.rs | ForEach-Object {
+    (Select-String -Path $_.FullName -Pattern '#\[test\]' -AllMatches).Matches.Count
+} | Measure-Object -Sum
 ```
 
-Numbers represent LLVM **region coverage** (primary), **line coverage** (secondary), and **function coverage** across all instrumented code.
+Coverage numbers represent LLVM **region coverage** (primary), **line coverage** (secondary), and **function coverage** across all instrumented code. Test counts represent `#[test]` function markers in source, verified by file scanning on 2026-02-27.
 
 ---
 
 ## 1. P0: Core Engine (12 crates)
 
-**Target**: 85% line coverage | **Weighted Actual**: 55.4% (137,617 lines measured)
+**Target**: 85% line coverage | **Weighted Actual**: 55.4% (137,617 instrumented lines)
 
-| Crate | Region Cov | Line Cov | Func Cov | Lines | Tests | Status |
-|-------|-----------|----------|----------|-------|-------|--------|
-| astraweave-ecs | 95.16% | **96.39%** | 97.53% | 4,769 | 330 | EXCEEDS |
-| astraweave-physics | 94.53% | **94.38%** | 99.65% | 18,324 | 1,244 | EXCEEDS |
-| astraweave-math | 94.01% | **91.12%** | 100.00% | 1,329 | 109 | EXCEEDS |
-| astraweave-nav | 92.88% | **93.11%** | 99.34% | 3,136 | 216 | EXCEEDS |
-| astraweave-behavior | 87.51% | **85.81%** | 86.44% | 3,847 | 233 | MEETS |
-| astraweave-core | 83.29% | **80.98%** | 78.29% | 9,390 | 505 | BELOW |
-| astraweave-ai | 65.26% | **67.38%** | 54.21% | 7,768 | 268 | BELOW |
-| astraweave-scene | 55.09% | **55.42%** | 64.55% | 4,890 | 210 | BELOW |
-| astraweave-gameplay | 48.56% | **50.46%** | 42.46% | 16,641 | 471 | BELOW |
-| astraweave-render | 46.01% | **48.04%** | 43.96% | 37,035 | 806 | BELOW |
-| astraweave-terrain | 46.22% | **44.11%** | 42.16% | 18,826 | 2,536 | BELOW |
-| astraweave-audio | 25.70% | **24.34%** | 21.77% | 11,662 | 239 | BELOW |
+| Crate | Region Cov | Line Cov | Func Cov | Instr. Lines | Tests (Lib+Integ) | Status |
+|-------|-----------|----------|----------|-------------|-------------------|--------|
+| astraweave-ecs | 95.16% | **96.39%** | 97.53% | 4,769 | 728 (331+397) | EXCEEDS |
+| astraweave-physics | 94.53% | **94.38%** | 99.65% | 18,324 | 1,884 (1,284+600) | EXCEEDS |
+| astraweave-math | 94.01% | **91.12%** | 100.00% | 1,329 | 176 (109+67) | EXCEEDS |
+| astraweave-nav | 92.88% | **93.11%** | 99.34% | 3,136 | 496 (216+280) | EXCEEDS |
+| astraweave-behavior | 87.51% | **85.81%** | 86.44% | 3,847 | 458 (233+225) | MEETS |
+| astraweave-core | 83.29% | **80.98%** | 78.29% | 9,390 | 959 (505+454) | BELOW |
+| astraweave-ai | 65.26% | **67.38%** | 54.21% | 7,768 | 921 (514+407) | BELOW |
+| astraweave-scene | 55.09% | **55.42%** | 64.55% | 4,890 | 405 (213+192) | BELOW |
+| astraweave-gameplay | 48.56% | **50.46%** | 42.46% | 16,641 | 687 (471+216) | BELOW |
+| astraweave-render | 46.01% | **48.04%** | 43.96% | 37,035 | 4,272 (851+3,421) | BELOW |
+| astraweave-terrain | 46.22% | **44.11%** | 42.16% | 18,826 | 2,107 (543+1,564) | BELOW |
+| astraweave-audio | 25.70% | **24.34%** | 21.77% | 11,662 | 531 (240+291) | BELOW |
 
 ### Crate Analysis
 
-**astraweave-ecs** (96.39% line, 330 tests): Industry-leading for an ECS implementation. BlobVec, SparseSet, EntityAllocator, Archetype, SystemParam all thoroughly tested. Miri-validated, Kani-verified. 4,769 lines.
+**astraweave-ecs** (96.39% line, 728 tests): Industry-leading for an ECS implementation. BlobVec, SparseSet, EntityAllocator, Archetype, SystemParam all thoroughly tested. 331 lib tests + 397 integration tests. Miri-validated (379 tests passed, 7 ignored), Kani-verified (27 proofs). 4,769 instrumented lines.
 
-**astraweave-physics** (94.38% line, 1,244 tests): Comprehensive coverage of character controllers, vehicles, ragdolls, cloth simulation, spatial hash. 18,324 lines with near-complete function coverage (99.65%). Largest well-covered P0 crate.
+**astraweave-physics** (94.38% line, 1,884 tests): Comprehensive coverage of character controllers, vehicles, ragdolls, cloth simulation, spatial hash. 18,324 instrumented lines with near-complete function coverage (99.65%). Largest well-covered P0 crate. 1,284 lib + 600 integration tests.
 
-**astraweave-math** (91.12% line, 109 tests): SIMD vector/matrix/quaternion operations. 100% function coverage. Miri-validated (scalar fallback paths). Kani proofs for dot product symmetry, cross product anticommutativity, normalization. Small footprint (1,329 lines).
+**astraweave-math** (91.12% line, 176 tests): SIMD vector/matrix/quaternion operations. 100% function coverage. Miri-validated (109 tests, all passed). Kani proofs for dot product symmetry, cross product anticommutativity, normalization. Small footprint (1,329 instrumented lines). 109 lib + 67 integration tests.
 
-**astraweave-nav** (93.11% line, 216 tests): A* pathfinding, navmesh baking, obstacle avoidance. 99.34% function coverage. 15 winding bugs and 3 topology issues fixed during earlier coverage sprint.
+**astraweave-nav** (93.11% line, 496 tests): A* pathfinding, navmesh baking, obstacle avoidance. 99.34% function coverage. 15 winding bugs and 3 topology issues fixed during earlier coverage sprint. 216 lib + 280 integration tests.
 
-**astraweave-behavior** (85.81% line, 233 tests): Behavior trees, GOAP planning, utility evaluation. Meets the 85% target. goap.rs well-covered, ecs.rs strong.
+**astraweave-behavior** (85.81% line, 458 tests): Behavior trees, GOAP planning, utility evaluation. Meets the 85% target. goap.rs well-covered, ecs.rs strong. 233 lib + 225 integration tests.
 
-**astraweave-core** (80.98% line, 505 tests): 4 pp below the 85% target. 9,390 lines — grew significantly with ECS bridge, perception, capture/replay, tool sandbox modules. Core modules (ecs_bridge, perception, sim, lib) at near-100%; validation.rs (~82%) and tool_vocabulary remain hotspots. A focused sprint could close the gap.
+**astraweave-core** (80.98% line, 959 tests): 4 pp below the 85% target. 9,390 instrumented lines — grew significantly with ECS bridge, perception, capture/replay, tool sandbox modules. Core modules (ecs_bridge, perception, sim, lib) at near-100%; validation.rs (~82%) and tool_vocabulary remain hotspots. 505 lib + 454 integration tests. Miri-validated (449 passed, 13 ignored). A focused sprint could close the gap.
 
-**astraweave-ai** (67.38% line, 268 tests): Previous report claimed 97.39% using "source-only" filtering on 2,455 lines. Crate has since grown to 7,768 lines. Many new orchestrator/plugin modules lack complete coverage. Priority improvement target.
+**astraweave-ai** (67.38% line, 921 tests): Coverage measured when crate had 7,768 instrumented lines. Crate has since grown substantially (~19,500 source lines). 514 lib + 407 integration tests (up from 268 total at time of coverage measurement). Many new orchestrator/plugin modules added. Coverage would likely be lower if re-measured today. Priority improvement target.
 
-**astraweave-scene** (55.42% line, 210 tests): World partitioning, streaming, GPU resource management. gpu_resource_manager and streaming modules have significant untested code paths.
+**astraweave-scene** (55.42% line, 405 tests): World partitioning, streaming, GPU resource management. gpu_resource_manager and streaming modules have significant untested code paths. 213 lib + 192 integration tests.
 
-**astraweave-gameplay** (50.46% line, 471 tests): Combat physics, damage systems, AI-combat pipeline. Grew to 16,641 lines. Many new gameplay systems added without proportional test coverage.
+**astraweave-gameplay** (50.46% line, 687 tests): Combat physics, damage systems, AI-combat pipeline. 16,641 instrumented lines (inflated by dependency inlining; ~10,800 actual source lines). Many new gameplay systems added without proportional test coverage. 471 lib + 216 integration tests.
 
-**astraweave-render** (48.04% line, 806 tests): Largest crate at 37,035 lines. Contains substantial GPU-only code untestable in headless mode (shaders, framebuffer, pipeline creation). High-coverage files: clustered.rs (97.66%), vertex_compression.rs (96.23%), lod_generator.rs (~95%). Low-coverage: renderer.rs (~1%), ibl.rs (13%), skybox.rs (0%). Industry comparison: Unity rendering 25–35%, Bevy 45–50%.
+**astraweave-render** (48.04% line, 4,272 tests): Largest crate at 37,035 instrumented lines (~38,200 source lines). Contains substantial GPU-only code untestable in headless mode (shaders, framebuffer, pipeline creation). High-coverage files: clustered.rs (97.66%), vertex_compression.rs (96.23%), lod_generator.rs (~95%). Low-coverage: renderer.rs (~1%), ibl.rs (13%), skybox.rs (0%). **Test suite expanded dramatically** since coverage measurement: 851 lib + 3,421 integration tests (including Wave 3 mutation remediation tests). Coverage would likely improve significantly if re-measured. Industry comparison: Unity rendering 25–35%, Bevy 45–50%.
 
-**astraweave-terrain** (44.11% line, 2,536 tests): Despite having 2,536 tests (largest test suite of any P0 crate), the 18,826 measured lines include large generated/table modules (marching cubes tables, voxel mesh). Integration tests (2,065) run via `--tests` and are not captured by `--lib` coverage.
+**astraweave-terrain** (44.11% line, 2,107 tests): 18,826 instrumented lines include large generated/table modules (marching cubes tables, voxel mesh). 543 lib + 1,564 integration tests. Integration tests run via `--tests` and are not captured by `--lib` coverage measurement — effective coverage is likely significantly higher.
 
-**astraweave-audio** (24.34% line, 239 tests): 11,662 measured lines include large dependency footprint. Core audio engine requires runtime context (audio devices, mixers) unavailable in headless testing.
+**astraweave-audio** (24.34% line, 531 tests): 11,662 instrumented lines include large dependency footprint (actual source ~4,200 lines). Core audio engine requires runtime context (audio devices, mixers) unavailable in headless testing. 240 lib + 291 integration tests.
 
 ---
 
 ## 2. P1: Important Systems (5 crates)
 
-**Target**: 80% line coverage | **Weighted Actual**: 58.9% (25,136 lines measured)
+**Target**: 80% line coverage | **Weighted Actual**: 58.9% (25,136 instrumented lines)
 
-| Crate | Region Cov | Line Cov | Func Cov | Lines | Tests | Status |
-|-------|-----------|----------|----------|-------|-------|--------|
-| astraweave-cinematics | 99.35% | **99.54%** | 100.00% | 1,531 | 476 | EXCEEDS |
-| astraweave-pcg | 98.76% | **99.32%** | 100.00% | 587 | 133 | EXCEEDS |
-| astraweave-materials | 96.40% | **98.55%** | 100.00% | 1,032 | 282 | EXCEEDS |
-| astraweave-weaving | 95.04% | **94.34%** | 94.06% | 7,294 | 407 | EXCEEDS |
-| astraweave-ui | 32.02% | **32.62%** | 31.54% | 14,692 | 331 | BELOW |
+| Crate | Region Cov | Line Cov | Func Cov | Instr. Lines | Tests (Lib+Integ) | Status |
+|-------|-----------|----------|----------|-------------|-------------------|--------|
+| astraweave-cinematics | 99.35% | **99.54%** | 100.00% | 1,531 | 335 (141+194) | EXCEEDS |
+| astraweave-pcg | 98.76% | **99.32%** | 100.00% | 587 | 90 (43+47) | EXCEEDS |
+| astraweave-materials | 96.40% | **98.55%** | 100.00% | 1,032 | 241 (41+200) | EXCEEDS |
+| astraweave-weaving | 95.04% | **94.34%** | 94.06% | 7,294 | 614 (394+220) | EXCEEDS |
+| astraweave-ui | 32.02% | **32.62%** | 31.54% | 14,692 | 751 (320+431) | BELOW |
 
 ### Crate Analysis
 
-**astraweave-cinematics** (99.54% line, 476 tests): Near-perfect coverage. Timeline creation, track sequencing, playback — 100% function coverage. Compact design (1,531 lines). Previous report listed 76.19% with 2 tests — massive improvement from test suite expansion.
+**astraweave-cinematics** (99.54% line, 335 tests): Near-perfect coverage. Timeline creation, track sequencing, playback — 100% function coverage. Compact design (1,531 instrumented lines). 141 lib + 194 integration tests.
 
-**astraweave-pcg** (99.32% line, 133 tests): Procedural content generation. Room overlap, dungeon layout, encounter generation. 100% function coverage. Previously reported 93.46% with 19 tests.
+**astraweave-pcg** (99.32% line, 90 tests): Procedural content generation. Room overlap, dungeon layout, encounter generation. 100% function coverage. 43 lib + 47 integration tests. High coverage despite small test count reflects compact, well-factored design.
 
-**astraweave-materials** (98.55% line, 282 tests): PBR material system. 100% function coverage. Previously reported 90.11% with 3 tests.
+**astraweave-materials** (98.55% line, 241 tests): PBR material system. 100% function coverage. 41 lib + 200 integration tests. Integration-heavy testing strategy validates the cross-crate material pipeline.
 
-**astraweave-weaving** (94.34% line, 407 tests): Pattern classification, adjudication, damage resolution. Strong coverage across all modules. patterns.rs near-100%, adjudicator.rs 98%+.
+**astraweave-weaving** (94.34% line, 614 tests): Pattern classification, adjudication, damage resolution. Strong coverage across all modules. patterns.rs near-100%, adjudicator.rs 98%+. 394 lib + 220 integration tests.
 
-**astraweave-ui** (32.62% line, 331 tests): 14,692 measured lines — the largest P1 crate. Many UI components require egui Context for rendering, unavailable in headless tests. Menu systems well-tested (menus.rs ~92%); layer.rs and widget code largely untestable without GPU context.
+**astraweave-ui** (32.62% line, 751 tests): 14,692 instrumented lines — the largest P1 crate (~8,900 actual source lines; dependency inflation ~65%). Many UI components require egui Context for rendering, unavailable in headless tests. Menu systems well-tested (menus.rs ~92%); layer.rs and widget code largely untestable without GPU context. 320 lib + 431 integration tests.
 
 ---
 
 ## 3. P2: Support & Infrastructure (6 crates)
 
-**Target**: 75% line coverage | **Weighted Actual**: 73.9% (38,419 lines measured)
+**Target**: 75% line coverage | **Weighted Actual**: 73.9% (38,419 instrumented lines)
 
-| Crate | Region Cov | Line Cov | Func Cov | Lines | Tests | Status |
-|-------|-----------|----------|----------|-------|-------|--------|
-| astraweave-embeddings | 98.10% | **97.84%** | 98.10% | 1,663 | 331 | EXCEEDS |
-| astraweave-input | 96.86% | **95.62%** | 98.98% | 2,215 | 481 | EXCEEDS |
-| astraweave-memory | 94.29% | **94.47%** | 93.16% | 6,929 | 945 | EXCEEDS |
-| astraweave-security | 84.36% | **83.21%** | 83.08% | 3,657 | 701 | EXCEEDS |
+| Crate | Region Cov | Line Cov | Func Cov | Instr. Lines | Tests (Lib+Integ) | Status |
+|-------|-----------|----------|----------|-------------|-------------------|--------|
+| astraweave-embeddings | 98.10% | **97.84%** | 98.10% | 1,663 | 198 (104+94) | EXCEEDS |
+| astraweave-input | 96.86% | **95.62%** | 98.98% | 2,215 | 303 (178+125) | EXCEEDS |
+| astraweave-memory | 94.29% | **94.47%** | 93.16% | 6,929 | 603 (342+261) | EXCEEDS |
+| astraweave-security | 84.36% | **83.21%** | 83.08% | 3,657 | 419 (188+231) | EXCEEDS |
 | astraweave-llm | 78.62% | **79.47%** | 74.95% | 16,776 | 0* | MEETS |
-| astraweave-scripting | 26.51% | **23.75%** | 19.61% | 7,179 | 179 | BELOW |
+| astraweave-scripting | 26.51% | **23.75%** | 19.61% | 7,179 | 128 (45+83) | BELOW |
 
 *LLM crate excluded from standard builds; tests require external API keys. Coverage from prior instrumented runs.
 
 ### Crate Analysis
 
-**astraweave-embeddings** (97.84% line, 331 tests): Vector embedding operations, similarity search. Near-complete coverage with 98.10% function coverage.
+**astraweave-embeddings** (97.84% line, 198 tests): Vector embedding operations, similarity search. Near-complete coverage with 98.10% function coverage. 104 lib + 94 integration tests.
 
-**astraweave-input** (95.62% line, 481 tests): Input bindings, action mapping, manager state. bindings.rs 100%, manager.rs 92%+. Exceeds target significantly.
+**astraweave-input** (95.62% line, 303 tests): Input bindings, action mapping, manager state. bindings.rs 100%, manager.rs 92%+. 178 lib + 125 integration tests. Exceeds target significantly.
 
-**astraweave-memory** (94.47% line, 945 tests): Short/long-term memory systems, retrieval, importance decay. 6,929 lines with excellent function coverage (93.16%).
+**astraweave-memory** (94.47% line, 603 tests): Short/long-term memory systems, retrieval, importance decay. 6,929 instrumented lines with excellent function coverage (93.16%). 342 lib + 261 integration tests.
 
-**astraweave-security** (83.21% line, 701 tests): RBAC, anti-cheat, injection detection, operation limiting. 701 tests provide solid coverage above target.
+**astraweave-security** (83.21% line, 419 tests): RBAC, anti-cheat, injection detection, operation limiting. 188 lib + 231 integration tests provide solid coverage above target.
 
-**astraweave-llm** (79.47% line, 16,776 lines): LLM integration requires external API dependencies. Coverage measured from prior instrumented run. Substantial async infrastructure.
+**astraweave-llm** (79.47% line, 16,776 instrumented lines): LLM integration requires external API dependencies. Coverage measured from prior instrumented run. Substantial async infrastructure.
 
-**astraweave-scripting** (23.75% line, 179 tests): 7,179 measured lines include ~5,000 lines of Rhai external FFI bindings. Module-level analysis: api.rs ~76%, lib.rs ~90%, loader.rs ~97%. Effective source-only coverage estimated at ~70–80%.
+**astraweave-scripting** (23.75% line, 128 tests): 7,179 instrumented lines include ~5,400 lines of Rhai external FFI bindings (actual source ~1,750 lines). Module-level analysis: api.rs ~76%, lib.rs ~90%, loader.rs ~97%. Effective source-only coverage estimated at ~70–80%. 45 lib + 83 integration tests.
 
 ---
 
@@ -173,37 +181,53 @@ Numbers represent LLVM **region coverage** (primary), **line coverage** (seconda
 
 These crates are outside the primary tier system but have been measured:
 
-| Crate | Region Cov | Line Cov | Lines | Tests | Notes |
-|-------|-----------|----------|-------|-------|-------|
-| astraweave-prompts | 95.46% | **95.66%** | 5,968 | 1,931 | Wave 2 mutation: 792 mutants, 100% kill rate |
-| astraweave-fluids | 91.57% | **89.27%** | 46,173 | 4,907 | Largest test suite; SPH/FLIP simulation |
-| astraweave-context | 30.74% | **25.71%** | 9,813 | 424 | Large dependency footprint inflates denominator |
-| astraweave-persistence-ecs | 28.96% | **28.29%** | 3,287 | 160 | Roundtrip serialization verified; async gaps |
-| astraweave-rag | 20.78% | **19.85%** | 9,957 | 364 | Large dependency footprint; consolidation.rs high |
+| Crate | Region Cov | Line Cov | Instr. Lines | Tests (Lib+Integ) | Notes |
+|-------|-----------|----------|-------------|-------------------|-------|
+| astraweave-prompts | 95.46% | **95.66%** | 5,968 | 1,375 (556+819) | Wave 2 mutation: 792 mutants, 100% kill rate |
+| astraweave-fluids | 91.57% | **89.27%** | 46,173 | 2,509 (2,410+99) | Largest crate; SPH/FLIP simulation |
+| astraweave-context | 30.74% | **25.71%** | 9,813 | 228 (101+127) | Large dependency footprint inflates denominator |
+| astraweave-persistence-ecs | 28.96% | **28.29%** | 3,287 | 132 (28+104) | Roundtrip serialization verified; async gaps |
+| astraweave-rag | 20.78% | **19.85%** | 9,957 | 235 (76+159) | Large dependency footprint; consolidation.rs high |
 
 ### Notable
 
-**astraweave-prompts** (95.66%, 1,931 tests): Template engine, prompt library, optimization. 556 unit + 1,375 integration tests. Wave 2 mutation testing: 792 mutants with 100% kill rate on all killable mutants. Best-validated crate in the workspace.
+**astraweave-prompts** (95.66%, 1,375 tests): Template engine, prompt library, optimization. 556 lib + 819 integration tests. Wave 2 mutation testing: 792 mutants with 100% kill rate on all killable mutants. Best-validated crate in the workspace.
 
-**astraweave-fluids** (89.27%, 4,907 tests): SPH fluid simulation, spatial hashing, GPU buffers. Largest crate by measured lines (46,173). 2,404 lib + 2,503 integration tests. Excellent coverage given domain complexity.
+**astraweave-fluids** (89.27%, 2,509 tests): SPH fluid simulation, spatial hashing, GPU buffers. Largest crate by instrumented lines (46,173; ~67,800 actual source lines). 2,410 lib + 99 integration tests. Excellent coverage given domain complexity.
 
 ---
 
 ## 5. Unmeasured Crates
 
-The following crates were not measured in this audit (build issues, external dependencies, or low priority):
+The following crates were not measured for coverage in this audit (build issues, external dependencies, or lower priority). Test counts verified via `#[test]` marker scanning on 2026-02-27.
 
-| Category | Crates |
-|----------|--------|
-| Editor | aw_editor (~6,100+ `#[test]` markers; build depends on astraweave-terrain) |
-| Runtime | veilweaver_slice_runtime (~460 `#[test]` markers) |
-| Assets | astraweave-asset, astraweave-assets |
-| Networking | astraweave-net, astraweave-ipc |
-| AI Support | astraweave-persona, astraweave-director, astraweave-dialogue |
-| Game Features | astraweave-npc, astraweave-quests |
-| Observability | astraweave-observability, astraweave-profiling |
-| Build/CLI | aw_asset_cli, aw_build, aw_release, aw_demo_builder |
-| Other | astraweave-author (Rhai Sync errors), astraweave-coordination |
+| Crate | Tests (Lib+Integ) | Category | Notes |
+|-------|-------------------|----------|-------|
+| aw_editor | 8,979 (3,677+5,302) | Editor | Largest test suite in workspace; build depends on astraweave-terrain |
+| astraweave-asset | 431 (240+191) | Assets | Asset loading/management |
+| veilweaver_slice_runtime | 324 (324+0) | Runtime | Slice runtime system |
+| astraweave-dialogue | 291 (168+123) | AI Support | Dialogue tree system |
+| astraweave-net | 255 (41+214) | Networking | Network transport layer |
+| astraweave-persona | 244 (108+136) | AI Support | AI persona management |
+| astraweave-quests | 218 (28+190) | Game Features | Quest system |
+| astraweave-director | 180 (90+90) | AI Support | AI director system |
+| astraweave-npc | 108 (66+42) | Game Features | NPC behavior |
+| astraweave-observability | 105 (64+41) | Observability | Metrics and tracing |
+| astraweave-coordination | 94 (4+90) | Infrastructure | Multi-agent coordination |
+| astraweave-optimization | 60 (2+58) | AI Support | Optimization algorithms |
+| astraweave-asset-pipeline | 61 (14+47) | Assets | Asset pipeline processing |
+| astraweave-ipc | 57 (8+49) | Networking | Inter-process communication |
+| astraweave-secrets | 54 (19+35) | Security | Secrets management |
+| astraweave-llm-eval | 43 (0+43) | AI Support | LLM evaluation framework |
+| astraweave-profiling | 41 (7+34) | Observability | Performance profiling |
+| astraweave-net-ecs | 35 (8+27) | Networking | ECS-integrated networking |
+| astraweave-stress-test | 34 (1+33) | Testing | Stress test infrastructure |
+| astraweave-steam | 30 (10+20) | Platform | Steam integration |
+| Build/CLI tools | ~9 | Tooling | aw_build, aw_asset_cli, aw_release, aw_demo_builder |
+| Other | 0 | Various | astraweave-author (Rhai Sync errors), astraweave-assets, astraweave-blend, net clients/servers |
+| **Unmeasured Total** | **~3,433** | | |
+
+**Total workspace tests**: ~39,000+ `#[test]` functions across 128 crates (measured + unmeasured + demo/example crates).
 
 ---
 
@@ -287,48 +311,94 @@ Kani uses CBMC bounded model checking. Math proofs use concrete representative i
 - plugin.rs: 6 missed → all remediated
 - 2 permanent GUI-only MISSED: `dock_layout.rs show` and `show_inside` (require egui Context)
 
-**Latest run (Feb 25, 2026)**: Terrain/render/editor sweeps attempted. Render and editor failed due to dependency build errors. Terrain partially completed (5 caught, 3 missed, 7 unviable across 4 shards) before disk space exhaustion. Results incomplete — re-run recommended.
-
 **Remediation commits (Wave 2)**: `3a54a591`, `0c834270`, `8c10a46b`, `0581aeec`, `ffc605bc`, `47669d30`, `167666e8`.
+
+#### Wave 3 — Targeted Remediation (February 2026)
+
+**Method**: Targeted `cargo-mutants` runs with `--re` function filters and `--lib` limitation. Focused on specific functions identified as mutation-vulnerable in earlier sweeps.
+
+| Run | Target Functions | Caught | Missed | Unviable | Timeout | Kill Rate |
+|-----|-----------------|--------|--------|----------|---------|-----------|
+| terrain_targeted_v3 | climate, heightmap, smooth | 241 | 13 | 1 | 1 | **94.9%** |
+| terrain_targeted_v4 | sample_bilinear, fbm, smooth | 140 | 4 | 0 | 0 | **97.2%** |
+| render_targeted_v2 | Camera::dir, sun, weather, easing | 77 | 5 | 0 | 0 | **93.9%** |
+| render_cam_biome | camera.rs, biome_transition.rs | 5 | 0 | 2 | 0 | **100%** |
+| **Wave 3 Total** | | **463** | **22** | **3** | **1** | **95.5%** |
+
+**Terrain remaining MISSED** (4 in latest v4 run):
+- `heightmap.rs:152–153`: `replace - with +` and `replace - with /` in `Heightmap::sample_bilinear` — bilinear interpolation weight calculations require exact-value regression tests
+- All 4 are arithmetic operator mutations in interpolation weight computation
+
+**Render remaining MISSED** (5 in v2 run):
+- `environment.rs:61`: `replace - with +` in `get_sun_position` — azimuth sign inversion
+- `environment.rs:67`: `replace < with ==` and `replace < with <=` in `get_sun_position` — boundary condition in sun hemisphere check
+- `renderer.rs:3292`: `replace set_weather with ()` — requires GPU context for full validation
+- `biome_transition.rs:96`: `replace < with <=` in `EasingFunction::apply` — boundary condition at t=1.0
+
+**Wave 3 remediation commits**: `cd6475df`, `9db0d3be`, `c7d573fb`, `bfb94e46`, `57a14600`.
+
+#### Cumulative Mutation Testing Summary
+
+| Wave | Mutants Tested | Caught | Kill Rate | Period |
+|------|---------------|--------|-----------|--------|
+| Wave 1 (Manual) | 767 | 767 | 100% | January 2026 |
+| Wave 2 (Automated) | 1,261 | 1,050 | 83.3%* | February 2026 |
+| Wave 3 (Targeted) | 489 | 463 | 94.7% | February 2026 |
+| **Total** | **2,517** | **2,280** | **90.6%** | Jan–Feb 2026 |
+
+*Kill rates in cumulative table = caught ÷ total submitted. Individual run kill rates in detail tables = caught ÷ (caught + missed). Wave 2 includes GPU-untestable mutants; excluding GPU-only code: ~95%+.
 
 ---
 
 ## 7. Test Quality
 
-### Test Counts by Crate (Measured 2026-02-25)
+### Test Counts by Crate (Audited 2026-02-27 via `#[test]` marker scanning)
 
 | Crate | Lib Tests | Integration Tests | Total |
 |-------|----------|-------------------|-------|
-| astraweave-fluids | 2,404 | 2,503 | **4,907** |
-| astraweave-terrain | 471 | 2,065 | **2,536** |
-| astraweave-prompts | 556 | 1,375 | **1,931** |
-| astraweave-physics | 1,244 | 0 | **1,244** |
-| astraweave-memory | 342 | 603 | **945** |
-| astraweave-render | 806 | 0 | **806** |
-| astraweave-security | 215 | 486 | **701** |
-| astraweave-core | 505 | 0 | **505** |
-| astraweave-input | 178 | 303 | **481** |
-| astraweave-cinematics | 141 | 335 | **476** |
-| astraweave-gameplay | 471 | 0 | **471** |
-| astraweave-context | 131 | 293 | **424** |
-| astraweave-weaving | 394 | 13 | **407** |
-| astraweave-rag | 82 | 282 | **364** |
-| astraweave-embeddings | 113 | 218 | **331** |
-| astraweave-ecs | 330 | 0 | **330** |
-| astraweave-ui | 320 | 11 | **331** |
-| astraweave-materials | 41 | 241 | **282** |
-| astraweave-ai | 268 | 0 | **268** |
-| astraweave-audio | 239 | 0 | **239** |
-| astraweave-behavior | 233 | 0 | **233** |
-| astraweave-nav | 216 | 0 | **216** |
-| astraweave-scene | 210 | 0 | **210** |
-| astraweave-scripting | 48 | 131 | **179** |
-| astraweave-persistence-ecs | 28 | 132 | **160** |
-| astraweave-pcg | 43 | 90 | **133** |
-| astraweave-math | 109 | 0 | **109** |
-| **Measured Total** | **~10,367** | **~9,081** | **~18,238** |
+| aw_editor | 3,677 | 5,302 | **8,979** |
+| astraweave-render | 851 | 3,421 | **4,272** |
+| astraweave-fluids | 2,410 | 99 | **2,509** |
+| astraweave-terrain | 543 | 1,564 | **2,107** |
+| astraweave-physics | 1,284 | 600 | **1,884** |
+| astraweave-prompts | 556 | 819 | **1,375** |
+| astraweave-core | 505 | 454 | **959** |
+| astraweave-ai | 514 | 407 | **921** |
+| astraweave-ui | 320 | 431 | **751** |
+| astraweave-ecs | 331 | 397 | **728** |
+| astraweave-gameplay | 471 | 216 | **687** |
+| astraweave-weaving | 394 | 220 | **614** |
+| astraweave-memory | 342 | 261 | **603** |
+| astraweave-audio | 240 | 291 | **531** |
+| astraweave-nav | 216 | 280 | **496** |
+| astraweave-behavior | 233 | 225 | **458** |
+| astraweave-security | 188 | 231 | **419** |
+| astraweave-scene | 213 | 192 | **405** |
+| astraweave-cinematics | 141 | 194 | **335** |
+| astraweave-input | 178 | 125 | **303** |
+| astraweave-materials | 41 | 200 | **241** |
+| astraweave-rag | 76 | 159 | **235** |
+| astraweave-context | 101 | 127 | **228** |
+| astraweave-embeddings | 104 | 94 | **198** |
+| astraweave-math | 109 | 67 | **176** |
+| astraweave-persistence-ecs | 28 | 104 | **132** |
+| astraweave-scripting | 45 | 83 | **128** |
+| astraweave-pcg | 43 | 47 | **90** |
+| astraweave-sdk | 17 | 53 | **70** |
+| **Measured + Editor Total** | **~13,350** | **~16,613** | **~29,855** |
 
-Additional unmeasured crates (aw_editor ~6,100+, veilweaver ~460, others) bring workspace total to **~27,000+** `#[test]` functions.
+Additional unmeasured crates (persona, dialogue, quests, director, npc, asset, net, coordination, observability, profiling, etc.) contribute ~3,400+ tests. Demo and example crates contribute ~5,700+ more.
+
+**Total workspace**: ~39,000 `#[test]` functions across 128 crates.
+
+### Test Count Methodology Note
+
+Test counts in this revision (v5.1.0) were obtained by scanning source files for `#[test]` markers on 2026-02-27. This differs from the v5.0.0 methodology which used `cargo test --list` output. Key differences:
+
+- `#[test]` scanning reflects current source state and is reproducible independently of build status
+- `cargo test --list` may report differently due to conditional compilation, `#[ignore]` attributes, and feature flags
+- Some v5.0.0 integration test counts were significantly inflated (e.g., fluids reported 2,503 integration tests; actual `#[test]` markers in `tests/` directory: 99)
+- Test counts have grown significantly since Feb 25 due to Wave 3 mutation remediation commits
 
 ### Production Code Safety
 
@@ -336,9 +406,10 @@ All `.unwrap()` calls in engine runtime are confined to `#[cfg(test)]` modules. 
 
 ### Integration Testing Highlights
 
-- **2,503** integration tests for astraweave-fluids
-- **2,065** integration tests for astraweave-terrain
-- **1,375** integration tests for astraweave-prompts
+- **5,302** integration tests for aw_editor (largest integration test suite)
+- **3,421** integration tests for astraweave-render (including Wave 3 mutation remediation)
+- **1,564** integration tests for astraweave-terrain
+- **819** integration tests for astraweave-prompts
 - Combat physics: AI → Combat → Physics → Damage pipeline validated
 - Determinism: 100-frame replay, seed variation, component updates
 - Performance SLA: 1,000-entity at 60 FPS, AI latency, memory stability
@@ -350,13 +421,13 @@ All `.unwrap()` calls in engine runtime are confined to `#[cfg(test)]` modules. 
 | Tier | Coverage Range | Description | AstraWeave Crates |
 |------|---------------|-------------|-------------------|
 | Minimal | 0–30% | Untested or prototype | audio (24%), scripting (24%), rag (20%), context (26%) |
-| Basic | 30–50% | Some testing | render (48%), gameplay (50%), terrain (44%), ui (33%) |
+| Basic | 30–50% | Some testing | render (48%), gameplay (50%), terrain (44%), ui (33%), persistence-ecs (28%) |
 | Good | 50–70% | Reasonable coverage | ai (67%), scene (55%) |
 | **Standard** | **70–85%** | **Mature projects** | core (81%), llm (79%), security (83%), behavior (86%) |
 | Excellent | 85–95% | High quality | fluids (89%), ecs (96%), physics (94%), math (91%), nav (93%), memory (94%), input (96%), weaving (94%), prompts (96%) |
-| Outstanding | 95–100% | Mission-critical | cinematics (99.5%), pcg (99.3%), materials (98.5%), embeddings (97.8%) |
+| Outstanding | 95–100% | Mission-critical | cinematics (99.5%), pcg (99.3%), materials (98.6%), embeddings (97.8%) |
 
-**14 crates at ≥85% line coverage** (50% of measured). **4 crates at ≥98%**. 6 crates below 30% (mostly due to dependency inflation or GPU-only code).
+**14 crates at ≥85% line coverage** (50% of 28 measured). **3 crates at ≥98%** (cinematics, pcg, materials). 5 crates below 30% (mostly due to dependency inflation or GPU-only code).
 
 ---
 
@@ -375,22 +446,26 @@ cargo llvm-cov --no-cfg-coverage --lib -p <crate> --summary-only
 
 ### Known Measurement Caveats
 
-1. **Dependency inflation**: LLVM instruments all compiled code, including inlined generics from workspace dependencies. This inflates the line count for crates that depend on other workspace crates. Most affected: audio, rag, context, scripting, persistence-ecs.
-2. **Integration tests excluded**: `--lib` only measures code exercised by `#[test]` functions in `src/`. Crates with extensive `tests/` directories (terrain: 2,065, fluids: 2,503, prompts: 1,375) have higher effective coverage than the lib-only numbers suggest.
+1. **Dependency inflation**: LLVM instruments all compiled code, including inlined generics from workspace dependencies. This inflates the instrumented line count for crates that depend on other workspace crates. Most affected: audio (11,662 instrumented vs ~4,200 source), rag (9,957 vs ~3,200), context (9,813 vs ~3,800), scripting (7,179 vs ~1,750), persistence-ecs (3,287 vs ~1,160).
+2. **Integration tests excluded**: `--lib` only measures code exercised by `#[test]` functions in `src/`. Crates with extensive `tests/` directories (render: 3,421 integration tests, terrain: 1,564, prompts: 819) have higher effective coverage than the lib-only numbers suggest.
 3. **GPU code untestable**: Rendering, terrain GPU meshing, and audio device code requires runtime GPU context unavailable during `cargo test`. This is a fundamental limitation shared by all game engines.
 4. **LLM crate**: Excluded from standard builds. Coverage from prior instrumented runs.
-5. **astraweave-terrain**: `cargo llvm-cov` initially failed during this audit (dependency build error). Coverage of 46.22% is from a successful retry within the same session.
+5. **Measurement staleness**: Coverage percentages were measured on 2026-02-25. Significant test additions occurred between Feb 25–27 (Wave 3 mutation remediation commits). Re-measurement recommended to capture current state.
+6. **astraweave-terrain**: `cargo llvm-cov` initially failed during the v5.0 audit (dependency build error). Coverage of 46.22% is from a successful retry within the same session.
 
-### Comparison with Previous Report (v4.2.0)
+### Report Version Comparison
 
-| Metric | v4.2.0 (Feb 24) | v5.0.0 (Feb 25) | Notes |
-|--------|-----------------|-----------------|-------|
-| Weighted coverage | 94.57% | 59.3% | v4.2 used source-only filtering; crates grew |
-| Crates measured | 25 | 28 | +3 (fluids, rag, context added) |
-| Total tests | 15,000+ | 27,000+ | Massive test expansion |
-| Methodology | Manual file analysis | Automated `llvm-cov` | v5.0 is reproducible |
+| Metric | v4.2.0 (Feb 24) | v5.0.0 (Feb 25) | v5.1.0 (Feb 27) |
+|--------|-----------------|-----------------|-----------------|
+| Weighted coverage | 94.57% | 59.3% | 59.3%* |
+| Crates measured | 25 | 28 | 28 + editor |
+| Workspace tests | 15,000+ | ~18,200+ | ~39,000+ |
+| Mutation mutants | 767 | 2,028+ | 2,517 |
+| Methodology | Manual file analysis | `llvm-cov` | `llvm-cov` + `#[test]` scan |
 
-The v5.0.0 methodology is more rigorous and reproducible. The trade-off is that including dependency code makes raw numbers lower for some crates compared to source-file-only analysis.
+*Coverage not re-measured in v5.1.0; same llvm-cov data from v5.0.0. Test counts re-audited via source scanning.
+
+The v5.0.0+ methodology is more rigorous and reproducible. The trade-off is that including dependency code makes raw numbers lower for some crates compared to source-file-only analysis.
 
 ---
 
@@ -401,28 +476,33 @@ The v5.0.0 methodology is more rigorous and reproducible. The trade-off is that 
 1. **14 crates at 85%+ line coverage** — half of all measured crates exceed industry standards
 2. **Miri + Kani dual verification** on all unsafe code — zero UB, all proofs passing
 3. **Mutation testing** with 100% kill rate on prompts crate (792 mutants) — gold standard
-4. **~27,000+ tests** workspace-wide — extensive test infrastructure
-5. **4 crates at 98%+** (cinematics, pcg, materials, embeddings) — mission-critical quality
+4. **~39,000+ tests** workspace-wide across 128 crates — extensive test infrastructure
+5. **3 crates at 98%+** (cinematics 99.5%, pcg 99.3%, materials 98.6%) — mission-critical quality
 6. **Zero `.unwrap()` in production code** — disciplined error handling
+7. **Wave 3 mutation testing** achieved 95.5% kill rate on targeted terrain/render functions
+8. **aw_editor has 8,979 tests** — largest single-crate test suite in the workspace
 
 ### Priority Improvement Targets
 
 | Priority | Crate | Current Line Cov | Target | Effort | Impact |
 |----------|-------|-----------------|--------|--------|--------|
-| P0 | astraweave-ai | 67.38% | 85% | Medium | High — core AI loop |
+| P0 | astraweave-ai | 67.38%† | 85% | Medium | High — core AI loop |
 | P0 | astraweave-core | 80.98% | 85% | Low | High — 4 pp from target |
 | P0 | astraweave-gameplay | 50.46% | 70% | High | Medium — large crate |
 | P0 | astraweave-audio | 24.34% | 50% | High | Medium — dependency inflation |
 | P1 | astraweave-ui | 32.62% | 60% | High | Low — requires egui mocking |
 | P2 | astraweave-scripting | 23.75% | 50% | Medium | Low — Rhai FFI dominates |
 
+†AI coverage likely lower if re-measured due to substantial crate growth since Feb 25.
+
 ### Methodology Recommendations
 
-1. **Run integration tests under llvm-cov**: Use `cargo llvm-cov --tests -p <crate>` to capture coverage from `tests/` directories. This would significantly improve reported numbers for terrain, prompts, and fluids.
-2. **Source-only filtering**: Use `cargo llvm-cov --html` and inspect per-file coverage to separate true source coverage from dependency inflation.
-3. **Exclude GPU code from targets**: Set separate coverage targets for headless-testable vs GPU-only code paths.
-4. **Re-run mutation testing**: Terrain/render/editor sweeps failed due to disk space and build issues. Re-run with clean disk.
-5. **Track coverage delta per-commit**: Integrate `cargo llvm-cov` into CI to prevent coverage regression on high-coverage crates.
+1. **Re-measure coverage**: Coverage was last measured 2026-02-25. Given significant test additions (Wave 3 mutation remediation), a full re-measurement via `cargo llvm-cov` is recommended to capture the improvement in render, terrain, and editor crates.
+2. **Run integration tests under llvm-cov**: Use `cargo llvm-cov --tests -p <crate>` to capture coverage from `tests/` directories. This would significantly improve reported numbers for render (3,421 integration tests), terrain (1,564), and prompts (819).
+3. **Source-only filtering**: Use `cargo llvm-cov --html` and inspect per-file coverage to separate true source coverage from dependency inflation.
+4. **Exclude GPU code from targets**: Set separate coverage targets for headless-testable vs GPU-only code paths.
+5. **Continue Wave 3 mutation testing**: 4 remaining terrain MISSED (sample_bilinear arithmetic) and 5 render MISSED (sun position, easing boundary) are concrete remediation targets.
+6. **Track coverage delta per-commit**: Integrate `cargo llvm-cov` into CI to prevent coverage regression on high-coverage crates.
 
 ---
 
@@ -457,7 +537,8 @@ cargo mutants --package astraweave-prompts --test-tool nextest --in-place --time
 
 | Version | Date | Type | Summary | Impact |
 |:-------:|:----:|:----:|:--------|:------:|
-| **5.0.0** | 2026-02-25 | **Major audit** | Full re-measurement of 28 crates via `cargo llvm-cov`. Corrected stale coverage data. Reformatted to match benchmark report structure. Added hardware, methodology, and limitations sections. Grade recalibrated to B+. All numbers reproducible. | Critical |
+| **5.1.0** | 2026-02-27 | **Audit** | Full audit: corrected test counts via `#[test]` marker scanning (39,000+ workspace total). Added Wave 3 mutation testing results (463 mutants, 95.5% kill rate). Fixed "4 crates at ≥98%" → 3. Corrected fluids integration test count (4,907→2,509). Added detailed unmeasured crate inventory with verified test counts. Updated methodology comparison table. | Significant |
+| 5.0.0 | 2026-02-25 | Major audit | Full re-measurement of 28 crates via `cargo llvm-cov`. Corrected stale coverage data. Reformatted to match benchmark report structure. Added hardware, methodology, and limitations sections. Grade recalibrated to B+. All numbers reproducible. | Critical |
 | 4.2.0 | 2026-02-24 | Update | Wave 2 mutation testing: prompts 100% kill (792 mutants), render 97% non-GPU | Significant |
 | 4.1.0 | 2026-02-24 | Update | Added cargo-mutants automated sweep data | Incremental |
 | 4.0.0 | 2026-02-10 | Major | Full audit: removed duplicates, consolidated tiers, eliminated contradictions | Significant |

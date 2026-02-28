@@ -124,7 +124,7 @@ flowchart TB
 ## ✨ Key Features
 
 ### 🧠 AI & Agents
-  **Multi-Modal Intelligence**: 6 validated AI modes including LLM (Hermes 2 Pro), GOAP, Behavior Trees, and Hybrid ensembles.
+  **Multi-Modal Intelligence**: 6 validated AI modes including LLM (Qwen3-8B), GOAP, Behavior Trees, and Hybrid ensembles.
   
   **Massive Scale**: Orchestrates 12,700+ agents @ 60 FPS.
   

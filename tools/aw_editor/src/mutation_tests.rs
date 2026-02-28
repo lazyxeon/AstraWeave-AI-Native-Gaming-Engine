@@ -1079,3 +1079,1294 @@ mod boolean_return_path_tests {
         assert!(LayoutPreset::Wide.shortcut_hint().is_some());
     }
 }
+
+// ============================================================================
+// Mutation-Resistant V2: Exact Value Tests
+// ============================================================================
+
+/// Tests that check EXACT return values for every match arm —
+/// mutations that swap arms or replace with "xyzzy" / defaults will fail.
+mod exact_value_tests {
+    use super::*;
+    use crate::dock_layout::{DockLayout, LayoutPreset, LayoutStats};
+    use crate::editor_mode::EditorMode;
+
+    // --- LayoutPreset::description() exact values ---
+    #[test]
+    fn test_layout_description_default() {
+        assert_eq!(
+            LayoutPreset::Default.description(),
+            "Balanced layout for general editing"
+        );
+    }
+    #[test]
+    fn test_layout_description_wide() {
+        assert_eq!(
+            LayoutPreset::Wide.description(),
+            "Maximized viewport for scene viewing"
+        );
+    }
+    #[test]
+    fn test_layout_description_compact() {
+        assert_eq!(
+            LayoutPreset::Compact.description(),
+            "All panels visible in smaller configuration"
+        );
+    }
+    #[test]
+    fn test_layout_description_modeling() {
+        assert_eq!(
+            LayoutPreset::Modeling.description(),
+            "Large viewport with transform tools"
+        );
+    }
+    #[test]
+    fn test_layout_description_animation() {
+        assert_eq!(
+            LayoutPreset::Animation.description(),
+            "Timeline at bottom, graph on side"
+        );
+    }
+    #[test]
+    fn test_layout_description_debug() {
+        assert_eq!(
+            LayoutPreset::Debug.description(),
+            "Console and profiler prominent"
+        );
+    }
+
+    // --- LayoutPreset::icon() exact values ---
+    #[test]
+    fn test_layout_icon_default() {
+        assert_eq!(LayoutPreset::Default.icon(), "\u{1f3e0}");
+    }
+    #[test]
+    fn test_layout_icon_wide() {
+        assert_eq!(LayoutPreset::Wide.icon(), "\u{1f5a5}\u{fe0f}");
+    }
+    #[test]
+    fn test_layout_icon_compact() {
+        assert_eq!(LayoutPreset::Compact.icon(), "\u{1f4d0}");
+    }
+    #[test]
+    fn test_layout_icon_modeling() {
+        assert_eq!(LayoutPreset::Modeling.icon(), "\u{1f527}");
+    }
+    #[test]
+    fn test_layout_icon_animation() {
+        assert_eq!(LayoutPreset::Animation.icon(), "\u{1f3ac}");
+    }
+    #[test]
+    fn test_layout_icon_debug() {
+        assert_eq!(LayoutPreset::Debug.icon(), "\u{1f50d}");
+    }
+
+    // --- LayoutPreset::shortcut_hint() exact values ---
+    #[test]
+    fn test_layout_shortcut_default() {
+        assert_eq!(LayoutPreset::Default.shortcut_hint(), Some("Ctrl+1"));
+    }
+    #[test]
+    fn test_layout_shortcut_wide() {
+        assert_eq!(LayoutPreset::Wide.shortcut_hint(), Some("Ctrl+2"));
+    }
+    #[test]
+    fn test_layout_shortcut_compact() {
+        assert_eq!(LayoutPreset::Compact.shortcut_hint(), Some("Ctrl+3"));
+    }
+    #[test]
+    fn test_layout_shortcut_modeling() {
+        assert_eq!(LayoutPreset::Modeling.shortcut_hint(), Some("Ctrl+4"));
+    }
+    #[test]
+    fn test_layout_shortcut_animation() {
+        assert_eq!(LayoutPreset::Animation.shortcut_hint(), Some("Ctrl+5"));
+    }
+    #[test]
+    fn test_layout_shortcut_debug() {
+        assert_eq!(LayoutPreset::Debug.shortcut_hint(), Some("Ctrl+6"));
+    }
+
+    // --- LayoutPreset::expected_panel_count() exact values ---
+    #[test]
+    fn test_layout_panel_count_exact_default() {
+        assert_eq!(LayoutPreset::Default.expected_panel_count(), 6);
+    }
+    #[test]
+    fn test_layout_panel_count_exact_wide() {
+        assert_eq!(LayoutPreset::Wide.expected_panel_count(), 2);
+    }
+    #[test]
+    fn test_layout_panel_count_exact_compact() {
+        assert_eq!(LayoutPreset::Compact.expected_panel_count(), 8);
+    }
+    #[test]
+    fn test_layout_panel_count_exact_modeling() {
+        assert_eq!(LayoutPreset::Modeling.expected_panel_count(), 3);
+    }
+    #[test]
+    fn test_layout_panel_count_exact_animation() {
+        assert_eq!(LayoutPreset::Animation.expected_panel_count(), 5);
+    }
+    #[test]
+    fn test_layout_panel_count_exact_debug() {
+        assert_eq!(LayoutPreset::Debug.expected_panel_count(), 5);
+    }
+
+    // --- LayoutPreset::name() exact values ---
+    #[test]
+    fn test_layout_name_each_variant() {
+        assert_eq!(LayoutPreset::Default.name(), "Default");
+        assert_eq!(LayoutPreset::Wide.name(), "Wide");
+        assert_eq!(LayoutPreset::Compact.name(), "Compact");
+        assert_eq!(LayoutPreset::Modeling.name(), "Modeling");
+        assert_eq!(LayoutPreset::Animation.name(), "Animation");
+        assert_eq!(LayoutPreset::Debug.name(), "Debug");
+    }
+
+    // --- DockLayout::dock_state_mut() must return internal ref ---
+    #[test]
+    fn test_dock_state_mut_returns_internal() {
+        use crate::panel_type::PanelType;
+        let mut layout = DockLayout::new();
+        let state = layout.dock_state_mut();
+        let has_viewport = state.find_tab(&PanelType::Viewport).is_some();
+        assert!(
+            has_viewport,
+            "dock_state_mut must return the internal state containing Viewport"
+        );
+    }
+
+    // --- DockLayout::style_mut() must return internal ref ---
+    #[test]
+    fn test_style_mut_returns_internal() {
+        let mut layout = DockLayout::new();
+        // Modify style through style_mut
+        layout.style_mut().tab_bar.height = 999.0;
+        // Read back through style() – if style_mut returned a leaked default,
+        // the internal style would still have 24.0
+        assert!(
+            (layout.style().tab_bar.height - 999.0).abs() < f32::EPSILON,
+            "style_mut must return the actual internal style"
+        );
+    }
+
+    // --- DockLayout::from_preset specific panel checks ---
+    #[test]
+    fn test_from_preset_wide_has_inspector_only() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        assert!(layout.is_panel_visible(&PanelType::Viewport));
+        assert!(layout.is_panel_visible(&PanelType::Inspector));
+        assert!(!layout.is_panel_visible(&PanelType::Console));
+    }
+
+    #[test]
+    fn test_from_preset_debug_has_console_profiler() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Debug);
+        assert!(layout.is_panel_visible(&PanelType::Console));
+        assert!(layout.is_panel_visible(&PanelType::Profiler));
+        assert!(layout.is_panel_visible(&PanelType::Performance));
+    }
+
+    #[test]
+    fn test_from_preset_modeling_has_transform() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Modeling);
+        assert!(layout.is_panel_visible(&PanelType::Transform));
+        assert!(layout.is_panel_visible(&PanelType::Inspector));
+        assert!(!layout.is_panel_visible(&PanelType::Console));
+    }
+
+    #[test]
+    fn test_from_preset_animation_has_graph() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Animation);
+        assert!(layout.is_panel_visible(&PanelType::BehaviorGraph));
+        assert!(layout.is_panel_visible(&PanelType::Animation));
+        assert!(layout.is_panel_visible(&PanelType::Graph));
+    }
+
+    #[test]
+    fn test_from_preset_compact_has_many_panels() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Compact);
+        assert!(layout.is_panel_visible(&PanelType::Inspector));
+        assert!(layout.is_panel_visible(&PanelType::Transform));
+        assert!(layout.is_panel_visible(&PanelType::EntityPanel));
+        assert!(layout.is_panel_visible(&PanelType::Console));
+        assert!(layout.is_panel_visible(&PanelType::Profiler));
+    }
+
+    // --- DockLayout::remove_panel returns true for removable panel ---
+    #[test]
+    fn test_remove_panel_returns_true() {
+        use crate::panel_type::PanelType;
+        let mut layout = DockLayout::from_preset(LayoutPreset::Default);
+        let removed = layout.remove_panel(&PanelType::Inspector);
+        assert!(removed, "remove_panel should return true for a present closable panel");
+        assert!(!layout.is_panel_visible(&PanelType::Inspector));
+    }
+
+    #[test]
+    fn test_remove_panel_returns_false_for_unclosable() {
+        use crate::panel_type::PanelType;
+        let mut layout = DockLayout::from_preset(LayoutPreset::Default);
+        let removed = layout.remove_panel(&PanelType::Viewport);
+        assert!(!removed, "Viewport is not closable, should return false");
+    }
+
+    // --- DockLayout::has_panel ---
+    #[test]
+    fn test_has_panel_true() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        assert!(layout.has_panel(&PanelType::Viewport));
+        assert!(layout.has_panel(&PanelType::Inspector));
+    }
+
+    #[test]
+    fn test_has_panel_false() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        assert!(!layout.has_panel(&PanelType::Console));
+    }
+
+    // --- DockLayout::toggle_panel ---
+    #[test]
+    fn test_toggle_panel_removes_then_adds() {
+        use crate::panel_type::PanelType;
+        let mut layout = DockLayout::from_preset(LayoutPreset::Default);
+        assert!(layout.has_panel(&PanelType::Inspector));
+        layout.toggle_panel(PanelType::Inspector);
+        assert!(
+            !layout.has_panel(&PanelType::Inspector),
+            "toggle should remove a visible panel"
+        );
+        layout.toggle_panel(PanelType::Inspector);
+        assert!(
+            layout.has_panel(&PanelType::Inspector),
+            "toggle should add an absent panel"
+        );
+    }
+
+    // --- DockLayout::apply_preset ---
+    #[test]
+    fn test_apply_preset_changes_layout() {
+        use crate::panel_type::PanelType;
+        let mut layout = DockLayout::from_preset(LayoutPreset::Wide);
+        assert!(!layout.has_panel(&PanelType::Console));
+        layout.apply_preset(LayoutPreset::Debug);
+        assert!(
+            layout.has_panel(&PanelType::Console),
+            "apply_preset(Debug) should add Console panel"
+        );
+        assert!(
+            layout.has_panel(&PanelType::Profiler),
+            "apply_preset(Debug) should add Profiler panel"
+        );
+    }
+
+    // --- DockLayout::to_json ---
+    #[test]
+    fn test_to_json_returns_valid_json() {
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        let json_result = layout.to_json();
+        assert!(json_result.is_ok(), "to_json should succeed");
+        let json = json_result.unwrap();
+        assert!(json.contains("Viewport"), "JSON should contain Viewport panel");
+        assert!(!json.is_empty());
+        let parsed: Result<serde_json::Value, _> = serde_json::from_str(&json);
+        assert!(parsed.is_ok(), "to_json output must be valid JSON");
+    }
+
+    // --- DockLayout::from_json ---
+    #[test]
+    fn test_from_json_rejects_invalid_json() {
+        // If the mutant replaces the body with Ok(Default::default()),
+        // invalid JSON would succeed instead of failing
+        let result = DockLayout::from_json("NOT VALID JSON {{{");
+        assert!(result.is_err(), "from_json must reject invalid JSON");
+    }
+
+    #[test]
+    fn test_from_json_accepts_valid_json() {
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        let json = layout.to_json().unwrap();
+        let result = DockLayout::from_json(&json);
+        assert!(result.is_ok(), "from_json must accept valid JSON from to_json");
+    }
+
+    #[test]
+    fn test_from_json_rejects_empty_string() {
+        let result = DockLayout::from_json("");
+        assert!(result.is_err(), "from_json must reject empty string");
+    }
+
+    #[test]
+    fn test_from_json_rejects_wrong_structure() {
+        // Valid JSON but wrong structure (missing "panels" field)
+        let result = DockLayout::from_json(r#"{"foo": "bar"}"#);
+        assert!(result.is_err(), "from_json must reject wrong JSON structure");
+    }
+
+    // --- DockLayout::missing_panels_for_preset ---
+    #[test]
+    fn test_missing_panels_for_preset_default_is_empty() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        let missing = layout.missing_panels_for_preset(LayoutPreset::Default);
+        assert!(missing.is_empty(), "Default layout should have no missing panels for Default preset");
+    }
+
+    #[test]
+    fn test_missing_panels_for_preset_finds_missing() {
+        use crate::panel_type::PanelType;
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        let missing = layout.missing_panels_for_preset(LayoutPreset::Default);
+        assert!(!missing.is_empty(), "Wide layout should be missing panels for Default preset");
+        // Wide has only Viewport + Inspector, Default has 6 panels, so at least 4 are missing
+        assert!(missing.len() >= 4, "Should be missing at least 4 panels");
+    }
+
+    // --- EditorMode::status_color() exact RGB ---
+    #[test]
+    fn test_editor_mode_status_color_edit() {
+        let c = EditorMode::Edit.status_color();
+        assert_eq!(c, egui::Color32::from_rgb(100, 100, 100));
+    }
+    #[test]
+    fn test_editor_mode_status_color_play() {
+        let c = EditorMode::Play.status_color();
+        assert_eq!(c, egui::Color32::from_rgb(100, 200, 100));
+    }
+    #[test]
+    fn test_editor_mode_status_color_paused() {
+        let c = EditorMode::Paused.status_color();
+        assert_eq!(c, egui::Color32::from_rgb(255, 180, 50));
+    }
+
+    // --- EditorMode::description() exact values ---
+    #[test]
+    fn test_editor_mode_description_edit() {
+        assert_eq!(
+            EditorMode::Edit.description(),
+            "Modify scene objects, properties, and layout"
+        );
+    }
+    #[test]
+    fn test_editor_mode_description_play() {
+        assert_eq!(
+            EditorMode::Play.description(),
+            "Run the game simulation in real-time"
+        );
+    }
+    #[test]
+    fn test_editor_mode_description_paused() {
+        assert_eq!(
+            EditorMode::Paused.description(),
+            "Simulation paused - can step frame by frame"
+        );
+    }
+
+    // --- EditorMode::icon() exact values ---
+    #[test]
+    fn test_editor_mode_icon_edit() {
+        assert_eq!(EditorMode::Edit.icon(), "\u{1f527}");
+    }
+    #[test]
+    fn test_editor_mode_icon_play() {
+        assert_eq!(EditorMode::Play.icon(), "\u{25b6}\u{fe0f}");
+    }
+    #[test]
+    fn test_editor_mode_icon_paused() {
+        assert_eq!(EditorMode::Paused.icon(), "\u{23f8}\u{fe0f}");
+    }
+
+    // --- EditorMode::status_text() exact values ---
+    #[test]
+    fn test_editor_mode_status_text_edit() {
+        assert_eq!(EditorMode::Edit.status_text(), "Edit Mode");
+    }
+    #[test]
+    fn test_editor_mode_status_text_play() {
+        assert_eq!(EditorMode::Play.status_text(), "\u{25b6}\u{fe0f} Playing");
+    }
+    #[test]
+    fn test_editor_mode_status_text_paused() {
+        assert_eq!(EditorMode::Paused.status_text(), "\u{23f8}\u{fe0f} Paused");
+    }
+
+    // --- EditorMode::action_verb() exact values ---
+    #[test]
+    fn test_editor_mode_action_verb_each() {
+        assert_eq!(EditorMode::Edit.action_verb(), "Stop");
+        assert_eq!(EditorMode::Play.action_verb(), "Play");
+        assert_eq!(EditorMode::Paused.action_verb(), "Pause");
+    }
+
+    // --- EditorMode::next_mode() exact transitions ---
+    #[test]
+    fn test_editor_mode_next_mode_each() {
+        assert_eq!(EditorMode::Edit.next_mode(), EditorMode::Play);
+        assert_eq!(EditorMode::Play.next_mode(), EditorMode::Paused);
+        assert_eq!(EditorMode::Paused.next_mode(), EditorMode::Play);
+    }
+
+    // --- LayoutStats::default() fields ---
+    #[test]
+    fn test_layout_stats_default_all_fields() {
+        let stats = LayoutStats::default();
+        assert_eq!(stats.panel_count, 0);
+        assert_eq!(stats.tab_group_count, 0);
+        assert!(stats.visible_panels.is_empty());
+        assert!(!stats.has_viewport);
+        assert!(!stats.has_debug_panels);
+    }
+}
+
+/// Tests for interaction.rs mutation killing
+mod interaction_exact_tests {
+    use crate::interaction::{
+        GizmoCancelMetadata, GizmoCommitMetadata, GizmoMeasurement, GizmoOperationKind,
+    };
+    use astraweave_core::IVec2;
+    use glam::{Quat, Vec3};
+
+    // --- GizmoOperationKind::icon() exact values ---
+    #[test]
+    fn test_gizmo_op_icon_translate() {
+        assert_eq!(GizmoOperationKind::Translate.icon(), "\u{2194}");
+    }
+    #[test]
+    fn test_gizmo_op_icon_rotate() {
+        assert_eq!(GizmoOperationKind::Rotate.icon(), "\u{27f3}");
+    }
+    #[test]
+    fn test_gizmo_op_icon_scale() {
+        assert_eq!(GizmoOperationKind::Scale.icon(), "\u{2922}");
+    }
+
+    // --- GizmoOperationKind::name() exact values ---
+    #[test]
+    fn test_gizmo_op_name_each() {
+        assert_eq!(GizmoOperationKind::Translate.name(), "Translate");
+        assert_eq!(GizmoOperationKind::Rotate.name(), "Rotate");
+        assert_eq!(GizmoOperationKind::Scale.name(), "Scale");
+    }
+
+    // --- GizmoOperationKind::shortcut() exact values ---
+    #[test]
+    fn test_gizmo_op_shortcut_each() {
+        assert_eq!(GizmoOperationKind::Translate.shortcut(), "G");
+        assert_eq!(GizmoOperationKind::Rotate.shortcut(), "R");
+        assert_eq!(GizmoOperationKind::Scale.shortcut(), "S");
+    }
+
+    // --- GizmoMeasurement::kind() exact mapping ---
+    #[test]
+    fn test_measurement_kind_translate() {
+        let m = GizmoMeasurement::Translate {
+            from: IVec2 { x: 0, y: 0 },
+            to: IVec2 { x: 1, y: 1 },
+        };
+        assert_eq!(m.kind(), GizmoOperationKind::Translate);
+    }
+    #[test]
+    fn test_measurement_kind_rotate() {
+        let m = GizmoMeasurement::Rotate {
+            from: (0.0, 0.0, 0.0),
+            to: (1.0, 0.0, 0.0),
+        };
+        assert_eq!(m.kind(), GizmoOperationKind::Rotate);
+    }
+    #[test]
+    fn test_measurement_kind_scale() {
+        let m = GizmoMeasurement::Scale {
+            from: 1.0,
+            to: 2.0,
+        };
+        assert_eq!(m.kind(), GizmoOperationKind::Scale);
+    }
+
+    // --- GizmoMeasurement::magnitude() precise arithmetic ---
+    #[test]
+    fn test_magnitude_translate_3_4_5() {
+        let m = GizmoMeasurement::Translate {
+            from: IVec2 { x: 0, y: 0 },
+            to: IVec2 { x: 3, y: 4 },
+        };
+        assert!((m.magnitude() - 5.0).abs() < 1e-6);
+    }
+    #[test]
+    fn test_magnitude_translate_negative() {
+        let m = GizmoMeasurement::Translate {
+            from: IVec2 { x: 5, y: 5 },
+            to: IVec2 { x: 2, y: 1 },
+        };
+        assert!((m.magnitude() - 5.0).abs() < 1e-6);
+    }
+    #[test]
+    fn test_magnitude_rotate_unit() {
+        let m = GizmoMeasurement::Rotate {
+            from: (0.0, 0.0, 0.0),
+            to: (1.0, 0.0, 0.0),
+        };
+        assert!((m.magnitude() - 1.0).abs() < 1e-6);
+    }
+    #[test]
+    fn test_magnitude_scale_abs() {
+        let m = GizmoMeasurement::Scale {
+            from: 3.0,
+            to: 1.0,
+        };
+        assert!((m.magnitude() - 2.0).abs() < 1e-6);
+    }
+    #[test]
+    fn test_magnitude_zero() {
+        let m = GizmoMeasurement::Translate {
+            from: IVec2 { x: 5, y: 5 },
+            to: IVec2 { x: 5, y: 5 },
+        };
+        assert!((m.magnitude()).abs() < 1e-6);
+    }
+
+    // --- GizmoMeasurement::is_significant() threshold ---
+    #[test]
+    fn test_is_significant_above_threshold() {
+        let m = GizmoMeasurement::Scale {
+            from: 1.0,
+            to: 1.02,
+        };
+        assert!(m.is_significant());
+    }
+    #[test]
+    fn test_is_significant_at_threshold() {
+        let m = GizmoMeasurement::Scale {
+            from: 1.0,
+            to: 1.01,
+        };
+        assert!(!m.is_significant());
+    }
+    #[test]
+    fn test_is_significant_below_threshold() {
+        let m = GizmoMeasurement::Scale {
+            from: 1.0,
+            to: 1.005,
+        };
+        assert!(!m.is_significant());
+    }
+
+    // --- GizmoMeasurement::summary() format ---
+    #[test]
+    fn test_summary_translate_contains_coords() {
+        let m = GizmoMeasurement::Translate {
+            from: IVec2 { x: 10, y: 20 },
+            to: IVec2 { x: 30, y: 40 },
+        };
+        let s = m.summary();
+        assert!(s.contains("10"), "summary should contain from.x");
+        assert!(s.contains("20"), "summary should contain from.y");
+        assert!(s.contains("30"), "summary should contain to.x");
+        assert!(s.contains("40"), "summary should contain to.y");
+    }
+    #[test]
+    fn test_summary_scale_contains_values() {
+        let m = GizmoMeasurement::Scale {
+            from: 1.5,
+            to: 2.5,
+        };
+        let s = m.summary();
+        assert!(s.contains("1.50"), "should contain from scale");
+        assert!(s.contains("2.50"), "should contain to scale");
+    }
+
+    // --- GizmoCommitMetadata::is_constrained ---
+    #[test]
+    fn test_commit_is_constrained_true() {
+        let meta = GizmoCommitMetadata {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+            measurement: GizmoMeasurement::Translate {
+                from: IVec2 { x: 0, y: 0 },
+                to: IVec2 { x: 1, y: 0 },
+            },
+            constraint: Some("X".to_string()),
+        };
+        assert!(meta.is_constrained());
+    }
+    #[test]
+    fn test_commit_is_constrained_false() {
+        let meta = GizmoCommitMetadata {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+            measurement: GizmoMeasurement::Translate {
+                from: IVec2 { x: 0, y: 0 },
+                to: IVec2 { x: 1, y: 0 },
+            },
+            constraint: None,
+        };
+        assert!(!meta.is_constrained());
+    }
+
+    // --- GizmoCommitMetadata::summary() format ---
+    #[test]
+    fn test_commit_summary_contains_constraint() {
+        let meta = GizmoCommitMetadata {
+            entity: 42,
+            operation: GizmoOperationKind::Translate,
+            measurement: GizmoMeasurement::Translate {
+                from: IVec2 { x: 0, y: 0 },
+                to: IVec2 { x: 5, y: 0 },
+            },
+            constraint: Some("X".to_string()),
+        };
+        let s = meta.summary();
+        assert!(s.contains("X"), "summary should mention constraint");
+    }
+    #[test]
+    fn test_commit_summary_none_constraint() {
+        let meta = GizmoCommitMetadata {
+            entity: 1,
+            operation: GizmoOperationKind::Scale,
+            measurement: GizmoMeasurement::Scale {
+                from: 1.0,
+                to: 2.0,
+            },
+            constraint: None,
+        };
+        let s = meta.summary();
+        assert!(s.contains("None"), "should show None for no constraint");
+    }
+
+    // --- GizmoCancelMetadata snapshot accessors ---
+    #[test]
+    fn test_cancel_original_position() {
+        use crate::gizmo::state::TransformSnapshot;
+        let meta = GizmoCancelMetadata {
+            entity: 1,
+            operation: GizmoOperationKind::Translate,
+            snapshot: TransformSnapshot {
+                position: Vec3::new(10.0, 20.0, 30.0),
+                rotation: Quat::IDENTITY,
+                scale: Vec3::ONE,
+            },
+        };
+        assert_eq!(meta.original_position(), Vec3::new(10.0, 20.0, 30.0));
+        assert_eq!(meta.original_rotation(), Quat::IDENTITY);
+        assert_eq!(meta.original_scale(), Vec3::ONE);
+    }
+    #[test]
+    fn test_cancel_summary_contains_operation() {
+        use crate::gizmo::state::TransformSnapshot;
+        let meta = GizmoCancelMetadata {
+            entity: 1,
+            operation: GizmoOperationKind::Rotate,
+            snapshot: TransformSnapshot {
+                position: Vec3::ZERO,
+                rotation: Quat::IDENTITY,
+                scale: Vec3::ONE,
+            },
+        };
+        let s = meta.summary();
+        assert!(s.contains("Rotate"), "should contain operation name");
+        assert!(s.contains("cancelled"), "should contain 'cancelled'");
+    }
+}
+
+/// Tests for toast.rs mutation killing
+mod toast_exact_tests {
+    use crate::ui::toast::{Toast, ToastAction, ToastLevel, ToastManager};
+    use std::time::Duration;
+
+    // --- ToastLevel::color() exact RGB ---
+    #[test]
+    fn test_toast_color_info() {
+        let c = ToastLevel::Info.color();
+        assert_eq!(c, egui::Color32::from_rgb(60, 120, 200));
+    }
+    #[test]
+    fn test_toast_color_success() {
+        let c = ToastLevel::Success.color();
+        assert_eq!(c, egui::Color32::from_rgb(40, 160, 80));
+    }
+    #[test]
+    fn test_toast_color_warning() {
+        let c = ToastLevel::Warning.color();
+        assert_eq!(c, egui::Color32::from_rgb(200, 140, 40));
+    }
+    #[test]
+    fn test_toast_color_error() {
+        let c = ToastLevel::Error.color();
+        assert_eq!(c, egui::Color32::from_rgb(200, 60, 60));
+    }
+
+    // --- ToastLevel::icon() exact values ---
+    #[test]
+    fn test_toast_icon_info() {
+        assert_eq!(ToastLevel::Info.icon(), "\u{2139}\u{fe0f}");
+    }
+    #[test]
+    fn test_toast_icon_success() {
+        assert_eq!(ToastLevel::Success.icon(), "\u{2705}");
+    }
+    #[test]
+    fn test_toast_icon_warning() {
+        assert_eq!(ToastLevel::Warning.icon(), "\u{26a0}\u{fe0f}");
+    }
+    #[test]
+    fn test_toast_icon_error() {
+        assert_eq!(ToastLevel::Error.icon(), "\u{274c}");
+    }
+
+    // --- ToastLevel::name() exact values ---
+    #[test]
+    fn test_toast_name_each() {
+        assert_eq!(ToastLevel::Info.name(), "Info");
+        assert_eq!(ToastLevel::Success.name(), "Success");
+        assert_eq!(ToastLevel::Warning.name(), "Warning");
+        assert_eq!(ToastLevel::Error.name(), "Error");
+    }
+
+    // --- ToastLevel::severity() exact values ---
+    #[test]
+    fn test_toast_severity_each() {
+        assert_eq!(ToastLevel::Info.severity(), 0);
+        assert_eq!(ToastLevel::Success.severity(), 1);
+        assert_eq!(ToastLevel::Warning.severity(), 2);
+        assert_eq!(ToastLevel::Error.severity(), 3);
+    }
+
+    // --- ToastLevel::is_problem() ---
+    #[test]
+    fn test_toast_is_problem_true() {
+        assert!(ToastLevel::Warning.is_problem());
+        assert!(ToastLevel::Error.is_problem());
+    }
+    #[test]
+    fn test_toast_is_problem_false() {
+        assert!(!ToastLevel::Info.is_problem());
+        assert!(!ToastLevel::Success.is_problem());
+    }
+
+    // --- ToastLevel::is_success() ---
+    #[test]
+    fn test_toast_is_success_true() {
+        assert!(ToastLevel::Success.is_success());
+    }
+    #[test]
+    fn test_toast_is_success_false() {
+        assert!(!ToastLevel::Info.is_success());
+        assert!(!ToastLevel::Warning.is_success());
+        assert!(!ToastLevel::Error.is_success());
+    }
+
+    // --- ToastAction::label() exact values ---
+    #[test]
+    fn test_toast_action_label_undo() {
+        assert_eq!(ToastAction::Undo.label(), "Undo");
+    }
+    #[test]
+    fn test_toast_action_label_details() {
+        assert_eq!(
+            ToastAction::ViewDetails("info".to_string()).label(),
+            "Details"
+        );
+    }
+    #[test]
+    fn test_toast_action_label_retry() {
+        assert_eq!(ToastAction::Retry.label(), "Retry");
+    }
+    #[test]
+    fn test_toast_action_label_open() {
+        assert_eq!(
+            ToastAction::Open("/path".to_string()).label(),
+            "Open"
+        );
+    }
+    #[test]
+    fn test_toast_action_label_custom() {
+        let action = ToastAction::Custom {
+            label: "MyAction".to_string(),
+            action_id: "id1".to_string(),
+        };
+        assert_eq!(action.label(), "MyAction");
+    }
+
+    // --- ToastAction::icon() exact values ---
+    #[test]
+    fn test_toast_action_icon_each() {
+        assert_eq!(ToastAction::Undo.icon(), "\u{21a9}\u{fe0f}");
+        assert_eq!(ToastAction::ViewDetails("x".into()).icon(), "\u{1f50d}");
+        assert_eq!(ToastAction::Retry.icon(), "\u{1f504}");
+        assert_eq!(ToastAction::Open("x".into()).icon(), "\u{1f4c2}");
+        assert_eq!(
+            ToastAction::Custom {
+                label: "x".into(),
+                action_id: "y".into()
+            }
+            .icon(),
+            "\u{26a1}"
+        );
+    }
+
+    // --- ToastAction::is_mutating() ---
+    #[test]
+    fn test_toast_action_is_mutating_true() {
+        assert!(ToastAction::Undo.is_mutating());
+        assert!(ToastAction::Retry.is_mutating());
+    }
+    #[test]
+    fn test_toast_action_is_mutating_false() {
+        assert!(!ToastAction::ViewDetails("x".into()).is_mutating());
+        assert!(!ToastAction::Open("x".into()).is_mutating());
+        assert!(!ToastAction::Custom {
+            label: "x".into(),
+            action_id: "y".into()
+        }
+        .is_mutating());
+    }
+
+    // --- Toast::should_remove() with dismissed ---
+    #[test]
+    fn test_toast_should_remove_if_dismissed() {
+        let mut toast = Toast::new("test", ToastLevel::Info);
+        toast.dismissed = true;
+        assert!(toast.should_remove());
+    }
+    #[test]
+    fn test_toast_should_not_remove_when_hovered() {
+        let mut toast = Toast::new("test", ToastLevel::Info);
+        toast.hovered = true;
+        toast.duration = Duration::from_millis(0);
+        std::thread::sleep(Duration::from_millis(10));
+        assert!(!toast.should_remove());
+    }
+    #[test]
+    fn test_toast_not_removed_fresh() {
+        let toast = Toast::new("test", ToastLevel::Info);
+        assert!(!toast.should_remove());
+    }
+
+    // --- Toast builder methods ---
+    #[test]
+    fn test_toast_with_duration() {
+        let toast = Toast::new("msg", ToastLevel::Info).with_duration(Duration::from_secs(10));
+        assert_eq!(toast.duration, Duration::from_secs(10));
+    }
+    #[test]
+    fn test_toast_with_action() {
+        let toast = Toast::new("msg", ToastLevel::Info).with_action(ToastAction::Undo);
+        assert_eq!(toast.actions.len(), 1);
+    }
+    #[test]
+    fn test_toast_with_group() {
+        let toast = Toast::new("msg", ToastLevel::Info).with_group("my_group");
+        assert_eq!(toast.group_key, Some("my_group".to_string()));
+    }
+
+    // --- ToastManager ---
+    #[test]
+    fn test_toast_manager_new_defaults() {
+        let mgr = ToastManager::new();
+        assert_eq!(mgr.active_count(), 0);
+        assert!(!mgr.has_toasts());
+        assert_eq!(mgr.count(), 0);
+    }
+    #[test]
+    fn test_toast_manager_add_and_count() {
+        let mut mgr = ToastManager::new();
+        mgr.toast("hello", ToastLevel::Info);
+        assert_eq!(mgr.active_count(), 1);
+        assert!(mgr.has_toasts());
+    }
+    #[test]
+    fn test_toast_manager_group_dedup() {
+        let mut mgr = ToastManager::new();
+        mgr.add(Toast::new("first", ToastLevel::Info).with_group("g1"));
+        mgr.add(Toast::new("second", ToastLevel::Info).with_group("g1"));
+        assert_eq!(mgr.active_count(), 1);
+    }
+    #[test]
+    fn test_toast_manager_clear() {
+        let mut mgr = ToastManager::new();
+        mgr.toast("a", ToastLevel::Info);
+        mgr.toast("b", ToastLevel::Warning);
+        mgr.clear();
+        assert_eq!(mgr.active_count(), 0);
+    }
+    #[test]
+    fn test_toast_manager_convenience_methods() {
+        let mut mgr = ToastManager::new();
+        mgr.success("ok");
+        mgr.error("fail");
+        mgr.info("note");
+        mgr.warning("warn");
+        assert_eq!(mgr.active_count(), 4);
+    }
+}
+
+/// Tests for scene_state.rs mutation killing
+mod scene_state_exact_tests {
+    use crate::scene_state::{EditorSceneState, SceneStateIssue, SceneStateStats};
+    use astraweave_core::{IVec2, Team, World};
+    use glam::Vec3;
+
+    /// Helper: build a world with one entity at a given grid position.
+    fn world_with_entity(name: &str, pos: IVec2) -> World {
+        let mut w = World::new();
+        w.spawn(name, pos, Team { id: 0 }, 100, 10);
+        w
+    }
+
+    // --- SceneStateIssue error vs warning ---
+    #[test]
+    fn test_issue_error_is_error_true() {
+        let issue = SceneStateIssue::error(1, "bad");
+        assert!(issue.is_error);
+    }
+    #[test]
+    fn test_issue_warning_is_error_false() {
+        let issue = SceneStateIssue::warning(1, "meh");
+        assert!(!issue.is_error);
+    }
+
+    // --- SceneStateStats cache_coverage div-by-zero ---
+    #[test]
+    fn test_stats_coverage_empty_world() {
+        let world = World::default();
+        let state = EditorSceneState::new(world);
+        let stats = state.stats();
+        assert_eq!(stats.cache_coverage, 1.0);
+    }
+
+    #[test]
+    fn test_stats_with_entity() {
+        let w = world_with_entity("TestEntity", IVec2 { x: 5, y: 5 });
+        let state = EditorSceneState::new(w);
+        let stats = state.stats();
+        assert_eq!(stats.entity_count, 1);
+        assert_eq!(stats.cached_entity_count, 1);
+        assert_eq!(stats.cache_coverage, 1.0);
+    }
+
+    // --- find_entities_near via world-based spawning ---
+    #[test]
+    fn test_find_near_includes_close_entity() {
+        let w = world_with_entity("Near", IVec2 { x: 3, y: 4 });
+        let state = EditorSceneState::new(w);
+        let found = state.find_entities_near(Vec3::ZERO, 6.0);
+        assert_eq!(found.len(), 1, "entity within radius should be found");
+    }
+    #[test]
+    fn test_find_near_excludes_far_entity() {
+        let w = world_with_entity("Far", IVec2 { x: 100, y: 100 });
+        let state = EditorSceneState::new(w);
+        let found = state.find_entities_near(Vec3::ZERO, 1.0);
+        assert_eq!(found.len(), 0, "entity outside radius should be excluded");
+    }
+
+    // --- validate with valid entities ---
+    #[test]
+    fn test_validate_valid_world() {
+        let w = world_with_entity("Valid", IVec2 { x: 0, y: 0 });
+        let state = EditorSceneState::new(w);
+        let issues = state.validate();
+        assert!(issues.is_empty() || issues.iter().all(|i| !i.is_error));
+    }
+
+    // --- validate with zero scale ---
+    #[test]
+    fn test_validate_zero_scale_is_error() {
+        let mut w = World::new();
+        let entity = w.spawn("ZeroScale", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 10);
+        if let Some(pose) = w.pose_mut(entity) {
+            pose.scale = 0.0;
+        }
+        let state = EditorSceneState::new(w);
+        let issues = state.validate();
+        assert!(
+            issues.iter().any(|i| i.is_error),
+            "scale=0 should be an error"
+        );
+    }
+
+    // --- find_entities_by_name ---
+    #[test]
+    fn test_find_by_name_case_insensitive() {
+        let w = world_with_entity("MyPlayer", IVec2 { x: 0, y: 0 });
+        let state = EditorSceneState::new(w);
+        let found = state.find_entities_by_name("myplayer");
+        assert_eq!(found.len(), 1);
+        let found2 = state.find_entities_by_name("MYPLAYER");
+        assert_eq!(found2.len(), 1);
+    }
+    #[test]
+    fn test_find_by_name_no_match() {
+        let w = world_with_entity("Alpha", IVec2 { x: 0, y: 0 });
+        let state = EditorSceneState::new(w);
+        let found = state.find_entities_by_name("Beta");
+        assert!(found.is_empty());
+    }
+
+    // --- entity_count ---
+    #[test]
+    fn test_entity_count_matches_world() {
+        let mut w = World::new();
+        w.spawn("A", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 10);
+        w.spawn("B", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 100, 10);
+        let state = EditorSceneState::new(w);
+        assert_eq!(state.entity_count(), 2);
+    }
+
+    // --- is_valid ---
+    #[test]
+    fn test_is_valid_empty() {
+        let state = EditorSceneState::new(World::default());
+        assert!(state.is_valid());
+    }
+
+    // --- clear_cache ---
+    #[test]
+    fn test_clear_cache_resets() {
+        let w = world_with_entity("ToClear", IVec2 { x: 0, y: 0 });
+        let mut state = EditorSceneState::new(w);
+        assert!(state.all_cached_entities().count() > 0);
+        state.clear_cache();
+        assert_eq!(state.all_cached_entities().count(), 0);
+    }
+
+    // --- transform_for returns correct position ---
+    #[test]
+    fn test_transform_for_existing() {
+        let w = world_with_entity("HasPose", IVec2 { x: 7, y: 3 });
+        let state = EditorSceneState::new(w);
+        let entities: Vec<_> = state.all_cached_entities().map(|(e, _)| e).collect();
+        assert!(!entities.is_empty());
+        let t = state.transform_for(entities[0]);
+        assert!(t.is_some());
+        let t = t.unwrap();
+        assert!((t.position.x - 7.0).abs() < 0.01);
+        assert!((t.position.z - 3.0).abs() < 0.01);
+        assert!((t.position.y - 1.0).abs() < 0.01);
+    }
+}
+
+/// Tests for behavior_graph/document.rs mutation killing
+mod behavior_graph_exact_tests {
+    use crate::behavior_graph::document::{
+        BehaviorGraphNodeKind, DecoratorKind, DecoratorNode, NodePosition,
+    };
+
+    // --- DecoratorKind::name() exact ---
+    #[test]
+    fn test_decorator_name_each() {
+        assert_eq!(DecoratorKind::Inverter.name(), "Inverter");
+        assert_eq!(DecoratorKind::Succeeder.name(), "Succeeder");
+        assert_eq!(DecoratorKind::Failer.name(), "Failer");
+        assert_eq!(DecoratorKind::Repeat(3).name(), "Repeat");
+        assert_eq!(DecoratorKind::Retry(5).name(), "Retry");
+    }
+
+    // --- DecoratorKind::icon() exact ---
+    #[test]
+    fn test_decorator_icon_inverter() {
+        assert_eq!(DecoratorKind::Inverter.icon(), "\u{1f504}");
+    }
+    #[test]
+    fn test_decorator_icon_succeeder() {
+        assert_eq!(DecoratorKind::Succeeder.icon(), "\u{2705}");
+    }
+    #[test]
+    fn test_decorator_icon_failer() {
+        assert_eq!(DecoratorKind::Failer.icon(), "\u{274c}");
+    }
+    #[test]
+    fn test_decorator_icon_repeat() {
+        assert_eq!(DecoratorKind::Repeat(1).icon(), "\u{1f501}");
+    }
+    #[test]
+    fn test_decorator_icon_retry() {
+        assert_eq!(DecoratorKind::Retry(1).icon(), "\u{1f502}");
+    }
+
+    // --- DecoratorKind::modifies_result() ---
+    #[test]
+    fn test_decorator_modifies_result_true() {
+        assert!(DecoratorKind::Inverter.modifies_result());
+        assert!(DecoratorKind::Succeeder.modifies_result());
+        assert!(DecoratorKind::Failer.modifies_result());
+    }
+    #[test]
+    fn test_decorator_modifies_result_false() {
+        assert!(!DecoratorKind::Repeat(1).modifies_result());
+        assert!(!DecoratorKind::Retry(1).modifies_result());
+    }
+
+    // --- DecoratorKind::is_looping() ---
+    #[test]
+    fn test_decorator_is_looping_true() {
+        assert!(DecoratorKind::Repeat(1).is_looping());
+        assert!(DecoratorKind::Retry(1).is_looping());
+    }
+    #[test]
+    fn test_decorator_is_looping_false() {
+        assert!(!DecoratorKind::Inverter.is_looping());
+        assert!(!DecoratorKind::Succeeder.is_looping());
+        assert!(!DecoratorKind::Failer.is_looping());
+    }
+
+    // --- DecoratorKind::loop_count() ---
+    #[test]
+    fn test_decorator_loop_count() {
+        assert_eq!(DecoratorKind::Repeat(7).loop_count(), Some(7));
+        assert_eq!(DecoratorKind::Retry(3).loop_count(), Some(3));
+        assert_eq!(DecoratorKind::Inverter.loop_count(), None);
+    }
+
+    // --- BehaviorGraphNodeKind::display_name() exact ---
+    #[test]
+    fn test_node_kind_display_name_action() {
+        let kind = BehaviorGraphNodeKind::Action {
+            name: "attack".into(),
+        };
+        assert_eq!(kind.display_name(), "Action");
+    }
+    #[test]
+    fn test_node_kind_display_name_condition() {
+        let kind = BehaviorGraphNodeKind::Condition {
+            name: "has_target".into(),
+        };
+        assert_eq!(kind.display_name(), "Condition");
+    }
+    #[test]
+    fn test_node_kind_display_name_sequence() {
+        let kind = BehaviorGraphNodeKind::Sequence {
+            children: vec![],
+        };
+        assert_eq!(kind.display_name(), "Sequence");
+    }
+    #[test]
+    fn test_node_kind_display_name_selector() {
+        let kind = BehaviorGraphNodeKind::Selector {
+            children: vec![],
+        };
+        assert_eq!(kind.display_name(), "Selector");
+    }
+    #[test]
+    fn test_node_kind_display_name_parallel() {
+        let kind = BehaviorGraphNodeKind::Parallel {
+            children: vec![],
+            success_threshold: 1,
+        };
+        assert_eq!(kind.display_name(), "Parallel");
+    }
+    #[test]
+    fn test_node_kind_display_name_decorator() {
+        let kind = BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
+        assert_eq!(kind.display_name(), "Decorator");
+    }
+
+    // --- BehaviorGraphNodeKind::icon() exact ---
+    #[test]
+    fn test_node_kind_icon_each() {
+        assert_eq!(
+            BehaviorGraphNodeKind::Action {
+                name: "x".into()
+            }
+            .icon(),
+            "\u{26a1}"
+        );
+        assert_eq!(
+            BehaviorGraphNodeKind::Condition {
+                name: "x".into()
+            }
+            .icon(),
+            "\u{2753}"
+        );
+        assert_eq!(
+            BehaviorGraphNodeKind::Sequence {
+                children: vec![]
+            }
+            .icon(),
+            "\u{27a1}\u{fe0f}"
+        );
+        assert_eq!(
+            BehaviorGraphNodeKind::Selector {
+                children: vec![]
+            }
+            .icon(),
+            "\u{1f500}"
+        );
+        assert_eq!(
+            BehaviorGraphNodeKind::Parallel {
+                children: vec![],
+                success_threshold: 1
+            }
+            .icon(),
+            "\u{23f8}"
+        );
+        assert_eq!(
+            BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter)).icon(),
+            "\u{1f381}"
+        );
+    }
+
+    // --- BehaviorGraphNodeKind::child_count() ---
+    #[test]
+    fn test_node_kind_child_count_leaf() {
+        let kind = BehaviorGraphNodeKind::Action {
+            name: "x".into(),
+        };
+        assert_eq!(kind.child_count(), 0);
+    }
+    #[test]
+    fn test_node_kind_child_count_sequence() {
+        let kind = BehaviorGraphNodeKind::Sequence {
+            children: vec![1, 2, 3],
+        };
+        assert_eq!(kind.child_count(), 3);
+    }
+    #[test]
+    fn test_node_kind_child_count_decorator_with_child() {
+        let mut node = DecoratorNode::new(DecoratorKind::Inverter);
+        node.child = Some(42);
+        let kind = BehaviorGraphNodeKind::Decorator(node);
+        assert_eq!(kind.child_count(), 1);
+    }
+    #[test]
+    fn test_node_kind_child_count_decorator_without_child() {
+        let kind =
+            BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
+        assert_eq!(kind.child_count(), 0);
+    }
+
+    // --- NodePosition default ---
+    #[test]
+    fn test_node_position_default() {
+        let pos = NodePosition::default();
+        assert_eq!(pos.x, 0.0);
+        assert_eq!(pos.y, 0.0);
+    }
+
+    // --- DecoratorKind::default ---
+    #[test]
+    fn test_decorator_kind_default() {
+        assert_eq!(DecoratorKind::default(), DecoratorKind::Inverter);
+    }
+
+    // --- DecoratorKind Display ---
+    #[test]
+    fn test_decorator_display_repeat() {
+        assert_eq!(format!("{}", DecoratorKind::Repeat(5)), "Repeat (5)");
+    }
+    #[test]
+    fn test_decorator_display_retry() {
+        assert_eq!(format!("{}", DecoratorKind::Retry(3)), "Retry (3)");
+    }
+    #[test]
+    fn test_decorator_display_inverter() {
+        assert_eq!(format!("{}", DecoratorKind::Inverter), "Inverter");
+    }
+}

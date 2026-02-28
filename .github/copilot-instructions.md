@@ -149,12 +149,18 @@ let graph = BehaviorGraph::new(root);  // 1 arg: BehaviorNode
 let status = graph.tick(&BehaviorContext::new(snap));
 ```
 
-### GOAP+Hermes Hybrid Arbiter (Common Pattern)
+### GOAP+Qwen3 Hybrid Arbiter (Common Pattern)
 
 ```rust
 use astraweave_ai::arbiter::{AIArbiter, AIControlMode};
-let mut arbiter = AIArbiter::new(llm_executor.clone());
-arbiter.update(world, &snap)?;
+
+// Dual-executor setup: strategic (thinking) + fast (non-thinking)
+let arbiter = AIArbiter::new(strategic_executor, Some(fast_executor), goap, bt);
+
+// Single-executor backward compat:
+// let arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
+
+arbiter.update(&snap);
 match arbiter.mode() {
     AIControlMode::GOAP => goap_orchestrator.plan(world, &snap),
     AIControlMode::ExecutingLLM { step_index } => execute_step(plan, step_index),

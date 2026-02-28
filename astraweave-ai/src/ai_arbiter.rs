@@ -1,7 +1,13 @@
-//! AI Arbiter: GOAP+Hermes Hybrid Control System
+//! AI Arbiter: GOAP+Qwen3 Hybrid Control System
 //!
 //! The `AIArbiter` provides seamless switching between instant GOAP tactical control
-//! and asynchronous Hermes strategic planning, achieving zero user-facing latency.
+//! and asynchronous Qwen3 strategic planning, achieving zero user-facing latency.
+//!
+//! ## Dual-Executor Architecture
+//!
+//! The arbiter supports two LLM executors:
+//! - **Fast executor** (non-thinking Qwen3): Low-latency (<2s) inline queries and fallbacks
+//! - **Strategic executor** (thinking Qwen3): Deep chain-of-thought planning (3-8s, background)
 //!
 //! # Architecture
 //!
@@ -48,7 +54,7 @@
 //!
 //! async fn example() -> anyhow::Result<()> {
 //!     // Setup orchestrators
-//!     let llm_client = /* Hermes 2 Pro client */;
+//!     let llm_client = /* Qwen3-8B client */;
 //!     let llm_orch = Arc::new(FallbackOrchestrator::new(llm_client, default_tool_registry()));
 //!     let runtime = tokio::runtime::Handle::current();
 //!     let llm_executor = LlmExecutor::new(llm_orch, runtime);
@@ -56,7 +62,7 @@
 //!     let goap = /* GOAP orchestrator */;
 //!     let bt = /* Behavior tree orchestrator */;
 //!
-//!     let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+//!     let mut arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 //!
 //!     // Game loop (60 FPS)
 //!     loop {
@@ -171,10 +177,18 @@ impl AIControlMode {
     }
 }
 
-/// AI Arbiter: Hybrid GOAP+Hermes control system.
+/// AI Arbiter: Hybrid GOAP+Qwen3 control system.
 ///
 /// Seamlessly switches between instant GOAP tactical control and asynchronous
-/// Hermes strategic planning to achieve zero user-facing latency.
+/// Qwen3 strategic planning to achieve zero user-facing latency.
+///
+/// ## Dual-Executor Architecture
+///
+/// The arbiter supports two LLM executors:
+/// - **`strategic_executor`**: Uses thinking-mode Qwen3 for deep background planning.
+///   Spawned asynchronously via `generate_plan_async()`.
+/// - **`fast_executor`** (optional): Uses non-thinking Qwen3 for low-latency inline
+///   queries and plan-validation fallback. If not provided, falls back to GOAP.
 ///
 /// # Thread Safety
 /// - Not `Send` or `Sync` (contains orchestrators which may not be thread-safe)
@@ -186,8 +200,13 @@ impl AIControlMode {
 /// - LLM requests: Non-blocking (<1 ms to spawn task)
 pub struct AIArbiter {
     // === AI Modules ===
-    /// LLM executor for async strategic planning
-    llm_executor: LlmExecutor,
+    /// Strategic LLM executor for async background planning (thinking mode Qwen3).
+    /// Used by `maybe_request_llm()` for deep chain-of-thought plan generation.
+    strategic_executor: LlmExecutor,
+
+    /// Fast LLM executor for low-latency inline queries (non-thinking Qwen3).
+    /// Optional — if absent, the arbiter uses GOAP for all fast-path decisions.
+    fast_executor: Option<LlmExecutor>,
 
     /// GOAP orchestrator for instant tactical decisions
     goap: Box<dyn Orchestrator>,
@@ -233,10 +252,11 @@ pub struct AIArbiter {
 }
 
 impl AIArbiter {
-    /// Create a new AI Arbiter.
+    /// Create a new AI Arbiter with dual executors.
     ///
     /// # Arguments
-    /// - `llm_executor`: Async LLM plan generator (Hermes 2 Pro)
+    /// - `strategic_executor`: Async LLM plan generator (thinking-mode Qwen3)
+    /// - `fast_executor`: Optional low-latency LLM for inline queries (non-thinking Qwen3)
     /// - `goap`: GOAP orchestrator for instant tactical decisions
     /// - `bt`: Behavior tree orchestrator (emergency fallback)
     ///
@@ -252,21 +272,27 @@ impl AIArbiter {
     /// use astraweave_core::default_tool_registry;
     ///
     /// async fn example() {
-    ///     let llm_executor = /* ... */;
+    ///     let strategic_exec = /* thinking-mode Qwen3 executor */;
+    ///     let fast_exec = /* non-thinking Qwen3 executor */;
     ///     let goap = /* ... */;
     ///     let bt = /* ... */;
     ///
-    ///     let arbiter = AIArbiter::new(llm_executor, goap, bt);
+    ///     let arbiter = AIArbiter::new(strategic_exec, Some(fast_exec), goap, bt);
     /// }
     /// ```
     pub fn new(
-        llm_executor: LlmExecutor,
+        strategic_executor: LlmExecutor,
+        fast_executor: Option<LlmExecutor>,
         goap: Box<dyn Orchestrator>,
         bt: Box<dyn Orchestrator>,
     ) -> Self {
-        info!("AIArbiter initialized in GOAP mode");
+        info!(
+            "AIArbiter initialized in GOAP mode (dual-executor: {})",
+            if fast_executor.is_some() { "yes" } else { "no" }
+        );
         Self {
-            llm_executor,
+            strategic_executor,
+            fast_executor,
             goap,
             bt,
             mode: AIControlMode::GOAP,
@@ -281,6 +307,26 @@ impl AIArbiter {
             goap_actions: 0,
             llm_steps_executed: 0,
         }
+    }
+
+    /// Create a new AI Arbiter with a single executor (backward compatibility).
+    ///
+    /// Uses the provided executor as the strategic executor. No fast executor
+    /// is configured — the arbiter uses GOAP for all fast-path decisions.
+    ///
+    /// This constructor maintains backward compatibility with code that
+    /// passes a single `LlmExecutor`.
+    ///
+    /// # Arguments
+    /// - `llm_executor`: Async LLM plan generator (used as strategic executor)
+    /// - `goap`: GOAP orchestrator for instant tactical decisions
+    /// - `bt`: Behavior tree orchestrator (emergency fallback)
+    pub fn with_single_executor(
+        llm_executor: LlmExecutor,
+        goap: Box<dyn Orchestrator>,
+        bt: Box<dyn Orchestrator>,
+    ) -> Self {
+        Self::new(llm_executor, None, goap, bt)
     }
 
     /// Configure LLM request cooldown.
@@ -560,7 +606,7 @@ impl AIArbiter {
             "Requesting LLM planning (cooldown elapsed: {:.1}s)",
             cooldown_elapsed
         );
-        let task = self.llm_executor.generate_plan_async(snap.clone());
+        let task = self.strategic_executor.generate_plan_async(snap.clone());
         self.current_llm_task = Some(task);
         self.last_llm_request_time = snap.t;
         self.llm_requests += 1;
@@ -1122,7 +1168,7 @@ mod tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        AIArbiter::new(llm_executor, goap, bt)
+        AIArbiter::with_single_executor(llm_executor, goap, bt)
     }
 
     // ============================================================================
@@ -1327,7 +1373,7 @@ mod tests {
             should_fail: false,
         });
         let bt = Box::new(MockBT);
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+        let mut arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 
         let snap1 = create_test_snapshot(0.0);
         arbiter.update(&snap1);

@@ -1,6 +1,6 @@
 //! Production validation test for batch LLM integration
 //!
-//! Tests real Ollama/Hermes 2 Pro performance with:
+//! Tests real Ollama/Qwen3-8B performance with:
 //! - Single agent batch (baseline)
 //! - 5 agent batch (4-5× speedup target)
 //! - 10 agent batch (5-7× speedup target)
@@ -24,18 +24,18 @@ async fn main() -> anyhow::Result<()> {
     println!("\n🚀 AstraWeave Batch LLM Production Validation");
     println!("=" .repeat(60));
     
-    // Initialize Ollama client with Hermes 2 Pro
+    // Initialize Ollama client with Qwen3-8B
     let client = OllamaClient::new(
         "http://localhost:11434".to_string(),
-        "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
+        "qwen3:8b".to_string(),
     );
     
     // Initialize tool registry and fallback system
     let reg = ToolRegistry::default();
     let fallback = FallbackSystem::new();
     
-    println!("\n✅ Connected to Ollama with Hermes 2 Pro model");
-    println!("   Model: adrienbrault/nous-hermes2pro:Q4_K_M (4.4 GB)");
+    println!("\n✅ Connected to Ollama with Qwen3-8B model");
+    println!("   Model: qwen3:8b (~5 GB)");
     
     // Test 1: Single agent baseline
     println!("\n" .repeat(2));

@@ -189,7 +189,7 @@ fn create_arbiter_with_mocks(
     let runtime = tokio::runtime::Handle::current();
     let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-    AIArbiter::new(llm_executor, goap, bt)
+    AIArbiter::with_single_executor(llm_executor, goap, bt)
 }
 
 // ============================================================================
@@ -441,7 +441,7 @@ async fn test_poll_llm_result_failure_stays_in_goap() {
 
     let goap = Box::new(MockGoap::new(ActionStep::Scan { radius: 10.0 }));
     let bt = Box::new(MockBT::new(ActionStep::Wait { duration: 1.0 }));
-    let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+    let mut arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 
     // Request LLM plan
     let snap1 = create_test_snapshot(0.0);

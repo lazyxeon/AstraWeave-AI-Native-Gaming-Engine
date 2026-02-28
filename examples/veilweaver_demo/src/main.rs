@@ -1,5 +1,5 @@
 // Veilweaver Demo - Showcase of AstraWeave AI-Native Game Engine
-// Demonstrates: Hermes 2 Pro LLM integration, telemetry, rich terminal HUD
+// Demonstrates: Qwen3-8B LLM integration, telemetry, rich terminal HUD
 // Use `--features visual` for full 3D windowed mode with terrain, water, and egui HUD.
 
 use anyhow::Result;
@@ -9,7 +9,7 @@ use glam::Vec3;
 #[cfg(not(feature = "visual"))]
 use anyhow::Context;
 #[cfg(not(feature = "visual"))]
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 #[cfg(not(feature = "visual"))]
 use std::time::{Duration, Instant};
 #[cfg(not(feature = "visual"))]
@@ -152,7 +152,7 @@ fn print_banner() {
     println!("  ╔══════════════════════════════════════════════════════╗");
     println!("  ║          VEILWEAVER  ·  AI-NATIVE  ENGINE           ║");
     println!("  ║       ───────────────────────────────────           ║");
-    println!("  ║        AstraWeave  ·  Hermes 2 Pro  ·  60 FPS      ║");
+    println!("  ║        AstraWeave  ·  Qwen3-8B  ·  60 FPS      ║");
     println!("  ╚══════════════════════════════════════════════════════╝");
     println!("{RESET}\n");
 }
@@ -509,10 +509,10 @@ fn run_headless_demo() -> Result<()> {
     let mut hud = TelemetryHud::new();
     let mut metrics = TelemetryMetrics::default();
 
-    // Initialize Hermes 2 Pro LLM client
-    let _llm_client = Hermes2ProOllama::fast();
+    // Initialize Qwen3-8B LLM client
+    let _llm_client = Qwen3Ollama::fast();
 
-    println!("  {GREEN}Engine ready.{RESET} {DIM}Hermes 2 Pro LLM loaded.{RESET}");
+    println!("  {GREEN}Engine ready.{RESET} {DIM}Qwen3-8B LLM loaded.{RESET}");
     println!("  {DIM}Starting 30-second simulation...{RESET}\n");
     std::thread::sleep(Duration::from_secs(1));
 

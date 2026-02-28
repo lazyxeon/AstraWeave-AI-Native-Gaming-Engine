@@ -1,7 +1,7 @@
 //! Hello Companion Visual Demo
 //!
 //! A visual demo showcasing 3 AI modes with an interactive NPC:
-//! - Mode 1 (Pure LLM): Full conversation via Hermes 2 Pro
+//! - Mode 1 (Pure LLM): Full conversation via Qwen3-8B
 //! - Mode 2 (Pure GOAP): Pre-written scripted responses
 //! - Mode 3 (Arbiter): GOAP+LLM hybrid with organic filler dialogue
 //!
@@ -30,8 +30,8 @@ use astraweave_render::{
 // Asset loading for GLB models
 use astraweave_asset::gltf_loader;
 
-// LLM integration for real Hermes 2 Pro chat
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+// LLM integration for real Qwen3-8B chat
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 
 use crate::chat_ui::{self, ChatUi};
 use crate::dialogue_bank::DialogueBank;
@@ -648,7 +648,7 @@ struct CompanionApp {
     // Demo scene instances (visible spheres)
     demo_instances: Vec<Instance>,
 
-    // LLM client for real Hermes 2 Pro integration
+    // LLM client for real Qwen3-8B integration
     llm_worker: LlmWorker,
     llm_response_receiver: Option<tokio::sync::oneshot::Receiver<String>>,
 
@@ -842,9 +842,9 @@ impl CompanionApp {
             demo_instances,
             // Initialize LLM worker (reuses a single runtime + caches prompts)
             llm_worker: LlmWorker::new(
-                Hermes2ProOllama::new(
+                Qwen3Ollama::new(
                     "http://localhost:11434",
-                    "spooknik/hermes-2-pro-mistral-7b:q5_k_s",
+                    "qwen3:8b",
                 )
                 .with_temperature(0.6)
                 .with_max_tokens(192)
@@ -1176,7 +1176,7 @@ impl CompanionApp {
                 };
             }
             DemoMode::PureLlm => {
-                // Start real LLM request via Hermes 2 Pro
+                // Start real LLM request via Qwen3-8B
                 self.llm_pending = true;
                 self.llm_request_time = Some(Instant::now());
                 self.chat_ui.set_npc_typing(true);
@@ -1324,7 +1324,7 @@ impl CompanionApp {
         self.renderer.tick_environment(dt);
     }
 
-    /// Start an async LLM request using Hermes 2 Pro (with modifiers from input).
+    /// Start an async LLM request using Qwen3-8B (with modifiers from input).
     fn start_llm_request(&mut self, user_input: &str) {
         // Build prompt with session context.
         let context = self.session_memory.to_context_prefix();
