@@ -45,11 +45,42 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────────────
+  # Gate: Reject commits containing cargo-mutants artifacts
+  # Runs in <5 seconds, blocks all downstream jobs
+  # ──────────────────────────────────────────────────────
+  source-integrity:
+    name: Source Integrity Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reject cargo-mutants artifacts in source
+        run: |
+          echo "::group::Scanning for cargo-mutants markers"
+          if grep -rn "changed by cargo-mutants" --include="*.rs" .; then
+            echo "::endgroup::"
+            echo ""
+            echo "::error::cargo-mutants markers found in committed source code!"
+            echo "These are artifacts from mutation testing that were accidentally committed."
+            echo "Each marker replaces real logic with a mutation (e.g., returning 0 or true)."
+            echo ""
+            echo "## ❌ Source Integrity Failure" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "cargo-mutants markers found in committed source code." >> $GITHUB_STEP_SUMMARY
+            echo "Run \`git grep 'changed by cargo-mutants' -- '*.rs'\` locally to find them." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "::endgroup::"
+          echo "✅ No cargo-mutants artifacts found"
+
+  # ──────────────────────────────────────────────────────
   # Fast ASan check on critical crates (every PR)
   # NOTE: Excludes render crate due to GPU driver false positives
   # ──────────────────────────────────────────────────────
   asan-critical:
     name: AddressSanitizer (Critical Crates)
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Only run on PRs and pushes (not nightly schedule)
@@ -111,6 +142,7 @@ jobs:
   # ──────────────────────────────────────────────────────
   asan-full:
     name: AddressSanitizer (Full Suite)
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 90
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
@@ -245,6 +277,7 @@ jobs:
   # ──────────────────────────────────────────────────────
   leak-sanitizer:
     name: LeakSanitizer
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -305,6 +338,7 @@ jobs:
   # ──────────────────────────────────────────────────────
   thread-sanitizer:
     name: ThreadSanitizer (Advisory)
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
@@ -369,6 +403,7 @@ jobs:
   # ──────────────────────────────────────────────────────
   determinism:
     name: Determinism Validation
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
@@ -462,12 +497,13 @@ jobs:
   # ──────────────────────────────────────────────────────
   # Summary job: aggregates results from all sanitizer jobs
   # ──────────────────────────────────────────────────────
-  sanitizer-summary:
-    name: Sanitizer Summary
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: always()
-    needs: [asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
+  sanitizer-source-integrity, asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
+    steps:
+      - name: Check sanitizer results
+        run: |
+          echo "=== Sanitizer Workflow Summary ==="
+          echo ""
+          echo "source-integrity: ${{ needs.source-integrity.result }}-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
     steps:
       - name: Check sanitizer results
         run: |
