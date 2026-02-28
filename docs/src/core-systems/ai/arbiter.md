@@ -85,7 +85,7 @@ loop {
      │                    │                    │
      ▼                    ▼                    ▼
 ┌──────────┐      ┌──────────────┐     ┌──────────┐
-│   GOAP   │      │ Hermes 2 Pro │     │    BT    │
+│   GOAP   │      │   Qwen3-8B    │     │    BT    │
 │ (3-5 ns) │      │ (13-21s async)│     │ Fallback │
 └──────────┘      └──────────────┘     └──────────┘
 ```
@@ -271,7 +271,7 @@ let arbiter = AIArbiter::new(executor, goap, bt)
 ollama list
 
 # Test model directly
-ollama run adrienbrault/nous-hermes2pro:Q4_K_M
+ollama run qwen3:8b
 ```
 
 ### High Failure Rate
@@ -313,7 +313,7 @@ if plan.steps.len() > 50 {
 # GOAP-only mode
 cargo run -p hello_companion --release
 
-# Arbiter mode (GOAP + Hermes 2 Pro)
+# Arbiter mode (GOAP + Qwen3-8B)
 cargo run -p hello_companion --release --features llm_orchestrator -- --arbiter
 ```
 

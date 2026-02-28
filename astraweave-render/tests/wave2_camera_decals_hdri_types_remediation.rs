@@ -1260,6 +1260,7 @@ mod scene_env_tests {
     }
 
     #[test]
+    #[ignore = "GPU/wgpu test - not available in CI/mutation testing"]
     fn ubo_bytemuck_roundtrip() {
         let mut env = SceneEnvironment::default();
         env.set_biome(BiomeType::Mountain);

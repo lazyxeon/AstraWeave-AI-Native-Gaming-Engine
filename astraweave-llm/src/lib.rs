@@ -38,6 +38,8 @@ pub mod phi3;
 pub mod hermes2pro_ollama;
 #[cfg(feature = "ollama")]
 pub mod phi3_ollama;
+#[cfg(feature = "ollama")]
+pub mod qwen3_ollama;
 
 #[cfg(feature = "llm_cache")]
 use cache::{CachedPlan, PromptCache, PromptKey};

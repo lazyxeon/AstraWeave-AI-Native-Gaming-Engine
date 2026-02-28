@@ -175,7 +175,7 @@ mod arbiter_integration_tests {
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
         // Create arbiter
-        let arbiter = AIArbiter::new(llm_executor, goap, bt);
+        let arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 
         // Verify initial mode
         assert_eq!(arbiter.mode(), AIControlMode::GOAP);
@@ -215,7 +215,7 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+        let mut arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 
         let snap = create_test_snapshot();
 
@@ -267,7 +267,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(0.0); // No cooldown for test
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(0.0); // No cooldown for test
 
         let snap = create_test_snapshot();
 
@@ -322,7 +323,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm.clone(), runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(0.0);
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(0.0);
 
         let snap = create_test_snapshot();
 
@@ -389,7 +391,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(0.0);
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(0.0);
 
         let snap = create_test_snapshot();
 
@@ -437,7 +440,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(5.0); // 5s cooldown
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(5.0); // 5s cooldown
 
         let mut snap = create_test_snapshot();
 
@@ -508,7 +512,7 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+        let mut arbiter = AIArbiter::with_single_executor(llm_executor, goap, bt);
 
         let snap = create_test_snapshot();
 
@@ -537,7 +541,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(0.0);
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(0.0);
 
         let snap = create_test_snapshot();
 
@@ -582,7 +587,8 @@ mod arbiter_integration_tests {
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm.clone(), runtime);
 
-        let mut arbiter = AIArbiter::new(llm_executor, goap, bt).with_llm_cooldown(0.0);
+        let mut arbiter =
+            AIArbiter::with_single_executor(llm_executor, goap, bt).with_llm_cooldown(0.0);
 
         let snap = create_test_snapshot();
 

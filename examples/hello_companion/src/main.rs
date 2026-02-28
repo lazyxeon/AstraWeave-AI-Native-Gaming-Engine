@@ -1,13 +1,13 @@
-//! hello_companion - Advanced AI Showcase with Hermes 2 Pro + Phase 7 Features
+//! hello_companion - Advanced AI Showcase with Qwen3-8B + Phase 7 Features
 //!
 //! Demonstrates 7 AI modes + Phase 7 enhancements:
 //! 1. Classical (RuleOrchestrator - baseline)
 //! 2. BehaviorTree (Hierarchical reasoning)
 //! 3. Utility (Score-based selection)
-//! 4. LLM (Hermes 2 Pro via Ollama with Phase 7 enhancements)
+//! 4. LLM (Qwen3-8B via Ollama with Phase 7 enhancements)
 //! 5. Hybrid (LLM with Classical fallback)
 //! 6. Ensemble (Voting across all modes)
-//! 7. Arbiter (GOAP + Hermes Hybrid - instant control + strategic planning)
+//! 7. Arbiter (GOAP + Qwen3 Hybrid - instant control + strategic planning)
 //!
 //! Phase 7 Features Showcased:
 //! - 37-tool vocabulary (expanded from 4)
@@ -19,12 +19,12 @@
 //!
 //! Usage:
 //!   cargo run -p hello_companion --release                                        # Classical (default)
-//!   cargo run -p hello_companion --release --features llm,ollama                 # Hermes 2 Pro
+//!   cargo run -p hello_companion --release --features llm,ollama                 # Qwen3-8B
 //!   cargo run -p hello_companion --release --features llm,ollama -- --bt         # BehaviorTree
 //!   cargo run -p hello_companion --release --features llm,ollama -- --utility    # Utility AI
 //!   cargo run -p hello_companion --release --features llm,ollama -- --hybrid     # LLM + fallback
 //!   cargo run -p hello_companion --release --features llm,ollama -- --ensemble   # All modes voting
-//!   cargo run -p hello_companion --release --features llm_orchestrator -- --arbiter  # GOAP + Hermes Arbiter
+//!   cargo run -p hello_companion --release --features llm_orchestrator -- --arbiter  # GOAP + Qwen3 Arbiter
 //!   cargo run -p hello_companion --release --features visual                     # Visual demo with 3 AI modes
 //!   cargo run -p hello_companion --release --features llm,ollama,metrics -- --demo-all --metrics --export-metrics --phase7
 
@@ -64,7 +64,7 @@ use astraweave_core::{ActionStep, ToolRegistry};
 use astraweave_llm::{plan_from_llm, PlanSource};
 
 #[cfg(feature = "ollama")]
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 
 use anyhow::Result;
 
@@ -80,13 +80,13 @@ enum AIMode {
     #[cfg(feature = "llm")]
     Utility, // Score-based selection
     #[cfg(feature = "ollama")]
-    LLM, // Hermes 2 Pro via Ollama
+    LLM, // Qwen3-8B via Ollama
     #[cfg(feature = "ollama")]
     Hybrid, // LLM + Classical fallback
     #[cfg(feature = "llm")]
     Ensemble, // Voting across all modes
     #[cfg(feature = "llm_orchestrator")]
-    Arbiter, // GOAP + Hermes hybrid (instant control)
+    Arbiter, // GOAP + Qwen3 hybrid (instant control)
 }
 
 impl std::fmt::Display for AIMode {
@@ -98,13 +98,13 @@ impl std::fmt::Display for AIMode {
             #[cfg(feature = "llm")]
             AIMode::Utility => write!(f, "Utility (Score-based)"),
             #[cfg(feature = "ollama")]
-            AIMode::LLM => write!(f, "LLM (Hermes 2 Pro via Ollama)"),
+            AIMode::LLM => write!(f, "LLM (Qwen3-8B via Ollama)"),
             #[cfg(feature = "ollama")]
             AIMode::Hybrid => write!(f, "Hybrid (LLM + Fallback)"),
             #[cfg(feature = "llm")]
             AIMode::Ensemble => write!(f, "Ensemble (Voting)"),
             #[cfg(feature = "llm_orchestrator")]
-            AIMode::Arbiter => write!(f, "Arbiter (GOAP + Hermes Hybrid)"),
+            AIMode::Arbiter => write!(f, "Arbiter (GOAP + Qwen3 Hybrid)"),
         }
     }
 }
@@ -590,7 +590,7 @@ fn select_ai_mode(args: &[String]) -> AIMode {
     #[cfg(all(feature = "llm", not(feature = "ollama")))]
     {
         println!("💡 LLM features enabled. Using BehaviorTree mode.");
-        println!("   Enable Ollama with --features llm,ollama for Hermes 2 Pro\n");
+        println!("   Enable Ollama with --features llm,ollama for Qwen3-8B\n");
         return AIMode::BehaviorTree;
     }
 
@@ -881,19 +881,19 @@ fn calculate_coverfire_score(snap: &WorldSnapshot) -> f32 {
 }
 
 // ============================================================================
-// LLM AI (Hermes 2 Pro via Ollama)
+// LLM AI (Qwen3-8B via Ollama)
 // ============================================================================
 
 #[cfg(feature = "ollama")]
 fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
     use anyhow::Context;
-    println!("🧠 LLM AI (Hermes 2 Pro via Ollama)");
+    println!("🧠 LLM AI (Qwen3-8B via Ollama)");
 
     // Check Ollama availability first
     check_ollama_available()?;
 
-    // Create Hermes2ProOllama client (4.4GB Q4_K_M - 75-85% success rate vs 40-50% Phi-3)
-    // Hermes 2 Pro is trained for function calling, ideal for AstraWeave's 37-tool system
+    // Create Qwen3Ollama client (5GB Q4_K_M - Qwen3-8B with dual thinking modes)
+    // Qwen3-8B has native tool calling and excellent structured output for AstraWeave's 37-tool system
     // TEMPERATURE EXPERIMENT: Change this value to test different configurations
     // - 0.3 = Deterministic (high consistency, low creativity)
     // - 0.5 = Balanced (BASELINE - 100% success rate validated)
@@ -902,7 +902,7 @@ fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
     // LATENCY OPTIMIZATION: Reduced max_tokens from 1024 to 256
     // - Prevents overly verbose plans (~0.5-1s savings on generation)
     // - Combined with Tier 2 (SimplifiedLlm) for maximum latency reduction
-    let client = Hermes2ProOllama::localhost()
+    let client = Qwen3Ollama::localhost()
         .with_temperature(0.5) // ⚠️ MODIFY THIS for temperature experiments
         .with_max_tokens(256); // Reduced from 1024 for faster generation
 
@@ -917,11 +917,11 @@ fn generate_llm_plan(snap: &WorldSnapshot) -> Result<PlanIntent> {
 
     match result {
         PlanSource::Llm(plan) => {
-            println!("   ✅ Hermes 2 Pro generated {} steps", plan.steps.len());
+            println!("   ✅ Qwen3-8B generated {} steps", plan.steps.len());
             Ok(plan)
         }
         PlanSource::Fallback { plan, reason } => {
-            println!("   ⚠️  Hermes 2 Pro returned fallback: {}", reason);
+            println!("   ⚠️  Qwen3-8B returned fallback: {}", reason);
             Ok(plan)
         }
     }

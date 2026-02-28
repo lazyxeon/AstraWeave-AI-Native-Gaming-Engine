@@ -4,6 +4,8 @@ use astraweave_llm::few_shot::{FewShotExample, FewShotRegistry};
 use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
 #[cfg(feature = "ollama")]
 use astraweave_llm::phi3_ollama::Phi3Ollama;
+#[cfg(feature = "ollama")]
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 
 #[test]
 fn test_prompt_compressor_ratio() {
@@ -97,9 +99,35 @@ fn test_phi3_variants() {
 #[test]
 #[cfg(feature = "ollama")]
 fn test_hermes2pro_variants() {
-    // Test Fast variant
+    // Test Fast variant (legacy — retained for backward compat)
     let fast = Hermes2ProOllama::fast();
     assert_eq!(fast.model, "adrienbrault/nous-hermes2pro:Q4_K_M");
     assert_eq!(fast.temperature, 0.5);
     assert_eq!(fast.max_tokens, 128);
+}
+
+#[test]
+#[cfg(feature = "ollama")]
+fn test_qwen3_variants() {
+    // Test Fast variant
+    let fast = Qwen3Ollama::fast();
+    assert_eq!(fast.model, "qwen3:8b");
+    assert_eq!(fast.temperature, 0.5);
+    assert_eq!(fast.max_tokens, 128);
+    assert!(!fast.enable_thinking);
+    assert_eq!(fast.context_length, 8192);
+
+    // Test Strategic variant
+    let strategic = Qwen3Ollama::strategic();
+    assert_eq!(strategic.model, "qwen3:8b");
+    assert_eq!(strategic.temperature, 0.6);
+    assert_eq!(strategic.max_tokens, 1024);
+    assert!(strategic.enable_thinking);
+    assert_eq!(strategic.context_length, 32768);
+
+    // Test Localhost default
+    let default = Qwen3Ollama::localhost();
+    assert_eq!(default.model, "qwen3:8b");
+    assert!(!default.enable_thinking);
+    assert_eq!(default.context_length, 32768);
 }

@@ -9,7 +9,7 @@
 
 #![allow(dead_code)] // Some methods/fields reserved for future streaming expansion
 
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 use astraweave_llm::LlmClient;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{mpsc, Arc, Mutex};
@@ -108,7 +108,7 @@ impl PromptCache {
 }
 
 impl LlmWorker {
-    pub fn new(client: Hermes2ProOllama) -> Self {
+    pub fn new(client: Qwen3Ollama) -> Self {
         let (tx, rx) = mpsc::channel::<Request>();
         let streaming_rx = Arc::new(Mutex::new(None));
 

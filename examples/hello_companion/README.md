@@ -73,9 +73,9 @@ cargo run -p hello_companion --release --features llm -- --demo-both
 - **Use Case**: Best of both worlds (LLM intelligence + classical reliability)
 
 ### 🤖 Arbiter Mode (NEW - Zero-Latency Hybrid)
-- **Type**: GOAP+Hermes Hybrid Arbiter (`AIArbiter`)
+- **Type**: GOAP+Qwen3 Hybrid Arbiter (`AIArbiter`)
 - **Latency**: **101.7 ns** GOAP control (instant tactical decisions)
-- **Intelligence**: Hermes 2 Pro LLM plans generate asynchronously (13-21s background)
+- **Intelligence**: Qwen3-8B LLM plans generate asynchronously (background)
 - **Reliability**: 100% (GOAP provides instant responses while LLM thinks)
 - **Use Case**: Production-ready AI with zero user-facing latency
 

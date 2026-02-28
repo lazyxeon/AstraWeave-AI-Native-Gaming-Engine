@@ -2,7 +2,7 @@
 //!
 //! This module provides `LlmExecutor`, which wraps an `OrchestratorAsync` and enables
 //! non-blocking LLM plan generation. This is critical for the AI Arbiter pattern where
-//! GOAP maintains control while Hermes generates strategic plans in the background.
+//! GOAP maintains control while Qwen3 generates strategic plans in the background.
 //!
 //! # Architecture
 //!
@@ -15,7 +15,7 @@
 //!       ↓
 //! tokio::spawn_blocking  ← CPU-bound LLM work
 //!       ↓
-//! OrchestratorAsync::plan()  ← 13-21s Hermes inference
+//! OrchestratorAsync::plan()  ← 3-8s Qwen3 inference
 //!       ↓
 //! PlanIntent  ← Strategic plan ready
 //! ```
@@ -23,15 +23,12 @@
 //! # Example
 //! ```ignore
 //! use astraweave_ai::LlmExecutor;
-//! use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+//! use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 //! use astraweave_core::{WorldSnapshot, default_tool_registry};
 //! use std::sync::Arc;
 //!
 //! async fn example() -> anyhow::Result<()> {
-//!     let client = Hermes2ProOllama::new(
-//!         "http://127.0.0.1:11434".to_string(),
-//!         "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
-//!     );
+//!     let client = Qwen3Ollama::localhost();  // Qwen3-8B on port 11434
 //!
 //!     let registry = default_tool_registry();
 //!     let orchestrator = Arc::new(astraweave_llm::fallback_system::FallbackOrchestrator::new(client, registry));
@@ -65,7 +62,7 @@ use tokio::runtime::Handle;
 
 /// LLM executor for non-blocking plan generation.
 ///
-/// Wraps an `OrchestratorAsync` (typically a fallback system with Hermes 2 Pro)
+/// Wraps an `OrchestratorAsync` (typically a fallback system with Qwen3-8B)
 /// and provides async plan generation that doesn't block the game loop.
 ///
 /// # Thread Safety
@@ -74,7 +71,7 @@ use tokio::runtime::Handle;
 ///
 /// # Performance
 /// - `generate_plan_async()`: Returns immediately (<1 ms)
-/// - Background task: 13-21s (Hermes 2 Pro inference)
+/// - Background task: 3-8s (Qwen3-8B inference)
 /// - `generate_plan_sync()`: Blocks for full duration (testing only)
 pub struct LlmExecutor {
     /// The wrapped orchestrator (Arc for thread-safety)
@@ -94,15 +91,12 @@ impl LlmExecutor {
     /// # Example
     /// ```ignore
     /// use astraweave_ai::LlmExecutor;
-    /// use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+    /// use astraweave_llm::qwen3_ollama::Qwen3Ollama;
     /// use astraweave_core::default_tool_registry;
     /// use std::sync::Arc;
     ///
     /// async fn example() {
-    ///     let client = Hermes2ProOllama::new(
-    ///         "http://127.0.0.1:11434".to_string(),
-    ///         "adrienbrault/nous-hermes2pro:Q4_K_M".to_string(),
-    ///     );
+    ///     let client = Qwen3Ollama::localhost();  // Qwen3-8B on port 11434
     ///
     ///     let registry = default_tool_registry();
     ///     let orchestrator = Arc::new(astraweave_llm::fallback_system::FallbackOrchestrator::new(client, registry));
@@ -131,13 +125,13 @@ impl LlmExecutor {
     ///
     /// # Performance
     /// - Returns in: <1 ms
-    /// - Background task completes in: 13-21s (Hermes 2 Pro)
+    /// - Background task completes in: 3-8s (Qwen3-8B)
     /// - Memory: Clones `WorldSnapshot` (~1-2 KB)
     ///
     /// # Example
     /// ```no_run
     /// use astraweave_ai::LlmExecutor;
-    /// # use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+    /// # use astraweave_llm::qwen3_ollama::Qwen3Ollama;
     /// # use astraweave_core::{WorldSnapshot, default_tool_registry};
     /// # use std::sync::Arc;
     ///
@@ -207,12 +201,12 @@ impl LlmExecutor {
     /// # Example
     /// ```no_run
     /// use astraweave_ai::LlmExecutor;
-    /// # use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+    /// # use astraweave_llm::qwen3_ollama::Qwen3Ollama;
     /// # use astraweave_core::{WorldSnapshot, default_tool_registry};
     /// # use std::sync::Arc;
     ///
     /// # async fn example(executor: LlmExecutor, snapshot: WorldSnapshot) -> anyhow::Result<()> {
-    /// // For testing only - blocks for 13-21s!
+    /// // For testing only - blocks for 3-8s!
     /// let plan = executor.generate_plan_sync(&snapshot)?;
     /// println!("Generated plan: {} steps", plan.steps.len());
     /// # Ok(())

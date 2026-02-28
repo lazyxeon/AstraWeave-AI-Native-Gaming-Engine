@@ -1,29 +1,29 @@
 //! LLM Streaming Demo
 //!
-//! Demonstrates the new streaming API for Hermes 2 Pro, showing:
+//! Demonstrates the new streaming API for Qwen3-8B, showing:
 //! - Time-to-first-chunk advantage (8× faster first action)
 //! - Progressive response delivery
 //! - Integration with StreamingParser (future work)
 //!
 //! # Usage
 //! ```bash
-//! # Start Ollama with Hermes 2 Pro
+//! # Start Ollama with Qwen3-8B
 //! ollama serve
-//! ollama pull adrienbrault/nous-hermes2pro:Q4_K_M
+//! ollama pull qwen3:8b
 //!
 //! # Run demo
 //! cargo run -p llm_streaming_demo --release
 //! ```
 
 use anyhow::Result;
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 use astraweave_llm::LlmClient;
 use futures_util::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("╔═══════════════════════════════════════════════════════════════╗");
-    println!("║            LLM STREAMING DEMO - HERMES 2 PRO                  ║");
+    println!("║            LLM STREAMING DEMO - Qwen3-8B                  ║");
     println!("╠═══════════════════════════════════════════════════════════════╣");
     println!("║  Demonstrates:                                                 ║");
     println!("║  - Progressive response delivery (streaming)                   ║");
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     println!("║  - Side-by-side blocking vs streaming comparison               ║");
     println!("╚═══════════════════════════════════════════════════════════════╝\n");
 
-    let client = Hermes2ProOllama::localhost();
+    let client = Qwen3Ollama::localhost();
 
     // Health check first
     println!("🔍 Checking Ollama health...");
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
         eprintln!("\nPlease ensure Ollama is running:");
         eprintln!("  1. Install Ollama: https://ollama.ai");
         eprintln!("  2. Start server: ollama serve");
-        eprintln!("  3. Pull model: ollama pull adrienbrault/nous-hermes2pro:Q4_K_M");
+        eprintln!("  3. Pull model: ollama pull qwen3:8b");
         std::process::exit(1);
     }
 

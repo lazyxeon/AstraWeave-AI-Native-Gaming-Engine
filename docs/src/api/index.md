@@ -17,7 +17,7 @@ Browse the Rust API documentation for all AstraWeave crates.
 | [astraweave-nav](./nav.md) | Navigation and pathfinding | 72.1% | Production |
 | [astraweave-gameplay](./gameplay.md) | Combat physics, damage | 68.9% | Production |
 | [astraweave-terrain](./terrain.md) | Voxel terrain generation | 71.5% | Production |
-| [astraweave-llm](./llm.md) | LLM integration (Hermes 2 Pro) | 58.3% | Beta |
+| [astraweave-llm](./llm.md) | LLM integration (Qwen3-8B) | 58.3% | Beta |
 | [astraweave-behavior](./behavior.md) | Behavior trees, utility AI | 74.2% | Production |
 
 ## Core Engine Crates
@@ -120,7 +120,7 @@ use astraweave_behavior::{BehaviorGraph, BehaviorNode, BehaviorContext, Behavior
 
 ### astraweave-llm (58.3% coverage)
 
-LLM integration (Hermes 2 Pro via Ollama):
+LLM integration (Qwen3-8B via Ollama):
 
 | Export | Description |
 |--------|-------------|

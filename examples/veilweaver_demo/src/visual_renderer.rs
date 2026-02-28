@@ -23,7 +23,7 @@ use winit::{
 };
 
 use astraweave_ecs::App;
-use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 use astraweave_render::{
     Camera, CameraController, Instance, Mesh, Renderer, Vertex, WaterRenderer,
 };
@@ -543,7 +543,7 @@ struct VeilweaverApp {
     hud: TelemetryHud,
     metrics: TelemetryMetrics,
 
-    _llm_client: Hermes2ProOllama,
+    _llm_client: Qwen3Ollama,
 
     start_time: Instant,
     last_frame: Instant,
@@ -744,7 +744,7 @@ impl VeilweaverApp {
             game_state.enemy_entities.push(e);
         }
 
-        let llm_client = Hermes2ProOllama::fast();
+        let llm_client = Qwen3Ollama::fast();
 
         Ok(Self {
             window,

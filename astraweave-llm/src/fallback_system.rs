@@ -184,8 +184,11 @@ impl FallbackOrchestrator {
                         debug!("Falling back to tier {}", current_tier.as_str());
                     } else {
                         // No more tiers - this shouldn't happen since Emergency always succeeds
-                        #[allow(clippy::panic)] // Unreachable: Emergency tier is infallible by design
-                        { panic!("Emergency tier failed - this should never happen"); }
+                        #[allow(clippy::panic)]
+                        // Unreachable: Emergency tier is infallible by design
+                        {
+                            panic!("Emergency tier failed - this should never happen");
+                        }
                     }
                 }
             }
@@ -281,8 +284,11 @@ impl FallbackOrchestrator {
                                 current_tier = next_tier;
                                 debug!("Batch falling back to tier {}", current_tier.as_str());
                             } else {
-                                #[allow(clippy::panic)] // Unreachable: Emergency tier is infallible by design
-                                { panic!("Emergency tier failed - this should never happen"); }
+                                #[allow(clippy::panic)]
+                                // Unreachable: Emergency tier is infallible by design
+                                {
+                                    panic!("Emergency tier failed - this should never happen");
+                                }
                             }
                         }
                     }
@@ -713,7 +719,8 @@ SIMPLE (no params or one param):
                 let example = if param_count == 0 {
                     format!("{{\"act\": \"{}\"}}", tool.name)
                 } else {
-                    #[allow(clippy::expect_used)] // INVARIANT: param_count == 1 guaranteed by branch condition
+                    #[allow(clippy::expect_used)]
+                    // INVARIANT: param_count == 1 guaranteed by branch condition
                     let (key, val) = tool
                         .args
                         .iter()

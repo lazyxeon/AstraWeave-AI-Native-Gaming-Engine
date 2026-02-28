@@ -1,0 +1,41 @@
+# Qwen3-8B Strategic — Thinking Mode for Deep Planning
+#
+# Enables Qwen3's chain-of-thought reasoning via <think> blocks.
+# Used for background strategic planning by the AIArbiter.
+# Higher latency (3-8s) but significantly better tactical analysis.
+#
+# Usage:
+#   ollama create qwen3-strategic -f Modelfile.qwen3-strategic
+#   ollama run qwen3-strategic
+#
+# Performance target: 3-8s latency, ≥95% JSON success rate
+
+FROM qwen3:8b
+
+# Thinking mode sampling — Qwen3 docs recommend top_p 0.95 for thinking
+PARAMETER temperature 0.6
+PARAMETER top_p 0.95
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1.05
+PARAMETER num_predict 1024
+PARAMETER num_ctx 32768
+
+SYSTEM """You are a strategic AI planner in a real-time game.
+Think carefully before responding. Use chain-of-thought reasoning.
+After reasoning, respond with ONLY valid JSON — no markdown, no commentary.
+Follow this exact schema:
+{
+  "plan_id": "unique_id",
+  "reasoning": "detailed strategic analysis",
+  "steps": [
+    {"act": "MoveTo", "x": 10, "y": 5},
+    {"act": "CoverFire", "target_id": 99, "duration": 2.0}
+  ]
+}
+
+Available actions: MoveTo, Throw, CoverFire, Revive, Wait, Scan, Attack, Reload.
+Rules:
+- Consider enemy positions, cover, and team health
+- Analyze flanking opportunities and fallback routes
+- Plan multi-step tactics (up to 8 steps)
+- All field names must match exactly (case-sensitive)"""
