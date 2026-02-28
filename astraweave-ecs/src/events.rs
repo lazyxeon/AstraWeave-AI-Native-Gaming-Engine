@@ -158,7 +158,11 @@ impl Events {
 
     /// Get event count for type E
     pub fn len<E: Event>(&self) -> usize {
-        0 /* ~ changed by cargo-mutants ~ */
+        self.queues
+            .get(&TypeId::of::<E>())
+            .and_then(|q| q.downcast_ref::<EventQueue<E>>())
+            .map(|q| q.len())
+            .unwrap_or(0)
     }
 
     /// Check if events queue is empty for type E
