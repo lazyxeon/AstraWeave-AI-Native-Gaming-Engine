@@ -59,7 +59,7 @@ impl BlobVec {
     /// Create a new BlobVec with specified capacity
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self {
         let mut blob = Self::new::<T>();
-        if capacity < /* ~ changed by cargo-mutants ~ */ 0 {
+        if capacity > 0 {
             blob.reserve(capacity);
         }
         blob

@@ -1,0 +1,40 @@
+# ============================================
+# TSan Suppressions for AstraWeave
+# ============================================
+# TSan with async Rust is noisy. These are known false positives.
+# This file is committed to the repo so TSAN_OPTIONS can reference it
+# from any CI job without needing to create it at runtime.
+#
+# Last updated: February 2026
+# ============================================
+
+# Standard library false positives
+race:std::sync::mpsc
+race:std::sync::Once
+race:std::thread
+
+# Async runtime false positives (Tokio internals)
+race:tokio::runtime
+race:tokio::sync
+race:tokio::io
+race:tokio::task
+race:tokio::time
+
+# Common concurrency crates
+race:crossbeam
+race:crossbeam_channel
+race:crossbeam_deque
+race:parking_lot
+race:rayon
+race:rayon_core
+
+# External dependencies
+race:rapier3d
+race:nalgebra
+
+# GPU stack (handled by wgpu validation instead)
+race:wgpu
+race:wgpu_core
+race:wgpu_hal
+race:naga
+race:ash
