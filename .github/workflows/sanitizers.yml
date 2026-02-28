@@ -526,7 +526,8 @@ jobs:
             case "$1" in
               success)  echo "✅ Pass" ;;
               failure)  echo "❌ Fail" ;;
-              skipped)  echo "⏭️ Skipped" ;;
+              skipSource Integrity | $(result_icon "${{ needs.source-integrity.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| ped)  echo "⏭️ Skipped" ;;
               cancelled) echo "🚫 Cancelled" ;;
               *)        echo "❓ $1" ;;
             esac
@@ -537,7 +538,12 @@ jobs:
           echo "| LeakSanitizer | $(result_icon "${{ needs.leak-sanitizer.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
           echo "| ThreadSanitizer | $(result_icon "${{ needs.thread-sanitizer.result }}") | No (advisory) |" >> $GITHUB_STEP_SUMMARY
           echo "| Determinism | $(result_icon "${{ needs.determinism.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHsource-integrity.result }}" = "failure" ]; then
+            echo "❌ Source integrity check FAILED (cargo-mutants artifacts detected)"
+            FAILED=1
+          fi
+
+          if [ "${{ needs.UB_STEP_SUMMARY
           echo "_Run triggered by: \`${{ github.event_name }}\` at $(date -u)_" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any critical (non-advisory) job failed
