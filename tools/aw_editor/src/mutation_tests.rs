@@ -2067,6 +2067,24 @@ mod scene_state_exact_tests {
         assert_eq!(found.len(), 0, "entity outside radius should be excluded");
     }
 
+    // Kill mutation: replace - with + in find_entities_near
+    // Using non-zero center so (pos - center) != (pos + center)
+    #[test]
+    fn test_find_near_with_nonzero_center() {
+        // Entity at (5, 1, 0) — center at (4, 1, 0) — distance = 1.0
+        let w = world_with_entity("Close", IVec2 { x: 5, y: 0 });
+        let state = EditorSceneState::new(w);
+        // pos = (5.0, 1.0, 0.0), center = (4.0, 1.0, 0.0)
+        // Original: (5-4, 1-1, 0-0) = (1,0,0), length_sq = 1 <= 4 → found
+        // Mutated:  (5+4, 1+1, 0+0) = (9,2,0), length_sq = 85 > 4 → NOT found
+        let found = state.find_entities_near(Vec3::new(4.0, 1.0, 0.0), 2.0);
+        assert_eq!(
+            found.len(),
+            1,
+            "entity near non-zero center should be found (kills -/+ mutation)"
+        );
+    }
+
     // --- validate with valid entities ---
     #[test]
     fn test_validate_valid_world() {
@@ -2368,5 +2386,315 @@ mod behavior_graph_exact_tests {
     #[test]
     fn test_decorator_display_inverter() {
         assert_eq!(format!("{}", DecoratorKind::Inverter), "Inverter");
+    }
+}
+
+// ==========================================================================
+// v4 Mutation Kill Tests — dock_layout, scene_state additional coverage
+// ==========================================================================
+
+/// Additional tests for dock_layout.rs mutations (v4 misses)
+mod dock_layout_v4_tests {
+    use crate::dock_layout::{DockLayout, LayoutPreset};
+
+    // --- has_debug_panels must return false for non-debug layouts ---
+    #[test]
+    fn test_has_debug_panels_false_for_wide() {
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        // Wide only has Viewport + Inspector — no debug panels
+        assert!(
+            !layout.has_debug_panels(),
+            "Wide layout should have no debug panels"
+        );
+    }
+
+    #[test]
+    fn test_has_debug_panels_true_for_debug() {
+        let layout = DockLayout::from_preset(LayoutPreset::Debug);
+        assert!(
+            layout.has_debug_panels(),
+            "Debug layout should have debug panels"
+        );
+    }
+
+    // --- matches_preset must return false for non-matching presets ---
+    #[test]
+    fn test_matches_preset_false_for_mismatch() {
+        let layout = DockLayout::from_preset(LayoutPreset::Wide);
+        // Wide != Default
+        assert!(
+            !layout.matches_preset(LayoutPreset::Default),
+            "Wide layout should not match Default preset"
+        );
+    }
+
+    #[test]
+    fn test_matches_preset_true_for_same() {
+        let layout = DockLayout::from_preset(LayoutPreset::Default);
+        assert!(
+            layout.matches_preset(LayoutPreset::Default),
+            "Default layout should match Default preset"
+        );
+    }
+
+    // --- closest_preset must return the correct preset ---
+    #[test]
+    fn test_closest_preset_debug_returns_debug() {
+        let layout = DockLayout::from_preset(LayoutPreset::Debug);
+        assert_eq!(
+            layout.closest_preset(),
+            LayoutPreset::Debug,
+            "Debug layout's closest preset must be Debug, not Default"
+        );
+    }
+
+    #[test]
+    fn test_closest_preset_not_always_default() {
+        // Kill mutation: closest_preset -> Default::default() (which is Default)
+        // Debug layout's closest preset must NOT be Default
+        let layout = DockLayout::from_preset(LayoutPreset::Debug);
+        assert_ne!(
+            layout.closest_preset(),
+            LayoutPreset::Default,
+            "Debug layout must not return Default as closest preset"
+        );
+    }
+}
+
+/// Additional scene_state.rs tests for v4 mutations
+mod scene_state_v4_tests {
+    use crate::scene_state::{EditorSceneState, TransformableScene};
+    use crate::gizmo::state::TransformSnapshot;
+    use astraweave_core::{IVec2, Team, World};
+    use glam::{Quat, Vec3};
+
+    /// Helper: build world + EditorSceneState with one entity
+    fn state_with_entity(name: &str, x: i32, y: i32) -> (EditorSceneState, astraweave_core::Entity) {
+        let mut w = World::new();
+        let e = w.spawn(name, IVec2 { x, y }, Team { id: 0 }, 100, 10);
+        let state = EditorSceneState::new(w);
+        (state, e)
+    }
+
+    // --- world() must return the internal world, not a leaked default ---
+    #[test]
+    fn test_world_returns_actual_world() {
+        let (state, entity) = state_with_entity("probe", 5, 10);
+        // If world() returned a leaked Default::default(), it wouldn't have our entity
+        let world = state.world();
+        assert!(
+            world.pose(entity).is_some(),
+            "world() must return the actual internal world containing our entity"
+        );
+    }
+
+    // --- world_mut() must return the actual mutable world ---
+    #[test]
+    fn test_world_mut_returns_actual_world() {
+        let (mut state, entity) = state_with_entity("probe", 5, 10);
+        // Mutate through world_mut, then read back through world
+        let new_entity = state.world_mut().spawn("new_entity", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 50, 5);
+        assert!(
+            state.world().pose(new_entity).is_some(),
+            "world_mut() must return the actual internal world"
+        );
+    }
+
+    // --- get_editor_entity_mut must return Some for existing entity ---
+    #[test]
+    fn test_get_editor_entity_mut_returns_some() {
+        let (mut state, entity) = state_with_entity("hero", 3, 4);
+        let result = state.get_editor_entity_mut(entity);
+        assert!(
+            result.is_some(),
+            "get_editor_entity_mut must return Some for existing entity"
+        );
+        let editor_entity = result.unwrap();
+        assert_eq!(editor_entity.name, "hero");
+    }
+
+    // --- apply_transform updates the world pose ---
+    #[test]
+    fn test_apply_transform_updates_world() {
+        use crate::gizmo::scene_viewport::Transform;
+        let (mut state, entity) = state_with_entity("target", 0, 0);
+        let new_transform = Transform {
+            position: Vec3::new(10.0, 1.0, 20.0),
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        state.apply_transform(entity, &new_transform);
+        let pose = state.world().pose(entity).unwrap();
+        assert_eq!(pose.pos.x, 10);
+        assert_eq!(pose.pos.y, 20);
+    }
+
+    // --- TransformableScene::world() must return actual world ---
+    #[test]
+    fn test_transformable_scene_world() {
+        let (state, entity) = state_with_entity("ts_probe", 7, 8);
+        let world = TransformableScene::world(&state);
+        assert!(
+            world.pose(entity).is_some(),
+            "TransformableScene::world() must return the actual world"
+        );
+    }
+
+    // --- TransformableScene::world_mut() must return actual mutable world ---
+    #[test]
+    fn test_transformable_scene_world_mut() {
+        let (mut state, _) = state_with_entity("ts_probe", 7, 8);
+        let new_e = TransformableScene::world_mut(&mut state)
+            .spawn("added", IVec2 { x: 1, y: 2 }, Team { id: 0 }, 50, 5);
+        assert!(
+            TransformableScene::world(&state).pose(new_e).is_some(),
+            "TransformableScene::world_mut() must modify the actual world"
+        );
+    }
+
+    // --- TransformableScene::sync_all must update cache ---
+    #[test]
+    fn test_transformable_scene_sync_all_updates_cache() {
+        let (mut state, entity) = state_with_entity("sync_test", 5, 5);
+        // Clear cache first (via EditorSceneState method)
+        state.clear_cache();
+        assert_eq!(state.stats().cached_entity_count, 0);
+        // sync_all should rebuild cache
+        TransformableScene::sync_all(&mut state);
+        assert!(
+            state.stats().cached_entity_count > 0,
+            "sync_all must rebuild the cache"
+        );
+    }
+
+    // --- TransformableScene::snapshot_for ---
+    #[test]
+    fn test_snapshot_for_existing_entity() {
+        let (state, entity) = state_with_entity("snap", 3, 7);
+        let snap = TransformableScene::snapshot_for(&state, entity);
+        assert!(
+            snap.is_some(),
+            "snapshot_for must return Some for existing entity"
+        );
+        let snap = snap.unwrap();
+        // Position should reflect entity at (3, 7) → (3.0, 1.0, 7.0)
+        assert!((snap.position.x - 3.0).abs() < 0.01);
+        assert!((snap.position.y - 1.0).abs() < 0.01);
+        assert!((snap.position.z - 7.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_snapshot_for_nonexistent_entity() {
+        let (state, _) = state_with_entity("snap", 3, 7);
+        let snap = TransformableScene::snapshot_for(&state, 99999);
+        assert!(
+            snap.is_none(),
+            "snapshot_for must return None for nonexistent entity"
+        );
+    }
+
+    #[test]
+    fn test_snapshot_for_has_correct_values_not_default() {
+        // Kill mutation: snapshot_for -> Some(Default::default())
+        let (state, entity) = state_with_entity("offset", 10, 20);
+        let snap = TransformableScene::snapshot_for(&state, entity).unwrap();
+        // Default position is Vec3::ZERO, but our entity is at (10, 1, 20)
+        assert!(
+            snap.position.x > 1.0,
+            "snapshot_for must return actual position, not Default"
+        );
+        assert!(
+            snap.position.z > 1.0,
+            "snapshot_for z must reflect entity y coordinate"
+        );
+    }
+
+    // --- TransformableScene::apply_snapshot ---
+    #[test]
+    fn test_apply_snapshot_modifies_world() {
+        let (mut state, entity) = state_with_entity("snap_apply", 0, 0);
+        let snapshot = TransformSnapshot {
+            position: Vec3::new(15.0, 1.0, 25.0),
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        TransformableScene::apply_snapshot(&mut state, entity, &snapshot);
+        let pose = state.world().pose(entity).unwrap();
+        assert_eq!(pose.pos.x, 15, "apply_snapshot must update world x");
+        assert_eq!(pose.pos.y, 25, "apply_snapshot must update world y");
+    }
+
+    // --- stats: division (not multiplication) for cache_coverage ---
+    #[test]
+    fn test_stats_coverage_is_division_not_multiplication() {
+        // With 2 entities and 2 cached, coverage = 2/2 = 1.0
+        // If mutated to multiplication: 2*2 = 4.0 — clearly wrong
+        let mut w = World::new();
+        w.spawn("a", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 10);
+        w.spawn("b", IVec2 { x: 1, y: 1 }, Team { id: 0 }, 100, 10);
+        let state = EditorSceneState::new(w);
+        let stats = state.stats();
+        assert_eq!(stats.entity_count, 2);
+        assert!(
+            stats.cache_coverage <= 1.0,
+            "cache_coverage must be <= 1.0 (division), got {}",
+            stats.cache_coverage
+        );
+        assert!(
+            (stats.cache_coverage - 1.0).abs() < 0.01,
+            "With all entities cached, coverage should be 1.0, got {}",
+            stats.cache_coverage
+        );
+    }
+
+    // --- validate: rotation checks ---
+    #[test]
+    fn test_validate_valid_entity_no_rotation_warnings() {
+        // Entity with valid (finite, normalized) rotation → no rotation warnings
+        let (state, _) = state_with_entity("valid_rot", 1, 1);
+        let issues = state.validate();
+        let rotation_issues: Vec<_> = issues
+            .iter()
+            .filter(|i| i.message.contains("Rotation") || i.message.contains("rotation"))
+            .collect();
+        assert!(
+            rotation_issues.is_empty(),
+            "Valid entity should have no rotation issues, got: {:?}",
+            rotation_issues
+        );
+    }
+
+    // --- validate: delete ! in scale check (line 269 region) ---
+    #[test]
+    fn test_validate_with_all_entities_cached_no_uncached_warning() {
+        // After sync, all entities should be cached — no "not in cache" warnings
+        let (state, _) = state_with_entity("cached", 5, 5);
+        let issues = state.validate();
+        let uncached_issues: Vec<_> = issues
+            .iter()
+            .filter(|i| i.message.contains("not in cache"))
+            .collect();
+        assert!(
+            uncached_issues.is_empty(),
+            "After sync, no 'not in cache' warnings should exist, got: {:?}",
+            uncached_issues
+        );
+    }
+
+    // --- validate: scale checks ---
+    #[test]
+    fn test_validate_normal_scale_no_error() {
+        // Entity with default scale (1.0) should produce no scale errors
+        let (state, _) = state_with_entity("good_scale", 1, 1);
+        let issues = state.validate();
+        let scale_errors: Vec<_> = issues
+            .iter()
+            .filter(|i| i.message.contains("scale") || i.message.contains("Scale"))
+            .collect();
+        assert!(
+            scale_errors.is_empty(),
+            "Entity with normal scale should have no scale errors, got: {:?}",
+            scale_errors
+        );
     }
 }

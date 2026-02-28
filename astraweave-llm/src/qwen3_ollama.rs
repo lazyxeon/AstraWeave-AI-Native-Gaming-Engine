@@ -199,8 +199,17 @@ impl Qwen3Ollama {
     /// Create optimized Qwen3-8B client for low-latency game AI
     ///
     /// Non-thinking mode with lower temperature (0.5), fewer max tokens (128),
-    /// and reduced context window (8192) for fastest possible inference.
+    /// and reduced context window (2048) for fastest possible inference.
     /// Expected latency: <2s on modern GPUs.
+    ///
+    /// ## Optimizations Applied (Rounds 1-3)
+    /// - Context window: 2048 (vs 32K default) — minimal KV cache allocation
+    /// - Ultra-short system prompt — fewest possible prefill tokens
+    /// - Lean sampling: no top_k, no repeat_penalty — faster per-token decode
+    /// - `num_batch: 1024` — faster prompt prefill (2× default)
+    /// - `num_keep: -1` — cache entire system prompt in KV prefix (skips re-eval)
+    /// - `use_mmap: true` — memory-mapped model loading
+    /// - `keep_alive: -1` — never unload model from memory
     ///
     /// # Example
     /// ```no_run
@@ -208,11 +217,14 @@ impl Qwen3Ollama {
     /// let client = Qwen3Ollama::fast(); // Low latency variant
     /// ```
     pub fn fast() -> Self {
-        Self::new("http://localhost:11434", "qwen3:8b")
+        let mut client = Self::new("http://localhost:11434", "qwen3:8b")
             .with_temperature(0.5)
             .with_max_tokens(128)
             .with_thinking(false)
-            .with_context_length(8192)
+            .with_context_length(2048);
+        // Ultra-short system prompt — every token saved reduces TTFC
+        client.system_prompt = Some(FAST_SYSTEM_PROMPT.to_string());
+        client
     }
 
     /// Create Qwen3-8B client for strategic planning (thinking mode)
@@ -283,24 +295,125 @@ impl Qwen3Ollama {
     }
 
     /// Build the Ollama API request options with Qwen3-specific sampling parameters
+    ///
+    /// **Optimization**: Non-thinking mode uses a lean parameter set (no top_k, no
+    /// repeat_penalty) to minimize per-token sampling overhead. These params are
+    /// only valuable for thinking mode where quality matters more than speed.
     fn build_options(&self) -> serde_json::Value {
-        json!({
-            "temperature": self.temperature,
-            "num_predict": self.max_tokens,
-            "num_ctx": self.context_length,
-            "top_p": if self.enable_thinking { 0.95 } else { 0.8 },
-            "top_k": 20,
-            "repeat_penalty": if self.enable_thinking { 1.05 } else { 1.1 },
-        })
+        if self.enable_thinking {
+            // Full sampling for strategic planning quality
+            json!({
+                "temperature": self.temperature,
+                "num_predict": self.max_tokens,
+                "num_ctx": self.context_length,
+                "top_p": 0.95,
+                "top_k": 20,
+                "repeat_penalty": 1.05,
+            })
+        } else {
+            // Lean sampling for maximum inference speed.
+            // Omit top_k and repeat_penalty — Ollama defaults are fine
+            // and each extra sampler adds per-token latency.
+            // num_batch: 1024 — doubles parallel prompt processing (default: 512).
+            // num_keep: -1 — cache entire system prompt prefix in KV cache,
+            //   so consecutive requests skip re-evaluating system prompt tokens.
+            // use_mmap: true — memory-mapped model loading for faster access.
+            json!({
+                "temperature": self.temperature,
+                "num_predict": self.max_tokens,
+                "num_ctx": self.context_length,
+                "num_batch": 1024,
+                "num_keep": -1,
+                "use_mmap": true,
+            })
+        }
     }
 
-    /// Prepare user message content with thinking mode prefix
+    /// Prepare user message content with optional thinking mode prefix
+    ///
+    /// **Optimization**: Only prepend `/think` when thinking mode is enabled.
+    /// The `/no_think` prefix is redundant because we already set `"think": false`
+    /// in the API request body. Removing it saves ~10 prompt tokens per request.
     fn prepare_user_content(&self, prompt: &str) -> String {
         if self.enable_thinking {
             format!("/think\n{}", prompt)
         } else {
-            format!("/no_think\n{}", prompt)
+            // No prefix needed — "think": false in the request body handles it
+            prompt.to_string()
         }
+    }
+
+    /// Preload the model into GPU/memory and warm the KV prefix cache.
+    ///
+    /// Performs two operations:
+    /// 1. Loads model weights into VRAM (eliminates 3-5s cold-start)
+    /// 2. Sends a minimal inference with the system prompt to populate
+    ///    the KV prefix cache (`num_keep=-1` keeps it cached)
+    ///
+    /// After preload, the first real inference request skips both model loading
+    /// AND system prompt re-evaluation, achieving steady-state TTFC immediately.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use astraweave_llm::qwen3_ollama::Qwen3Ollama;
+    /// # async fn demo() -> anyhow::Result<()> {
+    /// let client = Qwen3Ollama::fast();
+    /// client.preload().await?;  // Warm model + KV cache
+    /// // First real call now has the same TTFC as subsequent calls
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn preload(&self) -> Result<()> {
+        static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+        let client = CLIENT.get_or_init(|| {
+            reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(120))
+                .build()
+                .expect("Failed to create HTTP client")
+        });
+
+        let url = format!("{}/api/chat", self.url);
+
+        // Build messages: include system prompt if configured, plus a minimal
+        // user message to trigger a full forward pass and populate KV cache.
+        let mut messages = Vec::new();
+        if let Some(ref sys) = self.system_prompt {
+            messages.push(json!({"role": "system", "content": sys}));
+        }
+        messages.push(json!({"role": "user", "content": "ready"}));
+
+        let body = json!({
+            "model": self.model,
+            "messages": messages,
+            "stream": false,
+            "think": false,
+            "keep_alive": -1,
+            "options": self.build_options(),
+        });
+
+        tracing::info!("Preloading model {} (weights + KV prefix cache)...", self.model);
+        let start = std::time::Instant::now();
+
+        let response = client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await
+            .context("Failed to preload model")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Ollama preload returned error: {}", response.status());
+        }
+
+        // Consume the response body to complete the request
+        let _ = response.text().await;
+
+        tracing::info!(
+            "Model {} preloaded in {:.1}s (KV prefix cached)",
+            self.model,
+            start.elapsed().as_secs_f64()
+        );
+        Ok(())
     }
 
     /// Internal chat method using /api/chat
@@ -323,6 +436,7 @@ impl Qwen3Ollama {
             "messages": messages,
             "stream": false,
             "think": self.enable_thinking,
+            "keep_alive": -1,
             "options": self.build_options(),
         });
 
@@ -438,6 +552,13 @@ Rules:
 - Prioritize team survival and tactical advantage
 - Be concise — minimize steps for efficiency"#;
 
+/// Minimal system prompt for fast/latency-critical inference.
+///
+/// Ultra-short — only 2 lines, ~15 tokens. Every token saved at the system prompt
+/// level reduces TTFC because it shrinks the prefill workload. The JSON schema
+/// example acts as a one-shot template that Qwen3 reliably follows.
+const FAST_SYSTEM_PROMPT: &str = "JSON only. {\"plan_id\":\"id\",\"steps\":[{\"act\":\"MoveTo\",\"x\":0,\"y\":0}]}";
+
 /// Strip `<think>...</think>` blocks from Qwen3 thinking-mode responses.
 ///
 /// Handles edge cases:
@@ -535,6 +656,7 @@ impl LlmClient for Qwen3Ollama {
             "messages": messages,
             "stream": false,
             "think": self.enable_thinking,
+            "keep_alive": -1,
             "options": self.build_options(),
         });
 
@@ -648,6 +770,7 @@ impl LlmClient for Qwen3Ollama {
                 "messages": messages,
                 "stream": false,
                 "think": true,
+                "keep_alive": -1,
                 "options": self.build_options(),
             });
 
@@ -687,6 +810,7 @@ impl LlmClient for Qwen3Ollama {
             "messages": messages,
             "stream": true,
             "think": false,
+            "keep_alive": -1,
             "options": self.build_options(),
         });
 
@@ -840,7 +964,7 @@ mod tests {
         assert_eq!(client.temperature, 0.5);
         assert_eq!(client.max_tokens, 128);
         assert!(!client.enable_thinking);
-        assert_eq!(client.context_length, 8192);
+        assert_eq!(client.context_length, 2048);
     }
 
     #[test]
@@ -917,17 +1041,27 @@ mod tests {
     fn test_prepare_user_content_no_thinking() {
         let client = Qwen3Ollama::localhost().with_thinking(false);
         let content = client.prepare_user_content("What should I do?");
-        assert!(content.starts_with("/no_think\n"));
-        assert!(content.contains("What should I do?"));
+        // Optimized: no /no_think prefix — API body "think": false handles it
+        assert_eq!(content, "What should I do?");
     }
 
     #[test]
     fn test_build_options_non_thinking() {
         let client = Qwen3Ollama::fast();
         let opts = client.build_options();
-        assert_eq!(opts["top_p"], 0.8);
-        assert_eq!(opts["top_k"], 20);
-        assert_eq!(opts["repeat_penalty"], 1.1);
+        // Optimized: lean params — no top_p, top_k, repeat_penalty for speed
+        assert_eq!(opts["temperature"], 0.5);
+        assert_eq!(opts["num_predict"], 128);
+        assert_eq!(opts["num_ctx"], 2048);
+        // num_batch added for round 2 perf optimization
+        assert_eq!(opts["num_batch"], 1024);
+        // Round 3: num_keep=-1 caches system prompt prefix in KV cache
+        assert_eq!(opts["num_keep"], -1);
+        // Round 3: use_mmap for memory-mapped model loading
+        assert_eq!(opts["use_mmap"], true);
+        // These should NOT be present in lean mode
+        assert!(opts.get("top_k").is_none() || opts["top_k"].is_null());
+        assert!(opts.get("repeat_penalty").is_none() || opts["repeat_penalty"].is_null());
     }
 
     #[test]

@@ -263,7 +263,16 @@ impl DockLayout {
     /// Returns true if the panel was removed, false if it wasn't found
     /// or couldn't be removed (e.g., Viewport is not closable).
     pub fn remove_panel(&mut self, panel: &PanelType) -> bool {
-        true /* ~ changed by cargo-mutants ~ */
+        if !panel.is_closable() {
+            return false;
+        }
+
+        if let Some((surface_idx, node_idx, tab_idx)) = self.find_panel(panel) {
+            self.dock_state.remove_tab((surface_idx, node_idx, tab_idx));
+            return true;
+        }
+
+        false
     }
 
     /// Find a panel in the layout
