@@ -1857,3 +1857,130 @@ mod type_registry_mutation_tests {
         assert!(world.has::<Marker>(e), "handler must insert component");
     }
 }
+
+// =============================================================================
+// 12. Targeted Mutation Kills — Round 2
+// =============================================================================
+// These tests target the 7 catchable mutations missed in round 1.
+
+mod round2_mutation_kills {
+    use super::*;
+
+    // -------------------------------------------------------------------------
+    // archetype.rs:285 — remove_entity -> Option<usize> with Some(0)/Some(1)
+    // We must verify None is returned for non-existent entities.
+    // -------------------------------------------------------------------------
+    #[test]
+    fn archetype_remove_entity_returns_none_for_unknown_entity() {
+        let mut storage = ArchetypeStorage::new();
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<u32>()]);
+        let arch_id = storage.get_or_create_archetype(sig);
+        let arch = storage.get_archetype_mut(arch_id).unwrap();
+
+        // Never inserted entity — remove must return None, not Some(0) or Some(1)
+        let fake_entity = Entity::new(999, 0);
+        let result = arch.remove_entity(fake_entity);
+        assert_eq!(result, None, "remove_entity on unknown entity must return None");
+    }
+
+    #[test]
+    fn archetype_remove_entity_returns_correct_dense_index() {
+        let mut storage = ArchetypeStorage::new();
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<u32>()]);
+        let arch_id = storage.get_or_create_archetype(sig);
+        let arch = storage.get_archetype_mut(arch_id).unwrap();
+
+        let e0 = Entity::new(0, 0);
+        let e1 = Entity::new(1, 0);
+        let e2 = Entity::new(2, 0);
+        let mut comps0 = HashMap::new();
+        comps0.insert(TypeId::of::<u32>(), Box::new(10u32) as Box<dyn std::any::Any + Send + Sync>);
+        arch.add_entity(e0, comps0);
+        let mut comps1 = HashMap::new();
+        comps1.insert(TypeId::of::<u32>(), Box::new(20u32) as Box<dyn std::any::Any + Send + Sync>);
+        arch.add_entity(e1, comps1);
+        let mut comps2 = HashMap::new();
+        comps2.insert(TypeId::of::<u32>(), Box::new(30u32) as Box<dyn std::any::Any + Send + Sync>);
+        arch.add_entity(e2, comps2);
+
+        // e1 is at dense index 1 — removing it should return Some(1)
+        let idx = arch.remove_entity(e1);
+        assert_eq!(idx, Some(1), "remove_entity must return the correct dense index");
+
+        // e0 is at dense index 0
+        let idx0 = arch.remove_entity(e0);
+        assert_eq!(idx0, Some(0), "remove_entity must return correct index after prior removal");
+    }
+
+    // -------------------------------------------------------------------------
+    // blob_vec.rs:117 — capacity * 2 growth factor in reserve
+    // Mutant changes * 2 to + 2 or / 2. After growing past 4, next growth
+    // should double: 4 → 8. With + 2 it would be 6, with / 2 it would be 2.
+    // -------------------------------------------------------------------------
+    #[test]
+    fn blob_vec_reserve_growth_factor_doubles() {
+        let mut blob = BlobVec::new::<u32>();
+        // First reserve: capacity goes to max(additional, 0*2, 4) = max(additional, 4)
+        // Push 4 items to fill capacity
+        for i in 0u32..4 {
+            unsafe { blob.push(i); }
+        }
+        assert_eq!(blob.capacity(), 4, "initial capacity should be 4");
+
+        // Push 5th item: triggers reserve(1), required_cap=5
+        // new_capacity = max(5, 4*2, 4) = max(5, 8, 4) = 8  (correct)
+        // with +2: max(5, 4+2, 4) = max(5, 6, 4) = 6
+        // with /2: max(5, 4/2, 4) = max(5, 2, 4) = 5
+        unsafe { blob.push(4u32); }
+        assert_eq!(
+            blob.capacity(), 8,
+            "capacity must double from 4 to 8 (growth factor * 2)"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // sparse_set.rs:239 — != to == in SparseSetData::remove
+    // Mutant inverts the swap condition. When removing a non-last element,
+    // the swap wouldn't happen; when removing the last, it would try to swap.
+    // -------------------------------------------------------------------------
+    #[test]
+    fn sparse_set_data_remove_non_last_preserves_remaining() {
+        let mut set = SparseSetData::<i32>::new();
+        let e0 = Entity::new(0, 0);
+        let e1 = Entity::new(1, 0);
+        let e2 = Entity::new(2, 0);
+
+        set.insert(e0, 100);
+        set.insert(e1, 200);
+        set.insert(e2, 300);
+
+        // Remove e0 (at dense index 0, NOT the last element)
+        // With correct !=: swaps e2 into position 0, removes last
+        // With wrong ==: no swap, pops last (e2's data), but e0's data remains
+        let removed = set.remove(e0);
+        assert_eq!(removed, Some(100));
+
+        // e1 and e2 must still be accessible with correct values
+        assert_eq!(set.get(e1), Some(&200), "e1 must still be accessible after removing e0");
+        assert_eq!(set.get(e2), Some(&300), "e2 must still be accessible after removing e0");
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn sparse_set_data_remove_last_element_works() {
+        let mut set = SparseSetData::<i32>::new();
+        let e0 = Entity::new(0, 0);
+        let e1 = Entity::new(1, 0);
+
+        set.insert(e0, 10);
+        set.insert(e1, 20);
+
+        // Remove the LAST element (e1 at dense index 1 = last_index 1)
+        // With correct !=: dense_index == last_index, no swap, just pop
+        // With wrong ==: dense_index == last_index → tries to swap with itself
+        let removed = set.remove(e1);
+        assert_eq!(removed, Some(20));
+        assert_eq!(set.get(e0), Some(&10), "e0 must survive after removing last element");
+        assert_eq!(set.len(), 1);
+    }
+}
