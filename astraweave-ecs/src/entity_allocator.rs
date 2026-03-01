@@ -388,6 +388,11 @@ impl EntityAllocator {
     pub fn reserve(&mut self, additional: usize) {
         self.generations.reserve(additional);
     }
+
+    /// Get the current capacity of the generations array (for testing/diagnostics).
+    pub fn generations_capacity(&self) -> usize {
+        self.generations.capacity()
+    }
 }
 
 impl Default for EntityAllocator {
