@@ -1762,4 +1762,130 @@ mod tests {
             orch.name()
         );
     }
+
+    // ========================================================================
+    // Mutation-Killing Tests: Distance calculation with non-origin positions
+    // Catches lines 230-232 where |enemy - me| mutates to |enemy + me|
+    // and dist = dx + dy mutates to dx - dy
+    // ========================================================================
+
+    /// Kills mutation: line 230 `enemy.pos.x - me.pos.x` → `+ me.pos.x`
+    /// With me=(5,5), enemy=(7,5): original dx=|7-5|=2, dist=2 → CoverFire.
+    /// With mutation: dx=|7+5|=12, dist=12 → no CoverFire. Detectable!
+    #[test]
+    fn utility_distance_dx_catches_sub_to_add_mutation() {
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::from([("throw:smoke".to_string(), 5.0)]),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2 { x: 7, y: 5 },
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // dist = |7-5| + |5-5| = 2 ≤ 3 → CoverFire should be present
+        assert_eq!(plan.steps.len(), 2, "Should have MoveTo + CoverFire (dist=2)");
+        assert!(
+            matches!(plan.steps.get(1), Some(ActionStep::CoverFire { .. })),
+            "CoverFire expected when dist=2 with non-origin me"
+        );
+    }
+
+    /// Kills mutation: line 231 `enemy.pos.y - me.pos.y` → `+ me.pos.y`
+    /// With me=(5,5), enemy=(5,7): original dy=|7-5|=2, dist=2 → CoverFire.
+    /// With mutation: dy=|7+5|=12, dist=12 → no CoverFire. Detectable!
+    #[test]
+    fn utility_distance_dy_catches_sub_to_add_mutation() {
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::from([("throw:smoke".to_string(), 5.0)]),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2 { x: 5, y: 7 },
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // dist = |5-5| + |7-5| = 2 ≤ 3 → CoverFire should be present
+        assert_eq!(plan.steps.len(), 2, "Should have MoveTo + CoverFire (dist=2)");
+        assert!(
+            matches!(plan.steps.get(1), Some(ActionStep::CoverFire { .. })),
+            "CoverFire expected when dist=2 with non-origin me (y-axis)"
+        );
+    }
+
+    /// Kills mutation: line 232 `dx + dy` → `dx - dy`
+    /// With me=(5,5), enemy=(7,7): original dist=|2|+|2|=4 > 3 → no CoverFire.
+    /// With mutation: dist=2-2=0 ≤ 3 → CoverFire appears. Detectable!
+    #[test]
+    fn utility_distance_sum_catches_add_to_sub_mutation() {
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::from([("throw:smoke".to_string(), 5.0)]),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![EnemyState {
+                id: 1,
+                pos: IVec2 { x: 7, y: 7 },
+                hp: 100,
+                cover: "none".into(),
+                last_seen: 0.0,
+            }],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+        // dist = |7-5| + |7-5| = 4 > 3 → no CoverFire (only MoveTo)
+        assert_eq!(plan.steps.len(), 1, "Should have only MoveTo (dist=4, no CoverFire)");
+        assert!(
+            matches!(plan.steps.first(), Some(ActionStep::MoveTo { .. })),
+            "Only MoveTo expected when dist=4 (no CoverFire)"
+        );
+    }
 }
