@@ -497,18 +497,18 @@ jobs:
   # ──────────────────────────────────────────────────────
   # Summary job: aggregates results from all sanitizer jobs
   # ──────────────────────────────────────────────────────
-  sanitizer-source-integrity, asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
+  sanitizer-summary:
+    name: Sanitizer Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [source-integrity, asan-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
     steps:
       - name: Check sanitizer results
         run: |
           echo "=== Sanitizer Workflow Summary ==="
           echo ""
-          echo "source-integrity: ${{ needs.source-integrity.result }}-critical, asan-full, leak-sanitizer, thread-sanitizer, determinism]
-    steps:
-      - name: Check sanitizer results
-        run: |
-          echo "=== Sanitizer Workflow Summary ==="
-          echo ""
+          echo "source-integrity: ${{ needs.source-integrity.result }}"
           echo "asan-critical:    ${{ needs.asan-critical.result }}"
           echo "asan-full:        ${{ needs.asan-full.result }}"
           echo "leak-sanitizer:   ${{ needs.leak-sanitizer.result }}"
@@ -526,29 +526,29 @@ jobs:
             case "$1" in
               success)  echo "✅ Pass" ;;
               failure)  echo "❌ Fail" ;;
-              skipSource Integrity | $(result_icon "${{ needs.source-integrity.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
-          echo "| ped)  echo "⏭️ Skipped" ;;
+              skipped)  echo "⏭️ Skipped" ;;
               cancelled) echo "🚫 Cancelled" ;;
               *)        echo "❓ $1" ;;
             esac
           }
 
+          echo "| Source Integrity | $(result_icon "${{ needs.source-integrity.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
           echo "| ASan (Critical) | $(result_icon "${{ needs.asan-critical.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
           echo "| ASan (Full) | $(result_icon "${{ needs.asan-full.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
           echo "| LeakSanitizer | $(result_icon "${{ needs.leak-sanitizer.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
           echo "| ThreadSanitizer | $(result_icon "${{ needs.thread-sanitizer.result }}") | No (advisory) |" >> $GITHUB_STEP_SUMMARY
           echo "| Determinism | $(result_icon "${{ needs.determinism.result }}") | Yes |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHsource-integrity.result }}" = "failure" ]; then
-            echo "❌ Source integrity check FAILED (cargo-mutants artifacts detected)"
-            FAILED=1
-          fi
-
-          if [ "${{ needs.UB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "_Run triggered by: \`${{ github.event_name }}\` at $(date -u)_" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any critical (non-advisory) job failed
           # Skipped jobs are OK — they run on different triggers
           FAILED=0
+
+          if [ "${{ needs.source-integrity.result }}" = "failure" ]; then
+            echo "❌ Source integrity check FAILED (cargo-mutants artifacts detected)"
+            FAILED=1
+          fi
 
           if [ "${{ needs.asan-critical.result }}" = "failure" ]; then
             echo "❌ ASan critical crates FAILED"
