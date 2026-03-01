@@ -263,6 +263,11 @@ impl<T> SparseSetData<T> {
         &self.entities
     }
 
+    /// Get the dense array capacity (pre-allocated slots)
+    pub fn capacity(&self) -> usize {
+        self.entities.capacity()
+    }
+
     /// Get the packed data array
     pub fn data(&self) -> &[T] {
         &self.data

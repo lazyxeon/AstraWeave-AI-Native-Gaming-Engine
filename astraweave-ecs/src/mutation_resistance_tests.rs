@@ -1983,4 +1983,33 @@ mod round2_mutation_kills {
         assert_eq!(set.get(e0), Some(&10), "e0 must survive after removing last element");
         assert_eq!(set.len(), 1);
     }
+
+    // -------------------------------------------------------------------------
+    // entity_allocator.rs:389 — reserve → ()
+    // Verify reserve actually pre-allocates via generations_capacity()
+    // -------------------------------------------------------------------------
+    #[test]
+    fn entity_allocator_reserve_preallocates() {
+        let mut alloc = EntityAllocator::new();
+        alloc.reserve(1000);
+        assert!(
+            alloc.generations_capacity() >= 1000,
+            "reserve(1000) must pre-allocate, got capacity {}",
+            alloc.generations_capacity()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // sparse_set.rs:177 — with_capacity → Default::default()
+    // Verify with_capacity actually pre-allocates via capacity()
+    // -------------------------------------------------------------------------
+    #[test]
+    fn sparse_set_data_with_capacity_preallocates() {
+        let set: SparseSetData<u64> = SparseSetData::with_capacity(256);
+        assert!(
+            set.capacity() >= 256,
+            "with_capacity(256) must pre-allocate, got capacity {}",
+            set.capacity()
+        );
+    }
 }
