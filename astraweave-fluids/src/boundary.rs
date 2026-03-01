@@ -1201,4 +1201,141 @@ mod tests {
         // Force should push fluid away from boundary
         assert!(force[1] > 0.0);
     }
+
+    // =========================================================================
+    // Mutation-killing tests
+    // =========================================================================
+
+    #[test]
+    fn test_as_kinematic_sets_boundary_type() {
+        // Catches: replace as_kinematic -> Self with Default::default()
+        let bp = BoundaryParticle::new([1.0, 2.0, 3.0], [0.0, 0.0, 1.0])
+            .with_volume(2.5)
+            .as_kinematic();
+        assert_eq!(bp.boundary_type, 2, "as_kinematic must set boundary_type=2");
+        // These would be wrong if Default::default() was returned
+        assert_eq!(bp.position, [1.0, 2.0, 3.0]);
+        assert_eq!(bp.volume, 2.5);
+    }
+
+    #[test]
+    fn test_static_walls_all_fields() {
+        let c = BoundaryConfig::static_walls();
+        assert!(matches!(c.slip_condition, SlipCondition::NoSlip),
+            "static_walls must use NoSlip");
+        assert!((c.friction - 0.8).abs() < 1e-6,
+            "static_walls friction should be 0.8, got {}", c.friction);
+    }
+
+    #[test]
+    fn test_smooth_surface_all_fields() {
+        let c = BoundaryConfig::smooth_surface();
+        assert!(matches!(
+            c.method,
+            BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: false }
+        ), "smooth_surface method mismatch");
+        assert!((c.friction - 0.1).abs() < 1e-6,
+            "smooth_surface friction should be 0.1, got {}", c.friction);
+        assert!((c.restitution - 0.5).abs() < 1e-6,
+            "smooth_surface restitution should be 0.5, got {}", c.restitution);
+    }
+
+    #[test]
+    fn test_rough_surface_all_fields() {
+        let c = BoundaryConfig::rough_surface();
+        assert!(matches!(
+            c.method,
+            BoundaryMethod::Hybrid { sdf_for_density: true, particles_for_friction: true }
+        ), "rough_surface method mismatch");
+        assert!(matches!(c.slip_condition, SlipCondition::NoSlip),
+            "rough_surface must use NoSlip");
+        assert!((c.restitution - 0.1).abs() < 1e-6,
+            "rough_surface restitution should be 0.1, got {}", c.restitution);
+    }
+
+    #[test]
+    fn test_dynamic_object_all_fields() {
+        let c = BoundaryConfig::dynamic_object();
+        if let SlipCondition::PartialSlip(f) = c.slip_condition {
+            assert!((f - 0.5).abs() < 1e-6,
+                "dynamic_object partial slip should be 0.5, got {}", f);
+        } else {
+            panic!("dynamic_object must use PartialSlip, got {:?}", c.slip_condition);
+        }
+        assert!((c.friction - 0.5).abs() < 1e-6,
+            "dynamic_object friction should be 0.5, got {}", c.friction);
+        assert!(c.adaptive_sampling,
+            "dynamic_object must enable adaptive_sampling");
+    }
+
+    #[test]
+    fn test_cubic_spline_kernel_exact_first_branch() {
+        // Catches: sigma /→*, /→%, *→+, *→/ mutations (lines 279)
+        let h = 0.1_f32;
+        let r = 0.025_f32; // q = 0.25, first branch (q <= 0.5)
+        let sigma = 8.0 / (std::f32::consts::PI * h.powi(3));
+        let q = r / h;
+        let expected = sigma * (6.0 * q.powi(3) - 6.0 * q.powi(2) + 1.0);
+
+        let actual = cubic_spline_kernel(r, h);
+        let rel_err = (actual - expected).abs() / expected.abs();
+        assert!(rel_err < 1e-5,
+            "kernel({},{})={}, expected={}, rel_err={}", r, h, actual, expected, rel_err);
+    }
+
+    #[test]
+    fn test_cubic_spline_kernel_exact_second_branch() {
+        // Catches: sigma * 2.0 → sigma / 2.0 mutation (line 284)
+        let h = 0.1_f32;
+        let r = 0.08_f32; // q = 0.8, second branch
+        let sigma = 8.0 / (std::f32::consts::PI * h.powi(3));
+        let q = r / h;
+        let expected = sigma * 2.0 * (1.0 - q).powi(3);
+
+        let actual = cubic_spline_kernel(r, h);
+        let rel_err = (actual - expected).abs() / expected.abs();
+        assert!(rel_err < 1e-4,
+            "kernel({},{})={}, expected={}, rel_err={}", r, h, actual, expected, rel_err);
+    }
+
+    #[test]
+    fn test_cubic_spline_gradient_exact_first_branch() {
+        // Catches: q=/→*, sigma /→*, *→+, branch <=→>, and /h→*h mutations
+        let h = 0.1_f32;
+        let r = 0.03_f32; // q = 0.3, well inside first branch
+        let sigma = 8.0 / (std::f32::consts::PI * h.powi(3));
+        let q = r / h;
+        let expected = sigma * (18.0 * q * q - 12.0 * q) / h;
+
+        let actual = cubic_spline_gradient(r, h);
+        let rel_err = (actual - expected).abs() / expected.abs();
+        assert!(rel_err < 1e-4,
+            "gradient({},{})={}, expected={}, rel_err={}", r, h, actual, expected, rel_err);
+    }
+
+    #[test]
+    fn test_cubic_spline_gradient_exact_second_branch() {
+        // Catches: second branch gradient computation mutations
+        let h = 0.1_f32;
+        let r = 0.08_f32; // q = 0.8, second branch
+        let sigma = 8.0 / (std::f32::consts::PI * h.powi(3));
+        let q = r / h;
+        let expected = -sigma * 6.0 * (1.0 - q).powi(2) / h;
+
+        let actual = cubic_spline_gradient(r, h);
+        let rel_err = (actual - expected).abs() / expected.abs();
+        assert!(rel_err < 1e-4,
+            "gradient({},{})={}, expected={}, rel_err={}", r, h, actual, expected, rel_err);
+    }
+
+    #[test]
+    fn test_cubic_spline_gradient_at_min_distance_nonzero() {
+        // Catches: < → == and < → <= mutations on the MIN_DISTANCE check
+        // At r = MIN_DISTANCE exactly, original continues (< is false)
+        // but == or <= mutations would early-return 0.0
+        let h = 0.1_f32;
+        let result = cubic_spline_gradient(MIN_DISTANCE, h);
+        assert!(result.abs() > 0.0,
+            "gradient at MIN_DISTANCE should be nonzero, got {}", result);
+    }
 }
