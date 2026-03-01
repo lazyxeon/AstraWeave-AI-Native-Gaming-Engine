@@ -535,8 +535,12 @@ mod tests {
     use super::*;
 
     /// Helper: create a wgpu device + queue for testing.
-    /// Returns None if no GPU adapter is available (e.g. headless CI).
+    /// Returns None if no GPU adapter is available (e.g. headless CI)
+    /// or if SKIP_GPU_TESTS env var is set (e.g. mutation testing).
     fn try_create_test_device() -> Option<(wgpu::Device, wgpu::Queue)> {
+        if std::env::var("SKIP_GPU_TESTS").is_ok() {
+            return None;
+        }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower,
