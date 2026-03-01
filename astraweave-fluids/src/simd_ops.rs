@@ -39416,4 +39416,102 @@ mod tests {
         assert!(health.velocity_warning);
         assert!(health.compression_warning);
     }
+
+    // =========================================================================
+    // Mutation-killing tests: batch_distances, batch_kernel_cubic,
+    // batch_kernel_gradient_cubic exact values
+    // =========================================================================
+
+    #[test]
+    fn test_batch_distances_at_epsilon_boundary() {
+        // Catches: > 1e-8 → >= 1e-8 mutation
+        // Two particles exactly 1e-8 apart: direction should be [0,0,0]
+        let pos = [0.0, 0.0, 0.0];
+        let neighbors = vec![[1e-8, 0.0, 0.0]];
+        let mut distances = vec![0.0; 1];
+        let mut directions = vec![[0.0, 0.0, 0.0]; 1];
+
+        batch_distances(pos, &neighbors, &mut distances, &mut directions);
+
+        // dist = 1e-8 which is NOT > 1e-8, so direction should be zero
+        assert_eq!(directions[0], [0.0, 0.0, 0.0],
+            "direction at dist=1e-8 should be zero");
+    }
+
+    #[test]
+    fn test_batch_kernel_cubic_exact_values() {
+        // Catches: all arithmetic mutations in batch_kernel_cubic
+        let h = 0.1_f32;
+        let norm = 8.0 / (std::f32::consts::PI * h * h * h);
+        let h_inv = 1.0 / h;
+
+        // Test first branch (q < 0.5): q=0.3
+        let r1 = 0.03_f32;
+        let q1 = r1 * h_inv;
+        let expected1 = norm * (6.0 * q1 * q1 * (q1 - 1.0) + 1.0);
+
+        // Test second branch (0.5 <= q < 1.0): q=0.7
+        let r2 = 0.07_f32;
+        let q2 = r2 * h_inv;
+        let t2 = 1.0 - q2;
+        let expected2 = norm * 2.0 * t2 * t2 * t2;
+
+        let distances = vec![r1, r2];
+        let mut values = vec![0.0; 2];
+        batch_kernel_cubic(&distances, h, &mut values);
+
+        let rel1 = (values[0] - expected1).abs() / expected1.abs();
+        let rel2 = (values[1] - expected2).abs() / expected2.abs();
+        assert!(rel1 < 1e-5, "kernel(q=0.3): got {} expected {} rel={}", values[0], expected1, rel1);
+        assert!(rel2 < 1e-4, "kernel(q=0.7): got {} expected {} rel={}", values[1], expected2, rel2);
+    }
+
+    #[test]
+    fn test_batch_kernel_gradient_cubic_exact_values() {
+        // Catches: all arithmetic mutations in batch_kernel_gradient_cubic
+        let h = 0.1_f32;
+        let norm = 48.0 / (std::f32::consts::PI * h * h * h * h);
+        let h_inv = 1.0 / h;
+
+        // q=0.3 (first branch, q < 0.5): grad = norm * q * (3q - 2)
+        let r1 = 0.03_f32;
+        let q1 = r1 * h_inv;
+        let grad1 = norm * q1 * (3.0 * q1 - 2.0);
+
+        // q=0.7 (second branch, 0.5 <= q < 1.0): grad = -norm * (1-q)^2
+        let r2 = 0.07_f32;
+        let q2 = r2 * h_inv;
+        let t2 = 1.0 - q2;
+        let grad2 = -norm * t2 * t2;
+
+        // direction = [1,0,0] → gradient = [grad_mag, 0, 0]
+        let distances = vec![r1, r2];
+        let directions = vec![[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
+        let mut gradients = vec![[0.0; 3]; 2];
+        batch_kernel_gradient_cubic(&distances, &directions, h, &mut gradients);
+
+        let rel1 = (gradients[0][0] - grad1).abs() / grad1.abs();
+        let rel2 = (gradients[1][0] - grad2).abs() / grad2.abs();
+        assert!(rel1 < 1e-4,
+            "gradient(q=0.3): got {} expected {} rel={}", gradients[0][0], grad1, rel1);
+        assert!(rel2 < 1e-4,
+            "gradient(q=0.7): got {} expected {} rel={}", gradients[1][0], grad2, rel2);
+        // y and z components should be 0
+        assert_eq!(gradients[0][1], 0.0);
+        assert_eq!(gradients[1][2], 0.0);
+    }
+
+    #[test]
+    fn test_batch_kernel_gradient_cubic_outside_range() {
+        // q outside [1e-8, 1.0) should give zero gradient
+        let h = 0.1_f32;
+        let distances = vec![0.0, 0.1, 0.2]; // q=0, q=1, q=2
+        let directions = vec![[1.0, 0.0, 0.0]; 3];
+        let mut gradients = vec![[0.0; 3]; 3];
+        batch_kernel_gradient_cubic(&distances, &directions, h, &mut gradients);
+
+        assert_eq!(gradients[0], [0.0, 0.0, 0.0], "q=0 should give zero gradient");
+        assert_eq!(gradients[1], [0.0, 0.0, 0.0], "q=1 should give zero gradient");
+        assert_eq!(gradients[2], [0.0, 0.0, 0.0], "q=2 should give zero gradient");
+    }
 }
