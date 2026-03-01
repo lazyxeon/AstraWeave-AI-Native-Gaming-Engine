@@ -550,4 +550,108 @@ mod tests {
         let p = app.world.get::<CPos>(e).unwrap();
         assert_eq!(p.pos.x, 1, "Should reach goal after 2 ticks");
     }
+
+    // ─── Mutation-killing tests for sys_sim cooldown decay ───
+
+    #[test]
+    fn sys_sim_cooldown_decay_subtracts_dt() {
+        // Kills: `*v - dt` → `*v + dt` and `*v - dt` → `*v / dt`
+        // With cd=1.0 and dt=0.1:
+        //   correct: (1.0 - 0.1).max(0.0) = 0.9
+        //   +dt:     (1.0 + 0.1).max(0.0) = 1.1  → WRONG
+        //   /dt:     (1.0 / 0.1).max(0.0) = 10.0 → WRONG
+        let mut ecs_world = ecs::World::new();
+        ecs_world.insert_resource(Dt(0.1));
+        ecs_world.insert_resource(World::new());
+
+        let e = ecs_world.spawn();
+        ecs_world.insert(
+            e,
+            CCooldowns {
+                map: std::collections::BTreeMap::from([(
+                    crate::cooldowns::CooldownKey::from("test_cd"),
+                    1.0,
+                )]),
+            },
+        );
+
+        // Call sys_sim directly
+        sys_sim(&mut ecs_world);
+
+        let cds = ecs_world.get::<CCooldowns>(e).unwrap();
+        let val = *cds.map.get(&crate::cooldowns::CooldownKey::from("test_cd")).unwrap();
+        assert!(
+            (val - 0.9).abs() < 1e-5,
+            "Cooldown should decrease: 1.0 - 0.1 = 0.9, got {}",
+            val
+        );
+    }
+
+    #[test]
+    fn sys_sim_cooldown_clamps_to_zero() {
+        // Ensures .max(0.0) works correctly and subtraction goes to 0
+        let mut ecs_world = ecs::World::new();
+        ecs_world.insert_resource(Dt(2.0));
+        ecs_world.insert_resource(World::new());
+
+        let e = ecs_world.spawn();
+        ecs_world.insert(
+            e,
+            CCooldowns {
+                map: std::collections::BTreeMap::from([(
+                    crate::cooldowns::CooldownKey::from("cd"),
+                    0.5,
+                )]),
+            },
+        );
+
+        sys_sim(&mut ecs_world);
+
+        let cds = ecs_world.get::<CCooldowns>(e).unwrap();
+        let val = *cds.map.get(&crate::cooldowns::CooldownKey::from("cd")).unwrap();
+        assert_eq!(val, 0.0, "Cooldown should clamp to 0.0 when dt > remaining");
+    }
+
+    // ─── Mutation-killing test for sys_sync_to_legacy ───
+
+    #[test]
+    fn sys_sync_to_legacy_updates_positions() {
+        // Kills: replacing sys_sync_to_legacy body with ()
+        // Creates an ECS entity with CLegacyId and CPos, then verifies
+        // that после sync the legacy world reflects the ECS position.
+        let mut legacy_w = World::new();
+        let legacy_id =
+            legacy_w.spawn("ally", IVec2 { x: 0, y: 0 }, crate::Team { id: 1 }, 100, 5);
+
+        let mut ecs_world = ecs::World::new();
+        ecs_world.insert_resource(Dt(0.016));
+        ecs_world.insert_resource(Events::<MovedEvent>::default());
+        ecs_world.insert_resource(EntityBridge::default());
+        ecs_world.insert_resource::<World>(legacy_w);
+
+        // Create ECS entity with CLegacyId pointing to legacy entity
+        let e = ecs_world.spawn();
+        ecs_world.insert(e, crate::CLegacyId { id: legacy_id });
+        ecs_world.insert(
+            e,
+            CPos {
+                pos: IVec2 { x: 42, y: 99 },
+            },
+        );
+        ecs_world.insert(e, CHealth { hp: 77 });
+
+        // Call sys_sync_to_legacy directly
+        sys_sync_to_legacy(&mut ecs_world);
+
+        // Verify legacy world was updated
+        let w = ecs_world.get_resource::<World>().unwrap();
+        let pose = w.pose(legacy_id).unwrap();
+        assert_eq!(
+            pose.pos,
+            IVec2 { x: 42, y: 99 },
+            "Legacy position should match ECS position after sync"
+        );
+        let hp = w.health(legacy_id).unwrap();
+        assert_eq!(hp.hp, 77, "Legacy health should match ECS health after sync");
+    }
 }
