@@ -191,7 +191,7 @@ impl CausticsProjector {
 
         for _ in 0..config.wave_octaves {
             intensity += self.caustic_noise(uv * scale, self.time) * amplitude;
-            scale /= /* ~ changed by cargo-mutants ~ */ 2.0;
+            scale /= 2.0;
             amplitude *= 0.5;
         }
 
