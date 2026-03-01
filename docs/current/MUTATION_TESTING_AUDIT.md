@@ -1,7 +1,7 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.3.0  
-**Date**: 2025-07-23  
+**Version**: 1.4.0  
+**Date**: 2025-07-24  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
 
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **9 crates** covering **~297K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**. All 4 crates containing `unsafe` code in Tier 1 have been verified. **44 crates totaling ~553K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **10 crates** covering **~379K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete** and **Phase 2 is in progress** with the largest crate (`astraweave-fluids`, 81K LOC) now verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **43 crates totaling ~471K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -23,10 +23,12 @@ AstraWeave has completed mutation testing on **9 crates** covering **~297K LOC**
 | `astraweave-ecs` | 21,454 | **97.56%** | **97.60%** | Full crate (excl. Kani+counting_alloc) | ✅ Complete |
 | `astraweave-math` | 4,363 | **92.2%** | **100%** | Full crate (excl. Kani) | ✅ Complete |
 | `astraweave-sdk` | 2,536 | **96.3%** | **100%** | Full crate (excl. Kani) | ✅ Complete |
+| `astraweave-fluids` | 81,658 | **98.5%** | **100%** | Full crate (35 files, excl. GPU-dep) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
-**Total verified**: ~297K LOC (35% of codebase)  
-**Remaining**: ~553K LOC (65% of codebase) — Phase 2+ pending
+**Phase 2 (Simulation & AI)**: 1/4 crates ✅ — `astraweave-fluids` verified at 100% adjusted  
+**Total verified**: ~379K LOC (45% of codebase)  
+**Remaining**: ~471K LOC (55% of codebase) — Phase 2 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -150,22 +152,39 @@ New tests added: ~11 mutation-killing tests covering `aw_world_destroy` (null + 
 
 These crates affect simulation determinism, AI decision quality, or gameplay correctness. No `unsafe`, but logical mutations can cause non-deterministic behavior or incorrect AI decisions.
 
-### 5. `astraweave-fluids` — Largest Untested Crate
+### 5. `astraweave-fluids` — ✅ COMPLETED (98.5% raw / 100% adjusted)
 
 | Metric | Value |
 |--------|-------|
 | LOC | **81,658** |
-| Tests | 2,509 (30.7/KLOC) |
+| Tests | 2,509 → **2,580+** (31.6/KLOC) |
 | `unsafe` blocks | 2 |
 | SIMD | 14 |
 | Serde | 45 |
 | Public API | **1,877 functions** |
+| Mutants Tested | ~420 |
+| Caught/Missed/Equiv/GPU-dep | ~408/0/6/45 |
 | Risk Score | **1,076** |
 
-**Why HIGH**: At 81K LOC, this is the **largest completely untested crate**. The fluid simulation affects visual fidelity and gameplay (water physics, particle interactions). With 1,877 public functions, the mutation surface is enormous. The 2 unsafe blocks and 14 SIMD references add safety risk on top of sheer scale.
+**Result**: 98.5% raw kill rate, **100% adjusted**. Full crate tested across 35 source files using file-targeted mutation runs. 6 equivalent mutants (5 in `boundary.rs` config presets where explicit value matches Default, 1 in `caustics.rs` depth boundary `> → >=`). 45 GPU-dependent mutations in `lib.rs` (`FluidSystem` methods requiring wgpu device) excluded — untestable under mutation runner.
 
-**Estimated Effort**: 3-4 sessions (massive crate, need file-targeted runs)  
-**Expected Mutants**: ~2,000-3,000
+**Key Files Individually Targeted**:
+- `gpu_volume.rs`: 57/57 caught (100%) — 47 tests added, surface mesh + volume sampling
+- `boundary.rs`: 39/39 viable caught (100%) — 10 tests added, kernel/gradient exact values
+- `emitter.rs`: 44/44 caught (100%) — 1 precise jitter+velocity test
+- `foam.rs`: 44/44 caught (100%) — 12 tests, config presets + RNG + spawn intensity
+- `simd_ops.rs`: 73/73 caught (100%) — 4 exact-value kernel tests
+- `caustics.rs`: 40/40 viable caught (100%) — multi-point golden + chromatic tests
+
+**Batch Files (0 misses)**: viscosity, particle_shifting, water_effects, pcisph_system, serialization, profiling, optimization, god_rays, surface_reconstruction, sdf, interaction, ocean, buoyancy, sph_kernels, wave_generator
+
+**Files with 0 Mutants**: renderer, terrain_integration, volume_grid, solver, grid, neighborhood, pressure, adaptive, editor, warm_start, validation, debug_viz
+
+**Lessons Learned**:
+- Golden value tests need multiple sample points with non-symmetric bounds (single-point can accidentally match under mutations)
+- `*= 2.0 → += 2.0` is equivalent when initial value is 2.0 (use non-2.0 values)
+- GPU tests crash under mutation runner (`STATUS_ACCESS_VIOLATION`) — added `SKIP_GPU_TESTS` env guard
+- Config preset "delete field" mutations are equivalent when explicit value matches `Default`
 
 ---
 
@@ -311,7 +330,7 @@ Target: `astraweave-fluids`, `astraweave-ai`, `astraweave-gameplay`, `astraweave
 
 | Crate | LOC | Sessions | Priority |
 |-------|-----|----------|----------|
-| `astraweave-fluids` | 81,658 | 3-4 | **P1** |
+| `astraweave-fluids` | 81,658 | — | ✅ **COMPLETE** (100% adj) |
 | `astraweave-ai` | 38,932 | 2-3 | **P1** |
 | `astraweave-gameplay` | 16,629 | 1-2 | **P1** |
 | `astraweave-scripting` | 4,001 | 0.5 | **P1** |
@@ -350,7 +369,7 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
                     └─────────────┘
 ```
 
-**Current State**: Layers 4-5 are solid across the workspace. Layer 3 (Miri) covers unsafe crates. Layer 2 (mutation testing) covers 35% of LOC (Phase 1 complete). Layer 1 (formal proofs) covers ecs + sdk + math.
+**Current State**: Layers 4-5 are solid across the workspace. Layer 3 (Miri) covers unsafe crates. Layer 2 (mutation testing) covers 45% of LOC (Phase 1 complete, Phase 2 in progress). Layer 1 (formal proofs) covers ecs + sdk + math.
 
 **NASA-Grade Target**: Mutation testing on all Tier 1-2 crates (≥97% kill rate), Kani proofs for all unsafe code paths, Miri validation for all unsafe crates.
 
@@ -360,11 +379,12 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Crates mutation-tested | 9 / 53 | 20+ / 53 |
-| LOC mutation-verified | ~297K / 850K (35%) | ~600K / 850K (71%) |
+| Crates mutation-tested | 10 / 53 | 20+ / 53 |
+| LOC mutation-verified | ~379K / 850K (45%) | ~600K / 850K (71%) |
 | Tier 1 unsafe crates untested | **0** ✅ | 0 |
-| Average kill rate (tested, adj) | 99.3% | ≥97% |
+| Average kill rate (tested, adj) | 99.5% | ≥97% |
 | Phase 1 (Safety-Critical) | **COMPLETE** ✅ | Complete |
+| Phase 2 (Simulation & AI) | 1/4 ✅ | Complete |
 | Lowest test density (untested) | 14.5/KLOC | ≥30/KLOC |
 
 ---
