@@ -32,16 +32,26 @@ on:
       force_full_suite:
         description: 'Run the full nightly suite (schedule-only jobs)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Harden token scope (least-privilege)
+permissions:
+  contents: read
+
+# Use bash everywhere so inline scripts behave consistently
+defaults:
+  run:
+    shell: bash
+
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
 
 jobs:
   # ──────────────────────────────────────────────────────
@@ -84,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Only run on PRs and pushes (not nightly schedule)
-    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.force_full_suite)
     env:
       # Disable leak detection here — the dedicated LSan job handles it.
       # abort_on_error=0 lets the test harness report per-test results.
@@ -145,7 +155,7 @@ jobs:
     needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite)
     env:
       # Disable leak detection — the dedicated LSan job handles leaks.
       # abort_on_error=0 so the test harness can finish and report all failures,
@@ -341,7 +351,7 @@ jobs:
     needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite)
     env:
       # Suppressions file is committed at scripts/tsan_suppressions.txt
       TSAN_OPTIONS: suppressions=scripts/tsan_suppressions.txt:second_deadlock_stack=1
@@ -406,7 +416,7 @@ jobs:
     needs: [source-integrity]
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite == 'true')
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force_full_suite)
     steps:
       - uses: actions/checkout@v5
 
