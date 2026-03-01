@@ -763,4 +763,52 @@ mod tests {
         // 100 * 0.1 = 10 particles expected
         assert_eq!(total, 10);
     }
+
+    // =========================================================================
+    // Mutation-killing tests for jitter and velocity calculations
+    // =========================================================================
+
+    #[test]
+    fn test_tick_jitter_and_velocity_exact() {
+        // Non-zero jitter + custom velocity: verify exact jitter arithmetic
+        let mut emitter = FluidEmitter {
+            shape: EmitterShape::Point,
+            velocity: [1.0, 2.0, 3.0],
+            jitter: 0.5,
+            rate: 20.0,
+            enabled: true,
+            ..Default::default()
+        };
+
+        // 20 * 0.1 = 2 particles
+        let (_, velocities, _) = emitter.tick(0.1);
+        assert!(velocities.len() >= 2, "need >= 2 particles, got {}", velocities.len());
+
+        // Reproduce the jitter formula for each particle.
+        // Point emitter: sample_shape always returns pos=[0,0,0], normal=[0,-1,0].
+        for (i, vel) in velocities.iter().enumerate() {
+            let jitter_seed = (i as f32 * 12.9898).sin() * 43_758.547_f32;
+            let jx = (jitter_seed.fract() - 0.5) * 0.5;
+            let jy = ((jitter_seed * 2.0).fract() - 0.5) * 0.5;
+            let jz = ((jitter_seed * 3.0).fract() - 0.5) * 0.5;
+
+            // velocity * normal + jitter  (normal = [0, -1, 0])
+            let expected_x = 1.0_f32 * 0.0 + jx;
+            let expected_y = 2.0_f32 * (-1.0) + jy;
+            let expected_z = 3.0_f32 * 0.0 + jz;
+
+            assert!(
+                (vel[0] - expected_x).abs() < 1e-3,
+                "particle {} vx: got {} expected {}", i, vel[0], expected_x
+            );
+            assert!(
+                (vel[1] - expected_y).abs() < 1e-3,
+                "particle {} vy: got {} expected {}", i, vel[1], expected_y
+            );
+            assert!(
+                (vel[2] - expected_z).abs() < 1e-3,
+                "particle {} vz: got {} expected {}", i, vel[2], expected_z
+            );
+        }
+    }
 }
