@@ -1280,4 +1280,154 @@ mod tests {
             "water height should be 0.4, got {}", y_water
         );
     }
+
+    /// Tests fallback for y00: when h00 is None, y00 = avg_height - 0.1.
+    /// Kills: `replace - with + in y00 unwrap_or` (line 396)
+    #[test]
+    fn test_generate_surface_mesh_y00_fallback() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(1.0, 1.0, 1.0));
+        gpu.set_origin(Vec3::ZERO);
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Water at (1,1,0) but NOT at (0,_,0) → h10=Some, h00=None
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(1, 1, 0)) {
+            cell.level = 0.5; // height = 1.0 + 0.5 = 1.5
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(verts.len() >= 4, "should produce quad at (0,0)");
+        // v[0] = p00 (h00=None) → y00 = avg(1.5) - 0.1 = 1.4
+        // v[1] = p10 (h10=Some(1.5)) → y10 = 1.5
+        let y00 = verts[0].position[1];
+        let y10 = verts[1].position[1];
+        assert!(
+            y00 < y10,
+            "y00 fallback ({}) should be below y10 ({}) since y00 uses avg-0.1",
+            y00, y10
+        );
+        assert!(
+            (y10 - y00 - 0.1).abs() < 0.01,
+            "difference should be ~0.1, got {}", y10 - y00
+        );
+    }
+
+    /// Tests fallback for y01: when h01 is None, y01 = avg_height - 0.1.
+    /// Kills: `replace - with + in y01 unwrap_or` (line 399)
+    #[test]
+    fn test_generate_surface_mesh_y01_fallback() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(1.0, 1.0, 1.0));
+        gpu.set_origin(Vec3::ZERO);
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Water at (0,1,0) but NOT at (0,_,1) → h00=Some, h01=None
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(0, 1, 0)) {
+            cell.level = 0.5; // height = 1.0 + 0.5 = 1.5
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(verts.len() >= 4, "should produce quad at (0,0)");
+        // v[0] = p00 (h00=Some(1.5)) → y00 = 1.5
+        // v[2] = p01 (h01=None) → y01 = avg(1.5) - 0.1 = 1.4
+        let y00 = verts[0].position[1];
+        let y01 = verts[2].position[1];
+        assert!(
+            y01 < y00,
+            "y01 fallback ({}) should be below y00 ({}) since h01 is None",
+            y01, y00
+        );
+        assert!(
+            (y00 - y01 - 0.1).abs() < 0.01,
+            "difference should be ~0.1, got {}", y00 - y01
+        );
+    }
+
+    /// Tests that h01 samples at z+1 (not z-1 or z*1).
+    /// Kills: `replace + with - in z+1` for h01 sampling (line 380:64)
+    #[test]
+    fn test_generate_surface_mesh_h01_samples_z_plus_1() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water at (0, 2, 1) — column (x=0, z=1) has water
+        // h01 = sample(0, z+1=0+1=1) should find water
+        // With mutation z+1→z-1: sample(0, -1) → out of bounds → None
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(0, 2, 1)) {
+            cell.level = 0.8;
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(!verts.is_empty(), "h01 should find water at z+1=1");
+        // v[2] = p01 should have a water-derived height, not a fallback
+        let y01 = verts[2].position[1];
+        // expected: base=2*1 + 0.8*1 = 2.8
+        assert!(
+            (y01 - 2.8).abs() < 0.1,
+            "y01 should reflect water at (0,2,1), got {}", y01
+        );
+    }
+
+    /// Tests that h11 samples at (x+1, z+1) correctly.
+    /// Kills: `replace + with - in x+1,z+1` for h11 sampling (lines 381:61, 381:68)
+    #[test]
+    fn test_generate_surface_mesh_h11_samples_x_plus_1_z_plus_1() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water at (1, 2, 1) — column (x=1, z=1) has water
+        // h11 = sample(x+1=0+1=1, z+1=0+1=1) should find water
+        // With mutation x+1→x-1: sample(-1, 1) → out of bounds → None
+        // With mutation z+1→z-1: sample(1, -1) → out of bounds → None
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(1, 2, 1)) {
+            cell.level = 0.7;
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(!verts.is_empty(), "h11 should find water at (1,1)");
+        // v[3] = p11 should have a water-derived height
+        let y11 = verts[3].position[1];
+        // expected: base=2*1 + 0.7*1 = 2.7
+        assert!(
+            (y11 - 2.7).abs() < 0.1,
+            "y11 should reflect water at (1,2,1), got {}", y11
+        );
+    }
+
+    /// Tests p11 position uses `(x+1) * cell_size.x` (not / cell_size.x).
+    /// Kills: `replace * with / in p11 x-position` (line 402:55)
+    #[test]
+    fn test_generate_surface_mesh_p11_position_uses_multiply() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(2.0, 1.0, 3.0));
+        gpu.set_origin(Vec3::ZERO);
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        for x in 0..4 {
+            for z in 0..4 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        // First quad: v[3] = p11 = ((0+1)*2.0, _, (0+1)*3.0) = (2.0, _, 3.0)
+        let p11 = verts[3].position;
+        assert!(
+            (p11[0] - 2.0).abs() < 1e-4,
+            "p11.x should be (0+1)*2.0=2.0, got {} (would be 0.5 if / instead of *)",
+            p11[0]
+        );
+        assert!(
+            (p11[2] - 3.0).abs() < 1e-4,
+            "p11.z should be (0+1)*3.0=3.0, got {}",
+            p11[2]
+        );
+    }
 }
