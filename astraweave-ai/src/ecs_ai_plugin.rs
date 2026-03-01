@@ -1798,4 +1798,49 @@ mod tests {
         let result = map_legacy_companion_to_ecs(&positions, &teams, &snap, 0, &world);
         assert_eq!(result, None, "No team-1 entities should return None");
     }
+
+    // ========================================================================
+    // Mutation-Killing Test: line 137 `if !updates.is_empty()` → `is_empty()`
+    // ========================================================================
+
+    /// Kills mutation: line 137 `delete !` — inverts the condition so updates
+    /// are only written when the vec is empty (discarding real plans).
+    /// This test verifies that when a legacy world has enemies and planning
+    /// produces a MoveTo, CDesiredPos is actually written to the bridged ECS entity.
+    #[cfg(not(feature = "veilweaver_slice"))]
+    #[test]
+    fn test_sys_ai_planning_writes_desired_pos_when_updates_nonempty() -> Result<()> {
+        use astraweave_core::ecs_bridge::EntityBridge;
+        use astraweave_core::Team;
+
+        // Create legacy world with player, companion, and enemy
+        let mut w = World::new();
+        let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
+        let companion = w.spawn("Companion", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 80, 30);
+        let _enemy = w.spawn("Enemy", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 50, 15);
+
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Look up the ECS entity for the companion via the EntityBridge
+        // (build_app auto-populates ECS entities from legacy world)
+        let ecs_comp = app
+            .world
+            .get_resource::<EntityBridge>()
+            .and_then(|b| b.get(&companion))
+            .ok_or_else(|| anyhow!("companion should be bridged to ECS entity"))?;
+
+        // Run the planning system
+        app = app.run_fixed(1);
+
+        // With enemy present, RuleOrchestrator produces a plan with MoveTo.
+        // The `if !updates.is_empty()` branch should have written CDesiredPos.
+        // With mutation `if updates.is_empty()`, the write is skipped.
+        let has_desired = app.world.get::<CDesiredPos>(ecs_comp).is_some();
+        assert!(
+            has_desired,
+            "CDesiredPos must be written when planner produces MoveTo (guards `if !updates.is_empty()`)"
+        );
+
+        Ok(())
+    }
 }
