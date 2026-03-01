@@ -1,6 +1,6 @@
 # AstraWeave Master Test Coverage Report
 
-> **Version**: 5.1.0 | **Date**: 2026-02-27 | **Grade**: B+ | **Tool**: `cargo llvm-cov` (LLVM source-based)
+> **Version**: 5.2.0 | **Date**: 2026-03-01 | **Grade**: B+ | **Tool**: `cargo llvm-cov` (LLVM source-based)
 
 ---
 
@@ -15,7 +15,7 @@
 | **High-Coverage Crates (≥85%)** | 14 of 28 (50%) |
 | **Miri Validated** | 977 tests, 4 crates, zero UB |
 | **Kani Verified** | ~71 proof harnesses, 4 crates, all passing |
-| **Mutation Testing** | Wave 1: 767 manual + Wave 2: 1,261 automated + Wave 3: 489 targeted |
+| **Mutation Testing** | Wave 1: 767 manual + Wave 2: 1,261 automated + Wave 3: 489 targeted + Wave 4: 411 fluids |
 
 ### Tier Overview (Line Coverage, Weighted by LOC)
 
@@ -193,7 +193,7 @@ These crates are outside the primary tier system but have been measured:
 
 **astraweave-prompts** (95.66%, 1,375 tests): Template engine, prompt library, optimization. 556 lib + 819 integration tests. Wave 2 mutation testing: 792 mutants with 100% kill rate on all killable mutants. Best-validated crate in the workspace.
 
-**astraweave-fluids** (89.27%, 2,509 tests): SPH fluid simulation, spatial hashing, GPU buffers. Largest crate by instrumented lines (46,173; ~67,800 actual source lines). 2,410 lib + 99 integration tests. Excellent coverage given domain complexity.
+**astraweave-fluids** (89.27%, 2,509 tests): SPH fluid simulation, spatial hashing, GPU buffers. Largest crate by instrumented lines (46,173; ~67,800 actual source lines). 2,410 lib + 99 integration tests. Excellent coverage given domain complexity. **Wave 4 mutation testing**: 411 viable mutations, 405 caught, 6 equivalent, **100% adjusted kill rate**. See `docs/current/FLUIDS_MUTATION_TESTING_REPORT.md`.
 
 ---
 
@@ -344,9 +344,12 @@ Kani uses CBMC bounded model checking. Math proofs use concrete representative i
 | Wave 1 (Manual) | 767 | 767 | 100% | January 2026 |
 | Wave 2 (Automated) | 1,261 | 1,050 | 83.3%* | February 2026 |
 | Wave 3 (Targeted) | 489 | 463 | 94.7% | February 2026 |
-| **Total** | **2,517** | **2,280** | **90.6%** | Jan–Feb 2026 |
+| Wave 4 (Fluids) | 411 | 405 | 98.5%† | March 2026 |
+| **Total** | **2,928** | **2,685** | **91.7%** | Jan–Mar 2026 |
 
 *Kill rates in cumulative table = caught ÷ total submitted. Individual run kill rates in detail tables = caught ÷ (caught + missed). Wave 2 includes GPU-untestable mutants; excluding GPU-only code: ~95%+.
+
+†Fluids Wave 4: 411 viable mutations, 405 caught, 6 equivalent (5 boundary.rs + 1 caustics.rs), 0 non-equivalent missed. 45 GPU-dependent mutations excluded (lib.rs). **100% adjusted kill rate**. Full details: `docs/current/FLUIDS_MUTATION_TESTING_REPORT.md`.
 
 ---
 
@@ -537,7 +540,8 @@ cargo mutants --package astraweave-prompts --test-tool nextest --in-place --time
 
 | Version | Date | Type | Summary | Impact |
 |:-------:|:----:|:----:|:--------|:------:|
-| **5.1.0** | 2026-02-27 | **Audit** | Full audit: corrected test counts via `#[test]` marker scanning (39,000+ workspace total). Added Wave 3 mutation testing results (463 mutants, 95.5% kill rate). Fixed "4 crates at ≥98%" → 3. Corrected fluids integration test count (4,907→2,509). Added detailed unmeasured crate inventory with verified test counts. Updated methodology comparison table. | Significant |
+| **5.2.0** | 2026-03-01 | **Update** | Added Wave 4 fluids mutation testing (411 mutants, 100% adjusted kill rate). Updated cumulative mutation totals (2,928 mutants, 91.7% raw). Created `FLUIDS_MUTATION_TESTING_REPORT.md`. | Significant |
+| 5.1.0 | 2026-02-27 | Audit | Full audit: corrected test counts via `#[test]` marker scanning (39,000+ workspace total). Added Wave 3 mutation testing results (463 mutants, 95.5% kill rate). Fixed "4 crates at ≥98%" → 3. Corrected fluids integration test count (4,907→2,509). Added detailed unmeasured crate inventory with verified test counts. Updated methodology comparison table. | Significant |
 | 5.0.0 | 2026-02-25 | Major audit | Full re-measurement of 28 crates via `cargo llvm-cov`. Corrected stale coverage data. Reformatted to match benchmark report structure. Added hardware, methodology, and limitations sections. Grade recalibrated to B+. All numbers reproducible. | Critical |
 | 4.2.0 | 2026-02-24 | Update | Wave 2 mutation testing: prompts 100% kill (792 mutants), render 97% non-GPU | Significant |
 | 4.1.0 | 2026-02-24 | Update | Added cargo-mutants automated sweep data | Incremental |
