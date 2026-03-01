@@ -1729,4 +1729,131 @@ mod tests {
             );
         }
     }
+
+    // ============================================================================
+    // Mutation-Killing Tests (targeted from cargo-mutants analysis)
+    // ============================================================================
+
+    /// Kills mutation: line 429 `step_index < plan.steps.len()` → `<=`
+    /// Empty LLM plan with step_index=0: `0 < 0` = false (fallback),
+    /// but `0 <= 0` = true → panics on steps[0].
+    #[tokio::test]
+    async fn test_empty_llm_plan_falls_back_to_goap() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Scan { radius: 10.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        // Transition to LLM with an empty plan (step_index=0, len=0)
+        let plan = PlanIntent {
+            plan_id: "empty".into(),
+            steps: vec![],
+        };
+        arbiter.transition_to_llm(plan);
+        assert!(matches!(
+            arbiter.mode(),
+            AIControlMode::ExecutingLLM { step_index: 0 }
+        ));
+
+        // Update should detect invalid state and fall back to GOAP
+        let snap = create_test_snapshot(0.0);
+        let action = arbiter.update(&snap);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 }));
+    }
+
+    /// Kills mutations: line 519 `mode_transitions += 1` → `-=` and `*=`
+    /// in transition_to_goap. After transition_to_llm (transitions=1) and then
+    /// plan exhaustion → transition_to_goap, transitions must be exactly 2.
+    /// With `-=`: 1-1=0≠2. With `*=`: 1*1=1≠2.
+    #[tokio::test]
+    async fn test_transition_to_goap_increments_mode_transitions() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        // transition_to_llm → mode_transitions=1
+        let plan = PlanIntent {
+            plan_id: "single".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        arbiter.transition_to_llm(plan);
+        let (t1, _, _, _, _, _) = arbiter.metrics();
+        assert_eq!(t1, 1);
+
+        // Exhaust plan → transition_to_goap → mode_transitions must be 2
+        let snap = create_test_snapshot(0.0);
+        arbiter.update(&snap);
+        let (t2, _, _, _, _, _) = arbiter.metrics();
+        assert_eq!(t2, 2);
+    }
+
+    /// Kills mutation: line 536 `mode_transitions += 1` → `*=`
+    /// in transition_to_bt. Before the call, mode_transitions=0.
+    /// With `+=`: 0+1=1. With `*=`: 0*1=0≠1.
+    #[tokio::test]
+    async fn test_transition_to_bt_increments_mode_transitions() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: true, // Empty plan triggers BT fallback
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let snap = create_test_snapshot(0.0);
+        arbiter.update(&snap);
+
+        assert_eq!(arbiter.mode(), AIControlMode::BehaviorTree);
+        let (transitions, _, _, _, _, _) = arbiter.metrics();
+        assert_eq!(transitions, 1);
+    }
+
+    /// Kills mutations: line 600 `cooldown_elapsed < self.llm_request_cooldown`
+    /// → `==` and `<=`. At exact boundary (elapsed == cooldown):
+    /// Original `<`: 5.0 < 5.0 = false → request proceeds.
+    /// Mutation `<=`: 5.0 <= 5.0 = true → returns early, no request.
+    /// Mutation `==`: 5.0 == 5.0 = true → returns early, no request.
+    #[tokio::test]
+    async fn test_cooldown_exact_boundary_allows_request() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter =
+            create_arbiter_with_mocks(goap, bt, Duration::from_millis(10)).with_llm_cooldown(5.0);
+
+        // First request at t=0.0
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+        let (_, r1, _, _, _, _) = arbiter.metrics();
+        assert_eq!(r1, 1);
+
+        // Wait for LLM task to complete
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // Poll result → transitions to ExecutingLLM, executes step 0
+        let snap2 = create_test_snapshot(1.0);
+        arbiter.update(&snap2);
+        // Execute remaining steps (mock plan has 3 steps)
+        let snap3 = create_test_snapshot(2.0);
+        arbiter.update(&snap3);
+        let snap4 = create_test_snapshot(3.0);
+        arbiter.update(&snap4);
+        // Should be back in GOAP after exhausting 3-step plan
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        // At t=5.0: elapsed = 5.0 - 0.0 = 5.0 = cooldown (exact boundary)
+        // With <: proceeds. With <= or ==: returns early.
+        let snap5 = create_test_snapshot(5.0);
+        arbiter.update(&snap5);
+        let (_, r2, _, _, _, _) = arbiter.metrics();
+        assert_eq!(r2, 2, "Second LLM request should fire at exact cooldown boundary");
+    }
 }
