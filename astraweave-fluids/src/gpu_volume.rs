@@ -534,6 +534,34 @@ impl WaterVolumeGpu {
 mod tests {
     use super::*;
 
+    /// Helper: create a wgpu device + queue for testing.
+    /// Returns None if no GPU adapter is available (e.g. headless CI).
+    fn try_create_test_device() -> Option<(wgpu::Device, wgpu::Queue)> {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        }))
+        .ok()?;
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("test device"),
+                required_features: wgpu::Features::FLOAT32_FILTERABLE,
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            },
+        ))
+        .ok()?;
+        Some((device, queue))
+    }
+
+    /// Helper: create a minimal WaterVolumeGpu for testing.
+    fn create_test_gpu(device: &wgpu::Device, dims: UVec3) -> WaterVolumeGpu {
+        WaterVolumeGpu::new(device, dims)
+    }
+
     #[test]
     fn test_gpu_water_cell_size() {
         assert_eq!(std::mem::size_of::<GpuWaterCell>(), 16); // 4 floats * 4 bytes
@@ -553,5 +581,428 @@ mod tests {
             "Uniforms must be 16-byte aligned, got {}",
             size
         );
+    }
+
+    // ---- GpuWaterCell::from_cell (no GPU needed) ----
+
+    #[test]
+    fn test_from_cell_copies_level() {
+        let cell = WaterCell {
+            level: 0.75,
+            velocity: Vec3::new(1.0, 2.0, 3.0),
+            ..Default::default()
+        };
+        let gpu = GpuWaterCell::from_cell(&cell);
+        assert_eq!(gpu.level, 0.75);
+    }
+
+    #[test]
+    fn test_from_cell_copies_velocity() {
+        let cell = WaterCell {
+            level: 0.5,
+            velocity: Vec3::new(1.5, -2.5, 3.5),
+            ..Default::default()
+        };
+        let gpu = GpuWaterCell::from_cell(&cell);
+        assert_eq!(gpu.velocity_x, 1.5);
+        assert_eq!(gpu.velocity_y, -2.5);
+        assert_eq!(gpu.velocity_z, 3.5);
+    }
+
+    #[test]
+    fn test_from_cell_default_produces_zeros() {
+        let cell = WaterCell::default();
+        let gpu = GpuWaterCell::from_cell(&cell);
+        assert_eq!(gpu.level, 0.0);
+        assert_eq!(gpu.velocity_x, 0.0);
+        assert_eq!(gpu.velocity_y, 0.0);
+        assert_eq!(gpu.velocity_z, 0.0);
+    }
+
+    // ---- WaterVolumeGpu setter/getter tests (need GPU device) ----
+
+    #[test]
+    fn test_dimensions_returns_constructor_value() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return; // skip if no GPU
+        };
+        let dims = UVec3::new(4, 8, 16);
+        let gpu = create_test_gpu(&device, dims);
+        assert_eq!(gpu.dimensions(), dims);
+    }
+
+    #[test]
+    fn test_is_dirty_initially_true() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        assert!(gpu.is_dirty());
+    }
+
+    #[test]
+    fn test_mark_dirty_sets_dirty_true() {
+        let Some((device, queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        let grid = WaterVolumeGrid::new(UVec3::new(2, 2, 2), 1.0, Vec3::ZERO);
+        gpu.upload(&queue, &grid);
+        assert!(!gpu.is_dirty());
+        gpu.mark_dirty();
+        assert!(gpu.is_dirty());
+    }
+
+    #[test]
+    fn test_upload_clears_dirty() {
+        let Some((device, queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        assert!(gpu.is_dirty());
+        let grid = WaterVolumeGrid::new(UVec3::new(2, 2, 2), 1.0, Vec3::ZERO);
+        gpu.upload(&queue, &grid);
+        assert!(!gpu.is_dirty());
+    }
+
+    #[test]
+    fn test_set_origin_updates_uniforms() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.set_origin(Vec3::new(10.0, 20.0, 30.0));
+        assert_eq!(gpu.uniforms.origin[0], 10.0);
+        assert_eq!(gpu.uniforms.origin[1], 20.0);
+        assert_eq!(gpu.uniforms.origin[2], 30.0);
+        assert_eq!(gpu.uniforms.origin[3], 0.0);
+    }
+
+    #[test]
+    fn test_set_cell_size_updates_uniforms() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.set_cell_size(Vec3::new(0.5, 1.0, 2.0));
+        assert_eq!(gpu.uniforms.cell_size[0], 0.5);
+        assert_eq!(gpu.uniforms.cell_size[1], 1.0);
+        assert_eq!(gpu.uniforms.cell_size[2], 2.0);
+        assert_eq!(gpu.uniforms.cell_size[3], 0.0);
+    }
+
+    #[test]
+    fn test_set_flow_speed_updates_animation_1() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.set_flow_speed(5.0);
+        assert_eq!(gpu.uniforms.animation[1], 5.0);
+    }
+
+    #[test]
+    fn test_set_wave_height_updates_animation_2() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.set_wave_height(0.25);
+        assert_eq!(gpu.uniforms.animation[2], 0.25);
+    }
+
+    #[test]
+    fn test_set_wave_frequency_updates_animation_3() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.set_wave_frequency(3.14);
+        assert_eq!(gpu.uniforms.animation[3], 3.14);
+    }
+
+    // ---- generate_surface_mesh & helpers (need GPU device) ----
+
+    #[test]
+    fn test_sample_column_height_no_water_returns_none() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        assert!(gpu.sample_column_height(&grid, 0, 0).is_none());
+    }
+
+    #[test]
+    fn test_sample_column_height_with_water() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water at level 0.5 in cell (1, 2, 1)
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(1, 2, 1)) {
+            cell.level = 0.5;
+        }
+        let h = gpu.sample_column_height(&grid, 1, 1);
+        assert!(h.is_some());
+        // base_height = y(2) * cell_size(1.0) = 2.0
+        // water_height = 2.0 + 0.5 * 1.0 = 2.5
+        let h = h.unwrap();
+        assert!((h - 2.5).abs() < 1e-5, "expected ~2.5, got {}", h);
+    }
+
+    #[test]
+    fn test_sample_column_height_returns_topmost_water() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water at y=1 (level=0.8) and y=3 (level=0.3)
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(0, 1, 0)) {
+            cell.level = 0.8;
+        }
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(0, 3, 0)) {
+            cell.level = 0.3;
+        }
+        let h = gpu.sample_column_height(&grid, 0, 0).unwrap();
+        // Should return topmost (y=3): base=3.0 + 0.3*1.0 = 3.3
+        assert!((h - 3.3).abs() < 1e-5, "expected topmost water ~3.3, got {}", h);
+    }
+
+    #[test]
+    fn test_sample_column_height_ignores_below_min_water_level() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water below MIN_WATER_LEVEL (0.01)
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(0, 0, 0)) {
+            cell.level = 0.005;
+        }
+        assert!(gpu.sample_column_height(&grid, 0, 0).is_none());
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_empty_grid_no_vertices() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        let (verts, indices) = gpu.generate_surface_mesh(&grid);
+        assert!(verts.is_empty(), "empty grid should produce no vertices");
+        assert!(indices.is_empty(), "empty grid should produce no indices");
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_produces_vertices_with_water() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(1.0, 1.0, 1.0));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Fill a 2x2 column area with water at y=0
+        for x in 0..2 {
+            for z in 0..2 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, indices) = gpu.generate_surface_mesh(&grid);
+        assert!(!verts.is_empty(), "grid with water should produce vertices");
+        assert!(!indices.is_empty(), "grid with water should produce indices");
+        // Each quad = 4 vertices, 6 indices
+        assert_eq!(indices.len() % 6, 0, "indices should be multiple of 6");
+        assert_eq!(verts.len() % 4, 0, "vertices should be multiple of 4");
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_vertex_positions_use_cell_size() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(2.0, 1.0, 3.0));
+        gpu.set_origin(Vec3::ZERO);
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        // Place water at (0,0,0) and (1,0,0) — needs 2x2 area for a quad
+        for x in 0..2 {
+            for z in 0..2 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(!verts.is_empty());
+        // Check that x positions use cell_size.x (2.0)
+        let has_nonzero_x = verts.iter().any(|v| v.position[0] > 0.5);
+        assert!(has_nonzero_x, "vertex x positions should reflect cell_size.x=2.0");
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_vertex_positions_use_origin() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        gpu.set_cell_size(Vec3::new(1.0, 1.0, 1.0));
+        gpu.set_origin(Vec3::new(100.0, 200.0, 300.0));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        for x in 0..2 {
+            for z in 0..2 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        assert!(!verts.is_empty());
+        // All positions should be offset by origin
+        for v in &verts {
+            assert!(v.position[0] >= 100.0, "x should be >= origin.x=100, got {}", v.position[0]);
+            assert!(v.position[2] >= 300.0, "z should be >= origin.z=300, got {}", v.position[2]);
+        }
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_uv_coordinates() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        for x in 0..3 {
+            for z in 0..3 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, _indices) = gpu.generate_surface_mesh(&grid);
+        // UV coords should be in [0, 1] range (x/dim_x, z/dim_z)
+        for v in &verts {
+            assert!(v.uv[0] >= 0.0 && v.uv[0] <= 1.0, "u should be in [0,1], got {}", v.uv[0]);
+            assert!(v.uv[1] >= 0.0 && v.uv[1] <= 1.0, "v should be in [0,1], got {}", v.uv[1]);
+        }
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_indices_valid() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        for x in 0..2 {
+            for z in 0..2 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (verts, indices) = gpu.generate_surface_mesh(&grid);
+        for &idx in &indices {
+            assert!((idx as usize) < verts.len(), "index {} out of range for {} vertices", idx, verts.len());
+        }
+    }
+
+    #[test]
+    fn test_generate_surface_mesh_index_triangle_pattern() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(4, 4, 4));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(4, 4, 4), 1.0, Vec3::ZERO);
+        for x in 0..2 {
+            for z in 0..2 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 0, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let (_verts, indices) = gpu.generate_surface_mesh(&grid);
+        // Each quad: base, base+1, base+2, base+1, base+3, base+2
+        assert!(indices.len() >= 6);
+        let base = indices[0];
+        assert_eq!(indices[1], base + 1);
+        assert_eq!(indices[2], base + 2);
+        assert_eq!(indices[3], base + 1);
+        assert_eq!(indices[4], base + 3);
+        assert_eq!(indices[5], base + 2);
+    }
+
+    #[test]
+    fn test_calculate_surface_normal_flat_surface_is_up() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(6, 4, 6));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(6, 4, 6), 1.0, Vec3::ZERO);
+        // Fill a flat plane of water at same level
+        for x in 0..6 {
+            for z in 0..6 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 1, z)) {
+                    cell.level = 0.5;
+                }
+            }
+        }
+        let n = gpu.calculate_surface_normal(&grid, 3, 3);
+        // Flat surface should have normal pointing up (0, 1, 0)
+        assert!((n.y - 1.0).abs() < 0.01, "flat surface normal.y should be ~1.0, got {}", n.y);
+        assert!(n.x.abs() < 0.01, "flat surface normal.x should be ~0, got {}", n.x);
+        assert!(n.z.abs() < 0.01, "flat surface normal.z should be ~0, got {}", n.z);
+    }
+
+    #[test]
+    fn test_calculate_surface_normal_sloped_surface() {
+        let Some((device, _queue)) = try_create_test_device() else {
+            return;
+        };
+        let gpu = create_test_gpu(&device, UVec3::new(6, 4, 6));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(6, 4, 6), 1.0, Vec3::ZERO);
+        // Create a sloped surface: higher water on the right (x+)
+        for x in 0..6 {
+            for z in 0..6 {
+                if let Some(cell) = grid.get_cell_mut(IVec3::new(x, 1, z)) {
+                    cell.level = 0.1 + 0.15 * x as f32;
+                }
+            }
+        }
+        let n = gpu.calculate_surface_normal(&grid, 3, 3);
+        // Normal should tilt away from the higher side (negative x)
+        assert!(n.x < 0.0, "normal should tilt away from higher x, got n.x={}", n.x);
+    }
+
+    #[test]
+    fn test_update_uniforms_sets_time() {
+        let Some((device, queue)) = try_create_test_device() else {
+            return;
+        };
+        let mut gpu = create_test_gpu(&device, UVec3::new(2, 2, 2));
+        gpu.update_uniforms(&queue, 42.5);
+        assert_eq!(gpu.uniforms.animation[0], 42.5);
+    }
+
+    #[test]
+    fn test_upload_iterates_full_grid() {
+        let Some((device, queue)) = try_create_test_device() else {
+            return;
+        };
+        // Create a 3x3x3 GPU volume
+        let mut gpu = create_test_gpu(&device, UVec3::new(3, 3, 3));
+        let mut grid = WaterVolumeGrid::new(UVec3::new(3, 3, 3), 1.0, Vec3::ZERO);
+        // Set one cell with water
+        if let Some(cell) = grid.get_cell_mut(IVec3::new(1, 1, 1)) {
+            cell.level = 0.99;
+        }
+        // Upload should not panic
+        gpu.upload(&queue, &grid);
+        assert!(!gpu.is_dirty(), "upload should clear dirty flag");
     }
 }
