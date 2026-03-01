@@ -2210,4 +2210,230 @@ mod tests {
         assert!(cats_physics.contains(&ValidationCategory::Physics));
         assert!(!cats_physics.contains(&ValidationCategory::Nav));
     }
+
+    // ========================================
+    // Mutation-Killing Tests (tool_sandbox.rs)
+    // Catches: has_physics &&→||, cooldown >=→>,
+    //          morale <→<=, revive dist *→+,
+    //          LOS obs &&→||, LOS from non-origin
+    // ========================================
+
+    #[test]
+    fn test_has_physics_partial_only_pipeline() {
+        // has_physics uses `&&`: ALL three must be Some.
+        // Setting only physics_pipeline but not rigid_body/collider → false.
+        // Mutation `&& → ||` would make this true incorrectly.
+        let pipeline = PhysicsPipeline::new();
+        let ctx = ValidationContext {
+            nav_mesh: None,
+            physics_pipeline: Some(&pipeline),
+            rigid_body_set: None,
+            collider_set: None,
+        };
+        assert!(!ctx.has_physics(),
+            "has_physics should be false when only pipeline is set (&&, not ||)");
+    }
+
+    #[test]
+    fn test_has_physics_partial_missing_collider() {
+        // physics_pipeline + rigid_body_set but NO collider_set → false.
+        // Catches the second `&&` mutation.
+        let pipeline = PhysicsPipeline::new();
+        let bodies = RigidBodySet::new();
+        let ctx = ValidationContext {
+            nav_mesh: None,
+            physics_pipeline: Some(&pipeline),
+            rigid_body_set: Some(&bodies),
+            collider_set: None,
+        };
+        assert!(!ctx.has_physics(),
+            "has_physics should be false when collider_set is missing");
+    }
+
+    #[test]
+    fn test_cooldown_zero_allows_action() {
+        // Cooldown = 0.0 should NOT block (> 0.0 is false).
+        // Mutation `> → >=` would block at 0.0.
+        let mut cooldowns = std::collections::BTreeMap::new();
+        cooldowns.insert("throw".to_string(), 0.0);
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns,
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0, ToolVerb::Throw, &world, &context, Some(IVec2 { x: 1, y: 0 }),
+        );
+        assert!(result.is_ok(), "Cooldown=0.0 should not block (> 0.0 = false)");
+    }
+
+    #[test]
+    fn test_revive_morale_exact_boundary() {
+        // Morale = 0.5: `< 0.5` is false → allowed.
+        // Mutation `< → <=` would block at exactly 0.5.
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.5, // Exactly at boundary
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0, ToolVerb::Revive, &world, &context, Some(IVec2 { x: 1, y: 0 }),
+        );
+        assert!(result.is_ok(), "Revive at morale=0.5 should pass (< 0.5 is false)");
+    }
+
+    #[test]
+    fn test_revive_distance_negative_dx_catches_multiply_vs_add() {
+        // When dx is negative: dx*dx = positive, but dx+dx = negative.
+        // (dx+dx + dy*dy) could be negative → sqrt(NaN) → NaN > 2.0 = false → OK.
+        // We need a case where *→+ changes the outcome.
+        // me at (5,0), target at (2,0): dx = 2-5 = -3.
+        // Original: (-3)*(-3) = 9, sqrt(9) = 3.0 > 2.0 → FAIL.
+        // Mutation: (-3)+(-3) = -6, (-6+0) as f32 → sqrt(-6) = NaN, NaN > 2.0 = false → OK.
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0, ToolVerb::Revive, &world, &context, Some(IVec2 { x: 2, y: 0 }),
+        );
+        assert!(result.is_err(), "Revive at distance 3.0 should fail (target too far)");
+    }
+
+    #[test]
+    fn test_revive_distance_negative_dy_catches_multiply_vs_add() {
+        // Same idea for dy mutation: me at (0,4), target at (0,1).
+        // dy = 1-4 = -3. Original: (-3)² = 9. Mutation: -3+(-3) = -6.
+        // sqrt(0+9) = 3 > 2 → fail. Mutation: sqrt(0+(-6)) = NaN → OK.
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 4 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0, ToolVerb::Revive, &world, &context, Some(IVec2 { x: 0, y: 1 }),
+        );
+        assert!(result.is_err(), "Revive at distance 3.0 should fail (dy*dy vs dy+dy)");
+    }
+
+    #[test]
+    fn test_los_obstacle_single_coordinate_match() {
+        // Obstacle at (5,1) shares y=1 with path cell (0,1) on vertical line.
+        // Original: obs.x == x && obs.y == y → 5==0 && 1==1 → false → no block.
+        // Mutation `&& → ||`: 5==0 || 1==1 → true → blocked incorrectly.
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 5, y: 1 }], // Shares y=1 with path cell (0,1)
+        };
+        // LOS from (0,0) to (0,3) — vertical line, obstacle at (5,1) NOT on path.
+        let has_los = has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 0, y: 3 }, &world);
+        assert!(has_los,
+            "Obstacle at (5,1) should NOT block vertical LOS from (0,0) to (0,3)");
+    }
+
+    #[test]
+    fn test_los_from_nonzero_origin_with_obstacle() {
+        // Uses non-zero from to catch `(to.x - from.x).abs() → (to.x + from.x).abs()`
+        // from (3,2) to (6,4): original dx=3, dy=2.
+        // Mutation: dx=abs(6+3)=9, dy=abs(4+2)=6 — different Bresenham path.
+        // With the mutation, Bresenham may diverge (timeout=caught) or miss obstacle.
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 3, y: 2 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 5, y: 3 }], // On original path (3,2)→(4,3)→(5,3)→(6,4)
+        };
+        let has_los = has_line_of_sight(IVec2 { x: 3, y: 2 }, IVec2 { x: 6, y: 4 }, &world);
+        assert!(!has_los,
+            "Obstacle at (5,3) should block LOS from (3,2) to (6,4)");
+    }
 }
