@@ -849,10 +849,14 @@ mod tests {
     fn test_delta_detects_entity_removal() {
         // Kills: `delete ! in aw_world_tick` (line 206)
         // `if !cur.contains_key(id)` → `if cur.contains_key(id)` inverts removal detection
+        // With mutation: entities that EXIST would be reported as removed,
+        // and actually removed entities would NOT be reported.
         use std::sync::Mutex;
 
         static REMOVE_DELTA: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
         REMOVE_DELTA.get_or_init(|| Mutex::new(Vec::new()));
+        // Clear any previous messages from other test runs
+        REMOVE_DELTA.get().unwrap().lock().unwrap().clear();
 
         unsafe extern "C" fn collect_remove_delta(msg: *const c_char) {
             let s = CStr::from_ptr(msg).to_string_lossy().to_string();
@@ -865,12 +869,19 @@ mod tests {
         // Tick 1: establish baseline (3 entities)
         aw_world_tick(w, 0.016);
 
-        // Destroy an entity
+        // Destroy an entity and record which one
         let wrap = unsafe { &mut *(w.0) };
         let entities: Vec<u32> = wrap.world.all_of_team(2); // enemy team
-        if let Some(&eid) = entities.first() {
-            wrap.world.destroy_entity(eid);
-        }
+        let destroyed_id = entities[0];
+        wrap.world.destroy_entity(destroyed_id);
+
+        // Also record surviving entity IDs
+        let surviving: Vec<u32> = wrap
+            .world
+            .all_of_team(0)
+            .into_iter()
+            .chain(wrap.world.all_of_team(1))
+            .collect();
 
         // Tick 2: should detect the removed entity
         aw_world_tick(w, 0.016);
@@ -879,10 +890,30 @@ mod tests {
         assert!(msgs.len() >= 2, "Should have at least 2 delta messages");
         let delta2: serde_json::Value = serde_json::from_str(&msgs[1]).unwrap();
         let removed = delta2["removed"].as_array().unwrap();
-        assert!(
-            !removed.is_empty(),
-            "Delta should detect removed entity (kills `!` deletion mutation)"
+
+        // The removed list must contain EXACTLY the destroyed entity
+        assert_eq!(
+            removed.len(),
+            1,
+            "Should report exactly 1 removed entity, got {} \
+             (mutation `!` deletion would report {} surviving entities as removed instead)",
+            removed.len(),
+            surviving.len()
         );
+        assert_eq!(
+            removed[0].as_u64().unwrap(),
+            destroyed_id as u64,
+            "Removed entity ID should match the destroyed entity"
+        );
+
+        // Surviving entities must NOT be in removed
+        for &s_id in &surviving {
+            assert!(
+                !removed.iter().any(|r| r.as_u64() == Some(s_id as u64)),
+                "Surviving entity {} must not be in removed list",
+                s_id
+            );
+        }
         drop(msgs);
 
         aw_world_destroy(w);
