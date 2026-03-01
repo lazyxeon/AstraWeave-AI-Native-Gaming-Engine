@@ -654,26 +654,66 @@ mod tests {
     }
 
     #[test]
-    fn test_sample_with_noise_golden() {
-        // With noise: exact value depends on UV+noise calculation.
-        // Any mutation in UV, noise accumulation, or octave scaling changes this.
+    fn test_sample_multi_point_golden() {
+        // Multi-point golden test with non-symmetric bounds, 3 octaves,
+        // and tight tolerance to catch ALL arithmetic mutations in sample().
+        // Non-symmetric bounds ensure UV - vs + mutations are detected.
+        // 3 octaves ensure scale/amplitude loop mutations diverge.
+        // pattern_scale=3.5 (not 2.0) to prevent *= vs += equivalence.
+        let config = CausticsConfig {
+            wave_octaves: 3,
+            intensity: 0.7,
+            pattern_scale: 3.5,
+            max_depth: 80.0,
+            depth_falloff: 0.6,
+            ..Default::default()
+        };
+        let proj = CausticsProjector::new(Vec3::NEG_Y, 50.0)
+            .with_bounds(Vec2::new(-10.0, -20.0), Vec2::new(30.0, 40.0));
+
+        // Three sample points at different depths and UVs
+        let p1 = proj.sample(Vec3::new(5.0, 30.0, 10.0), &config);  // depth=20
+        let p2 = proj.sample(Vec3::new(-3.0, 10.0, 25.0), &config); // depth=40
+        let p3 = proj.sample(Vec3::new(15.0, 45.0, -5.0), &config); // depth=5
+
+        eprintln!("GOLDEN p1={p1} p2={p2} p3={p3}");
+
+        // Golden values from verified correct implementation (tolerance 1e-5).
+        // All three must match — any arithmetic mutation in UV, noise, octave
+        // loop, normalization, or depth falloff changes at least one.
+        assert!((p1 - 0.22275063).abs() < 1e-5, "p1 mismatch: {p1}");
+        assert!((p2 - 0.16042350).abs() < 1e-5, "p2 mismatch: {p2}");
+        assert!((p3 - 0.29726005).abs() < 1e-5, "p3 mismatch: {p3}");
+
+        // Determinism check
+        let p1b = proj.sample(Vec3::new(5.0, 30.0, 10.0), &config);
+        assert!((p1 - p1b).abs() < 1e-6, "non-deterministic");
+    }
+
+    #[test]
+    fn test_sample_chromatic_returns_three_channels() {
+        // Exercises sample_chromatic which calls sample 3 times with offsets.
+        // Verifies chromatic aberration offset logic.
         let config = CausticsConfig {
             wave_octaves: 2,
             intensity: 0.8,
-            pattern_scale: 3.0, // NOT 2.0: avoids *= vs += equivalence
-            max_depth: 100.0,
+            pattern_scale: 3.0,
+            max_depth: 80.0,
             depth_falloff: 0.5,
+            chromatic_aberration: 0.05,
             ..Default::default()
         };
-        let proj = CausticsProjector::new(Vec3::NEG_Y, 100.0);
-        let result = proj.sample(Vec3::new(10.0, 50.0, 20.0), &config);
-        // Golden value from verified correct implementation.
-        // pattern_scale=3.0 (not 2.0) to prevent *= vs += equivalence.
-        // Any mutation in UV, noise, depth, or octave math changes this.
-        assert!((result - 0.11716).abs() < 1e-3,
-            "golden mismatch: expected ~0.1370, got {}", result);
-        // Deterministic: same inputs → same output
-        let r2 = proj.sample(Vec3::new(10.0, 50.0, 20.0), &config);
-        assert!((result - r2).abs() < 1e-6);
+        let proj = CausticsProjector::new(Vec3::NEG_Y, 50.0)
+            .with_bounds(Vec2::new(-10.0, -20.0), Vec2::new(30.0, 40.0));
+        let rgb = proj.sample_chromatic(Vec3::new(5.0, 30.0, 10.0), &config);
+
+        // All channels should be in [0, 1]
+        assert!(rgb.x >= 0.0 && rgb.x <= 1.0, "R: {}", rgb.x);
+        assert!(rgb.y >= 0.0 && rgb.y <= 1.0, "G: {}", rgb.y);
+        assert!(rgb.z >= 0.0 && rgb.z <= 1.0, "B: {}", rgb.z);
+
+        // G channel should match direct sample() call
+        let g = proj.sample(Vec3::new(5.0, 30.0, 10.0), &config);
+        assert!((rgb.y - g).abs() < 1e-6, "G channel should match sample()");
     }
 }
