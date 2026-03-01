@@ -577,4 +577,102 @@ mod tests {
         assert!(CAUSTICS_WGSL.contains("sample_caustics"));
         assert!(CAUSTICS_WGSL.contains("caustic_noise"));
     }
+
+    // =========================================================================
+    // Mutation-killing tests
+    // =========================================================================
+
+    #[test]
+    fn test_shallow_all_fields() {
+        let c = CausticsConfig::shallow();
+        assert!((c.animation_speed - 1.5).abs() < 1e-6);
+        assert!((c.intensity - 1.0).abs() < 1e-6);
+        assert!((c.pattern_scale - 1.5).abs() < 1e-6);
+        assert!((c.max_depth - 10.0).abs() < 1e-6);
+        assert!((c.chromatic_aberration - 0.03).abs() < 1e-6);
+        assert_eq!(c.wave_octaves, 4);
+        assert!((c.depth_falloff - 0.3).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_deep_ocean_all_fields() {
+        let c = CausticsConfig::deep_ocean();
+        assert_eq!(c.texture_size, 256);
+        assert!((c.animation_speed - 0.3).abs() < 1e-6);
+        assert!((c.intensity - 0.4).abs() < 1e-6);
+        assert!((c.pattern_scale - 4.0).abs() < 1e-6);
+        assert!((c.max_depth - 100.0).abs() < 1e-6);
+        assert!((c.chromatic_aberration - 0.01).abs() < 1e-6);
+        assert_eq!(c.wave_octaves, 2);
+        assert!((c.depth_falloff - 0.8).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_from_config_time_scaling() {
+        let config = CausticsConfig { animation_speed: 2.5, ..Default::default() };
+        let u = CausticsUniforms::from_config(&config, 3.0);
+        // time = 3.0 * 2.5 = 7.5
+        assert!((u.time - 7.5).abs() < 1e-6,
+            "time should be 7.5, got {}", u.time);
+    }
+
+    #[test]
+    fn test_update_advances_time() {
+        let config = CausticsConfig { animation_speed: 2.0, ..Default::default() };
+        let mut proj = CausticsProjector::new(Vec3::NEG_Y, 0.0);
+        assert_eq!(proj.time, 0.0);
+
+        proj.update(0.5, &config);
+        // time += 0.5 * 2.0 = 1.0
+        assert!((proj.time - 1.0).abs() < 1e-6, "time={}", proj.time);
+
+        proj.update(0.25, &config);
+        // time += 0.25 * 2.0 = 0.5 → total 1.5
+        assert!((proj.time - 1.5).abs() < 1e-6, "time={}", proj.time);
+    }
+
+    #[test]
+    fn test_sample_depth_exact() {
+        // With 0 octaves: intensity = (0*0.5+0.5) = 0.5
+        // then *= config.intensity, then *= depth_factor
+        let config = CausticsConfig {
+            wave_octaves: 0,
+            intensity: 1.0,
+            max_depth: 100.0,
+            depth_falloff: 1.0,
+            ..Default::default()
+        };
+        let proj = CausticsProjector::new(Vec3::NEG_Y, 100.0);
+
+        // depth=50 → factor = 1 - (50/100)^1 = 0.5 → result = 0.5*1.0*0.5 = 0.25
+        let r = proj.sample(Vec3::new(0.0, 50.0, 0.0), &config);
+        assert!((r - 0.25).abs() < 1e-4, "expected 0.25, got {}", r);
+
+        // depth=75 → factor = 0.25 → result = 0.125
+        let r2 = proj.sample(Vec3::new(0.0, 25.0, 0.0), &config);
+        assert!((r2 - 0.125).abs() < 1e-4, "expected 0.125, got {}", r2);
+    }
+
+    #[test]
+    fn test_sample_with_noise_golden() {
+        // With noise: exact value depends on UV+noise calculation.
+        // Any mutation in UV, noise accumulation, or octave scaling changes this.
+        let config = CausticsConfig {
+            wave_octaves: 2,
+            intensity: 0.8,
+            pattern_scale: 2.0,
+            max_depth: 100.0,
+            depth_falloff: 0.5,
+            ..Default::default()
+        };
+        let proj = CausticsProjector::new(Vec3::NEG_Y, 100.0);
+        let result = proj.sample(Vec3::new(10.0, 50.0, 20.0), &config);
+        // Golden value from verified correct implementation.
+        // Any mutation in UV, noise, depth, or octave math changes this.
+        assert!((result - 0.1369569).abs() < 1e-4,
+            "golden mismatch: expected ~0.1370, got {}", result);
+        // Deterministic: same inputs → same output
+        let r2 = proj.sample(Vec3::new(10.0, 50.0, 20.0), &config);
+        assert!((result - r2).abs() < 1e-6);
+    }
 }
