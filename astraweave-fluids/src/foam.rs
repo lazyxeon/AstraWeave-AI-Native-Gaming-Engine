@@ -635,4 +635,134 @@ mod tests {
         // GpuFoamParticle: 2 * [f32; 4] = 32 bytes (wgpu aligned)
         assert_eq!(std::mem::size_of::<GpuFoamParticle>(), 32);
     }
+
+    // =========================================================================
+    // Mutation-killing tests
+    // =========================================================================
+
+    #[test]
+    fn test_calm_all_fields() {
+        let c = FoamConfig::calm();
+        assert_eq!(c.max_particles, 2000);
+        assert!((c.lifetime - 2.0).abs() < 1e-6);
+        assert!((c.whitecap_threshold - 0.9).abs() < 1e-6);
+        assert!((c.shore_intensity - 0.5).abs() < 1e-6);
+        assert!((c.wake_intensity - 0.5).abs() < 1e-6);
+        assert!((c.initial_opacity - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_stormy_all_fields() {
+        let c = FoamConfig::stormy();
+        assert_eq!(c.max_particles, 20000);
+        assert!((c.lifetime - 4.0).abs() < 1e-6);
+        assert!((c.whitecap_threshold - 0.3).abs() < 1e-6);
+        assert!((c.shore_intensity - 2.5).abs() < 1e-6);
+        assert!((c.wake_intensity - 2.0).abs() < 1e-6);
+        assert!((c.initial_opacity - 1.0).abs() < 1e-6);
+        assert!((c.spread_rate - 0.8).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_rapids_all_fields() {
+        let c = FoamConfig::rapids();
+        assert_eq!(c.max_particles, 15000);
+        assert!((c.lifetime - 1.5).abs() < 1e-6);
+        assert!((c.whitecap_threshold - 0.4).abs() < 1e-6);
+        assert!((c.shore_intensity - 2.0).abs() < 1e-6);
+        assert!((c.wake_intensity - 1.5).abs() < 1e-6);
+        assert!((c.spread_rate - 1.0).abs() < 1e-6);
+        assert!((c.fade_rate - 0.6).abs() < 1e-6);
+        assert!((c.initial_opacity - 0.9).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_config_getter_returns_set_config() {
+        let cfg = FoamConfig::calm();
+        let system = FoamSystem::new(cfg.clone());
+        assert_eq!(system.config().max_particles, 2000);
+        assert!((system.config().lifetime - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_set_config_updates() {
+        let mut system = FoamSystem::new(FoamConfig::default());
+        assert_eq!(system.config().max_particles, 10000);
+        system.set_config(FoamConfig::calm());
+        assert_eq!(system.config().max_particles, 2000);
+    }
+
+    #[test]
+    fn test_next_random_range_and_determinism() {
+        let mut system = FoamSystem::new(FoamConfig::default());
+        let v1 = system.next_random();
+        let v2 = system.next_random();
+        let v3 = system.next_random();
+        // Values must be in [0, 1)
+        assert!(v1 >= 0.0 && v1 < 1.0, "v1={}", v1);
+        assert!(v2 >= 0.0 && v2 < 1.0, "v2={}", v2);
+        assert!(v3 >= 0.0 && v3 < 1.0, "v3={}", v3);
+        // Not all the same
+        assert!(v1 != v2 || v2 != v3, "RNG stuck: {} {} {}", v1, v2, v3);
+
+        // Deterministic: same seed → same values
+        let mut system2 = FoamSystem::new(FoamConfig::default());
+        assert!((system2.next_random() - v1).abs() < 1e-6);
+        assert!((system2.next_random() - v2).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_spawn_foam_source_intensity_shore() {
+        // shore_intensity < 1.0 ensures Shore arm makes a difference vs default (1.0)
+        let cfg = FoamConfig {
+            shore_intensity: 0.5,
+            initial_opacity: 0.8,
+            ..Default::default()
+        };
+        let mut system = FoamSystem::new(cfg);
+        system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Shore);
+        let p = &system.particles()[0];
+        // intensity = shore_intensity = 0.5, .min(1.0) = 0.5
+        // opacity = initial_opacity * 0.5 = 0.4
+        assert!((p.opacity - 0.4).abs() < 1e-4, "shore opacity={}", p.opacity);
+    }
+
+    #[test]
+    fn test_spawn_foam_source_intensity_wake() {
+        let cfg = FoamConfig {
+            wake_intensity: 0.3,
+            initial_opacity: 0.8,
+            ..Default::default()
+        };
+        let mut system = FoamSystem::new(cfg);
+        system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Wake);
+        let p = &system.particles()[0];
+        // intensity = wake_intensity = 0.3, opacity = 0.8 * 0.3 = 0.24
+        assert!((p.opacity - 0.24).abs() < 1e-4, "wake opacity={}", p.opacity);
+    }
+
+    #[test]
+    fn test_spawn_foam_source_intensity_waterfall() {
+        let cfg = FoamConfig {
+            shore_intensity: 0.4,
+            initial_opacity: 1.0,
+            ..Default::default()
+        };
+        let mut system = FoamSystem::new(cfg);
+        system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Waterfall);
+        let p = &system.particles()[0];
+        // intensity = shore_intensity * 1.5 = 0.6, .min(1.0) = 0.6
+        // opacity = 1.0 * 0.6 = 0.6
+        assert!((p.opacity - 0.6).abs() < 1e-4, "waterfall opacity={}", p.opacity);
+    }
+
+    #[test]
+    fn test_spawn_foam_size_has_random_component() {
+        let mut system = FoamSystem::new(FoamConfig::default());
+        system.spawn_foam(Vec3::ZERO, Vec2::ZERO, FoamSource::Whitecap);
+        let p = &system.particles()[0];
+        // size = 0.1 + next_random() * 0.1 → should be in [0.1, 0.2)
+        assert!(p.size >= 0.1, "size too small: {}", p.size);
+        assert!(p.size < 0.2 + 1e-6, "size too large: {}", p.size);
+    }
 }
