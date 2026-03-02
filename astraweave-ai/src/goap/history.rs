@@ -499,4 +499,34 @@ mod tests {
         assert_eq!(stats.failures, 2);
         assert_eq!(stats.successes, 0);
     }
+
+    // ── Round 2 mutation-killing tests ──
+
+    #[test]
+    fn test_get_action_stats_mut_returns_mutable_ref() {
+        // Kills: get_action_stats_mut → None / Some(Box::leak(...))
+        let mut history = ActionHistory::new();
+        history.record_success("heal", 2.0);
+
+        // Should return Some with correct data
+        let stats = history.get_action_stats_mut("heal").unwrap();
+        assert_eq!(stats.executions, 1);
+        assert_eq!(stats.successes, 1);
+        assert_eq!(stats.avg_duration, 2.0);
+
+        // Mutate through the reference
+        stats.executions = 10;
+        stats.successes = 8;
+
+        // Verify mutation persisted
+        let stats2 = history.get_action_stats("heal").unwrap();
+        assert_eq!(stats2.executions, 10);
+        assert_eq!(stats2.successes, 8);
+    }
+
+    #[test]
+    fn test_get_action_stats_mut_none_for_missing() {
+        let mut history = ActionHistory::new();
+        assert!(history.get_action_stats_mut("nonexistent").is_none());
+    }
 }

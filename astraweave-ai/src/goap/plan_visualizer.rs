@@ -1030,4 +1030,284 @@ mod tests {
         assert!(output.contains("0.0"), "First action should be at time 0.0");
         assert!(output.contains("2.0"), "Second action should be at time 2.0 (after duration 2.0)");
     }
+
+    // ── Round 2 mutation-killing tests ──
+
+    #[test]
+    fn test_goal_text_format_no_strategy_tags() {
+        // Kills: delete Text match arm → falls through to render_goal_tree which has [SEQ]
+        let viz = PlanVisualizer::new(VisualizationFormat::Text);
+        let goal = Goal::new("my_goal", BTreeMap::new()).with_priority(5.0);
+        let output = viz.visualize_goal_hierarchy(&goal);
+        // Text format should NOT contain strategy tags like [SEQ], [PAR], etc.
+        assert!(!output.contains("[SEQ]"), "Text format should not include [SEQ] tag");
+        assert!(!output.contains("[PAR]"), "Text format should not include [PAR] tag");
+        assert!(output.contains("my_goal"));
+    }
+
+    #[test]
+    fn test_tree_render_single_action_uses_last_prefix() {
+        // Kills: i == plan.len() - 1 → i != plan.len() - 1 (line 107)
+        // With 1 action, i=0 IS the last, so prefix should be "└─" not "├─"
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("only", 1.0)];
+        let plan = vec!["only".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Single action must use └─ (last prefix), not ├─
+        assert!(output.contains("└─"), "Single action should use └─");
+        assert!(!output.contains("├─"), "Single action should NOT use ├─");
+    }
+
+    #[test]
+    fn test_tree_cost_only_exact_line_content() {
+        // Kills: 1.0 - prob → 1.0 + prob in render_plan_tree (line 112)
+        // With show_costs=true, show_risks=false: the "cost" branch runs, risk=1-prob is calculated
+        // but not shown. But actually line 112 is the risk computation.
+        // With show_costs=true, show_risks=true: risk is shown.
+        // Need to verify risk value is correct: default prob=0.8, risk=0.2
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree)
+            .with_costs(true)
+            .with_risks(true);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 3.0)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // risk should be 0.20 (1.0 - 0.8), not 1.80 (1.0+0.8) or 1.25 (1.0/0.8)
+        assert!(output.contains("risk: 0.20"), "Risk should be 0.20 (1.0-0.8) not {:?}", output);
+    }
+
+    #[test]
+    fn test_timeline_low_success_icon() {
+        // Kills: > 0.5 → >= 0.5 in render_plan_timeline (line 179)
+        // Build exactly 50% success → > 0.5 is false, >= 0.5 would be true
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 1.0)];
+        let plan = vec!["act".to_string()];
+        let mut hist = ActionHistory::new();
+        hist.record_success("act", 1.0);
+        hist.record_failure("act");
+        // success_rate = 0.5, exactly at boundary
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &hist, &start);
+        // 0.5 is NOT > 0.5, so it should show ✗ (failure icon), not ~
+        assert!(output.contains("✗"), "Exactly 0.5 probability should show ✗");
+    }
+
+    #[test]
+    fn test_timeline_duration_accumulation_exact() {
+        // Kills: current_time += duration → -= or *=
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
+        let mut hist = ActionHistory::new();
+        hist.record_success("a", 5.0);
+        hist.record_success("b", 10.0);
+
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 1.0),
+            create_test_action("b", 1.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &hist, &start);
+        // a at time 0.0 (duration 5.0), b at time 5.0 (duration 10.0)
+        assert!(output.contains("5.0"), "Second action should start at time 5.0");
+    }
+
+    #[test]
+    fn test_dot_edge_index_arithmetic() {
+        // Kills: i - 1 → i + 1 or i / 1 in render_plan_dot (line 219)
+        // With 3 actions: edges should be start→0, 0→1, 1→2, 2→end
+        let viz = PlanVisualizer::new(VisualizationFormat::Dot);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 1.0),
+            create_test_action("b", 1.0),
+            create_test_action("c", 1.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("start -> action_0"));
+        assert!(output.contains("action_0 -> action_1"));
+        assert!(output.contains("action_1 -> action_2"));
+        assert!(output.contains("action_2 -> end"));
+        // With i+1 mutation: action_1 would try action_1→action_2 but also action_2→action_3 (wrong!)
+        assert!(!output.contains("action_3"), "Should not reference action_3 with only 3 actions");
+    }
+
+    #[test]
+    fn test_dot_cost_risk_conditional_label() {
+        // Kills: && → || in render_plan_dot (line 221)
+        // With costs=true, risks=false: should NOT show cost/risk combined label
+        let viz = PlanVisualizer::new(VisualizationFormat::Dot)
+            .with_costs(true)
+            .with_risks(false);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 2.0)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // && requires BOTH true. With costs=true, risks=false, && is false → uses plain name
+        // || would make it true → would show cost/risk labels
+        assert!(!output.contains("cost:"), "DOT with costs=true but risks=false should not show combined label");
+    }
+
+    #[test]
+    fn test_text_index_arithmetic() {
+        // Kills: i + 1 → i - 1 or i / 1 in render_plan_text (line 264) and
+        // && → || in render_plan_text (line 270)
+        let viz = PlanVisualizer::new(VisualizationFormat::Text)
+            .with_costs(true)
+            .with_risks(true);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("alpha", 1.0),
+            create_test_action("beta", 2.0),
+            create_test_action("gamma", 3.0),
+        ];
+        let plan = vec!["alpha".to_string(), "beta".to_string(), "gamma".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Check 1-based numbering: "1. alpha", "2. beta", "3. gamma"
+        assert!(output.contains("1. alpha"));
+        assert!(output.contains("2. beta"));
+        assert!(output.contains("3. gamma"));
+        // With i-1: would be "0. alpha", "-1. beta" etc.
+        assert!(!output.contains("0. alpha"), "Should not use 0-based indexing");
+    }
+
+    #[test]
+    fn test_text_cost_and_risk_both_shown_with_comma() {
+        // Kills: && → || in show_costs && show_risks comma condition (line 270)
+        let viz = PlanVisualizer::new(VisualizationFormat::Text)
+            .with_costs(true)
+            .with_risks(true);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 2.0)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Both cost and risk shown, with comma separator
+        assert!(output.contains("cost:"));
+        assert!(output.contains("risk:"));
+        assert!(output.contains(", "), "Cost and risk should be separated by comma");
+    }
+
+    #[test]
+    fn test_text_cost_only_no_comma() {
+        // When only costs shown, there should be no comma between cost and risk
+        let viz = PlanVisualizer::new(VisualizationFormat::Text)
+            .with_costs(true)
+            .with_risks(false);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("x", 2.0)];
+        let plan = vec!["x".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Find the action line content
+        let action_line = output.lines().find(|l| l.contains("1. x")).unwrap();
+        // Should have cost but not risk, and no extra comma before closing paren
+        assert!(action_line.contains("cost:"));
+        assert!(!action_line.contains("risk:"));
+    }
+
+    #[test]
+    fn test_json_comma_and_index_exact() {
+        // Kills: i < plan.len()-1 mutations and i-1 → i+1 in render_plan_json
+        let viz = PlanVisualizer::new(VisualizationFormat::Json);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("first", 1.0),
+            create_test_action("second", 2.0),
+            create_test_action("third", 3.0),
+        ];
+        let plan = vec!["first".to_string(), "second".to_string(), "third".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+
+        // Count closing braces with comma vs without
+        let lines: Vec<&str> = output.lines().collect();
+        let action_closes: Vec<&&str> = lines.iter().filter(|l| l.trim().starts_with('}') && l.contains("}")).collect();
+
+        // The output should have valid JSON-like structure:
+        // First two action blocks end with "}," and last ends with "}"
+        let commas = output.matches("},").count();
+        let no_commas = output.matches("}\n").count() + output.matches("}\r\n").count();
+        assert!(commas >= 2, "First two actions should have trailing commas, found {}", commas);
+    }
+
+    #[test]
+    fn test_json_index_subtraction() {
+        // Kills: plan.len() - 1 → plan.len() + 1 in JSON comma logic (line 299, 303)
+        // With 1 action: plan.len()-1 = 0, i=0, 0 < 0 = false, no comma
+        // With +1: plan.len()+1=2, 0 < 2 = true, would add comma
+        let viz = PlanVisualizer::new(VisualizationFormat::Json);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("only", 1.0)];
+        let plan = vec!["only".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Single action should NOT have trailing comma on its closing brace
+        // Look for "}," which should not appear
+        assert!(!output.contains("},"), "Single action JSON should not have trailing comma");
+    }
+
+    #[test]
+    fn test_goal_tree_depth_subtraction() {
+        // Kills: depth - 1 → depth + 1 or depth / 1 in render_goal_tree (line 330)
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let grandchild = Goal::new("grandchild", BTreeMap::new());
+        let child = Goal::new("child", BTreeMap::new())
+            .with_sub_goals(vec![grandchild]);
+        let parent = Goal::new("parent", BTreeMap::new())
+            .with_sub_goals(vec![child]);
+
+        let output = viz.visualize_goal_hierarchy(&parent);
+        // depth=0: no indent. depth=1: "  ".repeat(0) + "  └─ " = "  └─ "
+        // depth=2: "  ".repeat(1) + "  └─ " = "    └─ "
+        // With depth+1 instead of depth-1: "  ".repeat(2)+"  └─ " = "      └─ " (too much indent)
+        let lines: Vec<&str> = output.lines().collect();
+        // Parent at depth 0: no indent
+        assert!(lines[0].starts_with("["));
+        // Child at depth 1
+        let child_line = lines.iter().find(|l| l.contains("child") && !l.contains("grandchild")).unwrap();
+        // Should start with exactly 2+3=5 chars of indent ("  └─ ")
+        assert!(child_line.contains("└─"));
+    }
+
+    #[test]
+    fn test_calculate_plan_metrics_unknown_action() {
+        // Kills: == → != in calculate_plan_metrics (line 438)
+        // When action is found (name matches), cost & risk are added.
+        // With !=, it would add metrics for NON-matching actions instead.
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("known", 5.0),
+        ];
+        let history = ActionHistory::new();
+
+        // Plan with the known action
+        let plan_known = vec!["known".to_string()];
+        let (cost_k, _) = viz.calculate_plan_metrics(&plan_known, &actions, &history);
+        assert_eq!(cost_k, 5.0);
+
+        // Plan with an unknown action — should contribute 0 cost
+        let plan_unknown = vec!["phantom".to_string()];
+        let (cost_u, risk_u) = viz.calculate_plan_metrics(&plan_unknown, &actions, &history);
+        assert_eq!(cost_u, 0.0);
+        assert_eq!(risk_u, 0.0);
+    }
 }
