@@ -27,7 +27,7 @@ impl MoveToAction {
 
 impl Action for MoveToAction {
     fn name(&self) -> &str {
-        "move_to"
+        "" /* ~ changed by cargo-mutants ~ */
     }
 
     fn preconditions(&self) -> &BTreeMap<String, StateValue> {
