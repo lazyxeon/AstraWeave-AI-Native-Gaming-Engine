@@ -455,38 +455,82 @@ mod tests {
 
     #[test]
     fn test_update_removes_expired_goals() {
-        // Test that deadline check uses < (not <=, >, or ==)
+        // Test deadline check uses < (not <=, >, or ==) at line 87
+        // Must use a planner that CAN solve the goal so the planner's
+        // "unachievable removal" doesn't mask the deadline check
+        let mut planner = AdvancedGOAP::new();
+        let mut effects = BTreeMap::new();
+        effects.insert("target".to_string(), StateValue::Bool(true));
+        use crate::goap::SimpleAction;
+        planner.add_action(Box::new(SimpleAction::new(
+            "achieve",
+            BTreeMap::new(),
+            effects,
+            1.0,
+        )));
+
         let mut scheduler = GoalScheduler::new();
 
+        // Goal with deadline=10.0
         let mut desired = BTreeMap::new();
-        desired.insert("x".to_string(), StateValue::Bool(true));
-        let goal = Goal::new("timed", desired)
+        desired.insert("target".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("timed", desired.clone())
             .with_priority(5.0)
             .with_deadline(10.0);
         scheduler.add_goal(goal);
 
         let world = WorldState::new();
-        let planner = AdvancedGOAP::new();
 
-        // At time 9.0, goal should still exist (9.0 < 10.0)
-        scheduler.update(9.0, &world, &planner);
-        // Planner can't solve it, but it shouldn't be expired
+        // At time 9.0 (< 10.0): goal should survive deadline check
+        let plan = scheduler.update(9.0, &world, &planner);
+        assert!(plan.is_some(), "should find plan before deadline");
+        assert_eq!(scheduler.goal_count(), 1, "goal kept before deadline");
 
-        // Re-add since planner removes unachievable goals
-        let mut desired = BTreeMap::new();
-        desired.insert("y".to_string(), StateValue::Bool(true));
+        // Re-add for time=10.0 test (previous update consumed the goal via planning)
+        scheduler.clear();
         let goal2 = Goal::new("timed2", desired)
             .with_priority(5.0)
             .with_deadline(10.0);
         scheduler.add_goal(goal2);
 
-        // At time 10.0, goal should be removed (10.0 is NOT < 10.0)
-        scheduler.update(10.0, &world, &planner);
-        // All goals with deadline=10.0 should be gone at time=10.0
-        assert_eq!(
-            scheduler.goal_count(),
-            0,
-            "expired goals should be removed"
+        // At time 10.0 (NOT < 10.0): should be expired and removed
+        let plan2 = scheduler.update(10.0, &world, &planner);
+        assert!(plan2.is_none(), "no plan after deadline");
+        assert_eq!(scheduler.goal_count(), 0, "goal expired at deadline");
+    }
+
+    #[test]
+    fn test_should_replan_exact_interval_boundary() {
+        // Kill < with <= at line 133: current_time - last_replan_time < interval
+        let mut scheduler = GoalScheduler::with_replan_interval(5.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("g".into());
+
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Bool(true));
+        scheduler
+            .active_goals
+            .push_back(Goal::new("g", desired));
+
+        // At time 4.9: 4.9 - 0 = 4.9 < 5.0 → no replan
+        assert!(!scheduler.should_replan(4.9, &WorldState::new()));
+
+        // At time 5.0: 5.0 - 0 = 5.0, NOT < 5.0 → proceeds to further checks
+        // Goal "g" is not satisfied (empty world) → doesn't return true for that
+        // No more urgent goal → returns false
+        // But with <= mutation: 5.0 <= 5.0 = true → returns false (still in cooldown)
+        // So exact boundary: < returns false at L133 (interval elapsed), continues to L142+
+        // But current goal is not satisfied, so it falls through to urgency check.
+        // No other goals → returns false. Result is same for < and <= here.
+        // Need exact interval AND a satisfied goal to differentiate:
+        let mut satisfied_world = WorldState::new();
+        satisfied_world.set("x", StateValue::Bool(true));
+        // With <: 5.0 < 5.0 = false → continues → goal satisfied → true (replan!)
+        // With <=: 5.0 <= 5.0 = true → returns false (cooldown still active)
+        assert!(
+            scheduler.should_replan(5.0, &satisfied_world),
+            "at exact interval, should proceed past interval check"
         );
     }
 
@@ -573,28 +617,62 @@ mod tests {
 
     #[test]
     fn test_should_replan_urgency_not_enough() {
+        // Kills > → >= at L165:55 by using urgency exactly at *1.5 boundary
         let mut scheduler = GoalScheduler::with_replan_interval(0.0);
         scheduler.last_replan_time = 0.0;
         scheduler.current_plan = Some(vec!["action".into()]);
         scheduler.current_goal_name = Some("current".into());
 
-        // Need unsatisfied desired_state so is_satisfied returns false
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Bool(true));
+
+        // Current goal: priority 4.0 → urgency 4.0
+        scheduler
+            .active_goals
+            .push_back(Goal::new("current", desired.clone()).with_priority(4.0));
+
+        // Other goal: priority 6.0 → urgency 6.0
+        // 6.0 > 4.0 * 1.5 = 6.0? NO (6.0 > 6.0 is false)
+        // 6.0 >= 4.0 * 1.5 = 6.0? YES → would preempt with mutation
+        scheduler
+            .active_goals
+            .push_back(Goal::new("exact_boundary", desired).with_priority(6.0));
+
+        assert!(
+            !scheduler.should_replan(1.0, &WorldState::new()),
+            "should NOT preempt when urgency == threshold exactly"
+        );
+    }
+
+    #[test]
+    fn test_should_replan_urgency_kills_mult_to_add() {
+        // Kills * → + at L165:73: current_urgency * 1.5 vs current_urgency + 1.5
+        // Need urgency between the two thresholds
+        let mut scheduler = GoalScheduler::with_replan_interval(0.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("current".into());
+
         let mut desired = BTreeMap::new();
         desired.insert("x".to_string(), StateValue::Bool(true));
 
         // Current goal: priority 5.0 → urgency 5.0
+        // Threshold * 1.5: 5.0 * 1.5 = 7.5
+        // Threshold + 1.5: 5.0 + 1.5 = 6.5
         scheduler
             .active_goals
             .push_back(Goal::new("current", desired.clone()).with_priority(5.0));
 
-        // Other goal: priority 6.0 → urgency 6.0, but NOT > 5.0 * 1.5 = 7.5
+        // Other goal: priority 7.0 → urgency 7.0
+        // 7.0 > 7.5 = false → no preempt (correct with *)
+        // 7.0 > 6.5 = true → preempt (wrong with +)
         scheduler
             .active_goals
-            .push_back(Goal::new("slightly_higher", desired).with_priority(6.0));
+            .push_back(Goal::new("medium_high", desired).with_priority(7.0));
 
         assert!(
             !scheduler.should_replan(1.0, &WorldState::new()),
-            "should NOT preempt when urgency difference is small"
+            "should NOT preempt: 7.0 < 5.0*1.5=7.5"
         );
     }
 

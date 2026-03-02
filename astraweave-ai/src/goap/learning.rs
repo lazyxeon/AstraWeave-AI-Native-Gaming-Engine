@@ -359,22 +359,23 @@ mod tests {
     #[test]
     fn test_confidence_interval_exact_values() {
         // Bayesian CI width = 2 * 1.96 * sqrt(p * (1-p) / n)
-        // with prior_successes=2, prior_failures=2
-        let bayesian = BayesianSmoothing::new(2, 2);
+        // Use ASYMMETRIC priors to kill + → * mutation at L69
+        // prior_failures=3 ensures failures+prior != failures*prior when failures=2
+        let bayesian = BayesianSmoothing::new(2, 3);
 
         // stats: 6 successes, 2 failures
-        // posterior: (6+2)=8 successes, (2+2)=4 failures, n=12
-        // p = 8/12 = 2/3
-        // variance = (2/3)*(1/3)/12 = 2/108 ≈ 0.01852
-        // CI = 2 * 1.96 * sqrt(0.01852) ≈ 2 * 1.96 * 0.13608 ≈ 0.5334
+        // posterior_successes = 6+2 = 8
+        // posterior_failures = 2+3 = 5 (vs 2*3=6 with mutation)
+        // n = 8 + 5 = 13 (vs 8 + 6 = 14 with mutation)
+        // p = 8/13
         let stats = create_test_stats(6, 2);
         let ci = bayesian.confidence_interval_width(&stats);
 
-        let p = 8.0_f32 / 12.0;
-        let variance = p * (1.0 - p) / 12.0;
+        let p = 8.0_f32 / 13.0;
+        let variance = p * (1.0 - p) / 13.0;
         let expected = 2.0 * 1.96 * variance.sqrt();
         assert!(
-            (ci - expected).abs() < 0.01,
+            (ci - expected).abs() < 0.001,
             "CI width: {ci}, expected: {expected}"
         );
     }
@@ -497,21 +498,48 @@ mod tests {
         let mut manager = LearningManager::new(config.clone());
 
         let mut history = ActionHistory::new();
-        // 50% success rate
+        // Start with 50% success rate (1 success, 1 failure)
         history.record_success("test_act", 0.1);
         history.record_failure("test_act");
 
-        let prob = manager.get_probability("test_act", &history);
-
-        // EWMA with no previous: raw_rate = 0.5. estimate = 0.5
-        // Then stored in ewma_estimates. Next call should use previous.
-        let _prob2 = manager.get_probability("test_act", &history);
-
-        // Second call: alpha * 0.5 + (1-alpha) * 0.5 = 0.5 (same for 50%)
-        // The key test is that it stores the estimate in ewma_estimates (EWMA method check)
+        // First call: no previous → returns raw rate 0.5, stores 0.5
+        let prob1 = manager.get_probability("test_act", &history);
         assert!(
-            (prob - 0.5).abs() < 0.01,
-            "EWMA with 50% data should be near 0.5, got {prob}"
+            (prob1 - 0.5).abs() < 0.02,
+            "First call should be ~0.5, got {prob1}"
+        );
+
+        // Add more successes to change the raw rate: now 3/4 = 75%
+        history.record_success("test_act", 0.1);
+        history.record_success("test_act", 0.1);
+
+        // Second call: has previous estimate (0.5).
+        // EWMA: 0.5 * 0.75 + 0.5 * 0.5 = 0.375 + 0.25 = 0.625
+        // Without stored (== → !=): would use None → raw rate 0.75
+        let prob2 = manager.get_probability("test_act", &history);
+        let expected_ewma = 0.5 * 0.75 + 0.5 * 0.5;
+        assert!(
+            (prob2 - expected_ewma).abs() < 0.02,
+            "EWMA with stored previous should be ~{expected_ewma}, got {prob2}"
+        );
+    }
+
+    #[test]
+    fn test_ewma_confidence_exact() {
+        // Kills / → % and / → * at line 104: (stats.executions as f32 / 20.0)
+        let mut config = GOAPConfig::default();
+        config.learning.smoothing.method = SmoothingMethod::Ewma;
+
+        // Use exactly 10 executions: conf = 10/20 = 0.5
+        // Mutation %: 10 % 20 = 10.0 → min(1.0) = 1.0
+        // Mutation *: 10 * 20 = 200.0 → min(1.0) = 1.0
+        let stats = create_test_stats(5, 5); // 10 executions
+        let smoothed = SmoothedStats::from_stats(stats, &config, None);
+
+        assert!(
+            (smoothed.confidence - 0.5).abs() < 0.001,
+            "EWMA confidence with 10 executions should be 0.5, got {}",
+            smoothed.confidence
         );
     }
 }

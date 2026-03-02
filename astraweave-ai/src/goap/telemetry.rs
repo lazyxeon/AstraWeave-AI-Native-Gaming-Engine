@@ -551,7 +551,45 @@ mod tests {
             } => {
                 assert_eq!(steps_executed, 2);
                 assert_eq!(steps_failed, 1);
-                assert!(total_duration_ms > 0.0);
+                // total_duration_ms = start_time.elapsed() * 1000.0
+                // Test runs in µs, so should be < 500ms
+                // Kills * → + (would add ~1000), but / → * is still timing-dependent
+                assert!(
+                    total_duration_ms < 500.0,
+                    "total_duration_ms should be small, got {total_duration_ms}"
+                );
+                assert!(
+                    total_duration_ms >= 0.0,
+                    "duration must be non-negative"
+                );
+            }
+            _ => panic!("expected PlanCompleted"),
+        }
+    }
+
+    #[test]
+    fn test_tracker_complete_duration_kills_mutations() {
+        // Creates a tracker, sleeps briefly, then completes.
+        // Ensures * 1000.0 is correct by asserting a range
+        // that excludes + 1000.0 and / 1000.0 results
+        let tracker = PlanExecutionTracker::new("duration-test".into());
+        std::thread::sleep(Duration::from_millis(10));
+        let event = tracker.complete();
+        match event {
+            TelemetryEvent::PlanCompleted {
+                total_duration_ms, ..
+            } => {
+                // With * 1000: ~10ms (between 5 and 200)
+                // With + 1000: ~1000ms (way above 200)
+                // With / 1000: ~0.00001ms (way below 5)
+                assert!(
+                    total_duration_ms > 5.0,
+                    "duration too small (/ mutation?): {total_duration_ms}"
+                );
+                assert!(
+                    total_duration_ms < 200.0,
+                    "duration too large (+ mutation?): {total_duration_ms}"
+                );
             }
             _ => panic!("expected PlanCompleted"),
         }
