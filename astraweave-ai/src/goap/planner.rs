@@ -1101,4 +1101,45 @@ mod tests {
         // > 0.5 is false for exactly 0.5, so should fail
         assert!(result.is_err(), "Exactly 0.5 probability should fail with > 0.5 check");
     }
+
+    #[test]
+    fn test_plan_direct_risk_accumulation_sign_mutation_kill() {
+        // Kills: risk: current.risk + action_risk → current.risk - action_risk (L291)
+        // With -, negative risk makes risky actions MORE attractive (lower f_cost).
+        // Design: safe action has 0 risk (prob=1.0), risky has 0.5 risk (prob=0.5).
+        // Both reach goal. Costs engineered so risk difference flips ordering with -.
+        let mut goap = AdvancedGOAP::new();
+
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+
+        // safe: base_cost=6, 1 success → cost=6+0-2=4, prob=1.0, risk=0.0
+        goap.add_action(Box::new(SimpleAction::new(
+            "safe",
+            BTreeMap::new(),
+            eff.clone(),
+            6.0,
+        )));
+        goap.get_history_mut().record_success("safe", 1.0);
+
+        // risky: base_cost=1, 1 success + 1 failure → cost=1+5-1=5, prob=0.5, risk=0.5
+        goap.add_action(Box::new(SimpleAction::new(
+            "risky",
+            BTreeMap::new(),
+            eff,
+            1.0,
+        )));
+        goap.get_history_mut().record_success("risky", 1.0);
+        goap.get_history_mut().record_failure("risky");
+
+        let start = WorldState::new();
+        let mut gs = BTreeMap::new();
+        gs.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", gs);
+
+        let plan = goap.plan(&start, &goal).unwrap();
+        // With +: safe f=4+0+0*5=4, risky f=5+0+0.5*5=7.5 → safe wins
+        // With -: safe f=4+0+0*5=4, risky f=5+0+(-0.5)*5=2.5 → risky wins → FAIL
+        assert_eq!(plan, vec!["safe"]);
+    }
 }
