@@ -187,4 +187,93 @@ mod tests {
         let prob = action.success_probability(&world, &history);
         assert!((prob - 0.666666).abs() < 0.01);
     }
+
+    // ================================================================
+    // Mutation-killing tests
+    // ================================================================
+
+    /// Kills line 26: `failure_rate() * 10.0` → `+`
+    /// Kills line 29: `success_rate() * -2.0` → `+`, `/`, and `delete -`
+    /// Kills line 31: `failure_penalty + success_bonus` → `-`, and `+= → *=`
+    #[test]
+    fn test_calculate_cost_exact_values_all_success() {
+        let action = SimpleAction::new("test", BTreeMap::new(), BTreeMap::new(), 5.0);
+        let world = WorldState::new();
+        let mut history = ActionHistory::new();
+
+        // Record 10 successes (failure_rate=0.0, success_rate=1.0)
+        for _ in 0..10 {
+            history.record_success("test", 1.0);
+        }
+
+        let cost = action.calculate_cost(&world, &history);
+        // penalty = 0.0 * 10.0 = 0.0, bonus = 1.0 * -2.0 = -2.0
+        // cost = 5.0 + 0.0 + (-2.0) = 3.0
+        assert!(
+            (cost - 3.0).abs() < 0.01,
+            "Cost with all successes should be 3.0, got {}",
+            cost
+        );
+    }
+
+    /// Kills same lines from the failure perspective
+    #[test]
+    fn test_calculate_cost_exact_values_all_failures() {
+        let action = SimpleAction::new("test", BTreeMap::new(), BTreeMap::new(), 5.0);
+        let world = WorldState::new();
+        let mut history = ActionHistory::new();
+
+        // Record 10 failures (failure_rate=1.0, success_rate=0.0)
+        for _ in 0..10 {
+            history.record_failure("test");
+        }
+
+        let cost = action.calculate_cost(&world, &history);
+        // penalty = 1.0 * 10.0 = 10.0, bonus = 0.0 * -2.0 = 0.0
+        // cost = 5.0 + 10.0 + 0.0 = 15.0
+        assert!(
+            (cost - 15.0).abs() < 0.01,
+            "Cost with all failures should be 15.0, got {}",
+            cost
+        );
+    }
+
+    /// Kills line 54: `state_cost_modifier -> f32` replaced with 0.0 / -1.0
+    #[test]
+    fn test_state_cost_modifier_default() {
+        let action = SimpleAction::new("test", BTreeMap::new(), BTreeMap::new(), 1.0);
+        let world = WorldState::new();
+        let modifier = action.state_cost_modifier(&world);
+        assert!(
+            (modifier - 1.0).abs() < f32::EPSILON,
+            "Default state_cost_modifier should be 1.0, got {}",
+            modifier
+        );
+    }
+
+    /// Kills line 60: `estimated_duration -> f32` replaced with 0.0 / 1.0 / -1.0
+    #[test]
+    fn test_estimated_duration_default_and_with_history() {
+        let action = SimpleAction::new("test", BTreeMap::new(), BTreeMap::new(), 1.0);
+        let history = ActionHistory::new();
+
+        // No history → default 1.0
+        let dur = action.estimated_duration(&history);
+        assert!(
+            (dur - 1.0).abs() < f32::EPSILON,
+            "Default estimated_duration should be 1.0"
+        );
+
+        // With history → avg_duration from stats
+        let mut history2 = ActionHistory::new();
+        history2.record_success("test", 2.0);
+        history2.record_success("test", 4.0);
+        let dur2 = action.estimated_duration(&history2);
+        // avg_duration = (2.0 + 4.0) / 2 = 3.0
+        assert!(
+            (dur2 - 3.0).abs() < 0.01,
+            "estimated_duration with history should be avg ~3.0, got {}",
+            dur2
+        );
+    }
 }

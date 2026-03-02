@@ -453,4 +453,105 @@ mod tests {
         let deserialized: SmoothingConfig = toml::from_str(&toml_str).unwrap();
         assert_eq!(deserialized.method, SmoothingMethod::Bayesian);
     }
+
+    // ================================================================
+    // Mutation-killing tests
+    // ================================================================
+
+    /// Kills line 215: `load_or_default` with valid file returns loaded config
+    #[test]
+    fn test_load_or_default_with_valid_file() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("valid.toml");
+
+        let mut config = GOAPConfig::default();
+        config.cost_tuning.risk_weight = 42.0;
+        config.save(&path).unwrap();
+
+        let loaded = GOAPConfig::load_or_default(&path);
+        assert_eq!(
+            loaded.cost_tuning.risk_weight, 42.0,
+            "load_or_default should return loaded config, not default"
+        );
+    }
+
+    /// Kills lines 234: boundary tests for initial_success_rate
+    /// Mutations: `< 0.0` → `<= 0.0`, `< 0.0` → `== 0.0`, `> 1.0` → `>= 1.0`
+    #[test]
+    fn test_validate_initial_success_rate_boundaries() {
+        let mut config = GOAPConfig::default();
+
+        // Exactly 0.0 should be valid (kills < → <=)
+        config.learning.initial_success_rate = 0.0;
+        assert!(config.validate().is_ok(), "initial_success_rate=0.0 should be valid");
+
+        // Exactly 1.0 should be valid (kills > → >=)
+        config.learning.initial_success_rate = 1.0;
+        assert!(config.validate().is_ok(), "initial_success_rate=1.0 should be valid");
+
+        // Negative should fail (kills < → ==)
+        config.learning.initial_success_rate = -0.1;
+        assert!(config.validate().is_err(), "initial_success_rate=-0.1 should be invalid");
+    }
+
+    /// Kills lines 240: boundary tests for min_success_rate
+    #[test]
+    fn test_validate_min_success_rate_boundaries() {
+        let mut config = GOAPConfig::default();
+
+        config.learning.min_success_rate = 0.0;
+        assert!(config.validate().is_ok(), "min_success_rate=0.0 should be valid");
+
+        config.learning.min_success_rate = -0.1;
+        assert!(config.validate().is_err(), "min_success_rate=-0.1 should be invalid");
+
+        // Just under max to avoid min >= max error
+        config.learning.min_success_rate = config.learning.max_success_rate - 0.01;
+        assert!(config.validate().is_ok());
+    }
+
+    /// Kills lines 246: boundary tests for max_success_rate
+    #[test]
+    fn test_validate_max_success_rate_boundaries() {
+        let mut config = GOAPConfig::default();
+
+        config.learning.max_success_rate = 1.0;
+        assert!(config.validate().is_ok(), "max_success_rate=1.0 should be valid");
+
+        config.learning.max_success_rate = -0.1;
+        assert!(config.validate().is_err(), "max_success_rate=-0.1 should be invalid");
+
+        config.learning.max_success_rate = 1.1;
+        assert!(config.validate().is_err(), "max_success_rate=1.1 should be invalid");
+    }
+
+    /// Kills lines 259: boundary tests for ewma_alpha
+    #[test]
+    fn test_validate_ewma_alpha_boundaries() {
+        let mut config = GOAPConfig::default();
+
+        config.learning.smoothing.ewma_alpha = 0.0;
+        assert!(config.validate().is_ok(), "ewma_alpha=0.0 should be valid");
+
+        config.learning.smoothing.ewma_alpha = 1.0;
+        assert!(config.validate().is_ok(), "ewma_alpha=1.0 should be valid");
+
+        config.learning.smoothing.ewma_alpha = -0.1;
+        assert!(config.validate().is_err(), "ewma_alpha=-0.1 should be invalid");
+
+        config.learning.smoothing.ewma_alpha = 1.1;
+        assert!(config.validate().is_err(), "ewma_alpha=1.1 should be invalid");
+    }
+
+    /// Kills line 272: boundary test for risk_weight
+    #[test]
+    fn test_validate_risk_weight_boundary() {
+        let mut config = GOAPConfig::default();
+
+        config.cost_tuning.risk_weight = 0.0;
+        assert!(config.validate().is_ok(), "risk_weight=0.0 should be valid");
+
+        config.cost_tuning.risk_weight = -0.1;
+        assert!(config.validate().is_err(), "risk_weight=-0.1 should be invalid");
+    }
 }

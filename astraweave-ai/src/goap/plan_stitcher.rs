@@ -403,4 +403,178 @@ mod tests {
         assert!(resume_points.contains(&0)); // Start
         assert!(resume_points.len() > 1); // Should have intermediate points
     }
+
+    // ================================================================
+    // Mutation-killing tests
+    // ================================================================
+
+    fn create_action_with_preconditions(
+        name: &str,
+        preconditions: Vec<(&str, StateValue)>,
+        effects: Vec<(&str, StateValue)>,
+    ) -> Box<dyn Action> {
+        let mut prec_map = BTreeMap::new();
+        for (k, v) in preconditions {
+            prec_map.insert(k.to_string(), v);
+        }
+        let mut eff_map = BTreeMap::new();
+        for (k, v) in effects {
+            eff_map.insert(k.to_string(), v);
+        }
+        Box::new(SimpleAction::new(name, prec_map, eff_map, 1.0))
+    }
+
+    /// Kills lines 115, 119: detect_conflicts with unsatisfied preconditions
+    #[test]
+    fn test_detect_conflicts_unsatisfied_preconditions() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_action_with_preconditions(
+                "needs_ammo",
+                vec![("has_ammo", StateValue::Bool(true))],
+                vec![("fired", StateValue::Bool(true))],
+            ),
+        ];
+        let plan = vec!["needs_ammo".to_string()];
+        // Start state lacks has_ammo, so precondition is violated
+        let start_state = WorldState::new();
+
+        let conflicts = PlanStitcher::detect_conflicts(&plan, &actions, &start_state);
+        assert!(!conflicts.is_empty(), "Should detect precondition violation");
+        assert!(
+            matches!(conflicts[0], Conflict::PreconditionViolation { .. }),
+            "Should be PreconditionViolation"
+        );
+    }
+
+    /// Kills lines 115, 119: detect_conflicts with precondition value mismatch
+    #[test]
+    fn test_detect_conflicts_precondition_value_mismatch() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_action_with_preconditions(
+                "needs_high_health",
+                vec![("health", StateValue::Int(100))],
+                vec![("attacked", StateValue::Bool(true))],
+            ),
+        ];
+        let plan = vec!["needs_high_health".to_string()];
+        let mut start_state = WorldState::new();
+        start_state.set("health", StateValue::Int(50)); // Wrong value
+
+        let conflicts = PlanStitcher::detect_conflicts(&plan, &actions, &start_state);
+        assert!(!conflicts.is_empty(), "Should detect value mismatch");
+    }
+
+    /// Kills line 135: skip(i + 1) offset with 3+ actions
+    #[test]
+    fn test_detect_conflicts_state_conflict_three_actions() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a1", vec![("health", StateValue::Int(100))]),
+            create_test_action("a2", vec![("ammo", StateValue::Int(10))]),
+            create_test_action("a3", vec![("health", StateValue::Int(50))]),
+        ];
+        let plan = vec!["a1".to_string(), "a2".to_string(), "a3".to_string()];
+        let start_state = WorldState::new();
+
+        let conflicts = PlanStitcher::detect_conflicts(&plan, &actions, &start_state);
+        // a1 sets health=100, a3 sets health=50 → state conflict
+        let state_conflicts: Vec<_> = conflicts
+            .iter()
+            .filter(|c| matches!(c, Conflict::StateConflict { .. }))
+            .collect();
+        assert!(
+            !state_conflicts.is_empty(),
+            "Should detect state conflict between non-adjacent actions"
+        );
+    }
+
+    /// Kills line 176: "attack" + "heal" incompatibility
+    /// Kills lines 183-184: reverse order check
+    #[test]
+    fn test_are_incompatible_attack_heal() {
+        assert!(
+            PlanStitcher::are_incompatible("attack_enemy", "heal_ally"),
+            "attack + heal should be incompatible"
+        );
+        assert!(
+            PlanStitcher::are_incompatible("heal_ally", "attack_enemy"),
+            "heal + attack should be incompatible (reverse)"
+        );
+        assert!(
+            !PlanStitcher::are_incompatible("move_forward", "look_around"),
+            "unrelated actions should not be incompatible"
+        );
+    }
+
+    /// Kills line 194: optimize(vec![]) returning non-empty
+    #[test]
+    fn test_optimize_empty_plan() {
+        let actions: Vec<Box<dyn Action>> = vec![];
+        let start_state = WorldState::new();
+        let result = PlanStitcher::optimize(vec![], &actions, &start_state);
+        assert!(result.is_empty(), "Optimizing empty plan should return empty");
+    }
+
+    /// Kills line 218: unknown action preserved in optimize
+    #[test]
+    fn test_optimize_preserves_unknown_actions() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("known", vec![("x", StateValue::Bool(true))]),
+        ];
+        let plan = vec!["known".to_string(), "unknown_action".to_string()];
+        let start_state = WorldState::new();
+
+        let result = PlanStitcher::optimize(plan, &actions, &start_state);
+        assert!(
+            result.contains(&"unknown_action".to_string()),
+            "Unknown actions should be preserved"
+        );
+    }
+
+    /// Kills line 237: validate_plan with conflicts returns Err
+    #[test]
+    fn test_validate_plan_with_conflicts() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("attack_enemy", vec![("damage", StateValue::Int(10))]),
+            create_test_action("heal_target", vec![("healed", StateValue::Bool(true))]),
+        ];
+        let plan = vec!["attack_enemy".to_string(), "heal_target".to_string()];
+        let start_state = WorldState::new();
+
+        let result = PlanStitcher::validate_plan(&plan, &actions, &start_state);
+        assert!(
+            result.is_err(),
+            "validate_plan should fail for incompatible actions"
+        );
+    }
+
+    /// Kills lines 256, 261, 262: find_resume_points exact indices
+    #[test]
+    fn test_find_resume_points_exact_indices() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a1", vec![("v1", StateValue::Int(1))]),
+            create_test_action("a2", vec![("v2", StateValue::Int(2))]),
+            create_test_action("a3", vec![("v3", StateValue::Int(3))]),
+            create_test_action("a4", vec![("v4", StateValue::Int(4))]),
+            create_test_action("a5", vec![("v5", StateValue::Int(5))]),
+            create_test_action("a6", vec![("v6", StateValue::Int(6))]),
+        ];
+        let plan = vec![
+            "a1".to_string(),
+            "a2".to_string(),
+            "a3".to_string(),
+            "a4".to_string(),
+            "a5".to_string(),
+            "a6".to_string(),
+        ];
+        let start_state = WorldState::new();
+
+        let resume_points = PlanStitcher::find_resume_points(&plan, &actions, &start_state);
+        // Start is always 0, then every 3rd: (0+1)%3!=0, (1+1)%3!=0, (2+1)%3==0→push 3,
+        // (3+1)%3!=0, (4+1)%3!=0, (5+1)%3==0→push 6
+        assert_eq!(
+            resume_points,
+            vec![0, 3, 6],
+            "Resume points should be exactly [0, 3, 6] for 6 actions"
+        );
+    }
 }
