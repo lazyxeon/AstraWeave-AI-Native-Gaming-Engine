@@ -450,7 +450,24 @@ jobs:
       - name: Run determinism tests (astraweave-terrain)
         run: |
           echo "=== Terrain Determinism Tests ==="
+          # Terrain has 35+ integration test files. Compiling ALL of them
+          # to run only the determinism-filtered subset causes compilation
+          # failures from unrelated test targets on CI.
+          # Scope to --lib (8 core determinism tests) plus only the
+          # integration test files that actually contain determinism tests.
           cargo test -p astraweave-terrain \
+            --lib \
+            --test behavioral_correctness_tests \
+            --test wave2_noise_remediation \
+            --test wave2_advanced_erosion_tests \
+            --test wave2_biome_blending_remediation \
+            --test wave2_shard21_splatmap_voxel_remediation \
+            --test wave2_structures_remediation \
+            --test mutation_resistant_comprehensive_tests \
+            --test wave2_erosion_golden_tests \
+            --test wave2_mutation_remediation_tests \
+            --test wave3_mutation_remediation \
+            --test wave2_shard0_targeted_remediation \
             -- --test-threads=1 \
             determinism deterministic replay
 

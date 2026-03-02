@@ -287,7 +287,7 @@ impl ShadowModeRunner {
 
     /// Get all comparisons
     pub fn get_comparisons(&self) -> &[PlanComparison] {
-        &self.comparisons
+        Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */
     }
 
     /// Generate aggregate statistics
