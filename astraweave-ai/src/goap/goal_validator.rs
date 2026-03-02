@@ -832,4 +832,986 @@ mod tests {
             .iter()
             .any(|e| e.message.contains("IntRange min")));
     }
+
+    // ========== Mutation-killing tests ==========
+
+    #[test]
+    fn test_total_issues() {
+        let mut result = ValidationResult::new();
+        assert_eq!(result.total_issues(), 0);
+
+        result.add(ValidationError::error("e1"));
+        assert_eq!(result.total_issues(), 1);
+
+        result.add(ValidationError::warning("w1"));
+        assert_eq!(result.total_issues(), 2);
+
+        result.add(ValidationError::info("i1"));
+        assert_eq!(result.total_issues(), 3);
+
+        result.add(ValidationError::error("e2"));
+        assert_eq!(result.total_issues(), 4);
+    }
+
+    #[test]
+    fn test_merge() {
+        let mut result1 = ValidationResult::new();
+        result1.add(ValidationError::error("e1"));
+        result1.add(ValidationError::warning("w1"));
+
+        let mut result2 = ValidationResult::new();
+        result2.add(ValidationError::error("e2"));
+        result2.add(ValidationError::info("i1"));
+
+        result1.merge(result2);
+
+        assert_eq!(result1.errors.len(), 2);
+        assert_eq!(result1.warnings.len(), 1);
+        assert_eq!(result1.info.len(), 1);
+        assert!(result1.errors.iter().any(|e| e.message == "e2"));
+    }
+
+    #[test]
+    fn test_with_strict_mode() {
+        let validator = GoalValidator::new().with_strict_mode(true);
+        let mut goal = create_simple_goal();
+
+        // Unknown variable in strict mode → error, not warning
+        goal.desired_state.insert(
+            "completely_unknown_var".to_string(),
+            StateValueDef::Bool(true),
+        );
+
+        let result = validator.validate(&goal);
+        assert!(!result.is_valid()); // Has errors, not just warnings
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Unknown state variable")));
+    }
+
+    #[test]
+    fn test_strict_mode_false_gives_warning() {
+        let validator = GoalValidator::new().with_strict_mode(false);
+        let mut goal = create_simple_goal();
+
+        goal.desired_state.insert(
+            "my_made_up_var".to_string(),
+            StateValueDef::Bool(true),
+        );
+
+        let result = validator.validate(&goal);
+        // Should be valid (only warnings)
+        assert!(result.is_valid());
+        assert!(result.has_warnings());
+    }
+
+    #[test]
+    fn test_add_known_state_variable() {
+        let mut validator = GoalValidator::new();
+        validator.add_known_state_variable("my_custom_var");
+
+        let mut goal = create_simple_goal();
+        goal.desired_state
+            .insert("my_custom_var".to_string(), StateValueDef::Bool(true));
+
+        let result = validator.validate(&goal);
+        // No unknown variable warnings
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("my_custom_var")));
+    }
+
+    #[test]
+    fn test_default() {
+        let validator = GoalValidator::default();
+        let goal = create_simple_goal();
+        let result = validator.validate(&goal);
+        assert!(result.is_valid()); // Default should work like new()
+    }
+
+    #[test]
+    fn test_long_name_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.name = "a".repeat(101); // > 100 chars
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very long")));
+    }
+
+    #[test]
+    fn test_name_exactly_100_chars() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.name = "a".repeat(100); // exactly 100 → no warning
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very long")));
+    }
+
+    #[test]
+    fn test_priority_zero_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.priority = Some(0.0);
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("lowest urgency")));
+    }
+
+    #[test]
+    fn test_priority_high_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.priority = Some(11.0); // > 10.0
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very high")));
+    }
+
+    #[test]
+    fn test_priority_10_no_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.priority = Some(10.0); // exactly 10 → no "very high" warning
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very high")));
+    }
+
+    #[test]
+    fn test_deadline_short_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.deadline_seconds = Some(0.5); // < 1.0
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very short")));
+    }
+
+    #[test]
+    fn test_deadline_1_no_short_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.deadline_seconds = Some(1.0);
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very short")));
+    }
+
+    #[test]
+    fn test_deadline_long_info() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.deadline_seconds = Some(3601.0); // > 3600.0
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .info
+            .iter()
+            .any(|i| i.message.contains("very long")));
+    }
+
+    #[test]
+    fn test_deadline_3600_no_info() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.deadline_seconds = Some(3600.0); // exactly 3600 → no info
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .info
+            .iter()
+            .any(|i| i.message.contains("very long")));
+    }
+
+    #[test]
+    fn test_negative_deadline_error() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.deadline_seconds = Some(-1.0);
+
+        let result = validator.validate(&goal);
+        assert!(!result.is_valid());
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("non-negative")));
+    }
+
+    #[test]
+    fn test_max_depth_zero_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.max_depth = Some(0);
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("Max depth is 0")));
+    }
+
+    #[test]
+    fn test_max_depth_large_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.max_depth = Some(11); // > 10
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very large")));
+    }
+
+    #[test]
+    fn test_max_depth_10_no_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.max_depth = Some(10); // exactly 10 → no warning
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very large")));
+    }
+
+    #[test]
+    fn test_int_range_min_equals_max_info() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.desired_state.insert(
+            "enemy_count".to_string(),
+            StateValueDef::IntRange { min: 5, max: 5 },
+        );
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .info
+            .iter()
+            .any(|i| i.message.contains("min == max")));
+    }
+
+    #[test]
+    fn test_float_approx_negative_tolerance() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.desired_state.insert(
+            "player_hp".to_string(),
+            StateValueDef::FloatApprox {
+                value: 50.0,
+                tolerance: -1.0,
+            },
+        );
+
+        let result = validator.validate(&goal);
+        assert!(!result.is_valid());
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("tolerance must be non-negative")));
+    }
+
+    #[test]
+    fn test_float_approx_large_tolerance() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.desired_state.insert(
+            "player_hp".to_string(),
+            StateValueDef::FloatApprox {
+                value: 50.0,
+                tolerance: 150.0, // > 100.0
+            },
+        );
+
+        let result = validator.validate(&goal);
+        assert!(result.has_warnings());
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("very large")));
+    }
+
+    #[test]
+    fn test_float_approx_100_no_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.desired_state.insert(
+            "player_hp".to_string(),
+            StateValueDef::FloatApprox {
+                value: 50.0,
+                tolerance: 100.0, // exactly 100 → no warning
+            },
+        );
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("tolerance") && w.message.contains("very large")));
+    }
+
+    #[test]
+    fn test_sub_goals_without_decomposition() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+
+        let mut sub_desired = BTreeMap::new();
+        sub_desired.insert("enemy_defeated".to_string(), StateValueDef::Bool(true));
+
+        goal.sub_goals = Some(vec![GoalDefinition {
+            name: "sub1".to_string(),
+            priority: Some(3.0),
+            deadline_seconds: None,
+            decomposition: None,
+            max_depth: None,
+            desired_state: sub_desired,
+            sub_goals: None,
+        }]);
+        // decomposition is None but sub_goals exist
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("no decomposition strategy")));
+    }
+
+    #[test]
+    fn test_decomposition_without_sub_goals() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("sequential".to_string());
+        // No sub_goals
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("no sub-goals defined")));
+    }
+
+    #[test]
+    fn test_any_of_with_one_sub_goal() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("any_of".to_string());
+
+        let mut sub_desired = BTreeMap::new();
+        sub_desired.insert("enemy_defeated".to_string(), StateValueDef::Bool(true));
+
+        goal.sub_goals = Some(vec![GoalDefinition {
+            name: "only_option".to_string(),
+            priority: Some(3.0),
+            deadline_seconds: None,
+            decomposition: None,
+            max_depth: None,
+            desired_state: sub_desired,
+            sub_goals: None,
+        }]);
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("only one sub-goal")));
+    }
+
+    #[test]
+    fn test_conflicting_sub_goals_parallel() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("parallel".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert("in_combat".to_string(), StateValueDef::Bool(true));
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert("in_combat".to_string(), StateValueDef::Bool(false));
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "attack".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "retreat".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_conflicting_sub_goals_all_of() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("all_of".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert("enemy_count".to_string(), StateValueDef::Int(0));
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert("enemy_count".to_string(), StateValueDef::Int(5));
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "clear_area".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "gather_enemies".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_compatible_sub_goals_no_conflict() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("parallel".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert("in_combat".to_string(), StateValueDef::Bool(true));
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert("in_combat".to_string(), StateValueDef::Bool(true));
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "attack1".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "attack2".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_conflicting_int_ranges_disjoint() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("parallel".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert(
+            "enemy_count".to_string(),
+            StateValueDef::IntRange { min: 0, max: 3 },
+        );
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert(
+            "enemy_count".to_string(),
+            StateValueDef::IntRange { min: 5, max: 10 },
+        );
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "few".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "many".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        // Disjoint ranges → conflict warning
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_overlapping_int_ranges_compatible() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("parallel".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert(
+            "enemy_count".to_string(),
+            StateValueDef::IntRange { min: 0, max: 5 },
+        );
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert(
+            "enemy_count".to_string(),
+            StateValueDef::IntRange { min: 3, max: 10 },
+        );
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "range1".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "range2".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        // Overlapping ranges → NO conflict
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_conflicting_strings() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("all_of".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert(
+            "custom_state".to_string(),
+            StateValueDef::String("attack".to_string()),
+        );
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert(
+            "custom_state".to_string(),
+            StateValueDef::String("retreat".to_string()),
+        );
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "offense".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "defense".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("conflicting")));
+    }
+
+    #[test]
+    fn test_total_goals_over_20_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("sequential".to_string());
+
+        // Create 21 sub-goals (total = 22 with root)
+        let mut sub_goals = Vec::new();
+        for i in 0..21 {
+            let mut desired = BTreeMap::new();
+            desired.insert(format!("flag_{}", i), StateValueDef::Bool(true));
+
+            sub_goals.push(GoalDefinition {
+                name: format!("sub_{}", i),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired,
+                sub_goals: None,
+            });
+        }
+        goal.sub_goals = Some(sub_goals);
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("total goals")));
+    }
+
+    #[test]
+    fn test_same_priority_info() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("sequential".to_string());
+
+        let mut desired1 = BTreeMap::new();
+        desired1.insert("enemy_defeated".to_string(), StateValueDef::Bool(true));
+
+        let mut desired2 = BTreeMap::new();
+        desired2.insert("in_cover".to_string(), StateValueDef::Bool(true));
+
+        goal.sub_goals = Some(vec![
+            GoalDefinition {
+                name: "sub1".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired1,
+                sub_goals: None,
+            },
+            GoalDefinition {
+                name: "sub2".to_string(),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: None,
+                max_depth: None,
+                desired_state: desired2,
+                sub_goals: None,
+            },
+        ]);
+
+        let result = validator.validate(&goal);
+        assert!(
+            result
+                .info
+                .iter()
+                .any(|i| i.message.contains("same priority")),
+            "Expected same priority info: {:?}",
+            result.info
+        );
+    }
+
+    #[test]
+    fn test_empty_desired_state_error() {
+        let validator = GoalValidator::new();
+
+        let goal = GoalDefinition {
+            name: "empty_goal".to_string(),
+            priority: Some(5.0),
+            deadline_seconds: None,
+            decomposition: None,
+            max_depth: None,
+            desired_state: BTreeMap::new(),
+            sub_goals: None,
+        };
+
+        let result = validator.validate(&goal);
+        assert!(!result.is_valid());
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("no desired state")));
+    }
+
+    #[test]
+    fn test_custom_prefix_no_warning() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+
+        // custom_ prefix should not trigger unknown variable warning
+        goal.desired_state.insert(
+            "custom_my_special_flag".to_string(),
+            StateValueDef::Bool(true),
+        );
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("custom_my_special_flag")));
+    }
+
+    #[test]
+    fn test_validation_error_with_field() {
+        let err = ValidationError::error("test").with_field("my_field");
+        assert_eq!(err.field, Some("my_field".to_string()));
+    }
+
+    #[test]
+    fn test_validation_error_with_suggestion() {
+        let err = ValidationError::error("test").with_suggestion("try this");
+        assert_eq!(err.suggestion, Some("try this".to_string()));
+    }
+
+    #[test]
+    fn test_validation_result_routing() {
+        let mut result = ValidationResult::new();
+
+        result.add(ValidationError::error("err"));
+        result.add(ValidationError::warning("warn"));
+        result.add(ValidationError::info("info"));
+
+        assert_eq!(result.errors.len(), 1);
+        assert_eq!(result.warnings.len(), 1);
+        assert_eq!(result.info.len(), 1);
+
+        assert_eq!(result.errors[0].message, "err");
+        assert_eq!(result.warnings[0].message, "warn");
+        assert_eq!(result.info[0].message, "info");
+    }
+
+    #[test]
+    fn test_is_valid_and_has_warnings() {
+        let mut result = ValidationResult::new();
+        assert!(result.is_valid());
+        assert!(!result.has_warnings());
+
+        result.add(ValidationError::warning("w"));
+        assert!(result.is_valid()); // warnings don't invalidate
+        assert!(result.has_warnings());
+
+        result.add(ValidationError::error("e"));
+        assert!(!result.is_valid());
+    }
+
+    #[test]
+    fn test_sub_goal_schema_errors_prefixed() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("sequential".to_string());
+
+        // Sub-goal with empty name → error with prefixed field
+        let sub_goal = GoalDefinition {
+            name: "".to_string(),
+            priority: Some(5.0),
+            deadline_seconds: None,
+            decomposition: None,
+            max_depth: None,
+            desired_state: BTreeMap::from([("enemy_defeated".to_string(), StateValueDef::Bool(true))]),
+            sub_goals: None,
+        };
+
+        goal.sub_goals = Some(vec![sub_goal]);
+
+        let result = validator.validate(&goal);
+        assert!(!result.is_valid());
+        assert!(result.errors.iter().any(|e| {
+            e.field
+                .as_ref()
+                .map_or(false, |f| f.starts_with("sub_goals[0]"))
+        }));
+    }
+
+    #[test]
+    fn test_calculate_depth_flat() {
+        let validator = GoalValidator::new();
+        let goal = create_simple_goal();
+        // No sub-goals → depth 1
+        // Indirectly verified via complexity (depth > 5 triggers warning)
+        let result = validator.validate(&goal);
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("levels deep")));
+    }
+
+    #[test]
+    fn test_calculate_depth_exactly_5() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        let mut current = &mut goal;
+
+        // Create exactly 5 levels deep (1 root + 4 sub-goals = depth 5)
+        for i in 0..4 {
+            let mut sub_desired = BTreeMap::new();
+            sub_desired.insert(format!("level_{}", i), StateValueDef::Bool(true));
+
+            let sub_goal = GoalDefinition {
+                name: format!("level_{}", i),
+                priority: Some(5.0),
+                deadline_seconds: None,
+                decomposition: Some("sequential".to_string()),
+                max_depth: None,
+                desired_state: sub_desired,
+                sub_goals: None,
+            };
+
+            current.sub_goals = Some(vec![sub_goal]);
+            current = current.sub_goals.as_mut().unwrap().get_mut(0).unwrap();
+        }
+
+        let result = validator.validate(&goal);
+        // Depth = 5 → no warning (needs > 5)
+        assert!(!result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("levels deep")));
+    }
+
+    #[test]
+    fn test_decomposition_with_empty_sub_goals() {
+        let validator = GoalValidator::new();
+        let mut goal = create_simple_goal();
+        goal.decomposition = Some("sequential".to_string());
+        goal.sub_goals = Some(vec![]); // Empty vec, not None
+
+        let result = validator.validate(&goal);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("no sub-goals defined")));
+    }
+
+    #[test]
+    fn test_valid_decomposition_strategies() {
+        let validator = GoalValidator::new();
+
+        for strategy in &["sequential", "parallel", "any_of", "all_of"] {
+            let mut goal = create_simple_goal();
+            goal.decomposition = Some(strategy.to_string());
+
+            let mut sub_desired = BTreeMap::new();
+            sub_desired.insert("enemy_defeated".to_string(), StateValueDef::Bool(true));
+
+            goal.sub_goals = Some(vec![
+                GoalDefinition {
+                    name: "sub1".to_string(),
+                    priority: Some(3.0),
+                    deadline_seconds: None,
+                    decomposition: None,
+                    max_depth: None,
+                    desired_state: sub_desired.clone(),
+                    sub_goals: None,
+                },
+                GoalDefinition {
+                    name: "sub2".to_string(),
+                    priority: Some(4.0),
+                    deadline_seconds: None,
+                    decomposition: None,
+                    max_depth: None,
+                    desired_state: sub_desired.clone(),
+                    sub_goals: None,
+                },
+            ]);
+
+            let result = validator.validate(&goal);
+            assert!(
+                !result
+                    .errors
+                    .iter()
+                    .any(|e| e.message.contains("Invalid decomposition")),
+                "Strategy '{}' should be valid",
+                strategy
+            );
+        }
+    }
+
+    #[test]
+    fn test_strict_mode_with_custom_prefix() {
+        // Even in strict mode, custom_ prefix should not error
+        let validator = GoalValidator::new().with_strict_mode(true);
+        let mut goal = create_simple_goal();
+        goal.desired_state.insert(
+            "custom_flag".to_string(),
+            StateValueDef::Bool(true),
+        );
+
+        let result = validator.validate(&goal);
+        assert!(!result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("custom_flag")));
+    }
 }

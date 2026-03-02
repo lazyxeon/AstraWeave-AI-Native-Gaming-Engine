@@ -593,4 +593,962 @@ mod tests {
         assert!(report.contains("Total Actions: 5"));
         assert!(report.contains("Total Cost"));
     }
+
+    // ========== Mutation-killing tests ==========
+
+    #[test]
+    fn test_analyze_with_history_stats() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("move", 3.0),
+            create_test_action("attack", 5.0),
+        ];
+        let plan = vec!["move".to_string(), "attack".to_string()];
+        let mut history = ActionHistory::new();
+
+        // Record some history for "move"
+        history.record_success("move", 2.0);
+        history.record_success("move", 3.0);
+        history.record_failure("move");
+
+        // Record history for "attack"
+        history.record_success("attack", 4.0);
+        history.record_success("attack", 6.0);
+
+        let start = WorldState::new();
+        let metrics = PlanAnalyzer::analyze(&plan, &actions, &history, &start);
+
+        assert_eq!(metrics.action_count, 2);
+
+        // Check move action breakdown
+        let move_m = metrics.action_breakdown.get("move").unwrap();
+        assert_eq!(move_m.executions, 3);
+        // success_rate = 2/3
+        assert!((move_m.success_rate - 2.0 / 3.0).abs() < 0.01);
+        // avg_duration from history
+        assert!(move_m.avg_duration > 0.0);
+
+        // Check attack action breakdown
+        let attack_m = metrics.action_breakdown.get("attack").unwrap();
+        assert_eq!(attack_m.executions, 2);
+        assert!((attack_m.success_rate - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_analyze_total_risk_and_duration() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a1", 2.0),
+            create_test_action("a2", 3.0),
+        ];
+        let plan = vec!["a1".to_string(), "a2".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let metrics = PlanAnalyzer::analyze(&plan, &actions, &history, &start);
+
+        // risk = 1.0 - success_probability for each action
+        // No history → success_prob = 0.8 (SimpleAction default), risk = 0.2 each
+        assert!((metrics.total_risk - 0.4).abs() < 0.01);
+
+        // Duration: no history → defaults to 1.0 each
+        assert!((metrics.estimated_duration - 2.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_analyze_success_probability_product() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a1", 1.0),
+            create_test_action("a2", 1.0),
+        ];
+        let plan = vec!["a1".to_string(), "a2".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let metrics = PlanAnalyzer::analyze(&plan, &actions, &history, &start);
+
+        // No history → success_rate = 0.5 (from ActionStats default)
+        // Product of 0.5 * 0.5 = 0.25
+        assert!((metrics.success_probability - 0.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_compare_plan2_better() {
+        let metrics1 = PlanMetrics {
+            total_cost: 20.0,
+            total_risk: 1.0,
+            action_count: 5,
+            estimated_duration: 30.0,
+            success_probability: 0.3,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let metrics2 = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 2,
+            estimated_duration: 5.0,
+            success_probability: 0.9,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert_eq!(comparison.better_plan, PlanComparison::Plan2Better);
+    }
+
+    #[test]
+    fn test_compare_similar() {
+        let metrics1 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        // Nearly identical scoring
+        let metrics2 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert_eq!(comparison.better_plan, PlanComparison::Similar);
+    }
+
+    #[test]
+    fn test_compare_plan1_better() {
+        let metrics1 = PlanMetrics {
+            total_cost: 3.0,
+            total_risk: 0.1,
+            action_count: 2,
+            estimated_duration: 5.0,
+            success_probability: 0.95,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let metrics2 = PlanMetrics {
+            total_cost: 25.0,
+            total_risk: 2.0,
+            action_count: 8,
+            estimated_duration: 40.0,
+            success_probability: 0.2,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert_eq!(comparison.better_plan, PlanComparison::Plan1Better);
+    }
+
+    #[test]
+    fn test_compare_recommendations_cost() {
+        let metrics1 = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        // Plan 2 much more expensive
+        let metrics2 = PlanMetrics {
+            total_cost: 15.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert!(comparison.cost_diff > 1.0);
+        assert!(
+            comparison
+                .recommendations
+                .iter()
+                .any(|r| r.contains("cheaper")),
+            "Expected cost recommendation: {:?}",
+            comparison.recommendations
+        );
+    }
+
+    #[test]
+    fn test_compare_recommendations_risk() {
+        let metrics1 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let metrics2 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 1.0,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert!(
+            comparison
+                .recommendations
+                .iter()
+                .any(|r| r.contains("risk")),
+            "Expected risk recommendation: {:?}",
+            comparison.recommendations
+        );
+    }
+
+    #[test]
+    fn test_compare_recommendations_duration() {
+        let metrics1 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 5.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let metrics2 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 15.0,
+            success_probability: 0.8,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+        assert!(comparison.duration_diff > 2.0);
+        assert!(
+            comparison
+                .recommendations
+                .iter()
+                .any(|r| r.contains("faster")),
+            "Expected duration recommendation: {:?}",
+            comparison.recommendations
+        );
+    }
+
+    #[test]
+    fn test_suggest_optimizations_high_risk() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 2.5, // > 2.0
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.7,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(
+            suggestions
+                .iter()
+                .any(|s| s.message.contains("cumulative risk")),
+            "Expected high risk suggestion: {:?}",
+            suggestions.iter().map(|s| &s.message).collect::<Vec<_>>()
+        );
+        // High risk → Critical priority
+        assert!(suggestions
+            .iter()
+            .any(|s| s.priority == SuggestionPriority::Critical
+                && s.message.contains("risk")));
+    }
+
+    #[test]
+    fn test_suggest_optimizations_long_duration() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 35.0, // > 30.0
+            success_probability: 0.9,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(
+            suggestions
+                .iter()
+                .any(|s| s.message.contains("long time")),
+            "Expected duration suggestion: {:?}",
+            suggestions.iter().map(|s| &s.message).collect::<Vec<_>>()
+        );
+        // Duration → Medium priority with estimated_improvement
+        let dur_s = suggestions
+            .iter()
+            .find(|s| s.message.contains("long time"))
+            .unwrap();
+        assert_eq!(dur_s.priority, SuggestionPriority::Medium);
+        assert!(dur_s.estimated_improvement.is_some());
+    }
+
+    #[test]
+    fn test_suggest_optimizations_long_plan() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 12, // > 10
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(
+            suggestions
+                .iter()
+                .any(|s| s.message.contains("12 actions")),
+            "Expected long plan suggestion: {:?}",
+            suggestions.iter().map(|s| &s.message).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_suggest_optimizations_bottleneck_high_risk() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![Bottleneck {
+                action_name: "risky_move".to_string(),
+                reason: BottleneckReason::HighRisk,
+                severity: 0.9,
+            }],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(suggestions
+            .iter()
+            .any(|s| s.message.contains("risky_move") && s.message.contains("risky")));
+    }
+
+    #[test]
+    fn test_suggest_optimizations_bottleneck_low_success() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![Bottleneck {
+                action_name: "flaky_action".to_string(),
+                reason: BottleneckReason::LowSuccessRate,
+                severity: 0.7,
+            }],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(suggestions
+            .iter()
+            .any(|s| s.message.contains("flaky_action")
+                && s.message.contains("low historical success")));
+    }
+
+    #[test]
+    fn test_suggest_optimizations_bottleneck_long_duration() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![Bottleneck {
+                action_name: "slow_action".to_string(),
+                reason: BottleneckReason::LongDuration,
+                severity: 0.6,
+            }],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        assert!(suggestions
+            .iter()
+            .any(|s| s.message.contains("slow_action")
+                && s.message.contains("long time")));
+        // LongDuration bottleneck → Low priority
+        let dur_s = suggestions
+            .iter()
+            .find(|s| s.message.contains("slow_action"))
+            .unwrap();
+        assert_eq!(dur_s.priority, SuggestionPriority::Low);
+        assert!(dur_s.estimated_improvement.is_some());
+    }
+
+    #[test]
+    fn test_suggest_optimizations_bottleneck_high_cost_severity() {
+        // Test severity > 0.7 → High priority, and severity <= 0.7 → Medium
+        let metrics_high = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![Bottleneck {
+                action_name: "costly".to_string(),
+                reason: BottleneckReason::HighCost,
+                severity: 0.8,
+            }],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics_high);
+        let costly_s = suggestions
+            .iter()
+            .find(|s| s.message.contains("costly"))
+            .unwrap();
+        assert_eq!(costly_s.priority, SuggestionPriority::High);
+
+        let metrics_low = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![Bottleneck {
+                action_name: "moderate".to_string(),
+                reason: BottleneckReason::HighCost,
+                severity: 0.5,
+            }],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions2 = PlanAnalyzer::suggest_optimizations(&metrics_low);
+        let mod_s = suggestions2
+            .iter()
+            .find(|s| s.message.contains("moderate"))
+            .unwrap();
+        assert_eq!(mod_s.priority, SuggestionPriority::Medium);
+    }
+
+    #[test]
+    fn test_identify_bottleneck_high_risk() {
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "safe".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "risky".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.8, // avg_risk = 0.45, 2x = 0.9; 0.8 < 0.9 won't trigger
+                success_rate: 0.2,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        // Need a third action to make avg low enough
+        breakdown.insert(
+            "normal".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        // avg_risk = (0.1 + 0.8 + 0.1) / 3 = 0.333, 2x = 0.667
+        // 0.8 > 0.667 AND 0.8 > 0.3 → HighRisk
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            bottlenecks
+                .iter()
+                .any(|b| b.action_name == "risky" && b.reason == BottleneckReason::HighRisk),
+            "Expected HighRisk bottleneck: {:?}",
+            bottlenecks
+        );
+    }
+
+    #[test]
+    fn test_identify_bottleneck_low_success_rate() {
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "reliable".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.95,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "unreliable".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.3, // < 0.5 AND executions > 3
+                avg_duration: 1.0,
+                executions: 5,
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            bottlenecks
+                .iter()
+                .any(|b| b.action_name == "unreliable"
+                    && b.reason == BottleneckReason::LowSuccessRate),
+            "Expected LowSuccessRate bottleneck: {:?}",
+            bottlenecks
+        );
+        // Severity = 1.0 - success_rate = 0.7
+        let bn = bottlenecks
+            .iter()
+            .find(|b| b.reason == BottleneckReason::LowSuccessRate)
+            .unwrap();
+        assert!((bn.severity - 0.7).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_identify_bottleneck_low_success_rate_min_executions() {
+        // executions <= 3 should NOT trigger LowSuccessRate
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "few_runs".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.2,
+                avg_duration: 1.0,
+                executions: 3, // <= 3
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            !bottlenecks
+                .iter()
+                .any(|b| b.reason == BottleneckReason::LowSuccessRate),
+            "Should not flag with only 3 executions"
+        );
+    }
+
+    #[test]
+    fn test_identify_bottleneck_long_duration() {
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "fast".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "slow".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 5.0, // avg = 3.0, 2x = 6.0; need it > 6.0 and > 2.0
+                executions: 10,
+            },
+        );
+
+        // avg = (1.0 + 5.0) / 2 = 3.0, threshold = 6.0
+        // 5.0 < 6.0 → not triggered
+
+        // Add a third to bring avg down
+        breakdown.insert(
+            "normal".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        // avg = (1.0 + 5.0 + 1.0) / 3 = 2.33, 2x = 4.67
+        // 5.0 > 4.67 AND 5.0 > 2.0 → LongDuration
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            bottlenecks
+                .iter()
+                .any(|b| b.action_name == "slow"
+                    && b.reason == BottleneckReason::LongDuration),
+            "Expected LongDuration bottleneck: {:?}",
+            bottlenecks
+        );
+    }
+
+    #[test]
+    fn test_identify_bottleneck_long_duration_min_threshold() {
+        // avg_duration > 2x avg BUT avg_duration <= 2.0 should NOT trigger
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "tiny_fast".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 0.1,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "tiny_slow".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.5, // > 2x avg(0.8) but <= 2.0
+                executions: 10,
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            !bottlenecks
+                .iter()
+                .any(|b| b.reason == BottleneckReason::LongDuration),
+            "Should not flag when avg_duration <= 2.0"
+        );
+    }
+
+    #[test]
+    fn test_identify_bottleneck_high_risk_min_threshold() {
+        // risk > 2x avg BUT risk <= 0.3 should NOT trigger
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "low_risk1".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.05,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "low_risk2".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.25, // > 2x avg(0.15)=0.3; 0.25 < 0.3 → should NOT trigger
+                success_rate: 0.75,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        assert!(
+            !bottlenecks
+                .iter()
+                .any(|b| b.reason == BottleneckReason::HighRisk),
+            "Should not flag when risk <= 0.3"
+        );
+    }
+
+    #[test]
+    fn test_generate_report_with_bottlenecks() {
+        let metrics = PlanMetrics {
+            total_cost: 25.0, // Also triggers high-cost suggestion
+            total_risk: 0.5,
+            action_count: 5,
+            estimated_duration: 15.0,
+            success_probability: 0.85,
+            bottlenecks: vec![
+                Bottleneck {
+                    action_name: "expensive_move".to_string(),
+                    reason: BottleneckReason::HighCost,
+                    severity: 0.8,
+                },
+                Bottleneck {
+                    action_name: "risky_attack".to_string(),
+                    reason: BottleneckReason::HighRisk,
+                    severity: 0.6,
+                },
+            ],
+            action_breakdown: HashMap::new(),
+        };
+
+        let report = PlanAnalyzer::generate_report(&metrics);
+
+        assert!(report.contains("Bottlenecks"));
+        assert!(report.contains("expensive_move"));
+        assert!(report.contains("risky_attack"));
+        assert!(report.contains("HighCost"));
+        assert!(report.contains("severity"));
+    }
+
+    #[test]
+    fn test_generate_report_with_suggestions() {
+        let metrics = PlanMetrics {
+            total_cost: 25.0, // triggers high-cost suggestion
+            total_risk: 3.0,  // triggers high-risk suggestion
+            action_count: 12, // triggers long-plan suggestion
+            estimated_duration: 35.0, // triggers long-duration suggestion
+            success_probability: 0.3, // triggers low success suggestion
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let report = PlanAnalyzer::generate_report(&metrics);
+
+        assert!(report.contains("Optimization Suggestions"));
+        assert!(report.contains("high total cost"));
+    }
+
+    #[test]
+    fn test_generate_report_metric_values() {
+        let metrics = PlanMetrics {
+            total_cost: 12.34,
+            total_risk: 0.56,
+            action_count: 7,
+            estimated_duration: 23.4,
+            success_probability: 0.78,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let report = PlanAnalyzer::generate_report(&metrics);
+        assert!(report.contains("Total Actions: 7"));
+        assert!(report.contains("12.34")); // Total Cost
+        assert!(report.contains("0.56")); // Total Risk
+        assert!(report.contains("23.4")); // Duration
+        assert!(report.contains("78.0%")); // Success probability
+    }
+
+    #[test]
+    fn test_compare_diffs_computation() {
+        let metrics1 = PlanMetrics {
+            total_cost: 10.0,
+            total_risk: 0.5,
+            action_count: 3,
+            estimated_duration: 20.0,
+            success_probability: 0.7,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let metrics2 = PlanMetrics {
+            total_cost: 15.0,
+            total_risk: 0.8,
+            action_count: 4,
+            estimated_duration: 25.0,
+            success_probability: 0.6,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let comparison = PlanAnalyzer::compare(&metrics1, &metrics2);
+
+        // cost_diff = metrics2.cost - metrics1.cost = 5.0
+        assert!((comparison.cost_diff - 5.0).abs() < 0.01);
+        // risk_diff = 0.3
+        assert!((comparison.risk_diff - 0.3).abs() < 0.01);
+        // duration_diff = 5.0
+        assert!((comparison.duration_diff - 5.0).abs() < 0.01);
+        // success_prob_diff = -0.1
+        assert!((comparison.success_prob_diff - (-0.1)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_suggestion_sorting_by_priority() {
+        let metrics = PlanMetrics {
+            total_cost: 25.0,     // High priority
+            total_risk: 3.0,      // Critical priority
+            action_count: 12,     // Medium priority
+            estimated_duration: 35.0, // Medium priority
+            success_probability: 0.3, // Critical priority
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+
+        // First suggestions should be Critical
+        assert!(suggestions.len() >= 2);
+        assert_eq!(suggestions[0].priority, SuggestionPriority::Critical);
+    }
+
+    #[test]
+    fn test_suggest_high_cost_estimated_improvement() {
+        let metrics = PlanMetrics {
+            total_cost: 30.0,
+            total_risk: 0.2,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        let cost_s = suggestions
+            .iter()
+            .find(|s| s.message.contains("high total cost"))
+            .unwrap();
+        // estimated_improvement = total_cost * 0.2 = 6.0
+        assert!((cost_s.estimated_improvement.unwrap() - 6.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_suggest_high_risk_estimated_improvement() {
+        let metrics = PlanMetrics {
+            total_cost: 5.0,
+            total_risk: 3.0,
+            action_count: 3,
+            estimated_duration: 10.0,
+            success_probability: 0.9,
+            bottlenecks: vec![],
+            action_breakdown: HashMap::new(),
+        };
+
+        let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
+        let risk_s = suggestions
+            .iter()
+            .find(|s| s.message.contains("cumulative risk"))
+            .unwrap();
+        // estimated_improvement = total_risk * 0.3 = 0.9
+        assert!((risk_s.estimated_improvement.unwrap() - 0.9).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_bottleneck_severity_capped_at_1() {
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "cheap1".to_string(),
+            ActionMetrics {
+                cost: 0.5,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "cheap2".to_string(),
+            ActionMetrics {
+                cost: 0.5,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        // Extremely expensive — severity should be capped at 1.0
+        // avg = (0.5 + 0.5 + 100.0) / 3 = 33.67, 2x = 67.33
+        // 100.0 / 67.33 = 1.48 → min(1.0) → capped at 1.0
+        breakdown.insert(
+            "extreme".to_string(),
+            ActionMetrics {
+                cost: 100.0,
+                risk: 0.1,
+                success_rate: 0.9,
+                avg_duration: 1.0,
+                executions: 10,
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+        let bn = bottlenecks
+            .iter()
+            .find(|b| b.action_name == "extreme")
+            .unwrap();
+        assert!((bn.severity - 1.0).abs() < 0.01, "Severity should cap at 1.0");
+    }
+
+    #[test]
+    fn test_bottleneck_sorting_by_severity() {
+        let mut breakdown = HashMap::new();
+
+        breakdown.insert(
+            "filler".to_string(),
+            ActionMetrics {
+                cost: 1.0,
+                risk: 0.05,
+                success_rate: 0.95,
+                avg_duration: 0.5,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "medium_cost".to_string(),
+            ActionMetrics {
+                cost: 10.0, // High cost but moderate severity
+                risk: 0.05,
+                success_rate: 0.95,
+                avg_duration: 0.5,
+                executions: 10,
+            },
+        );
+
+        breakdown.insert(
+            "extreme_cost".to_string(),
+            ActionMetrics {
+                cost: 50.0, // Very high cost
+                risk: 0.05,
+                success_rate: 0.95,
+                avg_duration: 0.5,
+                executions: 10,
+            },
+        );
+
+        let bottlenecks = PlanAnalyzer::identify_bottlenecks(&breakdown);
+
+        // Both should be HighCost but extreme should be first (higher severity)
+        if bottlenecks.len() >= 2 {
+            assert!(bottlenecks[0].severity >= bottlenecks[1].severity);
+        }
+    }
 }

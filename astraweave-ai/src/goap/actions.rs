@@ -793,4 +793,147 @@ mod tests {
         world.set("my_health", StateValue::Int(40)); // < 50
         assert_eq!(action.state_cost_modifier(&world), 0.7);
     }
+
+    // =========================================================================
+    // Round 2: Precondition/effect emptiness + boundary threshold tests
+    // =========================================================================
+
+    #[test]
+    fn test_cover_fire_preconditions_non_empty() {
+        let action = CoverFireAction::new();
+        assert!(!action.preconditions().is_empty(), "CoverFire should have preconditions");
+        assert!(action.preconditions().contains_key("has_ammo"));
+        assert!(action.preconditions().contains_key("enemy_present"));
+        assert!(action.preconditions().contains_key("in_range"));
+    }
+
+    #[test]
+    fn test_reload_preconditions_and_effects_non_empty() {
+        let action = ReloadAction::new();
+        assert!(!action.preconditions().is_empty(), "Reload should have preconditions");
+        assert!(!action.effects().is_empty(), "Reload should have effects");
+        assert!(action.effects().contains_key("has_ammo"));
+    }
+
+    #[test]
+    fn test_take_cover_effects_non_empty() {
+        let action = TakeCoverAction::new();
+        assert!(!action.effects().is_empty(), "TakeCover should have effects");
+        assert!(action.effects().contains_key("in_cover"));
+        assert!(action.effects().contains_key("protected"));
+    }
+
+    #[test]
+    fn test_heal_effects_non_empty() {
+        let action = HealAction::new();
+        assert!(!action.effects().is_empty(), "Heal should have effects");
+        assert!(action.effects().contains_key("healed"));
+    }
+
+    #[test]
+    fn test_throw_smoke_preconditions_non_empty() {
+        let action = ThrowSmokeAction::new();
+        assert!(!action.preconditions().is_empty(), "ThrowSmoke should have preconditions");
+        assert!(action.preconditions().contains_key("smoke_available"));
+    }
+
+    #[test]
+    fn test_retreat_preconditions_non_empty() {
+        let action = RetreatAction::new();
+        assert!(!action.preconditions().is_empty(), "Retreat should have preconditions");
+        assert!(action.preconditions().contains_key("enemy_distance"));
+    }
+
+    // Boundary tests: exact threshold values kill `< → <=` mutations
+    #[test]
+    fn test_approach_enemy_health_at_exact_boundary_30() {
+        let action = ApproachEnemyAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(30)); // Exactly 30: < 30 = false, <= 30 = true
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        // At health=30, < 30 is false → returns base (0.85), not base * 0.7
+        assert_eq!(prob, 0.85, "At health=30, < 30 is false, should return base probability");
+    }
+
+    #[test]
+    fn test_attack_health_at_exact_boundary_40() {
+        let action = AttackAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(40)); // Exactly 40: < 40 = false
+        world.set("my_ammo", StateValue::Int(100)); // Plenty of ammo
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        // < 40 is false → modifier stays 1.0 → returns 0.75
+        assert_eq!(prob, 0.75, "At health=40, < 40 is false, should return base probability");
+    }
+
+    #[test]
+    fn test_attack_ammo_at_exact_boundary_5() {
+        let action = AttackAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(100));
+        world.set("my_ammo", StateValue::Int(5)); // Exactly 5: < 5 = false
+        let history = ActionHistory::new();
+        let prob = action.success_probability(&world, &history);
+        // < 5 is false → no ammo modifier → returns 0.75
+        assert_eq!(prob, 0.75, "At ammo=5, < 5 is false, should return base probability");
+    }
+
+    #[test]
+    fn test_take_cover_health_at_exact_boundary_30() {
+        let action = TakeCoverAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(30)); // < 30 = false
+        // < 60 = true → returns 0.8
+        assert_eq!(action.state_cost_modifier(&world), 0.8,
+            "At health=30, < 30 = false, should fall to < 60 check → 0.8");
+    }
+
+    #[test]
+    fn test_take_cover_health_at_exact_boundary_60() {
+        let action = TakeCoverAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(60)); // < 60 = false
+        assert_eq!(action.state_cost_modifier(&world), 1.0,
+            "At health=60, < 60 = false, should return default 1.0");
+    }
+
+    #[test]
+    fn test_heal_health_at_exact_boundary_20() {
+        let action = HealAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(20)); // < 20 = false
+        // < 50 = true → returns 0.6
+        assert_eq!(action.state_cost_modifier(&world), 0.6,
+            "At health=20, < 20 = false, should fall to < 50 check → 0.6");
+    }
+
+    #[test]
+    fn test_heal_health_at_exact_boundary_50() {
+        let action = HealAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(50)); // < 50 = false
+        assert_eq!(action.state_cost_modifier(&world), 1.0,
+            "At health=50, < 50 = false, should return default 1.0");
+    }
+
+    #[test]
+    fn test_retreat_health_at_exact_boundary_25() {
+        let action = RetreatAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(25)); // < 25 = false
+        // < 50 = true → returns 0.7
+        assert_eq!(action.state_cost_modifier(&world), 0.7,
+            "At health=25, < 25 = false, should fall to < 50 check → 0.7");
+    }
+
+    #[test]
+    fn test_retreat_health_at_exact_boundary_50() {
+        let action = RetreatAction::new();
+        let mut world = WorldState::new();
+        world.set("my_health", StateValue::Int(50)); // < 50 = false
+        assert_eq!(action.state_cost_modifier(&world), 1.0,
+            "At health=50, < 50 = false, should return default 1.0");
+    }
 }
