@@ -451,4 +451,20 @@ mod tests {
         );
         assert_eq!(stats.unwrap().successes, 1);
     }
+
+    /// Kills line 78: age_seconds → 0 or 1
+    /// Uses a manually constructed PersistedHistory with timestamp=0 (epoch).
+    #[test]
+    fn test_age_seconds_with_epoch_timestamp() {
+        let mut persisted = PersistedHistory::new(ActionHistory::new());
+        persisted.timestamp = 0; // UNIX epoch = 1970-01-01
+
+        let age = persisted.age_seconds();
+        // Current time is well past the epoch, so age should be huge (> 1 billion)
+        assert!(
+            age > 1_000_000,
+            "age_seconds for epoch timestamp should be > 1M, got {}",
+            age
+        );
+    }
 }

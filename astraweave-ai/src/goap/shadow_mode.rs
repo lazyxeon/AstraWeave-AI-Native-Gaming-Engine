@@ -770,4 +770,91 @@ mod tests {
             "rule_faster should be total - goap_faster = 3 - 2 = 1"
         );
     }
+
+    /// Kills line 188: `- with /` in step_count_diff (i32 division)
+    /// 5 - 2 = 3, but 5 / 2 = 2 (integer division). Must use counts where a-b != a/b.
+    #[test]
+    fn test_step_count_diff_kills_division_mutation() {
+        let snap = make_test_snapshot();
+        let rule_plan = PlanIntent {
+            plan_id: "r".to_string(),
+            steps: vec![ActionStep::Reload, ActionStep::Reload],
+        };
+        let goap_plan = PlanIntent {
+            plan_id: "g".to_string(),
+            steps: vec![
+                ActionStep::Reload,
+                ActionStep::Reload,
+                ActionStep::Reload,
+                ActionStep::Reload,
+                ActionStep::Reload,
+            ],
+        };
+        let comparison = PlanComparison::new(&snap, rule_plan, 1.0, goap_plan, 1.0);
+        // step_count_diff = 5 - 2 = 3, NOT 5 / 2 = 2
+        assert_eq!(
+            comparison.differences.step_count_diff, 3,
+            "step_count_diff should be 3 (5-2), not 2 (5/2)"
+        );
+    }
+
+    /// Kills line 236: `< with <=` in rule_faster (equal times)
+    /// Kills line 238: `> with ==` / `>= with >=` in goap_more_steps (equal steps)
+    #[test]
+    fn test_metrics_with_equal_values() {
+        let snap = make_test_snapshot();
+        // Equal times
+        let rule_plan = PlanIntent {
+            plan_id: "r".to_string(),
+            steps: vec![ActionStep::Reload],
+        };
+        let goap_plan = PlanIntent {
+            plan_id: "g".to_string(),
+            steps: vec![ActionStep::Reload],
+        };
+        let comparison = PlanComparison::new(&snap, rule_plan, 2.0, goap_plan, 2.0);
+
+        // Equal times: rule_time < goap_time → false
+        assert!(
+            !comparison.metrics.rule_faster,
+            "With equal times, rule_faster should be false"
+        );
+        // Equal step counts: goap > rule → false
+        assert!(
+            !comparison.metrics.goap_more_steps,
+            "With equal step counts, goap_more_steps should be false"
+        );
+    }
+
+    /// Kills line 324: `/ total` → `* total` in avg_similarity
+    #[test]
+    fn test_report_avg_similarity_exact() {
+        let snap = make_test_snapshot();
+        let mut comparisons = Vec::new();
+
+        // 3 comparisons with identical plans (similarity 1.0 each)
+        for _ in 0..3 {
+            comparisons.push(PlanComparison::new(
+                &snap,
+                PlanIntent {
+                    plan_id: "r".to_string(),
+                    steps: vec![ActionStep::Reload],
+                },
+                1.0,
+                PlanIntent {
+                    plan_id: "g".to_string(),
+                    steps: vec![ActionStep::Reload],
+                },
+                1.0,
+            ));
+        }
+
+        let report = ShadowModeReport::from_comparisons(&comparisons);
+        // avg_similarity = sum(1.0 * 3) / 3 = 1.0, NOT sum * 3 = 9.0
+        assert!(
+            (report.avg_similarity - 1.0).abs() < 0.01,
+            "avg_similarity should be 1.0, got {}",
+            report.avg_similarity
+        );
+    }
 }
