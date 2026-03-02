@@ -1063,11 +1063,9 @@ mod tests {
 
     #[test]
     fn test_tree_cost_only_exact_line_content() {
-        // Kills: 1.0 - prob → 1.0 + prob in render_plan_tree (line 112)
-        // With show_costs=true, show_risks=false: the "cost" branch runs, risk=1-prob is calculated
-        // but not shown. But actually line 112 is the risk computation.
-        // With show_costs=true, show_risks=true: risk is shown.
-        // Need to verify risk value is correct: default prob=0.8, risk=0.2
+        // Kills: 1.0 - prob → 1.0 + prob or / in render_plan_tree (line 112)
+        // IMPORTANT: Must check the ACTION line, not just any occurrence.
+        // calculate_plan_metrics also computes 1-prob for the header, masking the mutation.
         let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree)
             .with_costs(true)
             .with_risks(true);
@@ -1077,8 +1075,13 @@ mod tests {
         let start = WorldState::new();
 
         let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        // Find the action-specific line (contains └─), not the header line
+        let action_line = output.lines()
+            .find(|l| l.contains("└─") || l.contains("├─"))
+            .expect("Should have an action line with tree prefix");
         // risk should be 0.20 (1.0 - 0.8), not 1.80 (1.0+0.8) or 1.25 (1.0/0.8)
-        assert!(output.contains("risk: 0.20"), "Risk should be 0.20 (1.0-0.8) not {:?}", output);
+        assert!(action_line.contains("risk: 0.20"),
+            "Action line risk should be 0.20 (1.0-0.8), got: {:?}", action_line);
     }
 
     #[test]
@@ -1116,13 +1119,23 @@ mod tests {
 
         let output = viz.visualize_plan(&plan, &actions, &hist, &start);
         // a at time 0.0 (duration 5.0), b at time 5.0 (duration 10.0)
-        assert!(output.contains("5.0"), "Second action should start at time 5.0");
+        // Find the data line for action "b" (skip header/separator)
+        let b_line = output.lines()
+            .find(|l| l.contains("| b"))
+            .expect("Should have a line for action b");
+        // With +=: time is 5.0 (positive). With -=: time is -5.0. With *=: time is 0.0.
+        // The time column is left-justified with width 6, so "5.0" starts at position 0.
+        let time_str = b_line.split('|').next().unwrap().trim();
+        let time_val: f32 = time_str.parse().expect("Time should be a valid float");
+        assert!((time_val - 5.0).abs() < 0.01,
+            "Second action should start at time 5.0, got {} from line: {:?}", time_val, b_line);
     }
 
     #[test]
     fn test_dot_edge_index_arithmetic() {
         // Kills: i - 1 → i + 1 or i / 1 in render_plan_dot (line 219)
-        // With 3 actions: edges should be start→0, 0→1, 1→2, 2→end
+        // Also kills: 1.0 - prob → 1.0 + prob or / in DOT risk calc
+        // Default viz has show_costs=true, show_risks=true → node labels include risk
         let viz = PlanVisualizer::new(VisualizationFormat::Dot);
         let actions: Vec<Box<dyn Action>> = vec![
             create_test_action("a", 1.0),
@@ -1138,8 +1151,11 @@ mod tests {
         assert!(output.contains("action_0 -> action_1"));
         assert!(output.contains("action_1 -> action_2"));
         assert!(output.contains("action_2 -> end"));
-        // With i+1 mutation: action_1 would try action_1→action_2 but also action_2→action_3 (wrong!)
         assert!(!output.contains("action_3"), "Should not reference action_3 with only 3 actions");
+        // Risk value in DOT node labels: default prob=0.8, risk=1.0-0.8=0.20
+        // With +: risk=1.80. With /: risk=1.25. Either would fail this assertion.
+        assert!(output.contains("risk: 0.20"),
+            "DOT node labels should contain risk: 0.20, got: {:?}", output);
     }
 
     #[test]
@@ -1188,6 +1204,7 @@ mod tests {
     #[test]
     fn test_text_cost_and_risk_both_shown_with_comma() {
         // Kills: && → || in show_costs && show_risks comma condition (line 270)
+        // Also kills: 1.0 - prob → 1.0 + prob or / in render_plan_text (line 264)
         let viz = PlanVisualizer::new(VisualizationFormat::Text)
             .with_costs(true)
             .with_risks(true);
@@ -1201,11 +1218,16 @@ mod tests {
         assert!(output.contains("cost:"));
         assert!(output.contains("risk:"));
         assert!(output.contains(", "), "Cost and risk should be separated by comma");
+        // Text format has no header with separate metrics — risk value is per-action only
+        // risk should be 0.20 (1.0-0.8), not 1.80 or 1.25
+        assert!(output.contains("risk: 0.20"),
+            "Text risk should be 0.20 (1.0-0.8), got: {:?}", output);
     }
 
     #[test]
     fn test_text_cost_only_no_comma() {
-        // When only costs shown, there should be no comma between cost and risk
+        // Kills: && → || in show_costs && show_risks comma condition
+        // With costs=true, risks=false: && is false (no comma), || is true (comma inserted)
         let viz = PlanVisualizer::new(VisualizationFormat::Text)
             .with_costs(true)
             .with_risks(false);
@@ -1215,16 +1237,18 @@ mod tests {
         let start = WorldState::new();
 
         let output = viz.visualize_plan(&plan, &actions, &history, &start);
-        // Find the action line content
         let action_line = output.lines().find(|l| l.contains("1. x")).unwrap();
-        // Should have cost but not risk, and no extra comma before closing paren
         assert!(action_line.contains("cost:"));
         assert!(!action_line.contains("risk:"));
+        // With || mutation: comma is inserted before risk (which isn't shown)
+        // producing "(cost: 2.0, )" — check no trailing comma before closing paren
+        assert!(!action_line.contains(", )"),
+            "Should not have trailing comma when only costs shown, got: {:?}", action_line);
     }
 
     #[test]
     fn test_json_comma_and_index_exact() {
-        // Kills: i < plan.len()-1 mutations and i-1 → i+1 in render_plan_json
+        // Kills: i < plan.len()-1 mutations, and 1.0 - prob → 1.0 + prob or / in JSON
         let viz = PlanVisualizer::new(VisualizationFormat::Json);
         let actions: Vec<Box<dyn Action>> = vec![
             create_test_action("first", 1.0),
@@ -1237,15 +1261,13 @@ mod tests {
 
         let output = viz.visualize_plan(&plan, &actions, &history, &start);
 
-        // Count closing braces with comma vs without
-        let lines: Vec<&str> = output.lines().collect();
-        let action_closes: Vec<&&str> = lines.iter().filter(|l| l.trim().starts_with('}') && l.contains("}")).collect();
-
-        // The output should have valid JSON-like structure:
         // First two action blocks end with "}," and last ends with "}"
         let commas = output.matches("},").count();
-        let no_commas = output.matches("}\n").count() + output.matches("}\r\n").count();
         assert!(commas >= 2, "First two actions should have trailing commas, found {}", commas);
+        // JSON risk values: default prob=0.8, risk=1.0-0.8=0.20
+        // With +: risk=1.80. With /: risk=1.25. Either would fail.
+        assert!(output.contains("\"risk\": 0.20"),
+            "JSON risk should be 0.20 (1.0-0.8), got: {:?}", output);
     }
 
     #[test]
@@ -1276,16 +1298,23 @@ mod tests {
             .with_sub_goals(vec![child]);
 
         let output = viz.visualize_goal_hierarchy(&parent);
-        // depth=0: no indent. depth=1: "  ".repeat(0) + "  └─ " = "  └─ "
-        // depth=2: "  ".repeat(1) + "  └─ " = "    └─ "
-        // With depth+1 instead of depth-1: "  ".repeat(2)+"  └─ " = "      └─ " (too much indent)
+        // depth=0: no indent (empty string)
+        // depth=1: "  ".repeat(1-1) + "  └─ " = "" + "  └─ " = "  └─ "
+        // depth=2: "  ".repeat(2-1) + "  └─ " = "  " + "  └─ " = "    └─ "
+        // With +1: depth=1 → "  ".repeat(2) + "  └─ " = "      └─ " (6 spaces)
+        // With /1: depth=1 → "  ".repeat(1) + "  └─ " = "    └─ " (4 spaces)
         let lines: Vec<&str> = output.lines().collect();
         // Parent at depth 0: no indent
-        assert!(lines[0].starts_with("["));
-        // Child at depth 1
-        let child_line = lines.iter().find(|l| l.contains("child") && !l.contains("grandchild")).unwrap();
-        // Should start with exactly 2+3=5 chars of indent ("  └─ ")
-        assert!(child_line.contains("└─"));
+        assert!(lines[0].starts_with("["), "Parent line should start with strategy tag");
+        // Child at depth 1: exactly "  └─ " prefix (2 spaces before └)
+        let child_line = lines.iter()
+            .find(|l| l.contains("child") && !l.contains("grandchild")).unwrap();
+        assert!(child_line.starts_with("  └─") || child_line.starts_with("  ├─"),
+            "Child at depth 1 should start with exactly 2 spaces before tree char. Got: {:?}", child_line);
+        // Verify grandchild at depth 2: exactly "    └─ " prefix (4 spaces before └)
+        let gc_line = lines.iter().find(|l| l.contains("grandchild")).unwrap();
+        assert!(gc_line.starts_with("    └─") || gc_line.starts_with("    ├─"),
+            "Grandchild at depth 2 should start with exactly 4 spaces before tree char. Got: {:?}", gc_line);
     }
 
     #[test]
