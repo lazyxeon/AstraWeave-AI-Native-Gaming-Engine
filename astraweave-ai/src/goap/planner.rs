@@ -600,4 +600,331 @@ mod tests {
         assert_eq!(plan1, plan2);
         assert_eq!(plan2, plan3);
     }
+
+    // ── Mutation-killing tests ──
+
+    #[test]
+    fn test_f_cost_arithmetic() {
+        // Kills g+h+risk*weight arithmetic mutations
+        let node = PlanNode {
+            state: WorldState::new(),
+            path: vec![],
+            g_cost: 2.0,
+            h_cost: 3.0,
+            risk: 1.0,
+        };
+        // f = 2 + 3 + 1*5 = 10
+        assert_eq!(node.f_cost(5.0), 10.0);
+        // f with weight=0 → risk is ignored: 2+3+0 = 5
+        assert_eq!(node.f_cost(0.0), 5.0);
+        // f with weight=2 → 2+3+2 = 7
+        assert_eq!(node.f_cost(2.0), 7.0);
+    }
+
+    #[test]
+    fn test_plan_node_ordering_min_heap() {
+        // BinaryHeap is max-heap; Ord is reversed for min-heap behavior.
+        // Lower f_cost should come out first.
+        let low = PlanNode {
+            state: WorldState::new(),
+            path: vec![],
+            g_cost: 1.0,
+            h_cost: 0.0,
+            risk: 0.0,
+        };
+        let high = PlanNode {
+            state: WorldState::new(),
+            path: vec![],
+            g_cost: 10.0,
+            h_cost: 0.0,
+            risk: 0.0,
+        };
+        // Reversed: low should be Greater than high (so BinaryHeap pops low first)
+        assert_eq!(low.cmp(&high), Ordering::Greater);
+        assert_eq!(high.cmp(&low), Ordering::Less);
+    }
+
+    #[test]
+    fn test_plan_already_satisfied() {
+        // Kills the early-return for already-satisfied goals
+        let mut goap = AdvancedGOAP::new();
+
+        let mut effects = BTreeMap::new();
+        effects.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("action", BTreeMap::new(), effects, 1.0)));
+
+        let mut start = WorldState::new();
+        start.set("done", StateValue::Bool(true)); // already satisfied
+
+        let mut goal_state = BTreeMap::new();
+        goal_state.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("goal", goal_state);
+
+        let plan = goap.plan(&start, &goal);
+        assert!(plan.is_some());
+        assert!(plan.unwrap().is_empty()); // No actions needed
+    }
+
+    #[test]
+    fn test_action_count_and_names() {
+        let mut goap = AdvancedGOAP::new();
+        assert_eq!(goap.action_count(), 0);
+        assert!(goap.action_names().is_empty());
+
+        goap.add_action(Box::new(SimpleAction::new("a", BTreeMap::new(), BTreeMap::new(), 1.0)));
+        goap.add_action(Box::new(SimpleAction::new("b", BTreeMap::new(), BTreeMap::new(), 2.0)));
+        goap.add_action(Box::new(SimpleAction::new("c", BTreeMap::new(), BTreeMap::new(), 3.0)));
+
+        assert_eq!(goap.action_count(), 3);
+        let names = goap.action_names();
+        assert!(names.contains(&"a".to_string()));
+        assert!(names.contains(&"b".to_string()));
+        assert!(names.contains(&"c".to_string()));
+    }
+
+    #[test]
+    fn test_set_max_iterations_limits_search() {
+        // With max_iterations=1, a multi-step plan should fail
+        let mut goap = AdvancedGOAP::new();
+        goap.set_max_iterations(1);
+
+        // Need 2 steps: get_key → open_door
+        let mut key_eff = BTreeMap::new();
+        key_eff.insert("has_key".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("get_key", BTreeMap::new(), key_eff, 1.0)));
+
+        let mut door_pre = BTreeMap::new();
+        door_pre.insert("has_key".to_string(), StateValue::Bool(true));
+        let mut door_eff = BTreeMap::new();
+        door_eff.insert("door_open".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("open_door", door_pre, door_eff, 1.0)));
+
+        let start = WorldState::new();
+        let mut goal_state = BTreeMap::new();
+        goal_state.insert("door_open".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("open", goal_state);
+
+        // Should fail: not enough iterations to find 2-step plan
+        assert!(goap.plan(&start, &goal).is_none());
+    }
+
+    #[test]
+    fn test_set_risk_weight_prefers_safer_plan() {
+        // Two paths to goal: risky (cheap but high failure) vs safe (expensive but reliable)
+        let mut goap = AdvancedGOAP::new();
+
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+
+        goap.add_action(Box::new(SimpleAction::new("risky", BTreeMap::new(), eff.clone(), 1.0)));
+        goap.add_action(Box::new(SimpleAction::new("safe", BTreeMap::new(), eff, 2.0)));
+
+        // Build history: risky has 20% success, safe has 100% success
+        goap.get_history_mut().record_failure("risky");
+        goap.get_history_mut().record_failure("risky");
+        goap.get_history_mut().record_failure("risky");
+        goap.get_history_mut().record_failure("risky");
+        goap.get_history_mut().record_success("risky", 1.0);
+
+        for _ in 0..5 {
+            goap.get_history_mut().record_success("safe", 1.0);
+        }
+
+        goap.set_risk_weight(100.0); // Heavily penalize risk
+
+        let start = WorldState::new();
+        let mut goal_state = BTreeMap::new();
+        goal_state.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", goal_state);
+
+        let plan = goap.plan(&start, &goal).unwrap();
+        assert_eq!(plan, vec!["safe"]); // Should prefer safe despite higher base cost
+    }
+
+    #[test]
+    fn test_simulate_plan_execution_success_and_failure() {
+        let mut goap = AdvancedGOAP::new();
+
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("act", BTreeMap::new(), eff, 1.0)));
+
+        // Default success_probability is 0.8 (> 0.5) → should succeed
+        let mut world = WorldState::new();
+        let result = goap.simulate_plan_execution(&["act".to_string()], &mut world);
+        assert!(result.is_ok());
+        assert_eq!(world.get("done"), Some(&StateValue::Bool(true)));
+
+        // Build history to make probability <= 0.5
+        let mut goap2 = AdvancedGOAP::new();
+        goap2.add_action(Box::new(SimpleAction::new("fail_act", BTreeMap::new(), BTreeMap::new(), 1.0)));
+        // 1 success + 3 failures = 25% success rate (<= 0.5)
+        goap2.get_history_mut().record_success("fail_act", 1.0);
+        goap2.get_history_mut().record_failure("fail_act");
+        goap2.get_history_mut().record_failure("fail_act");
+        goap2.get_history_mut().record_failure("fail_act");
+
+        let mut world2 = WorldState::new();
+        let result2 = goap2.simulate_plan_execution(&["fail_act".to_string()], &mut world2);
+        assert!(result2.is_err());
+    }
+
+    #[test]
+    fn test_simulate_plan_execution_action_not_found() {
+        let mut goap = AdvancedGOAP::new();
+        let mut world = WorldState::new();
+        let result = goap.simulate_plan_execution(&["nonexistent".to_string()], &mut world);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn test_simulate_plan_execution_precondition_failure() {
+        let mut goap = AdvancedGOAP::new();
+        let mut pre = BTreeMap::new();
+        pre.insert("has_key".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("open_door", pre, BTreeMap::new(), 1.0)));
+
+        let mut world = WorldState::new(); // no has_key
+        let result = goap.simulate_plan_execution(&["open_door".to_string()], &mut world);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("preconditions"));
+    }
+
+    #[test]
+    fn test_hierarchical_sequential_planning() {
+        use super::super::DecompositionStrategy;
+
+        let mut goap = AdvancedGOAP::new();
+
+        // Action: get_key → has_key=true
+        let mut key_eff = BTreeMap::new();
+        key_eff.insert("has_key".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("get_key", BTreeMap::new(), key_eff, 1.0)));
+
+        // Action: open_door (requires has_key) → door_open=true
+        let mut door_pre = BTreeMap::new();
+        door_pre.insert("has_key".to_string(), StateValue::Bool(true));
+        let mut door_eff = BTreeMap::new();
+        door_eff.insert("door_open".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("open_door", door_pre, door_eff, 1.0)));
+
+        // Sub-goal 1: get the key
+        let mut sg1_state = BTreeMap::new();
+        sg1_state.insert("has_key".to_string(), StateValue::Bool(true));
+        let sub1 = Goal::new("get_key_goal", sg1_state);
+
+        // Sub-goal 2: open the door
+        let mut sg2_state = BTreeMap::new();
+        sg2_state.insert("door_open".to_string(), StateValue::Bool(true));
+        let sub2 = Goal::new("open_door_goal", sg2_state);
+
+        // Parent goal: desired_state must NOT be empty (or it's immediately satisfied)
+        let mut parent_state = BTreeMap::new();
+        parent_state.insert("door_open".to_string(), StateValue::Bool(true));
+        let parent = Goal::new("enter_room", parent_state)
+            .with_sub_goals(vec![sub1, sub2])
+            .with_strategy(DecompositionStrategy::Sequential);
+
+        let start = WorldState::new();
+        let plan = goap.plan(&start, &parent);
+        assert!(plan.is_some());
+        let steps = plan.unwrap();
+        assert_eq!(steps, vec!["get_key", "open_door"]);
+    }
+
+    #[test]
+    fn test_hierarchical_any_of_planning() {
+        use super::super::DecompositionStrategy;
+
+        let mut goap = AdvancedGOAP::new();
+
+        // Action: climb_wall → past_wall=true (cost 5)
+        let mut climb_eff = BTreeMap::new();
+        climb_eff.insert("past_wall".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("climb_wall", BTreeMap::new(), climb_eff, 5.0)));
+
+        // Action: use_door → past_wall=true (cost 1)
+        let mut door_eff = BTreeMap::new();
+        door_eff.insert("past_wall".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("use_door", BTreeMap::new(), door_eff, 1.0)));
+
+        // Sub-goal options (AnyOf)
+        let mut sg_state = BTreeMap::new();
+        sg_state.insert("past_wall".to_string(), StateValue::Bool(true));
+        let sub_climb = Goal::new("climb", sg_state.clone()).with_priority(1.0);
+        let sub_door = Goal::new("door", sg_state.clone()).with_priority(10.0); // Higher priority → tried first
+
+        // Parent goal: must have unsatisfied desired_state
+        let parent = Goal::new("get_past_wall", sg_state)
+            .with_sub_goals(vec![sub_climb, sub_door])
+            .with_strategy(DecompositionStrategy::AnyOf);
+
+        let start = WorldState::new();
+        let plan = goap.plan(&start, &parent).unwrap();
+        // AnyOf sorts by priority desc: door (10.0) tried first → use_door
+        assert!(plan.contains(&"use_door".to_string()));
+    }
+
+    #[test]
+    fn test_hierarchical_parallel_sorts_by_priority() {
+        use super::super::DecompositionStrategy;
+
+        let mut goap = AdvancedGOAP::new();
+
+        let mut heal_eff = BTreeMap::new();
+        heal_eff.insert("healed".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("heal", BTreeMap::new(), heal_eff, 1.0)));
+
+        let mut reload_eff = BTreeMap::new();
+        reload_eff.insert("ammo_full".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("reload", BTreeMap::new(), reload_eff, 1.0)));
+
+        let mut sg1_state = BTreeMap::new();
+        sg1_state.insert("healed".to_string(), StateValue::Bool(true));
+        let sub_heal = Goal::new("heal_goal", sg1_state).with_priority(1.0); // lower
+
+        let mut sg2_state = BTreeMap::new();
+        sg2_state.insert("ammo_full".to_string(), StateValue::Bool(true));
+        let sub_reload = Goal::new("reload_goal", sg2_state).with_priority(10.0); // higher
+
+        // Parent must have unsatisfied desired_state 
+        let mut parent_state = BTreeMap::new();
+        parent_state.insert("healed".to_string(), StateValue::Bool(true));
+        parent_state.insert("ammo_full".to_string(), StateValue::Bool(true));
+        let parent = Goal::new("prepare", parent_state)
+            .with_sub_goals(vec![sub_heal, sub_reload])
+            .with_strategy(DecompositionStrategy::Parallel);
+
+        let start = WorldState::new();
+        let plan = goap.plan(&start, &parent).unwrap();
+        // Parallel sorts by priority desc: reload first, then heal
+        assert_eq!(plan[0], "reload");
+        assert_eq!(plan[1], "heal");
+    }
+
+    #[test]
+    fn test_plan_direct_cost_accumulation() {
+        // Kills g_cost + action_cost → g_cost - action_cost or * 
+        let mut goap = AdvancedGOAP::new();
+
+        // Chain: a (cost 3) → b (cost 5), total cost = 8
+        let mut a_eff = BTreeMap::new();
+        a_eff.insert("step1".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("a", BTreeMap::new(), a_eff, 3.0)));
+
+        let mut b_pre = BTreeMap::new();
+        b_pre.insert("step1".to_string(), StateValue::Bool(true));
+        let mut b_eff = BTreeMap::new();
+        b_eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("b", b_pre, b_eff, 5.0)));
+
+        let start = WorldState::new();
+        let mut goal_state = BTreeMap::new();
+        goal_state.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", goal_state);
+
+        let plan = goap.plan(&start, &goal).unwrap();
+        assert_eq!(plan, vec!["a", "b"]); // Correct ordering
+    }
 }
