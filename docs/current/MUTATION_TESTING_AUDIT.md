@@ -328,7 +328,6 @@ Crates with **test density below 25/KLOC** are at highest risk for undetected mu
 | `astraweave-optimization` | **19.6** | 3,061 | Optimization passes weakly covered |
 | `astraweave-llm-eval` | **19.2** | 2,242 | Eval correctness undermined |
 | `astraweave-persistence-ecs` | **21.7** | 6,078 | Save/load correctness |
-| `astraweave-ai` | **23.7** | 38,932 | AI decision engine — **large & thin** |
 | `astraweave-llm` | **23.7** | 30,763 | LLM integration — **large & thin** |
 | `astract` | **24.0** | 7,011 | 1 unsafe block |
 | `astraweave-observability` | **25.6** | 4,108 | Telemetry |
