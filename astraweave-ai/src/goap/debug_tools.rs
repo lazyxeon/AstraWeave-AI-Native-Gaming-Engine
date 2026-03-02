@@ -522,4 +522,258 @@ mod tests {
         assert_eq!(progress2.progress, 1.0);
         assert_eq!(progress2.satisfied_conditions.len(), 1);
     }
+
+    // ── mutation-killing tests ──
+
+    fn create_test_action_with_preconditions(
+        name: &str,
+        preconditions: Vec<(&str, StateValue)>,
+        effects: Vec<(&str, StateValue)>,
+        cost: f32,
+    ) -> Box<dyn Action> {
+        let mut pre_map = BTreeMap::new();
+        for (key, value) in preconditions {
+            pre_map.insert(key.to_string(), value);
+        }
+        let mut eff_map = BTreeMap::new();
+        for (key, value) in effects {
+            eff_map.insert(key.to_string(), value);
+        }
+        Box::new(SimpleAction::new(name, pre_map, eff_map, cost))
+    }
+
+    #[test]
+    fn test_current_action_returns_correct_name() {
+        let plan = vec!["alpha".to_string(), "beta".to_string()];
+        let start = WorldState::new();
+        let actions = vec![
+            create_test_action("alpha", vec![("a", StateValue::Bool(true))]),
+            create_test_action("beta", vec![("b", StateValue::Bool(true))]),
+        ];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+
+        // At step 0, current action is "alpha"
+        assert_eq!(debugger.current_action(), Some("alpha"));
+
+        debugger.step_forward().unwrap();
+        assert_eq!(debugger.current_action(), Some("beta"));
+
+        debugger.step_forward().unwrap();
+        // At end, no current action
+        assert_eq!(debugger.current_action(), None);
+    }
+
+    #[test]
+    fn test_get_plan_returns_all_actions() {
+        let plan = vec!["act1".to_string(), "act2".to_string(), "act3".to_string()];
+        let start = WorldState::new();
+        let debugger = PlanDebugger::new(plan.clone(), start, vec![]);
+
+        let returned_plan = debugger.get_plan();
+        assert_eq!(returned_plan.len(), 3);
+        assert_eq!(returned_plan[0], "act1");
+        assert_eq!(returned_plan[1], "act2");
+        assert_eq!(returned_plan[2], "act3");
+    }
+
+    #[test]
+    fn test_get_action_at_step_valid_and_invalid() {
+        let plan = vec!["first".to_string(), "second".to_string()];
+        let start = WorldState::new();
+        let debugger = PlanDebugger::new(plan, start, vec![]);
+
+        assert_eq!(debugger.get_action_at_step(0), Some("first"));
+        assert_eq!(debugger.get_action_at_step(1), Some("second"));
+        assert_eq!(debugger.get_action_at_step(2), None);
+        assert_eq!(debugger.get_action_at_step(999), None);
+    }
+
+    #[test]
+    fn test_jump_to_step_boundary() {
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let start = WorldState::new();
+        let actions = vec![
+            create_test_action("a", vec![("x", StateValue::Int(1))]),
+            create_test_action("b", vec![("x", StateValue::Int(2))]),
+        ];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+
+        // Jump to exact plan length should succeed (step past all actions)
+        assert!(debugger.jump_to_step(2).is_ok());
+        assert_eq!(debugger.current_step(), 2);
+
+        // Jump beyond plan length should fail  
+        assert!(debugger.jump_to_step(3).is_err());
+    }
+
+    #[test]
+    fn test_explain_action_preconditions_and_effects() {
+        let mut start = WorldState::new();
+        start.set("armed", StateValue::Bool(true));
+        start.set("has_ammo", StateValue::Bool(true));
+
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action_with_preconditions(
+                "fire",
+                vec![
+                    ("armed", StateValue::Bool(true)),
+                    ("has_ammo", StateValue::Bool(true)),
+                ],
+                vec![("enemy_hit", StateValue::Bool(true))],
+                5.0,
+            ),
+            create_test_action_with_preconditions(
+                "move",
+                vec![],
+                vec![("moved", StateValue::Bool(true))],
+                2.0,
+            ),
+        ];
+
+        let plan = vec!["fire".to_string()];
+        let debugger = PlanDebugger::new(plan, start, actions);
+
+        let explanation = debugger.explain_action("fire").unwrap();
+
+        assert_eq!(explanation.action_name, "fire");
+        assert_eq!(explanation.preconditions_met.len(), 2);
+        assert_eq!(explanation.effects_applied.len(), 1);
+        assert_eq!(explanation.cost, 5.0);
+        assert_eq!(explanation.risk, 0.0);
+        // "move" is executable, should be in alternatives
+        assert!(explanation.alternatives_considered.contains(&"move".to_string()));
+        // "fire" itself should NOT be in alternatives
+        assert!(!explanation.alternatives_considered.contains(&"fire".to_string()));
+        // reason string should contain the counts
+        assert!(explanation.reason.contains("2 preconditions"));
+        assert!(explanation.reason.contains("1 effects"));
+    }
+
+    #[test]
+    fn test_explain_action_unknown_returns_none() {
+        let plan = vec!["a".to_string()];
+        let start = WorldState::new();
+        let actions = vec![create_test_action("a", vec![])];
+        let debugger = PlanDebugger::new(plan, start, actions);
+
+        assert!(debugger.explain_action("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_check_goal_progress_remaining_steps() {
+        let plan = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let start = WorldState::new();
+        let actions = vec![
+            create_test_action("a", vec![("x", StateValue::Int(1))]),
+            create_test_action("b", vec![("x", StateValue::Int(2))]),
+            create_test_action("c", vec![("x", StateValue::Int(3))]),
+        ];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Int(3));
+        let goal = Goal::new("get_x_3", desired);
+
+        // At step 0: remaining = 3 - 0 = 3
+        let report0 = debugger.check_goal_progress(&goal);
+        assert_eq!(report0.estimated_actions_remaining, 3);
+        assert_eq!(report0.goal_name, "get_x_3");
+
+        debugger.step_forward().unwrap();
+        // At step 1: remaining = 3 - 1 = 2
+        let report1 = debugger.check_goal_progress(&goal);
+        assert_eq!(report1.estimated_actions_remaining, 2);
+    }
+
+    #[test]
+    fn test_diff_states_detects_change() {
+        // Test that changed values trigger a 'changed' entry (not just added)
+        let mut old = WorldState::new();
+        old.set("hp", StateValue::Int(100));
+        old.set("ammo", StateValue::Int(10));
+
+        let mut new = WorldState::new();
+        new.set("hp", StateValue::Int(50)); // changed
+        new.set("ammo", StateValue::Int(10)); // same — should NOT appear
+
+        let diff = PlanDebugger::diff_states(&old, &new);
+
+        // "hp" changed from 100 to 50
+        assert_eq!(diff.changed.len(), 1);
+        assert_eq!(diff.changed[0].key, "hp");
+        assert_eq!(diff.changed[0].old_value, StateValue::Int(100));
+        assert_eq!(diff.changed[0].new_value, StateValue::Int(50));
+
+        // No added or removed
+        assert!(diff.added.is_empty());
+        assert!(diff.removed.is_empty());
+    }
+
+    #[test]
+    fn test_format_current_state_content() {
+        let mut start = WorldState::new();
+        start.set("health", StateValue::Int(100));
+
+        let plan = vec!["a".to_string()];
+        let actions = vec![create_test_action("a", vec![("health", StateValue::Int(50))])];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        let output = debugger.format_current_state();
+        assert!(output.contains("Step 1"), "should contain step number");
+        assert!(output.contains("health"), "should contain state key");
+        assert!(!output.is_empty());
+    }
+
+    #[test]
+    fn test_format_state_diff_no_previous() {
+        let start = WorldState::new();
+        let plan = vec!["a".to_string()];
+        let debugger = PlanDebugger::new(plan, start, vec![]);
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("No previous state"));
+    }
+
+    #[test]
+    fn test_format_state_diff_with_changes() {
+        let mut start = WorldState::new();
+        start.set("hp", StateValue::Int(100));
+
+        let plan = vec!["a".to_string()];
+        let actions = vec![create_test_action(
+            "a",
+            vec![
+                ("hp", StateValue::Int(50)),      // changed
+                ("flag", StateValue::Bool(true)),  // added
+            ],
+        )];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("Added"), "should have Added section");
+        assert!(output.contains("Changed"), "should have Changed section");
+        assert!(output.contains("+"), "should have + marker for added");
+        assert!(output.contains("~"), "should have ~ marker for changed");
+    }
+
+    #[test]
+    fn test_format_state_diff_no_changes() {
+        // Action without effects → no state changes
+        let start = WorldState::new();
+        let plan = vec!["noop".to_string()];
+        let actions = vec![create_test_action("noop", vec![])];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("no changes"));
+    }
 }

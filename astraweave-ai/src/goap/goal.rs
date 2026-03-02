@@ -340,6 +340,37 @@ mod tests {
     }
 
     #[test]
+    fn test_urgency_exact_values() {
+        // Formula: priority * (1.0 + 10.0 / (time_remaining + 1.0))
+        // where time_remaining = (deadline - current_time).max(0.0)
+        let goal = Goal::new("timed", BTreeMap::new())
+            .with_priority(3.0)
+            .with_deadline(20.0);
+
+        // At time=10: remaining=10, urgency = 3.0 * (1.0 + 10.0 / 11.0) = 3.0 * 1.909... ≈ 5.727
+        let urgency = goal.urgency(10.0);
+        let expected = 3.0 * (1.0 + 10.0 / 11.0);
+        assert!(
+            (urgency - expected).abs() < 0.001,
+            "urgency={urgency}, expected={expected}"
+        );
+
+        // At deadline (time=20): remaining=0, urgency = 3.0 * (1 + 10/1) = 33.0
+        let urgency_at = goal.urgency(20.0);
+        assert!(
+            (urgency_at - 33.0).abs() < 0.001,
+            "urgency at deadline={urgency_at}, expected=33.0"
+        );
+
+        // Past deadline (time=25): remaining=(20-25).max(0)=0, urgency = 33.0
+        let urgency_past = goal.urgency(25.0);
+        assert!(
+            (urgency_past - 33.0).abs() < 0.001,
+            "urgency past deadline={urgency_past}"
+        );
+    }
+
+    #[test]
     fn test_unmet_conditions() {
         let mut desired = BTreeMap::new();
         desired.insert("health".to_string(), StateValue::Int(100));
