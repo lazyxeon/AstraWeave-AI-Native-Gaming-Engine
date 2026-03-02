@@ -776,4 +776,76 @@ mod tests {
         let output = debugger.format_state_diff();
         assert!(output.contains("no changes"));
     }
+
+    #[test]
+    fn test_format_state_diff_added_only_no_false_no_changes() {
+        // Start empty, action ADDS a key → should NOT say "no changes"
+        let start = WorldState::new();
+        let plan = vec!["add_key".to_string()];
+        let actions = vec![create_test_action(
+            "add_key",
+            vec![("new_flag", StateValue::Bool(true))],
+        )];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("Added"), "should show Added section");
+        assert!(
+            !output.contains("no changes"),
+            "should NOT say 'no changes' when items were added"
+        );
+    }
+
+    #[test]
+    fn test_format_state_diff_changed_only_no_false_no_changes() {
+        // Start with key, action changes it → should NOT say "no changes"
+        let mut start = WorldState::new();
+        start.set("x", StateValue::Int(1));
+
+        let plan = vec!["change_x".to_string()];
+        let actions = vec![create_test_action(
+            "change_x",
+            vec![("x", StateValue::Int(99))],
+        )];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("Changed"), "should show Changed section");
+        assert!(
+            !output.contains("no changes"),
+            "should NOT say 'no changes' when items were changed"
+        );
+    }
+
+    #[test]
+    fn test_format_state_diff_with_removed_key() {
+        // Directly manipulate state_history to test removed-key formatting
+        let mut start = WorldState::new();
+        start.set("will_remove", StateValue::Bool(true));
+        start.set("stays", StateValue::Int(5));
+
+        let plan = vec!["noop".to_string()];
+        let actions = vec![create_test_action("noop", vec![])];
+
+        let mut debugger = PlanDebugger::new(plan, start, actions);
+        debugger.step_forward().unwrap();
+
+        // Manually replace the post-step state to simulate removal
+        let mut modified = WorldState::new();
+        modified.set("stays", StateValue::Int(5));
+        // "will_remove" is absent → should appear as removed
+        debugger.state_history[1] = modified;
+
+        let output = debugger.format_state_diff();
+        assert!(output.contains("Removed"), "should show Removed section");
+        assert!(output.contains("-"), "should have - marker for removed");
+        assert!(
+            !output.contains("no changes"),
+            "should NOT say 'no changes'"
+        );
+    }
 }

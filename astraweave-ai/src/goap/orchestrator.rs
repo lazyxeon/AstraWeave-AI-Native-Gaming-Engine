@@ -407,14 +407,74 @@ mod tests {
     #[test]
     fn test_planner_accessors() {
         let mut orch = GOAPOrchestrator::new();
-        // planner() should return a reference to the internal planner
-        let _planner = orch.planner();
-        // planner_mut() should return a mutable reference
-        let planner_mut = orch.planner_mut();
-        // Verify it's usable — call a method
-        let empty_world = WorldState::new();
-        let goal = Goal::new("test", BTreeMap::new());
-        let _ = planner_mut.plan(&empty_world, &goal);
+        // planner() should return the internal planner WITH registered actions
+        let state = GOAPOrchestrator::snapshot_to_state(&make_test_snapshot());
+        let mut desired = BTreeMap::new();
+        desired.insert("enemy_damaged".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("engage", desired);
+
+        // Real planner (with actions) should find a plan
+        let plan = orch.planner().plan(&state, &goal);
+        assert!(
+            plan.is_some(),
+            "planner() should return the real planner with registered actions"
+        );
+
+        // planner_mut() should also return the real planner
+        let plan_mut = orch.planner_mut().plan(&state, &goal);
+        assert!(
+            plan_mut.is_some(),
+            "planner_mut() should return the real planner"
+        );
+    }
+
+    /// Test with enemy BEHIND me (negative direction) to kill
+    /// inner subtraction mutations: (enemy.x - me.x) → (enemy.x + me.x)
+    #[test]
+    fn test_plan_to_intent_move_to_negative_direction() {
+        // me=(10,10), enemy=(3,3) → signum(3-10)=signum(-7)=-1
+        let snap = make_test_snapshot_at(10, 10, 3, 3);
+        let intent =
+            GOAPOrchestrator::plan_to_intent(vec!["move_to".into()], &snap, "t".into());
+        match &intent.steps[0] {
+            ActionStep::MoveTo { x, y, .. } => {
+                // target = 10 + (-1)*2 = 8
+                assert_eq!(*x, 8, "move_to x: me + signum(enemy-me) * 2");
+                assert_eq!(*y, 8, "move_to y");
+            }
+            other => panic!("expected MoveTo, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_plan_to_intent_take_cover_negative_direction() {
+        // me=(10,10), enemy=(3,3) → signum(-7)=-1, retreat = 10 - (-1)*3 = 13
+        let snap = make_test_snapshot_at(10, 10, 3, 3);
+        let intent =
+            GOAPOrchestrator::plan_to_intent(vec!["take_cover".into()], &snap, "t".into());
+        match &intent.steps[0] {
+            ActionStep::MoveTo { x, y, .. } => {
+                assert_eq!(*x, 13);
+                assert_eq!(*y, 13);
+            }
+            other => panic!("expected MoveTo, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_plan_to_intent_retreat_negative_direction() {
+        // me=(10,10), enemy=(3,3) → retreat = 10 - (-1)*5 = 15
+        let snap = make_test_snapshot_at(10, 10, 3, 3);
+        let intent =
+            GOAPOrchestrator::plan_to_intent(vec!["retreat".into()], &snap, "t".into());
+        match &intent.steps[0] {
+            ActionStep::MoveTo { x, y, speed } => {
+                assert_eq!(*x, 15);
+                assert_eq!(*y, 15);
+                assert_eq!(*speed, Some(MovementSpeed::Sprint));
+            }
+            other => panic!("expected MoveTo, got {:?}", other),
+        }
     }
 
     /// Helper: snapshot with specific me/enemy positions
