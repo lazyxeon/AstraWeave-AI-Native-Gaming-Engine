@@ -454,4 +454,105 @@ mod tests {
         assert!(loaded.get_goal("goal2").is_some());
         assert!(loaded.get_goal("nonexistent").is_none());
     }
+
+    // ================================================================
+    // Mutation-killing tests
+    // ================================================================
+
+    /// Kills line 81: `priority < 0.0` → `<= 0.0`
+    #[test]
+    fn test_priority_zero_is_valid() {
+        let goal = GoalDefinition {
+            name: "test".to_string(),
+            priority: Some(0.0),
+            deadline_seconds: None,
+            decomposition: None,
+            max_depth: None,
+            desired_state: BTreeMap::new(),
+            sub_goals: None,
+        };
+        assert!(goal.validate().is_ok(), "priority=0.0 should be valid");
+    }
+
+    /// Kills line 90: `deadline < 0.0` → `<= 0.0` and `< → ==`
+    #[test]
+    fn test_deadline_boundaries() {
+        let mut goal = GoalDefinition {
+            name: "test".to_string(),
+            priority: None,
+            deadline_seconds: Some(0.0),
+            decomposition: None,
+            max_depth: None,
+            desired_state: BTreeMap::new(),
+            sub_goals: None,
+        };
+        assert!(goal.validate().is_ok(), "deadline=0.0 should be valid");
+
+        goal.deadline_seconds = Some(-1.0);
+        assert!(goal.validate().is_err(), "deadline=-1.0 should be invalid");
+    }
+
+    /// Kills lines 140-141: decomposition "any_of" and "all_of" match arms
+    #[test]
+    fn test_decomposition_any_of_and_all_of() {
+        let mut goal_def = GoalDefinition {
+            name: "test".to_string(),
+            priority: None,
+            deadline_seconds: None,
+            decomposition: Some("any_of".to_string()),
+            max_depth: None,
+            desired_state: BTreeMap::new(),
+            sub_goals: None,
+        };
+
+        let goal = goal_def.to_goal();
+        assert_eq!(
+            goal.decomposition_strategy,
+            DecompositionStrategy::AnyOf,
+            "decomposition='any_of' should produce AnyOf"
+        );
+
+        goal_def.decomposition = Some("all_of".to_string());
+        let goal2 = goal_def.to_goal();
+        assert_eq!(
+            goal2.decomposition_strategy,
+            DecompositionStrategy::AllOf,
+            "decomposition='all_of' should produce AllOf"
+        );
+    }
+
+    /// Kills line 250: `to_goals()` body replaced with `vec![]`
+    #[test]
+    fn test_goal_library_to_goals() {
+        let mut state = BTreeMap::new();
+        state.insert("ready".to_string(), StateValueDef::Bool(true));
+
+        let library = GoalLibrary {
+            goals: vec![
+                GoalDefinition {
+                    name: "g1".to_string(),
+                    priority: Some(1.0),
+                    deadline_seconds: None,
+                    decomposition: None,
+                    max_depth: None,
+                    desired_state: state.clone(),
+                    sub_goals: None,
+                },
+                GoalDefinition {
+                    name: "g2".to_string(),
+                    priority: Some(2.0),
+                    deadline_seconds: None,
+                    decomposition: None,
+                    max_depth: None,
+                    desired_state: state,
+                    sub_goals: None,
+                },
+            ],
+        };
+
+        let goals = library.to_goals();
+        assert_eq!(goals.len(), 2, "to_goals should return 2 goals");
+        assert_eq!(goals[0].name, "g1");
+        assert_eq!(goals[1].name, "g2");
+    }
 }
