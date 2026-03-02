@@ -577,4 +577,38 @@ mod tests {
             "Resume points should be exactly [0, 3, 6] for 6 actions"
         );
     }
+
+    /// Kills lines 183-184: `&&` → `||` in are_incompatible
+    /// Tests that "attack" + "look" are NOT incompatible (only one token matches).
+    #[test]
+    fn test_are_incompatible_rejects_false_positives() {
+        // "attack" matches in pair ("attack","heal") but "look" doesn't match "heal"
+        // With && → ||, "attack" alone would trigger incompatibility
+        assert!(
+            !PlanStitcher::are_incompatible("attack_enemy", "look_around"),
+            "attack + look_around should NOT be incompatible"
+        );
+        assert!(
+            !PlanStitcher::are_incompatible("look_around", "attack_enemy"),
+            "look_around + attack_enemy should NOT be incompatible (reverse)"
+        );
+    }
+
+    /// Kills line 218: `delete !` in optimize (is_redundant → !is_redundant)
+    /// Verifies non-redundant actions with effects are kept.
+    #[test]
+    fn test_optimize_keeps_non_redundant_actions() {
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a1", vec![("x", StateValue::Int(1))]),
+            create_test_action("a2", vec![("y", StateValue::Int(2))]),
+        ];
+        let plan = vec!["a1".to_string(), "a2".to_string()];
+        let start_state = WorldState::new();
+
+        let result = PlanStitcher::optimize(plan.clone(), &actions, &start_state);
+        assert_eq!(
+            result, plan,
+            "Non-redundant actions should all be preserved"
+        );
+    }
 }
