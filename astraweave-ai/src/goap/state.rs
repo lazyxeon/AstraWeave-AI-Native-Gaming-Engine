@@ -574,4 +574,47 @@ mod tests {
         conditions.insert("missing".to_string(), StateValue::Bool(true));
         assert!(!ws.satisfies(&conditions));
     }
+
+    // ── Round 2 mutation-killing tests ──
+
+    #[test]
+    fn test_ordered_float_hash_distinguishes_values() {
+        // Kills: <impl Hash for OrderedFloat>::hash → ()
+        // If hash does nothing, distinct floats hash the same.
+        let f1 = StateValue::Float(OrderedFloat(1.0));
+        let f2 = StateValue::Float(OrderedFloat(2.0));
+        assert_ne!(hash_value(&f1), hash_value(&f2));
+
+        let f3 = StateValue::Float(OrderedFloat(0.0));
+        let f4 = StateValue::Float(OrderedFloat(-1.0));
+        assert_ne!(hash_value(&f3), hash_value(&f4));
+    }
+
+    #[test]
+    fn test_satisfies_float_strict_less_than_tolerance() {
+        // Kills: < 1e-6 → <= 1e-6 in Float-Float satisfies
+        // At exactly 1e-6 distance, < should return false, <= would return true
+        let a = StateValue::Float(OrderedFloat(0.0));
+        let b = StateValue::Float(OrderedFloat(1e-6));
+        // (0.0 - 1e-6).abs() = 1e-6; 1e-6 < 1e-6 is false
+        assert!(!a.satisfies(&b), "Exactly 1e-6 apart should NOT satisfy with strict <");
+    }
+
+    #[test]
+    fn test_satisfies_int_float_strict_less_than() {
+        // Kills: < 1e-6 → <= 1e-6 in Int-Float satisfies (line 73)
+        let i = StateValue::Int(0);
+        let f = StateValue::Float(OrderedFloat(1e-6));
+        // (0 as f32 - 1e-6).abs() = 1e-6; 1e-6 < 1e-6 is false
+        assert!(!i.satisfies(&f), "Int(0) vs Float(1e-6) at boundary should NOT satisfy");
+    }
+
+    #[test]
+    fn test_satisfies_float_int_strict_less_than() {
+        // Kills: < 1e-6 → <= 1e-6 in Float-Int satisfies (line 74)
+        let f = StateValue::Float(OrderedFloat(1e-6));
+        let i = StateValue::Int(0);
+        // (1e-6 - 0.0).abs() = 1e-6; 1e-6 < 1e-6 is false
+        assert!(!f.satisfies(&i), "Float(1e-6) vs Int(0) at boundary should NOT satisfy");
+    }
 }

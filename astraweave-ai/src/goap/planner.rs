@@ -927,4 +927,177 @@ mod tests {
         let plan = goap.plan(&start, &goal).unwrap();
         assert_eq!(plan, vec!["a", "b"]); // Correct ordering
     }
+
+    // ── Round 2 mutation-killing tests ──
+
+    #[test]
+    fn test_get_actions_returns_registered_actions() {
+        // Kills: get_actions → Vec::leak(Vec::new())
+        let mut goap = AdvancedGOAP::new();
+        assert!(goap.get_actions().is_empty());
+
+        goap.add_action(Box::new(SimpleAction::new("attack", BTreeMap::new(), BTreeMap::new(), 1.0)));
+        goap.add_action(Box::new(SimpleAction::new("heal", BTreeMap::new(), BTreeMap::new(), 2.0)));
+
+        let actions = goap.get_actions();
+        assert_eq!(actions.len(), 2);
+        assert_eq!(actions[0].name(), "attack");
+        assert_eq!(actions[1].name(), "heal");
+    }
+
+    #[test]
+    fn test_set_risk_weight_stores_value() {
+        // EQUIVALENT: set_risk_weight → () is equivalent because the Ord impl
+        // for PlanNode uses hardcoded f_cost(5.0), not self.risk_weight.
+        // The field is stored but never read by plan_direct's BinaryHeap ordering.
+        // This test just exercises the API path.
+        let mut goap = AdvancedGOAP::new();
+        goap.set_risk_weight(0.0);
+        goap.set_risk_weight(100.0);
+        // No observable difference — equivalent mutant.
+    }
+
+    #[test]
+    fn test_max_iterations_boundary() {
+        // Kills: iterations > max → >= or ==
+        // With max=2 and a 1-step plan: needs 2 iterations (start + goal state).
+        // > 2: iteration 1 passes (1>2=false), iteration 2 passes (2>2=false) → plan found
+        // >= 2: iteration 2 blocked (2>=2=true) → plan NOT found
+        let mut goap = AdvancedGOAP::new();
+
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("act", BTreeMap::new(), eff, 1.0)));
+
+        let start = WorldState::new();
+        let mut goal_state = BTreeMap::new();
+        goal_state.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", goal_state);
+
+        // max=2 should allow finding 1-step plan (iterations: 1=check start, 2=check done)
+        goap.set_max_iterations(2);
+        let plan = goap.plan(&start, &goal);
+        assert!(plan.is_some(), "max_iterations=2 should allow 1-step plan");
+        assert_eq!(plan.unwrap(), vec!["act"]);
+    }
+
+    #[test]
+    fn test_plan_direct_risk_calculation() {
+        // Kills: 1.0 - success_prob → 1.0 + prob or 1.0 / prob in plan_direct
+        // If risk inverts (1+prob instead of 1-prob), high-success action has MORE risk
+        let mut goap = AdvancedGOAP::new();
+
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+
+        // reliable: cost=2, 100% success (risk=0). f(5) = 2+0+0 = 2
+        // unreliable: cost=1, 20% success (risk=0.8). f(5) = 1+0+0.8*5 = 5
+        goap.add_action(Box::new(SimpleAction::new("reliable", BTreeMap::new(), eff.clone(), 2.0)));
+        goap.add_action(Box::new(SimpleAction::new("unreliable", BTreeMap::new(), eff, 1.0)));
+
+        // Give reliable 100% success
+        for _ in 0..10 { goap.get_history_mut().record_success("reliable", 1.0); }
+        // Give unreliable 20% success
+        goap.get_history_mut().record_success("unreliable", 1.0);
+        for _ in 0..4 { goap.get_history_mut().record_failure("unreliable"); }
+
+        goap.set_risk_weight(10.0);
+
+        let start = WorldState::new();
+        let mut gs = BTreeMap::new();
+        gs.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", gs);
+
+        // reliable: f = 2 + 0*10 = 2. unreliable: f = 1 + 0.8*10 = 9. → reliable wins
+        // With 1+prob instead of 1-prob: reliable risk=1+1=2, f=2+20=22. unreliable risk=1+0.2=1.2, f=1+12=13. → unreliable wins
+        let plan = goap.plan(&start, &goal).unwrap();
+        assert_eq!(plan, vec!["reliable"]);
+    }
+
+    #[test]
+    fn test_plan_direct_cost_accumulation_ordering() {
+        // Kills: g_cost + action_cost → - or *
+        // Two paths: cheap_path (cost 1+1=2) and expensive_path (cost 10)
+        // With -, g_cost decreases making expensive look cheaper
+        let mut goap = AdvancedGOAP::new();
+
+        // Path 1: step1 (cost 1) → step2 (cost 1) → done. Total=2
+        let mut s1_eff = BTreeMap::new();
+        s1_eff.insert("intermediate".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("step1", BTreeMap::new(), s1_eff, 1.0)));
+
+        let mut s2_pre = BTreeMap::new();
+        s2_pre.insert("intermediate".to_string(), StateValue::Bool(true));
+        let mut s2_eff = BTreeMap::new();
+        s2_eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("step2", s2_pre, s2_eff, 1.0)));
+
+        // Path 2: expensive (cost 10) → done. Total=10
+        let mut exp_eff = BTreeMap::new();
+        exp_eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("expensive", BTreeMap::new(), exp_eff, 10.0)));
+
+        let start = WorldState::new();
+        let mut gs = BTreeMap::new();
+        gs.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", gs);
+
+        let plan = goap.plan(&start, &goal).unwrap();
+        // Should pick 2-step cheaper path over 1-step expensive
+        assert_eq!(plan, vec!["step1", "step2"]);
+    }
+
+    #[test]
+    fn test_plan_direct_cost_subtraction_mutation_kill() {
+        // Kills: g_cost + action_cost → g_cost - action_cost or * action_cost
+        // Design: 2-step path costs 2+2=4 (with +) but 2-step=-2 (with -)
+        // 1-step shortcut costs 3.
+        // With +: shortcut(3) < 2-step(4) → picks shortcut
+        // With -: 2-step(-2→0ish) < shortcut(3) → picks 2-step, assertion FAILS
+        let mut goap = AdvancedGOAP::new();
+
+        // 2-step path: step1(cost 2) → step2(cost 2), total = 4
+        let mut s1_eff = BTreeMap::new();
+        s1_eff.insert("stage1".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("step1", BTreeMap::new(), s1_eff, 2.0)));
+
+        let mut s2_pre = BTreeMap::new();
+        s2_pre.insert("stage1".to_string(), StateValue::Bool(true));
+        let mut s2_eff = BTreeMap::new();
+        s2_eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("step2", s2_pre, s2_eff, 2.0)));
+
+        // 1-step shortcut: cost 3
+        let mut sc_eff = BTreeMap::new();
+        sc_eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("shortcut", BTreeMap::new(), sc_eff, 3.0)));
+
+        let start = WorldState::new();
+        let mut gs = BTreeMap::new();
+        gs.insert("done".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("g", gs);
+
+        let plan = goap.plan(&start, &goal).unwrap();
+        // shortcut cost=3 < step1+step2 cost=4 → shortcut wins
+        assert_eq!(plan, vec!["shortcut"]);
+    }
+
+    #[test]
+    fn test_simulate_plan_at_exactly_half_probability() {
+        // Kills: success_prob > 0.5 → >= 0.5
+        // With exactly 0.5 probability, > 0.5 is false → failure
+        let mut goap = AdvancedGOAP::new();
+        let mut eff = BTreeMap::new();
+        eff.insert("done".to_string(), StateValue::Bool(true));
+        goap.add_action(Box::new(SimpleAction::new("coin_flip", BTreeMap::new(), eff, 1.0)));
+
+        // 1 success + 1 failure = 50% success rate = exactly 0.5
+        goap.get_history_mut().record_success("coin_flip", 1.0);
+        goap.get_history_mut().record_failure("coin_flip");
+
+        let mut world = WorldState::new();
+        let result = goap.simulate_plan_execution(&["coin_flip".to_string()], &mut world);
+        // > 0.5 is false for exactly 0.5, so should fail
+        assert!(result.is_err(), "Exactly 0.5 probability should fail with > 0.5 check");
+    }
 }
