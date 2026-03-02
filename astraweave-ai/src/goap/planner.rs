@@ -1049,25 +1049,26 @@ mod tests {
 
     #[test]
     fn test_plan_direct_cost_subtraction_mutation_kill() {
-        // Kills: g_cost + action_cost → g_cost - action_cost or * action_cost
-        // Design: 2-step path costs 2+2=4 (with +) but 2-step=-2 (with -)
-        // 1-step shortcut costs 3.
-        // With +: shortcut(3) < 2-step(4) → picks shortcut
-        // With -: 2-step(-2→0ish) < shortcut(3) → picks 2-step, assertion FAILS
+        // Kills: g_cost + action_cost → g_cost - action_cost
+        // Design: step costs must be large enough that with -, step1 is explored
+        // BEFORE shortcut, leading to step2 being found first.
+        // With +: shortcut f = 3+0+1 = 4  <  step1 f = 5+1+1 = 7 → shortcut explored first
+        // With -: shortcut f = -3+0+1 = -2  >  step1 f = -5+1+1 = -3 → step1 explored first
+        //   then step2 f = -10+0+2 = -8 → step2 wins → returns [step1,step2]
         let mut goap = AdvancedGOAP::new();
 
-        // 2-step path: step1(cost 2) → step2(cost 2), total = 4
+        // 2-step path: step1(cost 5) → step2(cost 5), total = 10
         let mut s1_eff = BTreeMap::new();
         s1_eff.insert("stage1".to_string(), StateValue::Bool(true));
-        goap.add_action(Box::new(SimpleAction::new("step1", BTreeMap::new(), s1_eff, 2.0)));
+        goap.add_action(Box::new(SimpleAction::new("step1", BTreeMap::new(), s1_eff, 5.0)));
 
         let mut s2_pre = BTreeMap::new();
         s2_pre.insert("stage1".to_string(), StateValue::Bool(true));
         let mut s2_eff = BTreeMap::new();
         s2_eff.insert("done".to_string(), StateValue::Bool(true));
-        goap.add_action(Box::new(SimpleAction::new("step2", s2_pre, s2_eff, 2.0)));
+        goap.add_action(Box::new(SimpleAction::new("step2", s2_pre, s2_eff, 5.0)));
 
-        // 1-step shortcut: cost 3
+        // 1-step shortcut: cost 3 (cheaper than 2-step total of 10)
         let mut sc_eff = BTreeMap::new();
         sc_eff.insert("done".to_string(), StateValue::Bool(true));
         goap.add_action(Box::new(SimpleAction::new("shortcut", BTreeMap::new(), sc_eff, 3.0)));
@@ -1078,7 +1079,7 @@ mod tests {
         let goal = Goal::new("g", gs);
 
         let plan = goap.plan(&start, &goal).unwrap();
-        // shortcut cost=3 < step1+step2 cost=4 → shortcut wins
+        // shortcut cost=3 << step1+step2 cost=10 → shortcut wins
         assert_eq!(plan, vec!["shortcut"]);
     }
 
