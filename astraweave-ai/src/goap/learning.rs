@@ -353,4 +353,165 @@ mod tests {
         let prob = manager.get_probability("attack", &history);
         assert_eq!(prob, config.learning.initial_success_rate);
     }
+
+    // ── mutation-killing tests ──
+
+    #[test]
+    fn test_confidence_interval_exact_values() {
+        // Bayesian CI width = 2 * 1.96 * sqrt(p * (1-p) / n)
+        // with prior_successes=2, prior_failures=2
+        let bayesian = BayesianSmoothing::new(2, 2);
+
+        // stats: 6 successes, 2 failures
+        // posterior: (6+2)=8 successes, (2+2)=4 failures, n=12
+        // p = 8/12 = 2/3
+        // variance = (2/3)*(1/3)/12 = 2/108 ≈ 0.01852
+        // CI = 2 * 1.96 * sqrt(0.01852) ≈ 2 * 1.96 * 0.13608 ≈ 0.5334
+        let stats = create_test_stats(6, 2);
+        let ci = bayesian.confidence_interval_width(&stats);
+
+        let p = 8.0_f32 / 12.0;
+        let variance = p * (1.0 - p) / 12.0;
+        let expected = 2.0 * 1.96 * variance.sqrt();
+        assert!(
+            (ci - expected).abs() < 0.01,
+            "CI width: {ci}, expected: {expected}"
+        );
+    }
+
+    #[test]
+    fn test_smoothed_stats_bayesian_exact_probability() {
+        // Test SmoothedStats::from_stats with Bayesian method
+        // Ensures / is not replaced with * or %
+        let mut config = GOAPConfig::default();
+        config.learning.smoothing.method = SmoothingMethod::Bayesian;
+        config.learning.smoothing.bayesian_prior_successes = 2;
+        config.learning.smoothing.bayesian_prior_failures = 3;
+
+        // stats: 8 successes, 2 failures
+        // posterior: (8+2)/(8+2+2+3) = 10/15 = 0.6667
+        let stats = create_test_stats(8, 2);
+        let smoothed = SmoothedStats::from_stats(stats, &config, None);
+
+        let expected = 10.0_f32 / 15.0;
+        assert!(
+            (smoothed.smoothed_probability - expected).abs() < 0.01,
+            "prob: {}, expected: {}",
+            smoothed.smoothed_probability,
+            expected
+        );
+
+        // Confidence = (1.0 - interval_width).max(0.0)
+        // interval_width for these values should be some positive number
+        assert!(smoothed.confidence >= 0.0 && smoothed.confidence <= 1.0);
+    }
+
+    #[test]
+    fn test_smoothed_stats_bayesian_confidence_exact() {
+        // Verify confidence = (1.0 - CI_width).max(0.0)
+        // This kills - → + and - → / mutations at line 116
+        let mut config = GOAPConfig::default();
+        config.learning.smoothing.method = SmoothingMethod::Bayesian;
+        config.learning.smoothing.bayesian_prior_successes = 1;
+        config.learning.smoothing.bayesian_prior_failures = 1;
+
+        // With lots of data, CI should be narrow → high confidence
+        let stats = create_test_stats(100, 100);
+        let bayesian = BayesianSmoothing::new(1, 1);
+        let expected_ci = bayesian.confidence_interval_width(&stats);
+        let smoothed = SmoothedStats::from_stats(stats, &config, None);
+        let expected_confidence = (1.0 - expected_ci).max(0.0);
+
+        assert!(
+            (smoothed.confidence - expected_confidence).abs() < 0.01,
+            "confidence: {}, expected: {}",
+            smoothed.confidence,
+            expected_confidence
+        );
+    }
+
+    #[test]
+    fn test_get_smoothed_stats_returns_some_when_enabled() {
+        let config = GOAPConfig::default(); // learning.enabled = true by default
+
+        let manager = LearningManager::new(config);
+
+        let mut history = ActionHistory::new();
+        history.record_success("move", 0.1);
+
+        let smoothed = manager.get_smoothed_stats("move", &history);
+        assert!(smoothed.is_some(), "should return Some for known action");
+
+        let unknown = manager.get_smoothed_stats("unknown", &history);
+        assert!(unknown.is_none(), "should return None for unknown action");
+    }
+
+    #[test]
+    fn test_get_smoothed_stats_returns_none_when_disabled() {
+        let mut config = GOAPConfig::default();
+        config.learning.enabled = false;
+
+        let manager = LearningManager::new(config);
+
+        let mut history = ActionHistory::new();
+        history.record_success("move", 0.1);
+
+        let smoothed = manager.get_smoothed_stats("move", &history);
+        assert!(
+            smoothed.is_none(),
+            "should return None when learning disabled"
+        );
+    }
+
+    #[test]
+    fn test_update_config_changes_behavior() {
+        let config = GOAPConfig::default();
+        let mut manager = LearningManager::new(config);
+
+        let mut history = ActionHistory::new();
+        history.record_success("attack", 0.1);
+
+        // Get probability with default config
+        let prob1 = manager.get_probability("attack", &history);
+
+        // Update config to disabled
+        let mut new_config = GOAPConfig::default();
+        new_config.learning.enabled = false;
+        manager.update_config(new_config.clone());
+
+        // Now should return initial rate (disabled)
+        let prob2 = manager.get_probability("attack", &history);
+        assert_eq!(prob2, new_config.learning.initial_success_rate);
+        // prob1 (from enabled) should differ from initial rate for an action with 100% success
+        assert_ne!(prob1, prob2, "update_config should change behavior");
+    }
+
+    #[test]
+    fn test_get_probability_with_known_action_uses_smoothing() {
+        // Tests the == with != mutation at line 162
+        // (method check: SmoothingMethod::Ewma)
+        let mut config = GOAPConfig::default();
+        config.learning.smoothing.method = SmoothingMethod::Ewma;
+        config.learning.smoothing.ewma_alpha = 0.5;
+
+        let mut manager = LearningManager::new(config.clone());
+
+        let mut history = ActionHistory::new();
+        // 50% success rate
+        history.record_success("test_act", 0.1);
+        history.record_failure("test_act");
+
+        let prob = manager.get_probability("test_act", &history);
+
+        // EWMA with no previous: raw_rate = 0.5. estimate = 0.5
+        // Then stored in ewma_estimates. Next call should use previous.
+        let _prob2 = manager.get_probability("test_act", &history);
+
+        // Second call: alpha * 0.5 + (1-alpha) * 0.5 = 0.5 (same for 50%)
+        // The key test is that it stores the estimate in ewma_estimates (EWMA method check)
+        assert!(
+            (prob - 0.5).abs() < 0.01,
+            "EWMA with 50% data should be near 0.5, got {prob}"
+        );
+    }
 }

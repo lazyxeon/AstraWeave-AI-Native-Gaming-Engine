@@ -383,4 +383,238 @@ mod tests {
         // At time 0.5, deadline goal should be most urgent
         assert_eq!(most_urgent.unwrap().name, "urgent_deadline");
     }
+
+    // ── mutation-killing tests ──
+
+    #[test]
+    fn test_add_goal_equal_priority_ordering() {
+        // Tests < vs <= in add_goal priority comparison
+        let mut scheduler = GoalScheduler::new();
+
+        scheduler.add_goal(create_test_goal("first", 5.0, None));
+        scheduler.add_goal(create_test_goal("second", 5.0, None));
+
+        let goals = scheduler.get_active_goals();
+        // First added should come first when priorities are equal (< not <=)
+        assert_eq!(goals[0].name, "first");
+        assert_eq!(goals[1].name, "second");
+    }
+
+    #[test]
+    fn test_remove_goal_returns_correct_goal() {
+        let mut scheduler = GoalScheduler::new();
+        scheduler.add_goal(create_test_goal("keep", 5.0, None));
+        scheduler.add_goal(create_test_goal("remove_me", 3.0, None));
+
+        let removed = scheduler.remove_goal("remove_me");
+        assert!(removed.is_some());
+        assert_eq!(removed.unwrap().name, "remove_me");
+
+        // "keep" should remain
+        let goals = scheduler.get_active_goals();
+        assert_eq!(goals.len(), 1);
+        assert_eq!(goals[0].name, "keep");
+    }
+
+    #[test]
+    fn test_get_current_plan_and_goal_name_after_update() {
+        let mut scheduler = GoalScheduler::new();
+
+        // Initially both should be None
+        assert!(scheduler.get_current_plan().is_none());
+        assert!(scheduler.get_current_goal_name().is_none());
+
+        // Add a goal with desired state and provide a planner with matching actions
+        let mut desired = BTreeMap::new();
+        desired.insert("flag".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("set_flag_goal", desired).with_priority(5.0);
+        scheduler.add_goal(goal);
+
+        let mut planner = AdvancedGOAP::new();
+        // Register an action that achieves the goal
+        let mut effects = BTreeMap::new();
+        effects.insert("flag".to_string(), StateValue::Bool(true));
+        use crate::goap::SimpleAction;
+        planner.add_action(Box::new(SimpleAction::new(
+            "do_flag",
+            BTreeMap::new(),
+            effects,
+            1.0,
+        )));
+
+        let world = WorldState::new();
+        let result = scheduler.update(0.0, &world, &planner);
+
+        // After successful update, current plan and goal name should be set
+        assert!(result.is_some());
+        assert!(scheduler.get_current_plan().is_some());
+        let plan = scheduler.get_current_plan().unwrap();
+        assert!(!plan.is_empty());
+        assert_eq!(scheduler.get_current_goal_name(), Some("set_flag_goal"));
+    }
+
+    #[test]
+    fn test_update_removes_expired_goals() {
+        // Test that deadline check uses < (not <=, >, or ==)
+        let mut scheduler = GoalScheduler::new();
+
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("timed", desired)
+            .with_priority(5.0)
+            .with_deadline(10.0);
+        scheduler.add_goal(goal);
+
+        let world = WorldState::new();
+        let planner = AdvancedGOAP::new();
+
+        // At time 9.0, goal should still exist (9.0 < 10.0)
+        scheduler.update(9.0, &world, &planner);
+        // Planner can't solve it, but it shouldn't be expired
+
+        // Re-add since planner removes unachievable goals
+        let mut desired = BTreeMap::new();
+        desired.insert("y".to_string(), StateValue::Bool(true));
+        let goal2 = Goal::new("timed2", desired)
+            .with_priority(5.0)
+            .with_deadline(10.0);
+        scheduler.add_goal(goal2);
+
+        // At time 10.0, goal should be removed (10.0 is NOT < 10.0)
+        scheduler.update(10.0, &world, &planner);
+        // All goals with deadline=10.0 should be gone at time=10.0
+        assert_eq!(
+            scheduler.goal_count(),
+            0,
+            "expired goals should be removed"
+        );
+    }
+
+    #[test]
+    fn test_should_replan_no_plan() {
+        let scheduler = GoalScheduler::new();
+        // No current plan → should replan
+        assert!(scheduler.should_replan(0.0, &WorldState::new()));
+    }
+
+    #[test]
+    fn test_should_replan_time_interval() {
+        let mut scheduler = GoalScheduler::with_replan_interval(5.0);
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("goal".into());
+        scheduler.last_replan_time = 10.0;
+
+        // 12.0 - 10.0 = 2.0 < 5.0 → should NOT replan
+        assert!(!scheduler.should_replan(12.0, &WorldState::new()));
+
+        // 16.0 - 10.0 = 6.0 >= 5.0 → current goal doesn't exist in active_goals
+        // → should replan (goal not found)
+        assert!(scheduler.should_replan(16.0, &WorldState::new()));
+    }
+
+    #[test]
+    fn test_should_replan_goal_satisfied() {
+        let mut scheduler = GoalScheduler::with_replan_interval(0.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("my_goal".into());
+
+        let mut desired = BTreeMap::new();
+        desired.insert("done".to_string(), StateValue::Bool(true));
+        scheduler
+            .active_goals
+            .push_back(Goal::new("my_goal", desired));
+
+        // Goal is NOT satisfied (world is empty) → should NOT replan
+        assert!(!scheduler.should_replan(1.0, &WorldState::new()));
+
+        // Goal IS satisfied → should replan
+        let mut satisfied_world = WorldState::new();
+        satisfied_world.set("done", StateValue::Bool(true));
+        assert!(scheduler.should_replan(1.0, &satisfied_world));
+    }
+
+    #[test]
+    fn test_should_replan_goal_removed() {
+        let mut scheduler = GoalScheduler::with_replan_interval(0.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("deleted_goal".into());
+        // active_goals is empty → current goal doesn't exist → should replan
+        assert!(scheduler.should_replan(1.0, &WorldState::new()));
+    }
+
+    #[test]
+    fn test_should_replan_urgency_preemption() {
+        let mut scheduler = GoalScheduler::with_replan_interval(0.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("low".into());
+
+        // Need unsatisfied desired_state so is_satisfied returns false
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Bool(true));
+
+        // Current goal: priority 2.0 → urgency 2.0
+        scheduler
+            .active_goals
+            .push_back(Goal::new("low", desired.clone()).with_priority(2.0));
+
+        // Other goal: priority 5.0 → urgency 5.0 > 2.0 * 1.5 = 3.0 → PREEMPT
+        scheduler
+            .active_goals
+            .push_back(Goal::new("high", desired).with_priority(5.0));
+
+        assert!(
+            scheduler.should_replan(1.0, &WorldState::new()),
+            "should preempt for more urgent goal"
+        );
+    }
+
+    #[test]
+    fn test_should_replan_urgency_not_enough() {
+        let mut scheduler = GoalScheduler::with_replan_interval(0.0);
+        scheduler.last_replan_time = 0.0;
+        scheduler.current_plan = Some(vec!["action".into()]);
+        scheduler.current_goal_name = Some("current".into());
+
+        // Need unsatisfied desired_state so is_satisfied returns false
+        let mut desired = BTreeMap::new();
+        desired.insert("x".to_string(), StateValue::Bool(true));
+
+        // Current goal: priority 5.0 → urgency 5.0
+        scheduler
+            .active_goals
+            .push_back(Goal::new("current", desired.clone()).with_priority(5.0));
+
+        // Other goal: priority 6.0 → urgency 6.0, but NOT > 5.0 * 1.5 = 7.5
+        scheduler
+            .active_goals
+            .push_back(Goal::new("slightly_higher", desired).with_priority(6.0));
+
+        assert!(
+            !scheduler.should_replan(1.0, &WorldState::new()),
+            "should NOT preempt when urgency difference is small"
+        );
+    }
+
+    #[test]
+    fn test_update_removes_failed_plan_goal() {
+        let mut scheduler = GoalScheduler::new();
+
+        let mut desired = BTreeMap::new();
+        desired.insert("impossible".to_string(), StateValue::Bool(true));
+        let goal = Goal::new("impossible_goal", desired).with_priority(5.0);
+        scheduler.add_goal(goal);
+
+        let mut planner = AdvancedGOAP::new();
+        // No actions registered → planning will fail
+        let world = WorldState::new();
+
+        let result = scheduler.update(0.0, &world, &planner);
+
+        // Planning failed → goal should be removed as unachievable
+        assert!(result.is_none());
+        assert_eq!(scheduler.goal_count(), 0);
+    }
 }
