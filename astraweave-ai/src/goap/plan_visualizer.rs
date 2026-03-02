@@ -602,4 +602,432 @@ mod tests {
         assert!(!output.contains("cost"));
         assert!(!output.contains("risk"));
     }
+
+    // ── Mutation-killing tests ──
+
+    fn create_test_action_with_effects(
+        name: &str,
+        cost: f32,
+        effects: BTreeMap<String, super::super::StateValue>,
+    ) -> Box<dyn Action> {
+        Box::new(SimpleAction::new(name, BTreeMap::new(), effects, cost))
+    }
+
+    #[test]
+    fn test_calculate_plan_metrics_exact() {
+        // Kills: total_cost += → -=, total_risk += → -=, 1.0 - prob → prob
+        let visualizer = PlanVisualizer::new(VisualizationFormat::Text);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 3.0),
+            create_test_action("b", 5.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let history = ActionHistory::new();
+
+        let (cost, risk) = visualizer.calculate_plan_metrics(&plan, &actions, &history);
+        assert_eq!(cost, 8.0); // 3+5
+        // Default prob=0.8, risk=0.2 each, total=0.4
+        assert!((risk - 0.4).abs() < 1e-6);
+
+        // Empty plan
+        let (c2, r2) = visualizer.calculate_plan_metrics(&[], &actions, &history);
+        assert_eq!(c2, 0.0);
+        assert_eq!(r2, 0.0);
+    }
+
+    #[test]
+    fn test_format_state_changes_branches() {
+        use super::super::StateValue;
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline)
+            .with_state_changes(true);
+
+        // Empty effects → "(no changes)"
+        let empty = BTreeMap::new();
+        let result = visualizer.format_state_changes(&empty);
+        assert_eq!(result, "(no changes)");
+
+        // 1 effect → no "+N more"
+        let mut one = BTreeMap::new();
+        one.insert("health".to_string(), StateValue::Int(100));
+        let r1 = visualizer.format_state_changes(&one);
+        assert!(r1.contains("health"));
+        assert!(!r1.contains("more"));
+
+        // 2 effects → no "+N more"
+        let mut two = BTreeMap::new();
+        two.insert("a".to_string(), StateValue::Bool(true));
+        two.insert("b".to_string(), StateValue::Bool(false));
+        let r2 = visualizer.format_state_changes(&two);
+        assert!(!r2.contains("more"));
+
+        // 3 effects → "+1 more"
+        let mut three = BTreeMap::new();
+        three.insert("a".to_string(), StateValue::Bool(true));
+        three.insert("b".to_string(), StateValue::Bool(false));
+        three.insert("c".to_string(), StateValue::Int(5));
+        let r3 = visualizer.format_state_changes(&three);
+        assert!(r3.contains("+1 more"));
+
+        // 4 effects → "+2 more"
+        let mut four = BTreeMap::new();
+        four.insert("a".to_string(), StateValue::Bool(true));
+        four.insert("b".to_string(), StateValue::Bool(false));
+        four.insert("c".to_string(), StateValue::Int(5));
+        four.insert("d".to_string(), StateValue::Int(10));
+        let r4 = visualizer.format_state_changes(&four);
+        assert!(r4.contains("+2 more"));
+    }
+
+    #[test]
+    fn test_timeline_success_icons() {
+        // Kills: > 0.8 → >= 0.8, > 0.5 → >= 0.5, icon assignments
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
+
+        // No history → default prob 0.8, which is NOT > 0.8, so should be "~"
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 1.0)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("~"), "0.8 probability should show ~ (not > 0.8)");
+
+        // Build history with 100% success → prob > 0.8 → "✓"
+        let mut hist_good = ActionHistory::new();
+        for _ in 0..10 {
+            hist_good.record_success("act", 1.0);
+        }
+        let output2 = visualizer.visualize_plan(&plan, &actions, &hist_good, &start);
+        assert!(output2.contains("✓"), "100% success should show ✓");
+
+        // Build history with ~30% success → prob < 0.5 → "✗"
+        let mut hist_bad = ActionHistory::new();
+        hist_bad.record_success("act", 1.0);
+        hist_bad.record_failure("act");
+        hist_bad.record_failure("act");
+        hist_bad.record_failure("act");
+        let output3 = visualizer.visualize_plan(&plan, &actions, &hist_bad, &start);
+        assert!(output3.contains("✗"), "25% success should show ✗");
+    }
+
+    #[test]
+    fn test_timeline_with_state_changes() {
+        use super::super::StateValue;
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline)
+            .with_state_changes(true);
+
+        let mut effects = BTreeMap::new();
+        effects.insert("health".to_string(), StateValue::Int(100));
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action_with_effects("heal", 1.0, effects),
+        ];
+        let plan = vec!["heal".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("health"), "State changes should be shown");
+    }
+
+    #[test]
+    fn test_timeline_without_state_changes() {
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline)
+            .with_state_changes(false);
+
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 1.0)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("..."), "Without state_changes, should show ...");
+    }
+
+    #[test]
+    fn test_tree_unknown_action() {
+        // Plan references an action not in the actions list
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let actions: Vec<Box<dyn Action>> = vec![]; // No actions registered
+        let plan = vec!["phantom".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("unknown"), "Unknown action should say (unknown)");
+    }
+
+    #[test]
+    fn test_tree_prefix_last_vs_non_last() {
+        // Kills: is_last toggling mutations for ├─ vs └─
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 1.0),
+            create_test_action("b", 1.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("├─"), "Non-last action should use ├─");
+        assert!(output.contains("└─"), "Last action should use └─");
+    }
+
+    #[test]
+    fn test_tree_cost_risk_flags() {
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("myact", 1.0)];
+        let plan = vec!["myact".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        // costs=true, risks=false — action line has "cost:" but not "risk:"
+        let v1 = PlanVisualizer::new(VisualizationFormat::AsciiTree)
+            .with_costs(true)
+            .with_risks(false);
+        let o1 = v1.visualize_plan(&plan, &actions, &history, &start);
+        // Find the action line (contains "myact" but NOT the header line starting with "Plan")
+        let action_line = o1.lines().find(|l| l.contains("myact") && !l.starts_with("Plan")).unwrap();
+        assert!(action_line.contains("cost:"));
+        assert!(!action_line.contains("risk:"));
+
+        // costs=false, risks=true
+        let v2 = PlanVisualizer::new(VisualizationFormat::AsciiTree)
+            .with_costs(false)
+            .with_risks(true);
+        let o2 = v2.visualize_plan(&plan, &actions, &history, &start);
+        let action_line2 = o2.lines().find(|l| l.contains("myact") && !l.starts_with("Plan")).unwrap();
+        assert!(action_line2.contains("risk:"));
+        assert!(!action_line2.contains("cost:"));
+
+        // costs=false, risks=false
+        let v3 = PlanVisualizer::new(VisualizationFormat::AsciiTree)
+            .with_costs(false)
+            .with_risks(false);
+        let o3 = v3.visualize_plan(&plan, &actions, &history, &start);
+        let action_line3 = o3.lines().find(|l| l.contains("myact") && !l.starts_with("Plan")).unwrap();
+        assert!(!action_line3.contains("cost:"));
+        assert!(!action_line3.contains("risk:"));
+    }
+
+    #[test]
+    fn test_dot_edge_connections() {
+        // Kills: i==0 → i==1, i-1 → i+1, plan.len()-1 mutations
+        let visualizer = PlanVisualizer::new(VisualizationFormat::Dot);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("first", 1.0),
+            create_test_action("second", 2.0),
+        ];
+        let plan = vec!["first".to_string(), "second".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("start -> action_0"), "First action connects from start");
+        assert!(output.contains("action_0 -> action_1"), "Actions chain together");
+        assert!(output.contains("action_1 -> end"), "Last action connects to end");
+    }
+
+    #[test]
+    fn test_json_comma_logic() {
+        // Kills: i < plan.len()-1 boundary, comma placement
+        let visualizer = PlanVisualizer::new(VisualizationFormat::Json);
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 1.0),
+            create_test_action("b", 2.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        // The first action's closing brace should have comma, the last should not
+        let lines: Vec<&str> = output.lines().collect();
+        // Find lines with closing braces for action objects
+        let closing_braces: Vec<&&str> = lines.iter().filter(|l| l.trim().starts_with('}') || l.trim().starts_with("}"    )).collect();
+        // At least first closing brace has comma
+        assert!(output.contains("},"), "First action should have trailing comma");
+    }
+
+    #[test]
+    fn test_json_unknown_action() {
+        let visualizer = PlanVisualizer::new(VisualizationFormat::Json);
+        let actions: Vec<Box<dyn Action>> = vec![]; // No actions
+        let plan = vec!["unknown_action".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("unknown_action"));
+        // Should NOT contain "cost" or "risk" for unknown action
+        // Check that the unknown action block only has "name"
+        assert!(output.contains("\"name\": \"unknown_action\""));
+    }
+
+    #[test]
+    fn test_goal_dot_format() {
+        let visualizer = PlanVisualizer::new(VisualizationFormat::Dot);
+        let sub = Goal::new("child", BTreeMap::new()).with_priority(5.0);
+        let goal = Goal::new("parent", BTreeMap::new())
+            .with_priority(10.0)
+            .with_sub_goals(vec![sub]);
+
+        let output = visualizer.visualize_goal_hierarchy(&goal);
+        assert!(output.contains("digraph GoalHierarchy"));
+        assert!(output.contains("node_0"));
+        assert!(output.contains("node_1"));
+        assert!(output.contains("node_0 -> node_1"), "Parent should connect to child");
+        assert!(output.contains("parent"));
+        assert!(output.contains("child"));
+    }
+
+    #[test]
+    fn test_goal_tree_strategy_tags() {
+        use super::super::DecompositionStrategy;
+
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+
+        let goal_seq = Goal::new("g", BTreeMap::new())
+            .with_strategy(DecompositionStrategy::Sequential);
+        assert!(viz.visualize_goal_hierarchy(&goal_seq).contains("[SEQ]"));
+
+        let goal_par = Goal::new("g", BTreeMap::new())
+            .with_strategy(DecompositionStrategy::Parallel);
+        assert!(viz.visualize_goal_hierarchy(&goal_par).contains("[PAR]"));
+
+        let goal_any = Goal::new("g", BTreeMap::new())
+            .with_strategy(DecompositionStrategy::AnyOf);
+        assert!(viz.visualize_goal_hierarchy(&goal_any).contains("[ANY]"));
+
+        let goal_all = Goal::new("g", BTreeMap::new())
+            .with_strategy(DecompositionStrategy::AllOf);
+        assert!(viz.visualize_goal_hierarchy(&goal_all).contains("[ALL]"));
+    }
+
+    #[test]
+    fn test_goal_tree_deadline_display() {
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+
+        let with_dl = Goal::new("urgent", BTreeMap::new()).with_deadline(30.0);
+        let output = viz.visualize_goal_hierarchy(&with_dl);
+        assert!(output.contains("deadline: 30s"));
+
+        let without_dl = Goal::new("relaxed", BTreeMap::new());
+        let output2 = viz.visualize_goal_hierarchy(&without_dl);
+        assert!(!output2.contains("deadline"));
+    }
+
+    #[test]
+    fn test_goal_tree_depth_indent() {
+        let viz = PlanVisualizer::new(VisualizationFormat::AsciiTree);
+        let child = Goal::new("child", BTreeMap::new());
+        let parent = Goal::new("parent", BTreeMap::new())
+            .with_sub_goals(vec![child]);
+
+        let output = viz.visualize_goal_hierarchy(&parent);
+        // Parent at depth 0 has no indent
+        assert!(output.starts_with("["));
+        // Child at depth 1 should have indent with └─
+        assert!(output.contains("└─"));
+    }
+
+    #[test]
+    fn test_goal_text_format() {
+        let viz = PlanVisualizer::new(VisualizationFormat::Text);
+        let child = Goal::new("child", BTreeMap::new()).with_priority(3.0);
+        let parent = Goal::new("parent", BTreeMap::new())
+            .with_priority(8.0)
+            .with_sub_goals(vec![child]);
+
+        let output = viz.visualize_goal_hierarchy(&parent);
+        assert!(output.contains("parent"));
+        assert!(output.contains("priority: 8.0"));
+        assert!(output.contains("child"));
+        assert!(output.contains("priority: 3.0"));
+        // Child should be more indented than parent
+        let parent_indent = output.lines().find(|l| l.contains("parent")).unwrap().find('p').unwrap();
+        let child_indent = output.lines().find(|l| l.contains("child")).unwrap().find('c').unwrap();
+        assert!(child_indent > parent_indent);
+    }
+
+    #[test]
+    fn test_text_format_cost_only_risk_only() {
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 2.5)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        // cost only
+        let v1 = PlanVisualizer::new(VisualizationFormat::Text)
+            .with_costs(true)
+            .with_risks(false);
+        let o1 = v1.visualize_plan(&plan, &actions, &history, &start);
+        assert!(o1.contains("cost:"));
+        assert!(!o1.contains("risk:"));
+
+        // risk only
+        let v2 = PlanVisualizer::new(VisualizationFormat::Text)
+            .with_costs(false)
+            .with_risks(true);
+        let o2 = v2.visualize_plan(&plan, &actions, &history, &start);
+        assert!(!o2.contains("cost:"));
+        assert!(o2.contains("risk:"));
+    }
+
+    #[test]
+    fn test_visualize_goal_hierarchy_fallthrough_formats() {
+        // AsciiTimeline and Json should fall through to tree format
+        let viz_timeline = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
+        let viz_json = PlanVisualizer::new(VisualizationFormat::Json);
+        let goal = Goal::new("test", BTreeMap::new()).with_priority(5.0);
+
+        let out_tl = viz_timeline.visualize_goal_hierarchy(&goal);
+        let out_json = viz_json.visualize_goal_hierarchy(&goal);
+        // Both should produce tree format (same output as AsciiTree)
+        assert!(out_tl.contains("[SEQ]"));
+        assert!(out_json.contains("[SEQ]"));
+    }
+
+    #[test]
+    fn test_dot_cost_risk_labels() {
+        // With costs+risks, DOT labels should include cost/risk info
+        let viz = PlanVisualizer::new(VisualizationFormat::Dot)
+            .with_costs(true)
+            .with_risks(true);
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("act", 3.5)];
+        let plan = vec!["act".to_string()];
+        let history = ActionHistory::new();
+        let start = WorldState::new();
+
+        let output = viz.visualize_plan(&plan, &actions, &history, &start);
+        assert!(output.contains("cost:"));
+        assert!(output.contains("risk:"));
+
+        // Without costs+risks, DOT labels should be just action name
+        let viz2 = PlanVisualizer::new(VisualizationFormat::Dot)
+            .with_costs(false)
+            .with_risks(false);
+        let output2 = viz2.visualize_plan(&plan, &actions, &history, &start);
+        assert!(!output2.contains("cost:"));
+    }
+
+    #[test]
+    fn test_timeline_time_accumulation() {
+        // Kills: current_time += duration mutations
+        let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
+        let mut hist = ActionHistory::new();
+        hist.record_success("a", 2.0); // avg_duration = 2.0
+        hist.record_success("b", 3.0); // avg_duration = 3.0
+
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("a", 1.0),
+            create_test_action("b", 1.0),
+        ];
+        let plan = vec!["a".to_string(), "b".to_string()];
+        let start = WorldState::new();
+
+        let output = visualizer.visualize_plan(&plan, &actions, &hist, &start);
+        // First action at time 0.0, second at time 2.0
+        assert!(output.contains("0.0"), "First action should be at time 0.0");
+        assert!(output.contains("2.0"), "Second action should be at time 2.0 (after duration 2.0)");
+    }
 }

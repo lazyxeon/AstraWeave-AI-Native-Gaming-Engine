@@ -358,4 +358,220 @@ mod tests {
         assert_eq!(hash1, hash2);
         assert_eq!(hash2, hash3);
     }
+
+    // ── Mutation-killing tests ──
+
+    fn hash_value(v: &StateValue) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        v.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    #[test]
+    fn test_hash_discriminant_tags_differ() {
+        // Each variant must have a unique discriminant tag so that
+        // e.g. Bool(true) vs Int(1) produce different hashes
+        let bool_val = StateValue::Bool(true);
+        let int_val = StateValue::Int(1);
+        let float_val = StateValue::Float(OrderedFloat(1.0));
+        let string_val = StateValue::String("1".to_string());
+        let range_val = StateValue::IntRange(1, 1);
+        let approx_val = StateValue::FloatApprox(1.0, 0.0);
+
+        // All pairs must differ — kills tag-swap mutations (0u8↔1u8, etc.)
+        let hashes = [
+            hash_value(&bool_val),
+            hash_value(&int_val),
+            hash_value(&float_val),
+            hash_value(&string_val),
+            hash_value(&range_val),
+            hash_value(&approx_val),
+        ];
+        for i in 0..hashes.len() {
+            for j in (i + 1)..hashes.len() {
+                assert_ne!(hashes[i], hashes[j], "Hash collision between variant {} and {}", i, j);
+            }
+        }
+    }
+
+    #[test]
+    fn test_satisfies_bool_exact() {
+        assert!(StateValue::Bool(true).satisfies(&StateValue::Bool(true)));
+        assert!(StateValue::Bool(false).satisfies(&StateValue::Bool(false)));
+        assert!(!StateValue::Bool(true).satisfies(&StateValue::Bool(false)));
+        assert!(!StateValue::Bool(false).satisfies(&StateValue::Bool(true)));
+    }
+
+    #[test]
+    fn test_satisfies_string_exact() {
+        let a = StateValue::String("hello".into());
+        let b = StateValue::String("hello".into());
+        let c = StateValue::String("world".into());
+        assert!(a.satisfies(&b));
+        assert!(!a.satisfies(&c));
+    }
+
+    #[test]
+    fn test_satisfies_int_range_boundaries() {
+        // Kills >= vs >, <= vs < boundary mutations on IntRange
+        let range = StateValue::IntRange(50, 100);
+        assert!(!StateValue::Int(49).satisfies(&range)); // below min
+        assert!(StateValue::Int(50).satisfies(&range));  // at min
+        assert!(StateValue::Int(75).satisfies(&range));  // mid
+        assert!(StateValue::Int(100).satisfies(&range)); // at max
+        assert!(!StateValue::Int(101).satisfies(&range)); // above max
+    }
+
+    #[test]
+    fn test_satisfies_float_tolerance() {
+        // Kills < vs <= and tolerance value mutations on Float↔Float
+        let a = StateValue::Float(OrderedFloat(1.0));
+        let b = StateValue::Float(OrderedFloat(1.0));
+        assert!(a.satisfies(&b));
+
+        // Within 1e-6 tolerance
+        let close = StateValue::Float(OrderedFloat(1.0 + 5e-7));
+        assert!(close.satisfies(&b));
+
+        // Outside 1e-6 tolerance
+        let far = StateValue::Float(OrderedFloat(1.0 + 2e-6));
+        assert!(!far.satisfies(&b));
+    }
+
+    #[test]
+    fn test_satisfies_float_approx_epsilon() {
+        // FloatApprox uses <= epsilon (not < )
+        let val = StateValue::Float(OrderedFloat(1.5));
+        let approx = StateValue::FloatApprox(1.5, 0.01);
+        assert!(val.satisfies(&approx));
+
+        // Exactly at epsilon boundary — should pass (<=)
+        let at_boundary = StateValue::Float(OrderedFloat(1.51));
+        assert!(at_boundary.satisfies(&approx));
+
+        // Just beyond epsilon
+        let beyond = StateValue::Float(OrderedFloat(1.52));
+        assert!(!beyond.satisfies(&approx));
+    }
+
+    #[test]
+    fn test_satisfies_cross_type_int_float() {
+        // Int(5) vs Float(5.0) → true
+        assert!(StateValue::Int(5).satisfies(&StateValue::Float(OrderedFloat(5.0))));
+        // Float(5.0) vs Int(5) → true
+        assert!(StateValue::Float(OrderedFloat(5.0)).satisfies(&StateValue::Int(5)));
+        // Int(5) vs Float(5.001) → false (outside 1e-6)
+        assert!(!StateValue::Int(5).satisfies(&StateValue::Float(OrderedFloat(5.001))));
+        // Float(5.001) vs Int(5) → false
+        assert!(!StateValue::Float(OrderedFloat(5.001)).satisfies(&StateValue::Int(5)));
+    }
+
+    #[test]
+    fn test_satisfies_mismatched_types_return_false() {
+        // Kills the fallback `_ => false` → `true` mutation
+        assert!(!StateValue::Bool(true).satisfies(&StateValue::Int(1)));
+        assert!(!StateValue::String("5".into()).satisfies(&StateValue::Int(5)));
+        assert!(!StateValue::Int(5).satisfies(&StateValue::String("5".into())));
+    }
+
+    #[test]
+    fn test_numeric_distance_float_float() {
+        let a = StateValue::Float(OrderedFloat(3.0));
+        let b = StateValue::Float(OrderedFloat(7.0));
+        assert_eq!(a.numeric_distance(&b), 4.0);
+        assert_eq!(b.numeric_distance(&a), 4.0); // abs
+    }
+
+    #[test]
+    fn test_numeric_distance_cross_type() {
+        // Int vs Float
+        let i = StateValue::Int(3);
+        let f = StateValue::Float(OrderedFloat(7.0));
+        assert_eq!(i.numeric_distance(&f), 4.0);
+        // Float vs Int
+        assert_eq!(f.numeric_distance(&i), 4.0);
+    }
+
+    #[test]
+    fn test_numeric_distance_int_range_clamping() {
+        // Kills arithmetic mutations in IntRange arm: min-val vs val-min, etc.
+        let range = StateValue::IntRange(50, 100);
+
+        // Below min: distance = min - val = 50 - 30 = 20
+        assert_eq!(StateValue::Int(30).numeric_distance(&range), 20.0);
+        // Above max: distance = val - max = 120 - 100 = 20
+        assert_eq!(StateValue::Int(120).numeric_distance(&range), 20.0);
+        // In range: distance = 0
+        assert_eq!(StateValue::Int(75).numeric_distance(&range), 0.0);
+        // At boundaries
+        assert_eq!(StateValue::Int(50).numeric_distance(&range), 0.0);
+        assert_eq!(StateValue::Int(100).numeric_distance(&range), 0.0);
+        // Just outside boundaries
+        assert_eq!(StateValue::Int(49).numeric_distance(&range), 1.0);
+        assert_eq!(StateValue::Int(101).numeric_distance(&range), 1.0);
+    }
+
+    #[test]
+    fn test_numeric_distance_fallback() {
+        // Same type (non-numeric): equal → 0, not equal → 1
+        let a = StateValue::Bool(true);
+        let b = StateValue::Bool(true);
+        assert_eq!(a.numeric_distance(&b), 0.0);
+
+        let c = StateValue::Bool(false);
+        assert_eq!(a.numeric_distance(&c), 1.0);
+    }
+
+    #[test]
+    fn test_distance_to_multiplier_and_missing_key() {
+        // Kills: `* 2.0` → `* 0.0`, `+ 0`, missing key `+= 1.0` → other
+        let mut current = WorldState::new();
+        // Set health to something that does NOT satisfy the goal
+        current.set("health", StateValue::Int(50));
+
+        let mut goal = BTreeMap::new();
+        goal.insert("health".to_string(), StateValue::Int(100));
+
+        // 1 unmet condition = 2.0 base + 50.0 numeric distance = 52.0
+        let d = current.distance_to(&goal);
+        assert_eq!(d, 52.0);
+
+        // Already satisfied → distance 0
+        current.set("health", StateValue::Int(100));
+        assert_eq!(current.distance_to(&goal), 0.0);
+
+        // Missing key → unmet + 1.0 distance
+        let empty = WorldState::new();
+        // 1 unmet (2.0) + 1.0 missing = 3.0
+        assert_eq!(empty.distance_to(&goal), 3.0);
+    }
+
+    #[test]
+    fn test_remove_contains_key_len_is_empty() {
+        let mut ws = WorldState::new();
+        assert!(ws.is_empty());
+        assert_eq!(ws.len(), 0);
+        assert!(!ws.contains_key("x"));
+
+        ws.set("x", StateValue::Int(42));
+        assert!(!ws.is_empty());
+        assert_eq!(ws.len(), 1);
+        assert!(ws.contains_key("x"));
+
+        let removed = ws.remove("x");
+        assert_eq!(removed, Some(StateValue::Int(42)));
+        assert!(ws.is_empty());
+        assert_eq!(ws.len(), 0);
+        assert!(!ws.contains_key("x"));
+        assert!(ws.get("x").is_none());
+    }
+
+    #[test]
+    fn test_world_state_satisfies_unwrap_or_false() {
+        // Missing key should NOT satisfy (unwrap_or(false))
+        let ws = WorldState::new();
+        let mut conditions = BTreeMap::new();
+        conditions.insert("missing".to_string(), StateValue::Bool(true));
+        assert!(!ws.satisfies(&conditions));
+    }
 }

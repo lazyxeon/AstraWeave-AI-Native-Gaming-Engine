@@ -299,4 +299,204 @@ mod tests {
         stats.successes = 18;
         assert!(stats.reliability_score() > 0.85);
     }
+
+    // ── Mutation-killing tests ──
+
+    #[test]
+    fn test_reliability_score_exact_arithmetic() {
+        // Kills: /20.0 → /1.0, .min(1.0) → .max(1.0), etc.
+        let mut stats = ActionStats::new();
+
+        // exec=10, succ=10 → confidence=(10/20).min(1.0)=0.5, sr=1.0, rel=0.5
+        stats.executions = 10;
+        stats.successes = 10;
+        assert_eq!(stats.reliability_score(), 0.5);
+
+        // exec=20, succ=20 → confidence=(20/20).min(1.0)=1.0, sr=1.0, rel=1.0
+        stats.executions = 20;
+        stats.successes = 20;
+        assert_eq!(stats.reliability_score(), 1.0);
+
+        // exec=40, succ=20 → confidence=(40/20).min(1.0)=1.0, sr=0.5, rel=0.5
+        stats.executions = 40;
+        stats.successes = 20;
+        assert_eq!(stats.reliability_score(), 0.5);
+
+        // exec=0 → sr=0.5, confidence=0.0, rel=0.0
+        stats.executions = 0;
+        stats.successes = 0;
+        assert_eq!(stats.reliability_score(), 0.0);
+    }
+
+    #[test]
+    fn test_success_rate_default_neutral() {
+        // Kills: default 0.5 → 0.0 or 1.0
+        let stats = ActionStats::new();
+        assert_eq!(stats.success_rate(), 0.5);
+    }
+
+    #[test]
+    fn test_failure_rate_complement() {
+        // Kills: 1.0 - success_rate → success_rate or 0.0 - success_rate
+        let mut stats = ActionStats::new();
+        stats.executions = 10;
+        stats.successes = 7;
+        stats.failures = 3;
+        assert_eq!(stats.failure_rate(), 0.3);
+        // Also verify sr + fr = 1.0
+        assert_eq!(stats.success_rate() + stats.failure_rate(), 1.0);
+    }
+
+    #[test]
+    fn test_rolling_average_first_execution_path() {
+        // Kills: ==1 → ==0 branch check, and first-exec direct assignment
+        let mut history = ActionHistory::new();
+        history.record_success("a", 5.0);
+
+        let stats = history.get_action_stats("a").unwrap();
+        assert_eq!(stats.executions, 1);
+        assert_eq!(stats.avg_duration, 5.0); // First exec: direct assignment
+
+        // Second execution: rolling average
+        history.record_success("a", 3.0);
+        let stats = history.get_action_stats("a").unwrap();
+        assert_eq!(stats.executions, 2);
+        // Rolling avg = (5.0 * 1 + 3.0) / 2 = 4.0
+        assert_eq!(stats.avg_duration, 4.0);
+    }
+
+    #[test]
+    fn test_rolling_average_arithmetic() {
+        // Kills: (exec-1) → (exec+1), division errors
+        let mut history = ActionHistory::new();
+        history.record_success("x", 10.0); // avg=10
+        history.record_success("x", 20.0); // avg = (10*1 + 20)/2 = 15
+        history.record_success("x", 30.0); // avg = (15*2 + 30)/3 = 20
+
+        let stats = history.get_action_stats("x").unwrap();
+        assert_eq!(stats.avg_duration, 20.0);
+    }
+
+    #[test]
+    fn test_total_executions() {
+        let mut history = ActionHistory::new();
+        history.record_success("a", 1.0);
+        history.record_success("a", 1.0);
+        history.record_success("a", 1.0);
+        history.record_success("b", 1.0);
+        history.record_failure("b");
+
+        assert_eq!(history.total_executions(), 5);
+    }
+
+    #[test]
+    fn test_prune_noise_threshold() {
+        // Kills: >= → >
+        let mut history = ActionHistory::new();
+        // "a" has 3 executions, "b" has 2
+        history.record_success("a", 1.0);
+        history.record_success("a", 1.0);
+        history.record_success("a", 1.0);
+        history.record_success("b", 1.0);
+        history.record_success("b", 1.0);
+
+        // prune_noise(3) → retain where exec >= 3 → only "a"
+        history.prune_noise(3);
+        assert_eq!(history.len(), 1);
+        assert!(history.get_action_stats("a").is_some());
+        assert!(history.get_action_stats("b").is_none());
+
+        // prune_noise(2) on a fresh set → both retained
+        let mut h2 = ActionHistory::new();
+        h2.record_success("x", 1.0);
+        h2.record_success("x", 1.0);
+        h2.record_success("y", 1.0);
+        h2.record_success("y", 1.0);
+        h2.prune_noise(2);
+        assert_eq!(h2.len(), 2);
+    }
+
+    #[test]
+    fn test_reset_action() {
+        let mut history = ActionHistory::new();
+        history.record_success("x", 1.0);
+        assert!(history.get_action_stats("x").is_some());
+
+        history.reset_action("x");
+        assert!(history.get_action_stats("x").is_none());
+    }
+
+    #[test]
+    fn test_clear_is_empty_len() {
+        let mut history = ActionHistory::new();
+        assert!(history.is_empty());
+        assert_eq!(history.len(), 0);
+
+        history.record_success("a", 1.0);
+        assert!(!history.is_empty());
+        assert_eq!(history.len(), 1);
+
+        history.clear();
+        assert!(history.is_empty());
+        assert_eq!(history.len(), 0);
+    }
+
+    #[test]
+    fn test_action_names() {
+        let mut history = ActionHistory::new();
+        history.record_success("alpha", 1.0);
+        history.record_success("beta", 1.0);
+        history.record_failure("gamma");
+
+        let names = history.action_names();
+        assert_eq!(names.len(), 3);
+        assert!(names.contains(&"alpha".to_string()));
+        assert!(names.contains(&"beta".to_string()));
+        assert!(names.contains(&"gamma".to_string()));
+    }
+
+    #[test]
+    fn test_merge_weighted_duration_exact() {
+        // Kills: dur*exec + other_dur*other_exec / total arithmetic mutations
+        let mut h1 = ActionHistory::new();
+        h1.record_success("act", 3.0); // exec=1, avg=3.0
+        h1.record_success("act", 3.0); // exec=2, avg=3.0
+
+        let mut h2 = ActionHistory::new();
+        h2.record_success("act", 2.0); // exec=1, avg=2.0
+        h2.record_success("act", 2.0); // exec=2, avg=2.0
+        h2.record_success("act", 2.0); // exec=3, avg=2.0
+
+        h1.merge(&h2);
+        let stats = h1.get_action_stats("act").unwrap();
+        assert_eq!(stats.executions, 5);
+        assert_eq!(stats.successes, 5);
+        // Weighted avg: (3.0*2 + 2.0*3) / 5 = 12/5 = 2.4
+        assert!((stats.avg_duration - 2.4).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_merge_new_action() {
+        // Merging an action that doesn't exist in self yet
+        let mut h1 = ActionHistory::new();
+        let mut h2 = ActionHistory::new();
+        h2.record_success("new_act", 5.0);
+
+        h1.merge(&h2);
+        let stats = h1.get_action_stats("new_act").unwrap();
+        assert_eq!(stats.executions, 1);
+        assert_eq!(stats.successes, 1);
+    }
+
+    #[test]
+    fn test_record_failure_increments() {
+        let mut history = ActionHistory::new();
+        history.record_failure("x");
+        history.record_failure("x");
+
+        let stats = history.get_action_stats("x").unwrap();
+        assert_eq!(stats.executions, 2);
+        assert_eq!(stats.failures, 2);
+        assert_eq!(stats.successes, 0);
+    }
 }
