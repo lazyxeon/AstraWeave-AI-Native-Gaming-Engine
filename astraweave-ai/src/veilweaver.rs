@@ -732,4 +732,97 @@ mod tests {
         assert_eq!(heuristics.has_echo, cloned.has_echo);
         assert_eq!(heuristics.position_good, cloned.position_good);
     }
+
+    // ==========================================================================
+    // Mutation-killing tests (veilweaver.rs)
+    // ==========================================================================
+
+    /// Kills line 122: `plan -> Result<PlanIntent>` replaced with `Ok(Default::default())`
+    /// Exercises the async `OrchestratorAsync::plan` path which was previously untested.
+    #[test]
+    fn test_async_plan_returns_valid_result() {
+        let orch = VeilweaverCompanionOrchestrator::new();
+        let mut snap = minimal_snapshot();
+        snap.player.hp = 20; // Low HP triggers heal goal
+
+        let result = futures_executor::block_on(orch.plan(snap, 100));
+        let plan = result.unwrap();
+        // Default PlanIntent has empty steps; real plan should produce non-empty steps.
+        assert!(
+            !plan.steps.is_empty(),
+            "Async plan should produce non-empty steps"
+        );
+    }
+
+    /// Kills lines 248-249: `enemy.pos.x - snap.me.pos.x` replaced with `+`
+    /// Uses non-origin companion position so |e-m| != |e+m|.
+    #[test]
+    fn test_closest_enemy_nonorigin_kills_sub_to_add_mutation() {
+        let mut snap = minimal_snapshot();
+        snap.me.pos = IVec2 { x: 5, y: 5 };
+
+        // Enemy A at (4,5): |4-5|=1 (original), |4+5|=9 (mutated dx)
+        // Enemy B at (1,5): |1-5|=4 (original), |1+5|=6 (mutated dx)
+        // Original: A closest (1 < 4). Mutation(dx→+): B closest (6 < 9). FLIPS.
+        snap.enemies.push(make_enemy(10, 4, 5, 50));
+        snap.enemies.push(make_enemy(20, 1, 5, 50));
+
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let closest = heuristics.closest_enemy.unwrap();
+        assert_eq!(
+            closest.id, 10,
+            "Enemy at (4,5) should be closest with non-origin companion"
+        );
+
+        // Now test dy axis with separate snapshot
+        let mut snap2 = minimal_snapshot();
+        snap2.me.pos = IVec2 { x: 0, y: 5 };
+        snap2.enemies.push(make_enemy(30, 0, 4, 50)); // |4-5|=1 vs |4+5|=9
+        snap2.enemies.push(make_enemy(40, 0, 1, 50)); // |1-5|=4 vs |1+5|=6
+        let h2 = HeuristicState::from_snapshot(&snap2);
+        assert_eq!(
+            h2.closest_enemy.unwrap().id,
+            30,
+            "Enemy at (0,4) should be closest via dy"
+        );
+    }
+
+    /// Kills line 250: `dx.abs() + dy.abs()` replaced with `dx.abs() * dy.abs()`
+    /// Uses enemies where Manhattan ordering differs from product ordering.
+    #[test]
+    fn test_closest_enemy_manhattan_vs_product_mutation() {
+        let mut snap = minimal_snapshot();
+        snap.me.pos = IVec2 { x: 0, y: 0 };
+
+        // A at (4,0): Manhattan=4, Product=0
+        // B at (1,2): Manhattan=3, Product=2
+        // Original(+): B closest (3 < 4). Mutation(*): A closest (0 < 2). FLIPS.
+        snap.enemies.push(make_enemy(10, 4, 0, 50));
+        snap.enemies.push(make_enemy(20, 1, 2, 50));
+
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        let closest = heuristics.closest_enemy.unwrap();
+        assert_eq!(
+            closest.id, 20,
+            "Enemy at (1,2) should be closest via Manhattan distance, not product"
+        );
+    }
+
+    /// Kills lines 255-256: `snap.player.pos.x - snap.me.pos.x` replaced with `+`
+    /// Uses non-origin positions where subtraction differs from addition.
+    #[test]
+    fn test_position_good_nonorigin_kills_sub_to_add_mutation() {
+        let mut snap = minimal_snapshot();
+        snap.player.pos = IVec2 { x: 5, y: 5 };
+        snap.me.pos = IVec2 { x: 3, y: 3 };
+
+        // Original: dx=2, dy=2, dist=4 <= 6 → position_good=true
+        // Mutation(x→+): dx=8, dist=10 > 6 → position_good=false
+        // Mutation(y→+): dy=8, dist=10 > 6 → position_good=false
+        let heuristics = HeuristicState::from_snapshot(&snap);
+        assert!(
+            heuristics.position_good,
+            "Position should be good when real distance is 4"
+        );
+    }
 }
