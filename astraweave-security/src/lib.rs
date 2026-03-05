@@ -891,4 +891,65 @@ mod tests {
         assert_eq!(restored.timestamp, 999);
         assert_eq!(restored.severity, TelemetrySeverity::Error);
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MUTATION REMEDIATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_plugin_build_sets_correct_memory_limit() {
+        // Targets: lib.rs:148 replace * with +/- in SecurityPlugin::build
+        // 1024 * 1024 = 1_048_576 (1 MB); + would give 2048, / would give 1
+        let plugin = SecurityPlugin::default();
+        let mut app = App::new();
+        plugin.build(&mut app);
+
+        let sandbox = app.world.get_resource::<ScriptSandbox>().unwrap();
+        assert_eq!(
+            sandbox.execution_limits.max_memory_bytes,
+            1024 * 1024,
+            "max_memory_bytes must be 1 MB (1024 * 1024 = {}), got {}",
+            1024 * 1024,
+            sandbox.execution_limits.max_memory_bytes
+        );
+    }
+
+    #[test]
+    fn mutation_validate_player_trust_boundary() {
+        // Targets: lib.rs:329 replace > with >= in validate_player_input
+        //
+        // Trust score with impossible_movement + rapid_input = 1.0 * 0.8 * 0.5 = 0.4
+        // Trust score with all three = 1.0 * 0.8 * 0.5 * 0.3 = 0.12
+        // To get close to 0.2: impossible_movement + memory_tamper = 1.0 * 0.5 * 0.3 = 0.15
+        // 0.15 < 0.2 → is_valid = false (both > and >= agree)
+        //
+        // memory_tamper alone: 1.0 * 0.3 = 0.3 > 0.2 → valid (both agree)
+        //
+        // All possible values: 1.0, 0.8, 0.5, 0.4, 0.3, 0.24, 0.15, 0.12
+        // None equals exactly 0.2 → this mutation is EQUIVALENT
+        //
+        // However, we still verify the boundary logic is correct:
+        let anti_cheat_tamper = CAntiCheat {
+            player_id: String::new(),
+            trust_score: 1.0,
+            last_validation: 0,
+            anomaly_flags: vec!["memory_tamper".to_string()],
+        };
+        let result = validate_player_input(&anti_cheat_tamper);
+        // 1.0 * 0.3 = 0.3 > 0.2 → valid
+        assert!(result.is_valid, "trust_score 0.3 should be valid");
+
+        let anti_cheat_two = CAntiCheat {
+            player_id: String::new(),
+            trust_score: 1.0,
+            last_validation: 0,
+            anomaly_flags: vec![
+                "impossible_movement".to_string(),
+                "memory_tamper".to_string(),
+            ],
+        };
+        let result2 = validate_player_input(&anti_cheat_two);
+        // 1.0 * 0.5 * 0.3 = 0.15 < 0.2 → invalid
+        assert!(!result2.is_valid, "trust_score 0.15 should be invalid");
+    }
 }

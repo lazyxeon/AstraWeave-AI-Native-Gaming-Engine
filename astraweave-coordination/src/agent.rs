@@ -606,4 +606,194 @@ mod tests {
         assert!(value.is_some());
         assert_eq!(value.unwrap(), serde_json::json!("test_value"));
     }
+
+    // =================================================================
+    // Mutation-killing tests
+    // =================================================================
+
+    #[tokio::test]
+    async fn mutation_add_task_sorts_and_persists() {
+        // Targets: agent.rs L293 add_task → (), L306 get_next_task → None
+        let agent = BaseAgent::new("a".into(), vec![]);
+        let t1 = Task::new("low".into(), "low priority".into()).with_priority(0.1);
+        let t2 = Task::new("high".into(), "high priority".into()).with_priority(0.9);
+        let t3 = Task::new("mid".into(), "mid priority".into()).with_priority(0.5);
+
+        agent.add_task(t1).await;
+        agent.add_task(t2).await;
+        agent.add_task(t3).await;
+
+        // Sorted descending [0.9, 0.5, 0.1], pop() returns from end
+        let first = agent.get_next_task().await.unwrap();
+        assert!(
+            (first.priority - 0.1).abs() < f32::EPSILON,
+            "First pop should be lowest priority (0.1), got {}",
+            first.priority
+        );
+        let second = agent.get_next_task().await.unwrap();
+        assert!(
+            (second.priority - 0.5).abs() < f32::EPSILON,
+            "Second pop should be mid priority (0.5), got {}",
+            second.priority
+        );
+        let third = agent.get_next_task().await.unwrap();
+        assert!(
+            (third.priority - 0.9).abs() < f32::EPSILON,
+            "Third pop should be highest priority (0.9), got {}",
+            third.priority
+        );
+        assert!(
+            agent.get_next_task().await.is_none(),
+            "Queue should be empty after all tasks popped"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_leave_coordination_removes_only_self() {
+        // Targets: agent.rs L385 leave_coordination → Ok(()), L387 != → ==
+        let mut agent1 = BaseAgent::new("type1".into(), vec![]);
+        let mut agent2 = BaseAgent::new("type2".into(), vec![]);
+        let id1 = agent1.id.clone();
+        let id2 = agent2.id.clone();
+
+        let ctx = Arc::new(RwLock::new(CoordinationContext {
+            session_id: "s1".into(),
+            participants: Vec::new(),
+            shared_state: HashMap::new(),
+            coordination_goals: Vec::new(),
+            start_time: Utc::now(),
+            last_update: Utc::now(),
+            status: CoordinationStatus::Planning,
+        }));
+
+        agent1.join_coordination(ctx.clone()).await.unwrap();
+        agent2.join_coordination(ctx.clone()).await.unwrap();
+
+        {
+            let c = ctx.read().await;
+            assert!(c.participants.contains(&id1));
+            assert!(c.participants.contains(&id2));
+        }
+
+        agent1.leave_coordination().await.unwrap();
+
+        {
+            let c = ctx.read().await;
+            assert!(
+                !c.participants.contains(&id1),
+                "Agent1 should be removed after leaving"
+            );
+            assert!(
+                c.participants.contains(&id2),
+                "Agent2 should still be present"
+            );
+        }
+        assert!(
+            agent1.coordination_context.is_none(),
+            "coordination_context should be None after leaving"
+        );
+    }
+
+    #[test]
+    fn mutation_is_satisfied_maintain_boundary() {
+        // Targets: agent.rs L446 < → <= in is_satisfied (Maintain branch)
+        let mut goal = AgentGoal::new("maintain".into(), GoalType::Maintain, 0.5);
+        goal.target_value = Some(0.0);
+
+        // Exactly 0.1 difference — should NOT be satisfied (0.1 < 0.1 = false)
+        // Use target=0.0, current=0.1 for exact f32 representation
+        goal.current_value = 0.1;
+        assert!(
+            !goal.is_satisfied(),
+            "Exactly 0.1 difference should NOT satisfy Maintain (kills < vs <=)"
+        );
+
+        // Slightly within threshold
+        goal.current_value = 0.09;
+        assert!(goal.is_satisfied(), "0.09 difference should satisfy Maintain");
+
+        // Maintain with None target → false
+        let mut goal2 = AgentGoal::new("m".into(), GoalType::Maintain, 0.5);
+        goal2.target_value = None;
+        assert!(!goal2.is_satisfied(), "Maintain with no target should be false");
+
+        // Achieve boundary: current == target → satisfied (kills >= vs >)
+        let mut achieve = AgentGoal::new("a".into(), GoalType::Achieve, 0.5);
+        achieve.target_value = Some(5.0);
+        achieve.current_value = 5.0;
+        assert!(
+            achieve.is_satisfied(),
+            "Achieve at exact target should be satisfied"
+        );
+    }
+
+    #[test]
+    fn mutation_is_satisfied_avoid_and_explore() {
+        // Targets: multiple is_satisfied branches
+        // Avoid: satisfied when current_value == 0.0
+        let mut avoid = AgentGoal::new("avoid".into(), GoalType::Avoid, 0.5);
+        avoid.current_value = 0.0;
+        assert!(avoid.is_satisfied(), "Avoid with 0.0 should be satisfied");
+        avoid.current_value = 0.001;
+        assert!(!avoid.is_satisfied(), "Avoid with non-zero should NOT be satisfied");
+
+        // Explore: satisfied when status == Completed
+        let mut explore = AgentGoal::new("explore".into(), GoalType::Explore, 0.5);
+        explore.status = GoalStatus::Active;
+        assert!(!explore.is_satisfied(), "Active Explore should NOT be satisfied");
+        explore.status = GoalStatus::Completed;
+        assert!(explore.is_satisfied(), "Completed Explore should be satisfied");
+
+        // Collaborate: same as Explore
+        let mut collab = AgentGoal::new("collab".into(), GoalType::Collaborate, 0.5);
+        collab.status = GoalStatus::Active;
+        assert!(!collab.is_satisfied());
+        collab.status = GoalStatus::Completed;
+        assert!(collab.is_satisfied());
+    }
+
+    #[test]
+    fn mutation_goal_overdue_branches() {
+        // Targets: agent.rs L470 > → >= in is_overdue
+        // Past deadline + Active → true
+        let mut goal = AgentGoal::new("g".into(), GoalType::Achieve, 0.5);
+        goal.deadline = Some(Utc::now() - chrono::Duration::hours(1));
+        goal.status = GoalStatus::Active;
+        assert!(goal.is_overdue(), "Past deadline + Active should be overdue");
+
+        // Past deadline + Completed → false (kills != → ==)
+        goal.status = GoalStatus::Completed;
+        assert!(
+            !goal.is_overdue(),
+            "Completed goal with past deadline should NOT be overdue"
+        );
+
+        // Future deadline + Active → false
+        let mut goal2 = AgentGoal::new("g2".into(), GoalType::Achieve, 0.5);
+        goal2.deadline = Some(Utc::now() + chrono::Duration::hours(1));
+        goal2.status = GoalStatus::Active;
+        assert!(!goal2.is_overdue(), "Future deadline should NOT be overdue");
+
+        // No deadline → false
+        let goal3 = AgentGoal::new("g3".into(), GoalType::Achieve, 0.5);
+        assert!(!goal3.is_overdue(), "No deadline should NOT be overdue");
+    }
+
+    #[test]
+    fn mutation_task_overdue_branches() {
+        // Targets: agent.rs L514 > → >= in Task::is_overdue
+        // Past deadline → true
+        let mut task = Task::new("t".into(), "d".into());
+        task.deadline = Some(Utc::now() - chrono::Duration::hours(1));
+        assert!(task.is_overdue(), "Past deadline should be overdue");
+
+        // Future deadline → false
+        let mut task2 = Task::new("t2".into(), "d".into());
+        task2.deadline = Some(Utc::now() + chrono::Duration::hours(1));
+        assert!(!task2.is_overdue(), "Future deadline should NOT be overdue");
+
+        // No deadline → false
+        let task3 = Task::new("t3".into(), "d".into());
+        assert!(!task3.is_overdue(), "No deadline should NOT be overdue");
+    }
 }

@@ -2004,6 +2004,27 @@ mod tests {
     }
 
     #[test]
+    fn mutation_bake_filters_degenerate_triangles() {
+        // Targets: lib.rs:438 replace < with == in NavMesh::bake
+        //
+        // Degenerate (collinear) triangle has zero normal -> length_squared = 0.0
+        // With <: 0.0 < 1e-6 = true -> filtered (correct)
+        // With ==: 0.0 == 1e-6 = false -> NOT filtered, leaks through
+        let degenerate = Triangle::new(
+            Vec3::ZERO,
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(2.0, 0.0, 0.0),
+        );
+        // Use max_slope > 90 so the only filter is the degenerate check
+        let nav = NavMesh::bake(&[degenerate], 0.5, 91.0);
+        assert_eq!(
+            nav.triangle_count(),
+            0,
+            "Degenerate triangle must be filtered in bake"
+        );
+    }
+
+    #[test]
     fn mutation_navtri_area_uses_cross_product_correctly() {
         // Targets: lib.rs:197 replace - with + in NavTri::area
         // Winding must produce upward (+Y) normal for bake to accept

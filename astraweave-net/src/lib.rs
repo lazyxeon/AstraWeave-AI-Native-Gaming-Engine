@@ -257,6 +257,8 @@ fn subset_hash(ents: &[EntityState]) -> u64 {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod mutation_tests;
 
 fn world_to_entities(w: &World) -> Vec<EntityState> {
     // Stable by sorting by id

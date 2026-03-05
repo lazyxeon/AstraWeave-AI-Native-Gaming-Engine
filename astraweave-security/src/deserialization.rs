@@ -303,4 +303,66 @@ mod tests {
         assert_eq!(n, 1);
         assert_eq!(&buf[..n], b"c");
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MUTATION REMEDIATION TESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    #[test]
+    fn mutation_toml_size_at_exact_boundary_passes() {
+        // Targets: deserialization.rs:58 replace > with >= in parse_toml_limited
+        // With >: a file of exactly MAX_TOML_BYTES is NOT too large (passes)
+        // With >=: a file of exactly MAX_TOML_BYTES IS too large (rejected)
+        let mut file = NamedTempFile::new().unwrap();
+        // Write exactly MAX_TOML_BYTES of valid TOML content
+        // Pad with TOML comments to reach exact size
+        let header = b"x = 42\n";
+        file.write_all(header).unwrap();
+        let remaining = MAX_TOML_BYTES as usize - header.len();
+        // Fill with comment characters (valid TOML)
+        let padding = vec![b'#'; remaining];
+        file.write_all(&padding).unwrap();
+        file.flush().unwrap();
+
+        // Verify file is exact size
+        let meta = std::fs::metadata(file.path()).unwrap();
+        assert_eq!(meta.len(), MAX_TOML_BYTES);
+
+        // With > : passes size check, proceeds to parsing
+        // With >= : rejects with "TOML file too large"
+        let result: Result<TestData> = parse_toml_limited(file.path());
+        // Should NOT contain "too large" error (size check passes)
+        if let Err(e) = &result {
+            assert!(
+                !format!("{}", e).contains("too large"),
+                "File at exact MAX size must pass size check, got: {}",
+                e
+            );
+        }
+    }
+
+    #[test]
+    fn mutation_ron_size_at_exact_boundary_passes() {
+        // Targets: deserialization.rs:74 replace > with >= in parse_ron_limited
+        let mut file = NamedTempFile::new().unwrap();
+        // Write exactly MAX_RON_BYTES of content
+        let header = b"(x: 42)\n";
+        file.write_all(header).unwrap();
+        let remaining = MAX_RON_BYTES as usize - header.len();
+        let padding = vec![b' '; remaining];
+        file.write_all(&padding).unwrap();
+        file.flush().unwrap();
+
+        let meta = std::fs::metadata(file.path()).unwrap();
+        assert_eq!(meta.len(), MAX_RON_BYTES);
+
+        let result: Result<TestData> = parse_ron_limited(file.path());
+        if let Err(e) = &result {
+            assert!(
+                !format!("{}", e).contains("too large"),
+                "File at exact MAX size must pass size check, got: {}",
+                e
+            );
+        }
+    }
 }
