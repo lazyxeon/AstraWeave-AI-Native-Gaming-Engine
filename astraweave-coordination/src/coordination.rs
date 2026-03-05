@@ -1448,4 +1448,671 @@ mod tests {
         let metrics = coordinator.get_metrics().await;
         assert_eq!(metrics.coordination_sessions, 1);
     }
+
+    // =================================================================
+    // Mutation-killing tests
+    // =================================================================
+
+    #[tokio::test]
+    async fn mutation_send_message_success_metrics() {
+        // Targets: L254 send_message → Ok(()), L257 delete !, L265 +=, L273 +=
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let agent = TestAgent {
+            base: BaseAgent::new("recv".into(), vec![]),
+        };
+        let agent_id = agent.agent_id().to_string();
+        coordinator.register_agent(Box::new(agent)).await.unwrap();
+
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "sender".into(),
+            to: agent_id,
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        coordinator.send_message(msg).await.unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(metrics.messages_sent, 1, "messages_sent should be 1");
+        assert_eq!(
+            metrics.messages_delivered, 1,
+            "messages_delivered should be 1"
+        );
+        assert_eq!(metrics.messages_failed, 0);
+    }
+
+    #[tokio::test]
+    async fn mutation_send_message_blocked_no_metrics() {
+        // Targets: L257 delete ! (inverts routing check)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        {
+            let mut rules = coordinator.message_router.routing_rules.write().await;
+            rules.push(RoutingRule {
+                id: "block-all".into(),
+                from_pattern: Some("blocked".into()),
+                to_pattern: None,
+                message_type: None,
+                action: RoutingAction::Block,
+                priority: 1,
+            });
+        }
+
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "blocked-agent".into(),
+            to: "target".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        coordinator.send_message(msg).await.unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(
+            metrics.messages_sent, 0,
+            "Blocked message should not increment sent"
+        );
+        assert_eq!(metrics.messages_delivered, 0);
+    }
+
+    #[tokio::test]
+    async fn mutation_send_message_failure_metrics() {
+        // Targets: L279 += (messages_failed increment)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        // Don't register any agent — sending to "nonexistent" should fail
+
+        let msg = AgentMessage {
+            id: "m-1".into(),
+            from: "sender".into(),
+            to: "nonexistent".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+
+        let result = coordinator.send_message(msg).await;
+        assert!(result.is_err(), "Should fail for nonexistent agent");
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(
+            metrics.messages_sent, 1,
+            "messages_sent incremented before delivery"
+        );
+        assert_eq!(
+            metrics.messages_failed, 1,
+            "messages_failed should be 1 after failure"
+        );
+        assert_eq!(metrics.messages_delivered, 0);
+    }
+
+    #[tokio::test]
+    async fn mutation_assign_task_increments_metrics() {
+        // Targets: L335 += → *= in assign_task (tasks_assigned)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let agent = TestAgent {
+            base: BaseAgent::new("a".into(), vec![]),
+        };
+        coordinator.register_agent(Box::new(agent)).await.unwrap();
+
+        let task = Task::new("t".into(), "d".into());
+        coordinator.assign_task(task).await.unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(
+            metrics.tasks_assigned, 1,
+            "tasks_assigned should be 1 after one assignment"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_select_best_priority_lowest_load() {
+        // Targets: L518 < → ==, < → > in select_best_agent (Priority)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig {
+            resource_strategy: ResourceStrategy::Priority,
+            ..Default::default()
+        });
+
+        // Busy agent (3 active tasks)
+        let mut base_busy = BaseAgent::new("busy".into(), vec![]);
+        base_busy.resource_usage.active_tasks = 3;
+        let busy_id = base_busy.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base: base_busy }))
+            .await
+            .unwrap();
+
+        // Idle agent (0 active tasks)
+        let base_idle = BaseAgent::new("idle".into(), vec![]);
+        let idle_id = base_idle.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base: base_idle }))
+            .await
+            .unwrap();
+
+        // Call select_best_agent directly with busy FIRST in candidates
+        let candidates = vec![busy_id.clone(), idle_id.clone()];
+        let task = Task::new("t".into(), "d".into());
+        let selected = coordinator
+            .select_best_agent(&candidates, &task)
+            .await
+            .unwrap();
+        assert_eq!(
+            selected, idle_id,
+            "Priority strategy should select agent with lowest load"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_select_best_load_balance() {
+        // Targets: L529 % → / and % → + in select_best_agent (LoadBalance)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig {
+            resource_strategy: ResourceStrategy::LoadBalance,
+            ..Default::default()
+        });
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.agent_id().to_string();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        let a2 = TestAgent {
+            base: BaseAgent::new("a2".into(), vec![]),
+        };
+        let a2_id = a2.agent_id().to_string();
+        coordinator.register_agent(Box::new(a2)).await.unwrap();
+
+        // LoadBalance: index = task.id.len() % candidates.len()
+        // UUID is 36 chars, 36 % 2 = 0 → candidates[0]
+        // With % → /: 36 / 2 = 18 → out of bounds (panic)
+        // With % → +: 36 + 2 = 38 → out of bounds (panic)
+        let candidates = vec![a1_id.clone(), a2_id.clone()];
+        let task = Task::new("t".into(), "d".into());
+        let selected = coordinator
+            .select_best_agent(&candidates, &task)
+            .await
+            .unwrap();
+        assert!(
+            selected == a1_id || selected == a2_id,
+            "LoadBalance should return a valid candidate"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_select_best_adaptive_lowest_load() {
+        // Targets: L543 < → ==, < → > in select_best_agent (Adaptive)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig {
+            resource_strategy: ResourceStrategy::Adaptive,
+            ..Default::default()
+        });
+
+        let mut base_busy = BaseAgent::new("busy".into(), vec![]);
+        base_busy.resource_usage.active_tasks = 3;
+        let busy_id = base_busy.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base: base_busy }))
+            .await
+            .unwrap();
+
+        let base_idle = BaseAgent::new("idle".into(), vec![]);
+        let idle_id = base_idle.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base: base_idle }))
+            .await
+            .unwrap();
+
+        let candidates = vec![busy_id.clone(), idle_id.clone()];
+        let task = Task::new("t".into(), "d".into());
+        let selected = coordinator
+            .select_best_agent(&candidates, &task)
+            .await
+            .unwrap();
+        assert_eq!(
+            selected, idle_id,
+            "Adaptive strategy should select agent with lowest load"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_find_suitable_rejects_unavailable() {
+        // Targets: L487 && → || in find_suitable_agents
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        // Agent with 5+ active tasks (unavailable: is_available = false)
+        let mut base = BaseAgent::new("type".into(), vec![]);
+        base.resource_usage.active_tasks = 5;
+        coordinator
+            .register_agent(Box::new(TestAgent { base }))
+            .await
+            .unwrap();
+
+        let task = Task::new("t".into(), "d".into());
+        let result = coordinator.assign_task(task).await;
+        // With &&: can_handle(true) && available(false) = false → no suitable → Err
+        // With ||: can_handle(true) || available(false) = true → would select agent
+        assert!(
+            result.is_err(),
+            "Should fail when only agent is unavailable"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_unregister_cleans_sessions() {
+        // Targets: L558 remove_agent_from_sessions → (), L562 != → ==
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.agent_id().to_string();
+        let a2 = TestAgent {
+            base: BaseAgent::new("a2".into(), vec![]),
+        };
+        let a2_id = a2.agent_id().to_string();
+
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+        coordinator.register_agent(Box::new(a2)).await.unwrap();
+
+        let session_id = coordinator
+            .start_coordination(vec![a1_id.clone(), a2_id.clone()], vec![])
+            .await
+            .unwrap();
+
+        // Unregister a1 — should remove from session
+        coordinator.unregister_agent(&a1_id).await.unwrap();
+
+        let sessions = coordinator.coordination_sessions.read().await;
+        let ctx = sessions[&session_id].read().await;
+        assert!(
+            !ctx.participants.contains(&a1_id),
+            "Unregistered agent should be removed from session"
+        );
+        assert!(
+            ctx.participants.contains(&a2_id),
+            "Other agent should remain in session"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_cleanup_expired_sessions_works() {
+        // Targets: L593 cleanup → (), L601 < → ==, < → >
+        let config = CoordinatorConfig {
+            max_coordination_duration: Duration::from_millis(1),
+            ..Default::default()
+        };
+        let coordinator = AgentCoordinator::new(config);
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.agent_id().to_string();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        let session_id = coordinator
+            .start_coordination(vec![a1_id.clone()], vec![])
+            .await
+            .unwrap();
+
+        // Wait for session to expire
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        // Create a second fresh session AFTER sleep (not expired)
+        // We need a new config with longer duration for this to work,
+        // but the coordinator already has short duration. Instead, verify
+        // both paths: expired removed AND that fresh sessions aren't wrongly removed.
+        // The fresh session's start_time is NOW, so duration ≈ 0ms < 1ms → kept.
+        let a2 = TestAgent {
+            base: BaseAgent::new("a2".into(), vec![]),
+        };
+        let a2_id = a2.agent_id().to_string();
+        coordinator.register_agent(Box::new(a2)).await.unwrap();
+        let fresh_session_id = coordinator
+            .start_coordination(vec![a2_id], vec![])
+            .await
+            .unwrap();
+
+        // Trigger cleanup via update
+        coordinator.update().await.unwrap();
+
+        let sessions = coordinator.coordination_sessions.read().await;
+        assert!(
+            !sessions.contains_key(&session_id),
+            "Expired session should be cleaned up"
+        );
+        // With < → ==: duration(0ms) == max(1ms) is false → keep=false → wrongly removed
+        // With <: duration(0ms) < max(1ms) is true → keep=true → correctly retained
+        assert!(
+            sessions.contains_key(&fresh_session_id),
+            "Fresh session should NOT be cleaned up (kills < → ==)"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_update_metrics_availability_and_utilization() {
+        // Targets: L614 update_metrics → (), L631 * → + and * → /,
+        //          L632 > → ==, > → <, L633 / → % and / → *
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        // Agent with 2 active tasks (still available: < 5)
+        let mut base = BaseAgent::new("loaded".into(), vec![]);
+        base.resource_usage.active_tasks = 2;
+        let loaded_id = base.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base }))
+            .await
+            .unwrap();
+
+        // Another agent with 0 active tasks
+        let base2 = BaseAgent::new("idle".into(), vec![]);
+        let idle_id = base2.id.clone();
+        coordinator
+            .register_agent(Box::new(TestAgent { base: base2 }))
+            .await
+            .unwrap();
+
+        coordinator.update().await.unwrap();
+        let metrics = coordinator.get_metrics().await;
+
+        // Check availability map populated
+        assert_eq!(
+            metrics.agent_availability.len(),
+            2,
+            "Should have 2 agent availability entries"
+        );
+        assert_eq!(
+            *metrics.agent_availability.get(&loaded_id).unwrap(),
+            1.0,
+            "Loaded agent should be available (active_tasks < 5)"
+        );
+        assert_eq!(
+            *metrics.agent_availability.get(&idle_id).unwrap(),
+            1.0,
+            "Idle agent should be available"
+        );
+
+        // Check utilization: 2 active / (2 agents * 5 max_tasks) = 2/10 = 0.2
+        // With * → +: 2 + 5 = 7, utilization = 2/7 ≈ 0.286
+        // With * → /: 2/5 = 0 (int), > 0 false → 0.0
+        // With / → %: 2.0 % 10.0 = 2.0
+        // With / → *: 2.0 * 10.0 = 20.0
+        assert!(
+            (metrics.resource_utilization - 0.2).abs() < 0.001,
+            "Utilization should be 0.2, got {}",
+            metrics.resource_utilization
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_update_metrics_zero_agents_utilization() {
+        // Targets: L632 > → >= (0 agents: 0 >= 0 = true → 0/0 = NaN)
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        coordinator.update().await.unwrap();
+
+        let metrics = coordinator.get_metrics().await;
+        assert_eq!(
+            metrics.resource_utilization, 0.0,
+            "Should be 0.0 with no agents"
+        );
+        assert!(
+            !metrics.resource_utilization.is_nan(),
+            "Must not be NaN"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_dispatch_event_stores_history() {
+        // Targets: L435 dispatch_event → Ok(())
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+
+        let event = WorldEvent {
+            id: "e-1".into(),
+            event_type: "combat".into(),
+            description: "Battle".into(),
+            location: None,
+            participants: vec![],
+            event_data: serde_json::json!({}),
+            timestamp: Utc::now(),
+            severity: crate::agent::EventSeverity::Major,
+        };
+
+        coordinator.dispatch_event(event).await.unwrap();
+
+        let history = coordinator.event_dispatcher.event_history.read().await;
+        assert_eq!(history.len(), 1, "Event should be stored in history");
+        assert_eq!(history[0].id, "e-1");
+    }
+
+    #[tokio::test]
+    async fn mutation_update_triggers_cleanup_and_metrics() {
+        // Targets: L572 update → Ok(())
+        let config = CoordinatorConfig {
+            max_coordination_duration: Duration::from_millis(1),
+            ..Default::default()
+        };
+        let coordinator = AgentCoordinator::new(config);
+
+        let a1 = TestAgent {
+            base: BaseAgent::new("a1".into(), vec![]),
+        };
+        let a1_id = a1.agent_id().to_string();
+        coordinator.register_agent(Box::new(a1)).await.unwrap();
+
+        let session_id = coordinator
+            .start_coordination(vec![a1_id.clone()], vec![])
+            .await
+            .unwrap();
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        coordinator.update().await.unwrap();
+
+        // Verify cleanup happened (if update was replaced with Ok(()),
+        // cleanup_expired_sessions would not run)
+        let sessions = coordinator.coordination_sessions.read().await;
+        assert!(
+            !sessions.contains_key(&session_id),
+            "Expired session should be cleaned up by update()"
+        );
+        drop(sessions);
+
+        // Verify metrics were updated
+        let metrics = coordinator.get_metrics().await;
+        assert!(
+            metrics.agent_availability.contains_key(&a1_id),
+            "Metrics should contain agent availability after update"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_rule_matches_to_pattern_and_message_type() {
+        // Targets: L725 delete !, L731 != → == in rule_matches
+        let router = MessageRouter::new();
+
+        // Test to_pattern matching
+        let rule_to = RoutingRule {
+            id: "r-to".into(),
+            from_pattern: None,
+            to_pattern: Some("npc".into()),
+            message_type: None,
+            action: RoutingAction::Block,
+            priority: 1,
+        };
+
+        let msg_to_match = AgentMessage {
+            id: "m".into(),
+            from: "player".into(),
+            to: "npc-guard".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        let msg_to_no_match = AgentMessage {
+            id: "m".into(),
+            from: "player".into(),
+            to: "merchant".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+
+        assert!(
+            router.rule_matches(&rule_to, &msg_to_match),
+            "to_pattern 'npc' should match 'npc-guard'"
+        );
+        assert!(
+            !router.rule_matches(&rule_to, &msg_to_no_match),
+            "to_pattern 'npc' should NOT match 'merchant'"
+        );
+
+        // Test message_type matching
+        let rule_type = RoutingRule {
+            id: "r-type".into(),
+            from_pattern: None,
+            to_pattern: None,
+            message_type: Some("Request".into()),
+            action: RoutingAction::Block,
+            priority: 1,
+        };
+
+        let msg_request = AgentMessage {
+            id: "m".into(),
+            from: "a".into(),
+            to: "b".into(),
+            message_type: crate::agent::MessageType::Request,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+        let msg_response = AgentMessage {
+            id: "m".into(),
+            from: "a".into(),
+            to: "b".into(),
+            message_type: crate::agent::MessageType::Response,
+            content: serde_json::json!({}),
+            timestamp: Utc::now(),
+            priority: crate::agent::MessagePriority::Normal,
+            reply_to: None,
+        };
+
+        assert!(
+            router.rule_matches(&rule_type, &msg_request),
+            "Request should match 'Request' type filter"
+        );
+        assert!(
+            !router.rule_matches(&rule_type, &msg_response),
+            "Response should NOT match 'Request' type filter"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_can_allocate_memory_and_used_plus_req() {
+        // Targets: L775 + → * in can_allocate
+        let rm = ResourceManager::new(ResourceLimits::default(), ResourceStrategy::Priority);
+        rm.initialize_allocation("a").await.unwrap();
+
+        // Allocation defaults: llm_calls_allocated = 100, memory_allocated = 819
+
+        // Test memory-only exceeds (kills && → || on the two conditions)
+        let req_mem_over = crate::agent::ResourceRequirements {
+            llm_calls: 50,
+            memory_mb: 900, // exceeds 819
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        assert!(
+            !rm.can_allocate("a", &req_mem_over).await,
+            "Should reject when memory exceeds even if LLM is within limits"
+        );
+
+        // Allocate some resources first to make used > 0
+        let initial = crate::agent::ResourceRequirements {
+            llm_calls: 50,
+            memory_mb: 400,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        rm.allocate_resources("a", &initial).await.unwrap();
+        // Now: llm_calls_used = 50, memory_used = 400
+
+        // Request 40 LLM + 300 memory — within limits with +, NOT with *
+        // + path: 50+40=90 <= 100 ✓, 400+300=700 <= 819 ✓
+        // * path: 50*40=2000 > 100 ✗, 400*300=120000 > 819 ✗
+        let req_ok = crate::agent::ResourceRequirements {
+            llm_calls: 40,
+            memory_mb: 300,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        assert!(
+            rm.can_allocate("a", &req_ok).await,
+            "used(50)+req(40)=90 <= 100 and used(400)+req(300)=700 <= 819 should pass"
+        );
+    }
+
+    #[tokio::test]
+    async fn mutation_event_history_caps_at_1000() {
+        // Targets: L860 > → == and > → >= in EventDispatcher::store_event
+        let ed = EventDispatcher::new();
+        for i in 0..1005 {
+            let event = WorldEvent {
+                id: format!("e-{}", i),
+                event_type: "test".into(),
+                description: "Test".into(),
+                location: None,
+                participants: vec![],
+                event_data: serde_json::json!({}),
+                timestamp: Utc::now(),
+                severity: crate::agent::EventSeverity::Trivial,
+            };
+            ed.store_event(event).await;
+        }
+        let history = ed.event_history.read().await;
+        assert_eq!(history.len(), 1000, "Event history should cap at 1000");
+    }
+
+    #[tokio::test]
+    async fn mutation_update_allocations_preserves_recent() {
+        // Targets: L809 >= → < in update_allocations
+        let coordinator = AgentCoordinator::new(CoordinatorConfig::default());
+        let agent = TestAgent {
+            base: BaseAgent::new("a".into(), vec![]),
+        };
+        let agent_id = agent.agent_id().to_string();
+        coordinator.register_agent(Box::new(agent)).await.unwrap();
+
+        // Allocate some resources
+        let req = crate::agent::ResourceRequirements {
+            llm_calls: 50,
+            memory_mb: 100,
+            compute_units: 0,
+            exclusive_resources: vec![],
+        };
+        coordinator
+            .resource_manager
+            .allocate_resources(&agent_id, &req)
+            .await
+            .unwrap();
+
+        // Call update — should NOT reset because allocation is < 1 min old
+        coordinator.update().await.unwrap();
+
+        let allocs = coordinator.resource_manager.allocations.read().await;
+        assert_eq!(
+            allocs.get(&agent_id).unwrap().llm_calls_used,
+            50,
+            "Recent allocation usage should NOT be reset (kills >= → <)"
+        );
+    }
 }

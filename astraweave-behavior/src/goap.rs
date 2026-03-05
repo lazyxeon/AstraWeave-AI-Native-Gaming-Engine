@@ -589,6 +589,56 @@ mod tests {
     }
 
     #[test]
+    fn mutation_f_cost_sum_with_high_heuristic() {
+        // Targets: goap.rs:161 replace + with - in PlanNode::f_cost
+        //
+        // With g+h: "useful" (f=1+0=1) beats distracts (f=0.1+5=5.1) -> found in ~2 iters
+        // With g-h: distracts (f=0.1-5=-4.9) beat "useful" (f=1-0=1) -> exponential
+        //           distraction blowup exhausts max_iterations before useful is popped
+        let mut actions = vec![
+            GoapAction::new("useful")
+                .with_cost(1.0)
+                .with_effect("g1", true)
+                .with_effect("g2", true)
+                .with_effect("g3", true)
+                .with_effect("g4", true)
+                .with_effect("g5", true),
+        ];
+
+        // 6 distraction actions -- set irrelevant facts, h stays 5
+        for i in 0..6 {
+            actions.push(
+                GoapAction::new(format!("distract_{}", i))
+                    .with_cost(0.1)
+                    .with_effect(&format!("junk_{}", i), true),
+            );
+        }
+
+        let state = WorldState::new();
+        let goal = GoapGoal::new(
+            "achieve_all",
+            WorldState::from_facts(&[
+                ("g1", true),
+                ("g2", true),
+                ("g3", true),
+                ("g4", true),
+                ("g5", true),
+            ]),
+        );
+
+        let planner = GoapPlanner::new().with_max_iterations(15);
+        let plan = planner.plan(&state, &goal, &actions);
+
+        assert!(
+            plan.is_some(),
+            "Planner MUST find plan with correct f_cost = g + h"
+        );
+        let plan = plan.unwrap();
+        assert_eq!(plan.len(), 1, "Should find single-step plan via 'useful'");
+        assert_eq!(plan[0].name, "useful");
+    }
+
+    #[test]
     fn mutation_plan_node_eq_checks_state() {
         // Targets: goap.rs:167 replace eq -> bool with true/false
         // and goap.rs:167 replace == with !=

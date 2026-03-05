@@ -210,3 +210,10 @@ content/**/.autosave/
 # Networking persistence databases
 aw_net_server_db/
 mutants.out/
+
+# Temporary scan/mutation output files
+scripting_scan*.txt
+weave_mutation_results.txt
+
+# Proptest regression files
+*.proptest-regressions
