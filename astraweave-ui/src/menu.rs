@@ -488,14 +488,16 @@ mod tests {
     fn test_menu_manager_apply_settings() {
         let mut manager = MenuManager::new();
 
-        // Modify settings
-        manager.settings.audio.master_volume = 50.0;
+        // Use a value guaranteed different from whatever was loaded
+        let orig = manager.settings.audio.master_volume;
+        let different_vol = if (orig - 42.0).abs() < 0.01 { 73.0 } else { 42.0 };
+        manager.settings.audio.master_volume = different_vol;
         assert!(manager.settings_modified());
 
         // Apply (saves and updates original)
         manager.apply_settings();
         assert!(!manager.settings_modified());
-        assert_eq!(manager.settings_original.audio.master_volume, 50.0);
+        assert_eq!(manager.settings_original.audio.master_volume, different_vol);
     }
 
     #[test]
