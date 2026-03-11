@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AstraWeave | AI-Native Game Engine</title>
+    <meta name="description" content="AstraWeave is a Rust-based AI-native game engine built for deterministic simulation, tool-validated intelligent agents, and evidence-backed performance.">
+    <link rel="stylesheet" href="assets/landing.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <div class="container">
+                <a class="brand" href="#top" aria-label="AstraWeave home">
+                    <span class="brand-mark" aria-hidden="true"></span>
+                    <span>AstraWeave</span>
+                </a>
+                <nav class="nav-links" aria-label="Primary">
+                    <a href="#proof">Proof</a>
+                    <a href="#systems">Systems</a>
+                    <a href="#audiences">Use Cases</a>
+                    <a href="architecture.html">Architecture</a>
+                    <a href="benchmarks.html">Benchmarks</a>
+                    <a class="nav-cta" href="setup.html">Get Started</a>
+                </nav>
+            </div>
+        </header>
+
+        <main id="top">
+            <section class="hero">
+                <div class="container hero-grid">
+                    <div class="hero-copy">
+                        <span class="eyebrow">AI-native engine design</span>
+                        <h1>Build worlds where intelligent agents are a core system, not an afterthought.</h1>
+                        <p>
+                            AstraWeave is a Rust game engine for teams that need deterministic simulation,
+                            tool-validated AI behavior, and evidence-backed performance. Its core loop is built
+                            around perception, planning, validation, and action, so large-scale agent reasoning can
+                            sit inside the engine instead of fighting against it.
+                        </p>
+                        <div class="hero-actions">
+                            <a class="button" href="architecture.html">Explore the architecture</a>
+                            <a class="button-secondary" href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine">View the repository</a>
+                        </div>
+                        <p class="hero-note">
+                            Production-ready core systems, desktop-first workflows, extensive examples, and a verification posture built around tests, Miri, Kani, and replay determinism.
+                        </p>
+                    </div>
+
+                    <div class="hero-visual">
+                        <div class="hero-frame">
+                            <div class="hero-image-wrap">
+                                <img class="hero-image" src="assets/Astraweave_logo.jpg" alt="AstraWeave nebula logomark hero image">
+                            </div>
+                            <div class="hero-caption">
+                                <strong>The AstraWeave identity</strong>
+                                <span>
+                                    The landing page centers the AstraWeave mark as the visual anchor, then carries the rest of the experience with verified metrics, system depth, and direct paths into docs, benchmarks, and setup.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container">
+                    <div class="proof-strip" aria-label="Key proof points">
+                        <article class="proof-tile">
+                            <strong>12,700+</strong>
+                            <span>validated agents at 60 FPS on modest consumer hardware</span>
+                        </article>
+                        <article class="proof-tile">
+                            <strong>39,000+</strong>
+                            <span>workspace tests across 128 packages</span>
+                        </article>
+                        <article class="proof-tile">
+                            <strong>977</strong>
+                            <span>Miri tests with zero undefined behavior</span>
+                        </article>
+                        <article class="proof-tile">
+                            <strong>2.70 ms</strong>
+                            <span>frame time at 1,000 entities in the current benchmark baseline</span>
+                        </article>
+                        <article class="proof-tile">
+                            <strong>71+</strong>
+                            <span>Kani proof harnesses across safety-critical crates</span>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="proof">
+                <div class="container">
+                    <div class="section-heading">
+                        <span class="eyebrow">Why AstraWeave</span>
+                        <h2>Three things this engine can defend with evidence.</h2>
+                        <p>
+                            The strongest case for AstraWeave is not visual polish alone. It is the combination of AI-native architecture, deterministic simulation, and measurable engineering rigor across the stack.
+                        </p>
+                    </div>
+
+                    <div class="three-up">
+                        <article class="section-card">
+                            <span class="card-kicker">AI-first architecture</span>
+                            <h3>Perception to action is part of the engine contract.</h3>
+                            <p>
+                                AstraWeave treats agent reasoning as a first-class runtime concern. World snapshots, plan intents, tool validation, behavior trees, GOAP, utility logic, and LLM-backed planning all plug into a deterministic loop rather than living in disconnected gameplay scripts.
+                            </p>
+                        </article>
+
+                        <article class="section-card">
+                            <span class="card-kicker">Deterministic and safe</span>
+                            <h3>Built for replay validation, anti-cheat integrity, and reproducibility.</h3>
+                            <p>
+                                The engine emphasizes bit-identical replay, validator-gated actions, and memory-safety verification. Core unsafe code paths have already been exercised under Miri, with Kani proofs backing critical invariants in the ECS, math, core, and SDK layers.
+                            </p>
+                        </article>
+
+                        <article class="section-card">
+                            <span class="card-kicker">Benchmarked subsystems</span>
+                            <h3>Performance claims connect back to current benchmark reports.</h3>
+                            <p>
+                                ECS world creation, character movement, simulation tick costs, rendering frame time, SIMD math throughput, and high-agent AI validation are all documented with specific measurements instead of broad claims about being fast or scalable.
+                            </p>
+                        </article>
+                    </div>
+
+                    <div class="architecture-band">
+                        <div class="section-heading">
+                            <span class="eyebrow">Engine loop</span>
+                            <h2>Perception, reasoning, planning, validation, action.</h2>
+                            <p>
+                                The engine's differentiator is structural. Agents observe the world, generate plans, validate each available tool or action, and only then mutate simulation state.
+                            </p>
+                        </div>
+                        <div class="architecture-flow">
+                            <div class="architecture-node">
+                                <strong>Perception</strong>
+                                <span>World snapshots built from deterministic ECS state and environment context.</span>
+                            </div>
+                            <div class="architecture-node">
+                                <strong>Reasoning</strong>
+                                <span>Behavior trees, utility systems, GOAP, or LLM-backed logic interpret the current state.</span>
+                            </div>
+                            <div class="architecture-node">
+                                <strong>Planning</strong>
+                                <span>Plan intents and action sequences are assembled with explicit costs, priorities, and fallbacks.</span>
+                            </div>
+                            <div class="architecture-node">
+                                <strong>Validation</strong>
+                                <span>Cooldowns, LOS, pathing, and sandbox rules constrain what the engine will actually execute.</span>
+                            </div>
+                            <div class="architecture-node">
+                                <strong>Action</strong>
+                                <span>Approved commands flow back into simulation, physics, audio, rendering, and UI systems.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="systems">
+                <div class="container">
+                    <div class="section-heading">
+                        <span class="eyebrow">What ships today</span>
+                        <h2>A focused stack for intelligent, simulation-heavy games.</h2>
+                        <p>
+                            AstraWeave is strongest when the game depends on believable NPCs, systemic simulation, deterministic networking, and a codebase that can stand up to inspection.
+                        </p>
+                    </div>
+
+                    <div class="subsystem-grid">
+                        <article class="subsystem-card">
+                            <span class="card-kicker">AI orchestration</span>
+                            <h3>Six validated modes plus hybrid arbiters.</h3>
+                            <p>
+                                Classical planners, behavior trees, utility logic, LLM orchestration, ensemble patterns, and hybrid arbiters let teams mix fast deterministic control with richer strategic reasoning.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="ai.html">AI systems</a>
+                                <a class="chip-link" href="architecture.html">Architecture</a>
+                            </div>
+                        </article>
+
+                        <article class="subsystem-card">
+                            <span class="card-kicker">Deterministic ECS</span>
+                            <h3>Ordered simulation for replay, tooling, and scale.</h3>
+                            <p>
+                                Archetype storage, system staging, entity iteration guarantees, and event channels form a reproducible simulation backbone designed for agent-heavy worlds.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="ecs.html">ECS details</a>
+                                <a class="chip-link" href="sdk.html">SDK</a>
+                            </div>
+                        </article>
+
+                        <article class="subsystem-card">
+                            <span class="card-kicker">Rendering</span>
+                            <h3>wgpu-based rendering tuned for real engine workloads.</h3>
+                            <p>
+                                PBR materials, clustered lighting, GPU skinning, post-processing, LOD tooling, and rendering benchmarks make the visual stack credible for actual game prototypes and showcases.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="rendering.html">Rendering</a>
+                                <a class="chip-link" href="benchmarks.html">Benchmarks</a>
+                            </div>
+                        </article>
+
+                        <article class="subsystem-card">
+                            <span class="card-kicker">Physics and movement</span>
+                            <h3>Character control, spatial hashing, fluids, cloth, and more.</h3>
+                            <p>
+                                AstraWeave wraps robust simulation systems around gameplay needs: collision, character motion, destructibles, ragdolls, vehicles, gravity zones, and high-coverage fluid simulation.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="physics.html">Physics</a>
+                                <a class="chip-link" href="benchmarks.html">Validation</a>
+                            </div>
+                        </article>
+
+                        <article class="subsystem-card">
+                            <span class="card-kicker">Navigation and world systems</span>
+                            <h3>Navmesh, terrain, scene streaming, and gameplay layers.</h3>
+                            <p>
+                                Terrain, scene partitioning, procedural generation, navigation meshes, crafting, quests, and dialogue systems give the engine enough surface area to support actual vertical slices.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="navigation.html">Navigation</a>
+                                <a class="chip-link" href="scene.html">Scene</a>
+                                <a class="chip-link" href="gameplay.html">Gameplay</a>
+                            </div>
+                        </article>
+
+                        <article class="subsystem-card">
+                            <span class="card-kicker">Tooling and integration</span>
+                            <h3>Examples, editor work, and a C ABI for embedding.</h3>
+                            <p>
+                                The workspace includes a large example suite, tooling for editor workflows, and a stable C SDK layer for teams that need to embed AstraWeave systems into a broader stack.
+                            </p>
+                            <div class="subsystem-links">
+                                <a class="chip-link" href="crates.html">Crate index</a>
+                                <a class="chip-link" href="setup.html">Development setup</a>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="container proof-layout">
+                    <article class="proof-card">
+                        <span class="card-kicker">Evidence-backed metrics</span>
+                        <h3>Numbers worth putting on a landing page.</h3>
+                        <p>
+                            The right way to present AstraWeave is with the figures the codebase can actually support today.
+                        </p>
+                        <ul class="metric-list">
+                            <li>
+                                <span class="metric-label">Agent capacity at 60 FPS</span>
+                                <span class="metric-value">12,700+</span>
+                            </li>
+                            <li>
+                                <span class="metric-label">AI validation throughput</span>
+                                <span class="metric-value">6.48M checks/sec</span>
+                            </li>
+                            <li>
+                                <span class="metric-label">Frame time at 1,000 entities</span>
+                                <span class="metric-value">2.70 ms</span>
+                            </li>
+                            <li>
+                                <span class="metric-label">ECS world creation</span>
+                                <span class="metric-value">25.8 ns</span>
+                            </li>
+                            <li>
+                                <span class="metric-label">Character move cost</span>
+                                <span class="metric-value">114 ns</span>
+                            </li>
+                            <li>
+                                <span class="metric-label">SIMD batch over 10k entities</span>
+                                <span class="metric-value">9.879 us</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <article class="benchmark-panel">
+                        <span class="card-kicker">Benchmark output</span>
+                        <h3>Current benchmark chart from the gh-pages bundle.</h3>
+                        <p>
+                            Existing benchmark assets stay part of the experience so the landing page routes straight into the performance story instead of hiding it behind prose.
+                        </p>
+                        <img src="graphs/top_series_time.png" alt="AstraWeave benchmark chart for top series time">
+                    </article>
+                </div>
+
+                <div class="container proof-layout" style="margin-top: 1.2rem;">
+                    <article class="proof-card">
+                        <span class="card-kicker">Quality posture</span>
+                        <h3>Verification, testing, and measurement are part of the product story.</h3>
+                        <p>
+                            AstraWeave's coverage numbers are not artificially inflated. Large GPU and async subsystems lower the weighted average, but high-value core crates show very strong line coverage and extensive mutation, Miri, and proof-based validation.
+                        </p>
+                        <ul class="detail-list">
+                            <li>
+                                <span class="detail-label">Weighted line coverage</span>
+                                <span class="detail-value">59.3% across measured crates</span>
+                            </li>
+                            <li>
+                                <span class="detail-label">High-coverage crates</span>
+                                <span class="detail-value">14 crates at 85%+</span>
+                            </li>
+                            <li>
+                                <span class="detail-label">Miri validation</span>
+                                <span class="detail-value">977 tests, 0 UB</span>
+                            </li>
+                            <li>
+                                <span class="detail-label">Kani verification</span>
+                                <span class="detail-value">71+ harnesses</span>
+                            </li>
+                            <li>
+                                <span class="detail-label">Prompt mutation testing</span>
+                                <span class="detail-value">100% adjusted kill rate</span>
+                            </li>
+                            <li>
+                                <span class="detail-label">Desktop targets</span>
+                                <span class="detail-value">Windows, Linux, macOS</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <article class="proof-card">
+                        <span class="card-kicker">Direct routes</span>
+                        <h3>Start from the part of the stack you care about.</h3>
+                        <p>
+                            This homepage is meant to work like a front door, not a dead-end banner. The fastest next step depends on whether you care about architecture, implementation detail, benchmarking, or getting the workspace running.
+                        </p>
+                        <ul class="link-list">
+                            <li>
+                                <span class="detail-label">System design</span>
+                                <a class="metric-value" href="architecture.html">Open architecture overview</a>
+                            </li>
+                            <li>
+                                <span class="detail-label">Performance data</span>
+                                <a class="metric-value" href="benchmarks.html">Open benchmarks</a>
+                            </li>
+                            <li>
+                                <span class="detail-label">Crate-by-crate map</span>
+                                <a class="metric-value" href="crates.html">Browse crate index</a>
+                            </li>
+                            <li>
+                                <span class="detail-label">Build and run</span>
+                                <a class="metric-value" href="setup.html">Read setup guide</a>
+                            </li>
+                            <li>
+                                <span class="detail-label">AI subsystem entry point</span>
+                                <a class="metric-value" href="ai.html">Inspect AI docs</a>
+                            </li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section" id="audiences">
+                <div class="container">
+                    <div class="section-heading">
+                        <span class="eyebrow">Use cases</span>
+                        <h2>Built for teams whose differentiator is intelligence, simulation, and trust.</h2>
+                        <p>
+                            AstraWeave is not trying to be every engine for every project. It is most credible where agent behavior, deterministic systems, and validation-heavy runtime guarantees are central to the product.
+                        </p>
+                    </div>
+
+                    <div class="audience-grid">
+                        <article class="audience-card">
+                            <span class="card-kicker">RPGs and immersive sims</span>
+                            <h3>Companions, directors, and systemic encounters.</h3>
+                            <p>
+                                The engine is well-suited for projects where companions, enemies, or world systems need to observe, plan, and react with more structure than state-machine scripting usually allows.
+                            </p>
+                        </article>
+
+                        <article class="audience-card">
+                            <span class="card-kicker">Server-authoritative multiplayer</span>
+                            <h3>Validation and replayability matter.</h3>
+                            <p>
+                                Deterministic simulation and tool-gated actions make AstraWeave a strong fit for projects that need anti-cheat discipline, reproducibility, or replay validation.
+                            </p>
+                        </article>
+
+                        <article class="audience-card">
+                            <span class="card-kicker">Research and prototyping</span>
+                            <h3>Benchmarkable AI-native architecture.</h3>
+                            <p>
+                                If the point is to test agent scale, planning strategies, orchestration modes, or hybrid AI control under measurable conditions, this workspace already has the right instrumentation story.
+                            </p>
+                        </article>
+
+                        <article class="audience-card">
+                            <span class="card-kicker">Embedded engine teams</span>
+                            <h3>Rust core with a C ABI.</h3>
+                            <p>
+                                The SDK and modular crate structure make it possible to adopt focused subsystems instead of committing to the whole stack at once.
+                            </p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="container">
+                    <div class="cta-band">
+                        <div>
+                            <span class="eyebrow">Next step</span>
+                            <h2>Start with the proof, then go as deep as you need.</h2>
+                            <p>
+                                Read the architecture, inspect the benchmarks, clone the repository, or move straight into setup. The landing page is designed to hand you off quickly instead of trapping you in overview copy.
+                            </p>
+                            <p class="footnote">
+                                Positioning note: AstraWeave is strongest as an AI-native, deterministic, simulation-heavy engine for desktop development today. That is a tighter and more credible story than pretending to be a universal engine replacement.
+                            </p>
+                        </div>
+                        <div class="cta-actions">
+                            <a class="button" href="setup.html">Build the workspace</a>
+                            <a class="button-secondary" href="benchmarks.html">Read benchmark report</a>
+                            <a class="button-secondary" href="crates.html">Browse engine crates</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <span>AstraWeave is a Rust-based AI-native game engine focused on deterministic simulation, intelligent agents, and verification-minded engineering.</span>
+                <span>
+                    <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine">GitHub</a>
+                    &nbsp;|&nbsp;
+                    <a href="setup.html">Setup</a>
+                    &nbsp;|&nbsp;
+                    <a href="architecture.html">Architecture</a>
+                </span>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
