@@ -3073,7 +3073,6 @@ mod player_state_extended_tests {
 // ══════════════════════════════════════════════════════════════════════
 mod dialogue_storm_integration_tests {
     use veilweaver_slice_runtime::game_loop::*;
-    use veilweaver_slice_runtime::storm_choice::*;
     use astraweave_dialogue::toml_loader::load_dialogue_from_toml;
 
     fn storm_dialogue_stabilize() -> astraweave_dialogue::toml_loader::LoadedDialogue {
@@ -4074,5 +4073,144 @@ mod beat_hud_sync_pipeline {
         orch.tick(0.016);
         assert!(!orch.vfx_audio.in_boss_encounter(),
             "BossDefeated should clear boss encounter VFX");
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Module 33: and_or_discriminators — kill && → || mutations
+// ══════════════════════════════════════════════════════════════════════
+mod and_or_discriminators {
+    use veilweaver_slice_runtime::zone_transitions::TriggerAction;
+    use veilweaver_slice_runtime::game_loop::*;
+    use veilweaver_slice_runtime::storm_choice::*;
+    use astraweave_dialogue::toml_loader::load_dialogue_from_toml;
+
+    // ── zone_transitions.rs:84 — is_decision: && → || ──────────────
+
+    #[test]
+    fn is_decision_false_when_category_matches_but_verb_differs() {
+        // category="decision" ✓, verb="close" ≠ "open" ✗
+        // With &&: false (verb mismatch). With ||: true (category match).
+        let action = TriggerAction::parse("decision.close:x");
+        assert!(
+            !action.is_decision(),
+            "decision.close must NOT be is_decision (verb 'close' != 'open')"
+        );
+    }
+
+    #[test]
+    fn is_decision_false_when_verb_matches_but_category_differs() {
+        // category="other" ≠ "decision" ✗, verb="open" ✓
+        // With &&: false (category mismatch). With ||: true (verb match).
+        let action = TriggerAction::parse("other.open:x");
+        assert!(
+            !action.is_decision(),
+            "other.open must NOT be is_decision (category 'other' != 'decision')"
+        );
+    }
+
+    // ── zone_transitions.rs:90 — is_vfx: && → || ──────────────────
+
+    #[test]
+    fn is_vfx_false_when_category_matches_but_verb_differs() {
+        // category="vfx" ✓, verb="stop" ≠ "activate" ✗
+        // With &&: false. With ||: true.
+        let action = TriggerAction::parse("vfx.stop:x");
+        assert!(
+            !action.is_vfx(),
+            "vfx.stop must NOT be is_vfx (verb 'stop' != 'activate')"
+        );
+    }
+
+    #[test]
+    fn is_vfx_false_when_verb_matches_but_category_differs() {
+        // category="other" ≠ "vfx" ✗, verb="activate" ✓
+        // With &&: false. With ||: true.
+        let action = TriggerAction::parse("other.activate:x");
+        assert!(
+            !action.is_vfx(),
+            "other.activate must NOT be is_vfx (category 'other' != 'vfx')"
+        );
+    }
+
+    // ── game_loop.rs:341 — process_dialogues: && → || ─────────────
+
+    #[test]
+    fn neutral_dialogue_choice_does_not_trigger_redirect_after_flush() {
+        // The existing test only ticked ONCE after the choice, so the
+        // deferred_storm_choice was set but never applied. This test ticks
+        // TWICE to flush the deferred choice through step 0 of the next tick.
+        //
+        // Kills: && → || in process_dialogues L341
+        // With ||: storm in DecisionPending → true regardless of text → Redirect
+        let toml = r#"
+id = "neutral"
+start = "n0"
+
+[[nodes]]
+id = "n0"
+line = { speaker = "A", text = "Nothing to do with storms." }
+choices = [{ text = "Continue onward", go_to = "n1" }]
+
+[[nodes]]
+id = "n1"
+line = { speaker = "A", text = "Farewell." }
+end = true
+"#;
+        let loaded = load_dialogue_from_toml(toml).unwrap();
+        let mut gl = GameLoop::new();
+        gl.register_dialogue(loaded);
+        gl.register_trigger_action("entry", "dialogue.play:neutral");
+
+        gl.storm_state.enter_crossroads();
+        assert_eq!(gl.storm_state.phase(), StormPhase::DecisionPending);
+
+        // Start dialogue.
+        gl.notify_trigger_enter(vec!["entry".to_string()]);
+        let _events = gl.tick(0.016);
+
+        // Choose "Continue onward" — no storm keywords.
+        gl.notify_dialogue_choice("neutral", 0);
+        let _events = gl.tick(0.016); // process_dialogues runs here
+        let _events = gl.tick(0.016); // flush deferred (if any) via step 0
+
+        assert!(
+            !gl.storm_state.is_decided(),
+            "Neutral dialogue choice must NOT trigger storm decision"
+        );
+        assert_eq!(
+            gl.storm_state.phase(),
+            StormPhase::DecisionPending,
+            "Storm should remain in DecisionPending after neutral choice"
+        );
+    }
+
+    // ── game_loop.rs:373 — process_cinematics: && → || ────────────
+
+    #[test]
+    fn mid_cinematic_tick_emits_no_finished_event() {
+        // was_playing=true, is_finished=false → no CinematicFinished
+        // Kills: && → || (would emit CinematicFinished when still playing)
+        use astraweave_cinematics::{CameraKey, Time, Timeline};
+        let mut gl = GameLoop::new();
+        let mut tl = Timeline::new("long_cine", 5.0);
+        tl.add_camera_track(vec![
+            CameraKey::new(Time::from_secs(0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 60.0),
+            CameraKey::new(Time::from_secs(5.0), (10.0, 0.0, 0.0), (10.0, 0.0, 1.0), 60.0),
+        ]);
+        gl.cinematics.load("long_cine", tl);
+        gl.cinematics.play("long_cine").unwrap();
+        assert!(gl.is_cinematic_playing(), "Cinematic should be playing");
+
+        // Tick with small dt — cinematic still in progress.
+        let events = gl.tick(0.5);
+        assert!(gl.is_cinematic_playing(), "Cinematic should still be playing mid-way");
+        let has_finished = events.iter().any(|e| {
+            matches!(e, GameLoopEvent::CinematicFinished { .. })
+        });
+        assert!(
+            !has_finished,
+            "CinematicFinished must NOT be emitted while cinematic is still playing"
+        );
     }
 }
