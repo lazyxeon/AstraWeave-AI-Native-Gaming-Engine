@@ -840,7 +840,10 @@ impl RenderMetrics {
 
     /// Returns the success rate as a percentage (0.0 to 1.0).
     pub fn success_rate(&self) -> f32 {
-        1.0 /* ~ changed by cargo-mutants ~ */
+        if self.total_renders == 0 {
+            return 0.0;
+        }
+        self.successful_renders as f32 / self.total_renders as f32
     }
 
     /// Returns the failure rate as a percentage (0.0 to 1.0).
@@ -858,7 +861,7 @@ impl RenderMetrics {
 
     /// Returns true if the cache is effective (>= 70% hit rate).
     pub fn has_effective_cache(&self) -> bool {
-        self.cache_hit_rate >= 0.7
+        self.cache_hit_rate < /* ~ changed by cargo-mutants ~ */ 0.7
     }
 
     /// Returns the average render time category.
