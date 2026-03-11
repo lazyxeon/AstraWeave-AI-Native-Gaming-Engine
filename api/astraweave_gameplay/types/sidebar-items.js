@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DamageType","ResourceKind","WeaveOpKind"],"struct":["DropTableEntry","InventoryEntry","WeaveBudget","WeaveConsequence","WeaveOp"]};

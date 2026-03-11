@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["apply_height_curve","create_island_mask","generate_preview","normalize_heights"]};

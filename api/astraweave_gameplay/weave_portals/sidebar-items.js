@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_portals","string_pull"],"struct":["Portal","PortalGraph"]};

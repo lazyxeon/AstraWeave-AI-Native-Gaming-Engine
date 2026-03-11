@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_SPLAT_LAYERS"],"struct":["SplatConfig","SplatMapGenerator","SplatRule","SplatWeights","TerrainMaterial","TerrainSplatVertex","TriplanarWeights"]};

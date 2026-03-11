@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_AMBIENT_CROSSFADE"],"struct":["BiomeAmbientMap"]};

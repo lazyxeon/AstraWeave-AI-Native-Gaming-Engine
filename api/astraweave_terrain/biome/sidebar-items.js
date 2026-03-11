@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BiomeType","PrecipitationType"],"struct":["Biome","BiomeConditions","BiomeConfig","BiomeSky","BiomeVegetation","ParseBiomeTypeError","VegetationType"]};

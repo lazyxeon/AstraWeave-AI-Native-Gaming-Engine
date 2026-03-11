@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ToolPolicy","ValidationResult"],"struct":["AuditEntry","ToolGuard","ValidationStats"]};

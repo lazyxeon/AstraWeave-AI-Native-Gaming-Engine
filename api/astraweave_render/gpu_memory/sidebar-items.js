@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BudgetEvent","MemoryCategory"],"struct":["CategoryBudget","GpuMemoryBudget"],"type":["BudgetCallback"]};

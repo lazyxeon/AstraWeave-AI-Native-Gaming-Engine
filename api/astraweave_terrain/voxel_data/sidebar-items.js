@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CHUNK_SIZE","MAX_OCTREE_DEPTH"],"struct":["ChunkCoord","Voxel","VoxelChunk","VoxelGrid"],"type":["Density","MaterialId"]};

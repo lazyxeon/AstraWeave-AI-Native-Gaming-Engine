@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["perform_attack_sweep"],"struct":["Combatant","HitResult","IFrame","Parry"]};

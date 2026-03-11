@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["behavior_tick_system"],"struct":["BehaviorPlugin","CBehaviorGraph"]};

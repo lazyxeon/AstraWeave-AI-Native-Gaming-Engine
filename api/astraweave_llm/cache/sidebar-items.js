@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CacheDecision"],"mod":["key","lru","similarity"],"struct":["CacheStats","CachedPlan","PromptCache"]};

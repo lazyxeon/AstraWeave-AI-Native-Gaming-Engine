@@ -1,0 +1,884 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Testing - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        <meta property="og:title" content="Testing - AstraWeave: AI-Native Game Engine Documentation">
+        <meta property="og:description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        <meta property="og:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        <meta property="og:site_name" content="AstraWeave Documentation">
+        <meta property="og:locale" content="en_US">
+        
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Testing - AstraWeave: AI-Native Game Engine Documentation">
+        <meta name="twitter:description" content="The first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="twitter:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        
+        <meta name="description" content="AstraWeave is an AI-native game engine built in Rust featuring deterministic ECS, LLM integration, and production-ready AI companion systems.">
+        <meta name="keywords" content="AstraWeave, game engine, Rust, AI, ECS, LLM, game development, AI companions, Bevy, deterministic simulation">
+        <meta name="author" content="AstraWeave Team">
+        <meta name="robots" content="index, follow">
+        <meta name="googlebot" content="index, follow">
+        <meta name="theme-color" content="#4a90a4">
+        
+        <link rel="canonical" href="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareSourceCode",
+          "name": "AstraWeave",
+          "description": "AI-native game engine built in Rust with deterministic ECS architecture",
+          "programmingLanguage": "Rust",
+          "codeRepository": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine",
+          "license": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE",
+          "author": {
+            "@type": "Organization",
+            "name": "AstraWeave Team"
+          }
+        }
+        </script>
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom-f1706e81.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-9fbab890.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-3c461bbc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/dev/testing.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <span class=fa-svg id="git-edit-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M421.7 220.3l-11.3 11.3-22.6 22.6-205 205c-6.6 6.6-14.8 11.5-23.8 14.1L30.8 511c-8.4 2.5-17.5 .2-23.7-6.1S-1.5 489.7 1 481.2L38.7 353.1c2.6-9 7.5-17.2 14.1-23.8l205-205 22.6-22.6 11.3-11.3 33.9 33.9 62.1 62.1 33.9 33.9zM96 353.9l-9.3 9.3c-.9 .9-1.6 2.1-2 3.4l-25.3 86 86-25.3c1.3-.4 2.5-1.1 3.4-2l9.3-9.3H112c-8.8 0-16-7.2-16-16V353.9zM453.3 19.3l39.4 39.4c25 25 25 65.5 0 90.5l-14.5 14.5-22.6 22.6-11.3 11.3-33.9-33.9-62.1-62.1L314.3 67.7l11.3-11.3 22.6-22.6 14.5-14.5c25-25 65.5-25 90.5 0z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="testing-guide"><a class="header" href="#testing-guide">Testing Guide</a></h1>
+<p>This guide covers testing practices for AstraWeave, including unit tests, integration tests, benchmarks, and coverage analysis.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="#running-tests">Running Tests</a></li>
+<li><a href="#writing-unit-tests">Writing Unit Tests</a></li>
+<li><a href="#integration-tests">Integration Tests</a></li>
+<li><a href="#benchmarks">Benchmarks</a></li>
+<li><a href="#code-coverage">Code Coverage</a></li>
+<li><a href="#testing-best-practices">Testing Best Practices</a></li>
+</ul>
+<h2 id="running-tests"><a class="header" href="#running-tests">Running Tests</a></h2>
+<h3 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h3>
+<pre><code class="language-bash"># Run all tests
+cargo test
+
+# Run tests in release mode (faster for compute-heavy tests)
+cargo test --release
+
+# Run tests for a specific package
+cargo test -p astraweave-ai
+
+# Run tests with all features enabled
+cargo test --all-features
+</code></pre>
+<h3 id="verbose-output"><a class="header" href="#verbose-output">Verbose Output</a></h3>
+<pre><code class="language-bash"># Show println! output from tests
+cargo test -- --nocapture
+
+# Show one test per line
+cargo test -- --test-threads=1 --nocapture
+
+# Run specific test
+cargo test test_emotion_processing -- --exact
+</code></pre>
+<h3 id="filtering-tests"><a class="header" href="#filtering-tests">Filtering Tests</a></h3>
+<pre><code class="language-bash"># Run tests matching a pattern
+cargo test emotion
+
+# Run only unit tests (exclude integration tests)
+cargo test --lib
+
+# Run only integration tests
+cargo test --test '*'
+
+# Run only documentation tests
+cargo test --doc
+</code></pre>
+<pre><code class="language-admonish tip">Use `cargo test --help` and `cargo test -- --help` to see all available options.
+</code></pre>
+<h2 id="writing-unit-tests"><a class="header" href="#writing-unit-tests">Writing Unit Tests</a></h2>
+<h3 id="basic-unit-tests"><a class="header" href="#basic-unit-tests">Basic Unit Tests</a></h3>
+<p>Place unit tests in the same file as the code they test:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn calculate_emotion_decay(initial: f32, decay_rate: f32, dt: f32) -&gt; f32 {
+    initial * (1.0 - decay_rate * dt).max(0.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_emotion_decay_basic() {
+        let result = calculate_emotion_decay(1.0, 0.5, 0.1);
+        assert_eq!(result, 0.95);
+    }
+
+    #[test]
+    fn test_emotion_decay_never_negative() {
+        let result = calculate_emotion_decay(1.0, 2.0, 1.0);
+        assert_eq!(result, 0.0);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="testing-with-floating-point"><a class="header" href="#testing-with-floating-point">Testing with Floating Point</a></h3>
+<p>Use approximate comparisons for floating-point values:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_emotion_blending() {
+    let result = blend_emotions(0.8, 0.6, 0.5);
+    assert!((result - 0.7).abs() &lt; 1e-6, "Expected ~0.7, got {}", result);
+}
+
+// Or use the approx crate
+use approx::assert_relative_eq;
+
+#[test]
+fn test_emotion_blending_approx() {
+    let result = blend_emotions(0.8, 0.6, 0.5);
+    assert_relative_eq!(result, 0.7, epsilon = 1e-6);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="testing-errors"><a class="header" href="#testing-errors">Testing Errors</a></h3>
+<p>Test error conditions explicitly:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_invalid_companion_id() {
+    let world = CompanionWorld::new();
+    let result = world.get_companion(CompanionId(999));
+    assert!(result.is_err());
+    assert!(matches!(result, Err(CompanionError::NotFound(_))));
+}
+
+#[test]
+#[should_panic(expected = "index out of bounds")]
+fn test_panic_on_invalid_index() {
+    let emotions = vec![Emotion::new("joy", 0.8)];
+    let _ = emotions[10]; // Should panic
+}
+<span class="boring">}</span></code></pre>
+<h3 id="testing-with-resources"><a class="header" href="#testing-with-resources">Testing with Resources</a></h3>
+<p>Use setup and teardown for resource management:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn setup_test_config() -&gt; (CompanionConfig, PathBuf) {
+        let temp_dir = std::env::temp_dir().join("astraweave_test");
+        fs::create_dir_all(&amp;temp_dir).unwrap();
+        
+        let config_path = temp_dir.join("config.json");
+        let config = CompanionConfig::default();
+        
+        (config, config_path)
+    }
+
+    fn teardown_test_config(path: &amp;Path) {
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn test_config_save_load() {
+        let (config, path) = setup_test_config();
+        
+        config.save(&amp;path).unwrap();
+        let loaded = CompanionConfig::load(&amp;path).unwrap();
+        
+        assert_eq!(config, loaded);
+        
+        teardown_test_config(&amp;path);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="parameterized-tests"><a class="header" href="#parameterized-tests">Parameterized Tests</a></h3>
+<p>Test multiple cases efficiently:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_emotion_clamping() {
+    let test_cases = vec![
+        (0.5, 0.5),   // Normal case
+        (1.5, 1.0),   // Above max
+        (-0.5, 0.0),  // Below min
+        (0.0, 0.0),   // Edge case: zero
+        (1.0, 1.0),   // Edge case: max
+    ];
+
+    for (input, expected) in test_cases {
+        let result = clamp_emotion(input);
+        assert_eq!(result, expected, "Failed for input {}", input);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="testing-async-code"><a class="header" href="#testing-async-code">Testing Async Code</a></h3>
+<p>For async functions, use <code>tokio::test</code> or similar:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::test;
+
+    #[tokio::test]
+    async fn test_async_companion_update() {
+        let mut companion = Companion::new("TestBot");
+        companion.update_async(0.016).await;
+        assert!(companion.is_initialized());
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_updates() {
+        let companion = Arc::new(Mutex::new(Companion::new("Concurrent")));
+        
+        let handles: Vec&lt;_&gt; = (0..10)
+            .map(|_| {
+                let c = Arc::clone(&amp;companion);
+                tokio::spawn(async move {
+                    c.lock().await.update_async(0.016).await;
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            handle.await.unwrap();
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="integration-tests"><a class="header" href="#integration-tests">Integration Tests</a></h2>
+<h3 id="integration-test-structure"><a class="header" href="#integration-test-structure">Integration Test Structure</a></h3>
+<p>Integration tests live in the <code>tests/</code> directory:</p>
+<pre><code>astraweave-ai/
+├── src/
+│   └── lib.rs
+├── tests/
+│   ├── companion_lifecycle.rs
+│   ├── emotion_integration.rs
+│   └── perception_behavior.rs
+└── Cargo.toml
+</code></pre>
+<h3 id="example-integration-test"><a class="header" href="#example-integration-test">Example Integration Test</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// tests/companion_lifecycle.rs
+use astraweave_ai::*;
+
+#[test]
+fn test_complete_companion_lifecycle() {
+    // Creation
+    let mut companion = CompanionBuilder::new()
+        .with_name("IntegrationBot")
+        .with_perception()
+        .with_emotion()
+        .with_behavior()
+        .build();
+
+    assert!(!companion.is_initialized());
+
+    // Initialization
+    companion.initialize();
+    assert!(companion.is_initialized());
+
+    // Update cycle
+    for _ in 0..100 {
+        companion.update(0.016);
+    }
+
+    // Verify state
+    assert!(companion.get_emotion("joy").is_some());
+    assert!(companion.perception_active());
+
+    // Shutdown
+    companion.shutdown();
+    assert!(!companion.is_active());
+}
+
+#[test]
+fn test_companion_persistence() {
+    let temp_path = std::env::temp_dir().join("companion_save.json");
+
+    // Create and save
+    let original = CompanionBuilder::new()
+        .with_name("Persistent")
+        .build();
+    original.save(&amp;temp_path).unwrap();
+
+    // Load and verify
+    let loaded = Companion::load(&amp;temp_path).unwrap();
+    assert_eq!(original.name(), loaded.name());
+
+    std::fs::remove_file(&amp;temp_path).unwrap();
+}
+<span class="boring">}</span></code></pre>
+<h3 id="integration-test-helpers"><a class="header" href="#integration-test-helpers">Integration Test Helpers</a></h3>
+<p>Create test utilities in <code>tests/common/mod.rs</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// tests/common/mod.rs
+use astraweave_ai::*;
+
+pub fn create_test_companion() -&gt; Companion {
+    CompanionBuilder::new()
+        .with_name("TestCompanion")
+        .with_perception()
+        .with_emotion()
+        .build()
+}
+
+pub fn create_test_world() -&gt; CompanionWorld {
+    let mut world = CompanionWorld::new();
+    for i in 0..5 {
+        world.add_companion(create_test_companion());
+    }
+    world
+}
+
+pub fn assert_emotion_in_range(emotion: &amp;Emotion, min: f32, max: f32) {
+    assert!(
+        emotion.intensity &gt;= min &amp;&amp; emotion.intensity &lt;= max,
+        "Emotion {} out of range [{}, {}]",
+        emotion.intensity,
+        min,
+        max
+    );
+}
+<span class="boring">}</span></code></pre>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// tests/world_simulation.rs
+mod common;
+
+use common::*;
+
+#[test]
+fn test_world_simulation() {
+    let mut world = create_test_world();
+    
+    for _ in 0..100 {
+        world.update(0.016);
+    }
+
+    assert_eq!(world.companion_count(), 5);
+}
+<span class="boring">}</span></code></pre>
+<h2 id="benchmarks"><a class="header" href="#benchmarks">Benchmarks</a></h2>
+<h3 id="setting-up-benchmarks"><a class="header" href="#setting-up-benchmarks">Setting Up Benchmarks</a></h3>
+<p>Benchmarks use the <code>criterion</code> crate. Add to <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "emotion_benchmarks"
+harness = false
+</code></pre>
+<h3 id="writing-benchmarks"><a class="header" href="#writing-benchmarks">Writing Benchmarks</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// benches/emotion_benchmarks.rs
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use astraweave_ai::*;
+
+fn benchmark_emotion_update(c: &amp;mut Criterion) {
+    let mut system = EmotionSystem::new();
+    
+    c.bench_function("emotion_update_single", |b| {
+        b.iter(|| {
+            system.update(black_box(0.016));
+        });
+    });
+}
+
+fn benchmark_emotion_blending(c: &amp;mut Criterion) {
+    let mut group = c.benchmark_group("emotion_blending");
+    
+    for count in [10, 100, 1000] {
+        group.bench_with_input(
+            BenchmarkId::from_parameter(count),
+            &amp;count,
+            |b, &amp;count| {
+                let emotions: Vec&lt;_&gt; = (0..count)
+                    .map(|i| Emotion::new(&amp;format!("emotion_{}", i), 0.5))
+                    .collect();
+                
+                b.iter(|| {
+                    blend_emotion_array(black_box(&amp;emotions))
+                });
+            },
+        );
+    }
+    
+    group.finish();
+}
+
+fn benchmark_companion_update(c: &amp;mut Criterion) {
+    let mut companion = CompanionBuilder::new()
+        .with_perception()
+        .with_emotion()
+        .with_behavior()
+        .build();
+    
+    c.bench_function("companion_full_update", |b| {
+        b.iter(|| {
+            companion.update(black_box(0.016));
+        });
+    });
+}
+
+criterion_group!(
+    benches,
+    benchmark_emotion_update,
+    benchmark_emotion_blending,
+    benchmark_companion_update
+);
+criterion_main!(benches);
+<span class="boring">}</span></code></pre>
+<h3 id="running-benchmarks"><a class="header" href="#running-benchmarks">Running Benchmarks</a></h3>
+<pre><code class="language-bash"># Run all benchmarks
+cargo bench
+
+# Run specific benchmark
+cargo bench emotion_update
+
+# Save baseline for comparison
+cargo bench -- --save-baseline main
+
+# Compare against baseline
+cargo bench -- --baseline main
+
+# Generate detailed reports
+cargo bench -- --verbose
+</code></pre>
+<pre><code class="language-admonish note">Benchmark results are saved in `target/criterion/`. You can view HTML reports by opening `target/criterion/report/index.html`.
+</code></pre>
+<h3 id="benchmark-best-practices"><a class="header" href="#benchmark-best-practices">Benchmark Best Practices</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Use black_box to prevent optimization
+use std::hint::black_box;
+
+c.bench_function("optimized_safe", |b| {
+    b.iter(|| {
+        expensive_function(black_box(input))
+    });
+});
+
+// Good: Separate setup from measurement
+c.bench_function("with_setup", |b| {
+    let data = create_large_dataset();
+    b.iter(|| {
+        process_dataset(black_box(&amp;data))
+    });
+});
+
+// Good: Use iter_batched for setup per iteration
+use criterion::BatchSize;
+
+c.bench_function("setup_per_iter", |b| {
+    b.iter_batched(
+        || create_test_data(),
+        |data| process_data(data),
+        BatchSize::SmallInput,
+    );
+});
+<span class="boring">}</span></code></pre>
+<h2 id="code-coverage"><a class="header" href="#code-coverage">Code Coverage</a></h2>
+<h3 id="installing-coverage-tools"><a class="header" href="#installing-coverage-tools">Installing Coverage Tools</a></h3>
+<pre><code class="language-bash"># Install tarpaulin (Linux only)
+cargo install cargo-tarpaulin
+
+# Or use llvm-cov (cross-platform)
+cargo install cargo-llvm-cov
+</code></pre>
+<h3 id="running-coverage-analysis"><a class="header" href="#running-coverage-analysis">Running Coverage Analysis</a></h3>
+<p><strong>Using tarpaulin</strong> (Linux):</p>
+<pre><code class="language-bash"># Generate coverage report
+cargo tarpaulin --all-features --workspace --timeout 300 --out Html
+
+# View report
+firefox tarpaulin-report.html
+</code></pre>
+<p><strong>Using llvm-cov</strong> (cross-platform):</p>
+<pre><code class="language-bash"># Install llvm-tools
+rustup component add llvm-tools-preview
+
+# Generate coverage
+cargo llvm-cov --all-features --workspace --html
+
+# View report
+open target/llvm-cov/html/index.html
+</code></pre>
+<h3 id="coverage-in-cicd"><a class="header" href="#coverage-in-cicd">Coverage in CI/CD</a></h3>
+<pre><code class="language-yaml"># .github/workflows/coverage.yml
+name: Coverage
+
+on: [push, pull_request]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+      
+      - name: Generate coverage
+        run: cargo tarpaulin --all-features --workspace --timeout 300 --out Xml
+      
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: cobertura.xml
+</code></pre>
+<h3 id="coverage-goals"><a class="header" href="#coverage-goals">Coverage Goals</a></h3>
+<ul>
+<li><strong>Overall</strong>: Aim for &gt;80% code coverage</li>
+<li><strong>Critical paths</strong>: AI logic, physics should be &gt;90%</li>
+<li><strong>Edge cases</strong>: All error paths should be tested</li>
+<li><strong>Public APIs</strong>: 100% coverage of public interfaces</li>
+</ul>
+<pre><code class="language-admonish warning">High coverage doesn't guarantee quality tests. Focus on meaningful test cases, not just hitting lines.
+</code></pre>
+<h2 id="testing-best-practices"><a class="header" href="#testing-best-practices">Testing Best Practices</a></h2>
+<h3 id="test-organization"><a class="header" href="#test-organization">Test Organization</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Group related tests
+    mod emotion_tests {
+        use super::*;
+
+        #[test]
+        fn test_creation() { /* ... */ }
+
+        #[test]
+        fn test_update() { /* ... */ }
+    }
+
+    mod perception_tests {
+        use super::*;
+
+        #[test]
+        fn test_stimulus_detection() { /* ... */ }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="clear-test-names"><a class="header" href="#clear-test-names">Clear Test Names</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Descriptive names
+#[test]
+fn test_emotion_decay_clamps_to_zero() { }
+
+#[test]
+fn test_companion_initialization_fails_without_required_components() { }
+
+// Bad: Unclear names
+#[test]
+fn test1() { }
+
+#[test]
+fn test_emotion() { }
+<span class="boring">}</span></code></pre>
+<h3 id="arrange-act-assert-pattern"><a class="header" href="#arrange-act-assert-pattern">Arrange-Act-Assert Pattern</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_companion_emotion_response() {
+    // Arrange
+    let mut companion = create_test_companion();
+    let stimulus = Stimulus::new(StimulusType::Positive, 0.8);
+
+    // Act
+    companion.process_stimulus(stimulus);
+    companion.update(0.016);
+
+    // Assert
+    let joy = companion.get_emotion("joy").unwrap();
+    assert!(joy.intensity &gt; 0.5);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="test-independence"><a class="header" href="#test-independence">Test Independence</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Each test is independent
+#[test]
+fn test_a() {
+    let mut system = EmotionSystem::new();
+    system.add_emotion("joy", 0.5);
+    assert_eq!(system.emotion_count(), 1);
+}
+
+#[test]
+fn test_b() {
+    let mut system = EmotionSystem::new(); // Fresh instance
+    system.add_emotion("calm", 0.8);
+    assert_eq!(system.emotion_count(), 1);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="documentation-in-tests"><a class="header" href="#documentation-in-tests">Documentation in Tests</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Tests that emotion decay never produces negative values,
+/// even with extreme decay rates or large time deltas.
+#[test]
+fn test_emotion_decay_bounds() {
+    let test_cases = vec![
+        (1.0, 10.0, 1.0),  // Extreme decay
+        (0.5, 1.0, 100.0), // Large time delta
+    ];
+
+    for (initial, rate, dt) in test_cases {
+        let result = calculate_emotion_decay(initial, rate, dt);
+        assert!(result &gt;= 0.0, "Decay produced negative value: {}", result);
+    }
+}
+<span class="boring">}</span></code></pre>
+<pre><code class="language-admonish success">Well-tested code is reliable code. Invest time in comprehensive tests to catch bugs early and enable confident refactoring.
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../dev/building.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../dev/code-style.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../dev/building.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../dev/code-style.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/clipboard-00df53dc.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LoaderStatus","TerrainTask","TerrainTaskResult"],"struct":["BackgroundChunkLoader","ChunkPriority","StreamingConfig","StreamingStats","TerrainRateLimiter"]};

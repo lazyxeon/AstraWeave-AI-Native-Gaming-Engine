@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AssetIndex","AudioPackEntry","HdriRef","IndexMeta","MaterialSetEntry","ModelEntry","TextureEntry"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_BLEND_BIOMES"],"struct":["BiomeBlendConfig","BiomeBlender","BiomeWeight","PackedBiomeBlend"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AdvancedErosionSimulator","ErosionPreset","ErosionStats","HydraulicErosionConfig","ThermalErosionConfig","WindErosionConfig"]};

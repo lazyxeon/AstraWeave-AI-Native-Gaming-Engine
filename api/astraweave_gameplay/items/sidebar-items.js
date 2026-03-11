@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ItemKind","Rarity"],"fn":["infuse","load_echo_defs"],"struct":["EchoMod","EchoModDef","Inventory","Item"],"type":["ItemId"]};

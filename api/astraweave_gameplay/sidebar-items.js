@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["biome","biome_spawn","combat","combat_physics","crafting","cutscenes","dialogue","ecs","harvesting","items","quests","stats","types","veilweaver_slice","veilweaver_tutorial","water_movement","weave_portals","weave_telemetry","weaving"]};

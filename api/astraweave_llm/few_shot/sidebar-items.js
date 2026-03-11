@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["add_few_shot_examples","get_examples"],"struct":["EXAMPLE_REGISTRY","FewShotExample","FewShotRegistry"]};

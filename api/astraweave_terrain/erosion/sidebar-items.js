@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["apply_hydraulic_erosion","apply_thermal_erosion"]};

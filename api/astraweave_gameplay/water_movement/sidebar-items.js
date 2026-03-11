@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WaterMovementMode","WetStatus"],"struct":["WaterForces","WaterMovementHelper","WaterPlayerConfig","WaterPlayerState","WaterSkills","WaterUpdateResult"]};

@@ -1,0 +1,2 @@
+window.ALL_CRATES = ["astraweave_ai","astraweave_behavior","astraweave_core","astraweave_ecs","astraweave_gameplay","astraweave_llm","astraweave_nav","astraweave_physics","astraweave_render","astraweave_terrain"];
+//{"start":21,"fragment_lengths":[15,22,18,17,22,17,17,21,20,21]}

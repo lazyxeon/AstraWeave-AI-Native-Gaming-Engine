@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["TaskKind"],"struct":["Quest","QuestLog","Task"]};

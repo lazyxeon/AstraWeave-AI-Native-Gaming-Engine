@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["DecisionPromptSpec","EffectAnchorSpec","EncounterCompleteSpec","EncounterTriggerSpec","SpawnPointSpec","TriggerZoneSpec","VeilweaverSliceMetadata","WeaveAnchorSpec"]};

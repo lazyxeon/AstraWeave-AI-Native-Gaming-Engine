@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["astraweave_ecs",[["impl&lt;'w, A: <a class=\"trait\" href=\"astraweave_ecs/trait.Component.html\" title=\"trait astraweave_ecs::Component\">Component</a>, B: <a class=\"trait\" href=\"astraweave_ecs/trait.Component.html\" title=\"trait astraweave_ecs::Component\">Component</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"astraweave_ecs/struct.Query2.html\" title=\"struct astraweave_ecs::Query2\">Query2</a>&lt;'w, A, B&gt;"],["impl&lt;'w, A: <a class=\"trait\" href=\"astraweave_ecs/trait.Component.html\" title=\"trait astraweave_ecs::Component\">Component</a>, B: <a class=\"trait\" href=\"astraweave_ecs/trait.Component.html\" title=\"trait astraweave_ecs::Component\">Component</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"astraweave_ecs/struct.Query2Mut.html\" title=\"struct astraweave_ecs::Query2Mut\">Query2Mut</a>&lt;'w, A, B&gt;"],["impl&lt;'w, T: <a class=\"trait\" href=\"astraweave_ecs/trait.Component.html\" title=\"trait astraweave_ecs::Component\">Component</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/core/iter/traits/iterator/trait.Iterator.html\" title=\"trait core::iter::traits::iterator::Iterator\">Iterator</a> for <a class=\"struct\" href=\"astraweave_ecs/struct.Query.html\" title=\"struct astraweave_ecs::Query\">Query</a>&lt;'w, T&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1627]}

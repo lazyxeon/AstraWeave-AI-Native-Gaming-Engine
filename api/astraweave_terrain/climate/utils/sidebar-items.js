@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["calculate_climate_stats","classify_whittaker_biome","generate_biome_classification_map","generate_climate_preview"],"struct":["ClimateStats"]};

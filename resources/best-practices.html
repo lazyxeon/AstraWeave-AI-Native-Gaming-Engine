@@ -1,0 +1,837 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Best Practices - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        <meta property="og:title" content="Best Practices - AstraWeave: AI-Native Game Engine Documentation">
+        <meta property="og:description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        <meta property="og:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        <meta property="og:site_name" content="AstraWeave Documentation">
+        <meta property="og:locale" content="en_US">
+        
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Best Practices - AstraWeave: AI-Native Game Engine Documentation">
+        <meta name="twitter:description" content="The first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="twitter:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        
+        <meta name="description" content="AstraWeave is an AI-native game engine built in Rust featuring deterministic ECS, LLM integration, and production-ready AI companion systems.">
+        <meta name="keywords" content="AstraWeave, game engine, Rust, AI, ECS, LLM, game development, AI companions, Bevy, deterministic simulation">
+        <meta name="author" content="AstraWeave Team">
+        <meta name="robots" content="index, follow">
+        <meta name="googlebot" content="index, follow">
+        <meta name="theme-color" content="#4a90a4">
+        
+        <link rel="canonical" href="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareSourceCode",
+          "name": "AstraWeave",
+          "description": "AI-native game engine built in Rust with deterministic ECS architecture",
+          "programmingLanguage": "Rust",
+          "codeRepository": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine",
+          "license": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE",
+          "author": {
+            "@type": "Organization",
+            "name": "AstraWeave Team"
+          }
+        }
+        </script>
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom-f1706e81.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-9fbab890.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-3c461bbc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/resources/best-practices.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <span class=fa-svg id="git-edit-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M421.7 220.3l-11.3 11.3-22.6 22.6-205 205c-6.6 6.6-14.8 11.5-23.8 14.1L30.8 511c-8.4 2.5-17.5 .2-23.7-6.1S-1.5 489.7 1 481.2L38.7 353.1c2.6-9 7.5-17.2 14.1-23.8l205-205 22.6-22.6 11.3-11.3 33.9 33.9 62.1 62.1 33.9 33.9zM96 353.9l-9.3 9.3c-.9 .9-1.6 2.1-2 3.4l-25.3 86 86-25.3c1.3-.4 2.5-1.1 3.4-2l9.3-9.3H112c-8.8 0-16-7.2-16-16V353.9zM453.3 19.3l39.4 39.4c25 25 25 65.5 0 90.5l-14.5 14.5-22.6 22.6-11.3 11.3-33.9-33.9-62.1-62.1L314.3 67.7l11.3-11.3 22.6-22.6 14.5-14.5c25-25 65.5-25 90.5 0z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h1>
+<p>This guide covers recommended practices for building production-quality games with AstraWeave, covering architecture, performance, AI integration, and maintainability.</p>
+<h2 id="project-architecture"><a class="header" href="#project-architecture">Project Architecture</a></h2>
+<h3 id="modular-design"><a class="header" href="#modular-design">Modular Design</a></h3>
+<p>Organize game code into focused modules:</p>
+<pre><code>my_game/
+├── src/
+│   ├── main.rs              # Entry point
+│   ├── lib.rs               # Game library root
+│   ├── player/              # Player systems
+│   │   ├── mod.rs
+│   │   ├── controller.rs
+│   │   └── inventory.rs
+│   ├── enemy/               # Enemy systems
+│   │   ├── mod.rs
+│   │   ├── ai.rs
+│   │   └── spawner.rs
+│   ├── world/               # World management
+│   │   ├── mod.rs
+│   │   ├── terrain.rs
+│   │   └── weather.rs
+│   └── ui/                  # User interface
+│       ├── mod.rs
+│       ├── hud.rs
+│       └── menus.rs
+├── assets/
+├── config/
+└── Cargo.toml
+</code></pre>
+<h3 id="plugin-pattern"><a class="header" href="#plugin-pattern">Plugin Pattern</a></h3>
+<p>Encapsulate features as plugins:</p>
+<pre class="playground"><code class="language-rust">pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&amp;self, app: &amp;mut App) {
+        app
+            .init_resource::&lt;PlayerConfig&gt;()
+            .add_systems(Startup, spawn_player)
+            .add_systems(Update, (
+                player_movement,
+                player_combat,
+                player_inventory,
+            ).chain());
+    }
+}
+
+pub struct EnemyPlugin;
+
+impl Plugin for EnemyPlugin {
+    fn build(&amp;self, app: &amp;mut App) {
+        app
+            .add_systems(Update, (
+                enemy_ai_tick,
+                enemy_spawning,
+                enemy_cleanup,
+            ));
+    }
+}
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(PlayerPlugin)
+        .add_plugins(EnemyPlugin)
+        .run();
+}</code></pre>
+<h3 id="dependency-injection"><a class="header" href="#dependency-injection">Dependency Injection</a></h3>
+<p>Use resources for configuration and shared state:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Resource)]
+pub struct GameConfig {
+    pub difficulty: Difficulty,
+    pub render_distance: f32,
+    pub ai_budget_ms: f32,
+}
+
+#[derive(Resource)]
+pub struct GameState {
+    pub current_level: String,
+    pub player_score: u64,
+    pub elapsed_time: f32,
+}
+
+fn game_system(
+    config: Res&lt;GameConfig&gt;,
+    mut state: ResMut&lt;GameState&gt;,
+) {
+    // Access shared configuration and state
+}
+<span class="boring">}</span></code></pre>
+<h2 id="ecs-best-practices"><a class="header" href="#ecs-best-practices">ECS Best Practices</a></h2>
+<h3 id="component-design"><a class="header" href="#component-design">Component Design</a></h3>
+<p><strong>Do:</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Small, focused components
+#[derive(Component)]
+struct Health(f32);
+
+#[derive(Component)]
+struct MaxHealth(f32);
+
+#[derive(Component)]
+struct Damage(f32);
+
+// Use marker components
+#[derive(Component)]
+struct Player;
+
+#[derive(Component)]
+struct Enemy;
+
+#[derive(Component)]
+struct Hostile;
+<span class="boring">}</span></code></pre>
+<p><strong>Don’t:</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Avoid monolithic components
+#[derive(Component)]
+struct Entity {
+    health: f32,
+    max_health: f32,
+    damage: f32,
+    position: Vec3,
+    rotation: Quat,
+    velocity: Vec3,
+    ai_state: AiState,
+    inventory: Vec&lt;Item&gt;,
+    // ... more fields
+}
+<span class="boring">}</span></code></pre>
+<h3 id="system-organization"><a class="header" href="#system-organization">System Organization</a></h3>
+<p>Group related systems with clear ordering:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>app.add_systems(Update, (
+    // Input phase
+    read_player_input,
+    
+    // AI phase (can run in parallel)
+    (enemy_perception, companion_perception).run_if(should_run_ai),
+    enemy_decision,
+    companion_decision,
+    
+    // Movement phase
+    apply_movement,
+    resolve_collisions,
+    
+    // Combat phase
+    process_attacks,
+    apply_damage,
+    check_deaths,
+    
+    // Cleanup phase
+    despawn_dead_entities,
+).chain());
+<span class="boring">}</span></code></pre>
+<h3 id="query-best-practices"><a class="header" href="#query-best-practices">Query Best Practices</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Specific queries with filters
+fn enemy_update(
+    enemies: Query&lt;(&amp;mut Transform, &amp;mut AiAgent), (With&lt;Enemy&gt;, Without&lt;Dead&gt;)&gt;,
+) {
+    for (mut transform, mut ai) in enemies.iter_mut() {
+        // Only active enemies
+    }
+}
+
+// Good: Read-only where possible
+fn render_system(
+    renderables: Query&lt;(&amp;Transform, &amp;Mesh, &amp;Material)&gt;,
+) {
+    for (transform, mesh, material) in renderables.iter() {
+        // Read-only access allows parallelism
+    }
+}
+
+// Good: Use change detection
+fn on_health_changed(
+    query: Query&lt;(Entity, &amp;Health), Changed&lt;Health&gt;&gt;,
+) {
+    for (entity, health) in query.iter() {
+        // Only runs when health actually changes
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="ai-integration"><a class="header" href="#ai-integration">AI Integration</a></h2>
+<h3 id="llm-usage-guidelines"><a class="header" href="#llm-usage-guidelines">LLM Usage Guidelines</a></h3>
+<p><strong>When to use LLM:</strong></p>
+<ul>
+<li>Dynamic dialogue and conversation</li>
+<li>Procedural narrative generation</li>
+<li>Player behavior analysis</li>
+<li>Creative content generation</li>
+</ul>
+<p><strong>When NOT to use LLM:</strong></p>
+<ul>
+<li>Real-time combat decisions (too slow)</li>
+<li>Deterministic game logic</li>
+<li>Anything requiring &lt; 100ms response</li>
+</ul>
+<h3 id="ai-architecture"><a class="header" href="#ai-architecture">AI Architecture</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Layer AI appropriately
+pub struct AiStack {
+    // Fast: Behavior trees for immediate reactions
+    pub behavior_tree: BehaviorTree,
+    
+    // Medium: GOAP for tactical planning
+    pub planner: GoalPlanner,
+    
+    // Slow: LLM for strategic/narrative decisions
+    pub llm_client: Option&lt;LlmClient&gt;,
+}
+
+impl AiStack {
+    pub fn update(&amp;mut self, context: &amp;AiContext) {
+        // Always run fast layer
+        self.behavior_tree.tick(context);
+        
+        // Run planner when needed
+        if self.needs_replan(context) {
+            self.planner.plan(context);
+        }
+        
+        // Async LLM calls for non-critical decisions
+        if self.should_consult_llm(context) {
+            self.queue_llm_request(context);
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="tool-validation"><a class="header" href="#tool-validation">Tool Validation</a></h3>
+<p>Always validate LLM tool calls:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn validate_tool_call(call: &amp;ToolCall, context: &amp;GameContext) -&gt; ToolResult {
+    match call.name.as_str() {
+        "move_to" =&gt; {
+            let target: Vec3 = call.parse_param("target")?;
+            
+            // Validate target is reachable
+            if !context.navmesh.is_reachable(context.position, target) {
+                return ToolResult::Error("Target unreachable".into());
+            }
+            
+            // Validate target is within range
+            let distance = context.position.distance(target);
+            if distance &gt; context.max_move_distance {
+                return ToolResult::Error("Target too far".into());
+            }
+            
+            ToolResult::Success(json!({ "path_found": true }))
+        }
+        "attack" =&gt; {
+            let target_id: u64 = call.parse_param("target")?;
+            
+            // Validate target exists and is attackable
+            if !context.can_attack(target_id) {
+                return ToolResult::Error("Cannot attack target".into());
+            }
+            
+            ToolResult::Success(json!({ "attack_initiated": true }))
+        }
+        _ =&gt; ToolResult::Error("Unknown tool".into()),
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="performance"><a class="header" href="#performance">Performance</a></h2>
+<h3 id="frame-budget-management"><a class="header" href="#frame-budget-management">Frame Budget Management</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Resource)]
+pub struct FrameBudget {
+    pub target_fps: f32,
+    pub ai_budget_pct: f32,
+    pub physics_budget_pct: f32,
+    pub render_budget_pct: f32,
+}
+
+impl FrameBudget {
+    pub fn frame_time_ms(&amp;self) -&gt; f32 {
+        1000.0 / self.target_fps
+    }
+    
+    pub fn ai_budget_ms(&amp;self) -&gt; f32 {
+        self.frame_time_ms() * self.ai_budget_pct
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="async-operations"><a class="header" href="#async-operations">Async Operations</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Load assets asynchronously
+fn load_level_async(
+    mut commands: Commands,
+    asset_server: Res&lt;AssetServer&gt;,
+    mut loading_state: ResMut&lt;LoadingState&gt;,
+) {
+    if loading_state.started {
+        return;
+    }
+    
+    loading_state.handles.push(asset_server.load_async::&lt;Scene&gt;("levels/level1.scn"));
+    loading_state.started = true;
+}
+
+// Check loading progress
+fn check_loading(
+    asset_server: Res&lt;AssetServer&gt;,
+    loading_state: Res&lt;LoadingState&gt;,
+    mut next_state: ResMut&lt;NextState&lt;GameState&gt;&gt;,
+) {
+    if loading_state.handles.iter().all(|h| asset_server.is_loaded(h)) {
+        next_state.set(GameState::Playing);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="memory-management"><a class="header" href="#memory-management">Memory Management</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Use object pools for frequent spawn/despawn
+#[derive(Resource)]
+pub struct ProjectilePool {
+    available: Vec&lt;Entity&gt;,
+    active: HashSet&lt;Entity&gt;,
+}
+
+impl ProjectilePool {
+    pub fn get(&amp;mut self, commands: &amp;mut Commands) -&gt; Entity {
+        if let Some(entity) = self.available.pop() {
+            commands.entity(entity).insert(Visible);
+            self.active.insert(entity);
+            entity
+        } else {
+            let entity = commands.spawn(ProjectileBundle::default()).id();
+            self.active.insert(entity);
+            entity
+        }
+    }
+    
+    pub fn return_entity(&amp;mut self, entity: Entity, commands: &amp;mut Commands) {
+        commands.entity(entity).remove::&lt;Visible&gt;();
+        self.active.remove(&amp;entity);
+        self.available.push(entity);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<h3 id="graceful-degradation"><a class="header" href="#graceful-degradation">Graceful Degradation</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn ai_system_with_fallback(
+    mut agents: Query&lt;&amp;mut AiAgent&gt;,
+    llm: Option&lt;Res&lt;LlmClient&gt;&gt;,
+) {
+    for mut agent in agents.iter_mut() {
+        let decision = if let Some(ref llm) = llm {
+            // Try LLM-based decision
+            match llm.try_decide(&amp;agent.context) {
+                Ok(decision) =&gt; decision,
+                Err(e) =&gt; {
+                    warn!("LLM failed: {}, using fallback", e);
+                    agent.fallback_decision()
+                }
+            }
+        } else {
+            // No LLM available, use behavior tree
+            agent.behavior_tree.tick()
+        };
+        
+        agent.execute(decision);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="structured-errors"><a class="header" href="#structured-errors">Structured Errors</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug, thiserror::Error)]
+pub enum GameError {
+    #[error("Asset not found: {0}")]
+    AssetNotFound(String),
+    
+    #[error("Invalid game state: {0}")]
+    InvalidState(String),
+    
+    #[error("Network error: {0}")]
+    Network(#[from] NetworkError),
+    
+    #[error("AI error: {0}")]
+    Ai(#[from] AiError),
+}
+
+pub type GameResult&lt;T&gt; = Result&lt;T, GameError&gt;;
+<span class="boring">}</span></code></pre>
+<h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
+<h3 id="unit-testing-systems"><a class="header" href="#unit-testing-systems">Unit Testing Systems</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_damage_system() {
+        let mut world = World::new();
+        
+        let entity = world.spawn((Health(100.0), DamageQueue::default())).id();
+        
+        world.get_mut::&lt;DamageQueue&gt;(entity).unwrap().push(Damage(30.0));
+        
+        let mut schedule = Schedule::default();
+        schedule.add_systems(apply_damage_system);
+        schedule.run(&amp;mut world);
+        
+        assert_eq!(world.get::&lt;Health&gt;(entity).unwrap().0, 70.0);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="integration-testing"><a class="header" href="#integration-testing">Integration Testing</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_combat_flow() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(CombatPlugin);
+    
+    app.world.spawn((
+        Player,
+        Health(100.0),
+        Transform::default(),
+    ));
+    
+    app.world.spawn((
+        Enemy,
+        Health(50.0),
+        Transform::from_xyz(5.0, 0.0, 0.0),
+    ));
+    
+    // Simulate multiple frames
+    for _ in 0..100 {
+        app.update();
+    }
+    
+    // Verify expected state
+}
+<span class="boring">}</span></code></pre>
+<h2 id="debugging"><a class="header" href="#debugging">Debugging</a></h2>
+<h3 id="logging"><a class="header" href="#logging">Logging</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use tracing::{info, warn, error, debug, trace, instrument};
+
+#[instrument(skip(query))]
+fn my_system(query: Query&lt;(&amp;Transform, &amp;Health)&gt;) {
+    for (transform, health) in query.iter() {
+        trace!("Processing entity at {:?}", transform.translation);
+        
+        if health.0 &lt; 10.0 {
+            warn!("Entity at low health: {}", health.0);
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="debug-visualization"><a class="header" href="#debug-visualization">Debug Visualization</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn debug_draw_system(
+    mut gizmos: Gizmos,
+    agents: Query&lt;(&amp;Transform, &amp;AiAgent)&gt;,
+) {
+    #[cfg(debug_assertions)]
+    for (transform, agent) in agents.iter() {
+        // Draw perception radius
+        gizmos.circle(transform.translation, Vec3::Y, agent.perception_radius, Color::YELLOW);
+        
+        // Draw path
+        if let Some(path) = &amp;agent.current_path {
+            for window in path.windows(2) {
+                gizmos.line(window[0], window[1], Color::GREEN);
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="security"><a class="header" href="#security">Security</a></h2>
+<h3 id="input-validation"><a class="header" href="#input-validation">Input Validation</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn validate_player_input(input: &amp;PlayerInput) -&gt; Result&lt;(), InputError&gt; {
+    // Validate movement speed
+    if input.movement.length() &gt; MAX_MOVEMENT_SPEED {
+        return Err(InputError::InvalidMovement);
+    }
+    
+    // Validate action cooldowns
+    if input.action.is_some() &amp;&amp; !can_perform_action() {
+        return Err(InputError::ActionOnCooldown);
+    }
+    
+    Ok(())
+}
+<span class="boring">}</span></code></pre>
+<h3 id="save-data-integrity"><a class="header" href="#save-data-integrity">Save Data Integrity</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use sha2::{Sha256, Digest};
+
+pub fn save_game(state: &amp;GameState) -&gt; Result&lt;(), SaveError&gt; {
+    let data = bincode::serialize(state)?;
+    let hash = Sha256::digest(&amp;data);
+    
+    let save = SaveFile {
+        version: SAVE_VERSION,
+        data,
+        checksum: hash.to_vec(),
+    };
+    
+    std::fs::write("save.dat", bincode::serialize(&amp;save)?)?;
+    Ok(())
+}
+
+pub fn load_game() -&gt; Result&lt;GameState, LoadError&gt; {
+    let bytes = std::fs::read("save.dat")?;
+    let save: SaveFile = bincode::deserialize(&amp;bytes)?;
+    
+    // Verify checksum
+    let hash = Sha256::digest(&amp;save.data);
+    if hash.as_slice() != save.checksum {
+        return Err(LoadError::CorruptedSave);
+    }
+    
+    Ok(bincode::deserialize(&amp;save.data)?)
+}
+<span class="boring">}</span></code></pre>
+<h2 id="summary-checklist"><a class="header" href="#summary-checklist">Summary Checklist</a></h2>
+<pre><code class="language-admonish tip title=&quot;Before Shipping&quot;">- [ ] All systems have error handling
+- [ ] Performance profiled on target hardware
+- [ ] AI fallbacks tested
+- [ ] Save/load tested extensively
+- [ ] Memory usage profiled
+- [ ] Input validation complete
+- [ ] Logging appropriate for production
+- [ ] All assets properly loaded
+- [ ] Multiplayer desync handled (if applicable)
+</code></pre>
+<h2 id="related-documentation"><a class="header" href="#related-documentation">Related Documentation</a></h2>
+<ul>
+<li><a href="../dev/performance.html">Performance Optimization</a> - Detailed performance guide</li>
+<li><a href="../reference/configuration.html">Configuration Reference</a> - Configuration options</li>
+<li><a href="../dev/testing.html">Testing Guide</a> - Testing strategies</li>
+<li><a href="patterns.html">Design Patterns</a> - Common patterns</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../resources/performance.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../resources/patterns.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../resources/performance.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../resources/patterns.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/clipboard-00df53dc.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

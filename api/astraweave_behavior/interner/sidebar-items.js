@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["intern","resolve"],"static":["GLOBAL_INTERNER"],"struct":["StringInterner"]};

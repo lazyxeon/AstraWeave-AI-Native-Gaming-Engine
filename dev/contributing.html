@@ -1,0 +1,642 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Contributing Guide - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        <meta property="og:title" content="Contributing Guide - AstraWeave: AI-Native Game Engine Documentation">
+        <meta property="og:description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        <meta property="og:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        <meta property="og:site_name" content="AstraWeave Documentation">
+        <meta property="og:locale" content="en_US">
+        
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Contributing Guide - AstraWeave: AI-Native Game Engine Documentation">
+        <meta name="twitter:description" content="The first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="twitter:image" content="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/assets/og-image.svg">
+        
+        <meta name="description" content="AstraWeave is an AI-native game engine built in Rust featuring deterministic ECS, LLM integration, and production-ready AI companion systems.">
+        <meta name="keywords" content="AstraWeave, game engine, Rust, AI, ECS, LLM, game development, AI companions, Bevy, deterministic simulation">
+        <meta name="author" content="AstraWeave Team">
+        <meta name="robots" content="index, follow">
+        <meta name="googlebot" content="index, follow">
+        <meta name="theme-color" content="#4a90a4">
+        
+        <link rel="canonical" href="https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/">
+        
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareSourceCode",
+          "name": "AstraWeave",
+          "description": "AI-native game engine built in Rust with deterministic ECS architecture",
+          "programmingLanguage": "Rust",
+          "codeRepository": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine",
+          "license": "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE",
+          "author": {
+            "@type": "Organization",
+            "name": "AstraWeave Team"
+          }
+        }
+        </script>
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine built in Rust with deterministic ECS architecture.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom-f1706e81.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-9fbab890.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-3c461bbc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/dev/contributing.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <span class=fa-svg id="git-edit-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M421.7 220.3l-11.3 11.3-22.6 22.6-205 205c-6.6 6.6-14.8 11.5-23.8 14.1L30.8 511c-8.4 2.5-17.5 .2-23.7-6.1S-1.5 489.7 1 481.2L38.7 353.1c2.6-9 7.5-17.2 14.1-23.8l205-205 22.6-22.6 11.3-11.3 33.9 33.9 62.1 62.1 33.9 33.9zM96 353.9l-9.3 9.3c-.9 .9-1.6 2.1-2 3.4l-25.3 86 86-25.3c1.3-.4 2.5-1.1 3.4-2l9.3-9.3H112c-8.8 0-16-7.2-16-16V353.9zM453.3 19.3l39.4 39.4c25 25 25 65.5 0 90.5l-14.5 14.5-22.6 22.6-11.3 11.3-33.9-33.9-62.1-62.1L314.3 67.7l11.3-11.3 22.6-22.6 14.5-14.5c25-25 65.5-25 90.5 0z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="contributing-to-astraweave"><a class="header" href="#contributing-to-astraweave">Contributing to AstraWeave</a></h1>
+<p>Thank you for your interest in contributing to AstraWeave! This guide will help you get started with contributing to the project.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="#code-of-conduct">Code of Conduct</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#how-to-contribute">How to Contribute</a></li>
+<li><a href="#development-setup">Development Setup</a></li>
+<li><a href="#coding-standards">Coding Standards</a></li>
+<li><a href="#testing-requirements">Testing Requirements</a></li>
+<li><a href="#documentation-requirements">Documentation Requirements</a></li>
+<li><a href="#code-review-process">Code Review Process</a></li>
+<li><a href="#community">Community</a></li>
+</ul>
+<h2 id="code-of-conduct"><a class="header" href="#code-of-conduct">Code of Conduct</a></h2>
+<p>We are committed to providing a welcoming and inclusive environment for all contributors. Please be respectful and constructive in all interactions.</p>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<p>Before you start contributing, please:</p>
+<ol>
+<li>Read the <a href="building.html">Building from Source</a> guide</li>
+<li>Familiarize yourself with the <a href="code-style.html">Code Style Guide</a></li>
+<li>Review the <a href="testing.html">Testing Guide</a></li>
+<li>Check existing <a href="https://github.com/verdentlabs/astraweave/issues">Issues</a> and <a href="https://github.com/verdentlabs/astraweave/pulls">Pull Requests</a></li>
+</ol>
+<h2 id="how-to-contribute"><a class="header" href="#how-to-contribute">How to Contribute</a></h2>
+<h3 id="reporting-bugs"><a class="header" href="#reporting-bugs">Reporting Bugs</a></h3>
+<p>When reporting bugs, please include:</p>
+<ul>
+<li><strong>Clear title</strong>: Describe the issue concisely</li>
+<li><strong>Environment</strong>: OS, Rust version, GPU model</li>
+<li><strong>Steps to reproduce</strong>: Detailed steps to trigger the bug</li>
+<li><strong>Expected behavior</strong>: What should happen</li>
+<li><strong>Actual behavior</strong>: What actually happens</li>
+<li><strong>Logs</strong>: Relevant error messages or stack traces</li>
+</ul>
+<pre><code class="language-admonish example title=&quot;Bug Report Template&quot;">**Environment:**
+- OS: Windows 11
+- Rust: 1.75.0
+- GPU: NVIDIA RTX 4080
+
+**Steps to Reproduce:**
+1. Create a new companion with perception
+2. Add emotion system
+3. Run the simulation
+
+**Expected:** Companion should respond to stimuli
+**Actual:** Panic in emotion processing thread
+
+**Logs:**
+\`\`\`
+thread 'emotion' panicked at 'index out of bounds'
+\`\`\`
+</code></pre>
+<h3 id="suggesting-features"><a class="header" href="#suggesting-features">Suggesting Features</a></h3>
+<p>For feature requests, please:</p>
+<ul>
+<li>Check if the feature already exists or is planned</li>
+<li>Describe the use case and problem it solves</li>
+<li>Provide examples of how it would work</li>
+<li>Consider implementation complexity and alternatives</li>
+</ul>
+<h3 id="submitting-pull-requests"><a class="header" href="#submitting-pull-requests">Submitting Pull Requests</a></h3>
+<ol>
+<li>
+<p><strong>Fork the repository</strong> and create a new branch:</p>
+<pre><code class="language-bash">git checkout -b feature/my-awesome-feature
+</code></pre>
+</li>
+<li>
+<p><strong>Make your changes</strong> following our coding standards</p>
+</li>
+<li>
+<p><strong>Write or update tests</strong> to cover your changes</p>
+</li>
+<li>
+<p><strong>Run the full test suite</strong>:</p>
+<pre><code class="language-bash">cargo test --all-features
+cargo clippy --all-targets --all-features
+cargo fmt --check
+</code></pre>
+</li>
+<li>
+<p><strong>Update documentation</strong> if needed</p>
+</li>
+<li>
+<p><strong>Commit with clear messages</strong>:</p>
+<pre><code class="language-bash">git commit -m "feat(ai): Add emotion blending system"
+</code></pre>
+</li>
+<li>
+<p><strong>Push and create a Pull Request</strong>:</p>
+<pre><code class="language-bash">git push origin feature/my-awesome-feature
+</code></pre>
+</li>
+</ol>
+<pre><code class="language-admonish tip">Keep PRs focused on a single feature or fix. Large PRs are harder to review and merge.
+</code></pre>
+<h2 id="development-setup"><a class="header" href="#development-setup">Development Setup</a></h2>
+<h3 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h3>
+<ul>
+<li>Rust 1.75.0 or later</li>
+<li>Git</li>
+<li>A supported GPU with Vulkan/DirectX 12/Metal</li>
+</ul>
+<h3 id="initial-setup"><a class="header" href="#initial-setup">Initial Setup</a></h3>
+<pre><code class="language-bash"># Clone the repository
+git clone https://github.com/verdentlabs/astraweave.git
+cd astraweave
+
+# Build the project
+cargo build
+
+# Run tests
+cargo test
+
+# Run examples
+cargo run --example basic_companion
+</code></pre>
+<h3 id="development-workflow"><a class="header" href="#development-workflow">Development Workflow</a></h3>
+<pre><code class="language-bash"># Create a new branch
+git checkout -b feature/my-feature
+
+# Make changes and test frequently
+cargo test
+
+# Run clippy for linting
+cargo clippy --all-targets --all-features
+
+# Format code
+cargo fmt
+
+# Commit changes
+git commit -m "feat: Add feature description"
+</code></pre>
+<h2 id="coding-standards"><a class="header" href="#coding-standards">Coding Standards</a></h2>
+<h3 id="general-principles"><a class="header" href="#general-principles">General Principles</a></h3>
+<ul>
+<li><strong>Clarity over cleverness</strong>: Write code that is easy to understand</li>
+<li><strong>Performance matters</strong>: AstraWeave is a high-performance engine</li>
+<li><strong>Safety first</strong>: Prefer safe abstractions over unsafe code</li>
+<li><strong>Documentation</strong>: Document all public APIs</li>
+</ul>
+<h3 id="rust-conventions"><a class="header" href="#rust-conventions">Rust Conventions</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Clear naming and documentation
+/// Calculates emotion intensity based on stimuli strength.
+///
+/// # Arguments
+/// * `stimulus` - The input stimulus value (0.0 to 1.0)
+/// * `sensitivity` - Sensitivity multiplier (default: 1.0)
+///
+/// # Returns
+/// Emotion intensity clamped to [0.0, 1.0]
+pub fn calculate_emotion_intensity(stimulus: f32, sensitivity: f32) -&gt; f32 {
+    (stimulus * sensitivity).clamp(0.0, 1.0)
+}
+
+// Bad: Unclear naming and no documentation
+pub fn calc(s: f32, m: f32) -&gt; f32 {
+    (s * m).min(1.0).max(0.0)
+}
+<span class="boring">}</span></code></pre>
+<h3 id="naming-conventions"><a class="header" href="#naming-conventions">Naming Conventions</a></h3>
+<ul>
+<li><strong>Types</strong>: <code>PascalCase</code> (e.g., <code>EmotionSystem</code>, <code>CompanionState</code>)</li>
+<li><strong>Functions</strong>: <code>snake_case</code> (e.g., <code>process_emotion</code>, <code>update_behavior</code>)</li>
+<li><strong>Constants</strong>: <code>SCREAMING_SNAKE_CASE</code> (e.g., <code>MAX_COMPANIONS</code>, <code>DEFAULT_TICK_RATE</code>)</li>
+<li><strong>Modules</strong>: <code>snake_case</code> (e.g., <code>emotion_system</code>, <code>companion_ai</code>)</li>
+</ul>
+<h3 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Use Result for recoverable errors
+pub fn load_companion_config(path: &amp;Path) -&gt; Result&lt;CompanionConfig, ConfigError&gt; {
+    let contents = std::fs::read_to_string(path)
+        .map_err(|e| ConfigError::FileRead(path.to_path_buf(), e))?;
+    
+    serde_json::from_str(&amp;contents)
+        .map_err(|e| ConfigError::Parse(e))
+}
+
+// Good: Use panic only for programming errors
+pub fn get_emotion(&amp;self, index: usize) -&gt; &amp;Emotion {
+    assert!(index &lt; self.emotions.len(), "Emotion index out of bounds");
+    &amp;self.emotions[index]
+}
+<span class="boring">}</span></code></pre>
+<h2 id="testing-requirements"><a class="header" href="#testing-requirements">Testing Requirements</a></h2>
+<p>All contributions must include appropriate tests:</p>
+<h3 id="unit-tests"><a class="header" href="#unit-tests">Unit Tests</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_emotion_intensity_clamping() {
+        assert_eq!(calculate_emotion_intensity(0.5, 1.0), 0.5);
+        assert_eq!(calculate_emotion_intensity(1.5, 1.0), 1.0);
+        assert_eq!(calculate_emotion_intensity(-0.5, 1.0), 0.0);
+    }
+
+    #[test]
+    fn test_emotion_blending() {
+        let joy = Emotion::new("joy", 0.8);
+        let calm = Emotion::new("calm", 0.6);
+        let blended = blend_emotions(&amp;joy, &amp;calm, 0.5);
+        assert_eq!(blended.intensity, 0.7);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="integration-tests"><a class="header" href="#integration-tests">Integration Tests</a></h3>
+<p>Place integration tests in <code>tests/</code> directory:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// tests/companion_integration.rs
+use astraweave_ai::*;
+
+#[test]
+fn test_companion_lifecycle() {
+    let mut companion = CompanionBuilder::new()
+        .with_perception()
+        .with_emotion()
+        .build();
+    
+    companion.update(0.016);
+    assert!(companion.is_active());
+}
+<span class="boring">}</span></code></pre>
+<h3 id="benchmarks"><a class="header" href="#benchmarks">Benchmarks</a></h3>
+<p>For performance-critical code, add benchmarks:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use criterion::{criterion_group, criterion_main, Criterion, black_box};
+
+fn benchmark_emotion_processing(c: &amp;mut Criterion) {
+    c.bench_function("process_100_emotions", |b| {
+        let mut system = EmotionSystem::new();
+        b.iter(|| {
+            for _ in 0..100 {
+                system.process(black_box(0.016));
+            }
+        });
+    });
+}
+
+criterion_group!(benches, benchmark_emotion_processing);
+criterion_main!(benches);
+<span class="boring">}</span></code></pre>
+<h3 id="coverage-requirements"><a class="header" href="#coverage-requirements">Coverage Requirements</a></h3>
+<ul>
+<li>New features should have <strong>&gt;80% code coverage</strong></li>
+<li>Bug fixes must include a regression test</li>
+<li>Run coverage locally:
+<pre><code class="language-bash">cargo tarpaulin --all-features --workspace --timeout 300
+</code></pre>
+</li>
+</ul>
+<pre><code class="language-admonish warning">PRs with insufficient test coverage will not be merged.
+</code></pre>
+<h2 id="documentation-requirements"><a class="header" href="#documentation-requirements">Documentation Requirements</a></h2>
+<h3 id="public-api-documentation"><a class="header" href="#public-api-documentation">Public API Documentation</a></h3>
+<p>All public items must have documentation:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Represents an AI companion with emotion and behavior systems.
+///
+/// A companion can perceive its environment, process emotions, and
+/// exhibit behaviors based on its internal state.
+///
+/// # Examples
+///
+/// ```
+/// use astraweave_ai::Companion;
+///
+/// let companion = Companion::new("Buddy");
+/// companion.update(0.016);
+/// ```
+pub struct Companion {
+    // ...
+}
+<span class="boring">}</span></code></pre>
+<h3 id="module-documentation"><a class="header" href="#module-documentation">Module Documentation</a></h3>
+<p>Add module-level documentation in <code>lib.rs</code> or <code>mod.rs</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>//! # Emotion System
+//!
+//! This module provides the emotion processing system for AI companions.
+//! Emotions are processed based on stimuli and decay over time.
+//!
+//! ## Example
+//!
+//! ```
+//! use astraweave_ai::emotion::EmotionSystem;
+//!
+//! let mut system = EmotionSystem::new();
+//! system.add_emotion("joy", 0.8);
+//! system.update(0.016);
+//! ```
+<span class="boring">}</span></code></pre>
+<h3 id="changelog-updates"><a class="header" href="#changelog-updates">Changelog Updates</a></h3>
+<p>Update <code>CHANGELOG.md</code> for significant changes:</p>
+<pre><code class="language-markdown">## [Unreleased]
+
+### Added
+- Emotion blending system for smoother transitions
+- New `CompanionBuilder` for easier companion creation
+
+### Changed
+- Improved perception system performance by 30%
+
+### Fixed
+- Fixed emotion decay rate calculation
+</code></pre>
+<h2 id="code-review-process"><a class="header" href="#code-review-process">Code Review Process</a></h2>
+<h3 id="what-reviewers-look-for"><a class="header" href="#what-reviewers-look-for">What Reviewers Look For</a></h3>
+<ol>
+<li><strong>Correctness</strong>: Does the code work as intended?</li>
+<li><strong>Tests</strong>: Are there adequate tests?</li>
+<li><strong>Documentation</strong>: Is the code well-documented?</li>
+<li><strong>Style</strong>: Does it follow our coding standards?</li>
+<li><strong>Performance</strong>: Are there any performance concerns?</li>
+<li><strong>Safety</strong>: Are there any unsafe patterns?</li>
+</ol>
+<h3 id="review-timeline"><a class="header" href="#review-timeline">Review Timeline</a></h3>
+<ul>
+<li>Initial review: Within 48 hours</li>
+<li>Follow-up reviews: Within 24 hours</li>
+<li>Merging: After approval from at least one maintainer</li>
+</ul>
+<h3 id="addressing-feedback"><a class="header" href="#addressing-feedback">Addressing Feedback</a></h3>
+<pre><code class="language-admonish tip">Respond to all review comments, even if just to acknowledge them.
+</code></pre>
+<ul>
+<li>Make requested changes in new commits</li>
+<li>Don’t force-push during review (makes tracking changes hard)</li>
+<li>Mark conversations as resolved when addressed</li>
+<li>Ask questions if feedback is unclear</li>
+</ul>
+<h3 id="approval-process"><a class="header" href="#approval-process">Approval Process</a></h3>
+<ol>
+<li>All CI checks must pass</li>
+<li>At least one maintainer approval required</li>
+<li>No unresolved review comments</li>
+<li>Up-to-date with the main branch</li>
+</ol>
+<h2 id="community"><a class="header" href="#community">Community</a></h2>
+<h3 id="getting-help"><a class="header" href="#getting-help">Getting Help</a></h3>
+<ul>
+<li><strong>Discord</strong>: Join our <a href="https://discord.gg/astraweave">Discord server</a></li>
+<li><strong>Discussions</strong>: Use <a href="https://github.com/verdentlabs/astraweave/discussions">GitHub Discussions</a></li>
+<li><strong>Issues</strong>: Search existing issues before creating new ones</li>
+</ul>
+<h3 id="stay-updated"><a class="header" href="#stay-updated">Stay Updated</a></h3>
+<ul>
+<li>Watch the repository for updates</li>
+<li>Follow our <a href="https://verdentlabs.com/blog">blog</a></li>
+<li>Subscribe to release notifications</li>
+</ul>
+<p>Thank you for contributing to AstraWeave! Your efforts help make AI-native gaming better for everyone.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../veilweaver/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../dev/building.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../veilweaver/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../dev/building.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/clipboard-00df53dc.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["StructureType"],"struct":["StructureConfig","StructureGenerator","StructureInstance","StructureResult"]};

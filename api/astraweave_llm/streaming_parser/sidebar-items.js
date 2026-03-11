@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse_complete_batch","parse_streaming_batch"],"struct":["StreamedPlanEntry","StreamingBatchParser"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["VoxelOpType"],"struct":["ModifierStats","NavMeshRegion","TerrainModifier","TerrainModifierConfig","VoxelOp"]};

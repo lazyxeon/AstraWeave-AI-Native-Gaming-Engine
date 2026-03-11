@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TERRAIN_SAVE_VERSION"],"fn":["get_chunks_in_region"],"struct":["PersistenceStats","TerrainLoadResult","TerrainPersistence","TerrainPersistenceConfig","TerrainSaveHeader","TerrainSaveInfo","TerrainSaveResult"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["TextureUsage"],"fn":["validate_texture_assets"],"struct":["Texture"]};
