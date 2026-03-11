@@ -4214,3 +4214,71 @@ end = true
         );
     }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// Module 34: companion_hud_extended — kill did_rank_change and unlock_description
+// ══════════════════════════════════════════════════════════════════════
+mod companion_hud_extended {
+    use veilweaver_slice_runtime::companion_hud::{AffinityRank, CompanionAffinityMeter};
+
+    #[test]
+    fn did_rank_change_false_initially() {
+        // Kills: did_rank_change → true
+        // New meter: rank == prev_rank (both Cooperative), so never changed.
+        let meter = CompanionAffinityMeter::new("Test", 0.5);
+        assert!(
+            !meter.did_rank_change(),
+            "Brand-new meter must NOT report rank change"
+        );
+    }
+
+    #[test]
+    fn did_rank_change_false_after_small_event() {
+        // Event that stays within same rank band.
+        // Kills: did_rank_change → true
+        let mut meter = CompanionAffinityMeter::new("Test", 0.5);
+        let result = meter.apply_event("small help", 0.05, 1.0);
+        assert!(result.is_none(), "Should stay in Cooperative");
+        assert!(
+            !meter.did_rank_change(),
+            "Same-rank event must NOT trigger did_rank_change"
+        );
+    }
+
+    #[test]
+    fn did_rank_change_true_after_rank_up() {
+        // Cooperative(0.4) → cross 0.6 threshold → Bonded
+        let mut meter = CompanionAffinityMeter::new("Test", 0.55);
+        let result = meter.apply_event("big help", 0.1, 1.0);
+        assert!(result.is_some(), "Should rank up to Bonded");
+        assert!(
+            meter.did_rank_change(),
+            "Rank-up event MUST trigger did_rank_change"
+        );
+    }
+
+    #[test]
+    fn unlock_description_differs_per_rank() {
+        // Kills: unlock_description → "xyzzy"
+        let wary = AffinityRank::Wary.unlock_description();
+        let cautious = AffinityRank::Cautious.unlock_description();
+        let cooperative = AffinityRank::Cooperative.unlock_description();
+        let bonded = AffinityRank::Bonded.unlock_description();
+        let synced = AffinityRank::Synced.unlock_description();
+
+        // All descriptions are non-empty
+        assert!(!wary.is_empty());
+        assert!(!cautious.is_empty());
+
+        // All descriptions are distinct
+        let descs = [wary, cautious, cooperative, bonded, synced];
+        for i in 0..descs.len() {
+            for j in (i + 1)..descs.len() {
+                assert_ne!(
+                    descs[i], descs[j],
+                    "Ranks must have unique unlock descriptions"
+                );
+            }
+        }
+    }
+}

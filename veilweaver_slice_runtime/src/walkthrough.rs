@@ -446,7 +446,14 @@ impl SliceOrchestrator {
     fn sync_hud_from_walkthrough_events(&mut self, events: &[WalkthroughEvent]) {
         for event in events {
             match event {
-                 /* ~ changed by cargo-mutants ~ */
+                WalkthroughEvent::EchoCollected { amount, total } => {
+                    self.thread_hud.echo_transact(*amount as i32);
+                    self.thread_hud.echoes.balance = *total;
+                    // Echo burst VFX.
+                    let large = *amount >= 10;
+                    self.vfx_audio
+                        .emit_echo_burst(crate::vfx_specs::Vec3f::ZERO, large);
+                }
                 WalkthroughEvent::AnchorRepaired {
                     anchor_id,
                     total_repaired,
