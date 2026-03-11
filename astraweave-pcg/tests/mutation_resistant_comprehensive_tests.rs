@@ -572,3 +572,174 @@ fn encounter_generator_zero_count() {
     let encounters = gen.generate(&mut rng, 0);
     assert!(encounters.is_empty());
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mutation kill tests
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Kill: SeedRng::shuffle → ()
+#[test]
+fn shuffle_actually_reorders() {
+    let mut rng = SeedRng::new(42, "test");
+    let original: Vec<i32> = (1..=20).collect();
+    let mut shuffled = original.clone();
+    rng.shuffle(&mut shuffled);
+    assert_ne!(shuffled, original, "shuffle must reorder a 20-element array");
+}
+
+/// Kill: SeedRng::gen_f32 → 0.0
+#[test]
+fn gen_f32_produces_nonzero() {
+    let mut rng = SeedRng::new(42, "test");
+    let sum: f32 = (0..100).map(|_| rng.gen_f32()).sum();
+    assert!(sum > 1.0, "100 gen_f32 calls should produce sum > 1.0, got {sum}");
+}
+
+/// Kill: SeedRng::gen_f64 → 0.0
+#[test]
+fn gen_f64_produces_nonzero() {
+    let mut rng = SeedRng::new(42, "test");
+    let sum: f64 = (0..100).map(|_| rng.gen_f64()).sum();
+    assert!(sum > 1.0, "100 gen_f64 calls should produce sum > 1.0, got {sum}");
+}
+
+/// Kill: Room::overlaps || → && mutations — rooms separated in X only
+#[test]
+fn overlaps_false_when_separated_in_x_only() {
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(5, 10)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(20, 0), IVec2::new(25, 10)),
+        connections: vec![],
+    };
+    // Same Y range, different X — should NOT overlap
+    assert!(!r1.overlaps(&r2));
+}
+
+/// Kill: Room::overlaps || → && mutations — rooms separated in Y only
+#[test]
+fn overlaps_false_when_separated_in_y_only() {
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(10, 5)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(0, 20), IVec2::new(10, 25)),
+        connections: vec![],
+    };
+    // Same X range, different Y — should NOT overlap
+    assert!(!r1.overlaps(&r2));
+}
+
+/// Kill: Room::overlaps boundary mutations (< → <=, > → >=, == etc)
+#[test]
+fn overlaps_true_when_edge_touching() {
+    // Rooms share an edge at x=5
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(5, 10)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(5, 0), IVec2::new(10, 10)),
+        connections: vec![],
+    };
+    // With `<`, 5 < 5 is false, so !(false||...) depends on other conditions
+    // These rooms share the x=5 line, so they DO overlap (touching counts as overlap)
+    assert!(r1.overlaps(&r2), "edge-touching rooms should overlap");
+}
+
+/// Kill: Room::overlaps boundary mutations — Y edge touching
+#[test]
+fn overlaps_true_when_y_edge_touching() {
+    let r1 = Room {
+        bounds: (IVec2::new(0, 0), IVec2::new(10, 5)),
+        connections: vec![],
+    };
+    let r2 = Room {
+        bounds: (IVec2::new(0, 5), IVec2::new(10, 10)),
+        connections: vec![],
+    };
+    assert!(r1.overlaps(&r2), "Y-edge-touching rooms should overlap");
+}
+
+/// Kill: LayoutGenerator::generate_rooms → vec![]
+#[test]
+fn generate_rooms_produces_rooms() {
+    let lg = LayoutGenerator::new(IVec2::new(200, 200));
+    let mut rng = SeedRng::new(42, "layout");
+    let rooms = lg.generate_rooms(&mut rng, 5);
+    assert!(!rooms.is_empty(), "generate_rooms must produce at least one room");
+    assert!(rooms.len() >= 3, "with ample space, should place at least 3 of 5 rooms");
+}
+
+/// Kill: LayoutGenerator::try_place_room → None (via generate_rooms returning few/no rooms)
+/// Kill: try_place_room delete ! (would generate overlapping rooms)
+/// Kill: try_place_room + → - (negative room dimensions)
+#[test]
+fn generated_rooms_have_positive_dimensions() {
+    let lg = LayoutGenerator::new(IVec2::new(200, 200));
+    let mut rng = SeedRng::new(99, "layout");
+    let rooms = lg.generate_rooms(&mut rng, 8);
+    assert!(rooms.len() >= 2, "should generate rooms in ample space");
+    for (i, room) in rooms.iter().enumerate() {
+        let size = room.size();
+        assert!(size.x > 0, "room {i} width must be positive, got {}", size.x);
+        assert!(size.y > 0, "room {i} height must be positive, got {}", size.y);
+    }
+}
+
+/// Kill: connect_rooms + → * on line 115 (connects to self instead of i+1)
+#[test]
+fn connected_rooms_dont_connect_to_self() {
+    let lg = LayoutGenerator::new(IVec2::new(200, 200));
+    let mut rng = SeedRng::new(7, "layout");
+    let rooms = lg.generate_rooms(&mut rng, 5);
+    assert!(rooms.len() >= 2);
+    // Chain connections should go to i+1, not i itself
+    for (i, room) in rooms.iter().enumerate() {
+        for &conn in &room.connections {
+            assert_ne!(conn, i, "room {i} should not connect to itself");
+        }
+    }
+}
+
+/// Kill: connect_rooms != → == and delete ! on line 124
+/// Kill: connect_rooms && → || on line 124
+#[test]
+fn chain_connections_are_sequential() {
+    let lg = LayoutGenerator::new(IVec2::new(300, 300));
+    let mut rng = SeedRng::new(42, "layout");
+    let rooms = lg.generate_rooms(&mut rng, 4);
+    assert!(rooms.len() >= 3, "need at least 3 rooms for chain test");
+    // First room should connect to room 1 (chain)
+    assert!(
+        rooms[0].connections.contains(&1),
+        "room 0 should have chain connection to room 1"
+    );
+    // Second room should connect to both room 0 and room 2
+    assert!(
+        rooms[1].connections.contains(&0),
+        "room 1 should connect back to room 0"
+    );
+    assert!(
+        rooms[1].connections.contains(&2),
+        "room 1 should connect forward to room 2"
+    );
+}
+
+/// Kill: EncounterGenerator::generate * → + on line 68 (max_attempts calc)
+/// Kill: EncounterGenerator::generate < → <= on loop conditions
+#[test]
+fn encounter_generator_produces_requested_count() {
+    let constraints = EncounterConstraints {
+        bounds: (IVec2::new(0, 0), IVec2::new(1000, 1000)),
+        min_spacing: 1.0,
+        difficulty_range: (1.0, 3.0),
+    };
+    let gen = EncounterGenerator::new(constraints);
+    let mut rng = SeedRng::new(42, "enc");
+    let encounters = gen.generate(&mut rng, 5);
+    assert_eq!(encounters.len(), 5, "with ample space, should produce exactly 5 encounters");
+}
