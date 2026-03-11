@@ -1720,3 +1720,58 @@ mod edge_case_tests {
         }
     }
 }
+
+// ============================================================================
+// Mutation Kill Tests — targeted at specific surviving mutations
+// ============================================================================
+mod mutation_kill_tests {
+    use super::*;
+
+    /// Kills `lib.rs:300` `- → +` in CameraKey::lerp pos.0
+    /// and `lib.rs:301` `- → +` in CameraKey::lerp pos.1
+    ///
+    /// With self.pos = (2.0, 3.0, 0.0) and other.pos = (8.0, 9.0, 0.0), t=0.5:
+    ///   Original: 2 + (8-2)*0.5 = 5.0, 3 + (9-3)*0.5 = 6.0
+    ///   Mutant:   2 + (8+2)*0.5 = 7.0, 3 + (9+3)*0.5 = 9.0  ← DIFFERENT
+    #[test]
+    fn lerp_pos_with_nonzero_start_discriminates_sub_vs_add() {
+        let a = CameraKey::new(Time(0.0), (2.0, 3.0, 0.0), (0.0, 0.0, 0.0), 60.0);
+        let b = CameraKey::new(Time(10.0), (8.0, 9.0, 0.0), (0.0, 0.0, 0.0), 60.0);
+        let r = a.lerp(&b, 0.5);
+        assert_eq!(r.pos.0, 5.0, "pos.0 lerp must subtract, not add");
+        assert_eq!(r.pos.1, 6.0, "pos.1 lerp must subtract, not add");
+    }
+
+    /// Kills `lib.rs:443` `> → >=` in Sequencer::step (Camera track)
+    ///
+    /// Events use half-open interval (from, to]. After stepping TO an event's
+    /// time, the next step must NOT re-emit the same event (from == event.t).
+    #[test]
+    fn sequencer_camera_no_duplicate_at_boundary() {
+        let mut tl = Timeline::new("test", 2.0);
+        tl.add_camera_track(vec![CameraKey::new(Time(0.5), (0.0, 0.0, 0.0), (0.0, 0.0, -1.0), 60.0)]);
+        let mut seq = Sequencer::new();
+        // Step from 0.0 to 0.5 — event at 0.5 is in (0.0, 0.5], should emit
+        let evs1 = seq.step(0.5, &tl).unwrap();
+        assert_eq!(evs1.len(), 1, "first step must emit camera event");
+        // Step from 0.5 to 1.0 — event at 0.5 is NOT in (0.5, 1.0], must not re-emit
+        let evs2 = seq.step(0.5, &tl).unwrap();
+        assert_eq!(evs2.len(), 0, "second step must not duplicate camera event");
+    }
+
+    /// Kills `lib.rs:489` `> → >=` in Sequencer::step (Audio track)
+    ///
+    /// Same boundary logic as camera but for audio tracks.
+    #[test]
+    fn sequencer_audio_no_duplicate_at_boundary() {
+        let mut tl = Timeline::new("test", 2.0);
+        tl.add_audio_track("sfx.ogg", Time(0.5), 1.0);
+        let mut seq = Sequencer::new();
+        // Step from 0.0 to 0.5 — audio at 0.5 is in (0.0, 0.5], should emit
+        let evs1 = seq.step(0.5, &tl).unwrap();
+        assert_eq!(evs1.len(), 1, "first step must emit audio event");
+        // Step from 0.5 to 1.0 — audio at 0.5 is NOT in (0.5, 1.0], must not re-emit
+        let evs2 = seq.step(0.5, &tl).unwrap();
+        assert_eq!(evs2.len(), 0, "second step must not duplicate audio event");
+    }
+}
