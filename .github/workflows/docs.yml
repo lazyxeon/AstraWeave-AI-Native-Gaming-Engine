@@ -32,31 +32,56 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  MDBOOK_VERSION: '0.4.43'
+
 jobs:
   build-and-deploy:
     name: Build and Deploy Docs
     runs-on: ubuntu-latest
-    continue-on-error: true  # Documentation may have missing files or plugin issues
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install system dependencies
+      - name: Install mdBook (pre-built binary)
+        run: |
+          curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz
+          sudo mv mdbook /usr/local/bin/
+          mdbook --version
+
+      - name: Install mdBook plugins
+        run: |
+          # mdbook-mermaid is required by book.toml
+          MERMAID_URL="https://github.com/badboy/mdbook-mermaid/releases/latest/download/mdbook-mermaid-x86_64-unknown-linux-gnu.tar.gz"
+          curl -sSL "$MERMAID_URL" -o mdbook-mermaid.tar.gz \
+            && tar -xzf mdbook-mermaid.tar.gz \
+            && sudo mv mdbook-mermaid /usr/local/bin/ \
+            && mdbook-mermaid --version \
+            || cargo install mdbook-mermaid
+        continue-on-error: true
+
+      - name: Build mdBook documentation
+        run: |
+          cd docs
+          mdbook build
+          touch book/.nojekyll
+          cp src/robots.txt book/robots.txt 2>/dev/null || true
+          mkdir -p book/assets
+          cp -r src/assets/* book/assets/ 2>/dev/null || true
+
+      - name: Install system dependencies (for cargo doc)
+        continue-on-error: true
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev
 
       - name: Install Rust
+        continue-on-error: true
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
+        continue-on-error: true
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
-
-      - name: Install mdBook and plugins
-        continue-on-error: true
-        run: |
-          cargo install mdbook mdbook-mermaid mdbook-admonish || echo "mdBook install had warnings"
-          mdbook-admonish install docs || echo "mdBook admonish setup had warnings"
 
       - name: Build API documentation
         continue-on-error: true
@@ -73,19 +98,9 @@ jobs:
             --package astraweave-gameplay \
             --package astraweave-terrain || echo "Some packages had doc warnings"
           echo '<meta http-equiv="refresh" content="0; url=astraweave_core/index.html">' > target/doc/index.html
-
-      - name: Build mdBook documentation
-        continue-on-error: true
-        run: |
-          cd docs
-          mdbook build
-          mkdir -p book/api
-          cp -r ../target/doc/* book/api/
-          echo '<meta http-equiv="refresh" content="0; url=astraweave_core/index.html">' > book/api/index.html
-          touch book/.nojekyll
-          cp src/robots.txt book/robots.txt
-          mkdir -p book/assets
-          cp -r src/assets/* book/assets/
+          mkdir -p docs/book/api
+          cp -r target/doc/* docs/book/api/
+          echo '<meta http-equiv="refresh" content="0; url=astraweave_core/index.html">' > docs/book/api/index.html
 
       - name: Generate sitemap
         continue-on-error: true
@@ -95,6 +110,7 @@ jobs:
 
       - name: Check for broken links
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip_link_check) }}
+        continue-on-error: true
         run: |
           curl -sSL https://github.com/lycheeverse/lychee/releases/download/v0.15.1/lychee-v0.15.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz
           ./lychee docs/book/**/*.html \
@@ -107,7 +123,6 @@ jobs:
             echo "### Link Check Report" >> $GITHUB_STEP_SUMMARY
             cat link-report.md >> $GITHUB_STEP_SUMMARY
           fi
-        continue-on-error: true
 
       - name: Upload link report artifact
         uses: actions/upload-artifact@v4
@@ -117,6 +132,14 @@ jobs:
           path: link-report.md
           retention-days: 7
 
+      - name: Verify mdBook output
+        run: |
+          if [ ! -f docs/book/index.html ]; then
+            echo "::error::docs/book/index.html not found — mdBook build failed"
+            exit 1
+          fi
+          echo "mdBook output verified: $(find docs/book -name '*.html' | wc -l) HTML files"
+
       - name: Deploy to GitHub Pages
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         uses: peaceiris/actions-gh-pages@v4
@@ -125,7 +148,6 @@ jobs:
           publish_dir: ./docs/book
           publish_branch: gh-pages
           keep_files: true
-          exclude_assets: 'benchmarks/**'
           commit_message: 'Deploy mdBook documentation: ${{ github.sha }}'
 
       - name: Summary
