@@ -1769,3 +1769,117 @@ fn node_partial_eq_same_variant_same_values() {
     let b = Node::constant1(0.5);
     assert_eq!(a, b);
 }
+
+// ===========================================================================
+// Mutation Kill Tests — targeted at surviving mutants
+// ===========================================================================
+
+/// Kills `lib.rs:164` `has_anisotropy → false`
+/// Previous tests only checked graphs WITHOUT anisotropy.
+#[test]
+fn graph_with_anisotropy_reports_has_anisotropy_true() {
+    let mut g = Graph::new("base");
+    g.anisotropy = Some("aniso".into());
+    assert!(g.has_anisotropy(), "graph with anisotropy set must return true");
+}
+
+/// Kills `lib.rs:169` `has_transmission → false`
+#[test]
+fn graph_with_transmission_reports_has_transmission_true() {
+    let mut g = Graph::new("base");
+    g.transmission = Some("trans".into());
+    assert!(g.has_transmission(), "graph with transmission set must return true");
+}
+
+/// Kills `lib.rs:1017` `wgsl_size → 1`
+/// Previous test only checked `> 0`. The actual shader is much larger than 1 byte.
+#[test]
+fn material_package_wgsl_size_is_realistic() {
+    let g = minimal_graph();
+    let pkg = MaterialPackage::from_graph(&g).unwrap();
+    assert!(pkg.wgsl_size() > 10, "wgsl shader must be >10 bytes, got {}", pkg.wgsl_size());
+}
+
+/// Kills validate_brdf arithmetic mutations (lines 1310-1311)
+/// With metallic=0.5, base_color=[0.8, 0.2, 0.1]:
+///   f0[0] = 0.04*(1-0.5) + 0.8*0.5 = 0.02 + 0.4 = 0.42
+///   diffuse = 1 - 0.5 = 0.5
+///   max_energy = 0.42 + 0.5*0.96 = 0.9
+/// Any arithmetic mutation changes this exact value.
+#[test]
+fn validate_brdf_exact_max_energy_ratio() {
+    let r = validate_brdf(0.5, 0.5, [0.8, 0.2, 0.1]);
+    assert!(
+        (r.max_energy_ratio - 0.9).abs() < 0.01,
+        "expected max_energy_ratio ≈ 0.9, got {}",
+        r.max_energy_ratio
+    );
+}
+
+/// With metallic=0, base_color=[0.5,0.5,0.5]:
+///   f0 = [0.04, 0.04, 0.04]
+///   max_energy = 0.04 + 1.0*0.96 = 1.0
+#[test]
+fn validate_brdf_dielectric_exact_max_energy() {
+    let r = validate_brdf(0.0, 0.5, [0.5, 0.5, 0.5]);
+    assert!(
+        (r.max_energy_ratio - 1.0).abs() < 0.01,
+        "expected max_energy_ratio ≈ 1.0, got {}",
+        r.max_energy_ratio
+    );
+}
+
+/// With metallic=1. f0=[base_color], diffuse=0, max_energy = max(base_color)
+#[test]
+fn validate_brdf_full_metal_max_energy_equals_max_base_color() {
+    let r = validate_brdf(1.0, 0.5, [0.9, 0.7, 0.3]);
+    assert!(
+        (r.max_energy_ratio - 0.9).abs() < 0.01,
+        "expected max_energy_ratio ≈ 0.9, got {}",
+        r.max_energy_ratio
+    );
+}
+
+/// Kills MaterialBaker::validate normal map mutations (line 1234)
+/// Validate should detect denormalized normal maps.
+#[test]
+fn material_baker_validate_detects_bad_normals() {
+    let baker = MaterialBaker::new(BakeConfig::with_resolution(2));
+    let g = minimal_graph();
+    let mut baked = baker.bake(&g).unwrap();
+    // Set a wildly denormalized normal — length ≈ √(4+4+4) = 3.46, far from 1.0
+    baked.normal[0] = [1.0, 1.0, 1.0, 1.0]; // maps to nx=1, ny=1, nz=1, len=√3≈1.73
+    // Actually, normal is in [0,1] range, converted: nx=1*2-1=1, ny=1*2-1=1, nz=1*2-1=1
+    // len = √(1+1+1) = √3 ≈ 1.732, (1.732-1.0).abs() = 0.732 > 0.1 → should warn
+    let warnings = baker.validate(&baked);
+    assert!(!warnings.is_empty(), "denormalized normals should produce warnings");
+}
+
+/// Kills BrdfLut math mutations by verifying specific LUT values.
+/// At high NdotV (head-on) with low roughness, scale should be high, bias low.
+/// At low NdotV (grazing) with low roughness, Fresnel dominance → bias > scale.
+#[test]
+fn brdf_lut_sample_values_discriminate_math() {
+    let lut = BrdfLut::generate(32);
+
+    // Head-on view (NdotV≈1), smooth surface (roughness≈0)
+    // Scale should be high (>0.5), bias should be low (<0.3)
+    let [s_hi, b_hi] = lut.sample(0.95, 0.1).unwrap();
+    assert!(s_hi > 0.5, "head-on smooth: scale should be >0.5, got {}", s_hi);
+    assert!(b_hi < 0.3, "head-on smooth: bias should be <0.3, got {}", b_hi);
+
+    // Grazing view (NdotV≈0), smooth surface → strong Fresnel
+    let [s_lo, b_lo] = lut.sample(0.05, 0.1).unwrap();
+    assert!(b_lo > s_lo, "grazing smooth: bias should exceed scale, got s={}, b={}", s_lo, b_lo);
+}
+
+/// Verify geometry_smith behavior through LUT — rough surfaces should reduce specular
+#[test]
+fn brdf_lut_rough_surface_reduces_specular() {
+    let lut = BrdfLut::generate(32);
+    let [s_smooth, _] = lut.sample(0.5, 0.1).unwrap();
+    let [s_rough, _] = lut.sample(0.5, 0.9).unwrap();
+    // Smoother surfaces should have higher specular scale
+    assert!(s_smooth > s_rough,
+        "smooth should have higher scale than rough: smooth={}, rough={}", s_smooth, s_rough);
+}
