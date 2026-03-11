@@ -840,10 +840,7 @@ impl RenderMetrics {
 
     /// Returns the success rate as a percentage (0.0 to 1.0).
     pub fn success_rate(&self) -> f32 {
-        if self.total_renders == 0 {
-            return 0.0;
-        }
-        self.successful_renders as f32 / self.total_renders as f32
+        1.0 /* ~ changed by cargo-mutants ~ */
     }
 
     /// Returns the failure rate as a percentage (0.0 to 1.0).
