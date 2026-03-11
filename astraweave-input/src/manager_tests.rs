@@ -985,66 +985,56 @@ mod save_tests {
         let mut bindings = BindingSet::default();
         bindings.actions.clear();
 
-        let path = "test_output/empty_bindings.json";
-        save_bindings(path, &bindings).expect("Failed to save empty bindings");
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty_bindings.json");
+        let path_str = path.to_string_lossy();
+        save_bindings(&path_str, &bindings).expect("Failed to save empty bindings");
 
-        let loaded = load_bindings(path).expect("Failed to load empty bindings");
+        let loaded = load_bindings(&path_str).expect("Failed to load empty bindings");
         assert_eq!(loaded.actions.len(), 0);
-
-        // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
     }
 
     // Save Test 5: Save full default binding set
     #[test]
     fn test_save_default_bindings() {
         let bindings = BindingSet::default();
-        let path = "test_output/default_bindings.json";
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("default_bindings.json");
+        let path_str = path.to_string_lossy();
 
-        save_bindings(path, &bindings).expect("Failed to save default bindings");
+        save_bindings(&path_str, &bindings).expect("Failed to save default bindings");
 
-        let loaded = load_bindings(path).expect("Failed to load default bindings");
+        let loaded = load_bindings(&path_str).expect("Failed to load default bindings");
         assert_eq!(loaded.actions.len(), bindings.actions.len());
-
-        // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
     }
 
     // Save Test 6: Load corrupted JSON returns None
     #[test]
     fn test_load_corrupted_json() {
-        let path = "test_output/corrupted.json";
-        fs::create_dir_all("test_output").ok();
-        fs::write(path, "{ this is not valid json }").expect("Failed to write corrupted file");
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("corrupted.json");
+        fs::write(&path, "{ this is not valid json }").expect("Failed to write corrupted file");
 
-        let result = load_bindings(path);
+        let result = load_bindings(&path.to_string_lossy());
         assert!(result.is_none());
-
-        // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
     }
 
     // Save Test 7: Save and load with all action types
     #[test]
     fn test_save_all_action_types() {
         let bindings = BindingSet::default(); // Has many actions
-        let path = "test_output/all_actions.json";
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("all_actions.json");
+        let path_str = path.to_string_lossy();
 
-        save_bindings(path, &bindings).expect("Failed to save all actions");
-        let loaded = load_bindings(path).expect("Failed to load all actions");
+        save_bindings(&path_str, &bindings).expect("Failed to save all actions");
+        let loaded = load_bindings(&path_str).expect("Failed to load all actions");
 
         // Verify all movement actions are preserved
         assert!(loaded.actions.contains_key(&Action::MoveForward));
         assert!(loaded.actions.contains_key(&Action::MoveBackward));
         assert!(loaded.actions.contains_key(&Action::MoveLeft));
         assert!(loaded.actions.contains_key(&Action::MoveRight));
-
-        // Cleanup
-        let _ = fs::remove_file(path);
-        let _ = fs::remove_dir("test_output");
     }
 
     // Save Test 8: Overwrite existing file
