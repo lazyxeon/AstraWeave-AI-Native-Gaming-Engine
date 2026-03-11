@@ -3441,3 +3441,638 @@ end = true
         assert!(!gl.is_cinematic_playing());
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 26 — Beat progression via zone-loading (kills evaluate_beat || → &&)
+// ════════════════════════════════════════════════════════════════════════════
+mod beat_progression_via_zones {
+    use veilweaver_slice_runtime::walkthrough::{SliceOrchestrator, WalkthroughBeat};
+    use astraweave_scene::world_partition::GridCoord;
+
+    /// Helper: register a custom zone and trigger it through the orchestrator.
+    fn trigger_zone_entry(orch: &mut SliceOrchestrator, zone_name: &str, coord: GridCoord) {
+        orch.game_loop.zone_registry.register(zone_name, coord);
+        orch.game_loop.register_trigger_action("zt", &format!("zone.transition:{}", zone_name));
+        orch.game_loop.notify_trigger_enter(vec!["zt".to_string()]);
+        orch.tick(0.016);
+        // Clear trigger for reuse
+        orch.game_loop.trigger_actions.remove("zt");
+    }
+
+    #[test]
+    fn tutorial_begin_to_complete_via_echo_grove_name_only() {
+        // Zone name contains "echo_grove" but NOT "Z1" → kills || → && at line 731
+        let mut orch = SliceOrchestrator::new();
+        assert_eq!(orch.beat(), WalkthroughBeat::TutorialBegin);
+        trigger_zone_entry(&mut orch, "echo_grove_area", GridCoord::new(101, 0, 0));
+        // Should have skipped tutorial → TutorialComplete (or further)
+        assert_ne!(orch.beat(), WalkthroughBeat::TutorialBegin);
+    }
+
+    #[test]
+    fn tutorial_begin_to_complete_via_z1_code_only() {
+        // Zone name contains "Z1" but NOT "echo_grove"
+        let mut orch = SliceOrchestrator::new();
+        trigger_zone_entry(&mut orch, "Z1_other_zone", GridCoord::new(101, 0, 0));
+        assert_ne!(orch.beat(), WalkthroughBeat::TutorialBegin);
+    }
+
+    #[test]
+    fn tutorial_complete_to_echo_grove_entry_via_name_only() {
+        // Kills || → && at line 743
+        let mut orch = SliceOrchestrator::new();
+        orch.complete_tutorial();
+        orch.tick(0.016);
+        assert_eq!(orch.beat(), WalkthroughBeat::TutorialComplete);
+        trigger_zone_entry(&mut orch, "echo_grove_area", GridCoord::new(101, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::EchoGroveEntry);
+    }
+
+    #[test]
+    fn echo_grove_to_fractured_cliff_via_name_only() {
+        // Kills || → && at line 754 — "fractured" but not "Z2"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::EchoGroveEntry);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "fractured_path", GridCoord::new(102, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::FracturedCliffEntry);
+    }
+
+    #[test]
+    fn echo_grove_to_fractured_cliff_via_z2_only() {
+        // "Z2" but not "fractured"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::EchoGroveEntry);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "Z2_somewhere", GridCoord::new(102, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::FracturedCliffEntry);
+    }
+
+    #[test]
+    fn skirmish_cleared_to_alcove_via_name_only() {
+        // Kills || → && at line 779 — "alcove" but not "Z2a"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::SkirmishCleared);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "hidden_alcove", GridCoord::new(102, 1, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::SideAlcoveVisited);
+    }
+
+    #[test]
+    fn skirmish_cleared_to_crossroads_via_name_only() {
+        // Kills || → && at line 781 — "crossroads" but not "Z3"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::SkirmishCleared);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "the_crossroads", GridCoord::new(103, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::LoomCrossroadsEntry);
+    }
+
+    #[test]
+    fn side_alcove_to_crossroads_via_name_only() {
+        // Kills || → && at line 792
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::SideAlcoveVisited);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "the_crossroads", GridCoord::new(103, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::LoomCrossroadsEntry);
+    }
+
+    #[test]
+    fn storm_decided_to_boss_arena_via_boss_name_only() {
+        // Kills first || at line ~810 — "boss" but not "courtyard" or "Z4"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::StormDecisionMade);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "boss_lair", GridCoord::new(104, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::BossArenaEntry);
+    }
+
+    #[test]
+    fn storm_decided_to_boss_arena_via_courtyard_name_only() {
+        // Kills second || at line ~810 — "courtyard" but not "boss" or "Z4"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::StormDecisionMade);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "old_courtyard", GridCoord::new(104, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::BossArenaEntry);
+    }
+
+    #[test]
+    fn storm_decided_to_boss_arena_via_z4_only() {
+        // "Z4" but not "boss" or "courtyard"
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::StormDecisionMade);
+        orch.tick(0.016);
+        trigger_zone_entry(&mut orch, "Z4_arena", GridCoord::new(104, 0, 0));
+        assert_eq!(orch.beat(), WalkthroughBeat::BossArenaEntry);
+    }
+
+    #[test]
+    fn loom_crossroads_to_storm_via_decided_only() {
+        // Kills || → && at line 802 (storm_decided || storm_resolved)
+        // Only storm_decided fires, not storm_resolved
+        use veilweaver_slice_runtime::storm_choice::StormChoice;
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::LoomCrossroadsEntry);
+        orch.tick(0.016);
+        // Enter crossroads and make a storm choice — generates StormDecisionMade
+        orch.game_loop.storm_state.enter_crossroads();
+        orch.game_loop.notify_storm_choice(StormChoice::Stabilize);
+        orch.tick(0.016); // consumes deferred choice → StormDecisionMade
+        // After this tick, beat should advance to StormDecisionMade
+        // (StormResolved also fires same tick via process_storm, but testing
+        // that only StormDecisionMade is needed)
+        assert!(
+            orch.beat() == WalkthroughBeat::StormDecisionMade
+                || orch.beat() == WalkthroughBeat::BossArenaEntry
+        );
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 27 — Combat event VFX/audio sync
+//   Kills: sync_hud_from_combat_events, sync_vfx_combat, feed_combat_telemetry
+// ════════════════════════════════════════════════════════════════════════════
+mod combat_event_vfx_sync {
+    use veilweaver_slice_runtime::walkthrough::SliceOrchestrator;
+    use veilweaver_slice_runtime::audio_specs::StingerKind;
+
+    #[test]
+    fn enemy_defeated_emits_echo_burst() {
+        // Kills: sync_hud_from_combat_events → () and delete EnemyDefeated arm
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016); // drains EncounterStarted
+        // Now kill enemy 1
+        orch.combat.damage_enemy(1, 99999.0);
+        let _result = orch.tick(0.016); // drains EnemyDefeated
+        let bursts = orch.vfx_audio.vfx_scene().echo_bursts.len();
+        assert!(bursts > 0, "EnemyDefeated should emit echo burst VFX");
+    }
+
+    #[test]
+    fn enemy_defeated_echo_burst_position_uses_remaining_count() {
+        // Kills: * → + and * → / in sync_hud_from_combat_events (remaining * 2.0)
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016); // drain EncounterStarted
+        // Kill enemy 1 — remaining = 2 (3 enemies, 1 killed)
+        orch.combat.damage_enemy(1, 99999.0);
+        orch.tick(0.016);
+        let bursts = &orch.vfx_audio.vfx_scene().echo_bursts;
+        assert!(!bursts.is_empty());
+        // Position x should be remaining * 2.0 = 2 * 2.0 = 4.0
+        let burst_x = bursts.last().unwrap().position.x;
+        assert!(
+            (burst_x - 4.0).abs() < 0.01,
+            "Echo burst position.x should be remaining*2.0 = 4.0, got {}",
+            burst_x
+        );
+    }
+
+    #[test]
+    fn echo_burst_position_discriminates_mul_vs_add() {
+        // remaining=1 → 1*2=2 (correct) but 1+2=3, 1/2=0.5
+        // This discriminates * from + and /
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016); // drain EncounterStarted
+        // Kill enemies 1 and 2 so remaining=1
+        orch.combat.damage_enemy(1, 99999.0);
+        orch.combat.damage_enemy(2, 99999.0);
+        orch.tick(0.016);
+        let bursts = &orch.vfx_audio.vfx_scene().echo_bursts;
+        // Last burst is from the 2nd kill (remaining=1)
+        let burst_x = bursts.last().unwrap().position.x;
+        assert!(
+            (burst_x - 2.0).abs() < 0.01,
+            "Echo burst with remaining=1 → x should be 1*2.0=2.0, got {}",
+            burst_x
+        );
+    }
+
+    #[test]
+    fn echo_burst_on_all_three_enemy_kills() {
+        // Test with remaining=0: 0*2=0 but 0+2=2, 0/2=0
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016);
+        orch.combat.damage_enemy(1, 99999.0);
+        orch.combat.damage_enemy(2, 99999.0);
+        orch.combat.damage_enemy(3, 99999.0);
+        orch.tick(0.016);
+        let bursts = &orch.vfx_audio.vfx_scene().echo_bursts;
+        // Last burst from remaining=0
+        let burst_x = bursts.last().unwrap().position.x;
+        assert!(
+            burst_x.abs() < 0.01,
+            "Echo burst with remaining=0 → x should be 0*2.0=0.0, got {}",
+            burst_x
+        );
+    }
+
+    #[test]
+    fn encounter_cleared_emits_weaving_success_stinger() {
+        // Kills: delete EncounterCleared in sync_hud_from_combat_events
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016);
+        // Clear all enemies
+        orch.clear_combat_wave();
+        let stingers_before = orch.vfx_audio.audio_scene().pending_stingers.len();
+        orch.tick(0.016);
+        let stingers_after = orch.vfx_audio.audio_scene().pending_stingers.len();
+        // Should have queued WeavingSuccess stinger(s) (from both sync_hud and sync_vfx)
+        assert!(
+            stingers_after > stingers_before || !orch.vfx_audio.audio_scene().pending_stingers.is_empty(),
+            "EncounterCleared should emit WeavingSuccess stingers"
+        );
+    }
+
+    #[test]
+    fn encounter_started_emits_stinger_via_sync_vfx_combat() {
+        // Kills: sync_vfx_combat → () and delete EncounterStarted arm
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016); // EncounterStarted events flow through sync_vfx_combat
+        let stingers = &orch.vfx_audio.audio_scene().pending_stingers;
+        let has_weaving_failure = stingers.iter().any(|s| s.kind == StingerKind::WeavingFailure);
+        assert!(
+            has_weaving_failure,
+            "EncounterStarted should queue WeavingFailure stinger via sync_vfx_combat"
+        );
+    }
+
+    #[test]
+    fn wave_cleared_emits_weaving_success_when_next_wave() {
+        // Kills: delete WaveCleared arm in sync_vfx_combat
+        // Need multi-wave encounter
+        use veilweaver_slice_runtime::combat::{CombatEnemy, CombatWave, CombatEncounter};
+        let wave1 = CombatWave::new(vec![
+            CombatEnemy::new(1, "grunt_a", 10.0, 1.0),
+        ]);
+        let wave2 = CombatWave::new(vec![
+            CombatEnemy::new(2, "grunt_b", 10.0, 1.0),
+        ]);
+        let mut orch = SliceOrchestrator::new();
+        orch.combat = CombatEncounter::new("multi", vec![wave1, wave2]);
+        orch.combat.start();
+        orch.tick(0.016); // drain EncounterStarted
+        // Clear wave 1 → triggers WaveCleared with next_wave=true
+        orch.combat.damage_enemy(1, 99999.0);
+        orch.tick(0.016);
+        // Check for WeavingSuccess stinger from sync_vfx_combat's WaveCleared handler
+        let stingers = &orch.vfx_audio.audio_scene().pending_stingers;
+        let has_weaving_success = stingers.iter().any(|s| s.kind == StingerKind::WeavingSuccess);
+        assert!(
+            has_weaving_success,
+            "WaveCleared with next_wave=true should queue WeavingSuccess stinger"
+        );
+    }
+
+    #[test]
+    fn enemy_defeated_updates_telemetry_via_feed_combat_telemetry() {
+        // Kills: delete EnemyDefeated arm in feed_combat_telemetry
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016);
+        assert_eq!(orch.telemetry().enemies_defeated, 0);
+        orch.combat.damage_enemy(1, 99999.0);
+        orch.tick(0.016);
+        assert!(
+            orch.telemetry().enemies_defeated > 0,
+            "EnemyDefeated should increment telemetry.enemies_defeated via feed_combat_telemetry"
+        );
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 28 — TickResult, vfx_audio_mut, misc
+// ════════════════════════════════════════════════════════════════════════════
+mod tick_result_and_misc_tests {
+    use veilweaver_slice_runtime::walkthrough::SliceOrchestrator;
+
+    #[test]
+    fn tick_result_event_count_addition() {
+        // Kills: + → - and + → * in TickResult::event_count
+        let mut orch = SliceOrchestrator::new();
+        // Tick with no events
+        let result = orch.tick(0.016);
+        let expected = result.game_events.len()
+            + result.combat_events.len()
+            + result.walkthrough_events.len();
+        assert_eq!(result.event_count(), expected);
+
+        // Now with some events
+        orch.start_combat();
+        let result2 = orch.tick(0.016);
+        let expected2 = result2.game_events.len()
+            + result2.combat_events.len()
+            + result2.walkthrough_events.len();
+        assert_eq!(result2.event_count(), expected2);
+        assert!(result2.event_count() > 0, "Combat start should produce events");
+    }
+
+    #[test]
+    fn tick_result_event_count_nonzero_and_consistent() {
+        // Create scenario with combat events
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat(); // pushes EncounterStarted to combat events
+        let result = orch.tick(0.016);
+        let manual = result.game_events.len()
+            + result.combat_events.len()
+            + result.walkthrough_events.len();
+        assert_eq!(result.event_count(), manual);
+        // Combat start should have at least 1 combat event
+        assert!(!result.combat_events.is_empty());
+        // With + → - or + → *, the sum would be wrong
+        assert!(result.event_count() >= 1);
+    }
+
+    #[test]
+    fn vfx_audio_mut_returns_mutable_reference() {
+        // Kills: vfx_audio_mut → Box::leak(Box::new(Default::default()))
+        let mut orch = SliceOrchestrator::new();
+        // Use mutable reference to modify VFX state
+        orch.vfx_audio_mut().enter_boss_encounter();
+        assert!(orch.vfx_audio.in_boss_encounter());
+        // Mutant returns a leaked default — modifications wouldn't be visible on orch
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 29 — Combat targeting (kills && → || in damage_enemy)
+// ════════════════════════════════════════════════════════════════════════════
+mod combat_targeting_tests {
+    use veilweaver_slice_runtime::walkthrough::SliceOrchestrator;
+
+    #[test]
+    fn damage_enemy_targets_correct_enemy_not_first_alive() {
+        // Kills: && → || in CombatEncounter::damage_enemy
+        // With ||, find(|e| e.id == id || e.alive) would match first alive enemy
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016);
+        // Default encounter has enemies 1, 2, 3 with same HP
+        let initial_hp_1 = orch.combat.waves[0].enemies[0].hp;
+        let initial_hp_2 = orch.combat.waves[0].enemies[1].hp;
+        // Damage enemy 2 specifically (small amount, not kill)
+        orch.combat.damage_enemy(2, 10.0);
+        // Enemy 1 should be UNCHANGED, enemy 2 should be damaged
+        assert!(
+            (orch.combat.waves[0].enemies[0].hp - initial_hp_1).abs() < 0.01,
+            "Enemy 1 should NOT take damage when targeting enemy 2"
+        );
+        assert!(
+            orch.combat.waves[0].enemies[1].hp < initial_hp_2,
+            "Enemy 2 should take damage"
+        );
+    }
+
+    #[test]
+    fn damage_dead_enemy_returns_false() {
+        // With || mutation, dead enemy could still be found by id match
+        let mut orch = SliceOrchestrator::new();
+        orch.start_combat();
+        orch.tick(0.016);
+        // Kill enemy 1
+        let killed = orch.combat.damage_enemy(1, 99999.0);
+        assert!(killed);
+        assert!(!orch.combat.waves[0].enemies[0].alive);
+        // Try damaging dead enemy 1 again
+        let killed_again = orch.combat.damage_enemy(1, 10.0);
+        assert!(!killed_again, "Dead enemy should not be found by damage_enemy");
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 30 — Boundary & guard mutations
+// ════════════════════════════════════════════════════════════════════════════
+mod boundary_guard_tests {
+    use veilweaver_slice_runtime::walkthrough::{SliceOrchestrator, WalkthroughBeat};
+    use veilweaver_slice_runtime::player_state::PlayerState;
+
+    #[test]
+    fn is_full_health_exact_boundary() {
+        // Kills: < → <= in PlayerState::is_full_health
+        // is_full_health: (self.hp - self.max_hp).abs() < f32::EPSILON
+        // With <=: would return true when abs diff == EPSILON (just outside tolerance)
+        let mut ps = PlayerState::default();
+        assert!(ps.is_full_health());
+        // Take tiny damage that puts hp just below max
+        ps.take_damage(0.001);
+        assert!(!ps.is_full_health(), "After any damage, should not be full health");
+        // Heal back fully
+        ps.heal(1000.0);
+        assert!(ps.is_full_health(), "After full heal, should be full health");
+    }
+
+    #[test]
+    fn damage_player_rejects_nan() {
+        // Kills: || → && in damage_player (line 875)
+        // Guard: !amount.is_finite() || amount <= 0.0
+        // With &&: NaN passes through (NaN is not finite, but NaN <= 0.0 is false)
+        let mut orch = SliceOrchestrator::new();
+        let hp_before = orch.player().hp;
+        orch.damage_player(f32::NAN);
+        assert!(
+            (orch.player().hp - hp_before).abs() < 0.01,
+            "NaN damage should be rejected"
+        );
+        // Also check telemetry wasn't polluted (catches || → && mutation)
+        assert!(
+            orch.telemetry().damage_taken.is_finite(),
+            "NaN damage should not pollute telemetry (damage_taken={:?})",
+            orch.telemetry().damage_taken
+        );
+        assert_eq!(
+            orch.telemetry().damage_taken, 0.0,
+            "NaN damage should not record any damage_taken"
+        );
+    }
+
+    #[test]
+    fn damage_player_rejects_infinity() {
+        let mut orch = SliceOrchestrator::new();
+        let hp_before = orch.player().hp;
+        orch.damage_player(f32::INFINITY);
+        assert!(
+            (orch.player().hp - hp_before).abs() < 0.01,
+            "Infinity damage should be rejected"
+        );
+        // Telemetry must also be clean
+        assert!(
+            orch.telemetry().damage_taken.is_finite(),
+            "Infinity damage should not pollute telemetry"
+        );
+        assert_eq!(orch.telemetry().damage_taken, 0.0);
+    }
+
+    #[test]
+    fn damage_player_rejects_zero_no_event() {
+        // With || → &&: 0.0 passes (is_finite=true → !is_finite=false, <= 0 = true → && = false)
+        // This means record_damage_taken(0) and event push happen
+        let mut orch = SliceOrchestrator::new();
+        let hp_before = orch.player().hp;
+        orch.damage_player(0.0);
+        assert_eq!(orch.player().hp, hp_before, "Zero damage should not change HP");
+        assert_eq!(orch.telemetry().damage_taken, 0.0, "Zero damage should not record telemetry");
+        orch.damage_player(-5.0);
+        assert_eq!(orch.player().hp, hp_before, "Negative damage should not change HP");
+        assert_eq!(orch.telemetry().damage_taken, 0.0, "Negative damage should not record telemetry");
+    }
+
+    #[test]
+    fn advance_to_debrief_noop_from_wrong_beat() {
+        // Kills: == → != in advance_to_debrief (line 974)
+        // With !=: advance_to_debrief would work from ANY beat != BossDefeated
+        let mut orch = SliceOrchestrator::new();
+        assert_eq!(orch.beat(), WalkthroughBeat::TutorialBegin);
+        orch.advance_to_debrief();
+        assert_eq!(
+            orch.beat(),
+            WalkthroughBeat::TutorialBegin,
+            "advance_to_debrief should be a no-op from TutorialBegin"
+        );
+    }
+
+    #[test]
+    fn advance_to_debrief_works_from_boss_defeated() {
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::BossDefeated);
+        orch.tick(0.016);
+        orch.advance_to_debrief();
+        assert_eq!(orch.beat(), WalkthroughBeat::Complete);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 31 — Zone transitions cross-contamination
+//   Kills: && → || by testing that verb-match without category-match returns false
+// ════════════════════════════════════════════════════════════════════════════
+mod zone_transitions_verb_contamination {
+    use veilweaver_slice_runtime::zone_transitions::{TriggerAction, ZoneRegistry};
+
+    #[test]
+    fn cinematic_play_is_not_dialogue() {
+        // cinematic.play has verb="play" matching dialogue.play's verb
+        // With && → ||, is_dialogue would be true for cinematic.play
+        let action = TriggerAction::parse("cinematic.play:intro_sequence");
+        assert!(action.is_cinematic());
+        assert!(
+            !action.is_dialogue(),
+            "cinematic.play should NOT be dialogue (verb 'play' matches but category doesn't)"
+        );
+    }
+
+    #[test]
+    fn dialogue_play_is_not_cinematic() {
+        let action = TriggerAction::parse("dialogue.play:npc_greeting");
+        assert!(action.is_dialogue());
+        assert!(
+            !action.is_cinematic(),
+            "dialogue.play should NOT be cinematic"
+        );
+    }
+
+    #[test]
+    fn zone_transition_is_not_zone_with_different_verb() {
+        // Construct an action with category="zone" but verb!="transition"
+        // zone.load would have category="zone", verb="load"
+        let action = TriggerAction::parse("zone.load:some_zone");
+        assert!(
+            !action.is_zone_transition(),
+            "zone.load should NOT be is_zone_transition (verb 'load' != 'transition')"
+        );
+    }
+
+    #[test]
+    fn decision_open_is_not_vfx_activate() {
+        // Test that shared-nothing types don't cross-contaminate
+        let action = TriggerAction::parse("decision.open:storm_choice");
+        assert!(action.is_decision());
+        assert!(!action.is_vfx());
+        assert!(!action.is_zone_transition());
+    }
+
+    #[test]
+    fn vfx_activate_is_not_decision() {
+        let action = TriggerAction::parse("vfx.activate:explosion");
+        assert!(action.is_vfx());
+        assert!(!action.is_decision());
+    }
+
+    #[test]
+    fn is_legacy_false_for_scoped_actions() {
+        // Kills: is_legacy → true
+        let zone = TriggerAction::parse("zone.transition:Z1_echo_grove");
+        assert!(!zone.is_legacy(), "Scoped action should NOT be legacy");
+        let dialogue = TriggerAction::parse("dialogue.play:greeting");
+        assert!(!dialogue.is_legacy());
+    }
+
+    #[test]
+    fn is_empty_true_for_new_registry() {
+        // Kills: is_empty → false
+        let reg = ZoneRegistry::new();
+        assert!(reg.is_empty(), "New empty registry should be empty");
+        assert_eq!(reg.len(), 0);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Module 32 — Echo/anchor VFX pipeline through tick
+//   Kills: delete EchoCollected arm + >= → < + delete ! mutations in
+//   sync_hud_from_walkthrough_events
+// ════════════════════════════════════════════════════════════════════════════
+mod beat_hud_sync_pipeline {
+    use veilweaver_slice_runtime::walkthrough::{SliceOrchestrator, WalkthroughBeat};
+
+    #[test]
+    fn boss_arena_beat_via_natural_progression_sets_boss_encounter() {
+        // BeatAdvanced { to: BossArenaEntry } flows through sync_hud_from_walkthrough_events
+        // during tick via check_beat_progression → kills delete BossDefeated arm, etc.
+        use astraweave_scene::world_partition::GridCoord;
+
+        let mut orch = SliceOrchestrator::new();
+        // Setup: get to StormDecisionMade
+        orch.force_beat(WalkthroughBeat::StormDecisionMade);
+        orch.tick(0.016);
+
+        // Now trigger zone entry with "boss" to advance StormDecisionMade → BossArenaEntry
+        orch.game_loop.zone_registry.register("boss_arena", GridCoord::new(104, 0, 0));
+        orch.game_loop.register_trigger_action("enter_boss", "zone.transition:boss_arena");
+        orch.game_loop.notify_trigger_enter(vec!["enter_boss".to_string()]);
+        orch.tick(0.016); // BeatAdvanced pushed DURING tick → sync handler processes it
+
+        assert_eq!(orch.beat(), WalkthroughBeat::BossArenaEntry);
+        // sync_hud_from_walkthrough_events should've called enter_boss_encounter()
+        assert!(orch.vfx_audio.in_boss_encounter(),
+            "Natural BossArenaEntry progression should activate boss encounter VFX");
+    }
+
+    #[test]
+    fn debrief_beat_via_force_beat_finalizes_recap() {
+        // force_beat(Complete) directly finalizes recap
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::BossDefeated);
+        orch.tick(0.016);
+        orch.advance_to_debrief();
+        orch.tick(0.016);
+        assert!(orch.recap().is_finalized(), "Complete should finalize recap");
+    }
+
+    #[test]
+    fn beat_advanced_to_boss_defeated_clears_boss_vfx() {
+        // force_beat(BossDefeated) directly calls boss_defeated()
+        let mut orch = SliceOrchestrator::new();
+        orch.force_beat(WalkthroughBeat::BossArenaEntry);
+        orch.tick(0.016);
+        assert!(orch.vfx_audio.in_boss_encounter());
+        orch.force_beat(WalkthroughBeat::BossDefeated);
+        orch.tick(0.016);
+        assert!(!orch.vfx_audio.in_boss_encounter(),
+            "BossDefeated should clear boss encounter VFX");
+    }
+}

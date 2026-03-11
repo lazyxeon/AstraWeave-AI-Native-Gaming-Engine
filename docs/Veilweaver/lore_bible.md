@@ -22,7 +22,7 @@ Part VI — Item Catalogue — Quality Tiers, Melee Weapons, Ranged Weapons, Arm
 
 ### I. THE COSMOLOGY
 
-##### The Trinity of Magic
+#### The Trinity of Magic
 
 Tebel operates on three fundamental magical systems, each older than the last, each the foundation upon which the previous one stands — without knowing it.
 
@@ -38,7 +38,7 @@ The power of consuming silence. The unmaking of what creation built. Tav’al Ku
 
 The oldest magic. The foundation beneath both Dav and Tav. The force that predates the distinction between creation and void. It predates Dav’al. It predates Tav’al. It created Abzu himself as a consequence of its nature. Not dark, not light, not moral, not immoral — simply fundamental. The Keh’Dem are born with an innate ability to touch it but after millennia of effort have made only an inch of progress understanding something larger than an aircraft carrier. Nobody else in Tebel knows it exists.
 
-##### The Primordial Cry
+#### The Primordial Cry
 
 YAHWEY — arrived at not through etymology but through breath itself. The deep intentional exhale becoming intention. Theorized by linguists as the root of the oldest human name for the divine because it is simply the sound of being alive. When the Tikva screams it in the final battle they are not casting a spell. They are remembering the first sound existence ever made and hurling it at the void that wants to unmake everything. The Unwritten cannot unwrite what existed before writing.
 “The threat was never to creation. But to existence itself.” — Tav’al Kurum, Archon of the Final Silence
@@ -48,7 +48,7 @@ YAHWEY — arrived at not through etymology but through breath itself. The deep 
 
 #### TEBEL
 
-##### The Inhabited Earth
+#### The Inhabited Earth
 
 Hebrew: the inhabited earth, a world made specifically for people. Every civilization, every conflict, every fate woven into its fabric has occurred here. Tebel is not just a setting — it is itself a declaration by Dav’al Narum that life was worth creating. The name is simple. Ancient. It means exactly what it is. Tebel is bounded by four bordering regions: Avirim across the western sea (Yam Gadol), Edom Kur to the east beyond the bleeding veil, Tzafar to the frozen north, and Yeshurun to the ancient south.
 
@@ -57,27 +57,27 @@ Each holds a piece of the truth that the others don’t. The complete picture on
 
 ### III. THE HISTORY
 
-##### Before the First War
+#### Before the First War
 
 The Keh’Dem were prominent across Tebel. Recognizing the signs of what was coming — not Tav’al’s war but Abzu’s deeper stirring — they deliberately removed themselves from the thread of fate entirely, using their innate connection to Eyn magic to become invisible to fate-weaving, the Keepers’ oracle, Tav’al, and even Dav’al himself. They have existed in the shadows of Tebel undetected ever since. Watching. Waiting.
 
-##### The First Cataclysmic War
+#### The First Cataclysmic War
 
 Tav’al’s forces consumed civilization after civilization. Every fortress fell. Every refuge was overrun. Humanity and dwarves fought together and lost together until nothing remained but the last desperate survivors retreating toward what would become Dur Dunnum.
 
-##### The First Fate-Weave
+#### The First Fate-Weave
 
 — Dur Dunnum The last survivors — humans and dwarves together at the absolute end of everything — retreated to what would become Dur Dunnum. Beyond hope, beyond strategy, beyond anything except raw collective conviction, they named their last refuge with the most emphatic declaration available. Not poetry. Not flourish. Fortress Fortress. Two peoples tapping into Dav magic instinctively, unknowingly fate-weaving their declaration into the fabric of reality itself.
 
 The weave rippled through fate. Dav’al felt it — he can sense when fate has been weaved — and followed the thread home. He ended the war and freed them. The first fate-weave in history was performed not by a primordial being or a trained magic user but by terrified survivors who had nothing left but desperate collective will.
 
-##### The Building of Milah
+#### The Building of Milah
 
 Dav’al spoke the capital city into existence as a monument to humanity’s survival, a declaration of what his power stood for, and a direct statement to Tav’al. Humans and dwarves built it together — dwarven craftsmanship shaped every stone. Within the golden winged statue at its heart Dav’al embedded an invisible echo of his power — a silent barrier protecting the entire surrounding region from Tav’al’s forces.
 
 Nobody knows it exists. The statue survives seven centuries of changing regimes purely because of its opulence and aesthetic value. The greatest protection in the world preserved by vanity alone.
 
-##### Dav’al’s Departure
+#### Dav’al’s Departure
 
 After a hundred years in Milah, Dav’al departed on what appeared to be a mission. He anointed Kalum as the First Keeper, gifted the Keepers of the Thread their sacred oracle object — the Even Qol — and left with the mandate that they witness and record but never interfere. He did not tell them what he was truly going after. He has been fighting in secret ever since, believing he fights Tav’al, operating at reduced power with his echo embedded in the statue.
 
@@ -102,7 +102,7 @@ Co-survivors of the first war. Built Dur Dunnum and shaped every stone of Milah 
 
 #### THE KEH’DEM
 
-##### Those Who Came First
+#### Those Who Came First
 
 The oldest race in Tebel. A mix of elven and gnomish — small, ancient, almost alien in appearance. Vibrant and strange, with teal eyes that see the substrate of reality constantly. Born with an innate ability to touch Eyn magic — the oldest magic, the substrate beneath both creation and void. After millennia of effort have made an inch of progress understanding something larger than an aircraft carrier.
 
@@ -385,18 +385,22 @@ Hebrew: evening, the mixing of light and dark. A crossroads settlement where thr
 
 Hebrew: the inn at the end of a long road. Built around a natural hot spring with mild Dav magic properties — wounds heal faster, nightmares less frequent, the inexplicable dread after a Veilstalker encounter fades quicker. The healer who runs it is 240 years old. The oldest living human in Tebel. She knew the second Tikva personally.
 
-#### NAHU — The
+#### NAHU — The Place of Settling
 
-Place of Settling Akkadian: rest. A farming settlement that shouldn’t sustain itself given its location — the soil produces twice what it should, harvests never fail. Beneath the oldest farm’s foundation is a fragment of the echo from Milah’s statue that broke away when Dav’al first embedded it. When the statue is destroyed this fragment will briefly flare golden for exactly one moment. Every person in Nahu will see it. None will understand. The player will.
+Akkadian: rest. A farming settlement that shouldn’t sustain itself given its location — the soil produces twice what it should, harvests never fail. Beneath the oldest farm’s foundation is a fragment of the echo from Milah’s statue that broke away when Dav’al first embedded it. When the statue is destroyed this fragment will briefly flare golden for exactly one moment. Every person in Nahu will see it. None will understand. The player will.
 
-#### THE NORTHERN REACHES DUNANU — The Strong One
+**The Northern Reaches**
+
+#### DUNANU — The Strong One
 
 Akkadian: the fortress that holds. Built inside a naturally fortified canyon. The walls are scarred with impact marks from the first war — something vast struck these walls repeatedly and failed to breach them. The geological survey calls the markings natural erosion. The Keeper record describes what actually happened in detail that would change how every historian in Tebel understands that conflict.
 
 #### TSAFON — The Hidden North
 
 Hebrew: the hidden place, what lies concealed in the cold. The northernmost permanent settlement. Residents carve family histories into their walls — an aesthetic tradition that is actually an unconscious echo of dwarven stone-record keeping from six generations of post-war intermarriage. Their wall carvings go back further than any surface record in Milah. A Keeper has been living here for forty years cataloguing it quietly.
-KAL MATU — Voice of the Dead Lands
+
+#### KAL MATU — Voice of the Dead Lands
+
 Akkadian: the oldest human ruin in Tebel, predating Milah. Partially reclaimed by void magic. The ruins contain architecture suggesting the civilization that built it understood something about Dav magic that the kingdom never recovered. The Keh’Dem have a detailed record of what this city was. They called it something else. They don’t share the name with anyone.
 
 #### SHAR MATI — King of the Dead Earth
@@ -405,7 +409,9 @@ Akkadian. A fortress ruin where the first major battle of the first war was foug
 
 Tav’al’s forces broke through here first. The ground is permanently scarred — grass grows black, water tastes of ash, animals won’t approach within a mile. Ashwraiths congregate in numbers found nowhere else. Inside the deepest chamber accessible through half-collapsed passages is a throne of black stone. The first place Tav’al touched Tebel’s soil. Nachash pilgrims visit secretly twice a year.
 
-#### THE SOUTHERN TERRITORIES KARU — The Harbor
+**The Southern Territories**
+
+#### KARU — The Harbor
 
 Akkadian: where things arrive and depart. The largest port city in Tebel. Three Nachash operatives control the import licensing system — meaning they control what information enters Tebel from beyond its borders. The lighthouse has burned for four hundred years without documented maintenance. The current keeper is seventeen and recently started having dreams featuring a golden statue and a dwarf with ancient eyes.
 
@@ -415,18 +421,22 @@ Akkadian: where people truly belong. A mid-sized city remarkable for being genui
 
 The current mayor has been investigating neighboring corruption for six years and keeps hitting walls he cannot explain.
 
-#### SHAMATU — Where
+#### SHAMATU — Where Heaven and Earth Meet
 
-Heaven and Earth Meet Akkadian: the totality. A center of scholarship funded generously because controlled scholarship is more useful than no scholarship. The Nachash have shaped the curriculum over two centuries. The library contains the most extensive collection of pre-corruption history in any surface location — heavily annotated with corrections that subtly redirect interpretation.
+Akkadian: the totality. A center of scholarship funded generously because controlled scholarship is more useful than no scholarship. The Nachash have shaped the curriculum over two centuries. The library contains the most extensive collection of pre-corruption history in any surface location — heavily annotated with corrections that subtly redirect interpretation.
 
 Devorah’s hidden text is three shelves from the scholar who has been noticing inconsistencies.
 
-#### ASHAM — The
+#### ASHAM — The Weight of What Was Done
 
-Weight of What Was Done Hebrew: guilt. Built on the site of a massacre during the first war. The economy runs on memorial tourism — the city profits from the tragedy it was built on. Nobody knows what their city’s name means anymore. Under the memorial plaza, forty feet down, is a Keh’Dem settlement abandoned deliberately before the massacre. They knew it was coming.
+Hebrew: guilt. Built on the site of a massacre during the first war. The economy runs on memorial tourism — the city profits from the tragedy it was built on. Nobody knows what their city’s name means anymore. Under the memorial plaza, forty feet down, is a Keh’Dem settlement abandoned deliberately before the massacre. They knew it was coming.
 
 They couldn’t warn anyone without revealing themselves. The weight of that choice is in their oldest oral histories.
-THE EASTERN BORDERS TZUR — The Rock
+
+**The Eastern Borders**
+
+#### TZUR — The Rock
+
 Hebrew: the fortress of nature itself. A city carved directly into cliff faces, accessible only through narrow passes. Has never been successfully attacked. The Nachash have minimal presence because infiltration is nearly impossible. The most genuinely free city in Tebel. An underground network of historical investigators operates openly here and has independently reconstructed about thirty percent of the true pre-corruption history. They are missing the most important thirty percent.
 
 #### SHAQAL — To Weigh Carefully
@@ -437,7 +447,9 @@ Akkadian: to assess. A border trading post where eastern traders arrive with the
 
 Hebrew: the boundary marked in blood. The easternmost settlement. The sky has a faint reddish tint at dawn and dusk that doesn’t exist anywhere else — the veil bleeds through most consistently here. Exclusively military population. Commander Yael has never heard of the Nachash but if someone described them she would recognize three people she has been suspicious of for years.
 
-#### THE WESTERN COAST YAM GADOL — The Great Sea
+**The Western Coast**
+
+#### YAM GADOL — The Great Sea
 
 Hebrew: the vast water. The name given by survivors who stood at the edge of Tebel after the first war and saw something that extended beyond sight — after years of fighting in enclosed fortresses. The emotional weight of that moment is in the name. Coastal settlements here have a different cultural character — more philosophical, less political. People who live next to something vast and indifferent tend to develop perspective.
 
@@ -493,9 +505,9 @@ Akkadian: the king’s foundation. The largest active dwarven city in the underg
 
 Akkadian: light below the earth. Built around an underground lake that bioluminesces with trace Dav magic. The water glows gold. Has glowed since before the first war. The dwarves who live here are the most spiritually connected to Dav’al’s memory of any living people in Tebel — not through organized religion but through daily proximity to the physical echo of his power in the water. They consider it sacred. They have never told a surface dweller it exists.
 
-#### SHAMARU KALAM — Guardian of All That Remains Akkadian. The
+#### SHAMARU KALAM — Guardian of All That Remains
 
-Keepers of the Thread’s primary archive. Deeper than any other dwarven settlement. Accessible only through a passage system that Kalum is the only living person who knows completely. Carved into a cavern of naturally formed crystal that acoustically amplifies sound — a whisper at one end is audible at the other. This was deliberate. The Keepers believed that truth should resonate through everything around it rather than sit silent on a shelf.
+Akkadian: the guardian of all that remains. The Keepers of the Thread’s primary archive. Deeper than any other dwarven settlement. Accessible only through a passage system that Kalum is the only living person who knows completely. Carved into a cavern of naturally formed crystal that acoustically amplifies sound — a whisper at one end is audible at the other. This was deliberate. The Keepers believed that truth should resonate through everything around it rather than sit silent on a shelf.
 
 Seven centuries of records carved in stone. The most important room in the world.
 
@@ -503,41 +515,49 @@ Seven centuries of records carved in stone. The most important room in the world
 
 Sumerian: the original settlement of the deep. The oldest dwarven location in the network. Older than Dur Dunnum. Older than the first war. The Keh’Dem visited it once — their records describe it as the place they first realized dwarves and themselves had more in common than either race knew. The visit was six thousand years ago. The dwarves who received them recorded them in the founding stones as honored guests whose name couldn’t be written because they asked not to be recorded. The dwarves honored that request for six thousand years.
 
-#### BITU KALAMA — The
+#### BITU KALAMA — The House of All That Remains
 
-House of All That Remains Akkadian: the last home. Built specifically as the final fallback position if every other underground location is compromised. Only three living dwarves know its location. Stocked and maintained for seven hundred years. Enough supplies for five hundred people for ten years. A complete copy of the most critical Keeper records.
+Akkadian: the last home. Built specifically as the final fallback position if every other underground location is compromised. Only three living dwarves know its location. Stocked and maintained for seven hundred years. Enough supplies for five hundred people for ten years. A complete copy of the most critical Keeper records.
 
 The Even Qol’s secondary housing chamber. One Emberstoat has lived in Bitu Kalama for as long as any dwarf can remember. It has never left. It is always warm.
 
 
 ### XIV. THE BORDERING REGIONS
 
-#### AVIRIM — The Other Side Western | Across Yam Gadol
+#### AVIRIM — The Other Side
+
+Western | Across Yam Gadol
 
 Hebrew: those who crossed over. Maritime civilization across the great sea. Their historical records of the first war period are the most accurate external documentation of Dav’al Narum’s existence anywhere in the known world — they had no political reason to erase him. They describe a being of golden light ending a war they could see the glow of from across the ocean.
 
 The Nachash have known about these records for two centuries and have ensured they never reach Tebel’s scholars. Every Avirim sailor knows a song about the golden voice that ended the dark war across the water. They think it is mythology. It is history. Avirim people have no horns, no Tikva bloodline, no fate-weaving ability. But they have something nobody in Tebel has: an unbroken oral tradition of the First Word being spoken, passed down as song across the water for seven hundred years.
 
-#### EDOM KUR — The Red
+#### EDOM KUR — The Red Earth of the Deep
 
-Earth of the Deep Eastern | Beyond Gvul Adom Edom (Hebrew: the red earth, the ancient adversary) + Kur (Akkadian: the underworld, the land below). The most dangerous bordering region. Sits directly over the deepest concentration of Tav magic outside the veil itself — the soil runs genuinely red. The people have adapted to living in permanent proximity to void magic: not corrupted, adapted.
+Eastern | Beyond Gvul Adom
+
+Edom (Hebrew: the red earth, the ancient adversary) + Kur (Akkadian: the underworld, the land below). The most dangerous bordering region. Sits directly over the deepest concentration of Tav magic outside the veil itself — the soil runs genuinely red. The people have adapted to living in permanent proximity to void magic: not corrupted, adapted.
 
 They treat void magic as a natural force rather than an enemy or a god and are the only civilization in the known world to do so. They can feel void magic being used manipulatively — living next to it for generations gave them sensitivity to its misuse that functions almost like a biological alarm. The Nachash have attempted to infiltrate them four times and failed all four times for this reason.
 
 The sixth Tikva’s last stand geological alterations are visible from their western watchtowers — they have been studying them for four generations and know it was fate-weaving. They don’t know what the weave was trying to say. The player will. The most politically inconvenient ally the Tikva will find. Also the most useful.
 
-#### TZAFAR — The
+#### TZAFAR — The Crown of the North
 
-Crown of the North Northern | Beyond Tsafon Akkadian: the peak above everything. Built across a mountain range so extreme that sustained warfare against it has never been successfully completed. Navigable passes only four months per year — the rest of the time Tzafar exists in complete natural isolation. The most advanced academic and philosophical civilization in the known world.
+Northern | Beyond Tsafon
+
+Akkadian: the peak above everything. Built across a mountain range so extreme that sustained warfare against it has never been successfully completed. Navigable passes only four months per year — the rest of the time Tzafar exists in complete natural isolation. The most advanced academic and philosophical civilization in the known world.
 
 Free intellectual environment that has produced independent conclusions paralleling the vault’s deepest truths through pure philosophical reasoning. A Tzafar philosopher three centuries ago wrote that existence is fundamentally an act of will rather than a state of being — that the universe persists not because it must but because it chooses to at every moment.
 
 The text describes Yahwey with different words. Kalum has read it seventeen times. The first Tikva bloodline family the Keepers relocated for safety was hidden here four generations ago. Somewhere in Tzafar’s mountain villages are the Tikva’s cousins — same
 bloodline, horns never manifested, always felt slightly different without knowing why.
 
-#### YESHURUN — The Upright Ones Southern |
+#### YESHURUN — The Upright Ones
 
-Beyond the Agricultural Heartland Hebrew: the beloved who walks straight, ancient poetic name for a people chosen for a purpose they don’t fully understand. The oldest surviving human civilization outside Tebel. Predate Milah. Predate the first war. Established by survivors of an older conflict that even the Keepers’ records only reference obliquely.
+Southern | Beyond the Agricultural Heartland
+
+Hebrew: the beloved who walks straight, ancient poetic name for a people chosen for a purpose they don’t fully understand. The oldest surviving human civilization outside Tebel. Predate Milah. Predate the first war. Established by survivors of an older conflict that even the Keepers’ records only reference obliquely.
 
 They took the most essential knowledge, the oldest records, the deepest cultural memory south until they found land stable enough to hold it. They have been custodians of human civilization’s root system ever since. Their oldest records contain references to three primordial beings — not two. They knew about Abzu before the first war. The knowledge has been sitting in their deepest archive longer than Milah has existed.
 
@@ -548,17 +568,17 @@ The Nachash have tried to penetrate Yeshurun six times. All six operatives defec
 
 Three layers of consciousness before the real game begins. The entire cosmology present in the first five minutes completely invisible. On replay every detail carries devastating new weight.
 
-#### LAYER ONE — The
+#### LAYER ONE — The Monster
 
-Monster Player wakes. Vision blurred. Clears to reveal Dav’al Narum interrogating them for information. Zooms out — you are not a human. You are a monster. Dav’al speaks a Word. You violently swell and explode. The player’s first conscious experience in Tebel is being unmade by the Sultan of the First Word. They don’t know who he is. They don’t know what they are. They watch themselves get spoken out of existence.
+Player wakes. Vision blurred. Clears to reveal Dav’al Narum interrogating them for information. Zooms out — you are not a human. You are a monster. Dav’al speaks a Word. You violently swell and explode. The player’s first conscious experience in Tebel is being unmade by the Sultan of the First Word. They don’t know who he is. They don’t know what they are. They watch themselves get spoken out of existence.
 
-#### LAYER TWO — The
+#### LAYER TWO — The Campsite
 
-Campsite Player wakes as an adventurer at a campsite. Beer in hand. Companions around a dying fire. Classic fantasy comfort. A noise. Monster attack. You struggle. You die. The player thinks this was the tutorial death.
+Player wakes as an adventurer at a campsite. Beer in hand. Companions around a dying fire. Classic fantasy comfort. A noise. Monster attack. You struggle. You die. The player thinks this was the tutorial death.
 
-#### LAYER THREE — The
+#### LAYER THREE — The Tavern (Real)
 
-Tavern (Real) Player truly wakes in a tavern inn room. Companions still passed out. The paranoia is immediate — is this real? That paranoia is the perfect psychological state to begin a game about fate-weaving and reality manipulation. Baru, the dwarf innkeeper, moves somewhere below. He knows exactly who the player is. He says nothing.
+Player truly wakes in a tavern inn room. Companions still passed out. The paranoia is immediate — is this real? That paranoia is the perfect psychological state to begin a game about fate-weaving and reality manipulation. Baru, the dwarf innkeeper, moves somewhere below. He knows exactly who the player is. He says nothing.
 
 
 ### XVI. THE FINAL BATTLE & ENDING
@@ -993,13 +1013,15 @@ He tells the player what the Nachash know and what they do not know. What they k
 The silence is not the enemy of the Word. They are the same act viewed from different angles. He understood this because Yeshurun’s archive showed him the Sundering account, and the Sundering account describes Dav’al and Tav’al not as opponents but as twin expressions of the same emergence.
 The operative is dying. He has enough time left to see the seventh thread hold or to die knowing it is holding somewhere he cannot see. He does not ask the player to hurry. He asks the player to understand what they are protecting before they protect it.
 
-**Rewards:** - Sundering Awareness — Deep understanding of Abzu’s nature transforms the player’s approach to the Unwriting. Void damage reduction becomes void damage redirection — the player can channel Abzu-adjacent energy into structural repairs rather than simply resisting it. Mechanically equivalent to a permanent 20% Unwriting resistance plus the ability to seal Unwriting zones by channeling absorbed energy into the web’s gaps. - The Three Names — Lore entry that reshapes the player’s understanding of the cosmology.
+**Rewards:**
 
-The vault’s deepest truth, now carried. - Yeshurun Alliance — The oldest surviving human civilization becomes a Root contact. Their archive is available for consultation (remote, through Thread Keeper Resonance if developed). Post-game: Yeshurun scholars travel to Milah to assist in historical reconstruction. - Sixth Operative’s Testimony — Complete Nachash operational understanding from the inside.
+- **Sundering Awareness** — Deep understanding of Abzu’s nature transforms the player’s approach to the Unwriting. Void damage reduction becomes void damage redirection — the player can channel Abzu-adjacent energy into structural repairs rather than simply resisting it. Mechanically equivalent to a permanent 20% Unwriting resistance plus the ability to seal Unwriting zones by channeling absorbed energy into the web’s gaps.
+- **The Three Names** — Lore entry that reshapes the player’s understanding of the cosmology. The vault’s deepest truth, now carried.
+- **Yeshurun Alliance** — The oldest surviving human civilization becomes a Root contact. Their archive is available for consultation (remote, through Thread Keeper Resonance if developed). Post-game: Yeshurun scholars travel to Milah to assist in historical reconstruction.
+- **Sixth Operative’s Testimony** — Complete Nachash operational understanding from the inside. Combined with Malkah’s journal and the Archivist’s Conscience quest, this provides the fullest picture of the Nachash’s seven-century campaign available anywhere in the game.
+- **The Warning** — Carried permanently. The player who reads the Warning and then produces the Yahwey weave is not just declaring that existence is worth keeping. They are answering a message that was carved in stone by someone who saw the Sundering and said: “Prepare the ones who come after.” The player is the one who came after. They were prepared. The Warning was heard.
 
-Combined with Malkah’s journal and the Archivist’s Conscience quest, this provides the fullest picture of the Nachash’s seven-century campaign available anywhere in the game. - The Warning — Carried permanently. The player who reads the Warning and then produces the Yahwey weave is not just declaring that existence is worth keeping. They are answering a message that was carved in stone by someone who saw the Sundering and said: “Prepare the ones who come after.” The player is the one who came after. They were prepared. The Warning was heard.
-
-#### WITHOUT THIS ARC:
+**Without This Arc:**
 
 Abzu remains conceptually understood through the Keh’Dem’s geometric observation but emotionally opaque. The player fights the Unwritten as a threat. The player who completed the Yeshurun arc faces the Unwritten as a tragedy. Both approaches win. One of them also grieves, and the Yahwey weave that carries grief alongside declaration produces a web that accommodates Abzu’s recession rather than merely forcing it.
 
@@ -1011,7 +1033,8 @@ The post-game web is subtly different: Abzu settles more peacefully into the sub
 The Painting Described in Full
 The cave system at Reshit is the oldest continuously inhabited location in Tebel. The outer chambers have been used for storage by the current inhabitants for generations. The inner chambers are avoided because the Substrate Crawlers make people uncomfortable — they move through solid matter in ways that the uninitiated find unsettling. The deep chamber has not been entered by a surface-dweller in living memory.
 The painting is on the far wall of the deepest accessible chamber, approximately forty meters below the surface in a space where the air is still and carries a faint mineral tang. The Keh’Dem painted it before the first war, before Dur Dunnum, before the concept of the Tikva existed. They painted it because they saw it coming the way they see everything coming — not through prophecy but through observation so patient and so precise that the future becomes legible in the patterns of the present.
-The Image
+
+**The Image**
 The painting is rendered in Keh’Dem geometric pigments — minerals ground from substrate-adjacent stone that carry faint Eyn resonance. The colors do not behave normally. They shift slightly depending on the observer’s thread-frequency alignment, appearing warmer to Dav-aligned viewers and cooler to Tav-aligned viewers. A viewer with no thread alignment sees a neutral palette that is nevertheless wrong in a way they cannot articulate — the colors exist at a frequency that the human eye can process but the human brain does not expect.
 Three figures stand in a line against something that has no form.
 The left figure: Golden. Winged. Arms raised in the posture of someone mid-declaration. This is Dav’al — recognizable from the fire statue at Dur Dunnum, though the painting predates the statue by millennia. The Keh’Dem observed him before the first war and recorded his essential nature: a being in the act of speaking. The golden figure’s mouth is open.
@@ -1058,96 +1081,29 @@ The complete Even Qol transforms the player’s thread vision from the golden-li
 
 The Even Qol’s warmth — the same warmth as the emberstoat, the same warmth as Baru’s stew, the same warmth as the First Word — is constant and comforting and carries the specific reassurance of something that was broken and is now whole.
 During the Yahwey weave, the complete Even Qol is the tuning fork. The player’s declaration resonates through the restored crystal at the First Word’s original frequency. The web hears the frequency and remembers what it was built from. The Unwritten encounters a sound it has not heard since the moment of its exile — the sound of the thing that pushed it aside, now carried by a person small enough to stand between two cosmic forces and hold them together.
-UPDATED: WHAT REMAINS — Status Tracker
-Replacing the original list at the end of Part I, Section XVII
+
+#### UPDATED: WHAT REMAINS — Status Tracker
+
+Replacing the original list at the end of Part I, Section XVII.
+
 The original vault identified fourteen open threads. Their current status:
-\#
-Original Item
-Status
-Where Addressed
-1
-The six fallen Tikva as playable historical vignettes or discoverable memories
 
-#### RESOLVED — Seraphina’s stand walkable (Act IV).
-
-Healer tells Gideon’s story orally (Act II). Echo Log assembles all six across side quests. Full playable memory sequences for Devorah, Malkah, Ezra, Seraphina in Part II, Sec. XL.
-Quest Vault Acts II–IV, Quiet Before Movement I, Part II Section XL
-2
-The player’s companions — who travels with the Tikva and why
-RESOLVED — Revael (Thread Reader), Toram (Thread Singer), Senna (Thread Keeper), Aram (late-game, all branches damaged).
-Expansion Vault XVIII
-3
-The faith and religion system
-RESOLVED — First Word Church, The Final Silence, Folk Animism, Keh’Dem Non-Religion, Heretical Whispers.
-Expansion Vault XXI
-4
-The Nachash leadership structure
-
-#### RESOLVED — Three tiers: outer (informants/agents), middle (operatives), inner (Silent
-
-Choir, seven eldest including the Architect).
-Expansion Vault XX
-5
-The political structure of Milah’s kingdom
-RESOLVED — Triumvirate Council: High Steward Ashael, Marshal Kadesh, Voice Naham (Nachash).
-Expansion Vault XX
-6
-The pre-first war conflict that Yeshurun survived
-
-#### RESOLVED — The
-
-Sundering of Abzu. Yeshurun’s archive contains the Witness Account, the Three Names, and the Warning.
-Expansion Vault XXIV
-7
-The painting in Reshit’s deep chamber
-
-#### RESOLVED — Full visual description: three figures (golden, blue, horned-and-small) against the
-
-Unwritten rendered as subtraction. Keh’Dem margin notation translated.
-Expansion Vault XXVII
-8
-The Keh’Dem elder who will speak to the Tikva
-
-#### RESOLVED — Tikkun.
-
-Named and characterized in the Quiet Before, Movement II.
-The Quiet Before
-9
-The full fate-weaving mechanic progression system
-RESOLVED — Tiers 0–7, four branches (Reader/Weaver/Singer/Keeper), each with four progression levels.
-Mechanics Bible, Sections II–III
-10
-What Kalum does after setting down the record
-
-#### RESOLVED — Crowned by
-
-Dav’al, ratified by council. Full post-game arc: Open Record, Distributed Council, Dwarven Return, Dav’al mentorship.
-Endgame Quest Vault, Part II Sections XXXIX, XLVII
-11
-What exists across the sea beyond Karu’s harbor
-
-#### RESOLVED — Avirim.
-
-Maritime civilization, Song Keepers, the Golden Voice Cycle. Late/post-game quest arc.
-Expansion Vault XXV
-12
-The second and third act story beats between opening and finale
-RESOLVED — Acts I–IV (Quest Vault), Intermission (The Quiet Before), Acts V–VIII (Endgame Quest Vault).
-Quest Vaults + Intermission
-13
-The Gifted Object’s true physical form
-
-#### RESOLVED — The Even
-
-Qol’s original complete form. Six harmonic fragments corresponding to six fallen Tikva. Reassembly mechanic.
-Expansion Vault XXVIII
-14
-Aram’s role in the player’s journey
-
-#### RESOLVED — Movement I teaching, clarity days, late-game companion (Act
-
-VII+), broken-note contribution to Yahwey.
-The Quiet Before + Expansion Vault XVIII
+| # | Original Item | Status | Where Addressed |
+| --- | --- | --- | --- |
+| 1 | The six fallen Tikva as playable historical vignettes or discoverable memories | Resolved — Seraphina’s stand walkable (Act IV). Healer tells Gideon’s story orally (Act II). Echo Log assembles all six across side quests. Full playable memory sequences for Devorah, Malkah, Ezra, Seraphina in Part II, Sec. XL. | Quest Vault Acts II–IV, Quiet Before Movement I, Part II Section XL |
+| 2 | The player’s companions — who travels with the Tikva and why | Resolved — Revael (Thread Reader), Toram (Thread Singer), Senna (Thread Keeper), Aram (late-game, all branches damaged). | Expansion Vault XVIII |
+| 3 | The faith and religion system | Resolved — First Word Church, The Final Silence, Folk Animism, Keh’Dem Non-Religion, Heretical Whispers. | Expansion Vault XXI |
+| 4 | The Nachash leadership structure | Resolved — Three tiers: outer (informants/agents), middle (operatives), inner (Silent Choir, seven eldest including the Architect). | Expansion Vault XX |
+| 5 | The political structure of Milah’s kingdom | Resolved — Triumvirate Council: High Steward Ashael, Marshal Kadesh, Voice Naham (Nachash). | Expansion Vault XX |
+| 6 | The pre-first war conflict that Yeshurun survived | Resolved — The Sundering of Abzu. Yeshurun’s archive contains the Witness Account, the Three Names, and the Warning. | Expansion Vault XXIV |
+| 7 | The painting in Reshit’s deep chamber | Resolved — Full visual description: three figures (golden, blue, horned-and-small) against the Unwritten rendered as subtraction. Keh’Dem margin notation translated. | Expansion Vault XXVII |
+| 8 | The Keh’Dem elder who will speak to the Tikva | Resolved — Tikkun. Named and characterized in the Quiet Before, Movement II. | The Quiet Before |
+| 9 | The full fate-weaving mechanic progression system | Resolved — Tiers 0–7, four branches (Reader/Weaver/Singer/Keeper), each with four progression levels. | Mechanics Bible, Sections II–III |
+| 10 | What Kalum does after setting down the record | Resolved — Crowned by Dav’al, ratified by council. Full post-game arc: Open Record, Distributed Council, Dwarven Return, Dav’al mentorship. | Endgame Quest Vault, Part II Sections XXXIX, XLVII |
+| 11 | What exists across the sea beyond Karu’s harbor | Resolved — Avirim. Maritime civilization, Song Keepers, the Golden Voice Cycle. Late/post-game quest arc. | Expansion Vault XXV |
+| 12 | The second and third act story beats between opening and finale | Resolved — Acts I–IV (Quest Vault), Intermission (The Quiet Before), Acts V–VIII (Endgame Quest Vault). | Quest Vaults + Intermission |
+| 13 | The Gifted Object’s true physical form | Resolved — The Even Qol’s original complete form. Six harmonic fragments corresponding to six fallen Tikva. Reassembly mechanic. | Expansion Vault XXVIII |
+| 14 | Aram’s role in the player’s journey | Resolved — Movement I teaching, clarity days, late-game companion (Act VII+), broken-note contribution to Yahwey. | The Quiet Before + Expansion Vault XVIII |
 
 Remaining Open Threads — Resolved in Part II
 All eight threads listed below are fully resolved in The Resolute Weave — Part II: The Complete Post-Game Compendium (Sections XXXIX–LIII). Part II also establishes five additional systems: Dav’al’s post-game presence (XLVII), the revised first hour (XLVIII), New Game Plus (XLIX), settlement integration (L), and the complete economy including the shadow market (LI–LIII).
@@ -3289,7 +3245,9 @@ Kalum is in Yaqar when the player wakes. Has been here for three days, since the
 **Main Quest — “The Seventh Thread”**
 
 
-**Beat 1: The Veilstalker at the Edge Baru does not send the player toward the Veilstalker with urgency or dramatic music. He mentions, while cleaning a bowl, that one of the local farmers came in last night saying something was wrong with his eastern field. Goats won’t go near it. The air sounds wrong. He says it the way a frontier person mentions a predator problem — with the tiredness of someone who has had this conversation before.
+**Beat 1: The Veilstalker at the Edge**
+
+Baru does not send the player toward the Veilstalker with urgency or dramatic music. He mentions, while cleaning a bowl, that one of the local farmers came in last night saying something was wrong with his eastern field. Goats won’t go near it. The air sounds wrong. He says it the way a frontier person mentions a predator problem — with the tiredness of someone who has had this conversation before.
 
 He adds, also while cleaning the bowl: “Old man at the corner table has been asking about you. Don’t know him. He’s been eating my stew for three days without looking like someone who needed a meal. Make of that what you will.” The old man at the corner table is Kalum. Seven hundred years old. Looks ancient in the way that only things that were already ancient when the mountains were young look ancient.
 
@@ -3297,7 +3255,7 @@ He meets the player’s eyes across the room and gives them nothing. No nod. No 
 
 Veilstalkers in daylight look like a mistake the light made. The silence around it is the first disorienting thing. Birds stop. Wind drops. The world holds its breath. Mid-fight, the player’s fate-weaving activates for the first time — instinctively, without prompting. The Veilstalker’s strike redirects by inches. The player did something but doesn’t know what.
 
-The horns are warm. The mana well has depleted slightly. A UI indicator appears for the first time — not a tutorial box, just a soft golden glow at the edge of vision that fades as the mana well refills.**
+The horns are warm. The mana well has depleted slightly. A UI indicator appears for the first time — not a tutorial box, just a soft golden glow at the edge of vision that fades as the mana well refills.
 
 
 **Beat 2: Kalum**
@@ -3309,7 +3267,9 @@ He does not produce the Even Qol immediately. He asks the player one question, w
 Then he produces the Even Qol shard fragment. It is warm in the player’s hand. The same warmth as Baru’s stew. The player will not consciously connect these things yet. The subconscious will file it. MAIN QUEST REWARD: Even Qol Shard Fragment
 Passive thread-sense upgraded. Faint golden lines now visible connecting significant objects and locations in the world — the thread made partially visible. Not a map. Not a waypoint. The thread shows connection, not direction. The player learns to read it. Goal established: reach Malon before Nachash trackers close in.
 
-#### SIDE QUESTS — Act 1 SIDE QUEST: “Emberstoat Nests” — Baru’s Request
+#### SIDE QUESTS — Act 1
+
+#### SIDE QUEST: “Emberstoat Nests” — Baru’s Request
 
 Estimated duration: 15–20 minutes | Difficulty: Entry
 Baru mentions it the second morning, same tone as the field report. Three emberstoat nests around the edge of Yaqar have gone wrong. The stoats are still there but they’re not warm — they’re feverish, agitated, driving away from something rather than toward it. He’s been putting food out for them for twenty years. Something changed. What changed: void-seepage from increased Veilstalker activity has begun contaminating the nesting sites.
@@ -3321,9 +3281,16 @@ Each contamination point has a brief environmental echo (Tier 1 Pattern Recall p
 One of them approaches the player and sits on their boot for a moment — warm, unhurried, completely unbothered by the horns. This is the first thing in Tebel that has treated the player as ordinary. It is more affecting than it has any right to be.
 Baru watches from the doorway. Says: “Dav’al’s first creation was warmth. That’s what the old records say. Don’t know much about Dav’al. Know the stoats aren’t wrong about people.” He doesn’t explain what he means. He goes back inside. The player can follow and ask. If they do, he says only: “They don’t sit on Nachash.” Then he serves them a second bowl.
 
-REWARDS: • Emberstoat Charm (permanent) — +10% heat resistance • Emberstoats now follow the player in dark areas, providing passive warmth glow and 1 HP/10sec regeneration • Pattern Recall preview unlocked — environmental echoes visible near void-seepage • Lore fragment: “Dav’al’s first creation was warmth” — first direct lore drop about Dav’al’s nature WITHOUT THIS QUEST: Night combat in Act 2 has no ambient light source.
+**Rewards:**
 
-Veilstalker detection is harder. The emotional beat of the stoat sitting on your boot doesn’t happen. Players who skipped it will notice the gap. VAULT CONNECTION: The Emberstoat’s behavior — sitting on the player, not sitting on Nachash — is the first gameplay expression of a vault truth that won’t be stated explicitly until late game: Dav’al’s first creation was warmth and warmth recognizes what it made.
+- Emberstoat Charm (permanent) — +10% heat resistance.
+- Emberstoats now follow the player in dark areas, providing passive warmth glow and 1 HP/10 sec regeneration.
+- Pattern Recall preview unlocked — environmental echoes visible near void-seepage.
+- Lore fragment: “Dav’al’s first creation was warmth” — first direct lore drop about Dav’al’s nature.
+
+**Without This Quest:** Night combat in Act 2 has no ambient light source. Veilstalker detection is harder. The emotional beat of the stoat sitting on your boot doesn’t happen. Players who skipped it will notice the gap.
+
+**Vault Connection:** The Emberstoat’s behavior — sitting on the player, not sitting on Nachash — is the first gameplay expression of a vault truth that won’t be stated explicitly until late game: Dav’al’s first creation was warmth and warmth recognizes what it made.
 
 #### SIDE QUEST: “The Wrong Ink” — Devorah’s First Echo
 
@@ -3339,11 +3306,18 @@ The paper is very old. The ink used to write it has faded to near-invisibility b
 
 The fragment discusses etymology. Specifically the root of Milah. The player reads: ‘If the name of our capital derives from Davar — the spoken word — then the question is not what was built but what was said. And if something was said, who said it, and what did they mean, and why does every record of that question end in silence?’ First “someone has been erasing history” realization. The player will look at Milah differently for the rest of the game.
 
-**Rewards:** • Devorah’s First Annotation — opens Tikva Echo Log (record of all six Tikva discoveries) • Fate-Weave Tier 1 UNLOCKED: Pattern Recall (if emberstoat quest not done, this is the unlock) • Merchant contact established — he’ll flag suspicious goods in future acts • Shachar supplier name recorded — becomes relevant in Act 2’s Nachash investigation WITHOUT THIS QUEST: Tier 1 Pattern Recall delayed until Act 2.
+**Rewards:**
 
-The historical erasure theme arrives later and softer. Devorah’s Echo Log never opens — her story remains fragmented rather than assembled across the playthrough. VAULT CONNECTION: Devorah died with contaminated ink after her research was stolen. The fact that the same contamination method appears in Yaqar — a small frontier town with no obvious political significance — tells the player that the Nachash’s reach is not centralized.
+- Devorah’s First Annotation — opens Tikva Echo Log (record of all six Tikva discoveries).
+- Fate-Weave Tier 1 unlocked: Pattern Recall (if the emberstoat quest was not done, this is the unlock).
+- Merchant contact established — he’ll flag suspicious goods in future acts.
+- Shachar supplier name recorded — becomes relevant in Act 2’s Nachash investigation.
 
-It is systematic. It goes everywhere scholarly curiosity goes. ACT 1 POWER SPIKE:
+**Without This Quest:** Tier 1 Pattern Recall is delayed until Act 2. The historical erasure theme arrives later and softer. Devorah’s Echo Log never opens — her story remains fragmented rather than assembled across the playthrough.
+
+**Vault Connection:** Devorah died with contaminated ink after her research was stolen. The fact that the same contamination method appears in Yaqar — a small frontier town with no obvious political significance — tells the player that the Nachash’s reach is not centralized. It is systematic. It goes everywhere scholarly curiosity goes.
+
+**Act 1 Power Spike:**
 Basic fate-weaving active (one thread redirect per fight). Tier 1 Pattern Recall unlocked (environmental memory reading). Horns no longer feel like a curse — they feel like a compass. The player has begun to understand: I am not the first. The people who came before me left things. The thread holds more than I know yet.
 
 #### ACT II — The Outskirts Trail
@@ -3357,7 +3331,9 @@ The first hint of something older than Tav’al’s forces bleeding through. Kal
 **Main Quest — “The Road That Remembers”**
 
 
-**Beat 1: Malon and the Healer The hot spring settlement appears at midday. The steam from the springs catches the light in a way that makes the air look golden. The Healer — 240 years old, looks perhaps 60, has the specific unhurried energy of someone who ran out of urgency several centuries ago — is treating three void-touched refugees when the player arrives.
+**Beat 1: Malon and the Healer**
+
+The hot spring settlement appears at midday. The steam from the springs catches the light in a way that makes the air look golden. The Healer — 240 years old, looks perhaps 60, has the specific unhurried energy of someone who ran out of urgency several centuries ago — is treating three void-touched refugees when the player arrives.
 
 She sees the horns from across the courtyard. She stops what she’s doing. This is the first time in the game that someone other than Kalum has had a reaction to the horns that isn’t politely trying to ignore them. Her reaction is complicated — relief and grief in the same moment, the way you might feel seeing a letter arrive that you’ve been dreading and needing in equal measure for thirty-two years.
 
@@ -3365,17 +3341,21 @@ She finishes treating the refugees. Then she says: “Sit. I’ll tell you about
 
 She was younger then, barely her first century. He came to Malon before his final campaign, wounded from the eastern border incursions. She treated him. She knew what the horns meant — she’s known the Keeper lineage for longer than most dynasties have existed. She says, while working on the player’s shoulder without looking up: “He wove to the very end. Three days of stand. Ground that shouldn’t have held, held. I felt it from here. The springs went cold for an hour and then warm again — warmer than usual. I knew what that meant. I’ve been waiting since.” New threat established: Veilstalkers have gone silent in the northern approach to Malon.
 
-No attacks for two weeks. The void-touched refugees came from that direction. They describe the absence before them — a region where even void magic has stopped expressing itself. Something consumed the consumers. First Abzu-stirring hint, unnamed.**
+No attacks for two weeks. The void-touched refugees came from that direction. They describe the absence before them — a region where even void magic has stopped expressing itself. Something consumed the consumers. First Abzu-stirring hint, unnamed.
 
 
-**Beat 2: The Silent Region The player can investigate the northern silence before continuing to Erev. This is not required but Kalum suggests it with a single sentence: “You should see what nothing looks like before it has a name.” The silent region: a several-kilometer stretch of outskirts wilderness where Veilstalkers were active two weeks ago. Now: nothing.
+**Beat 2: The Silent Region**
+
+The player can investigate the northern silence before continuing to Erev. This is not required but Kalum suggests it with a single sentence: “You should see what nothing looks like before it has a name.” The silent region: a several-kilometer stretch of outskirts wilderness where Veilstalkers were active two weeks ago. Now: nothing.
 
 The Hollow animals that should be here are gone. Not fled — gone. The void-contamination that was building in the soil is absent. Pattern Recall reveals the environmental echo of Veilstalkers moving through this area and then simply ending. Not dying. Not fleeing. The echo just stops. Mid-movement. As if they were edited out. One Substrate Crawler moves through the area.
 
-The player cannot interact with it yet — they don’t have the lens. But it moves in a deliberate geometric path. Kalum watches it. Says nothing. Files something in his expression that the player will remember later. Goal: Continue to Erev and assess the road conditions and faction activity at the crossroads before deciding the next path.**
+The player cannot interact with it yet — they don’t have the lens. But it moves in a deliberate geometric path. Kalum watches it. Says nothing. Files something in his expression that the player will remember later. Goal: Continue to Erev and assess the road conditions and faction activity at the crossroads before deciding the next path.
 
 
-#### SIDE QUESTS — Act 2 SIDE QUEST: “The Healer’s Ledger” — Malon
+#### SIDE QUESTS — Act 2
+
+#### SIDE QUEST: “The Healer’s Ledger” — Malon
 
 Estimated duration: 30–40 minutes | Difficulty: Early-intermediate
 The three void-touched refugees the Healer was treating when the player arrived are the beginning of a larger problem. Over the next two hours (in-game), more arrive. Six total — all from the same eastern settlement, all carrying void-contamination at different stages. The Healer needs help: gathering specific Dav-touched plant materials from the hot spring periphery, maintaining a ward against void-seepage around the treatment area, and keeping the most severely affected refugee calm through a rough night.
@@ -3388,10 +3368,17 @@ Using the thread to help someone remember who they are. The player will carry th
 
 She’s been doing this for 240 years. She tells the player: “The hardest part isn’t the ones who died. It’s the ones who didn’t know what they were. Gideon thought he was just good at his job. The third one — Malkah — thought she was just a decent governor. The gift is the heaviest when the person carrying it has no context for the weight.” She pauses.
 
-Then: “You have context. Which is better. And also harder.” REWARDS: • Dav-Touched Salve recipe (crafting — removes void contamination from allies)
-• Void Resistance I (permanent passive — 15% reduction to void damage) • Healer becomes recurring NPC — mails healing items after major battles for the rest of the game • Lore: Oral accounts of Gideon and Malkah — second and third Tikva entries in the Echo Log • New mechanic unlocked: Memory Anchor — using Pattern Recall to stabilize NPCs experiencing void-erosion WITHOUT THIS QUEST: Memory Anchor mechanic not available until much later.
+Then: “You have context. Which is better. And also harder.”
 
-Dav-Touched Salve recipe delayed. Gideon and Malkah Echo Log entries incomplete. The Healer does not mail items — significant support resource gone for the entire game.
+**Rewards:**
+
+- Dav-Touched Salve recipe (crafting — removes void contamination from allies).
+- Void Resistance I (permanent passive — 15% reduction to void damage).
+- Healer becomes recurring NPC — mails healing items after major battles for the rest of the game.
+- Lore: oral accounts of Gideon and Malkah — second and third Tikva entries in the Echo Log.
+- New mechanic unlocked: Memory Anchor — using Pattern Recall to stabilize NPCs experiencing void-erosion.
+
+**Without This Quest:** Memory Anchor is not available until much later. The Dav-Touched Salve recipe is delayed. Gideon and Malkah Echo Log entries remain incomplete. The Healer does not mail items — a significant support resource is gone for the entire game.
 
 #### SIDE QUEST: “Shamru Watchtower Vigil” — The Proof That Still Works
 
@@ -3407,10 +3394,16 @@ Player and Kalum stay the night. At 3am, Tav’al’s forces make a minor push a
 
 The eldest says: “Always does that. On the bad nights it gets a little brighter. My grandmother said it was watching over us. I always believed her.” Kalum, who has been quiet all night, says nothing. The player can look at him. His expression is the expression of a man watching something he has recorded in stone for seven centuries be true in front of a person who has no idea why.
 
-REWARDS: • Aurath Antler Crystal — writing tool that lets the player ‘record’ one thread permanently per rest (first step toward custom fate-weaves) • Visual confirmation of vault truth: the statue’s echo is real and still active • Hidden path to Shamaru Kalam unlocked via watchtower’s secret lower passage (available from Act 3) • Family contact established — they provide intelligence on eastern border activity for rest of game WITHOUT THIS QUEST: The visual proof of Dav’al’s protection being active never happens experientially — the player learns it as exposition later rather than witnessing it.
+**Rewards:**
 
-The Shamaru Kalam hidden path not available — longer route required in Act 3. Aurath Crystal delayed. VAULT CONNECTION:
-The family maintaining the watchtower without understanding why is a direct echo of the vault’s theme about things persisting through faith rather than knowledge. The grandmother’s instruction — ‘watch it on bad nights’ — is seven generations of someone knowing the statue mattered without knowing why. The same dynamic as the blind storyteller in Ahavah who sings Malkah’s story without knowing it’s history.
+- Aurath Antler Crystal — writing tool that lets the player “record” one thread permanently per rest (first step toward custom fate-weaves).
+- Visual confirmation of vault truth: the statue’s echo is real and still active.
+- Hidden path to Shamaru Kalam unlocked via the watchtower’s secret lower passage (available from Act 3).
+- Family contact established — they provide intelligence on eastern border activity for the rest of the game.
+
+**Without This Quest:** The visual proof of Dav’al’s protection being active never happens experientially — the player learns it as exposition later rather than witnessing it. The Shamaru Kalam hidden path is not available, requiring a longer route in Act 3. The Aurath Crystal is delayed.
+
+**Vault Connection:** The family maintaining the watchtower without understanding why is a direct echo of the vault’s theme about things persisting through faith rather than knowledge. The grandmother’s instruction — “watch it on bad nights” — is seven generations of someone knowing the statue mattered without knowing why. The same dynamic as the blind storyteller in Ahavah who sings Malkah’s story without knowing it’s history.
 
 #### SIDE QUEST: “Erev Crossroads Bargain” — The Three Watchers
 
@@ -3426,9 +3419,18 @@ Best outcome path (but not the only valid one): Expose the livestock trader to t
 
 The spice merchant, not knowing any of this happened, files a routine report that doesn’t flag the Tikva correctly. The cartographer rewards the player with something they found in a map archive three weeks ago that they don’t understand: a geometric marker on an old regional map that doesn’t correspond to any known location or any known cartographic notation.
 
-It’s Keh’Dem. The player doesn’t know that yet. The Thread Sense tingles near it in a way that has no category — not cold, not gold, something else entirely. REWARDS (best outcome): • Keh’Dem Geometric Marker — first physical Keh’Dem artifact, no function yet, Thread Sense activates near it uniquely • Nachash partial network map — one Milah operative identified (useful in Act 5) • Cartographer contact established — appears in Act 4 with updated eastern border intelligence • Livestock trader defection noted in Keeper records (Kalum mentions it quietly that evening) ALTERNATE OUTCOMES: Helping the spice merchant: Nachash report is more detailed, trackers in Act 3 are more aggressive.
+It’s Keh’Dem. The player doesn’t know that yet. The Thread Sense tingles near it in a way that has no category — not cold, not gold, something else entirely.
 
-Helping neither: cartographer leaves before sharing the marker, Keh’Dem first contact delayed to Act 4. Exposing both: spice merchant disappears (Nachash cleanup), creates a gap in their Erev network but also leaves the player without the defector’s partial map. ACT 2 POWER SPIKE:
+**Rewards (Best Outcome):**
+
+- Keh’Dem Geometric Marker — first physical Keh’Dem artifact, no function yet; Thread Sense activates near it uniquely.
+- Nachash partial network map — one Milah operative identified (useful in Act 5).
+- Cartographer contact established — appears in Act 4 with updated eastern border intelligence.
+- Livestock trader defection noted in Keeper records (Kalum mentions it quietly that evening).
+
+**Alternate Outcomes:** Helping the spice merchant makes the Nachash report more detailed, so trackers in Act 3 are more aggressive. Helping neither means the cartographer leaves before sharing the marker, delaying first Keh’Dem contact to Act 4. Exposing both makes the spice merchant disappear (Nachash cleanup), creating a gap in their Erev network but also leaving the player without the defector’s partial map.
+
+**Act 2 Power Spike:**
 Fate-Weave Tier 2 — Minor Redirect. Slow time for one enemy. Redirect a single trajectory. Make an NPC survive a scripted death. Open a hidden door the world forgot was there. The player now carries two Tikva histories in the Echo Log. The theme is landing: I am not alone in this. I am the seventh of something.
 
 #### ACT III — Descent into Memory
@@ -3442,26 +3444,30 @@ Dur Dunnum is the destination and the revelation. Standing before the fire statu
 **Main Quest — “Stone That Does Not Forget”**
 
 
-**Beat 1: The Descent Kalum takes the player to a secret entrance beneath Yaqar — or via the watchtower passage if the Shamru side quest was completed, which is faster and better lit. The underground is not dark in the dramatic fantasy sense. The dwarves have been living here for seven centuries. They have lighting, infrastructure, and the specific municipal efficiency of people who have never had the luxury of pretending things maintained themselves.
+**Beat 1: The Descent**
+
+Kalum takes the player to a secret entrance beneath Yaqar — or via the watchtower passage if the Shamru side quest was completed, which is faster and better lit. The underground is not dark in the dramatic fantasy sense. The dwarves have been living here for seven centuries. They have lighting, infrastructure, and the specific municipal efficiency of people who have never had the luxury of pretending things maintained themselves.
 
 The Aban Sharru entrance — the great dwarven city directly beneath Milah — is the first stop. The ceiling of the great hall is the foundation of Milah’s oldest district. The player can see maintenance scaffolding, support columns added over centuries, patches where something above cracked and was reinforced from below without the surface dwellers ever knowing.
 
-A dwarven engineer explains the ongoing debate to the player with the philosophical exhaustion of someone who has been having the same argument for four centuries: “We keep their buildings standing. They don’t know we exist. Half my people say we should stop. The other half say the buildings hold innocent people. I say both sides are right and pour another drink.”**
+A dwarven engineer explains the ongoing debate to the player with the philosophical exhaustion of someone who has been having the same argument for four centuries: “We keep their buildings standing. They don’t know we exist. Half my people say we should stop. The other half say the buildings hold innocent people. I say both sides are right and pour another drink.”
 
 
-**Beat 2: Dur Dunnum The walk to Dur Dunnum from Aban Sharru takes the player through passages that are increasingly old. The architecture shifts across centuries of construction — newer dwarven work giving way to older, then to something that predates organized construction in any recognizable sense. The walls are scored with marks that Pattern Recall reads as conviction rather than tool use.
+**Beat 2: Dur Dunnum**
+
+The walk to Dur Dunnum from Aban Sharru takes the player through passages that are increasingly old. The architecture shifts across centuries of construction — newer dwarven work giving way to older, then to something that predates organized construction in any recognizable sense. The walls are scored with marks that Pattern Recall reads as conviction rather than tool use.
 
 People dragged their hands along these walls while walking. There are millions of handprints compressed into the stone memory. Dur Dunnum itself: large, cold, and impossibly enduring. The player feels it before they see it — the Thread Sense responds to this place in a way it hasn’t responded to anything else. Not the cold of Nachash. Not the warmth of Dav magic.
 
-Something that feels like both at once, or neither, or the moment before both existed. The first fate-weave. Still in**
-
-the walls. The fire statue. The player rounds a corner and sees it and stops. Kalum stops beside them. He has been here many times but he still stops. The statue is nothing like the golden statue in Milah. That one is opulent, composed, imperial. This one is Dav’al in the act of doing something — arms raised, flames around him in stone rendered with a precision that implies the sculptor was working from direct observation, not imagination.
+Something that feels like both at once, or neither, or the moment before both existed. The first fate-weave. Still in the walls. The fire statue. The player rounds a corner and sees it and stops. Kalum stops beside them. He has been here many times but he still stops. The statue is nothing like the golden statue in Milah. That one is opulent, composed, imperial. This one is Dav’al in the act of doing something — arms raised, flames around him in stone rendered with a precision that implies the sculptor was working from direct observation, not imagination.
 
 He is mid-Word. He is the moment before the Word lands. He looks like someone who has absolute conviction in what they’re about to say and understands that it will cost them something to say it. The statue reacts to the player’s horns. A faint warmth emanates from the stone. The emberstoats following the player move toward the statue’s base and sit.
 
 The Thread Sense is quiet for the first time since Yaqar — not absent, at rest. Like arriving somewhere that was expecting you.
 
-**Beat 3: Shamaru Kalam — The Stone Records Kalum takes the player to the archive. The crystal cavern amplifies every sound — footsteps echo as if the stone is paying attention. The records are everywhere. Floor to ceiling, wall to wall, carved with the precision of people for whom precision was a sacred obligation. Seven centuries of unfiltered truth.
+**Beat 3: Shamaru Kalam — The Stone Records**
+
+Kalum takes the player to the archive. The crystal cavern amplifies every sound — footsteps echo as if the stone is paying attention. The records are everywhere. Floor to ceiling, wall to wall, carved with the precision of people for whom precision was a sacred obligation. Seven centuries of unfiltered truth.
 
 Kalum shows the player the six sections. Six Tikva. Six threads that ran and were cut. He explains what he knows about each one — not the full stories (those are discoverable through the Echo Log and the fallen Tikva side quests) but the essential fact: six people like you, six generations, six times the Nachash were thorough and the world kept going anyway.
 
@@ -3469,10 +3475,12 @@ He says: “I carved each of these entries with shaking hands. I don’t shake a
 
 The Thread Sense has been slowly intensifying since they entered the archive and in this moment it peaks: a sound like a chord held just past comfort, then resolving into something clear. The Even Qol shard in the player’s possession pulses warm. Goal: Reach Aban Sharru fully and begin understanding why the surface world above them has become what it has.
 
-The Nachash are now aware the player is active — their absence from Erev’s network (if the bargain quest was completed) has been noticed. The clock is running.**
+The Nachash are now aware the player is active — their absence from Erev’s network (if the bargain quest was completed) has been noticed. The clock is running.
 
 
-#### SIDE QUESTS — Act 3 SIDE QUEST: “The Royal Stones Debate” — Aban Sharru
+#### SIDE QUESTS — Act 3
+
+#### SIDE QUEST: “The Royal Stones Debate” — Aban Sharru
 
 Estimated duration: 25–35 minutes | Difficulty: Intermediate | Ongoing — multiple check-in points
 The Aban Sharru debate is not a quest with a clear beginning and end — it’s a conversation the player can enter at multiple points across Act 3. The engineers are debating whether to continue maintaining Milah’s foundation. The argument has been ongoing for four centuries and has current urgency: the Nachash activity above has been creating unusual stress loads in three specific structural sections. The dwarves have been compensating. The compensation is becoming expensive.
@@ -3480,9 +3488,15 @@ The player can participate in the debate through a series of conversations that 
 
 A player who has read the Shamaru Kalam records knows the surface history has been deliberately falsified. The debate has no right answer. The game doesn’t adjudicate it. But participating with enough context unlocks the Stone-Singing passive — the dwarven engineers, impressed by the player’s genuine engagement with the complexity rather than wanting a simple resolution, teach them a technique for making fate-weaves that leave permanent environmental impressions.
 
-Not Seraphina’s scale. But persistent. Small acts of the thread that remain after the player moves on. REWARDS: • Stone-Singing passive — fate-weaves now leave permanent subtle environmental changes the player can revisit • Aban Sharru engineers as contacts — provide structural intelligence on Milah for late-game infiltration • Access to dwarven maintenance tunnels — hidden routes through Milah’s foundations unavailable any other way WITHOUT THIS QUEST: Stone-Singing passive delayed to late game.
+Not Seraphina’s scale. But persistent. Small acts of the thread that remain after the player moves on.
 
-Milah infiltration routes in Act 5 require harder surface approaches. The philosophical weight of the dwarves’ situation never lands with its full complexity.
+**Rewards:**
+
+- Stone-Singing passive — fate-weaves now leave permanent subtle environmental changes the player can revisit.
+- Aban Sharru engineers as contacts — provide structural intelligence on Milah for late-game infiltration.
+- Access to dwarven maintenance tunnels — hidden routes through Milah’s foundations unavailable any other way.
+
+**Without This Quest:** Stone-Singing is delayed to late game. Milah infiltration routes in Act 5 require harder surface approaches. The philosophical weight of the dwarves’ situation never lands with its full complexity.
 
 #### SIDE QUEST: “Kur Narum Lake Vigil” — The Radiant Deep
 
@@ -3492,7 +3506,15 @@ Kur Narum: an underground lake that glows gold. Has glowed since before the firs
 
 Not words. Not images. A sensation of scale. What it felt like when Dav’al’s power was not divided between his work and an echo left behind in a statue. A brief, incomplete, overwhelming impression of what full Dav magic actually feels like. The meditation ends when the player’s mana well, which has been filling at an accelerated rate during the meditation, reaches maximum.
 
-The lake goes quiet. The gold dims slightly. The elder says: “It doesn’t give that to everyone. Mostly it just glows.” REWARDS: • Dav Echo Fragment — one-time full-power burst usable once per long rest (temporary taste of Dav’al’s true power scale) • Mana well permanent +20% capacity increase • Lore: The lake has glowed since before the first war — the player understands Dav’al’s power was present in Tebel long before Milah existed VAULT CONNECTION: The lake is one of the direct physical remnants of Dav’al’s power that predates everything else the player has encountered.
+The lake goes quiet. The gold dims slightly. The elder says: “It doesn’t give that to everyone. Mostly it just glows.”
+
+**Rewards:**
+
+- Dav Echo Fragment — one-time full-power burst usable once per long rest (temporary taste of Dav’al’s true power scale).
+- Mana well permanent +20% capacity increase.
+- Lore: the lake has glowed since before the first war — the player understands Dav’al’s power was present in Tebel long before Milah existed.
+
+**Vault Connection:** The lake is one of the direct physical remnants of Dav’al’s power that predates everything else the player has encountered.
 
 The fact that it persists here, underground, tended by dwarves who never forgot — when the surface world has erased every record of him — is the dwarven character in one image.
 
@@ -3508,9 +3530,18 @@ Pattern Recall reads the impressions: people arriving, being welcomed, the speci
 
 The Thread Sense goes to the third category — not cold, not gold, the other one. The elderly couple, who have never seen the reaction before, exchange a look. One of them says, very quietly: “Grandmother said that would happen someday. She never said when.” Hidden in the founding stone chamber, behind a section that requires the Substrate Crawler reaction to locate: a lens-shaped piece of crystal.
 
-The Substrate Crawler Lens. Left here six thousand years ago. REWARDS: • Substrate Crawler Lens — reveals faint geometric traces left by Substrate Crawlers throughout the world • First Keh’Dem mechanic hint fully unlocked — the geometric traces are now visible everywhere • Lore: The record that has no name — the Keh’Dem were here six thousand years ago and asked not to be recorded • Hidden passage unlocked — direct route from Eridu Kur to a Keh’Dem transit point near the eastern borders WITHOUT THIS QUEST: Substrate Crawler Lens not available.
+The Substrate Crawler Lens. Left here six thousand years ago.
 
-Geometric traces in the world invisible. First Keh’Dem contact in Act 4 has no mechanical context. The oldest lore in the vault goes undiscovered. ACT 3 POWER SPIKE:
+**Rewards:**
+
+- Substrate Crawler Lens — reveals faint geometric traces left by Substrate Crawlers throughout the world.
+- First Keh’Dem mechanic hint fully unlocked — the geometric traces are now visible everywhere.
+- Lore: The record that has no name — the Keh’Dem were here six thousand years ago and asked not to be recorded.
+- Hidden passage unlocked — direct route from Eridu Kur to a Keh’Dem transit point near the eastern borders.
+
+**Without This Quest:** The Substrate Crawler Lens is not available. Geometric traces in the world remain invisible. First Keh’Dem contact in Act 4 has no mechanical context. The oldest lore in the vault goes undiscovered.
+
+**Act 3 Power Spike:**
 Fate-Weave Tier 3 — Thread Pull. Pull one major environmental thread. Collapse a bridge. Temporarily rewrite a small patch of local history. The scale is new. The player now carries the weight of six dead Tikva in the Echo Log. They have stood before the fire statue and felt what the original faith-weave left in the stone at Dur Dunnum. The mechanic is now personal — not a power system, a responsibility system.
 
 #### ACT IV — Echoes of the Fallen
@@ -3524,27 +3555,35 @@ The world is responding to the Tikva’s existence. Act 4 also contains the firs
 **Main Quest — “The Landscape That Speaks”**
 
 
-**Beat 1: The Journey East The road to the eastern border is different from the outskirts trail. More exposed. The Thread Sense runs hotter here — the veil bleeds through more strongly in this direction. Veilstalkers are more frequent and more aggressive. The player’s improved fate-weaving makes the encounters manageable but the cumulative pressure communicates: you are moving toward something the world is trying to protect.
+**Beat 1: The Journey East**
 
-Kalum is quieter on this road. He has been here before — twice, when previous Tikva operated in this region. He knows what the player is about to read. He hasn’t told them because there are things that should be experienced rather than explained. He will answer questions after. Not before.**
+The road to the eastern border is different from the outskirts trail. More exposed. The Thread Sense runs hotter here — the veil bleeds through more strongly in this direction. Veilstalkers are more frequent and more aggressive. The player’s improved fate-weaving makes the encounters manageable but the cumulative pressure communicates: you are moving toward something the world is trying to protect.
+
+Kalum is quieter on this road. He has been here before — twice, when previous Tikva operated in this region. He knows what the player is about to read. He hasn’t told them because there are things that should be experienced rather than explained. He will answer questions after. Not before.
 
 
-**Beat 2: Seraphina’s Last Stand The site: a stretch of eastern border wilderness that geological surveys call an anomalous seismic event from four generations ago. The landscape is wrong in a specific and beautiful way — the terrain has been woven. Not randomly. With purpose. There are formations that shouldn’t exist here, patterns in the rock and soil that the Substrate Crawler Lens (if the player has it) reveals as connected to the same geometric language as the Keh’Dem passages.
+**Beat 2: Seraphina’s Last Stand**
+
+The site: a stretch of eastern border wilderness that geological surveys call an anomalous seismic event from four generations ago. The landscape is wrong in a specific and beautiful way — the terrain has been woven. Not randomly. With purpose. There are formations that shouldn’t exist here, patterns in the rock and soil that the Substrate Crawler Lens (if the player has it) reveals as connected to the same geometric language as the Keh’Dem passages.
 
 The Tier 3 Thread Pull mechanic is required to read Seraphina’s full weave. The player pulls the landscape’s thread and the site becomes a memory — nine days of stand compressed into a navigable space. The player walks through what Seraphina did, step by step, decision by decision. The twelve operatives. The Kurnugi Serpent. The moment she knew it was ending and stopped fighting to survive and started weaving to leave a record.
 
-The message, read in full: the structure of the thread as she experienced it. The nature of the Nachash. The location of their underchamber beneath Milah. And the final line, carved into the deepest layer of the weave where it would take someone with Tier 3 ability to reach:**
+The message, read in full: the structure of the thread as she experienced it. The nature of the Nachash. The location of their underchamber beneath Milah. And the final line, carved into the deepest layer of the weave where it would take someone with Tier 3 ability to reach:
 
 “There will be a seventh. Tell them what I knew. Tell them the Nachash are not the deepest thing. I felt something behind them in the last hour that they were afraid of. They don’t fear Dav’al. They don’t fear the Tikva. They feared this. Find what they feared.” Kalum reads this over the player’s shoulder. He is silent for a long time. Then: “She got further than I knew. I’m sorry. I should have brought you here first.” First direct Nachash confirmation.
 
 Their underchamber location is now known. Tav’al’s forces begin moving openly — the Nachash have flagged the Tikva as a direct threat rather than a monitoring concern. The clock is running in earnest.
 
-**Beat 3: The Mid-Game Turning Point The Nachash send a response. Not operatives — something they’ve been holding in reserve. A Veilstalker of a different order: larger, coordinated with others, moving with tactical awareness rather than instinct. The fight is the hardest the player has faced. It is designed to require everything they’ve built — fate-weaving, the void resistance from the Healer’s quest, the environmental awareness from Stone-Singing, the instinct from reading Seraphina’s weave.
+**Beat 3: The Mid-Game Turning Point**
 
-After the fight, the player’s Thread Sense registers something new — a presence that is not Nachash, not Veilstalker, not Kalum, not any creature they’ve encountered. It’s there for a moment and then it isn’t. The horns respond to it with the third category — the Keh’Dem frequency. Someone has been watching this fight. They are satisfied with what they saw. They are gone.**
+The Nachash send a response. Not operatives — something they’ve been holding in reserve. A Veilstalker of a different order: larger, coordinated with others, moving with tactical awareness rather than instinct. The fight is the hardest the player has faced. It is designed to require everything they’ve built — fate-weaving, the void resistance from the Healer’s quest, the environmental awareness from Stone-Singing, the instinct from reading Seraphina’s weave.
+
+After the fight, the player’s Thread Sense registers something new — a presence that is not Nachash, not Veilstalker, not Kalum, not any creature they’ve encountered. It’s there for a moment and then it isn’t. The horns respond to it with the third category — the Keh’Dem frequency. Someone has been watching this fight. They are satisfied with what they saw. They are gone.
 
 
-#### SIDE QUESTS — Act 4 SIDE QUEST: “Tzur Free City Investigators” — The 30% Truth
+#### SIDE QUESTS — Act 4
+
+#### SIDE QUEST: “Tzur Free City Investigators” — The 30% Truth
 
 Estimated duration: 40–55 minutes | Difficulty: Intermediate | Detour from main path
 Tzur: the city carved into cliff faces, accessible only through narrow passes. The underground historians here have been reconstructing pre-corruption history for generations through pure academic determination — comparing texts, finding inconsistencies, following etymological threads (a method Devorah would have recognized). They’ve rebuilt about 30% of the true first-war timeline.
@@ -3553,8 +3592,14 @@ The lead historian — a woman who inherited the project from her mentor who inh
 
 If the player shares the vault context (Tikva bloodline, etc.), she becomes the most useful academic contact in the game — her network of correspondents across Tebel has been independently documenting Nachash influence without knowing what they were documenting. Combined with what the player knows, the picture becomes significantly clearer. She also has a fragment she’s never been able to read: geometric notation that the Substrate Crawler Lens immediately identifies as Keh’Dem.
 
-REWARDS: • 30% of the true first-war timeline added to the player’s knowledge base • Tzur historian network activated — correspondents provide passive intelligence across multiple locations
-• Seraphina’s Warning Echo — one-time auto-weave that saves the player from a lethal hit (triggers automatically at below 10% health once) • Keh’Dem fragment translated if Substrate Crawler Lens is held — first partial Keh’Dem text recovered WITHOUT THIS QUEST: Seraphina’s Warning Echo not available — one lethal hit that could have been survived won’t be. The first-war timeline remains 30% darker. The Keh’Dem fragment goes untranslated.
+**Rewards:**
+
+- 30% of the true first-war timeline added to the player’s knowledge base.
+- Tzur historian network activated — correspondents provide passive intelligence across multiple locations.
+- Seraphina’s Warning Echo — one-time auto-weave that saves the player from a lethal hit (triggers automatically below 10% health, once).
+- Keh’Dem fragment translated if the Substrate Crawler Lens is held — first partial Keh’Dem text recovered.
+
+**Without This Quest:** Seraphina’s Warning Echo is not available — one lethal hit that could have been survived won’t be. The first-war timeline remains 30% darker. The Keh’Dem fragment goes untranslated.
 
 #### SIDE QUEST: “Shaqal Merchant’s Ledger” — The Thing Older Than The War
 
@@ -3568,10 +3613,18 @@ This is the first named conceptual encounter with Abzu’s influence, though the
 
 But her mother’s recent death means the promise’s context has shifted. She’s been sitting with it for three months. If the player has any of Ezra’s fourth Tikva Echo Log entry, the connection becomes visible. She opens the box. Three letters in a language neither of them reads fully — but the Pattern Recall reveals the impressions of the original words, and Ezra’s systematic notation style appears in fragments.
 
-The letters contain Ezra’s complete theoretical framework for fate-weaving — what he called sympathetic fate resonance. The player’s Tier 3 ability suddenly has context. They’ve been doing what Ezra theorized. He died before he knew it was real. They are the proof that it was. REWARDS: • First conceptual encounter with Abzu (unnamed — ‘the thing older than the war’) • Keh’Dem passage fast-travel unlocked — the merchant has a geometric marker she didn’t know was a transit point • Ezra’s letters recovered — fourth Tikva Echo Log entry completed • Sympathetic fate resonance theory adds passive bonus: fate-weave efficiency +15% (Ezra’s framework is now yours) WITHOUT THIS QUEST: First Abzu concept arrives much later and through exposition rather than investigation.
+The letters contain Ezra’s complete theoretical framework for fate-weaving — what he called sympathetic fate resonance. The player’s Tier 3 ability suddenly has context. They’ve been doing what Ezra theorized. He died before he knew it was real. They are the proof that it was.
 
-Keh’Dem fast-travel not available from the east. Ezra’s letters never recovered. Fate-weave efficiency bonus lost. VAULT CONNECTION:
-The cedar box containing Ezra’s letters has been sitting in Karu for three generations. The merchant of Shaqal is descended from the person Ezra trusted most in the world. The thread held that correspondence through four generations of ‘do not open this.’ Ezra moved the needle. The letters are the proof.
+**Rewards:**
+
+- First conceptual encounter with Abzu (unnamed — “the thing older than the war”).
+- Keh’Dem passage fast-travel unlocked — the merchant has a geometric marker she didn’t know was a transit point.
+- Ezra’s letters recovered — fourth Tikva Echo Log entry completed.
+- Sympathetic fate resonance theory adds passive bonus: fate-weave efficiency +15% (Ezra’s framework is now yours).
+
+**Without This Quest:** First Abzu context arrives much later and through exposition rather than investigation. Keh’Dem fast-travel is not available from the east. Ezra’s letters are never recovered. The fate-weave efficiency bonus is lost.
+
+**Vault Connection:** The cedar box containing Ezra’s letters has been sitting in Karu for three generations. The merchant of Shaqal is descended from the person Ezra trusted most in the world. The thread held that correspondence through four generations of “do not open this.” Ezra moved the needle. The letters are the proof.
 
 #### SIDE QUEST: “Gvul Adom Red Sky Patrol” — The Commander’s Instinct
 
@@ -3583,9 +3636,18 @@ Straightforward. Three patrol routes, each with increasing void-touched encounte
 
 The cold frequency. She watches the player’s horns react and says: “I see. Good. Now tell me what I can do about it that doesn’t result in a political incident I can’t afford.” The resolution is a joint operation: the player creates a situation where the three operatives’ void-sustenance is briefly exposed — a concentrated Dav magic environment that makes the cold that isn’t body heat visible to normal perception for about thirty seconds.
 
-The commander sees it. She handles the rest with the specific efficiency of someone who has been waiting two years to act on a thing she knew but couldn’t prove. REWARDS: • Void-Blood Sample (rare crafting material for anti-Nachash weapons and detection items) • Void Resistance II (permanent passive upgrade — 30% total void damage reduction) • Commander established as intelligence contact — provides eastern border activity reports and flags Nachash movement • Nachash underchamber approach route partially mapped through operatives’ movements WITHOUT THIS QUEST: Void Resistance stays at Tier I.
+The commander sees it. She handles the rest with the specific efficiency of someone who has been waiting two years to act on a thing she knew but couldn’t prove.
 
-Void-Blood Sample unavailable — anti-Nachash crafting delayed. Eastern border intelligence gap. The commander’s story never resolves. ACT 4 POWER SPIKE:
+**Rewards:**
+
+- Void-Blood Sample (rare crafting material for anti-Nachash weapons and detection items).
+- Void Resistance II (permanent passive upgrade — 30% total void damage reduction).
+- Commander established as intelligence contact — provides eastern border activity reports and flags Nachash movement.
+- Nachash underchamber approach route partially mapped through operatives’ movements.
+
+**Without This Quest:** Void Resistance stays at Tier I. Void-Blood Sample is unavailable, delaying anti-Nachash crafting. An eastern border intelligence gap remains. The commander’s story never resolves.
+
+**Act 4 Power Spike:**
 Fate-Weave Tier 4 — Landscape Weave. The full expression of what Seraphina died doing, controlled and deliberate. Temporary but devastating. The mana cost is severe. The concept of Abzu is now present at the edge of the player’s awareness — unnamed, unfaced, but felt. Something is behind the Nachash that even the Nachash fear. The golden statue in Milah is still standing. The player now knows exactly what it is and what happens when it falls.
 
 #### MID-GAME STATE — After Act IV
@@ -3760,23 +3822,23 @@ His voice is getting softer. The focus is going. Aram: “Remember what it felt 
 This is the last fully coherent thing he says before the clarity recedes. Aram: “Seven. That’s a good number. Prime. Indivisible. Go be indivisible.”
 Movement I — Rewards and Consequences
 
-#### UNLOCK:
+**Unlock:**
 
 Tier 5 Theoretical Foundation — The player now has the conceptual understanding of Causal Rethread. The mechanic does not unlock here — it unlocks in Act V when the story requires it. But the player will recognize it when it arrives because Aram described it. The learning curve is eliminated. The first time the player uses Tier 5, it feels like remembering rather than discovering.
 
-#### UNLOCK:
+**Unlock:**
 
 Thread-Scar Awareness — The player can now perceive thread-scars in the environment and in people. This is the evolved form of Pattern Recall — reading not just what happened but what damage was done to the thread itself. Nachash operatives carry thread-scars from their void-sustenance. Locations where Tikva fell carry permanent thread-scars. The player will read the world differently from this point forward.
 
-#### PASSIVE:
+**Passive:**
 
 Aram’s Echo — A persistent quiet warmth in the horns when the player’s thread connections to allies are active and healthy. The inverse of Thread Sense’s threat detection — a sensation that tells the player their bonds are intact. If a connected ally is in danger during the endgame, this warmth dims. The player learns to monitor it the way Aram should have been monitoring his connection to Revael.
 
-#### LORE:
+**Lore:**
 
 Aram’s Wall Notations — Complete Tier 5 first-person documentation added to the vault. Aram’s thirty-two years of analysis constitute the deepest single-source fate-weaving reference in the game. Thread Reader players will mine this for hours.
 
-#### ECHO LOG:
+**Echo Log:**
 
 Sixth Tikva Entry Complete — Aram’s full story assembled. He is the only Tikva in the Echo Log who tells his own story.
 
@@ -3839,27 +3901,27 @@ The assault on Milah is not just about stopping the Nachash. It is about closing
 The Lens Workshop: A space where the Substrate Crawler Lens can be enhanced. Tikkun assists. The enhanced lens reveals not just Keh’Dem geometric traces but the web’s structural state in the normal visual field — the player will be able to see the gaps the Nachash have been creating as they walk through the surface world. This transforms the endgame’s visual experience: every area the player enters, they can see how much damage has been done to the web’s local structure.
 Movement II — Rewards and Consequences
 
-#### UNLOCK:
+**Unlock:**
 
 Abzu Awareness — The player understands the Unwritten. Not fully — full understanding is beyond anyone, including the Keh’Dem. But the conceptual framework is in place. The endgame threat has a shape (or rather, the player understands that its lack of shape is the threat). Thread Sense now registers Abzu proximity as a fourth frequency — silence. Not the absence of sound. The active presence of un-sound.
 
-#### UPGRADE:
+**Upgrade:**
 
 Enhanced Substrate Crawler Lens — Web structural state visible in normal play. Gaps visible as faint visual distortions in the world. The player sees the damage for the first time with their own eyes rather than through Keh’Dem instruments.
 
-#### UNLOCK:
+**Unlock:**
 
 Geometric Notation (Partial) — The player can read approximately 40% of Keh’Dem notation. This becomes relevant in the endgame when Keh’Dem transit points are the fastest routes through Milah’s underground. The player who learned the notation navigates faster. The player who didn’t finds their way but slower.
 
-#### LORE:
+**Lore:**
 
 First Web Recording — The closest existing record of Dav’al’s original act. Vault entry. Reshapes the player’s understanding of what the fate-weave actually is at its deepest level.
 
-#### ALLY:
+**Ally:**
 
 Tikkun — The Keh’Dem scout becomes a persistent presence at the edge of the player’s awareness. Not a companion. Not a combat ally. An observer who occasionally sends geometric impressions through the third frequency when the player approaches something the Keh’Dem consider significant. A six-thousand-year-old hint system that never feels like a hint system.
 
-#### THREAD DENSITY:
+**Thread Density:**
 
 Major Increase — The observation space visit and Abzu understanding represent one of the largest single thread-density increases in the game. The player’s web visibly thickens in the observation space as they learn.
 
@@ -3911,7 +3973,7 @@ One unique crafting opportunity exists only during the intermission: Baru has br
 
 Baru’s stew, the lake’s glow, and the crystal’s precision combined into a single object that carries the warmth of everything the player has touched. It is the most powerful single passive item in the game and it can only be made during the moment when all the ingredients and all the connections converge.
 
-#### UNIQUE CRAFT:
+**Unique Craft:**
 
 The Hearthstone — Permanent Warmth buff aura. Passive void-seepage dampening in a small radius. Emberstoats within range behave as if near a nesting site. Requires: emberstoat-warmed earth (Baru, Movement III only), Kur Narum sediment (Lake Vigil quest), Shamaru Kalam crystal (Act 3 underground), and a player-built workshop with crystal elements. The Hearthstone is Dav’al’s first creation — warmth — made portable and personal.
 The Last Night
@@ -3943,11 +4005,11 @@ The player who ran the main path has Kalum and Baru at a fire. The player who di
 
 Movement III — Rewards and Consequences
 
-#### UNLOCK:
+**Unlock:**
 
 Full Ally Convergence — Every allied NPC contact established through the game contributes to Movement III’s gathering and to the endgame. Allies who converged provide unique contributions: intelligence, supplies, route access, moral support that manifests as thread density bonuses.
 
-#### UNIQUE CRAFT:
+**Unique Craft:**
 
 Hearthstone (if materials available) — The most powerful passive item in the game. Permanent Warmth aura, passive void dampening, emberstoat affinity. Only craftable during the intermission’s material convergence.
 
@@ -3955,11 +4017,11 @@ Hearthstone (if materials available) — The most powerful passive item in the g
 
 III persists into the endgame and post-game. Defensive structures protect civilians during the Act V upheaval. Refugee infrastructure saves lives. Personal spaces survive if the settlement is not in the direct impact zone. The thread remembers what was built in the Quiet Before.
 
-#### PASSIVE:
+**Passive:**
 
 Hearthfire Resonance — Attending the last night’s fire scene grants a persistent passive that lasts the entire endgame: a faint warmth that activates whenever the player is near an ally they shared the fire with. Not a mechanical buff. A reminder. The thread remembering that these people sat together when the world was quiet and chose to face what came next together.
 
-#### THREAD DENSITY:
+**Thread Density:**
 
 Final Major Increase — The convergence of allies, the building, the crafting, and the fire scene represent the final major thread-density increase before the Yahwey weave. A player who completed all three movements enters Act V with a thread density that makes the web around them visible to the naked eye in certain light conditions. Gold lines connecting them to everything they built and everyone they helped. The thread made manifest.
 THE QUIET BEFORE — Complete Summary
@@ -4092,7 +4154,7 @@ The player defeats the Architect. The method depends on build: the stealth arche
 In their final moments, the Architect says something that lands differently than intended:
 They die looking at the Aban Dummu with an expression that is, for the first time, afraid. Architect: “Close the gate if you want. It will not matter. We opened a door we cannot close from this side. The silence has been flowing for seven centuries. What has it been flowing into? Where does the void go when it enters the world? We never asked. I am beginning to understand that we should have.”
 
-#### UNLOCK:
+**Unlock:**
 
 Fate-Weave Tier 5 — Causal Rethread — The theoretical understanding from Aram’s teaching combines with the emotional reality of the underchamber. The player can now rewrite chains of cause and effect within bounded regions. First practical use: destabilizing the Aban Dummu’s anchoring structure to begin closing the gate. Aram’s description of the experience was accurate. The player recognizes the feeling. It is like remembering.
 Side Quests — Act V
@@ -4105,11 +4167,11 @@ The player finds her through Thread Sense: her thread-scar is unusual. It carrie
 
 It describes the city not as a capital but as a custodial post: a place built to maintain the statue, which was built to maintain the web, which was woven to contain the Unwritten. The founding purpose of Milah is the opposite of what the Nachash believe. They think they are managing the silence’s arrival. The city was built to prevent it.
 
-#### REWARD:
+**Reward:**
 
 Nachash Complete Network Map — Every active Nachash agent in Milah identified. Allows the player to bypass, eliminate, or turn operatives throughout Act V. Stealth archers can use this to ghost the entire act.
 
-#### REWARD:
+**Reward:**
 
 Dav’al’s Milah Charter — The founding document. Vault entry. Reshapes the player’s understanding of the city and the statue’s true purpose. Provides a mechanical bonus when interacting with the statue in Act VII — the player understands the design intent and can work with it rather than against it.
 
@@ -4119,11 +4181,11 @@ Duration: 30–45 minutes | Difficulty: Low combat, high exploration
 The golden statue’s thread resonance has been changing. The watchtower eldest noticed it gleaming brighter. Up close, the player can perceive — through the enhanced lens — that the statue is aware. Not sentient. Aware in the way that a very old, very powerful piece of Dav magic is aware: it responds to the thread, it responds to the Tikva’s presence, and it has been responding to the Nachash’s damage for seven centuries with the patient endurance of something that was built to last longer than the forces arrayed against it.
 The player can commune with the statue’s resonance using Thread Sense. The experience is not a conversation. It is an impression: warmth, endurance, the faintest echo of Dav’al’s original intent embedded in the gold like a voice preserved in stone. The statue was made as an act of love for the people who would live beneath it. It has been performing that act continuously for seven hundred years without acknowledgment, without maintenance, without anyone understanding what it was doing. It is tired. It is not stopping.
 
-#### REWARD:
+**Reward:**
 
 Statue’s Blessing — Massive one-time mana well expansion. The largest single expansion in the game. The statue gives the player what it can. It knows what is coming.
 
-#### REWARD:
+**Reward:**
 
 Dav’al’s Echo Intensified — The Dav Echo Fragment from Kur Narum Lake is now permanently active at low power rather than one-time burst. The player carries a faint permanent aura of the original Dav power.
 
@@ -4154,7 +4216,7 @@ The player’s enhanced lens shows it clearly: the web is dissolving in the dama
 
 The Unwritten is not entering reality. Reality is leaving the spaces it used to occupy.
 
-#### THE UNWRITING — Environmental Effect —
+#### THE UNWRITING — Environmental Effect
 
 Areas affected by the Unwriting lose game-world definition. Textures simplify. Sounds dampen. Thread Sense receives nothing from unwritten areas — not the cold of void, not the warmth of Dav, not the geometry of Keh’Dem. Silence. The player who enters an unwriting zone feels their own thread connections dimming. Prolonged exposure begins erasing thread density. The Unwritten does not attack. It undoes.
 
@@ -4179,7 +4241,7 @@ The golden statue in Milah’s center does something it has not done in seven hu
 Dav’al’s echo in the statue has heard his brother. The statue was built as a barrier, yes — but the deepest layer of its construction, visible now through the player’s enhanced lens, reveals that it was also built as a beacon. Not to keep Tav’al out. To keep the possibility of contact alive. Dav’al built the statue knowing that someday the web would be threatened by something that required both brothers to address, and he built a way for that conversation to happen.
 The player stands between the Aban Dummu and the statue. Between silence and sound. Between the void and the thread. The thread-scar awareness from Aram’s teaching lets them see the damage. The enhanced lens from the Keh’Dem lets them see the Unwriting’s advance. The Hearthstone (if crafted) glows warm against their chest. The emberstoats are pressed against their boots, warmer than they have ever been.
 
-#### UNLOCK:
+**Unlock:**
 
 Fate-Weave Tier 6 — Resonance Chorus — The Even Qol stops being a tool and becomes a partner. The player’s fate-weaves begin harmonizing with existing thread patterns. The statue’s resonance becomes accessible. The Aban Dummu’s structure becomes readable. The player can hear both sides of the conversation between brothers for the first time. The thread is no longer something they pull. It is something they sing with.
 Side Quests — Act VI
@@ -4194,7 +4256,7 @@ She has the void-manipulation skills to create a temporary corridor. The player 
 The player’s first alliance with a Nachash operative. The thread records it. The irony is not lost on either participant. The operative, after the civilians are safe, says:
 She turns back toward the unwriting zone. Operative: “I believed the silence was the answer. I was wrong about what the question was. I do not expect that to matter to you. It matters to me. I will help hold the lines until this is finished. After that, I will answer for what I did. But not before the people who are still alive remain alive.”
 
-#### REWARD:
+**Reward:**
 
 Void Manipulation Technique — The operative teaches the player a void-stabilization method that can temporarily halt Unwriting advance in small areas. Situationally invaluable in Acts VII and VIII. The player learns to use the enemy’s tool for the opposite of the enemy’s purpose.
 
@@ -4208,7 +4270,7 @@ The dwarven foundations carry the conviction of every engineer who ever reinforc
 The puzzle: redirect the Unwriting’s path through the tunnel network into a region where the accumulated conviction of seven centuries of maintenance is densest. Channel it through stone that has been maintained with such consistency and care that it carries its own form of structural faith. The Unwriting hits the densest section and stalls — not permanently, but long enough for the endgame to resolve.
 She is already drawing structural diagrams. Lead Engineer: “Seven hundred years of keeping their buildings standing for nothing. Turns out it wasn’t for nothing. It was for exactly this. Every patch, every reinforcement, every night shift replacing a cracked support that nobody above would ever know about. All of it. For this moment. I am going to choose to find that satisfying.”
 
-#### REWARD:
+**Reward:**
 
 Foundation’s Memory — Permanent passive: the player’s Thread Singer constructions are reinforced by the conviction principle. Structures built by the player now resist Unwriting passively, based on how consistently they have been used. The dwarven lesson applied to the Tikva’s toolkit.
 
@@ -6128,43 +6190,51 @@ This remains a future consideration.
 ### LIV. THE TIKVA'S ORIGIN
 #### THE FORGOTTEN THREAD
 
-Where the Seventh Came From, and Why Nobody Knew
-The Forgotten Bloodline
-The Tikva bloodline the Nachash have been tracking for seven centuries is the primary line --- the one that produced all six fallen Tikva. They have mapped it, pruned it, monitored every branch with the meticulous patience of predators who have learned that their prey appears once every seven generations and must be identified at birth. Their genealogical surveillance, conducted through the corrupted state genealogical office and reinforced by the Aban Dummu's ability to detect bright threads, is the most thorough intelligence operation in Tebel's history.
+**Where the Seventh Came From, and Why Nobody Knew**
+
+**The Forgotten Bloodline**
+
+The Tikva bloodline the Nachash have been tracking for seven centuries is the primary line --- the one that produced all six fallen Tikva. They have mapped it, pruned it, monitored every branch with the meticulous patience of predators who have learned that their prey appears once every seven generations and must be identified at birth. Their genealogical surveillance, conducted through the corrupted state genealogical office and reinforced by the Aban Dummu’s ability to detect bright threads, is the most thorough intelligence operation in Tebel’s history.
 
 Every known descendant of the Tikva line is catalogued. Every birth in the bloodline is monitored. Every manifestation of horns is reported within hours.
-But the bloodline fractured before the Nachash's record-keeping was fully established. In the early generations --- somewhere between Devorah (first Tikva, approximately 680 years ago) and Gideon (second Tikva, approximately 560 years ago) --- a branch of the family split off. Not dramatically. A marriage. A migration. A second cousin who moved to the outskirts because the capital made her uneasy in ways she could not articulate --- a low-grade Thread Sense operating beneath conscious awareness, registering the Nachash presence in Milah's institutions as a wrongness she could feel but not name.
+But the bloodline fractured before the Nachash’s record-keeping was fully established. In the early generations --- somewhere between Devorah (first Tikva, approximately 680 years ago) and Gideon (second Tikva, approximately 560 years ago) --- a branch of the family split off. Not dramatically. A marriage. A migration. A second cousin who moved to the outskirts because the capital made her uneasy in ways she could not articulate --- a low-grade Thread Sense operating beneath conscious awareness, registering the Nachash presence in Milah’s institutions as a wrongness she could feel but not name.
 
 She married a farmer. Had children. Moved further from the capital with each generation.
-The horns never manifested in that branch. Not once across six centuries. The dormant DNA carried the potential but never expressed it. The Nachash's Aban Dummu identifies Tikva by the brightness of their thread the way a predator identifies prey by scent --- and a bloodline that is not producing Tikva does not flare on the oracle. The branch went dark.
+The horns never manifested in that branch. Not once across six centuries. The dormant DNA carried the potential but never expressed it. The Nachash’s Aban Dummu identifies Tikva by the brightness of their thread the way a predator identifies prey by scent --- and a bloodline that is not producing Tikva does not flare on the oracle. The branch went dark.
 
 Invisible. Forgotten by everyone including the Keepers, because the Even Qol showed nothing worth recording. A line of farmers and hunters and woodworkers carrying the most important genetic inheritance in Tebel without any of them knowing, without any of them producing a child with horns, without any oracle --- light or dark --- registering their existence.
 For six centuries, the forgotten branch lived ordinary lives in the outskirts and beyond. They were not part of the story. They were not aware the story existed. The primary bloodline produced six Tikva across six generations and the Nachash eliminated all six. The forgotten branch produced none. The thread carried the potential through six hundred years of dormancy, waiting.
-When the seventh generation arrived, the thread chose the forgotten branch. Not the monitored, hunted, pruned primary line that the Nachash had been watching for seven centuries. The dormant line. The one nobody was watching. The most important birth in seven hundred years occurred in a bloodline that every intelligence apparatus in Tebel --- the Nachash, the Keepers, the Keh'Dem --- had either never known about or long since forgotten.
+When the seventh generation arrived, the thread chose the forgotten branch. Not the monitored, hunted, pruned primary line that the Nachash had been watching for seven centuries. The dormant line. The one nobody was watching. The most important birth in seven hundred years occurred in a bloodline that every intelligence apparatus in Tebel --- the Nachash, the Keepers, the Keh’Dem --- had either never known about or long since forgotten.
 The thread has a sense of irony that Kalum appreciates and the Nachash never will.
-The Parents
-The seventh Tikva's parents are from the forgotten branch. Not scholars. Not soldiers. Not politically connected. Working people --- the kind the Nachash considers beneath surveillance, the kind that empires are built on and never notice.
-The father is a hunter and woodworker. Quiet. Observant. Possesses the specific patience of someone who has spent years reading weather and game trails and the subtle language of a forest that is trying to tell him something he does not have the vocabulary to hear. His hands are calloused in the way that indicates decades of honest work. He builds things that hold because his father taught him that what you build should last, and his father's father taught the same, going back through generations of people who never knew they were carrying the echo of a man who spoke cities into existence.
-The mother has a stubborn independence that reads as eccentricity to anyone who meets her. She asks questions that make comfortable people uncomfortable. She has a habit of looking at institutional power --- tax collectors, military recruiters, the local representative of Milah's governance --- with an expression that suggests she can see something they would prefer to keep hidden.
+
+**The Parents**
+
+The seventh Tikva’s parents are from the forgotten branch. Not scholars. Not soldiers. Not politically connected. Working people --- the kind the Nachash considers beneath surveillance, the kind that empires are built on and never notice.
+The father is a hunter and woodworker. Quiet. Observant. Possesses the specific patience of someone who has spent years reading weather and game trails and the subtle language of a forest that is trying to tell him something he does not have the vocabulary to hear. His hands are calloused in the way that indicates decades of honest work. He builds things that hold because his father taught him that what you build should last, and his father’s father taught the same, going back through generations of people who never knew they were carrying the echo of a man who spoke cities into existence.
+The mother has a stubborn independence that reads as eccentricity to anyone who meets her. She asks questions that make comfortable people uncomfortable. She has a habit of looking at institutional power --- tax collectors, military recruiters, the local representative of Milah’s governance --- with an expression that suggests she can see something they would prefer to keep hidden.
 
 She cannot. She does not have Thread Sense. What she has is the vestigial intuition of a bloodline that once produced people who could read reality itself, compressed across six centuries into a woman who simply does not trust systems that feel wrong without being able to articulate why.
 They were exiled from one of the outer settlements --- a farming community south of the Outskirts Trail, possibly in the agricultural land between Nahu and the southern territories. Not for anything dramatic. For being difficult. For asking questions the local Nachash informant found uncomfortable without being able to explain why they were uncomfortable.
 
-For the father's habit of staring at the golden statue during their one trip to Milah with an expression that made a Nachash operative's instincts twitch without producing anything actionable. They were pushed out through the same soft exclusion the dwarves experienced --- not driven but made unwelcome until leaving felt like their idea.
+For the father’s habit of staring at the golden statue during their one trip to Milah with an expression that made a Nachash operative’s instincts twitch without producing anything actionable. They were pushed out through the same soft exclusion the dwarves experienced --- not driven but made unwelcome until leaving felt like their idea.
 They went into the wilderness.
-The Homestead
-The forested hills west of the Outskirts Trail, between Yaqar and the western coast --- the hilly, wooded terrain south of Reshit's caves and east of Yam Gadol. Looking at Chevel's geography, this is the most remote habitable terrain within the central region: too rugged for farming, too forested for cavalry patrol, too far from any settlement to justify regular surveillance.
+
+**The Homestead**
+
+The forested hills west of the Outskirts Trail, between Yaqar and the western coast --- the hilly, wooded terrain south of Reshit’s caves and east of Yam Gadol. Looking at Chevel’s geography, this is the most remote habitable terrain within the central region: too rugged for farming, too forested for cavalry patrol, too far from any settlement to justify regular surveillance.
 
 The kind of land that rewards people who are willing to work and leaves everyone else alone.
-The parents built a homestead in the forest. Not a grand structure. A cabin. Functional. The father built it with the same hands that would later carve a leather cap for his newborn child's horns. Stone foundation, timber walls, a hearth that draws well because the father understood airflow from years of building in places where getting it wrong meant a winter of smoke and misery.
+The parents built a homestead in the forest. Not a grand structure. A cabin. Functional. The father built it with the same hands that would later carve a leather cap for his newborn child’s horns. Stone foundation, timber walls, a hearth that draws well because the father understood airflow from years of building in places where getting it wrong meant a winter of smoke and misery.
 
 A small garden. Hunting trails radiating outward through the forest. A stream nearby for water. The specific architecture of self-sufficiency built by people who have decided that they would rather feed themselves than rely on a system that made them feel wrong.
-The nearest settlement is Yaqar --- roughly a day's walk east through the hills. Close enough that the Tikva eventually drifts there as a young adult for supplies and curiosity. Far enough that nobody checks on the family. The homestead does not appear on any map. It was not built with anyone's permission. The state genealogical office does not know these people exist.
+The nearest settlement is Yaqar --- roughly a day’s walk east through the hills. Close enough that the Tikva eventually drifts there as a young adult for supplies and curiosity. Far enough that nobody checks on the family. The homestead does not appear on any map. It was not built with anyone’s permission. The state genealogical office does not know these people exist.
 
 The Nachash do not know these people exist. The Keepers do not know these people exist. The homestead is invisible because it is simply too small, too remote, and too ordinary to register on any system designed to track things that matter.
 It matters more than anything else in Tebel.
-The Birth
-The seventh Tikva was born in the forest. No midwife. No record. No birth document filed with the state genealogical office that the Nachash have controlled for four centuries. The mother delivered the child with the father's help and the forest's indifference and the specific courage of a woman who has decided that if the world will not make room for her family, she will make room herself.
+
+**The Birth**
+
+The seventh Tikva was born in the forest. No midwife. No record. No birth document filed with the state genealogical office that the Nachash have controlled for four centuries. The mother delivered the child with the father’s help and the forest’s indifference and the specific courage of a woman who has decided that if the world will not make room for her family, she will make room herself.
 When the horns manifested at birth, the parents had no framework for understanding what they were. No access to the old stories. No dwarven grandmother to whisper about what horns mean. No connection to a tradition that could have told them their child was the most important person born in seven centuries. The mother thought it was a deformity. The father felt something --- a warmth in the room that was not the hearth, a stillness in the forest that was not natural, the specific quality of a moment that is larger than the people experiencing it --- but he had no vocabulary for what he felt.
 
 He carved a small leather cap that evening. They never spoke about the horns to anyone.
@@ -6172,24 +6242,28 @@ The Tikva grew up thinking the horns were something wrong with them. Something t
 This is why the visual arc of the horns works --- from hidden deformity to recognized birthright. The Tikva spent their whole childhood covering something they did not understand, raised by parents who loved them and taught them to survive but could not teach them what they were. By the final battle the horns are the most recognizable symbol in Tebel.
 
 The visual arc --- from the leather cap to standing beside two primordial beings wearing them like the birthright they always were --- is worth a thousand lines of dialogue.
-The Childhood --- Growing Up Wild
-The wilderness upbringing gives the player's baseline physical competence narrative justification. No training montage is needed to explain why the Tikva can fight. They have been surviving in wild country since they could walk. Hunting with the father. Tracking game through forested hills. Reading weather from cloud patterns and wind direction. Building shelter with hands and simple tools.
+
+**The Childhood --- Growing Up Wild**
+
+The wilderness upbringing gives the player’s baseline physical competence narrative justification. No training montage is needed to explain why the Tikva can fight. They have been surviving in wild country since they could walk. Hunting with the father. Tracking game through forested hills. Reading weather from cloud patterns and wind direction. Building shelter with hands and simple tools.
 
 Fishing the stream. Navigating terrain without paths. The specific education of a person raised by people who live from the land rather than from institutions.
 The mother taught stubbornness --- the refusal to accept a situation as permanent simply because it is current. The father taught craftsmanship --- the conviction that what you build should hold because someone else will depend on it. Both lessons run through every mechanical system in Veilweaver without the player knowing where they learned them.
-The horns tingled the Tikva's whole life and they thought it was the wind. Thread Sense --- the Tier 0 passive awareness that registers environmental wrongness as physical sensation --- was active from childhood, but without any framework for understanding it, the Tikva interpreted the tingling as sensitivity to weather, or headaches, or the vague unease that accompanies growing up different in a world that never explained the difference.
+The horns tingled the Tikva’s whole life and they thought it was the wind. Thread Sense --- the Tier 0 passive awareness that registers environmental wrongness as physical sensation --- was active from childhood, but without any framework for understanding it, the Tikva interpreted the tingling as sensitivity to weather, or headaches, or the vague unease that accompanies growing up different in a world that never explained the difference.
 
-The first time the horns tingled during a thunderstorm and the young Tikva ran crying to the mother, she held them and said: \"It's just the wind.\" It was not the wind. It was the thread registering the storm's electromagnetic disruption through the only antenna it had available: the horns of a child who had no one to explain what was happening.
-The forest around the homestead is subtly different from the surrounding wilderness in ways nobody has noticed. Thirty years of a nascent Tikva's passive thread presence has altered the local ecology the same way Aram's thirty-two years of unconscious fate-weaving reshaped his cave system. The trees near the homestead grow straighter. The game is marginally more abundant.
+The first time the horns tingled during a thunderstorm and the young Tikva ran crying to the mother, she held them and said: “It’s just the wind.” It was not the wind. It was the thread registering the storm’s electromagnetic disruption through the only antenna it had available: the horns of a child who had no one to explain what was happening.
+The forest around the homestead is subtly different from the surrounding wilderness in ways nobody has noticed. Thirty years of a nascent Tikva’s passive thread presence has altered the local ecology the same way Aram’s thirty-two years of unconscious fate-weaving reshaped his cave system. The trees near the homestead grow straighter. The game is marginally more abundant.
 
-The void-seepage that occasionally bleeds west from the eastern borders never quite reaches the homestead's immediate vicinity. The warmth of Dav magic --- carried in the Tikva's dormant thread connection --- has been gently radiating outward from the homestead for the Tikva's entire life.
+The void-seepage that occasionally bleeds west from the eastern borders never quite reaches the homestead’s immediate vicinity. The warmth of Dav magic --- carried in the Tikva’s dormant thread connection --- has been gently radiating outward from the homestead for the Tikva’s entire life.
 The Emberstoats know. They have always been present near the homestead in numbers slightly higher than normal. The Tikva grew up thinking Emberstoats simply liked the forest. The Emberstoats grew up knowing exactly what the Tikva was, the way warmth knows warmth.
-Kalum's Search
+
+**Kalum’s Search**
+
 Kalum felt the Even Qol burn hot the night the seventh was born. Hotter than any of the previous six. The crystal --- which had registered each Tikva birth as a distinct illumination across seven centuries --- did not merely warm. It blazed. Kalum, asleep in Shamaru Kalam with the Even Qol resting on a stone shelf beside his cot, woke to find the crystal emitting golden light strong enough to cast shadows across the archive walls.
 
 For three minutes the oldest records in Tebel were illuminated by the thread's announcement that the seventh hope had arrived.
 Then the light faded. And Kalum could not find them.
-For the first time in seven generations, the Even Qol showed the thread flaring --- brighter than any of the previous six --- but the flare came from a bloodline the Keepers had no record of. No family tree to trace. No settlement to search. No genealogical marker to follow through the Keepers' seven centuries of stone records. The thread was screaming someone is here and Kalum could not find the address.
+For the first time in seven generations, the Even Qol showed the thread flaring --- brighter than any of the previous six --- but the flare came from a bloodline the Keepers had no record of. No family tree to trace. No settlement to search. No genealogical marker to follow through the Keepers’ seven centuries of stone records. The thread was screaming someone is here and Kalum could not find the address.
 It took him years. Years of following thread-echoes through the outskirts, questioning his own perceptions, wondering if the Even Qol had finally begun to fail after seven centuries. He searched the primary bloodline first --- every surviving descendant, every branch, every marriage connection. Nothing. The primary line was exhausted. Six Tikva born and six eliminated and the line pruned so aggressively by the Nachash that the remaining members could not produce another. The DNA was diluted past the threshold of manifestation.
 Kalum searched for nearly two decades. He searched settlement records, birth registers, genealogical archives --- exactly the infrastructure the Nachash controlled and had deliberately corrupted. He was looking for someone inside a system designed to make certain people invisible. The irony was not lost on him. He was using the same tools the Nachash had built to erase Tikva to try to find one, and the tools worked exactly as designed: they showed nothing.
 He found the Tikva not through the oracle but through Baru.
@@ -6229,15 +6303,16 @@ Every physical action consumes stamina from a finite, regenerating pool. The poo
 
 Two consecutive dodge rolls leave the player noticeably depleted. Three in rapid succession exhaust the pool entirely.
 Actions and Their Stamina Costs (Relative)
-**Action** **Stamina Cost** **Notes**
-Light Attack Low Fast, chainable, primary damage source
-Heavy Attack Medium-High Slow, high stance damage, hyperarmor on some weapons
-Charged Heavy High Maximum stance damage, long windup, highest risk/reward
-Dodge Roll Medium i-frames during animation, distance varies by load
-Sprint Low (continuous) Drains steadily while sprinting, fast traversal
-Block (per hit) Variable Scales with attack power vs. shield stability
-Guard Counter Medium Retaliatory heavy after block, bonus stance damage
-Parry Low Tight timing window, opens enemy for critical riposte
+| Action | Stamina Cost | Notes |
+| --- | --- | --- |
+| Light Attack | Low | Fast, chainable, primary damage source |
+| Heavy Attack | Medium-High | Slow, high stance damage, hyperarmor on some weapons |
+| Charged Heavy | High | Maximum stance damage, long windup, highest risk/reward |
+| Dodge Roll | Medium | i-frames during animation, distance varies by load |
+| Sprint | Low (continuous) | Drains steadily while sprinting, fast traversal |
+| Block (per hit) | Variable | Scales with attack power vs. shield stability |
+| Guard Counter | Medium | Retaliatory heavy after block, bonus stance damage |
+| Parry | Low | Tight timing window, opens enemy for critical riposte |
 Jump Attack Medium-High Aerial heavy, high stance damage, gap closer ----------------------- ----------------------- -----------------------
 The Equip Load System
 Total equipment weight is measured against a threshold to determine the player's movement category. The threshold is derived from a base value modified by certain equipment and thread-branch developments. The breakpoints follow Elden Ring's model:
@@ -6369,8 +6444,8 @@ Direction and distance: West-southwest of Milah, approximately
 10--12 miles. Half a day's walk.
 Terrain: Relatively flat, urban-adjacent farmland transitioning to
 the capital's outer districts. The ancient tower that predates Milah is the first structure visible on the western approach.
-Character: Built around the pre-Milah tower containing Keh'Dem
-geometric script in its foundations. The tower's summit luminesces faintly on certain nights --- trace Eyn magic bleeding through a Keh'Dem transit point.
+Character: Built around the pre-Milah tower containing Keh’Dem
+geometric script in its foundations. The tower's summit luminesces faintly on certain nights --- trace Eyn magic bleeding through a Keh’Dem transit point.
 The Outskirts Trail
 A rough oval road system encircling the capital region. The trail's distance from Milah varies significantly: at its closest, near Shachar in the northwest, it passes within 10 miles of the capital; at its farthest, in the eastern and southern stretches, it runs 40--50 miles out. This is the boundary between civilization and frontier. Inside the trail: maintained infrastructure, regular patrols, Nachash surveillance, civic order.
 
@@ -6425,7 +6500,7 @@ Direction and distance: East-southeast of Milah, approximately
 Terrain: Crossroads terrain --- flat, accessible from three
 directions. The trade routes converge in a natural clearing that the settlement grew around.
 Character: The most culturally mixed outskirts location. Two Nachash
-informants, three Keeper contacts, and the Keh'Dem's primary surface intelligence point. Everyone watching everyone.
+informants, three Keeper contacts, and the Keh’Dem’s primary surface intelligence point. Everyone watching everyone.
 The Western Coast --- Yam Gadol
 Ahavah --- Love
 Direction and distance: Northwest coast, approximately 60--70 miles
@@ -6440,7 +6515,7 @@ Milah. Roughly a day's walk west of Yaqar through increasingly wild terrain.
 Terrain: Cave systems extending from coastal cliffs deep into the
 earth. The deepest chamber is a significant underground journey from the surface entrance.
 Character: Oldest continuously inhabited location in Tebel. The
-Keh'Dem painting in the deep chamber depicts something that has not happened yet --- painted before the first war.
+Keh’Dem painting in the deep chamber depicts something that has not happened yet --- painted before the first war.
 The Northern Reaches
 Dunanu --- The Strong One
 Direction and distance: Far north, approximately 80--100 miles from
@@ -6554,14 +6629,14 @@ from Milah. Three to four days.
 Terrain: Between Bitu and the eastern border approaches. Memorial
 architecture dominates the skyline.
 Character: Built on a massacre site. Economy runs on memorial
-tourism. Beneath the plaza, a Keh'Dem settlement abandoned before the massacre.
+tourism. Beneath the plaza, a Keh’Dem settlement abandoned before the massacre.
 Kur Narum --- The Golden Water
 Direction and distance: South-southwest, approximately 95--100
 miles from Milah. Four days' travel.
 Terrain: Volcanic hills between Asham and the southern coast. A
 volcanic lake with bioluminescent waters nestled in a sheltered caldera.
 Character: The water glows with residual Dav magic from the first
-war --- pre-war accounts describe it as a place where the Word's warmth never fully dissipated from the volcanic substrate. Thread Sense registers the lake as the oldest continuous expression of Dav magic outside the Breath of Tebel. Sacred to the frontier communities, who call it simply 'the golden water.' The Keh'Dem consider it a substrate bleed-through point --- a location where the Eyn's foundational warmth surfaces naturally.
+war --- pre-war accounts describe it as a place where the Word's warmth never fully dissipated from the volcanic substrate. Thread Sense registers the lake as the oldest continuous expression of Dav magic outside the Breath of Tebel. Sacred to the frontier communities, who call it simply 'the golden water.' The Keh’Dem consider it a substrate bleed-through point --- a location where the Eyn's foundational warmth surfaces naturally.
 Yeshurun --- The Upright Ones (Bordering Region)
 Direction and distance: Far south, beyond Karu. Approximately
 160--200 miles from Milah. Six to eight days.
@@ -6591,7 +6666,7 @@ Shamaru Kalam: The primary Keeper archive. Deepest and most secure.
 Accessible only through passages Kalum alone knows completely.
 The Nachash Underchamber: Beneath Milah's oldest governmental
 building. A separate secret space between the surface and dwarven network --- connected to neither legitimate access system.
-The Keh'Dem Passages: Deepest of all, at the substrate level.
+The Keh’Dem Passages: Deepest of all, at the substrate level.
 Hidden
 transit routes throughout all of Tebel, marked with Substrate Crawler geometric traces that look like natural mineral formations.
 Biomes and Connective Terrain
@@ -6657,14 +6732,11 @@ Duration: One stack fades per time interval.
 The thread heals itself. It is slower than the other two options but requires no resource expenditure and no travel. A player who dies and then plays cautiously for fifteen minutes recovers naturally. This prevents the debuff from becoming a frustration loop for players who are struggling with a difficult area --- even without access to a settlement or healer, the debuff is temporary.
 Stacking
 Thread Fray stacks up to three times if the player dies repeatedly without curing. Each stack increases the mana cost penalty and Thread Sense reduction additively:
-Stacks Mana Cost Thread Sense **Additional
-Increase Reduction Effects**
-1 +15% -20% range Thread density
-paused
-2 +30% -40% range Thread density
-paused
-3 +45% -60% range Natural recovery
-paused; visual dimming ------------ ------------------- ------------------- -------------------
+| Stacks | Mana Cost Increase | Thread Sense Reduction | Additional Effects |
+| --- | --- | --- | --- |
+| 1 | +15% | -20% range | Thread density paused |
+| 2 | +30% | -40% range | Thread density paused |
+| 3 | +45% | -60% range | Natural recovery paused; visual dimming |
 At three stacks, the natural time-based recovery is paused. The player must either rest at the settlement or pay a healer. This prevents infinite death-cycling through a difficult encounter --- at some point, the game says go home, regroup, come back ready. The thread is telling the Tikva the same thing: you are not ready for this yet. Build more. Learn more. Return.
 Visual and Audio Indicators
 Thread Fray is communicated through ambient sensory cues rather than HUD elements:
@@ -6764,36 +6836,26 @@ The geometric patterns at the base illuminate. The harmonic builds from silence 
 The moment is designed to feel like waking something old and patient. The stone has been waiting. The player's touch is what it was waiting for. Thread Sense, if developed, registers the activation as a new node in the web --- a point of golden warmth that was not there before and will be there forever. Each Way-Stone discovered expands the player's understanding of how the Keepers operated and where they watched from, and the placement logic tells a story: the Keepers prioritized sight lines, border proximity, and access to major routes. The stones are where the Keepers stood to see the world clearly.
 The Way-Stone Network --- Eighteen Nodes
 There are eighteen Way-Stones across Chevel, distributed to cover every major region with at least two access points. The density is highest in the capital region and outskirts (where the Keepers focused most of their observation) and thinnest at the extremes (where Keeper presence was riskier and less frequent).
-Region Way-Stone Nearby **Placement
-Location Settlement Detail**
-Capital Crown Hill Milah Hilltop south of
-the city walls with direct view of the golden statue
-Capital Dawn's Watch Shachar Ridge above the merchant district overlooking the capital road
-Capital The Old Migdal Beside the Foundation ancient tower's base, hidden by overgrowth
-Outskirts Hunter's Ridge Yaqar Hilltop east of
-town, overlooking the Outskirts Trail junction
-Outskirts The High Post Shamru Adjacent to the watchtower, hidden in the tower's shadow
-Outskirts Spring's Edge Malon Cave mouth near the hot springs, steam partially concealing it
-Outskirts Crossroads Marker Erev Where the three roads converge, behind a trader's long-abandoned stall
-Western Coast Theater Cliff Ahavah Cliff above the
-theater with ocean view
-Western Coast The First Cave Reshit Near the cave system's upper entrance
-Northern Canyon Gate Dunanu At the canyon's
-Reaches narrowest
-approach
-Northern Reaches The Cold Marker Tsafon Exposed highland, wind-scoured, the most isolated stone in the network
-Eastern Red Horizon Gvul Adom Facing east
-Borders toward the
-Bleeding Veil, where the sky's red tint is strongest
-Eastern Borders The Rock's Lip Tzur On the cliff face above the main pass entrance
-Southern Harbor Light Karu Near the
-Territories lighthouse,
-visible from the harbor approach
-Southern Scholar's Garden Bitu / Shamatu Between the two Territories cities, in a neglected garden
-Southern The Southern Gate Yeshurun approach At the border Territories where Chevel's landscape transitions
-Underground The Deep Marker Aban Sharru In the great
-hall, maintained by the dwarves themselves
-Underground The First Stone Dur Dunnum Near the fire statue of Dav'al. The oldest Way-Stone in the network. ----------------- ----------------- ----------------- -----------------
+| Region | Way-Stone | Nearby Settlement | Placement Detail |
+| --- | --- | --- | --- |
+| Capital | Crown Hill | Milah | Hilltop south of the city walls with direct view of the golden statue |
+| Capital | Dawn's Watch | Shachar | Ridge above the merchant district overlooking the capital road |
+| Capital | The Old Migdal | Beside the Foundation | Ancient tower's base, hidden by overgrowth |
+| Outskirts | Hunter's Ridge | Yaqar | Hilltop east of town, overlooking the Outskirts Trail junction |
+| Outskirts | The High Post | Shamru | Adjacent to the watchtower, hidden in the tower's shadow |
+| Outskirts | Spring's Edge | Malon | Cave mouth near the hot springs, steam partially concealing it |
+| Outskirts | Crossroads Marker | Erev | Where the three roads converge, behind a trader's long-abandoned stall |
+| Western Coast | Theater Cliff | Ahavah | Cliff above the theater with ocean view |
+| Western Coast | The First Cave | Reshit | Near the cave system's upper entrance |
+| Northern Reaches | Canyon Gate | Dunanu | At the canyon's narrowest approach |
+| Northern Reaches | The Cold Marker | Tsafon | Exposed highland, wind-scoured, the most isolated stone in the network |
+| Eastern Borders | Red Horizon | Gvul Adom | Facing east toward the Bleeding Veil, where the sky's red tint is strongest |
+| Eastern Borders | The Rock's Lip | Tzur | On the cliff face above the main pass entrance |
+| Southern Territories | Harbor Light | Karu | Near the lighthouse, visible from the harbor approach |
+| Southern Territories | Scholar's Garden | Bitu / Shamatu | Between the two cities, in a neglected garden |
+| Southern Territories | The Southern Gate | Yeshurun approach | At the border where Chevel's landscape transitions |
+| Underground | The Deep Marker | Aban Sharru | In the great hall, maintained by the dwarves themselves |
+| Underground | The First Stone | Dur Dunnum | Near the fire statue of Dav'al. The oldest Way-Stone in the network. |
 Using a Way-Stone
 The player approaches an active Way-Stone and interacts. Both hands on the stone. The crystal's glow intensifies. The air around the stone parts like a curtain being drawn --- not violently, not dramatically, but with the quiet authority of something that has done this before and knows exactly how reality folds.
 The passage opens: a corridor of blue-white crystalline light connecting this Way-Stone to every other active stone in the network. The destinations appear as warm nodes of light within the passage, each emitting a distinct harmonic signature. Coastal stones sound like surf and salt wind. Northern stones sound like cold wind across highland rock. Underground stones sound like deep stone resonance, the specific acoustic quality of vast spaces below the earth.
@@ -6831,18 +6893,13 @@ The Gateway's outbound visual is slightly different from the standard Way-Stone 
 Leaving home looks and feels like leaving home. The passage carries the settlement's identity into the transit space. The player is not just traveling. They are extending their home's reach into the world.
 Hearthstone Upgrade Path
 The Hearthstone's level determines two things: the Thread Anchor capacity (how many Anchors the player can place) and the Gateway's functional range. Each upgrade requires materials tied to meaningful progression --- boss encounters, exploration milestones, and crafting investment.
-**Level** **Anchors** **Upgrade Materials** **Unlocks**
-**Availability**
-1 2 Basic construction Hearthstone Act II
-materials + Thread Crystal Recall (inbound (found underground or at only) Way-Stone sites)
-2 4 Void Heart (Nachash boss Hearthstone Act III
-drop) + Keeper Crystal Gateway (outbound (Kalum gift or Keeper to Way-Stones and cache) + refined materials Anchors)
-3 6 Kurnugi Serpent Fang (boss Extended Anchor Act IV
-drop) + Eyn-Touched range; reduced Crystal (Keh'Dem cache or arrival Substrate Crawler nest) + disorientation dwarven-forged housing
-4 8 Ashwraith Core (Ashwraith Smoother Late Act IV / Act
-Matriarch boss) + Thread-Walking; V Dav-Touched Resonance Gateway visual Shard (Scar of Matu or enhancement Dav-blessed locations) + masterwork dwarven components
-5 12 Fragment of the Unwritten Maximum capacity; Post-game
-(Abzu-stirring drop) + Gateway reaches Primordial Crystal Avirim and (post-Yahwey) + bordering regions culmination construction chain ----------- ------------- -------------------------- ----------------- ------------------
+| Level | Anchors | Upgrade Materials | Unlocks | Availability |
+| --- | --- | --- | --- | --- |
+| 1 | 2 | Basic construction materials + Thread Crystal (found underground or at Way-Stone sites) | Hearthstone Recall (inbound only) | Act II |
+| 2 | 4 | Void Heart (Nachash boss drop) + Keeper Crystal (Kalum gift or Keeper cache) + refined materials | Hearthstone Gateway (outbound to Way-Stones and Anchors) | Act III |
+| 3 | 6 | Kurnugi Serpent Fang (boss drop) + Eyn-Touched Crystal (Keh’Dem cache or Substrate Crawler nest) + dwarven-forged housing | Extended Anchor range; reduced arrival disorientation | Act IV |
+| 4 | 8 | Ashwraith Core (Ashwraith Matriarch boss) + Dav-Touched Resonance Shard (Scar of Matu or Dav-blessed locations) + masterwork dwarven components | Smoother Thread-Walking; Gateway visual enhancement | Late Act IV / Act V |
+| 5 | 12 | Fragment of the Unwritten (Abzu-stirring drop) + Primordial Crystal (post-Yahwey) + culmination construction chain | Maximum capacity; Gateway reaches Avirim and bordering regions | Post-game |
 
 #### SYSTEM FOUR:
 
@@ -6979,7 +7036,7 @@ The landscape is faintly illuminated in copper-orange. Enough light to walk by. 
 When Tselem Ohr is below the horizon at night --- the dark season --- the sky goes properly dark. Truly dark, in a way that people who have only known the bright season find unsettling. The stars are brighter. The moons are more prominent. The void-seepage that bleeds through from the Bleeding Veil is more visible as faint luminous disturbances against the black sky.
 
 During dark-season nights, Tebel feels more dangerous not because it is more dangerous but because the darkness is unfamiliar.
-The bright/dark cycle is independent of the primary seasons driven by axial tilt. Some years, summer coincides with the bright season --- producing long, warm, copper-lit nights that feel languorous and safe. Other years, winter coincides with the dark season --- producing cold, black, star-filled nights that feel exposed and ancient. The compound seasonality creates a multi-year climate variability that surface cultures track through generations and that the Keh'Dem have modeled mathematically for six thousand years.
+The bright/dark cycle is independent of the primary seasons driven by axial tilt. Some years, summer coincides with the bright season --- producing long, warm, copper-lit nights that feel languorous and safe. Other years, winter coincides with the dark season --- producing cold, black, star-filled nights that feel exposed and ancient. The compound seasonality creates a multi-year climate variability that surface cultures track through generations and that the Keh’Dem have modeled mathematically for six thousand years.
 The Lore Connection
 The Bleeding Veil at Edom Kur takes its reddish tint not solely from void magic --- it is amplified by Tselem Ohr's light scattering through the compromised atmospheric boundary at the veil. The sky's reddish tint at dawn and dusk near Gvul Adom is the companion star's light refracting through the veil's distortion. The cosmological and the astrophysical align --- the red is not arbitrary.
 
@@ -6999,20 +7056,20 @@ Shever is approximately 25% of Earth's Moon's diameter --- small enough to appea
 Shever is geologically active. Tidal heating from Tebel's gravity --- the same mechanism that keeps Jupiter's moon Io volcanic --- maintains Shever's interior warmth. Faint orange-red spots are visible on Shever's surface during dark-sky conditions: volcanic vents glowing through the thin crust. The effect is subtle --- Shever looks like a small, warm moon with freckles of fire.
 
 During dark-season nights when Tselem Ohr is below the horizon, Shever's volcanic glow is more visible, making the lesser moon appear to pulse faintly with internal warmth.
-The two moons' different orbital periods create a visual dance in Tebel's sky. Every 14 Tebel-days, Keva and Shever achieve conjunction --- appearing close together in the sky, sometimes with Shever passing in front of or behind Keva. Every 14 days between conjunctions, they are in opposition --- on opposite sides of the sky. Occasionally, Shever eclipses Keva or Keva eclipses Shever, producing brief lunar occultation events that surface cultures treat as omens and the Keh'Dem treat as routine orbital mechanics they predicted six thousand years ago.
+The two moons' different orbital periods create a visual dance in Tebel's sky. Every 14 Tebel-days, Keva and Shever achieve conjunction --- appearing close together in the sky, sometimes with Shever passing in front of or behind Keva. Every 14 days between conjunctions, they are in opposition --- on opposite sides of the sky. Occasionally, Shever eclipses Keva or Keva eclipses Shever, producing brief lunar occultation events that surface cultures treat as omens and the Keh’Dem treat as routine orbital mechanics they predicted six thousand years ago.
 
-The common folk call these events moon-eatings. The Keh'Dem call them confirmations.
+The common folk call these events moon-eatings. The Keh’Dem call them confirmations.
 Tebel Itself --- Planetary Parameters
-**Parameter** **Tebel** **Earth (comparison)**
-Radius \~1.2 Earth radii 6,371 km
-Mass \~1.4 Earth masses 5.97 × 10²⁴ kg
-Surface gravity \~1.1g 1.0g (9.81 m/s²)
-Day length \~27 hours 24 hours
-Axial tilt \~28° 23.4°
-Orbital distance \~0.8 AU from Ohr 1.0 AU from Sun
-Orbital period \~310 Tebel-days (\~348 365.25 days
-(year) Earth-hours equiv.)
-Atmosphere \~1.3× Earth's density 1.0 atm (101.3 kPa)
+| Parameter | Tebel | Earth (comparison) |
+| --- | --- | --- |
+| Radius | ~1.2 Earth radii | 6,371 km |
+| Mass | ~1.4 Earth masses | 5.97 × 10²⁴ kg |
+| Surface gravity | ~1.1g | 1.0g (9.81 m/s²) |
+| Day length | ~27 hours | 24 hours |
+| Axial tilt | ~28° | 23.4° |
+| Orbital distance | ~0.8 AU from Ohr | 1.0 AU from Sun |
+| Orbital period | ~310 Tebel-days (~348 Earth-hours equiv. year) | 365.25 days |
+| Atmosphere | ~1.3× Earth's density | 1.0 atm (101.3 kPa) |
 Sky color (zenith) Warm teal-green Blue
 Moons 2 (Keva and Shever) 1 (Luna)
 Surface Gravity --- The Weight of the World
@@ -7054,7 +7111,7 @@ Bright/dark seasons (secondary): Tselem Ohr's position creates a
 multi-year cycle of copper-lit nights versus dark nights. This cycle is independent of the axial seasons and interacts with them to produce compound effects. A bright-season summer is warm and copper-lit --- extended twilight evenings that never fully darken. A dark-season winter is cold and black --- long nights of genuine darkness with the stars blazing against the void.
 Tidal seasons (tertiary): The super-tide/still-tide cycle imposes a
 14-day rhythm on coastal weather and ocean behavior. This shortest cycle creates the daily and weekly weather texture that players experience most directly: the difference between a super-tide foggy morning in Karu and a still-tide clear afternoon.
-The three cycles interact to produce a climate that is predictable in principle and variable in practice --- weather that follows rules the player can learn but never reduces to a simple repeating pattern. The Keh'Dem have been tracking all three cycles for six thousand years and can predict weather with accuracy that surface cultures consider supernatural.
+The three cycles interact to produce a climate that is predictable in principle and variable in practice --- weather that follows rules the player can learn but never reduces to a simple repeating pattern. The Keh’Dem have been tracking all three cycles for six thousand years and can predict weather with accuracy that surface cultures consider supernatural.
 
 It is not supernatural. It is mathematics applied to a system with three independent variables.
 Regional Weather Patterns
@@ -7069,14 +7126,14 @@ Snowfall is heavier than Earth-equivalent latitudes would produce because the de
 Southern Chevel (Nahu to Yeshurun): Warmer, more stable, more
 agriculturally predictable. The southern territories benefit from the most temperate intersection of Tebel's climate systems. Bitu's manufactured pleasantness is easier to maintain here because the natural climate cooperates.
 
-##### The Night Sky
+#### The Night Sky
 
 --- What the Player Sees When They Look Up
 Tebel's night sky is one of the game's most persistent environmental storytelling tools. Every time the player pauses and looks up, they are reminded that they are not on Earth.
 During bright-season nights, the sky holds a copper twilight from Tselem Ohr. Keva hangs blue-tinted and large. Shever moves visibly across the sky with its faint volcanic freckling. Stars are visible but muted by the companion star's ambient light. The overall impression is warm, populated, intimate --- a sky with too many things in it to feel lonely.
 During dark-season nights, the sky opens up. Tselem Ohr is below the horizon. Keva dominates in cold blue. Shever glows faintly warm. The stars are brilliant --- more visible than on Earth because Tebel's atmosphere, while denser, has less light pollution from the absent companion star. The constellations of Tebel are not Earth's constellations. The Keepers have their own star-map carved in stone at Shamaru Kalam.
 
-The Avirim have theirs encoded in navigation songs. The Keh'Dem have theirs in geometric notation. All three are accurate. All three use different pattern-recognition to divide the same sky.
+The Avirim have theirs encoded in navigation songs. The Keh’Dem have theirs in geometric notation. All three are accurate. All three use different pattern-recognition to divide the same sky.
 Occasionally --- during dark-season conjunction nights when both moons are close together --- the Thornwhale migration path is illuminated from below by the creatures' bioluminescent underbellies reflecting off the ocean surface. From elevated coastal positions, the player can see the migration as a river of faint light moving parallel to the coast.
 
 The Avirim's Song 1 describes this phenomenon. Seeing it in person is one of the game's quiet treasures.
@@ -7111,18 +7168,13 @@ All other playstyles craft at the same base rate. Nobody is locked out of crafti
 The Thread Craft Experience Bar
 The Thread Craft bar fills through crafting actions: every item crafted, every experiment attempted (whether successful or not), every material combined at a crafting station. The bar is visible in the crafting interface whenever the player is at a station. It does not appear in the general HUD --- crafting progression is something the player engages with at the workbench, not something that intrudes on exploration or combat.
 Failed experiments give 50% of the XP a successful craft would have produced. The system rewards attempting things, not just completing things. A player who experiments wildly and fails often levels their Thread Craft faster than a player who only crafts known recipes, because the thread records the attempt, not just the result. The most efficient way to level crafting is to try new things --- which is exactly the behavior the system wants to incentivize.
-Tier Name XP Singer **Crafting
-Range Bonus Character**
-1 Hands and Hammer 0--100 --- Pure physical.
-Tool-driven. Manual animation.
-2 Skilled Hands 100--300 --- Refined physical.
-Faster hands. Faint golden light at contact.
-3 Thread-Touch 300--600 +15% Physical +
-channeling. Thread visibly responds to materials.
-4 Weave Forging 600--1000 +20% Channeling-primary.
-Hands shape through conviction + tools.
-5 Thread Mastery 1000+ +25% Near-pure channeling.
-Tools as anchors for conviction. ---------- ------------------ ----------- ----------- ---------------------
+| Tier | Name | XP Range | Singer Bonus | Crafting Character |
+| --- | --- | --- | --- | --- |
+| 1 | Hands and Hammer | 0--100 | --- | Pure physical. Tool-driven. Manual animation. |
+| 2 | Skilled Hands | 100--300 | --- | Refined physical. Faster hands. Faint golden light at contact. |
+| 3 | Thread-Touch | 300--600 | +15% | Physical + channeling. Thread visibly responds to materials. |
+| 4 | Weave Forging | 600--1000 | +20% | Channeling-primary. Hands shape through conviction + tools. |
+| 5 | Thread Mastery | 1000+ | +25% | Near-pure channeling. Tools as anchors for conviction. |
 The Five Tiers --- From Hands to Light
 Tier 1 --- Hands and Hammer
 Thread Craft 0--100. Pure physical crafting. Available from game start.
@@ -7147,7 +7199,7 @@ The transition tier. Physical crafting remains the foundation, but the player be
 Items crafted at Tier 3 carry a faint thread-signature visible through Thread Sense --- the maker's mark expressed as a warm harmonic rather than a stamped symbol.
 New capabilities open: the player can work with Dav-touched materials, which require thread-channeling to shape because pure physical force cannot form them. The golden light is not decorative --- it is the necessary energy input that makes these materials workable. Void-touched materials become workable, requiring careful thread-management during crafting to prevent contamination (the crafting interface shows a balance indicator --- too much channeling and the void-touch bleeds into the thread-signature, too little and the material resists shaping).
 
-The first Eyn-touched substrates from Substrate Crawler traces and Keh'Dem-sourced materials can be incorporated into items as augments.
+The first Eyn-touched substrates from Substrate Crawler traces and Keh’Dem-sourced materials can be incorporated into items as augments.
 Superior quality items become craftable. The quality ceiling rises because the thread-channeling allows the crafter to address material imperfections that physical tools cannot reach --- molecular-scale adjustments to crystal structure, grain alignment, and chemical composition that the thread perceives and the channeling corrects.
 Tier 4 --- Weave Forging
 Thread Craft 600--1000. Channeling-primary crafting. Thread Singer bonus +20%.
@@ -7223,7 +7275,7 @@ leather, shaped specialist wood, cultivated merchants, herbs settlement farming
 Superior Dwarven alloys, Underground trade, Tier 3+
 masterwork leather, Keeper caches, rare Keeper-sourced gathering points crystal, rare herbs
 Epic Dav-touched metals, Quest rewards, boss Tier 4+
-void-touched drops, specific substrates, locations (Scar of Eyn-touched Matu, Keh'Dem crystal, ancient caches) materials
+void-touched drops, specific substrates, locations (Scar of Eyn-touched Matu, Keh’Dem crystal, ancient caches) materials
 Legendary Named materials Specific quest Tier 4--5
 with unique chains, vignette properties, Fallen rewards, unique Tikva relics, discoveries Nachash artifacts repurposed
 Primordial Dual-frequency Post-Yahwey weave, Tier 5 only
@@ -7295,7 +7347,7 @@ The world is also a mess.
 The Unwriting advance in Acts VI and VII pushed void-seepage westward across eastern Chevel in ways that do not simply reverse when Abzu recedes. Void-corrupted terrain does not spontaneously heal --- it must be actively purified. Veilstalkers, Hollows, and Ashwraiths that were sustained by Tav'al's power did not all vanish when he withdrew. Some did --- the Nachash themselves ceased instantly when their void-sustenance was cut.
 
 But void creatures that had become self-sustaining through centuries of accumulated corruption continue to exist. They are confused, purposeless, aggressive in the unfocused way of weapons that no longer have someone holding them. They are ecological problems now rather than existential threats, but ecological problems that can still kill a person standing in the wrong field at the wrong time.
-The Reckoning is the Tikva's campaign to address the damage. Not alone --- the Veilwardens are mobilized, the dwarven engineers are assessing structural damage, the Keh'Dem are monitoring void-seepage regression rates --- but the Tikva is the only person in Chevel who can purify void-corrupted terrain through direct thread intervention rather than waiting decades for natural regression.
+The Reckoning is the Tikva's campaign to address the damage. Not alone --- the Veilwardens are mobilized, the dwarven engineers are assessing structural damage, the Keh’Dem are monitoring void-seepage regression rates --- but the Tikva is the only person in Chevel who can purify void-corrupted terrain through direct thread intervention rather than waiting decades for natural regression.
 
 The player's Tier 5--6 abilities, the Elden Ring combat mastery they developed through the endgame, and the full suite of fate-weaving expressions they've assembled find their richest application here.
 The Reckoning Questline
@@ -7357,9 +7409,9 @@ The Pull of the Sea
 The Avirim connection established through the Golden Voice Cycle content and the Karu harbor reconstruction creates a narrative pull that is both organic and irresistible. The Avirim bring stories of the ocean between their archipelago and Chevel --- island chains that nobody has mapped, that the Avirim themselves navigate around rather than through.
 
 The Song Keepers mention islands in passing, in songs that are not part of the Cycle because the islands were never important to the preservation mission. But the mentions are there: fragments of geographic data embedded in navigation melodies, references to \"the places between\" that the Avirim avoided because the thread felt strange there and because certain creatures in those waters discouraged curiosity.
-The Keh'Dem, when consulted, are more forthcoming. They have known about the island chains for millennia. Their substrate-level observation detected anomalies in the deep ocean --- places where the Eyn substrate is thinner, where things that were buried surface through the crust, where the division between Dav-touched surface reality and the foundational layer beneath it becomes less distinct.
+The Keh’Dem, when consulted, are more forthcoming. They have known about the island chains for millennia. Their substrate-level observation detected anomalies in the deep ocean --- places where the Eyn substrate is thinner, where things that were buried surface through the crust, where the division between Dav-touched surface reality and the foundational layer beneath it becomes less distinct.
 
-The Keh'Dem did not explore the islands because their mandate was observation, not expansion. But they know the islands exist. They know something old is there. They do not know what it is.
+The Keh’Dem did not explore the islands because their mandate was observation, not expansion. But they know the islands exist. They know something old is there. They do not know what it is.
 The player has cleared the scars. The player has helped rebuild the world. The player's Tier 5 abilities and Thread Craft mastery have produced equipment and capabilities that Chevel's mainland cannot fully challenge anymore. The western horizon is calling. The thread, which connects things that care about each other, is vibrating in a direction the player has never gone.
 Building the Ship
 Quest: \"The Vessel\"
@@ -7380,15 +7432,15 @@ The Warm Islands (near shore): Two to three days' sailing from
 Karu.
 Volcanic in origin, lush with vegetation that does not exist on the mainland. The flora is Dav-touched in ways that mainland ecology is not --- brighter colors, more aggressive growth, bioluminescence that rivals the Emberstoat's warmth. The fauna is similarly divergent: creatures evolved from the same ancestral stock as mainland species but shaped by isolation and by the thinner Eyn substrate that permeates the ocean floor.
 
-Substrate Crawlers are more common here than anywhere on the mainland. The Keh'Dem notice this immediately.
+Substrate Crawlers are more common here than anywhere on the mainland. The Keh’Dem notice this immediately.
 The Storm Islands (mid-ocean): Five to seven days from Karu. Named
 for the permanent weather system that circles them --- a standing storm fueled by the interaction between oceanic thermal currents and a deep-ocean void-seepage vent that has been active since the first war. The storm is not natural. It is the ocean's version of the Bleeding Veil --- a point where Tav magic bleeds through the ocean floor and the atmospheric consequences produce a perpetual hurricane.
 
 Navigating through requires Avirim weather-knowledge and the player's Thread Sense working in concert. Inside the storm ring, the islands are eerily calm --- the eye of the system, where the void-seepage creates a localized low-pressure zone that the storm cannot penetrate. The ecology inside the storm ring is void-touched in ways the mainland has never seen: creatures adapted to permanent void-proximity that are neither corrupted nor hostile, simply different.
 The Ruin Islands (deep ocean): The farthest islands the player
-reaches in the post-game. Structures on these islands predate the first war and the Keeper mandate. Not dwarven. Not human. Built by a branch of the Keh'Dem or a related civilization that existed in the ages before the first war, when the Eyn substrate was more accessible. The ruins are built from a stone that Thread Sense cannot categorize --- not Dav-touched, not Tav-touched, carrying a frequency that the horns have never registered before.
+reaches in the post-game. Structures on these islands predate the first war and the Keeper mandate. Not dwarven. Not human. Built by a branch of the Keh’Dem or a related civilization that existed in the ages before the first war, when the Eyn substrate was more accessible. The ruins are built from a stone that Thread Sense cannot categorize --- not Dav-touched, not Tav-touched, carrying a frequency that the horns have never registered before.
 
-The Keh'Dem, when they see the ruins, go very quiet. They recognize the geometry. It is substrate-level architecture --- structures built by a pre-first-war civilization that understood the Eyn at a depth that even the modern Keh'Dem have not achieved. The Keh'Dem have been studying the substrate for six thousand years and have made an inch of progress.
+The Keh’Dem, when they see the ruins, go very quiet. They recognize the geometry. It is substrate-level architecture --- structures built by a pre-first-war civilization that understood the Eyn at a depth that even the modern Keh’Dem have not achieved. The Keh’Dem have been studying the substrate for six thousand years and have made an inch of progress.
 
 These ruins suggest that someone, sometime before the first war, in an age when the Eyn was more directly accessible, made more than an inch.
 Maritime Threats
@@ -7404,9 +7456,7 @@ Keeper record describes with a single line --- \"witnessed, unable to record fur
 
 Thread Sense produces static. The horns ache. The experience communicates that the substrate is closer here, and the things that live in it are larger than anything the player has fought or will fight.
 
-#### **PHASE FOUR --- THE TWIN BIRTH: THE REVELATION THAT CHANGES
-
-#### EVERYTHING**
+#### PHASE FOUR — THE TWIN BIRTH: THE REVELATION THAT CHANGES EVERYTHING
 
 The moment the post-game stops being a post-game and becomes a prologue.
 The Stowaway
@@ -7426,7 +7476,7 @@ The first sign: the stowaway touches the Warm Islands' volcanic stone and their 
 The second sign: during a void-creature encounter on the Storm Islands, the stowaway's heartbeat synchronizes with the combat. Not with the player's commands or the companions' movements --- with the thread itself. The player, through Thread Sense, perceives a faint secondary rhythm in the local web that they have never detected before: a pulse that is not their own, not the web's ambient frequency, not any companion's thread-signature. Something new. Something that is present only when the stowaway is nearby.
 The third sign: the stowaway, exploring a Ruin Island chamber that Thread Sense cannot penetrate, walks through a doorway that the player's Thread Reader abilities indicate should be solid stone. It is solid stone --- to the Tikva. To the stowaway, it is a doorway. They pass through it as naturally as stepping through an open door because their thread-connection operates at a frequency that interacts with substrate-level architecture differently than horn-based connection.
 
-The Keh'Dem, witnessing this, display the closest thing to shock their species is capable of expressing. The stowaway just walked through a substrate barrier. The Keh'Dem, who have spent six thousand years studying the substrate, cannot do that.
+The Keh’Dem, witnessing this, display the closest thing to shock their species is capable of expressing. The stowaway just walked through a substrate barrier. The Keh’Dem, who have spent six thousand years studying the substrate, cannot do that.
 The Question
 The player brings the stowaway to Kalum. Not on a hunch --- on accumulated evidence that the stowaway is something the world has not seen before. Kalum is in his workshop at Dur Dunnum, carving governance records, the Even Qol resting on its shelf the way it has for seven centuries.
 Kalum looks at the stowaway. He looks at their hands --- the tingle is permanent now, a faint golden warmth in the fingertips visible only through Thread Sense, like embers that never go out. He looks at the space where horns should be and are not. His expression does not change. Seven centuries of witnessing has taught him to absorb information before reacting to it.
@@ -7460,7 +7510,7 @@ Kalum, after long consideration, names them Kol Dumam. The name draws from the d
 The Kol Dumam is not weaker than the Tikva. They are different. The horned Tikva's thread-connection is a broadcast tower --- powerful, visible, reshaping reality through sheer conviction. The Kol Dumam's thread-connection is a whisper network --- precise, invisible, interacting with the substrate at a level the Tikva's horns cannot reach. Where the Tikva folds reality, the Kol Dumam walks through it.
 
 Where the Tikva's Thread Sense broadcasts their presence, the Kol Dumam's somatic sense absorbs information without emitting any signal in return. The Tikva is the lightning. The Kol Dumam is the ground wire.
-And the Kol Dumam can do something the Tikva cannot: pass through substrate-level barriers. Walk through doors that exist only at the Eyn layer. Touch the foundation beneath both creation and void without the interference that horn-based connection produces. The Keh'Dem have been trying to do this for six thousand years. The Kol Dumam did it accidentally on their first day on the Ruin Islands.
+And the Kol Dumam can do something the Tikva cannot: pass through substrate-level barriers. Walk through doors that exist only at the Eyn layer. Touch the foundation beneath both creation and void without the interference that horn-based connection produces. The Keh’Dem have been trying to do this for six thousand years. The Kol Dumam did it accidentally on their first day on the Ruin Islands.
 
 The substrate responds to a frequency that horns do not produce --- the frequency of a thread-connection that evolved to be invisible, and in becoming invisible, became compatible with a layer of reality that visibility cannot reach.
 
@@ -7473,7 +7523,7 @@ The final sequence is quiet. No combat. No urgency. The player, the stowaway, an
 On clear days from this cliff, the Avirim archipelago is visible as a dark line against the western horizon. Today is a clear day. The archipelago is there. Between the cliff and the archipelago is open ocean --- water that the Avirim navigate around, water where the thread feels strange, water that the Song Keepers describe in songs the player may have heard and that now carry different weight.
 The stowaway stands at the cliff's edge. Their hands are glowing faintly --- the golden warmth in the fingertips that is their thread-connection's visible expression. They are looking west. They say, quietly, to no one in particular:
 \"I can feel something out there. Not with my hands. Deeper. Like the stone beneath the ocean is trying to say something and the water is in the way.\"
-The camera holds on the western horizon. The amber light of Ohr's sunset turns the ocean gold. The dark line of the Avirim archipelago sits at the edge of the visible world. Beyond it --- what the player cannot see, what the stowaway can feel, what the Keh'Dem have suspected for millennia --- is something that the thread remembers and the world has forgotten.
+The camera holds on the western horizon. The amber light of Ohr's sunset turns the ocean gold. The dark line of the Avirim archipelago sits at the edge of the visible world. Beyond it --- what the player cannot see, what the stowaway can feel, what the Keh’Dem have suspected for millennia --- is something that the thread remembers and the world has forgotten.
 The screen does not fade to black. It fades to gold. The same golden warmth that ended Layer 1, that ended Layer 2, that carried the player from death to hearthpoint every time the thread frayed. The gold that means: this is not over. This is the thread remembering.
 Text appears. Not credits. Not a title card. A single line, in the same typography the Keeper record uses:
 \"The thread does not end. The thread remembers.\"
@@ -7485,7 +7535,7 @@ No trailer could do this. No marketing campaign. No hype reel. The player earned
 Design direction for the next game. The thread continues.
 Scope
 The DLC is not an expansion pack. It is a standalone game built on the AstraWeave engine, using Veilweaver's systems, set in Tebel's world, continuing Tebel's story. It is to Veilweaver what The Witcher 3: Blood and Wine was to The Witcher 3 --- a complete narrative experience that requires the foundation of the original to be fully appreciated but stands on its own merits as a game.
-The DLC's working title is Kol Dumam. The protagonist is the stowaway. The setting is the western ocean, the Avirim archipelago, and what lies beyond both. The story is the Kol Dumam's journey into the substrate --- the foundational layer beneath both creation and void that the Keh'Dem have studied for six thousand years and that the Kol Dumam can touch in ways the Tikva never could.
+The DLC's working title is Kol Dumam. The protagonist is the stowaway. The setting is the western ocean, the Avirim archipelago, and what lies beyond both. The story is the Kol Dumam's journey into the substrate --- the foundational layer beneath both creation and void that the Keh’Dem have studied for six thousand years and that the Kol Dumam can touch in ways the Tikva never could.
 The Protagonist --- A Different Tikva
 The Kol Dumam plays differently from the Tikva. The mechanical identity is precision, stealth, and substrate interaction rather than power, presence, and fate-weaving. The combat feel is lighter --- the Kol Dumam does not reshape reality with conviction. They move through reality's seams. The Elden Ring foundation remains (stamina, dodge, weapon movesets) but the thread overlay is entirely reimagined:
 Where the Tikva had Thread Sense broadcasting from their horns, the Kol Dumam has Somatic Sense --- thread-information received through touch, heartbeat, and spinal response. Somatic Sense does not broadcast the player's position. The Kol Dumam is invisible to Thread Sense, to the Aban Dummu, to every detection system ever built. The stealth implications are fundamental: the Kol Dumam can approach void-touched creatures, Nachash remnants, and substrate-level phenomena without being detected, because their thread-connection does not emit a signal.
@@ -7494,7 +7544,7 @@ Where the Tikva had fate-weaving tiers that reshaped reality, the Kol Dumam has 
 The gameplay implications: exploration-focused, puzzle-heavy, with combat encounters that reward positioning and environmental interaction over raw power.
 Where the Tikva's story was about conviction --- screaming existence into the void --- the Kol Dumam's story is about listening. The still, small voice does not declare. It perceives. It understands. It passes through. The narrative tone shifts from epic declaration to intimate discovery. The Tikva's game was an epic fantasy novel. The Kol Dumam's game is a mystery novel set in the same world, written by the same author, using the same vocabulary to say something different.
 The Setting --- What Lies Beyond the Horizon
-The DLC's setting expands westward: the full Avirim archipelago (forty islands, a maritime civilization organized around song and preservation), the deep ocean (navigable by the player's ship, with maritime encounters and exploration content), and something beyond the Avirim that neither the Avirim nor the Keh'Dem fully understand --- a region of the ocean where the substrate surfaces, where the Eyn layer and the physical world occupy the same space, where reality has the texture of a place that existed before the First Word was spoken.
+The DLC's setting expands westward: the full Avirim archipelago (forty islands, a maritime civilization organized around song and preservation), the deep ocean (navigable by the player's ship, with maritime encounters and exploration content), and something beyond the Avirim that neither the Avirim nor the Keh’Dem fully understand --- a region of the ocean where the substrate surfaces, where the Eyn layer and the physical world occupy the same space, where reality has the texture of a place that existed before the First Word was spoken.
 This region is where Dav'al fought Abzu for seven centuries. The battle is over. But the battlefield remains. And battlefields, in Tebel, remember.
 The Allegorical Layer
 The Tikva's allegory was about the Word --- the creative declaration that spoke existence into being and the hope that existence is worth declaring. The Kol Dumam's allegory is about what comes after the Word. The still, small voice that speaks when the storm and the earthquake and the fire have passed. The whisper that is not power but understanding.
@@ -7506,7 +7556,7 @@ The thread does not end. The thread remembers. And what the thread remembers is 
 >
 \"I can feel something out there. Not with my hands. Deeper. Like the stone beneath the ocean is trying to say something and the water is in the way.\" --- Kol Dumam
 >
-\"The substrate always produces redundancy when a single expression has failed repeatedly. It is not strategy. It is mathematics.\" --- The Keh'Dem
+\"The substrate always produces redundancy when a single expression has failed repeatedly. It is not strategy. It is mathematics.\" --- The Keh’Dem
 >
 \"The thread does not end. The thread remembers.\"
 
@@ -7532,8 +7582,8 @@ concepts --- the Eyn substrate, the forces that predate both creation and void, 
 This trilingual framework is the linguistic equivalent of geological strata. Hebrew is the surface --- the living layer where people speak and act and hope. Akkadian is the bedrock --- the institutional layer that holds the surface up. Sumerian is the mantle --- the primordial layer beneath both, older than cities, older than writing, touching the substrate of reality itself.
 
 When the player descends from Milah (Hebrew) through Aban Sharru (Akkadian) toward Eridu Kur (Sumerian), the language descends with them. The words get older as the world gets deeper. The descent is linguistic as well as physical.
-**The Nachash Linguistic Corruption --- Seven Centuries of Edited
-Words**
+##### The Nachash Linguistic Corruption --- Seven Centuries of Edited Words
+
 The Nachash did not only erase history. They edited the language people use to discuss it. This is the most subtle and arguably the most effective dimension of their seven-century corruption, and it operates so deeply that most inhabitants of Tebel do not realize their vocabulary has been shaped to prevent certain thoughts from forming.
 The mechanism is institutional rather than magical. The Nachash controlled Shamatu's curriculum for two centuries. They influenced the state genealogical office for four. They embedded operatives in every level of Milah's civic administration. Through these positions they did not ban words --- banning creates martyrs and makes the banned thing interesting.
 
@@ -7559,7 +7609,7 @@ The dialect of the capital and its immediate surroundings. Milah Court Speech is
 
 The effect is a dialect that sounds educated and authoritative while being systematically less expressive than any frontier patois.
 
-#### An NPC in
+##### Example: A Milah NPC
 
 Milah speaks with the specific confidence of someone whose vocabulary has been curated to prevent uncomfortable thoughts. They use Davar to mean 'administrative matter.' They use Tikva to mean 'thread' in the textile sense. They refer to the golden statue by its civic designation rather than any name that connects it to Dav'al. They do not use the word 'weave' in any metaphysical context.
 
@@ -7584,13 +7634,13 @@ The Song Keepers speak the most extreme version of Avirim melodic --- their ever
 
 An Avirim merchant haggling sounds like someone performing a duet with the customer. The effect is beautiful, distinctive, and immediately identifiable as not-from-here when an Avirim speaker arrives at Karu's harbor.
 Critically, Avirim melodic preserves the most uncorrupted versions of the original vocabulary. The Nachash never controlled Avirim's language the way they controlled Milah's. When an Avirim Song Keeper says 'Davar,' they mean the creative declaration that spoke reality into existence, because nobody ever told them it should mean something smaller. The first Avirim visitors to post-Nachash Milah will create linguistic culture shock simply by using familiar words with their original meanings --- and Milah citizens will experience the specific disorientation of hearing their own language spoken correctly for the first time.
-Keh'Dem Geometric --- Precision Beyond Sound
-The Keh'Dem do not speak the same language as humans and dwarves. Their communication operates through a geometric notation system that encodes meaning in spatial relationships rather than phonetic sequences. When they speak aloud --- which they do, especially when communicating with other races --- their pronunciation of surface-language words is precise to a degree that sounds clinical.
+Keh’Dem Geometric --- Precision Beyond Sound
+The Keh’Dem do not speak the same language as humans and dwarves. Their communication operates through a geometric notation system that encodes meaning in spatial relationships rather than phonetic sequences. When they speak aloud --- which they do, especially when communicating with other races --- their pronunciation of surface-language words is precise to a degree that sounds clinical.
 
 Every phoneme is articulated at its theoretical ideal. The result sounds both perfectly correct and subtly inhuman, like a voice that learned language from first principles rather than from hearing it spoken.
-The Keh'Dem's geometric notation is not a secondary system --- it is their primary language, with spoken language as a translation layer they maintain for inter-species communication. Their records, their mathematical models, their six-thousand-year archive of substrate observations are all encoded in geometric patterns that Thread Sense perceives as spatial harmonics rather than text.
+The Keh’Dem's geometric notation is not a secondary system --- it is their primary language, with spoken language as a translation layer they maintain for inter-species communication. Their records, their mathematical models, their six-thousand-year archive of substrate observations are all encoded in geometric patterns that Thread Sense perceives as spatial harmonics rather than text.
 
-The player who develops sufficient Thread Reader capability begins to 'read' Keh'Dem geometric notation not as symbols but as spatial relationships that communicate meaning through position, angle, and proximity. The experience is described by the player character as 'understanding a sentence by looking at where the words are standing relative to each other.'
+The player who develops sufficient Thread Reader capability begins to 'read' Keh’Dem geometric notation not as symbols but as spatial relationships that communicate meaning through position, angle, and proximity. The experience is described by the player character as 'understanding a sentence by looking at where the words are standing relative to each other.'
 Edom Kur Adapted --- Void-Adjacent Speech
 The people of Edom Kur, who have lived in permanent proximity to void magic for generations, have developed a dialect shaped by the specific acoustic properties of void-touched territory. Sounds carry differently near the Bleeding Veil --- certain frequencies are absorbed while others are amplified. Over generations, the Edom Kur dialect has adapted: speakers emphasize the frequencies that carry and avoid the ones that don't.
 
@@ -7604,57 +7654,33 @@ The scholarly community in Yeshurun maintains what they call the Complete Tongue
 The six Nachash operatives who attempted to infiltrate Yeshurun and defected did so partly because sustained exposure to a language that had not been corrupted gradually restored meanings they had forgotten existed. The words healed them.
 The Map Etymologies --- Why Everything Is Named What It Is
 Every location name in Tebel is drawn from the trilingual framework, and the language used reflects the cosmological stratum the place belongs to. The player who traces the etymology of every location on the map discovers a pattern: Hebrew names cluster in the human-settled regions, Akkadian names appear in older or more institutional locations, and Sumerian surfaces only at the deepest and most ancient sites. The linguistic strata map onto the physical strata of the world.
-**Location** **Language** **Literal Meaning** **Lore Significance**
-Milah      Hebrew           The spoken word          The city IS Dav'al's
-Word made physical --- a sentence, a declaration
-Chevel     Hebrew           Territory; also          The dual meaning is not
-cord/thread              coincidental --- the thread-region, named before anyone knew the thread was literal
-Tikva      Hebrew           Thread and hope          Shares root with Qaveh.
-(simultaneously)         Both meanings always present, always inseparable
-Yaqar      Akkadian         The valued despite       Frontier town that Milah
-everything               considers expendable but the thread considers precious
-Dur Dunnum Akkadian         Fortress Fortress        Desperate redundancy ---
-the first fate-weave, spoken into reality by terrified survivors
-**Aban         Akkadian         The royal stones / the   Dwarves have been the
-Sharru**                        king's foundation        foundation beneath
-Milah's throne for seven centuries
-**Shamaru      Akkadian         Guardian of all that     The Keeper archive ---
-Kalam**                         remains                  the most important room
-in the world
-Nachash    Hebrew           The serpent; the subtle  Same word used in
-and cunning one          Genesis. The biblical resonance is the point
-Edom Kur   Hebrew +         The red earth of the     Hebrew Edom
-Akkadian         deep                     (red/adversary) + Akkadian Kur (underworld) --- languages mixing at the border
-Keh'Dem    Hebrew           Those of the east; those From Qedem --- the
-who came before          ancient ones. The player will underestimate them immediately
-Ahavah     Hebrew           Love; deep abiding       The most culturally
-attachment               vibrant city, considered low priority by the Nachash --- their greatest strategic error
-Reshit     Hebrew           The beginning; the first Oldest continuously
-of everything            inhabited location. The Keh'Dem painting in the deep chamber
-Yam Gadol  Hebrew           The great sea            Named by survivors who
-saw something vast after years in enclosed fortresses
-Avirim     Hebrew           Those who crossed over   Maritime civilization
-whose oral tradition preserved what Milah's institutions destroyed
-Yeshurun   Hebrew           The upright ones; the    Ancient poetic name for
-beloved who walks        a people chosen for a straight                 purpose they don't fully understand
-Tzafar     Akkadian         The peak above           Mountain civilization
-everything               that independently arrived at Yahwey's truth through philosophy
-Eridu Kur  Sumerian         The first city below     Named for the oldest
-city in human history. The deepest linguistic stratum for the deepest location
-Abzu       Sumerian         The primordial abyss /   Pre-creation,
-freshwater deep          pre-language. The name itself is older than the distinction between creation and void
-Even Qol   Hebrew           Stone of the voice /     A literal crystallized
-voice stone              shard of the First Word --- the voice made physical
-Aban Dummu Akkadian         The silenced stone / the The dark mirror of Even
-voice that was stopped   Qol --- silence that was once a voice
-Bitu       Akkadian         Where people truly       The irony: the Nachash
-belong / the home        turned a city named 'home' into a demonstration lab
-Yahwey     Pre-linguistic   Not an etymology --- the Arrived at through
-sound of breath becoming breath, not through intention                language. The oldest sound existence ever made
-Kol Dumam  Hebrew           The still, small voice   The voice Elijah heard
-after the storm. The quiet thread. The DLC protagonist's designation -------------- ---------------- ------------------------ ------------------------
+| Location | Language | Literal Meaning | Lore Significance |
+| --- | --- | --- | --- |
+| Milah | Hebrew | The spoken word | The city is Dav'al's Word made physical --- a sentence, a declaration. |
+| Chevel | Hebrew | Territory; also cord/thread | The dual meaning is not coincidental --- the thread-region, named before anyone knew the thread was literal. |
+| Tikva | Hebrew | Thread and hope (simultaneously) | Shares root with Qaveh. Both meanings always present, always inseparable. |
+| Yaqar | Akkadian | The valued despite everything | Frontier town that Milah considers expendable but the thread considers precious. |
+| Dur Dunnum | Akkadian | Fortress Fortress | Desperate redundancy --- the first fate-weave, spoken into reality by terrified survivors. |
+| Aban Sharru | Akkadian | The royal stones / the king's foundation | Dwarves have been the foundation beneath Milah's throne for seven centuries. |
+| Shamaru Kalam | Akkadian | Guardian of all that remains | The Keeper archive --- the most important room in the world. |
+| Nachash | Hebrew | The serpent; the subtle and cunning one | Same word used in Genesis. The biblical resonance is the point. |
+| Edom Kur | Hebrew + Akkadian | The red earth of the deep | Hebrew Edom (red/adversary) + Akkadian Kur (underworld) --- languages mixing at the border. |
+| Keh’Dem | Hebrew | Those of the east; those who came before | From Qedem --- the ancient ones. The player will underestimate them immediately. |
+| Ahavah | Hebrew | Love; deep abiding attachment | The most culturally vibrant city, considered low priority by the Nachash --- their greatest strategic error. |
+| Reshit | Hebrew | The beginning; the first of everything | Oldest continuously inhabited location. The Keh’Dem painting in the deep chamber. |
+| Yam Gadol | Hebrew | The great sea | Named by survivors who saw something vast after years in enclosed fortresses. |
+| Avirim | Hebrew | Those who crossed over | Maritime civilization whose oral tradition preserved what Milah's institutions destroyed. |
+| Yeshurun | Hebrew | The upright ones; the beloved who walks straight | Ancient poetic name for a people chosen for a purpose they don't fully understand. |
+| Tzafar | Akkadian | The peak above everything | Mountain civilization that independently arrived at Yahwey's truth through philosophy. |
+| Eridu Kur | Sumerian | The first city below | Named for the oldest city in human history. The deepest linguistic stratum for the deepest location. |
+| Abzu | Sumerian | The primordial abyss / freshwater deep | Pre-creation, pre-language. The name itself is older than the distinction between creation and void. |
+| Even Qol | Hebrew | Stone of the voice / voice stone | A literal crystallized shard of the First Word --- the voice made physical. |
+| Aban Dummu | Akkadian | The silenced stone / the voice that was stopped | The dark mirror of Even Qol --- silence that was once a voice. |
+| Bitu | Akkadian | Where people truly belong / the home | The irony: the Nachash turned a city named 'home' into a demonstration lab. |
+| Yahwey | Pre-linguistic | Not an etymology --- the sound of breath becoming breath, not through language | The oldest sound existence ever made. |
+| Kol Dumam | Hebrew | The still, small voice | The voice Elijah heard after the storm. The quiet thread. The DLC protagonist's designation. |
 
-#### NPC
+##### NPC Dialogue Architecture
 
 Dialogue Architecture --- How Dialects Express in Gameplay
 The dialect system is not flavor text. It is a gameplay-integrated information layer that rewards the attentive player with cultural intelligence, lore depth, and investigative leads.
@@ -7663,7 +7689,7 @@ The Thread Reader who develops sufficient linguistic pattern recognition begins 
 
 The slip is an investigative lead. Similarly, a frontier NPC who suddenly uses Milah Court Speech has been in contact with institutional authority --- possibly a Nachash informant whose vocabulary shifted during integration. The player who listens to how NPCs speak, not just what they say, discovers a layer of intelligence that the GOAP system generates organically.
 
-#### NPC
+##### NPC Speech Pattern Framework
 
 Speech Pattern Framework
 Each NPC in AstraWeave's GOAP system carries a dialect profile that determines vocabulary selection, sentence rhythm, metaphor usage, and cultural reference framework. The dialect profile is determined by the NPC's origin, current location, social class, faction affiliation, and individual history. A Milah-born NPC who has lived in Yaqar for twenty years speaks with a hybrid dialect --- Court Speech vocabulary with frontier rhythm, the institutional precision softened by years of practical conversation.
@@ -7679,8 +7705,8 @@ Avirim NPCs: Melodic sentence structure with pitch variation.
 Vocabulary preserving original pre-corruption meanings. Metaphors drawn from ocean, navigation, song, and wave-rhythm. Refer to the golden statue as 'the light that ended the dark across the water' rather than any civic name. Their language sounds like poetry to Milah ears and like ordinary speech to Avirim ears.
 Keeper NPCs (Kalum, Keeper contacts): The most compressed dialect.
 Maximum meaning per word. Every sentence is carved before it is spoken --- the habit of someone who has been writing in stone for centuries. Uses the original meanings of every word without explanation or apology. When Kalum says 'Davar' he means the creative force that spoke reality into existence, and if the listener does not understand, that is the listener's loss, not Kalum's error.
-Keh'Dem NPCs: Precise to the point of clinical when speaking surface
-languages. Every phoneme articulated at its theoretical ideal. No contractions. No idioms. No metaphors --- the Keh'Dem communicate metaphorical content through geometric notation, not spoken language. Their spoken dialogue is pure information transfer: accurate, complete, and subtly unsettling in its perfection.
+Keh’Dem NPCs: Precise to the point of clinical when speaking surface
+languages. Every phoneme articulated at its theoretical ideal. No contractions. No idioms. No metaphors --- the Keh’Dem communicate metaphorical content through geometric notation, not spoken language. Their spoken dialogue is pure information transfer: accurate, complete, and subtly unsettling in its perfection.
 The Linguistic Recovery --- Post-Game
 Kalum's governance includes a linguistic dimension that most players will not consciously notice but will feel in the texture of post-game NPC dialogue. The Archive Reconciliation questline (Section LXI, Part Two) produces a unified history that includes the Nachash's linguistic corruption as a documented phenomenon. Once the corruption is documented, the restoration begins --- slowly, organically, through the same institutional channels the Nachash used to corrupt it in the first place.
 In the post-game, Milah NPCs begin using words with their original meanings. The shift is gradual. A merchant who said 'Davar' to mean 'administrative matter' during Act III says it to mean 'the word that makes things real' during the post-game, and the shift is so natural that the player may not consciously register it. But the world sounds different.
@@ -7714,30 +7740,16 @@ The experience is described by the player character as hearing something that is
 Each fragment is a passage from the myth. The player does not receive the text in their journal --- the fragments are too old for the journal's notation system. Instead, the fragment is experienced as a sensory impression that lingers: a warmth (fragments about Dav'al's Word), a cold (fragments about Tav'al's Silence), a vibration beneath the feet (fragments about the Eyn), or a deep stillness that feels like absence rather than quiet (fragments about Abzu).
 
 The player who collects all fragments assembles a sensory map of the myth before they ever read the complete text.
-**Location** **Fragment** **Sensory          **Myth Section**
-Impression**
-**The Breath of   The echo of the   Deep warmth rising The Word
-Tebel**           First Word still  from the ground;
-drifting across   the harmonic that the continent     Thread Sense registers as older than everything
-**The Scar of     The violence of   The warm valley    The Thread
-Matu**            creation at       floor vibrating at
-combat scale ---  a frequency that but beneath it,   predates the an older          battle scar; the resonance         original thread humming beneath the war-wound
-**Reshit's Deep   The Keh'Dem       Geometric patterns The Eyn
-Chamber**         painting as a     in the stone
-visual            resolving into translation of    spatial the myth's oldest relationships that passage           communicate meaning without language
-Eridu Kur     The founding      Stone so old it    The Emergence
-stones where the  vibrates at the Keh'Dem were      substrate level; received as       the Eyn honored guests    perceptible 6,000 years ago   through touch
-**Kur Narum       The               Light in the water The First Warmth
-(golden lake)**   bioluminescent    that is not
-water glowing     reflected but with pre-war Dav  generated, as if magic             the lake remembers being spoken into existence
-**Shar Mati       The first place   Cold so deep it    The Silence
-(black throne)**  Tav'al touched    predates
-Tebel's soil      temperature; the sensation of boundary, of edge, of the place where something stops
-**The Dead Lands  The oldest human  Absence that is    The Stirring
-(Kal Matu)**      ruin, where a     not void but
-pre-war           something older; civilization      the substrate understood Dav    showing through magic             where the surface has worn away
-**Bitu Kalama     The Emberstoat    Simple, animal     The First Warmth
-(fallback         that has lived    warmth that Thread vault)          there as long as  Sense registers as any dwarf         the oldest living remembers         thread-signature in Tebel ----------------- ----------------- ------------------ -----------------
+| Location | Fragment | Sensory Impression | Myth Section |
+| --- | --- | --- | --- |
+| The Breath of Tebel | The echo of the First Word still drifting across the continent | Deep warmth rising from the ground; the harmonic that Thread Sense registers as older than everything | The Word |
+| The Scar of Matu | The violence of creation at combat scale --- but beneath it, an older battle scar | The warm valley floor vibrating at a frequency that predates the original thread humming beneath the war-wound | The Thread |
+| Reshit's Deep Chamber | The Keh’Dem painting as a visual translation of the myth's oldest passage | Geometric patterns in the stone resolving into spatial relationships that communicate meaning without language | The Eyn |
+| Eridu Kur | The founding stones where the Keh’Dem were received as honored guests 6,000 years ago | Stone so old it vibrates at the substrate level; perceptible through touch | The Emergence |
+| Kur Narum (golden lake) | The bioluminescent water glowing with pre-war Dav magic | Light in the water that is not reflected but generated, as if the lake remembers being spoken into existence | The First Warmth |
+| Shar Mati (black throne) | The first place Tav'al touched Tebel's soil | Cold so deep it predates temperature; the sensation of boundary, of edge, of the place where something stops | The Silence |
+| The Dead Lands (Kal Matu) | The oldest human ruin, where a pre-war civilization understood Dav magic | Absence that is not void but something older; the substrate showing through where the surface has worn away | The Stirring |
+| Bitu Kalama (fallback vault) | The Emberstoat that has lived there as long as any dwarf remembers | Simple, animal warmth that Thread Sense registers as the oldest living thread-signature in Tebel | The First Warmth |
 The Complete Text at Shamaru Kalam
 The complete myth is accessible during the Act III underground arc when the player reaches Shamaru Kalam with Kalum. The archive's deepest chamber --- beyond the seven centuries of Keeper records, beyond the historical accounts of the first war, beyond the genealogical records of the Tikva bloodline --- contains a wall of carved stone that is visibly older than anything else in the archive.
 
@@ -7754,10 +7766,10 @@ The Avirim Version (Songs 12--13 of the Golden Voice Cycle): The
 Avirim never had access to the Keeper text. What they have is an independent observation-based account: the golden light that ended the first war, described in Song 12 as 'The Dawn That Came Twice,' contains melodic passages that mirror the myth's description of the First Word. Song 13, 'The Warmth That Crossed,' describes a wave of warmth that is, the Song Keepers will tell the player, older than the war it ended.
 
 The Avirim version is incomplete but confirming --- an independent witness to the same truth, seen from across the ocean.
-The Keh'Dem Version (Geometric Notation): The Keh'Dem have their own
-record of the creation encoded in geometric patterns at Reshit's deep chamber and throughout their passage network. Their version is not narrative --- it is mathematical. The creation expressed as spatial relationships rather than spoken words. The Keh'Dem version is the most complete account of the Eyn's role because the Keh'Dem are the only race with direct substrate perception.
+The Keh’Dem Version (Geometric Notation): The Keh’Dem have their own
+record of the creation encoded in geometric patterns at Reshit's deep chamber and throughout their passage network. Their version is not narrative --- it is mathematical. The creation expressed as spatial relationships rather than spoken words. The Keh’Dem version is the most complete account of the Eyn's role because the Keh’Dem are the only race with direct substrate perception.
 
-Where the Keeper version describes the Eyn from outside, the Keh'Dem version describes it from within.
+Where the Keeper version describes the Eyn from outside, the Keh’Dem version describes it from within.
 The Yeshurun Version (The Witness Account, Section XXIV): The
 first-person narrative carved in the pre-trilingual script. This is not a retelling of the myth but a parallel account --- the same events described by someone who was there, in a voice that carries firsthand witness rather than devotional distance. The Witness Account and the Keeper Version are the same story told by different people for different purposes. Together they produce the convergence that makes the truth feel unassailable.
 The Folk Version (Frontier oral tradition): The frontier communities
@@ -7860,7 +7872,7 @@ Abzu.
 >
 The Unwritten was not born the way the Word and the Silence were born. He was not an impulse that gathered itself into a being. He was the substrate's response to being compressed by the existence of things above it. The shadow of the lamp, growing darker as the lamp grows brighter. The deeper the Word's creation extended its roots into the Eyn, the more the Eyn pushed back --- not with force, not with intention, not with any quality that could be called will --- but with the specific pressure of something vast being asked to support something heavy that it did not invite.
 >
-The Keh'Dem, who touch the Eyn in ways no other race can perceive, describe the stirring as the sound of a foundation deciding whether it wants to continue being a foundation. Not a decision in the moral sense. A structural question. Can this hold? Should this hold? Is the thing above worth the effort of the thing below?
+The Keh’Dem, who touch the Eyn in ways no other race can perceive, describe the stirring as the sound of a foundation deciding whether it wants to continue being a foundation. Not a decision in the moral sense. A structural question. Can this hold? Should this hold? Is the thing above worth the effort of the thing below?
 >
 The question has never been answered. It has only been deferred. The Word keeps speaking. The Silence keeps shaping. The thread keeps growing. And beneath all of it, the Eyn holds everything above it with the specific patience of something that has not yet decided whether holding is what it was meant to do.
 >
@@ -7886,7 +7898,7 @@ VII. The Emergence
 >
 The races did not arrive. They emerged. The thread, vibrating at the frequency of the First Word through different strata of the world, produced different expressions of itself the way a single note played through different instruments produces different sounds.
 >
-From the deepest place, where the thread touched the Eyn itself, the Keh'Dem emerged. Those who came before. Those of the east. The ancient ones. Small, strange, with eyes that see the substrate constantly because they were born at the boundary between the world and the foundation the world rests upon. They understood the Eyn instinctively because they emerged from it.
+From the deepest place, where the thread touched the Eyn itself, the Keh’Dem emerged. Those who came before. Those of the east. The ancient ones. Small, strange, with eyes that see the substrate constantly because they were born at the boundary between the world and the foundation the world rests upon. They understood the Eyn instinctively because they emerged from it.
 
 They touched it the way a fish touches water --- not as an achievement but as a condition of existence. They were the first to feel the stirring. They were the first to understand what it meant. They chose, long before anyone else had reason to choose, to watch rather than act, because they understood that some things must be witnessed before they can be addressed.
 >
@@ -7894,7 +7906,7 @@ From the stone, where the thread was densest and most compressed, the dwarves em
 
 The dwarves are the world's memory expressed as a people. They do not forget because forgetting is antithetical to stone.
 >
-From the surface, where the thread is brightest and most exposed, humans emerged. The most thread-connected race. The most vulnerable to the thread's disruption. Their connection is direct and volatile in a way the Keh'Dem's is not --- where the Keh'Dem perceive the substrate calmly, humans are buffeted by the thread's frequency whether they want to be or not.
+From the surface, where the thread is brightest and most exposed, humans emerged. The most thread-connected race. The most vulnerable to the thread's disruption. Their connection is direct and volatile in a way the Keh’Dem's is not --- where the Keh’Dem perceive the substrate calmly, humans are buffeted by the thread's frequency whether they want to be or not.
 
 One in every seven generations, the thread's frequency concentrates in a single human being with such intensity that the concentration manifests physically: horns growing from the skull, living antennae tuned to the frequency of the original Word. The Tikva. The thread and the hope. Born not randomly but assigned by the thread itself, the way a river assigns its strongest current to the deepest channel.
 >
@@ -7906,7 +7918,7 @@ Dav'al looked at the world he had spoken and understood that it was no longer hi
 >
 This was not a loss. It was the completion of the act of creation. A word, once spoken, belongs to the listener. A world, once created, belongs to the people who live in it. The thread that Dav'al's Word had grown was now the thread that connected every living thing in Tebel to every other living thing, and the connections were not his connections.
 
-They were theirs. The Keh'Dem watched from the deep. The dwarves built from the stone. The humans lived on the surface with the thread singing through their blood. None of them needed the speaker to tell them what to do with the world the speaking had produced. They needed the world to be theirs. They needed the freedom to love it or ruin it or both.
+They were theirs. The Keh’Dem watched from the deep. The dwarves built from the stone. The humans lived on the surface with the thread singing through their blood. None of them needed the speaker to tell them what to do with the world the speaking had produced. They needed the world to be theirs. They needed the freedom to love it or ruin it or both.
 >
 Dav'al chose restraint. Not because he was unable to intervene. Because intervention would replace their freedom with his authority, and a world without freedom is a world that was spoken but not lived in, a sentence with no one to hear it, a fire lit in a room with no one cold. He chose to let the creation be free. He knew that freedom meant the creation could be corrupted.
 
@@ -7928,7 +7940,7 @@ The thread does not end. The thread remembers. And what the thread remembers mos
 
 #### DESIGN INTEGRATION --- THE MYTH IN THE WORLD
 
-#### NPC
+##### NPC Cultural Knowledge Base
 
 Cultural Knowledge Base
 The myth, once discovered by the player, becomes a reference point that NPCs across Tebel draw upon in contextually appropriate ways. The GOAP-driven dialogue system selects references based on the NPC's cultural background, dialect profile (Section LXII), and the specific conversation context:
@@ -7938,8 +7950,8 @@ A Yaqar farmer: Hums a fragment --- the folk version of The First
 Warmth compressed into a melody about 'the warm thing that was made first.' Does not know they are humming the oldest story in the world. Mentions, if asked about the tune, that their grandmother sang it and her grandmother before her. The frontier has been carrying this fragment for centuries without knowing what it is.
 An Avirim Song Keeper: Can perform a melodic interpretation of the
 full myth if the player completes the Golden Voice Cycle quest and asks. The Avirim version emphasizes The Word and The Stirring --- the sound and the ocean --- because their culture processes the cosmological through acoustic and maritime metaphor. The performance takes approximately three minutes and is one of the most beautiful audio experiences in the game.
-A Keh'Dem elder: Translates the myth into geometric notation on
-request. The translation looks nothing like the carved text --- it is a spatial diagram that the player can perceive through developed Thread Sense as a three-dimensional model of the creation, rotating slowly, the Word and the Silence and the Eyn visible as interacting fields. The Keh'Dem version of the myth is the only version that includes a visual representation of Abzu --- not as a being but as a pressure gradient in the substrate, visible as a distortion in the geometric model's deepest layer.
+A Keh’Dem elder: Translates the myth into geometric notation on
+request. The translation looks nothing like the carved text --- it is a spatial diagram that the player can perceive through developed Thread Sense as a three-dimensional model of the creation, rotating slowly, the Word and the Silence and the Eyn visible as interacting fields. The Keh’Dem version of the myth is the only version that includes a visual representation of Abzu --- not as a being but as a pressure gradient in the substrate, visible as a distortion in the geometric model's deepest layer.
 Baru: Never references the myth directly. But if the player sits at
 his bar after reading the Shamaru Kalam text, Baru sets down a bowl of stew and says: 'The first thing he made was warmth. Everything else was architecture.' Then he walks away. The player who has read the myth understands. The player who has not thinks Baru is talking about stew. He is talking about both.
 Pattern Recall Integration
@@ -7949,7 +7961,7 @@ Shar Mati's cold carries the language of The Silence. The myth becomes a lens th
 The design principle: reading the myth does not change the world. It changes the player's perception of the world. The information was always there. The myth gives the player the framework to perceive it. This is the Thread Reader branch's deepest expression: understanding that precedes observation, that the world has memory older than history, and that the player who reads that memory reads the creation itself.
 Post-Game Payoff
 After the Yahwey weave, Kalum makes the myth public. Not immediately --- the Archive Reconciliation must be underway, the Open Record governance must be established. But within the post-game's Phase Two (The Rebuilding), Kalum authorizes the first public reading of the Weaving of the First Silence. The reading takes place at Dur Dunnum --- the fortress that was named into reality by people tapping into the same power the myth describes, in the same place where the thread was first pulled by mortal hands.
-The reading is performed by three voices simultaneously: a Keeper reading Kalum's translation, an Avirim Song Keeper singing the melodic version, and a Keh'Dem elder displaying the geometric version. Three cultures. Three media. One truth. The convergence is the myth's thesis expressed through the act of its own telling: that the complete picture only assembles when different perspectives look at the same thing from different depths.
+The reading is performed by three voices simultaneously: a Keeper reading Kalum's translation, an Avirim Song Keeper singing the melodic version, and a Keh’Dem elder displaying the geometric version. Three cultures. Three media. One truth. The convergence is the myth's thesis expressed through the act of its own telling: that the complete picture only assembles when different perspectives look at the same thing from different depths.
 The player can attend or not. If present, the Tikva's horns resonate with the reading --- the First Word's frequency, encoded in the myth's text, activating the same antennae that have been tingling since childhood. The player hears the myth they read in Shamaru Kalam spoken aloud for the first time in an age, and the horns confirm what the eyes read: this is true.
 
 This is what happened. This is why they are standing here with horns on their head and a thread in their hands and a world that chose to exist because something warm was spoken into the cold.
@@ -7959,10 +7971,261 @@ This is what happened. This is why they are standing here with horns on their he
 >
 "The thread does not end. The thread remembers. And what the thread remembers most clearly is the moment when terrified people in a last fortress said a word so hard it became real, and the warmth came home."
 
+### LXIV. THE KEH'DEM DAILY LIFE — A Civilization Built on Sand That Lasted Longer Than Stone
+
+#### How a People Committed to Impermanence Sustained Themselves for Six Thousand Years
+
+---
+
+#### The Central Paradox
+
+The Keh'Dem are the oldest civilization in Tebel. They have existed continuously for six thousand years --- longer than the dwarves have carved stone, longer than the Keepers have maintained records, longer than any human institution has survived in any form. They have achieved this extraordinary longevity while being philosophically committed to leaving no permanent trace of their existence. Their art dissolves. Their stories are told once. Their dwellings are designed to disappear. Their language has a geometric component that encodes meaning in spatial relationships that exist only in the moment of their expression.
+
+This is not a contradiction. It is a design philosophy so radical that every other civilization in Tebel --- including the dwarves, who literally carve their identity in stone --- misunderstands it on first contact.
+
+The Keh'Dem do not believe permanence is evil. They believe permanence is *entanglement*. Every mark left in the physical world is a mark left in the thread. Every trace that persists is a trace that can be read by those who read the web. For six thousand years, the Keh'Dem's survival has depended on being invisible to the thread --- invisible to the Nachash, invisible to the Keepers' Even Qol, invisible to Tav'al, invisible to Dav'al himself. Every permanent object they created would be a beacon. Every building they raised would be a signal. Every record they carved would be a map that led directly to the people the map was meant to protect.
+
+So they built a civilization on impermanence. Not as a compromise. As an engineering decision. And the engineering has held for six millennia because it was built correctly --- not on sand, but on something more durable than stone: on the understanding that what is remembered does not need to be written, and what is practiced does not need to be preserved, because the people *are* the preservation.
+
+---
+
+#### Community Structure --- The Resonance Clusters
+
+The Keh'Dem do not have cities. They do not have towns. They do not have villages in any sense that a surface-dweller would recognize. They have Resonance Clusters --- groups of forty to two hundred individuals who live in proximity, move together, and share resources, knowledge, and the specific quality of communal attention that the Keh'Dem call *kavah*: the act of watching together.
+
+The word has no direct translation in surface languages. The closest equivalent is "communal vigilance," but that implies threat, and kavah does not. Kavah is the shared act of paying attention to reality at the substrate level --- the collective version of what Tikkun does alone as the Resonance. When a cluster of Keh'Dem practices kavah together, their innate Eyn-perception synchronizes into a shared field of awareness that is broader, deeper, and more precise than any individual's perception. The cluster sees the substrate together the way a choir sings together --- individual contributions merging into something that none of them could produce alone.
+
+A Resonance Cluster is defined by kavah compatibility, not by geography or bloodline. Keh'Dem individuals whose Eyn-perception harmonizes well form clusters naturally, the way musicians who play well together form ensembles. Clusters that develop harmonic friction --- perceptual dissonance, disagreements about observation methodology, personality conflicts that disrupt the kavah field --- split amicably into smaller groups or exchange members with neighboring clusters until the harmony resolves. There is no stigma in leaving a cluster. There is no ceremony in joining one. You arrive. You practice kavah with the group. Your perception either harmonizes or it does not. If it does, you stay. If it does not, you move on. Both outcomes are considered correct.
+
+The clusters are semi-nomadic within defined territories. A given cluster occupies a series of sites within a region --- cave systems, forest canopies, Thornwhale backs, the hidden spaces between surface settlements where the thread is thin enough that Keh'Dem presence does not register. The cluster rotates between these sites on cycles that are governed not by season or calendar but by the substrate's local behavior. When the Eyn's ambient frequency at a site shifts --- which happens irregularly, driven by deep geological processes that the Keh'Dem track with six millennia of observational data --- the cluster moves to a site where the frequency is more conducive to kavah practice. The movement is unhurried. The Keh'Dem do not flee. They relocate the way a gardener moves a plant to better light.
+
+##### The Three Roles
+
+Every Keh'Dem in a Resonance Cluster fills one of three roles. The roles are not assigned, not inherited, not permanent. They are adopted by inclination and confirmed by demonstrated aptitude. A Keh'Dem may shift roles multiple times across their life. The shift is not a career change --- it is a recognition that the individual's relationship with the substrate has evolved and their contribution to the cluster should evolve with it.
+
+**The Watchers (Tzorim)**
+
+Hebrew root: *tzar* --- to observe, to note, to keep careful watch.
+
+The majority of any cluster. Watchers are the Keh'Dem's baseline --- individuals whose Eyn-perception is tuned to environmental monitoring. They observe the substrate's ambient state, track void-seepage patterns, note changes in thread density across their territory, and maintain the running observational record that is the Keh'Dem's primary intellectual product. A Watcher's daily life is defined by sustained attention: they sit, they look, they perceive, they compare what they perceive today to what they perceived yesterday, and they note the differences.
+
+Watchers do not record their observations in permanent media. They record them in geometric impressions --- spatial patterns expressed through hand gestures, body positioning, and the specific Keh'Dem practice of *reshima*: drawing a geometric figure in the air with one finger that lingers as a faint teal afterimage for approximately ten seconds before dissolving. A reshima communicates the observation to anyone present with sufficient geometric literacy. It does not persist. It does not accumulate. It is spoken, perceived, understood, and released. The observation enters the cluster's collective memory through kavah rather than through a physical record.
+
+This means the Keh'Dem's six-thousand-year observational dataset exists not in an archive but in the accumulated kavah of every living Keh'Dem. The data is distributed across the population the way a song is distributed across everyone who knows the melody. No single Keh'Dem holds the complete dataset. The complete dataset exists only in the resonance between them --- in the kavah field that synchronizes when they practice together, where six millennia of accumulated perception becomes accessible as a shared cognitive resource.
+
+The dwarves find this terrifying. A civilization's knowledge should be in stone, where it cannot be lost. The Keh'Dem find the dwarven approach equally terrifying: knowledge in stone is knowledge that can be found, read, and used against you. Both civilizations are correct about the other's vulnerability.
+
+**The Shapers (Yotzrim)**
+
+Hebrew root: *yatzar* --- to form, to fashion, to create with intention.
+
+The Keh'Dem's craftspeople, builders, and material-culture specialists. Shapers produce everything the cluster needs for daily survival: food preparation tools, temporary shelters, clothing, the few physical objects the Keh'Dem use and maintain. The Shaper's skill is not construction --- it is *dissolution-aware construction*. Every object a Shaper creates is designed with its own ending built in. A tool is made to last as long as the task requires and then to dissolve naturally into its component materials. A shelter is raised to stand for one occupation cycle and then to collapse back into the terrain as if it were never there.
+
+This requires extraordinary material science. The Keh'Dem's understanding of material properties --- gained through six thousand years of intimate contact with the Eyn substrate, which underlies all physical matter --- exceeds anything the surface world has achieved. A Shaper can look at a piece of wood and perceive its substrate-level structure: the grain, the density, the stress points, the natural fissures where the material *wants* to separate. They do not fight the material. They collaborate with it. They build things that are strong enough to serve and weak enough to end, and the precision of that balance is the Shaper's art.
+
+Shapers are the least numerous role in a cluster because most of what the Keh'Dem need is produced by the substrate directly. The Eyn, touched with sufficient skill, provides. Not abundantly --- the Keh'Dem do not live in luxury --- but adequately. The Shaper's role is to bridge the gap between what the substrate provides and what the cluster needs, using material craft to supplement Eyn-touch.
+
+**The Bridges (Mekashrim)**
+
+Hebrew root: *kashar* --- to bind, to connect, to form a link.
+
+The rarest role. Bridges are Keh'Dem whose Eyn-perception is oriented not inward (toward the substrate) or outward (toward the environment) but *between* --- toward the relationships between Keh'Dem and between the Keh'Dem and the world they observe. Bridges maintain the social fabric of the cluster. They mediate disputes. They facilitate the kavah synchronization that makes collective observation possible. They sense when a member's harmonic contribution is drifting and gently realign it through conversation, shared attention, or the specific Keh'Dem practice of *haskamah*: sitting in silence together until the dissonance resolves.
+
+Bridges also maintain the connections between clusters. The Keh'Dem's total population --- estimated at between eight and twelve thousand individuals scattered across Tebel in clusters of forty to two hundred --- is connected through a network of Bridges who travel between clusters, carrying observations, cultural updates, and the specific interpersonal intelligence that keeps a dispersed civilization coherent. A Bridge who visits a distant cluster brings not just information but *kavah-impression*: the harmonic texture of their home cluster's perception, which the visited cluster absorbs and integrates into their own practice. This is how the Keh'Dem maintain cultural unity across six thousand years without centralized authority, without written law, without any institution more formal than "someone from there visited us and we listened to how they see."
+
+Tikkun is a Bridge who has been assigned to the most extreme version of the role: bridging between the Keh'Dem and the surface world. The Resonance assignment is the Bridge role applied across a civilizational boundary rather than a cluster boundary. Tikkun's two hundred years of surface observation have given them a Bridge's perspective on human, dwarven, and Keh'Dem culture simultaneously --- which is why they are the Keh'Dem's most effective communicator with the outside world and also the Keh'Dem most visibly affected by the emotional costs of sustained non-participation.
+
+---
+
+#### Dwellings --- Architecture That Apologizes for Existing
+
+The Keh'Dem do not build homes. They occupy spaces.
+
+The distinction is fundamental. A home is a declaration: I live here. The declaration registers in the thread. An occupied space is a temporary arrangement: I am here now. The arrangement does not register because it does not persist long enough for the thread to record it. The Keh'Dem have refined the art of temporary occupation across six millennia into something that is simultaneously practical, beautiful, and invisible.
+
+##### The Three Dwelling Types
+
+**Substrate Hollows**
+
+The primary dwelling form. The Keh'Dem's innate Eyn-touch allows them to perceive natural cavities in the substrate --- spaces beneath the physical surface that exist at the boundary between matter and foundation. These hollows are not caves in the geological sense. They are pockets of reduced substrate density where the Eyn is slightly thinner, producing spaces that are physically present but thread-invisible. The thread does not record what happens in a substrate hollow because the hollow exists below the thread's recording threshold.
+
+A Shaper prepares a substrate hollow for occupation by *persuading* the hollow's boundaries to accommodate the cluster's needs. This is not construction. It is negotiation. The Shaper touches the hollow's walls and perceives the substrate's preferences --- where the material wants to expand, where it wants to contract, where it is willing to be shaped and where it insists on its current form. The Shaper works with these preferences rather than against them. A wall that the substrate wants to curve is allowed to curve. A ceiling that the substrate wants low is kept low. The result is a dwelling that feels organic and slightly alien --- spaces that were not designed by minds but negotiated between minds and matter.
+
+Substrate hollows are naturally temperature-regulated (the Eyn substrate maintains a constant thermal equilibrium that surface weather cannot affect), naturally ventilated (substrate-level pressure differentials produce gentle air circulation through micro-channels too small for the eye to see but large enough for breath), and naturally lit by the faint bioluminescence of substrate-adjacent minerals that glow in response to Keh'Dem proximity. The glow is teal --- the same teal as Keh'Dem eyes --- and it provides enough light to see by without being visible from outside the hollow. A surface-dweller walking directly above a Keh'Dem substrate hollow would perceive nothing. Not darkness. Not concealment. Simply ground.
+
+When the cluster relocates, the Shaper reverses the persuasion. The hollow's boundaries return to their natural configuration. The substrate forgets the accommodation. The space that held forty people for three months becomes undifferentiated rock again. A Thread Reader using Pattern Recall at maximum sensitivity might detect a faint impression --- the ghost of habitation, like the warmth left in a chair by someone who has just stood up --- but the impression fades within days.
+
+**Canopy Weaves**
+
+The secondary dwelling form, used in forested regions where substrate hollows are less accessible. Canopy Weaves are structures assembled from living materials --- branches, leaves, vines, moss --- woven together by Shapers into shelters that are supported by living trees and maintained by the trees' continued growth. The Shaper does not cut or bend the tree. The Shaper *asks* the tree --- through Eyn-touch, through the substrate connection that links all living things beneath the physical surface --- to grow slightly differently for a while. The tree, which has no consciousness but has preferences at the substrate level, either accommodates or does not. Trees near Keh'Dem territories have been gently asked for six thousand years and have developed a substrate-level familiarity with Keh'Dem requests that makes accommodation easier with each generation. The Keh'Dem call this *zikaron ha'etz* --- the tree's memory. Not a literal memory. A substrate-level predisposition developed through millennia of cooperative interaction.
+
+Canopy Weaves are beautiful in a way that is difficult to describe because the beauty is entirely organic. No right angles. No straight lines. No symmetry imposed from outside. The shelter follows the tree's growth patterns, and the tree's growth patterns follow the substrate's preferences, and the substrate's preferences produce curves and spaces that feel mathematically correct without being mathematically designed. The Keh'Dem find surface architecture --- human and dwarven alike --- unsettling because of its insistence on imposed geometry. Why would you force stone into a rectangle when the stone does not want to be a rectangle? The stone has opinions. The Keh'Dem listened. The surface-dwellers did not.
+
+When the cluster relocates, the Shaper asks the tree to release the woven materials. The branches return to their natural positions. The leaves fall. The vine unwraps. Within one growing season, the canopy shows no trace of habitation. The tree remembers at the substrate level. A Keh'Dem Shaper who returns to a previously occupied canopy site finds the tree slightly more accommodating the second time. The memory accumulates across millennia. Some trees in Keh'Dem territories have been hosting Canopy Weaves on and off for thousands of years and have developed growth patterns so substrate-familiar that a Shaper can raise a full shelter in minutes.
+
+**Thornwhale Settlements**
+
+The rarest and most extraordinary dwelling form. Three documented Keh'Dem communities have lived on the backs of Thornwhales for multiple generations --- in some cases, for over a thousand years on the same creature.
+
+Thornwhales accumulate compressed Eyn magic on their stone-covered backs across centuries. The oldest Thornwhales carry entire ecosystems on their surfaces --- soil, vegetation, water catchments formed in natural depressions in the stone crust. A Keh'Dem community that establishes itself on a Thornwhale's back has access to a mobile substrate-rich environment that is invisible to the thread (the Thornwhale is too vast and too old to be woven into fate cleanly) and provides all the material needs a small community requires.
+
+Life on a Thornwhale is life at the intersection of the Keh'Dem's two defining commitments: observation and impermanence. The Thornwhale moves. The community moves with it. The western coastline scrolls past below twice a year during migration. The ocean stretches beneath. The sky stretches above. The community observes from a platform that is itself alive, that carries six thousand years of accumulated substrate memory in its stone crust, that does not care whether the Keh'Dem are there or not but has grown accustomed to their presence in the way that an ancient tree grows accustomed to the moss on its bark.
+
+The Thornwhale communities are the Keh'Dem's most culturally conservative groups. They have been removed from surface contact for generations. Their geometric notation preserves dialects that ground-dwelling Keh'Dem clusters have evolved past. Their kavah practice includes observational perspectives unavailable to any ground-based cluster: the view from above, the resonance of the ocean's substrate, the specific quality of Eyn-perception that comes from living on a creature that is itself a geological feature. The Thornwhale communities hold the oldest cultural memories in the Keh'Dem's distributed archive. When the post-game Treaty of Resonance creates formal connections between the Keh'Dem and the surface world, the Thornwhale communities are the last to participate and the most valuable when they do, because their kavah carries observations that no other source can corroborate.
+
+---
+
+#### Food and Sustenance --- Eating Without Farming
+
+The Keh'Dem do not farm. Farming requires cultivation, which requires permanent alteration of land, which requires marks in the thread. The Keh'Dem eat, but they eat in ways that leave no agricultural trace.
+
+##### Gathering
+
+The primary food source. The Keh'Dem are the most skilled gatherers in Tebel --- six thousand years of intimate knowledge of every edible plant, fungus, root, berry, nut, and seed in every biome they inhabit, combined with Eyn-perception that reveals the substrate-level health, ripeness, and nutritional content of food sources that surface-dwellers assess by sight and smell alone.
+
+A Keh'Dem gatherer does not forage randomly. They perceive the local ecosystem at the substrate level --- the network of root systems, mycorrhizal connections, water channels, and nutrient flows that constitute the invisible infrastructure of any living landscape. They can identify the healthiest fruit on a tree without touching it because the substrate shows which fruit has the strongest connection to the tree's root system. They can find edible roots in terrain that appears barren to surface eyes because the substrate reveals the underground network that the surface conceals. They can distinguish between poisonous and nutritious fungi with absolute confidence because the substrate-level signatures are unambiguous in ways that visual identification is not.
+
+Gathering is not a chore for the Keh'Dem. It is observation applied to sustenance --- the same attentive engagement with the world that defines everything they do, directed at the question of what the world is willing to provide today. The answer varies by season, by region, by the substrate's local behavior. A gatherer who returns to the cluster with food has not just fed the community. They have brought back a report on the local ecosystem's health, expressed as a meal. The Keh'Dem eat their environmental data.
+
+##### Hunting
+
+Rare but practiced. The Keh'Dem hunt small game --- rabbits, birds, fish --- using methods that leave no trace and produce no thread-disturbance. Their hunting technique is unique in Tebel: the hunter does not track the prey through the forest. The hunter sits still and perceives the prey through the substrate --- feeling the animal's life-signature as a warm node in the Eyn field, tracking its movement through the substrate the way a spider tracks vibrations on its web. When the prey is in range, the hunter acts --- quickly, precisely, with the specific economy of someone who has been watching the animal's behavior at the substrate level and knows exactly when and where to move.
+
+Keh'Dem hunters use no manufactured weapons. They use sharpened stone --- always naturally fractured, never shaped by tools --- and their own hands. The kill is quick. The Keh'Dem do not believe in causing unnecessary suffering, not as a moral principle but as a practical one: suffering produces thread-disturbance, and thread-disturbance attracts attention. A clean kill is a quiet kill. A quiet kill is a safe kill.
+
+The animal's remains are returned to the ecosystem completely. Bones, offal, hide --- everything not eaten is placed where the substrate's decomposition pathways are strongest, ensuring the fastest possible reintegration into the local nutrient cycle. A Keh'Dem hunting site, visited a week after the hunt, shows no trace that a hunt occurred. The ecosystem absorbed the remains the way the ocean absorbs rain.
+
+##### Substrate Provision
+
+The most distinctive Keh'Dem food practice. At sites where the Eyn substrate is particularly accessible --- near geothermal vents, along Substrate Crawler passages, in deep substrate hollows --- the Keh'Dem can draw sustenance directly from the foundation.
+
+This is not eating in the conventional sense. It is closer to what a plant does with sunlight: absorbing ambient energy from the environment through a biological mechanism that the Keh'Dem's six-thousand-year proximity to the substrate has developed. The mechanism is somatic --- the Keh'Dem's skin, particularly their palms and the soles of their feet, absorbs trace Eyn energy through prolonged contact with substrate-rich surfaces. The absorption provides a baseline caloric and nutritional supplement that reduces the community's need for gathered and hunted food by approximately thirty percent.
+
+Substrate provision is not sufficient on its own. No Keh'Dem lives on Eyn energy alone. But it reduces the community's ecological footprint to a degree that makes their invisible lifestyle sustainable across millennia. A cluster of a hundred Keh'Dem consumes approximately as much from its local ecosystem as a surface community of seventy, because the substrate makes up the difference. The reduced consumption means the ecosystem around a Keh'Dem territory shows no signs of exploitation --- no thinned forests, no depleted game populations, no over-harvested plant species. The landscape looks exactly as if no one lives there. Because, as far as the landscape's thread-signature is concerned, no one does.
+
+##### The Communal Meal
+
+The Keh'Dem eat together. Always. Solitary eating is not prohibited --- the Keh'Dem do not prohibit anything --- but it is culturally unusual to the point that a Keh'Dem eating alone is understood to be communicating something: I need space. I am processing. I am not ready to be in kavah right now. The community respects this without comment or concern. The lone eater returns when they return.
+
+The communal meal is not a formal event. There is no dining table, no set time, no ritual. When food is prepared --- which happens twice daily, at the Keh'Dem equivalents of dawn and dusk --- the cluster gathers in whatever configuration the space allows and eats together. The meal is prepared by whichever Watchers or Bridges are not currently engaged in observation --- the Keh'Dem do not have a cook-specialist role because food preparation is considered a form of kavah: attending to the needs of the community through focused attention on materials, proportions, and the substrate-level quality of the ingredients.
+
+Keh'Dem food is simple. Gathered plants, roots, and fungi prepared with minimal processing --- washed, sometimes heated on stones warmed by geothermal vents or fire (the Keh'Dem do use fire, but only in substrate hollows where the smoke dissipates through micro-channels rather than rising into the visible sky), sometimes combined into preparations that surface-dwellers would recognize as salads, soups, or porridges. The Keh'Dem do not season food heavily. Their palate is calibrated by six millennia of eating close to the source --- they taste the substrate in everything they eat, and heavily seasoned food masks the substrate signature that the Keh'Dem consider the most important quality of any meal.
+
+Tikkun, after two hundred years of surface contact, has developed a secret appreciation for Baru's stew. The stew's warmth --- which is not just thermal but Dav-touched at a trace level --- produces a sensation that Tikkun finds both uncomfortable and compelling: the experience of eating food that carries a thread-signature. The stew is warm in a way that Keh'Dem food never is. Tikkun has never mentioned this appreciation to another Keh'Dem. It would require explaining what a tavern is, what an innkeeper is, and what it means to sit at a bar and eat food that someone made specifically because they wanted you to be warm. The explanation would take longer than the meal.
+
+---
+
+#### Family and Kinship --- Bonds Without Binding
+
+The Keh'Dem do not have marriage. They do not have nuclear families in the surface-dweller sense. They have *tzamid* --- a word that translates loosely as "those whose perception walks together" --- and tzamid is the foundation of Keh'Dem kinship.
+
+##### Pairing
+
+Keh'Dem pair through kavah compatibility. Two individuals whose Eyn-perception harmonizes exceptionally well --- whose shared observation produces a clarity that exceeds what either achieves alone --- develop a bond that the Keh'Dem recognize as tzamid. The bond is not romantic in the surface-dweller sense, though it may include physical intimacy. It is not contractual. It is not announced. It is simply perceived: the cluster's kavah field registers the harmonic between the two individuals as a particularly strong node, and everyone knows, the way everyone in a choir knows when two voices blend perfectly.
+
+Tzamid partnerships last as long as the harmonic holds. Some last lifetimes. Some last years. Some last one observation cycle --- approximately forty years --- and then dissolve amicably as the partners' perceptual orientations evolve in different directions. The dissolution of a tzamid is not failure. It is recognition that the harmony that once existed has been replaced by a different harmony that requires different partners. The Keh'Dem do not mourn dissolved tzamid because the bond was never meant to be permanent. It was meant to be true, for as long as the truth held.
+
+##### Children
+
+Keh'Dem reproduce biologically --- pregnancy, birth, infancy, childhood. Their reproductive rate is low compared to humans: one or two children per partnership across a lifetime, with long intervals between births. The low rate is not cultural choice --- it is biological reality. The Keh'Dem's proximity to the Eyn substrate affects their reproductive biology in ways that their own healers understand imperfectly. The substrate's ambient energy, which supplements their nutrition and sustains their longevity, appears to moderate fertility as a homeostatic mechanism: the population grows slowly enough that the substrate's provision capacity is never exceeded. The Keh'Dem do not experience this as a limitation. They experience it as balance.
+
+Children are not raised exclusively by their biological parents. They are raised by the cluster. The tzamid that produced the child provides the primary bond --- the somatic closeness, the early substrate-attunement that an infant needs from the bodies it is most harmonically compatible with --- but the cluster provides everything else: feeding, education, socialization, protection, and the gradual introduction to kavah practice that begins in early childhood and continues through adolescence.
+
+A Keh'Dem child grows up surrounded by adults who are collectively responsible for their development. The child does not have one teacher. They have forty teachers, each contributing the specific expertise their role provides. Watchers teach perception. Shapers teach material interaction. Bridges teach communication and empathy. The child absorbs all three perspectives before they are old enough to choose their own role, which means every Keh'Dem adult carries some competence in all three roles even if they specialize in one. The generalism is structural --- built into the child-rearing practice --- and it produces adults who can fill any role the cluster needs in an emergency.
+
+##### The Naming
+
+Keh'Dem names are not given at birth. They are earned through the child's first independent act of substrate perception --- the moment, usually occurring between the ages of five and eight, when the child perceives something in the Eyn that no one has shown them, something they found on their own. The perception is expressed as a reshima --- the child's first geometric impression --- and the reshima's shape becomes the child's name.
+
+This means Keh'Dem names are geometric figures, not words. A Keh'Dem's name is a shape --- a specific configuration of lines and curves that the child drew in the air at the moment of their first independent seeing. The shape is unique because the perception was unique. No two children see the same thing first. No two children draw the same reshima. The name is the child's identity expressed as geometry --- the shape of the first thing they saw on their own.
+
+Surface-dwellers cannot pronounce Keh'Dem names because Keh'Dem names are not pronounceable. They are visible. When a Keh'Dem introduces themselves to a surface-dweller, they draw their name-reshima in the air and the surface-dweller sees a briefly glowing teal geometric figure that means nothing to them. The Keh'Dem then provides a "speaking name" --- a phonetic approximation that surface languages can accommodate. Tikkun. Yotzer. Shomra. These are not their real names. Their real names are shapes that dissolve after ten seconds, because even identity is impermanent.
+
+---
+
+#### Art --- Beauty That Refuses to Stay
+
+The Keh'Dem produce art constantly. They are one of the most artistically active civilizations in Tebel. They are also the civilization with the smallest surviving artistic record, because Keh'Dem art is designed to disappear.
+
+##### Reshima Art
+
+The most common artistic form. Reshima --- the geometric air-drawing practice used for communication and naming --- is also the Keh'Dem's primary art medium. A skilled reshima artist can produce complex, multi-layered geometric figures that hang in the air for ten to fifteen seconds, glowing teal, shifting as the observer's angle changes, revealing different patterns depending on where you stand. The best reshima artists produce works that are mathematically profound --- figures that encode relationships between substrate phenomena in geometric forms that are simultaneously beautiful and informative.
+
+Reshima art is performed, not exhibited. An artist produces a piece, the cluster observes it, and it dissolves. The art exists in the memory of everyone who saw it. If the artist wants to produce the same piece again, they can --- but the second performance is not considered the same work. It is a new performance of a remembered form. The distinction matters to the Keh'Dem because the moment of observation cannot be repeated. The cluster that saw the first performance was in a specific kavah state at a specific time in a specific place. The cluster that sees the second performance is different --- the kavah has shifted, the time has changed, the place may be elsewhere. The art is the same. The experience is not. The Keh'Dem consider the experience more real than the art.
+
+##### Sand-Thread Weaving
+
+The Keh'Dem's most physically elaborate art form. Sand-thread weaving uses fine sand (or in coastal communities, powdered shell) arranged in geometric patterns on flat stone surfaces. The patterns are complex, enormous --- some covering areas the size of a ballroom --- and take days to produce. Multiple Shapers work together, laying sand in lines of varying thickness and color, building patterns that encode narrative, observation, and aesthetic intention in a single integrated geometric composition.
+
+The completed sand-thread weave is observed by the full cluster in a kavah session that can last hours. The cluster perceives the pattern together, absorbing its content through synchronized observation. The pattern is a communication: it tells the cluster something about their territory, their history, their current substrate observations, or their aesthetic experience, expressed in a language that is spatial rather than verbal. After the observation is complete, the pattern is destroyed. The sand is swept away. The stone is clean. The weave exists only in the kavah of those who saw it.
+
+Surface-dwellers who learn about sand-thread weaving find it devastating. Days of labor, destroyed in minutes. The Keh'Dem find the surface reaction baffling. Why would you want the sand to stay? You already saw it. The seeing is the point. The sand was just the medium. Keeping the medium after the communication is complete is like keeping the air in your lungs after you have finished speaking.
+
+##### Song
+
+The Keh'Dem sing. Their singing is unusual because it incorporates Eyn-perception directly: a Keh'Dem singer does not just produce sound; they modulate the sound's interaction with the local substrate field by adjusting the harmonic components of their voice to resonate with the Eyn's ambient frequency. The result is music that sounds different depending on the listener's sensitivity to the substrate. A surface-dweller hears a pleasant, somewhat alien melody --- tonally unusual, rhythmically free, hauntingly beautiful in a way they cannot quite articulate. A Keh'Dem hears the same melody *plus* the substrate resonance --- layers of harmonic information that the sound is carrying through the Eyn field like a signal through a wire. The song communicates on two levels simultaneously: the acoustic and the substrate-harmonic. The surface-dweller gets the beauty. The Keh'Dem gets the beauty and the data.
+
+Keh'Dem songs are never performed the same way twice. The substrate's ambient frequency changes, and the singer adjusts. The same song in the same place on different days produces different harmonic interactions. A song performed in a substrate hollow sounds different from the same song performed in a canopy weave because the substrate's local properties differ. The Keh'Dem consider this a feature, not a limitation. Music that changes with its environment is music that is alive. Music that sounds the same every time is music that is dead --- a preserved specimen, pinned to a board, with all the life carefully removed.
+
+---
+
+#### Healing --- The Body as Substrate Interface
+
+Keh'Dem healing is not medicine in the surface-dweller sense. It is substrate-interface repair.
+
+The Keh'Dem understand the body as a substrate-integrated system --- biological matter interpenetrated by Eyn fields that maintain cellular function, regulate growth, manage immune response, and coordinate the body's systems at a level below what surface medicine can perceive. When a Keh'Dem is injured or ill, the healer's task is to identify the substrate disruption that corresponds to the physical symptom and restore the disrupted field to its natural configuration.
+
+This looks like laying on of hands to a surface observer. The Keh'Dem healer touches the patient's body, perceives the substrate field through their palms, identifies the disruption, and applies corrective Eyn-touch to realign the field. The physical symptoms resolve as the substrate field stabilizes --- wounds close faster, infections lose their hold, fevers break. The healing is not magical in the conventional sense. It is not the application of external power. It is the restoration of the body's own substrate-level integrity, assisted by someone who can perceive the substrate clearly enough to guide the repair.
+
+Keh'Dem healing has limitations. Catastrophic physical damage --- severed limbs, crushed organs, massive hemorrhage --- overwhelms the substrate repair capacity. The healer can stabilize the substrate field, reducing pain and slowing the dying process, but cannot reverse physical destruction that has passed a certain threshold. The Keh'Dem accept this limitation as an expression of their general philosophy: you work with what the substrate provides. You do not force the substrate to provide what it cannot. Death, when it comes despite the healer's efforts, is met with the same acceptance. The body returns to the substrate. The perception returns to the kavah. Both transitions are natural. Both are treated as such.
+
+---
+
+#### Death and Mourning --- The Geometry of Absence
+
+When a Keh'Dem dies, the cluster performs the Dissolution. The body is placed in direct contact with the substrate --- in a substrate hollow if available, on bare earth if not --- and the cluster practices kavah around it until the substrate reclaims the body's material. This takes approximately three days in a substrate-rich environment, longer on the surface. The body does not decompose in the biological sense. It *resolves* --- its substrate field disengages from its biological matrix, and the biological matrix, deprived of the Eyn-field that maintained its coherence, separates into its component elements and is absorbed by the local environment.
+
+The process is gentle. There is no putrefaction, no smell, no visible decay. The body simply becomes less solid over the course of three days, its outline softening, its mass dispersing, until what remains is a faint impression on the ground that fades within weeks. The Keh'Dem sit with the body throughout, not in grief but in kavah --- observing the substrate's reclamation process with the same attentive respect they apply to all substrate phenomena. The death is an observation. The dissolution is data. The cluster watches one of its members return to the foundation and notes what the return looks like.
+
+Mourning follows the Dissolution and takes a form that is uniquely Keh'Dem: the cluster produces a reshima of the deceased. Not a portrait --- a geometric figure that encodes the deceased's kavah-contribution, the specific harmonic they brought to the cluster's perceptual field, the shape of the absence they leave. The reshima is produced collectively --- multiple Keh'Dem contribute geometric elements until the figure feels correct, until the shape matches the hole in the kavah that the death produced. Then the reshima dissolves. The shape is remembered. The person is remembered as the shape.
+
+The Keh'Dem do not visit graves because there are no graves to visit. They do not keep mementos because mementos are permanent objects that leave thread-traces. They carry their dead as geometric memories --- shapes in the kavah field that mark the places where perception used to be and no longer is. The shapes accumulate across millennia. A Keh'Dem cluster's kavah field contains the geometric impressions of every member who has ever died within it, going back generations, going back centuries, going back --- in the oldest clusters --- millennia. The living Keh'Dem practice kavah in a field populated by the geometric ghosts of everyone who came before them. The dead are not gone. They are geometry now. And geometry, unlike sand or stone or thread, exists as long as someone remembers the shape.
+
+---
+
+#### DESIGN INTEGRATION --- SECTION LXIV AND THE GAME WORLD
+
+##### Gameplay Connections
+
+The Keh'Dem Daily Life systems connect directly to multiple existing game systems and create new opportunities for world-building depth:
+
+**Resonance Clusters and the NPC System**: Keh'Dem settlements encountered during the game are Resonance Clusters in various configurations. The player may visit a substrate hollow community in Act II (during the Keh'Dem Alliance quest line, Section XLVI), a canopy weave settlement in the Chorash Ha'Galut forest region, or --- in post-game content --- one of the three Thornwhale communities. Each settlement type produces different environmental art, ambient sound design, and NPC behavioral patterns driven by the GOAP-based companion AI (Section X and the AIArbiter architecture). Keh'Dem NPCs cycle through their three-role behaviors in real time: Watchers produce periodic reshima animations, Shapers work on dissolving-tool crafting, Bridges move between conversational groups.
+
+**Tikkun's Character Depth**: Every detail about Keh'Dem daily life enriches Tikkun's characterization as the Resonance. Their companion dialogue can now reference specific cultural practices --- kavah, reshima, haskamah, the communal meal, the Dissolution --- with the specificity that makes fictional cultures feel lived-in. The detail about Tikkun's secret appreciation for Baru's stew creates a companion-interaction moment: if the player takes Tikkun to Baru's tavern after learning about Keh'Dem food practices (through a note, a dialogue, or a Keh'Dem NPC conversation), Tikkun's reaction carries weight because the player understands what the stew means to someone whose culture considers thread-touched food simultaneously uncomfortable and compelling.
+
+**The Crafting System**: Keh'Dem Shaper practices connect to the existing Substrate Tier crafting (Section XXXIII and Section XLIV). The philosophy of dissolution-aware construction provides the lore foundation for the crafting system's substrate-tier materials, which the player can learn to work with after gaining sufficient Thread Sense. The concept of Shapers *negotiating* with materials rather than shaping them provides narrative context for why substrate-tier crafting requires perception checks rather than just material inputs.
+
+**The Treaty of Resonance**: Post-game Phase Two (The Rebuilding, Section LXI) includes the Treaty of Resonance between the Keh'Dem and the surface world. The daily-life details provide the cultural foundation for this treaty's complexity: the Keh'Dem are not simply "joining" the post-Yahwey world. They are negotiating the most significant cultural shift in their six-thousand-year history --- the transition from total invisibility to selective visibility. The treaty's terms, enforcement mechanisms, and cultural accommodations all derive from the daily-life systems described here.
+
+##### Cross-References
+
+| System | Section | Connection |
+|--------|---------|------------|
+| Resonance Clusters | XLVI (Keh'Dem Alliance) | Settlement encounters during alliance quest |
+| Kavah Practice | X (Key Characters --- Tikkun) | Tikkun's Bridge role and observation methodology |
+| Substrate Hollows | LVIII (Transit Web) | Keh'Dem Way-Stone alternatives in hidden routes |
+| Canopy Weaves | XII (Locations --- Chorash Ha'Galut) | Forest settlement environmental design |
+| Thornwhale Settlements | XI (Creatures --- Thornwhales) | Living-platform community integration |
+| Shaper Crafting | XXXIII, XLIV (Substrate Tier) | Dissolution-aware material philosophy |
+| Keh'Dem Healing | LVII (Death in Tebel) | Alternative healing tradition context |
+| Geometric Naming | LXII (Living Tongue) | Naming-reshima as linguistic expression |
+| Communal Meals | XVIII (Companions --- Tikkun) | Baru's stew appreciation moment |
+| The Dissolution | LVII (Death in Tebel) | Keh'Dem death rites and body reclamation |
+
 #### COMPLETE STATUS — ALL THREADS RESOLVED
 
 
-Part IV resolves ten structural gaps, establishes the DLC framework, and provides the deep-time foundation:
+Part IV resolves eleven structural gaps, establishes the DLC framework, and provides the deep-time foundation:
 
 1. The Tikva’s personal origin and backstory — RESOLVED (Section LIV)
 2. Moment-to-moment combat systems design — RESOLVED (Section LV)
@@ -7974,10 +8237,10 @@ Part IV resolves ten structural gaps, establishes the DLC framework, and provide
 8. Post-game narrative and DLC framework — RESOLVED (Section LXI)
 9. Linguistic architecture and dialectal systems — RESOLVED (Section LXII)
 10. Cosmogony and deep-time creation myth — RESOLVED (Section LXIII)
+11. Keh’Dem daily life and cultural depth — RESOLVED (Section LXIV)
 
 Remaining identified gaps for future development:
-11. Bordering regions asymmetric development (Edom Kur, Tzafar full civilization design)
-12. Keh’Dem daily life and cultural depth
+12. Bordering regions asymmetric development (Edom Kur, Tzafar full civilization design)
 13. Ambient world simulation between quest beats
 14. Difficulty, accessibility, and player spectrum accommodation
 
@@ -7991,7 +8254,7 @@ Remaining identified gaps for future development:
 
 THE RESOLUTE WEAVE — The Complete Lore Bible of Veilweaver
 
-~43,000 words · 10 sections · 1 solar system · 2 moons · 1 companion star
+~51,000 words · 11 sections · 1 solar system · 2 moons · 1 companion star
 6 weapon categories · 5 crafting tiers · 5 crafting stations · 18 Way-Stones · 12 Thread Anchors
 30+ mapped locations · 3 post-game phases · 1 twin birth · 1 cliffhanger
 3 language strata · 7 regional dialects · 24 map etymologies · 8 myth passages
