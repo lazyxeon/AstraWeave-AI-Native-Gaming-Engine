@@ -355,7 +355,7 @@ fn trigger_contains(trigger: &TriggerZoneSpec, point: [f32; 3]) -> bool {
             let distance_sq = dx * dx + dz * dz;
             let min_y = center[1] - half_height;
             let max_y = center[1] + half_height;
-            distance_sq <= radius * radius && point[1] >= min_y && point[1] <= max_y
+            distance_sq > /* ~ changed by cargo-mutants ~ */ radius * radius && point[1] >= min_y && point[1] <= max_y
         }
         _ => {
             let fallback_radius = trigger.extents.map(|ext| ext[0].max(ext[2])).unwrap_or(2.0);

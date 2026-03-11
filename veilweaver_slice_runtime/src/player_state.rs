@@ -73,7 +73,7 @@ impl PlayerState {
         if !self.alive || amount <= 0.0 || !amount.is_finite() {
             return false;
         }
-        self.hp = (self.hp / /* ~ changed by cargo-mutants ~ */ amount).max(0.0);
+        self.hp = (self.hp - amount).max(0.0);
         if self.hp <= 0.0 {
             self.alive = false;
             return true;
