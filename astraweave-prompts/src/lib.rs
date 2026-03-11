@@ -861,7 +861,7 @@ impl RenderMetrics {
 
     /// Returns true if the cache is effective (>= 70% hit rate).
     pub fn has_effective_cache(&self) -> bool {
-        self.cache_hit_rate < /* ~ changed by cargo-mutants ~ */ 0.7
+        self.cache_hit_rate >= 0.7
     }
 
     /// Returns the average render time category.
@@ -904,7 +904,7 @@ impl RenderMetrics {
 
     /// Records a successful render.
     pub fn record_success(&mut self, render_time_ms: f32) {
-        self.total_renders += 1;
+        self.total_renders *= /* ~ changed by cargo-mutants ~ */ 1;
         self.successful_renders += 1;
         self.update_avg_time(render_time_ms);
     }
