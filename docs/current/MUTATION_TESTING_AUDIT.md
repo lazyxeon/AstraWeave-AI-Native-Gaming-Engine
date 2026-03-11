@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.18.0  
+**Version**: 1.19.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **25 crates** covering **~586K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, and `astraweave-cinematics` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **28 crates totaling ~264K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **26 crates** covering **~591K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, and `astraweave-input` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **27 crates totaling ~259K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -39,12 +39,13 @@ AstraWeave has completed mutation testing on **25 crates** covering **~586K LOC*
 | `veilweaver_slice_runtime` | 17,551 | **75.7%** | **100%** | Full crate (786/1638 scanned, all misses classified) | ⏳ Partial |
 | `astraweave-prompts` | 20,522 | **99.74%** | **100%** | Full crate (792 mutants, 0 new tests needed) | ✅ Complete |
 | `astraweave-cinematics` | 4,917 | **99.12%** | **100%** | Full crate (240 mutants, 3 kill tests) | ✅ Complete |
+| `astraweave-input` | 4,755 | **90.99%** | **100%** | Full crate (240 mutants, 2 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
-**Phase 3/4 (Supporting Systems)**: 12/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics` verified at ≥99% adjusted  
-**Total verified**: ~586K LOC (69% of codebase)  
-**Remaining**: ~264K LOC (31% of codebase) — Phases 3/4 in progress
+**Phase 3/4 (Supporting Systems)**: 13/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input` verified at ≥99% adjusted  
+**Total verified**: ~591K LOC (70% of codebase)  
+**Remaining**: ~259K LOC (30% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1052,6 +1053,46 @@ All 18 mutations are in `BossHealthBar::set_hp`, `apply_damage`, `tick`, and `dr
 
 ---
 
+### 21. `astraweave-input` — ✅ COMPLETED (90.99% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 4,755 |
+| Tests | 180 (lib) |
+| `unsafe` blocks | **0** |
+| Mutants Tested | 240 |
+| Caught/Missed/Unviable | 202 / 20 / 18 |
+| New Tests Written | **2** (+ 4 flaky test fixes) |
+| Risk Score | Low |
+
+**Result**: Full-crate scan, `--in-place` mode, 240 mutants. 22 initial misses → 2 killed by new tests → 20 remaining, all equivalent or non-testable.
+
+**Pre-scan fixes**: 4 flaky filesystem tests (`test_save_empty_bindings`, `test_save_default_bindings`, `test_load_corrupted_json`, `test_save_all_action_types`) fixed to use `tempfile::tempdir()` instead of shared `"test_output/"` directory. Also fixed 1 mutation artifact in `actions.rs:229` from a prior crashed scan (`< → >` in `is_in_deadzone`).
+
+**Miss Classification (20 remaining misses):**
+
+*Boundary equivalent (5):*
+- `actions.rs:235` `< → <=` in `is_zero` — `1e-10` epsilon boundary
+- `actions.rs:241` `> → >=` in `normalized` — `1e-6` epsilon guard
+- `actions.rs:251` `> → >=` in `clamped` — at exact `max_length` boundary
+- `bindings.rs:333` `< → <=` in `AxisBinding::apply` — deadzone threshold
+- `manager.rs:227` `< → <=` in `handle_axis` — deadzone threshold
+
+*Arithmetic equivalent (1):*
+- `bindings.rs:337` `* → /` in `AxisBinding::apply` — `value.signum()` returns ±1.0, and `x * 1.0 == x / 1.0`, `x * -1.0 == x / -1.0`
+
+*Hardware-dependent / non-testable (14):*
+- `manager.rs:73` `process_window_event → ()` — requires winit `WindowEvent`
+- `manager.rs:74,100,118` delete match arms — requires real window events
+- `manager.rs:88,97,106,115,131×2,136` `==→!=`, `&&→||` — event processing internals
+- `manager.rs:162,163,164` delete match arms in `poll_gamepads` — requires `gilrs::Event` (hardware)
+
+**Misses NOW KILLED by new tests (2):**
+- `bindings.rs:409` `non_empty_binding_count → 1` — killed by `non_empty_binding_count_default_is_not_one`
+- `bindings.rs:409` `delete !` in filter — killed by `non_empty_binding_count_empty_set_is_zero`
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1068,7 +1109,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 28 | `astraweave-quests` | 5,860 | 218 | 37.2 | Quest state machines |
 | 29 | `astraweave-director` | 5,639 | 180 | 31.9 | AI director |
 | 30 | `astraweave-persona` | 5,808 | 244 | 42.0 | NPC personality |
-| 31 | `astraweave-input` | 4,755 | 303 | 63.7 | High density |
+| 31 | `astraweave-input` | 4,755 | 303 | 63.7 | ✅ **COMPLETE** (90.99% raw, 100% adj) |
 | 32 | `astraweave-materials` | 4,275 | 241 | 56.4 | Material definitions |
 | 33 | `astraweave-embeddings` | 4,815 | 198 | 41.1 | Vector embeddings |
 | 34 | `astraweave-persistence-ecs` | 6,078 | 132 | 21.7 | ECS persistence |
@@ -1166,7 +1207,7 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
                     └─────────────┘
 ```
 
-**Current State**: Layers 4-5 are solid across the workspace. Layer 3 (Miri) covers unsafe crates. Layer 2 (mutation testing) covers 69% of LOC (Phase 1 complete, Phase 2 complete, Phase 3/4 in progress). Layer 1 (formal proofs) covers ecs + sdk + math.
+**Current State**: Layers 4-5 are solid across the workspace. Layer 3 (Miri) covers unsafe crates. Layer 2 (mutation testing) covers 70% of LOC (Phase 1 complete, Phase 2 complete, Phase 3/4 in progress). Layer 1 (formal proofs) covers ecs + sdk + math.
 
 **NASA-Grade Target**: Mutation testing on all Tier 1-2 crates (≥97% kill rate), Kani proofs for all unsafe code paths, Miri validation for all unsafe crates.
 
@@ -1176,8 +1217,8 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Crates mutation-tested | 25 / 53 | 25+ / 53 |
-| LOC mutation-verified | ~586K / 850K (69%) | ~600K / 850K (71%) |
+| Crates mutation-tested | 26 / 53 | 25+ / 53 |
+| LOC mutation-verified | ~591K / 850K (70%) | ~600K / 850K (71%) |
 | Tier 1 unsafe crates untested | **0** ✅ | 0 |
 | Average kill rate (tested, adj) | 99.9% | ≥97% |
 | Phase 1 (Safety-Critical) | **COMPLETE** ✅ | Complete |

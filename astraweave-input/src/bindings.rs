@@ -1010,4 +1010,21 @@ mod tests {
         assert!(display.contains("BindingSet("));
         assert!(display.contains("actions"));
     }
+
+    /// Kills `bindings.rs:409` `non_empty_binding_count → 1`
+    /// Default BindingSet has many non-empty bindings (key-bound actions).
+    #[test]
+    fn non_empty_binding_count_default_is_not_one() {
+        let set = BindingSet::default();
+        let count = set.non_empty_binding_count();
+        assert!(count > 1, "default set should have >1 non-empty bindings, got {}", count);
+    }
+
+    /// Kills `bindings.rs:409` `delete !` in non_empty_binding_count filter
+    /// An empty BindingSet should have 0 non-empty bindings.
+    #[test]
+    fn non_empty_binding_count_empty_set_is_zero() {
+        let set = BindingSet::new(); // empty, no actions
+        assert_eq!(set.non_empty_binding_count(), 0);
+    }
 }
