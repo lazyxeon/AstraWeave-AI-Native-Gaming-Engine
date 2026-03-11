@@ -5,6 +5,7 @@
 #![allow(clippy::bool_assert_comparison, clippy::manual_range_contains)]
 
 use astraweave_dialogue::{DialogueGraph, DialogueNode, DialogueResponse};
+use astraweave_dialogue::runner::{DialogueRunner, RunnerState};
 
 // ============================= DialogueNode Construction =============================
 
@@ -1237,4 +1238,83 @@ fn graph_empty_operations_safe() {
     assert_eq!(g.max_depth(), 0);
     assert!(g.is_valid());
     assert!(g.validation_errors().is_empty());
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mutation kill tests — DialogueRunner accessor methods
+// ═══════════════════════════════════════════════════════════════════════════
+
+fn make_runner_graph() -> DialogueGraph {
+    DialogueGraph::with_nodes(vec![
+        DialogueNode::new("start", "Hello!")
+            .with_response(DialogueResponse::with_next("Ask more", "mid"))
+            .with_response(DialogueResponse::with_next("Bye", "end")),
+        DialogueNode::new("mid", "More info.")
+            .with_response(DialogueResponse::with_next("Thanks", "end")),
+        DialogueNode::new("end", "Farewell."),
+    ])
+}
+
+/// Kill: available_choices → vec![], vec![""], vec!["xyzzy"]
+#[test]
+fn available_choices_returns_correct_texts() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    runner.start("start").unwrap();
+    let choices = runner.available_choices();
+    assert_eq!(choices.len(), 2);
+    assert_eq!(choices[0], "Ask more");
+    assert_eq!(choices[1], "Bye");
+}
+
+/// Kill: has_visited → true (when node NOT visited)
+/// Kill: has_visited == → !=
+#[test]
+fn has_visited_returns_false_for_unvisited_node() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    runner.start("start").unwrap();
+    assert!(!runner.has_visited("mid"), "mid not yet visited");
+    assert!(!runner.has_visited("end"), "end not yet visited");
+}
+
+/// Kill: graph() → Default::default()
+#[test]
+fn graph_accessor_returns_original_graph() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    runner.start("start").unwrap();
+    let g = runner.graph();
+    assert!(g.get_node("start").is_some());
+    assert!(g.get_node("mid").is_some());
+    assert!(g.get_node("end").is_some());
+}
+
+/// Kill: is_finished → true (before dialogue ends)
+#[test]
+fn is_finished_false_during_dialogue() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    runner.start("start").unwrap();
+    assert!(!runner.is_finished(), "dialogue just started, not finished");
+}
+
+/// Kill: is_waiting → true (when idle), is_waiting → false (when waiting)
+/// Kill: is_waiting == → !=
+#[test]
+fn is_waiting_reflects_runner_state() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    // Before start, should NOT be waiting
+    assert!(!runner.is_waiting(), "idle runner should not be waiting");
+    // After start on a choice node, SHOULD be waiting
+    runner.start("start").unwrap();
+    assert!(runner.is_waiting(), "runner at choice node should be waiting");
+    // After choosing and reaching terminal, should NOT be waiting
+    runner.choose(1).unwrap(); // → end (terminal)
+    assert!(!runner.is_waiting(), "finished runner should not be waiting");
+}
+
+/// Kill: peek_events → Vec::leak(Vec::new()) (empty)
+#[test]
+fn peek_events_shows_pending_events() {
+    let mut runner = DialogueRunner::new(make_runner_graph());
+    runner.start("start").unwrap();
+    let events = runner.peek_events();
+    assert!(!events.is_empty(), "should have NodeEntered event after start");
 }
