@@ -904,7 +904,7 @@ impl RenderMetrics {
 
     /// Records a successful render.
     pub fn record_success(&mut self, render_time_ms: f32) {
-        self.total_renders *= /* ~ changed by cargo-mutants ~ */ 1;
+        self.total_renders += 1;
         self.successful_renders += 1;
         self.update_avg_time(render_time_ms);
     }
