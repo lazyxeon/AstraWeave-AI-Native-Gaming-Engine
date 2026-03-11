@@ -33,7 +33,7 @@ permissions:
   id-token: write
 
 env:
-  MDBOOK_VERSION: '0.4.43'
+  MDBOOK_VERSION: '0.5.2'
 
 jobs:
   build-and-deploy:
@@ -52,12 +52,9 @@ jobs:
       - name: Install mdBook plugins
         run: |
           # mdbook-mermaid is required by book.toml
-          MERMAID_URL="https://github.com/badboy/mdbook-mermaid/releases/latest/download/mdbook-mermaid-x86_64-unknown-linux-gnu.tar.gz"
-          curl -sSL "$MERMAID_URL" -o mdbook-mermaid.tar.gz \
-            && tar -xzf mdbook-mermaid.tar.gz \
+          curl -sSL "https://github.com/badboy/mdbook-mermaid/releases/download/v0.17.0/mdbook-mermaid-v0.17.0-x86_64-unknown-linux-gnu.tar.gz" | tar -xz \
             && sudo mv mdbook-mermaid /usr/local/bin/ \
-            && mdbook-mermaid --version \
-            || cargo install mdbook-mermaid
+            && mdbook-mermaid --version
         continue-on-error: true
 
       - name: Build mdBook documentation
