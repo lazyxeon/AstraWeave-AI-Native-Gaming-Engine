@@ -1544,6 +1544,67 @@ pub mod gltf_loader {
             Some(mat),
         ))
     }
+
+    #[cfg(test)]
+    mod normalize_q_tests {
+        use super::*;
+
+        #[test]
+        fn normalizes_to_unit_length() {
+            let q = normalize_q([3.0, 4.0, 0.0, 0.0]);
+            let len = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+            assert!((len - 1.0).abs() < 1e-5, "len={}", len);
+            assert!((q[0] - 0.6).abs() < 1e-5, "q[0]={}", q[0]);
+            assert!((q[1] - 0.8).abs() < 1e-5, "q[1]={}", q[1]);
+            assert!((q[2]).abs() < 1e-5);
+            assert!((q[3]).abs() < 1e-5);
+        }
+
+        #[test]
+        fn identity_quaternion_unchanged() {
+            let q = normalize_q([0.0, 0.0, 0.0, 1.0]);
+            assert!((q[3] - 1.0).abs() < 1e-5);
+            assert!(q[0].abs() < 1e-5);
+            assert!(q[1].abs() < 1e-5);
+            assert!(q[2].abs() < 1e-5);
+        }
+
+        #[test]
+        fn zero_quaternion_returns_zero() {
+            let q = normalize_q([0.0, 0.0, 0.0, 0.0]);
+            assert_eq!(q, [0.0, 0.0, 0.0, 0.0]);
+        }
+
+        #[test]
+        fn all_components_nonzero() {
+            let q = normalize_q([1.0, 2.0, 3.0, 4.0]);
+            let len = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+            assert!((len - 1.0).abs() < 1e-5, "len={}", len);
+            // input magnitude = sqrt(1+4+9+16) = sqrt(30) ≈ 5.477
+            let mag = 30.0_f32.sqrt();
+            assert!((q[0] - 1.0 / mag).abs() < 1e-5);
+            assert!((q[1] - 2.0 / mag).abs() < 1e-5);
+            assert!((q[2] - 3.0 / mag).abs() < 1e-5);
+            assert!((q[3] - 4.0 / mag).abs() < 1e-5);
+        }
+
+        #[test]
+        fn negative_components_normalized() {
+            let q = normalize_q([-1.0, -1.0, -1.0, -1.0]);
+            let len = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+            assert!((len - 1.0).abs() < 1e-5);
+            let expected = -1.0 / 2.0; // magnitude = 2.0
+            assert!((q[0] - expected).abs() < 1e-5);
+        }
+
+        #[test]
+        fn already_normalized_unchanged() {
+            let q = normalize_q([0.5, 0.5, 0.5, 0.5]);
+            let len = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+            assert!((len - 1.0).abs() < 1e-5);
+            assert!((q[0] - 0.5).abs() < 1e-5);
+        }
+    }
 }
 
 pub struct AssetManifest;
