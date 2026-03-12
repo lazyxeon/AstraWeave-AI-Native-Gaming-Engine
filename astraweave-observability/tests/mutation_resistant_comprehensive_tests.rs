@@ -670,3 +670,295 @@ fn telemetry_clone_shares_state() {
     let tel = LlmTelemetry::new(TelemetryConfig::default());
     let _tel2 = tel.clone(); // Should compile—manual Clone via Arc
 }
+
+// ========================================================================
+// MUTATION KILL TESTS — targeting 50 missed mutations in update_metrics,
+// get_dashboard_data, record_request, and should_sample
+// ========================================================================
+
+fn make_trace(
+    id: &str,
+    model: &str,
+    source: &str,
+    latency_ms: u64,
+    tokens: usize,
+    cost: f64,
+    success: bool,
+) -> LlmTrace {
+    let now = Utc::now();
+    LlmTrace {
+        request_id: id.into(),
+        session_id: None,
+        user_id: None,
+        prompt: None,
+        response: None,
+        prompt_hash: None,
+        model: model.into(),
+        start_time: now,
+        end_time: now,
+        latency_ms,
+        tokens_prompt: tokens / 2,
+        tokens_response: tokens - tokens / 2,
+        total_tokens: tokens,
+        cost_usd: cost,
+        success,
+        error_message: if success { None } else { Some("err".into()) },
+        error_type: if success {
+            None
+        } else {
+            Some("TestError".into())
+        },
+        request_source: source.into(),
+        tags: HashMap::new(),
+    }
+}
+
+/// Kill: total_cost_usd += mutations (line 605), average_latency running
+/// average formula (lines 609-611), error_rate / mutations (line 612).
+/// Uses 3 requests with distinct latencies to break `*→+`, `*→/`, `-→+`,
+/// `-→/`, `+→-`, `+→*`, `/→%`, `/→*` on the incremental average formula.
+#[tokio::test]
+async fn three_requests_verify_averages_and_costs() {
+    let tel = LlmTelemetry::new(TelemetryConfig::default());
+
+    tel.record_request(make_trace("r1", "m", "s", 100, 30, 0.01, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r2", "m", "s", 200, 50, 0.03, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r3", "m", "s", 600, 20, 0.06, false))
+        .await
+        .unwrap();
+
+    let m = tel.get_metrics().await;
+
+    // total_cost_usd = 0.01 + 0.03 + 0.06 = 0.10
+    assert!(
+        (m.total_cost_usd - 0.10).abs() < 1e-6,
+        "cost should be 0.10, got {}",
+        m.total_cost_usd
+    );
+
+    // average_latency = (100 + 200 + 600) / 3 = 300.0
+    assert!(
+        (m.average_latency_ms - 300.0).abs() < 1.0,
+        "avg latency should be 300, got {}",
+        m.average_latency_ms
+    );
+
+    // error_rate = 1 failure / 3 total ≈ 0.333
+    assert!(
+        (m.error_rate - 1.0 / 3.0).abs() < 0.01,
+        "error rate should be ~0.333, got {}",
+        m.error_rate
+    );
+}
+
+/// Kill: model_metrics accumulation (lines 620-621), model average_latency
+/// running average (lines 623-625), model error_rate formulas for both
+/// success and failure paths (lines 626-633), and delete-! mutation.
+#[tokio::test]
+async fn model_metrics_with_mixed_success_failures() {
+    let tel = LlmTelemetry::new(TelemetryConfig::default());
+
+    // 3 requests to same model: success, failure, success
+    tel.record_request(make_trace("r1", "gpt4", "s", 100, 30, 0.02, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r2", "gpt4", "s", 200, 70, 0.08, false))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r3", "gpt4", "s", 600, 50, 0.05, true))
+        .await
+        .unwrap();
+
+    let m = tel.get_metrics().await;
+    let mm = m.model_usage.get("gpt4").expect("model metrics must exist");
+
+    assert_eq!(mm.requests, 3);
+    assert_eq!(mm.total_tokens, 150);
+    assert!(
+        (mm.total_cost_usd - 0.15).abs() < 1e-6,
+        "model cost should be 0.15, got {}",
+        mm.total_cost_usd
+    );
+
+    // average_latency = (100 + 200 + 600) / 3 = 300.0
+    assert!(
+        (mm.average_latency_ms - 300.0).abs() < 1.0,
+        "model avg latency should be 300, got {}",
+        mm.average_latency_ms
+    );
+
+    // error_rate: 1 failure out of 3 ≈ 0.333
+    assert!(
+        (mm.error_rate - 1.0 / 3.0).abs() < 0.02,
+        "model error rate should be ~0.333, got {}",
+        mm.error_rate
+    );
+}
+
+/// Kill: source_metrics accumulation (line 642), source average_latency
+/// (line 646) running average formula.
+#[tokio::test]
+async fn source_metrics_accumulated_correctly() {
+    let tel = LlmTelemetry::new(TelemetryConfig::default());
+
+    tel.record_request(make_trace("r1", "m", "orchestrator", 100, 30, 0.01, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r2", "m", "orchestrator", 200, 70, 0.04, false))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r3", "m", "orchestrator", 600, 50, 0.05, true))
+        .await
+        .unwrap();
+
+    let m = tel.get_metrics().await;
+    let sm = m
+        .source_metrics
+        .get("orchestrator")
+        .expect("source metrics must exist");
+
+    assert_eq!(sm.requests, 3);
+    assert_eq!(sm.total_tokens, 150);
+
+    // average_latency = (100 + 200 + 600) / 3 = 300.0
+    assert!(
+        (sm.average_latency_ms - 300.0).abs() < 1.0,
+        "source avg latency should be 300, got {}",
+        sm.average_latency_ms
+    );
+
+    // error_rate: 1 / 3 ≈ 0.333
+    assert!(
+        (sm.error_rate - 1.0 / 3.0).abs() < 0.02,
+        "source error rate should be ~0.333, got {}",
+        sm.error_rate
+    );
+}
+
+/// Kill: trace buffer limit > → == and > → >= (line 407).
+#[tokio::test]
+async fn trace_buffer_enforces_max_traces() {
+    let config = TelemetryConfig {
+        max_traces: 2,
+        sampling_rate: 1.0,
+        ..TelemetryConfig::default()
+    };
+    let tel = LlmTelemetry::new(config);
+
+    tel.record_request(make_trace("r1", "m", "s", 10, 1, 0.0, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r2", "m", "s", 20, 1, 0.0, true))
+        .await
+        .unwrap();
+    tel.record_request(make_trace("r3", "m", "s", 30, 1, 0.0, true))
+        .await
+        .unwrap();
+
+    let json = tel.export_traces(ExportFormat::Json, None).await.unwrap();
+    let traces: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
+    assert_eq!(
+        traces.len(),
+        2,
+        "should keep only max_traces=2 traces, got {}",
+        traces.len()
+    );
+}
+
+/// Kill: delete-! on error tracking condition (line 431) — ensures failures
+/// trigger error patterns and successes do not.
+#[tokio::test]
+async fn failure_triggers_error_tracking_success_does_not() {
+    // Success-only: no error patterns
+    let tel_ok = LlmTelemetry::new(TelemetryConfig::default());
+    tel_ok
+        .record_request(make_trace("r1", "m", "s", 100, 10, 0.01, true))
+        .await
+        .unwrap();
+    let dash_ok = tel_ok.get_dashboard_data().await.unwrap();
+    assert!(
+        dash_ok.top_errors.is_empty(),
+        "success-only should have no error patterns"
+    );
+
+    // Failure: should produce error patterns
+    let tel_err = LlmTelemetry::new(TelemetryConfig::default());
+    tel_err
+        .record_request(make_trace("r2", "m", "s", 100, 10, 0.01, false))
+        .await
+        .unwrap();
+    let dash_err = tel_err.get_dashboard_data().await.unwrap();
+    assert!(
+        !dash_err.top_errors.is_empty(),
+        "failed trace should produce error patterns"
+    );
+}
+
+/// Kill: should_sample → true (line 588). With sampling_rate=0.0 no traces
+/// should be stored; the mutation makes it always true → traces appear.
+#[tokio::test]
+async fn sampling_rate_zero_stores_no_traces() {
+    let config = TelemetryConfig {
+        sampling_rate: 0.0,
+        ..TelemetryConfig::default()
+    };
+    let tel = LlmTelemetry::new(config);
+
+    tel.record_request(make_trace("r1", "m", "s", 50, 10, 0.01, true))
+        .await
+        .unwrap();
+
+    let json = tel.export_traces(ExportFormat::Json, None).await.unwrap();
+    let traces: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
+    assert_eq!(
+        traces.len(),
+        0,
+        "sampling_rate=0 should store no traces, found {}",
+        traces.len()
+    );
+}
+
+/// Kill: dashboard budget_remaining - → + (lines 460, 463) and cost
+/// percentile / → %|* (lines 502-503).
+#[tokio::test]
+async fn dashboard_budget_remaining_and_cost_percentiles() {
+    let tel = LlmTelemetry::new(TelemetryConfig::default());
+
+    // Record with non-trivial cost so histograms have data and spend > 0
+    tel.record_request(make_trace("r1", "m", "s", 100, 30, 0.05, true))
+        .await
+        .unwrap();
+
+    let dash = tel.get_dashboard_data().await.unwrap();
+
+    // With default budget=0 and spend>0: remaining = max(0 - spend, 0) = 0.0
+    // Mutation - → + would give max(0 + spend, 0) = spend > 0
+    assert!(
+        dash.cost_summary.daily_budget_remaining < 0.01,
+        "daily remaining should be ~0, got {}",
+        dash.cost_summary.daily_budget_remaining
+    );
+    assert!(
+        dash.cost_summary.monthly_budget_remaining < 0.01,
+        "monthly remaining should be ~0, got {}",
+        dash.cost_summary.monthly_budget_remaining
+    );
+
+    // Cost percentiles: histogram recorded (0.05*100)=5 cents.
+    // Divided by 100 → 0.05 USD. Mutations /→* (500.0) or /→% (5.0) would
+    // produce values well above 0.5.
+    assert!(
+        dash.performance_percentiles.cost_p50 < 0.5,
+        "cost_p50 should be in dollars not cents: {}",
+        dash.performance_percentiles.cost_p50
+    );
+    assert!(
+        dash.performance_percentiles.cost_p95 < 0.5,
+        "cost_p95 should be in dollars not cents: {}",
+        dash.performance_percentiles.cost_p95
+    );
+}
