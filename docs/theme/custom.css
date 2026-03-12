@@ -186,7 +186,7 @@ pre::-webkit-scrollbar-thumb:hover {
     --astra-panel: rgba(255, 252, 247, 0.86);
     --astra-panel-strong: #fffaf2;
     --astra-ink: #122430;
-    --astra-muted: #536471;
+    --astra-muted: #425460;
     --astra-line: rgba(18, 36, 48, 0.12);
     --astra-navy: #15394a;
     --astra-teal: #0e7c74;
@@ -194,6 +194,7 @@ pre::-webkit-scrollbar-thumb:hover {
     --astra-copper: #b96d35;
     --astra-shadow: 0 20px 60px rgba(15, 35, 48, 0.12);
     color: var(--astra-ink);
+    background: var(--astra-bg);
 }
 
 .astra-landing > * + * {
@@ -271,7 +272,7 @@ pre::-webkit-scrollbar-thumb:hover {
 }
 
 .astra-note--light {
-    color: rgba(246, 239, 231, 0.82);
+    color: rgba(246, 239, 231, 0.9);
 }
 
 .astra-actions {
@@ -726,4 +727,184 @@ pre::-webkit-scrollbar-thumb:hover {
     .content .astra-landing .astra-cta h2 {
         max-width: none;
     }
+}
+
+/* Dark theme support — Coal, Navy, Ayu */
+html.coal .astra-landing,
+html.navy .astra-landing,
+html.ayu .astra-landing {
+    --astra-bg: #1c1f2b;
+    --astra-bg-alt: #1a1d28;
+    --astra-panel: rgba(30, 34, 48, 0.88);
+    --astra-panel-strong: #232838;
+    --astra-ink: #e2dfd8;
+    --astra-muted: #a8a4b0;
+    --astra-line: rgba(255, 255, 255, 0.1);
+    --astra-navy: #6ab0d6;
+    --astra-teal: #3fc5b0;
+    --astra-teal-deep: #5ed4c1;
+    --astra-copper: #e4a06a;
+    --astra-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+html.coal .astra-eyebrow,
+html.navy .astra-eyebrow,
+html.ayu .astra-eyebrow {
+    background: rgba(40, 44, 60, 0.78);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.coal .astra-meta-badge,
+html.navy .astra-meta-badge,
+html.ayu .astra-meta-badge {
+    background: rgba(63, 197, 176, 0.12);
+    border-color: rgba(63, 197, 176, 0.22);
+}
+
+html.coal .astra-button--secondary,
+html.navy .astra-button--secondary,
+html.ayu .astra-button--secondary {
+    background: rgba(40, 44, 60, 0.9);
+    color: var(--astra-ink);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.coal .astra-hero__frame,
+html.navy .astra-hero__frame,
+html.ayu .astra-hero__frame {
+    background:
+        linear-gradient(160deg, rgba(35, 40, 56, 0.9), rgba(28, 31, 43, 0.85)),
+        linear-gradient(135deg, rgba(106, 176, 214, 0.15), rgba(63, 197, 176, 0.1));
+}
+
+html.coal .astra-hero__frame::before,
+html.navy .astra-hero__frame::before,
+html.ayu .astra-hero__frame::before {
+    background:
+        radial-gradient(circle at top, rgba(63, 197, 176, 0.12), transparent 46%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.02), rgba(228, 160, 106, 0.06));
+}
+
+html.coal .astra-hero__image-wrap,
+html.navy .astra-hero__image-wrap,
+html.ayu .astra-hero__image-wrap {
+    background: linear-gradient(180deg, rgba(18, 22, 34, 0.95), rgba(10, 14, 22, 0.96));
+}
+
+html.coal .astra-hero__caption,
+html.navy .astra-hero__caption,
+html.ayu .astra-hero__caption {
+    background: rgba(35, 40, 56, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.coal .astra-benchmark-image,
+html.navy .astra-benchmark-image,
+html.ayu .astra-benchmark-image {
+    background: #2a2e3e;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.coal .astra-chip,
+html.navy .astra-chip,
+html.ayu .astra-chip {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--astra-navy);
+}
+
+html.coal .content .astra-landing .astra-link-list a,
+html.navy .content .astra-landing .astra-link-list a,
+html.ayu .content .astra-landing .astra-link-list a {
+    color: var(--astra-navy);
+}
+
+html.coal .astra-band,
+html.navy .astra-band,
+html.ayu .astra-band {
+    background: linear-gradient(135deg, rgba(22, 30, 48, 0.95), rgba(16, 60, 56, 0.9));
+}
+
+html.coal .astra-cta,
+html.navy .astra-cta,
+html.ayu .astra-cta {
+    background:
+        linear-gradient(135deg, rgba(22, 30, 48, 0.97), rgba(16, 60, 56, 0.92)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+}
+
+/* Rust theme (warm mid-tone) */
+html.rust .astra-landing {
+    --astra-bg: #3b2e2a;
+    --astra-bg-alt: #342826;
+    --astra-panel: rgba(52, 40, 38, 0.88);
+    --astra-panel-strong: #3d302c;
+    --astra-ink: #e8ddd4;
+    --astra-muted: #b0a49a;
+    --astra-line: rgba(255, 255, 255, 0.1);
+    --astra-navy: #7dbcd5;
+    --astra-teal: #4dc9b0;
+    --astra-teal-deep: #6ad6c3;
+    --astra-copper: #e4a06a;
+    --astra-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+html.rust .astra-eyebrow {
+    background: rgba(52, 40, 38, 0.78);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.rust .astra-meta-badge {
+    background: rgba(77, 201, 176, 0.12);
+    border-color: rgba(77, 201, 176, 0.22);
+}
+
+html.rust .astra-button--secondary {
+    background: rgba(52, 40, 38, 0.9);
+    color: var(--astra-ink);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.rust .astra-hero__frame {
+    background:
+        linear-gradient(160deg, rgba(59, 46, 42, 0.9), rgba(52, 40, 38, 0.85)),
+        linear-gradient(135deg, rgba(125, 188, 213, 0.12), rgba(77, 201, 176, 0.08));
+}
+
+html.rust .astra-hero__frame::before {
+    background:
+        radial-gradient(circle at top, rgba(77, 201, 176, 0.1), transparent 46%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.02), rgba(228, 160, 106, 0.06));
+}
+
+html.rust .astra-hero__image-wrap {
+    background: linear-gradient(180deg, rgba(30, 22, 20, 0.95), rgba(20, 14, 12, 0.96));
+}
+
+html.rust .astra-hero__caption {
+    background: rgba(52, 40, 38, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.rust .astra-benchmark-image {
+    background: #3d302c;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.rust .astra-chip {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--astra-navy);
+}
+
+html.rust .content .astra-landing .astra-link-list a {
+    color: var(--astra-navy);
+}
+
+html.rust .astra-band {
+    background: linear-gradient(135deg, rgba(30, 22, 20, 0.95), rgba(16, 50, 46, 0.9));
+}
+
+html.rust .astra-cta {
+    background:
+        linear-gradient(135deg, rgba(30, 22, 20, 0.97), rgba(16, 50, 46, 0.92)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
 }
