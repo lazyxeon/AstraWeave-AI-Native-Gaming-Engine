@@ -20,3 +20,7 @@
 
 # Test fixture files: exempt from LFS (tiny JSON/text files that must always be available)
 **/tests/fixtures/*.gltf !filter !diff !merge text
+
+# Doc images: exempt from LFS so GitHub Pages can serve them directly
+docs/src/assets/*.jpg !filter !diff !merge
+docs/src/assets/*.png !filter !diff !merge
