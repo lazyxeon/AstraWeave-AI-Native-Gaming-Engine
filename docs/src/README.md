@@ -307,14 +307,70 @@
           <li><span>SIMD batch over 10k entities</span><strong>9.879 us</strong></li>
         </ul>
       </article>
-      <article class="astra-card astra-card--panel">
-        <span class="astra-kicker">Benchmark output</span>
-        <h3>Benchmark trace pulled directly from the docs bundle.</h3>
-        <p>
-          Existing benchmark assets remain part of the experience so the landing page routes straight into the
-          performance story instead of hiding it behind prose.
-        </p>
-        <img class="astra-benchmark-image" src="./assets/top_series_time.png" alt="AstraWeave benchmark chart for top series time">
+      <article class="astra-bench-card" aria-label="Top benchmark results">
+        <div class="astra-bench-header">
+          <div>
+            <div class="astra-bench-title">Top Benchmarks &middot; Latest Run</div>
+            <div class="astra-bench-subtitle">Criterion.rs statistical benchmarking &middot; Feb 2026</div>
+          </div>
+          <span class="astra-bench-badge"><span class="astra-bench-badge-dot"></span>Stable baseline</span>
+        </div>
+        <div class="astra-bench-legend">
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#4ea8de"></span>Bake 10K Triangles</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#e8915a"></span>E2E Plan Gen &middot; Cache Miss</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#fbbf24"></span>Cache Latency &middot; 200ms</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#a78bfa"></span>Light Binning &middot; High</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#22d3ee"></span>Bloom Upsample &middot; Mip 0</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#f472b6"></span>Light Binning &middot; 5K</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#f87171"></span>Cache Latency &middot; 100ms</span>
+          <span class="astra-bench-li"><span class="astra-bench-sw" style="background:#5bc9a0"></span>Game Loop &middot; 5K Stress</span>
+        </div>
+        <svg class="astra-bench-svg" viewBox="0 0 900 390" xmlns="http://www.w3.org/2000/svg" aria-label="Horizontal bar chart of benchmark results">
+          <rect width="900" height="390" fill="#161922"/>
+          <line x1="310" y1="14" x2="310" y2="350" stroke="rgba(255,255,255,0.04)"/>
+          <line x1="410" y1="14" x2="410" y2="350" stroke="rgba(255,255,255,0.04)"/>
+          <line x1="510" y1="14" x2="510" y2="350" stroke="rgba(255,255,255,0.04)"/>
+          <line x1="610" y1="14" x2="610" y2="350" stroke="rgba(255,255,255,0.04)"/>
+          <line x1="710" y1="14" x2="710" y2="350" stroke="rgba(255,255,255,0.04)"/>
+          <text x="310" y="372" fill="#555a6e" font-size="10" text-anchor="middle" style="font-family:Consolas,monospace">100 ms</text>
+          <text x="410" y="372" fill="#555a6e" font-size="10" text-anchor="middle" style="font-family:Consolas,monospace">200 ms</text>
+          <text x="510" y="372" fill="#555a6e" font-size="10" text-anchor="middle" style="font-family:Consolas,monospace">300 ms</text>
+          <text x="610" y="372" fill="#555a6e" font-size="10" text-anchor="middle" style="font-family:Consolas,monospace">400 ms</text>
+          <text x="710" y="372" fill="#555a6e" font-size="10" text-anchor="middle" style="font-family:Consolas,monospace">500 ms</text>
+          <defs>
+            <linearGradient id="blueBarGlow" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4ea8de"/><stop offset="100%" stop-color="#4ea8de" stop-opacity="0.6"/></linearGradient>
+          </defs>
+          <text x="200" y="39" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Bake 10K Triangles</text>
+          <rect x="210" y="22" width="548" height="28" rx="4" fill="url(#blueBarGlow)" opacity="0.9"/>
+          <text x="766" y="40" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">548.16 ms</text>
+          <text x="200" y="81" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">E2E Plan Gen · Cache Miss</text>
+          <rect x="210" y="64" width="219" height="28" rx="4" fill="#e8915a" opacity="0.85"/>
+          <text x="435" y="82" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">218.79 ms</text>
+          <text x="200" y="123" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Cache Latency · 200ms</text>
+          <rect x="210" y="106" width="209" height="28" rx="4" fill="#fbbf24" opacity="0.85"/>
+          <text x="425" y="124" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">209.26 ms</text>
+          <text x="200" y="165" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Light Binning · High</text>
+          <rect x="210" y="148" width="176" height="28" rx="4" fill="#a78bfa" opacity="0.85"/>
+          <text x="392" y="166" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">176.06 ms</text>
+          <text x="200" y="207" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Bloom Upsample · Mip 0</text>
+          <rect x="210" y="190" width="173" height="28" rx="4" fill="#22d3ee" opacity="0.85"/>
+          <text x="389" y="208" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">172.55 ms</text>
+          <text x="200" y="249" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Light Binning · 5K</text>
+          <rect x="210" y="232" width="113" height="28" rx="4" fill="#f472b6" opacity="0.85"/>
+          <text x="329" y="250" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">113.34 ms</text>
+          <text x="200" y="291" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Cache Latency · 100ms</text>
+          <rect x="210" y="274" width="109" height="28" rx="4" fill="#f87171" opacity="0.85"/>
+          <text x="325" y="292" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">108.52 ms</text>
+          <text x="200" y="333" fill="#8b90a0" font-size="11" text-anchor="end" style="font-family:'Segoe UI',system-ui,sans-serif">Game Loop · 5K Stress</text>
+          <rect x="210" y="316" width="94" height="28" rx="4" fill="#5bc9a0" opacity="0.85"/>
+          <text x="310" y="334" fill="#e2e4ea" font-size="10" style="font-family:Consolas,monospace">93.91 ms</text>
+        </svg>
+        <div class="astra-bench-footer">
+          <span class="astra-bench-caption">
+            All measurements are p50 medians from Criterion.rs with &ge;100 iterations per benchmark and 95% confidence intervals.
+          </span>
+          <span class="astra-bench-source">criterion &middot; cargo bench</span>
+        </div>
       </article>
     </div>
     <div class="astra-split astra-split--offset">
