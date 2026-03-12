@@ -6,6 +6,35 @@
     <title>AstraWeave Performance Dashboard</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
+        :root {
+            --astra-bg: #f4efe7;
+            --astra-bg-alt: #efe7db;
+            --astra-panel: rgba(255, 252, 247, 0.86);
+            --astra-panel-strong: #fffaf2;
+            --astra-ink: #122430;
+            --astra-muted: #425460;
+            --astra-line: rgba(18, 36, 48, 0.12);
+            --astra-navy: #15394a;
+            --astra-teal: #0e7c74;
+            --astra-teal-deep: #0a5f59;
+            --astra-copper: #b96d35;
+            --astra-shadow: 0 20px 60px rgba(15, 35, 48, 0.12);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --astra-bg: #1a2332;
+                --astra-bg-alt: #141c28;
+                --astra-panel: rgba(30, 40, 55, 0.86);
+                --astra-panel-strong: #1e2838;
+                --astra-ink: #e2dfd8;
+                --astra-muted: #9caab4;
+                --astra-line: rgba(226, 223, 216, 0.12);
+                --astra-navy: #0e2a38;
+                --astra-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            }
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,45 +42,57 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            padding: 20px;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--astra-bg);
+            color: var(--astra-ink);
+            padding: clamp(1rem, 3vw, 2.5rem);
             min-height: 100vh;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
+            background: var(--astra-panel-strong);
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--astra-shadow);
             overflow: hidden;
         }
 
         header {
-            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-            color: white;
-            padding: 30px 40px;
-            border-bottom: 4px solid #667eea;
+            background: linear-gradient(135deg, var(--astra-navy), var(--astra-teal));
+            color: #fffaf2;
+            padding: 40px 40px 36px;
+            border-bottom: none;
+        }
+
+        header .kicker {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 250, 242, 0.7);
+            margin-bottom: 0.5rem;
         }
 
         h1 {
-            font-size: 2.5em;
+            font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
             margin-bottom: 10px;
             font-weight: 700;
+            letter-spacing: -0.01em;
         }
 
         .subtitle {
-            font-size: 1.1em;
-            opacity: 0.9;
+            font-size: 1.05em;
+            opacity: 0.85;
             margin-top: 8px;
         }
 
         .controls {
-            background: #f7fafc;
+            background: var(--astra-bg-alt);
             padding: 25px 40px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--astra-line);
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
@@ -66,29 +107,30 @@
 
         label {
             font-weight: 600;
-            color: #4a5568;
-            font-size: 0.9em;
+            color: var(--astra-muted);
+            font-size: 0.85em;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         select, input[type="number"] {
             padding: 10px 14px;
-            border: 2px solid #cbd5e0;
+            border: 1px solid var(--astra-line);
             border-radius: 8px;
             font-size: 1em;
-            background: white;
+            background: var(--astra-panel-strong);
+            color: var(--astra-ink);
             transition: all 0.2s;
         }
 
         select:hover, input[type="number"]:hover {
-            border-color: #667eea;
+            border-color: var(--astra-teal);
         }
 
         select:focus, input[type="number"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--astra-teal);
+            box-shadow: 0 0 0 3px rgba(14, 124, 116, 0.15);
         }
 
         .stats-grid {
@@ -96,26 +138,26 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
             padding: 30px 40px;
-            background: #f7fafc;
+            background: var(--astra-bg-alt);
         }
 
         .stat-card {
-            background: white;
+            background: var(--astra-panel-strong);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border-left: 4px solid #667eea;
+            box-shadow: 0 4px 12px rgba(15, 35, 48, 0.06);
+            border-left: 4px solid var(--astra-teal);
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 20px rgba(15, 35, 48, 0.1);
         }
 
         .stat-label {
             font-size: 0.85em;
-            color: #718096;
+            color: var(--astra-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -123,9 +165,10 @@
         }
 
         .stat-value {
+            font-family: Georgia, 'Palatino Linotype', serif;
             font-size: 2em;
             font-weight: 700;
-            color: #2d3748;
+            color: var(--astra-ink);
         }
 
         .stat-change {
@@ -135,22 +178,24 @@
         }
 
         .stat-change.positive {
-            color: #48bb78;
+            color: var(--astra-teal);
         }
 
         .stat-change.negative {
-            color: #f56565;
+            color: var(--astra-copper);
         }
 
         .chart-container {
             padding: 40px;
+            background: var(--astra-panel-strong);
         }
 
         .chart-title {
+            font-family: Georgia, 'Palatino Linotype', serif;
             font-size: 1.5em;
             font-weight: 700;
             margin-bottom: 20px;
-            color: #2d3748;
+            color: var(--astra-ink);
         }
 
         #performanceChart {
@@ -160,15 +205,15 @@
 
         .tooltip {
             position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
+            background: var(--astra-navy);
+            color: #fffaf2;
             padding: 12px 16px;
             border-radius: 8px;
             font-size: 0.9em;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 16px rgba(15, 35, 48, 0.3);
             max-width: 300px;
         }
 
@@ -189,6 +234,11 @@
 
         .axis {
             font-size: 12px;
+            color: var(--astra-muted);
+        }
+
+        .axis text, .axis-label {
+            fill: var(--astra-muted);
         }
 
         .axis-label {
@@ -197,7 +247,7 @@
         }
 
         .grid line {
-            stroke: #e2e8f0;
+            stroke: var(--astra-line);
             stroke-opacity: 0.7;
         }
 
@@ -226,7 +276,7 @@
             gap: 16px;
             margin-top: 20px;
             padding: 20px;
-            background: #f7fafc;
+            background: var(--astra-bg-alt);
             border-radius: 8px;
         }
 
@@ -241,7 +291,7 @@
         }
 
         .legend-item:hover {
-            background: #edf2f7;
+            background: var(--astra-panel);
         }
 
         .legend-item.inactive {
@@ -257,49 +307,51 @@
         .legend-label {
             font-size: 0.9em;
             font-weight: 500;
+            color: var(--astra-ink);
         }
 
         .loading {
             text-align: center;
             padding: 60px;
             font-size: 1.2em;
-            color: #718096;
+            color: var(--astra-muted);
         }
 
         .error {
-            background: #fed7d7;
-            color: #c53030;
+            background: #fef2f2;
+            color: #991b1b;
             padding: 20px;
             margin: 20px;
             border-radius: 8px;
-            border-left: 4px solid #f56565;
+            border-left: 4px solid var(--astra-copper);
         }
 
         footer {
-            background: #2d3748;
-            color: white;
+            background: linear-gradient(135deg, var(--astra-navy), var(--astra-teal-deep));
+            color: #fffaf2;
             padding: 20px 40px;
             text-align: center;
             font-size: 0.9em;
         }
 
         footer a {
-            color: #90cdf4;
+            color: rgba(255, 250, 242, 0.8);
             text-decoration: none;
         }
 
         footer a:hover {
             text-decoration: underline;
+            color: #fffaf2;
         }
 
         .threshold-line {
-            stroke: #f56565;
+            stroke: var(--astra-copper);
             stroke-width: 2;
             stroke-dasharray: 5, 5;
         }
 
         .threshold-label {
-            fill: #f56565;
+            fill: var(--astra-copper);
             font-size: 11px;
             font-weight: 600;
         }
@@ -308,9 +360,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>🚀 AstraWeave Performance Dashboard</h1>
-            <p class="subtitle">AI-Native Game Engine • Real-time Benchmark Tracking</p>
-            <p class="subtitle" style="margin-top: 4px; opacity: 0.7;">Week 4 Action 15: Automated Performance Regression Detection</p>
+            <p class="kicker">Performance Observatory</p>
+            <h1>AstraWeave Benchmark Dashboard</h1>
+            <p class="subtitle">AI-Native Game Engine &bull; Real-time Performance Tracking</p>
         </header>
 
         <div class="controls">
@@ -363,7 +415,11 @@
         // Dashboard configuration
         const config = {
             margin: { top: 20, right: 120, bottom: 60, left: 80 },
-            colors: d3.schemeCategory10,
+            colors: [
+                '#0e7c74', '#b96d35', '#15394a', '#0a5f59',
+                '#c98a4e', '#1a5c6e', '#3a8f87', '#d4a46a',
+                '#2a7080', '#8b5e3c'
+            ],
             animationDuration: 750
         };
 
@@ -550,7 +606,7 @@
                     <div class="stat-change ${trend}">
                         ${trend === 'positive' ? '↓' : '↑'} ${Math.abs(changePercent)}% vs ${points.length} runs ago
                     </div>
-                    ${baselineValue ? `<div style="margin-top: 8px; font-size: 0.85em; color: #718096;">
+                    ${baselineValue ? `<div style="margin-top: 8px; font-size: 0.85em; color: var(--astra-muted);">
                         Baseline: ${formatValue(baselineValue, points[0].unit)}
                     </div>` : ''}
                 `;

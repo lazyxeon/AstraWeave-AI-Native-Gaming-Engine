@@ -66,6 +66,11 @@ jobs:
           mkdir -p book/assets
           cp -r src/assets/* book/assets/ 2>/dev/null || true
 
+      - name: Copy standalone dashboard
+        run: |
+          mkdir -p docs/book/dashboard/benchmark_dashboard
+          cp -r docs/archive/benchmark_dashboard/* docs/book/dashboard/benchmark_dashboard/ 2>/dev/null || true
+
       - name: Install system dependencies (for cargo doc)
         continue-on-error: true
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev
