@@ -657,17 +657,117 @@ main:has(> .astra-landing) {
     text-align: left;
 }
 
-.astra-benchmark-image {
+.astra-bench-card {
+    background: #161922;
+    border: 1px solid #1e2230;
+    border-radius: 12px;
+    padding: 32px 32px 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+    color: #e2e4ea;
+}
+
+.astra-bench-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.astra-bench-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e2e4ea;
+    letter-spacing: -0.01em;
+}
+
+.astra-bench-subtitle {
+    font-size: 13px;
+    color: #8b90a0;
+    margin-top: 4px;
+}
+
+.astra-bench-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #5bc9a0;
+    background: rgba(91, 201, 160, 0.08);
+    border: 1px solid rgba(91, 201, 160, 0.15);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: Consolas, 'Courier New', monospace;
+    white-space: nowrap;
+}
+
+.astra-bench-badge-dot {
+    width: 6px;
+    height: 6px;
+    background: #5bc9a0;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.astra-bench-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin-bottom: 20px;
+}
+
+.astra-bench-li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #8b90a0;
+}
+
+.astra-bench-sw {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.astra-bench-svg {
     width: 100%;
-    border-radius: 16px;
-    border: 1px solid rgba(18, 36, 48, 0.08);
-    background: #fff;
+    height: auto;
+    border-radius: 4px;
+}
+
+.astra-bench-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #1e2230;
+    gap: 16px;
+}
+
+.astra-bench-caption {
+    font-size: 12.5px;
+    color: #555a6e;
+    font-style: italic;
+    max-width: 520px;
+    line-height: 1.55;
+}
+
+.astra-bench-source {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    color: #555a6e;
+    white-space: nowrap;
 }
 
 @media (hover: hover) {
     .astra-card:hover,
     .astra-proof-tile:hover,
-    .astra-benchmark-image:hover {
+    .astra-bench-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 22px 48px rgba(18, 36, 48, 0.11);
     }
@@ -951,11 +1051,10 @@ html.ayu .astra-hero__caption {
     border-color: rgba(255, 255, 255, 0.08);
 }
 
-html.coal .astra-benchmark-image,
-html.navy .astra-benchmark-image,
-html.ayu .astra-benchmark-image {
-    background: #2a2e3e;
-    border-color: rgba(255, 255, 255, 0.08);
+html.coal .astra-bench-card,
+html.navy .astra-bench-card,
+html.ayu .astra-bench-card {
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 html.coal .astra-chip,
@@ -1060,9 +1159,8 @@ html.rust .astra-hero__caption {
     border-color: rgba(255, 255, 255, 0.08);
 }
 
-html.rust .astra-benchmark-image {
-    background: #3d302c;
-    border-color: rgba(255, 255, 255, 0.08);
+html.rust .astra-bench-card {
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 html.rust .astra-chip {
