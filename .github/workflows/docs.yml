@@ -42,9 +42,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Fetch docs assets from LFS
-        run: git lfs pull --include="docs/src/assets/*"
+        with:
+          lfs: true
 
       - name: Install mdBook (pre-built binary)
         run: |
