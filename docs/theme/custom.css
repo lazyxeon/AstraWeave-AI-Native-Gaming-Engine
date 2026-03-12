@@ -179,6 +179,18 @@ pre::-webkit-scrollbar-thumb:hover {
     background: var(--sidebar-active);
 }
 
+/* ── Landing page: break out of mdBook's narrow content column ── */
+main:has(> .astra-landing) {
+    max-width: none;
+    max-inline-size: none;
+    padding: 0;
+}
+
+.content:has(.astra-landing) {
+    padding: 0;
+    max-width: none;
+}
+
 /* Landing page styling */
 .astra-landing {
     --astra-bg: #f4efe7;
@@ -195,6 +207,7 @@ pre::-webkit-scrollbar-thumb:hover {
     --astra-shadow: 0 20px 60px rgba(15, 35, 48, 0.12);
     color: var(--astra-ink);
     background: var(--astra-bg);
+    padding-inline: clamp(1.5rem, 4vw, 4rem);
 }
 
 .astra-landing > * + * {
