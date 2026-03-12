@@ -7,7 +7,7 @@
 
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
-use astraweave_ecs::{Plugin, World};
+use astraweave_ecs::{App, Plugin, Schedule, World};
 use astraweave_persistence_ecs::*;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -48,7 +48,9 @@ fn serialized_entity_all_none() {
 fn serialized_entity_with_pos() {
     let se = SerializedEntity {
         entity_raw: 42,
-        pos: Some(CPos { pos: IVec2 { x: 5, y: 10 } }),
+        pos: Some(CPos {
+            pos: IVec2 { x: 5, y: 10 },
+        }),
         health: None,
         team: None,
         ammo: None,
@@ -128,7 +130,9 @@ fn serialized_entity_with_desired_pos() {
         team: None,
         ammo: None,
         cooldowns: None,
-        desired_pos: Some(CDesiredPos { pos: IVec2 { x: -3, y: 7 } }),
+        desired_pos: Some(CDesiredPos {
+            pos: IVec2 { x: -3, y: 7 },
+        }),
         ai_agent: None,
         legacy_id: None,
         persona: None,
@@ -143,12 +147,18 @@ fn serialized_entity_with_desired_pos() {
 fn serialized_entity_clone_preserves_all_fields() {
     let se = SerializedEntity {
         entity_raw: 99,
-        pos: Some(CPos { pos: IVec2 { x: 1, y: 2 } }),
+        pos: Some(CPos {
+            pos: IVec2 { x: 1, y: 2 },
+        }),
         health: Some(CHealth { hp: 100 }),
         team: Some(CTeam { id: 5 }),
         ammo: Some(CAmmo { rounds: 50 }),
-        cooldowns: Some(CCooldowns { map: BTreeMap::new() }),
-        desired_pos: Some(CDesiredPos { pos: IVec2 { x: 3, y: 4 } }),
+        cooldowns: Some(CCooldowns {
+            map: BTreeMap::new(),
+        }),
+        desired_pos: Some(CDesiredPos {
+            pos: IVec2 { x: 3, y: 4 },
+        }),
         ai_agent: Some(CAiAgent),
         legacy_id: None,
         persona: None,
@@ -186,7 +196,9 @@ fn serialized_world_with_entities() {
         entities: vec![
             SerializedEntity {
                 entity_raw: 1,
-                pos: Some(CPos { pos: IVec2 { x: 0, y: 0 } }),
+                pos: Some(CPos {
+                    pos: IVec2 { x: 0, y: 0 },
+                }),
                 health: Some(CHealth { hp: 100 }),
                 team: None,
                 ammo: None,
@@ -199,7 +211,9 @@ fn serialized_world_with_entities() {
             },
             SerializedEntity {
                 entity_raw: 2,
-                pos: Some(CPos { pos: IVec2 { x: 5, y: 5 } }),
+                pos: Some(CPos {
+                    pos: IVec2 { x: 5, y: 5 },
+                }),
                 health: Some(CHealth { hp: 50 }),
                 team: None,
                 ammo: None,
@@ -477,7 +491,12 @@ fn deserialize_empty_blob() {
 fn serialize_deserialize_roundtrip_pos() {
     let mut world = World::new();
     let entity = world.spawn();
-    world.insert(entity, CPos { pos: IVec2 { x: 7, y: 13 } });
+    world.insert(
+        entity,
+        CPos {
+            pos: IVec2 { x: 7, y: 13 },
+        },
+    );
 
     let blob = serialize_ecs_world(&world).unwrap();
     assert!(!blob.is_empty());
@@ -546,7 +565,10 @@ fn serialize_deserialize_roundtrip_cooldowns() {
     let mut world = World::new();
     let entity = world.spawn();
     let mut map = BTreeMap::new();
-    map.insert(astraweave_core::ecs_components::cooldowns::CooldownKey::ThrowSmoke, 3.5f32);
+    map.insert(
+        astraweave_core::ecs_components::cooldowns::CooldownKey::ThrowSmoke,
+        3.5f32,
+    );
     world.insert(entity, CCooldowns { map });
 
     let blob = serialize_ecs_world(&world).unwrap();
@@ -556,7 +578,10 @@ fn serialize_deserialize_roundtrip_cooldowns() {
     let q = astraweave_ecs::Query::<CCooldowns>::new(&new_world);
     let entities: Vec<_> = q.collect();
     assert_eq!(entities.len(), 1);
-    let cd_val = entities[0].1.map.get(&astraweave_core::ecs_components::cooldowns::CooldownKey::ThrowSmoke);
+    let cd_val = entities[0]
+        .1
+        .map
+        .get(&astraweave_core::ecs_components::cooldowns::CooldownKey::ThrowSmoke);
     assert!(cd_val.is_some());
     assert!((cd_val.unwrap() - 3.5).abs() < f32::EPSILON);
 }
@@ -565,7 +590,12 @@ fn serialize_deserialize_roundtrip_cooldowns() {
 fn serialize_deserialize_roundtrip_desired_pos() {
     let mut world = World::new();
     let entity = world.spawn();
-    world.insert(entity, CDesiredPos { pos: IVec2 { x: -2, y: 8 } });
+    world.insert(
+        entity,
+        CDesiredPos {
+            pos: IVec2 { x: -2, y: 8 },
+        },
+    );
 
     let blob = serialize_ecs_world(&world).unwrap();
     let mut new_world = World::new();
@@ -597,7 +627,12 @@ fn serialize_deserialize_roundtrip_ai_agent() {
 fn serialize_deserialize_roundtrip_multiple_components() {
     let mut world = World::new();
     let entity = world.spawn();
-    world.insert(entity, CPos { pos: IVec2 { x: 3, y: 4 } });
+    world.insert(
+        entity,
+        CPos {
+            pos: IVec2 { x: 3, y: 4 },
+        },
+    );
     world.insert(entity, CHealth { hp: 80 });
     world.insert(entity, CTeam { id: 1 });
     world.insert(entity, CAmmo { rounds: 25 });
@@ -633,7 +668,12 @@ fn serialize_deserialize_multiple_entities() {
     let mut world = World::new();
     for i in 0..10 {
         let entity = world.spawn();
-        world.insert(entity, CPos { pos: IVec2 { x: i, y: i * 2 } });
+        world.insert(
+            entity,
+            CPos {
+                pos: IVec2 { x: i, y: i * 2 },
+            },
+        );
         world.insert(entity, CHealth { hp: 100 - i });
     }
 
@@ -654,15 +694,22 @@ fn serialize_deserialize_multiple_entities() {
 fn serialize_blob_is_compact() {
     let mut world = World::new();
     let entity = world.spawn();
-    world.insert(entity, CPos { pos: IVec2 { x: 1, y: 1 } });
+    world.insert(
+        entity,
+        CPos {
+            pos: IVec2 { x: 1, y: 1 },
+        },
+    );
     world.insert(entity, CHealth { hp: 100 });
-    
+
     let blob = serialize_ecs_world(&world).unwrap();
     // postcard binary format should be much smaller than JSON
     let json = serde_json::to_string(&SerializedWorld {
         entities: vec![SerializedEntity {
             entity_raw: 0,
-            pos: Some(CPos { pos: IVec2 { x: 1, y: 1 } }),
+            pos: Some(CPos {
+                pos: IVec2 { x: 1, y: 1 },
+            }),
             health: Some(CHealth { hp: 100 }),
             team: None,
             ammo: None,
@@ -674,8 +721,14 @@ fn serialize_blob_is_compact() {
             memory: None,
         }],
         world_tick: 0,
-    }).unwrap();
-    assert!(blob.len() < json.len(), "binary should be smaller than JSON: {} vs {}", blob.len(), json.len());
+    })
+    .unwrap();
+    assert!(
+        blob.len() < json.len(),
+        "binary should be smaller than JSON: {} vs {}",
+        blob.len(),
+        json.len()
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -693,12 +746,22 @@ fn world_hash_empty_world() {
 fn world_hash_deterministic() {
     let mut w1 = World::new();
     let e1 = w1.spawn();
-    w1.insert(e1, CPos { pos: IVec2 { x: 3, y: 4 } });
+    w1.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 3, y: 4 },
+        },
+    );
     w1.insert(e1, CHealth { hp: 100 });
 
     let mut w2 = World::new();
     let e2 = w2.spawn();
-    w2.insert(e2, CPos { pos: IVec2 { x: 3, y: 4 } });
+    w2.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 3, y: 4 },
+        },
+    );
     w2.insert(e2, CHealth { hp: 100 });
 
     let h1 = calculate_world_hash(&w1);
@@ -710,12 +773,22 @@ fn world_hash_deterministic() {
 fn world_hash_changes_with_pos() {
     let mut w1 = World::new();
     let e1 = w1.spawn();
-    w1.insert(e1, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w1.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w1.insert(e1, CHealth { hp: 100 });
 
     let mut w2 = World::new();
     let e2 = w2.spawn();
-    w2.insert(e2, CPos { pos: IVec2 { x: 1, y: 0 } });
+    w2.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 1, y: 0 },
+        },
+    );
     w2.insert(e2, CHealth { hp: 100 });
 
     let h1 = calculate_world_hash(&w1);
@@ -727,12 +800,22 @@ fn world_hash_changes_with_pos() {
 fn world_hash_changes_with_hp() {
     let mut w1 = World::new();
     let e1 = w1.spawn();
-    w1.insert(e1, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w1.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w1.insert(e1, CHealth { hp: 100 });
 
     let mut w2 = World::new();
     let e2 = w2.spawn();
-    w2.insert(e2, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w2.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w2.insert(e2, CHealth { hp: 99 });
 
     let h1 = calculate_world_hash(&w1);
@@ -744,13 +827,23 @@ fn world_hash_changes_with_hp() {
 fn world_hash_changes_with_team() {
     let mut w1 = World::new();
     let e1 = w1.spawn();
-    w1.insert(e1, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w1.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w1.insert(e1, CHealth { hp: 100 });
     w1.insert(e1, CTeam { id: 0 });
 
     let mut w2 = World::new();
     let e2 = w2.spawn();
-    w2.insert(e2, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w2.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w2.insert(e2, CHealth { hp: 100 });
     w2.insert(e2, CTeam { id: 1 });
 
@@ -763,13 +856,23 @@ fn world_hash_changes_with_team() {
 fn world_hash_changes_with_ammo() {
     let mut w1 = World::new();
     let e1 = w1.spawn();
-    w1.insert(e1, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w1.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w1.insert(e1, CHealth { hp: 100 });
     w1.insert(e1, CAmmo { rounds: 10 });
 
     let mut w2 = World::new();
     let e2 = w2.spawn();
-    w2.insert(e2, CPos { pos: IVec2 { x: 0, y: 0 } });
+    w2.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     w2.insert(e2, CHealth { hp: 100 });
     w2.insert(e2, CAmmo { rounds: 11 });
 
@@ -782,7 +885,12 @@ fn world_hash_changes_with_ammo() {
 fn world_hash_consistent_across_calls() {
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 5, y: 5 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 5, y: 5 },
+        },
+    );
     world.insert(e, CHealth { hp: 100 });
 
     let h1 = calculate_world_hash(&world);
@@ -797,7 +905,12 @@ fn world_hash_multiple_entities() {
     let mut world = World::new();
     for i in 0..5 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i, y: 0 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 { x: i, y: 0 },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
     }
     let h = calculate_world_hash(&world);
@@ -867,7 +980,10 @@ fn persistence_manager_save_has_credits() {
     pm.set_player("p");
     pm.save_game(0, 0, 0, vec![]).unwrap();
     let (bundle, _) = pm.load_game(0).unwrap();
-    assert_eq!(bundle.inventory.credits, 1000, "hardcoded credits must be 1000");
+    assert_eq!(
+        bundle.inventory.credits, 1000,
+        "hardcoded credits must be 1000"
+    );
 }
 
 #[test]
@@ -925,7 +1041,10 @@ fn persistence_manager_list_saves_no_player_dir_errors() {
     };
     // Player directory doesn't exist yet, so list_saves should error
     let result = pm.list_saves();
-    assert!(result.is_err(), "listing saves for non-existent player dir should fail");
+    assert!(
+        result.is_err(),
+        "listing saves for non-existent player dir should fail"
+    );
 }
 
 #[test]
@@ -949,7 +1068,9 @@ fn persistence_manager_list_saves_after_save() {
 fn serialized_entity_json_roundtrip() {
     let se = SerializedEntity {
         entity_raw: 123,
-        pos: Some(CPos { pos: IVec2 { x: -1, y: 5 } }),
+        pos: Some(CPos {
+            pos: IVec2 { x: -1, y: 5 },
+        }),
         health: Some(CHealth { hp: 42 }),
         team: Some(CTeam { id: 2 }),
         ammo: Some(CAmmo { rounds: 15 }),
@@ -975,7 +1096,9 @@ fn serialized_world_json_roundtrip() {
     let sw = SerializedWorld {
         entities: vec![SerializedEntity {
             entity_raw: 7,
-            pos: Some(CPos { pos: IVec2 { x: 0, y: 0 } }),
+            pos: Some(CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            }),
             health: None,
             team: None,
             ammo: None,
@@ -1025,7 +1148,12 @@ fn serialize_deserialize_100_entities() {
     let mut world = World::new();
     for i in 0..100 {
         let entity = world.spawn();
-        world.insert(entity, CPos { pos: IVec2 { x: i, y: i * 3 } });
+        world.insert(
+            entity,
+            CPos {
+                pos: IVec2 { x: i, y: i * 3 },
+            },
+        );
         world.insert(entity, CHealth { hp: 100 + i });
         world.insert(entity, CTeam { id: (i % 3) as u8 });
         world.insert(entity, CAmmo { rounds: i * 10 });
@@ -1044,7 +1172,12 @@ fn serialize_deserialize_100_entities() {
 fn world_hash_zero_hp_entity() {
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 0, y: 0 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     world.insert(e, CHealth { hp: 0 });
     let _h = calculate_world_hash(&world);
     // Should not panic with zero HP
@@ -1054,7 +1187,12 @@ fn world_hash_zero_hp_entity() {
 fn world_hash_negative_pos() {
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: -100, y: -200 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: -100, y: -200 },
+        },
+    );
     world.insert(e, CHealth { hp: 50 });
 
     let h1 = calculate_world_hash(&world);
@@ -1067,10 +1205,20 @@ fn deserialized_entities_have_correct_component_count() {
     let mut world = World::new();
     // Entity 1: only pos
     let e1 = world.spawn();
-    world.insert(e1, CPos { pos: IVec2 { x: 1, y: 1 } });
+    world.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 1, y: 1 },
+        },
+    );
     // Entity 2: pos + health + ammo
     let e2 = world.spawn();
-    world.insert(e2, CPos { pos: IVec2 { x: 2, y: 2 } });
+    world.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 2, y: 2 },
+        },
+    );
     world.insert(e2, CHealth { hp: 50 });
     world.insert(e2, CAmmo { rounds: 20 });
 
@@ -1105,7 +1253,10 @@ fn start_replay_creates_correct_state() {
     let replay = pm.start_replay(0).unwrap();
     assert!(replay.is_replaying, "replay should start as replaying");
     assert_eq!(replay.current_tick, 0, "replay starts at tick 0");
-    assert_eq!(replay.total_ticks, 500, "total_ticks from save's world tick");
+    assert_eq!(
+        replay.total_ticks, 500,
+        "total_ticks from save's world tick"
+    );
     assert!(replay.events.is_empty(), "events start empty");
 }
 
@@ -1118,4 +1269,134 @@ fn start_replay_nonexistent_slot_fails() {
     };
     let result = pm.start_replay(0);
     assert!(result.is_err());
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mutation kill tests: replay_system via PersistencePlugin
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Helper: build an App whose schedule includes "pre_simulation" and
+/// "post_simulation" stages so PersistencePlugin::build can register its
+/// systems.  Without these stages the plugin's add_system calls are silent
+/// no-ops.
+fn app_with_persistence_stages() -> App {
+    let schedule = Schedule::default()
+        .with_stage("pre_simulation")
+        .with_stage("post_simulation");
+    let mut app = App {
+        world: World::new(),
+        schedule,
+    };
+    let plugin = PersistencePlugin::new(PathBuf::from("."));
+    plugin.build(&mut app);
+    app
+}
+
+/// Kills: `PersistencePlugin::build → ()` (miss 1)
+///        `replay_system → ()` (miss 2)
+///        `current_tick += 1  →  -= 1` (miss 6)
+///        `current_tick += 1  →  *= 1` (miss 7)
+///
+/// Spawn an entity with CReplayState at tick 0 / total 3, run one tick,
+/// assert current_tick == 1.  If plugin build is empty the system never
+/// runs (tick stays 0).  If replay_system body is empty, same.  If += is
+/// replaced with -=, tick wraps to u64::MAX.  If += is replaced with *=,
+/// 0*1 == 0 (stays 0).
+#[test]
+fn replay_system_advances_tick_from_zero() {
+    let mut app = app_with_persistence_stages();
+    let entity = app.world.spawn();
+    app.world.insert(
+        entity,
+        CReplayState {
+            is_replaying: true,
+            current_tick: 0,
+            total_ticks: 3,
+            events: vec![],
+        },
+    );
+
+    app.schedule.run(&mut app.world);
+
+    let replay = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(replay.current_tick, 1, "tick must advance from 0 to 1");
+    assert!(replay.is_replaying, "still replaying (1 < 3)");
+}
+
+/// Kills: `current_tick < total_ticks  →  == total_ticks` (miss 3)
+///        `current_tick < total_ticks  →  >  total_ticks` (miss 4)
+///
+/// With total_ticks=2: tick 0→1→2 over two runs, then a third run sees
+/// 2 < 2 = false and sets is_replaying = false.
+/// The `==` mutant only advances when tick==total, so tick 0 doesn't match
+/// and tick stays 0.  The `>` mutant never enters the branch.
+#[test]
+fn replay_system_advances_midway() {
+    let mut app = app_with_persistence_stages();
+    let entity = app.world.spawn();
+    app.world.insert(
+        entity,
+        CReplayState {
+            is_replaying: true,
+            current_tick: 0,
+            total_ticks: 2,
+            events: vec![],
+        },
+    );
+
+    // Run 1: 0 → 1
+    app.schedule.run(&mut app.world);
+    let r = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(r.current_tick, 1);
+    assert!(r.is_replaying);
+
+    // Run 2: 1 → 2 (still replaying — the else branch is checked next run)
+    app.schedule.run(&mut app.world);
+    let r = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(r.current_tick, 2);
+    assert!(
+        r.is_replaying,
+        "increment happens in this pass, is_replaying cleared next pass"
+    );
+
+    // Run 3: 2 < 2 is false → is_replaying = false
+    app.schedule.run(&mut app.world);
+    let r = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(r.current_tick, 2, "tick must not advance past total");
+    assert!(!r.is_replaying, "replay must be done when tick >= total");
+}
+
+/// Kills: `current_tick < total_ticks  →  <= total_ticks` (miss 5)
+///
+/// With total_ticks=1, run once (0→1).  Original code: 1 < 1 is false,
+/// so is_replaying = false.  The `<=` mutant would treat 1<=1 as true and
+/// advance again to 2, keeping is_replaying=true.  We assert tick==1 and
+/// is_replaying==false after one tick.
+#[test]
+fn replay_system_stops_exactly_at_total_ticks() {
+    let mut app = app_with_persistence_stages();
+    let entity = app.world.spawn();
+    app.world.insert(
+        entity,
+        CReplayState {
+            is_replaying: true,
+            current_tick: 0,
+            total_ticks: 1,
+            events: vec![],
+        },
+    );
+
+    // tick 0→1, then check 1<1 → false → is_replaying = false
+    app.schedule.run(&mut app.world);
+    let r = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(r.current_tick, 1, "tick must advance exactly once");
+    // After the increment, the *next* iteration's check (or a second
+    // schedule run) will determine is_replaying.  In the current code
+    // the update happens in one pass per entity — the first get_mut
+    // increments to 1, then the function returns.  On the *next* run,
+    // 1 < 1 is false → set is_replaying = false.
+    app.schedule.run(&mut app.world);
+    let r = app.world.get::<CReplayState>(entity).unwrap();
+    assert_eq!(r.current_tick, 1, "tick must NOT advance past total_ticks");
+    assert!(!r.is_replaying, "replay must be done");
 }

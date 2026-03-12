@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.32.0  
+**Version**: 1.33.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **39 crates** covering **~644K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, and `astraweave-quests` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **14 crates totaling ~206K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **40 crates** covering **~650K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, and `astraweave-persistence-ecs` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **13 crates totaling ~200K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -53,12 +53,13 @@ AstraWeave has completed mutation testing on **39 crates** covering **~644K LOC*
 | `astraweave-observability` | 4,108 | **29.2%** | **100%** | Full crate (91 mutants, 7 kill tests) | ✅ Complete |
 | `astraweave-embeddings` | 4,815 | **52.3%** | **100%** | Full crate (195 mutants, 2 kill tests) | ✅ Complete |
 | `astraweave-director` | 5,639 | **65.9%** | **100%** | Full crate (179 mutants, 5 kill tests) | ✅ Complete |
+| `astraweave-persistence-ecs` | 6,078 | **47.6%** | **100%** | Full crate (21 mutants, 3 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
 **Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets`, `astraweave-ipc`, `astraweave-llm-eval`, `astraweave-optimization` verified at ≥99% adjusted  
-**Total verified**: ~644K LOC (76% of codebase)  
-**Remaining**: ~206K LOC (24% of codebase) — Phases 3/4 in progress
+**Total verified**: ~650K LOC (76% of codebase)  
+**Remaining**: ~200K LOC (24% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1600,6 +1601,30 @@ All require constructing `BatchInferenceEngine` with mock LLM clients, calling `
 
 ---
 
+### 35. `astraweave-persistence-ecs` — ✅ COMPLETED (47.6% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 6,078 |
+| Tests | 138 (28 lib + 110 integration) |
+| `unsafe` blocks | **0** |
+| Mutants Tested | 21 |
+| Caught/Missed/Unviable | 10 / 7 / 4 |
+| New Tests Written | **3** |
+| Risk Score | Low |
+
+**Result**: Full-crate scan, `--in-place` mode, 21 mutants. No mutation artifact (clean git diff). All 7 misses in `lib.rs`, specifically in `PersistencePlugin::build` (1) and `replay_system` (6). 3 kill tests written exercising replay_system through ECS App plugin dispatch — all 7 misses killed.
+
+**Kill Tests (3 tests → 7/7 misses killed):**
+1. `replay_system_advances_tick_from_zero` — spawns entity with CReplayState (tick=0, total=3), runs one schedule tick, asserts current_tick==1 and is_replaying==true. Kills: `build → ()` (miss 1 — system never registered), `replay_system → ()` (miss 2 — tick stays 0), `+= with -=` (miss 6 — wraps to u64::MAX), `+= with *=` (miss 7 — 0*1 stays 0)
+2. `replay_system_advances_midway` — total_ticks=2, runs 3 schedule ticks: asserts tick=1→2→2 and is_replaying transitions from true to false on tick 3. Kills: `< with ==` (miss 3 — 0!=2 skips branch), `< with >` (miss 4 — never enters branch)
+3. `replay_system_stops_exactly_at_total_ticks` — total_ticks=1, runs 2 schedule ticks: asserts tick advances to 1 then stops, is_replaying becomes false. Kills: `< with <=` (miss 5 — 1<=1 would advance past total)
+
+**Miss Classification (7 misses → 7 killed, 0 classified):**
+All misses were testable through ECS App plugin dispatch. The `replay_system` function is private, but its effects are observable by spawning CReplayState entities and running the schedule via `PersistencePlugin`. A custom `app_with_persistence_stages()` helper creates an App with "pre_simulation" and "post_simulation" stages (not present in default App::new()) so the plugin's system registrations succeed.
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1619,7 +1644,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 31 | `astraweave-input` | 4,755 | 303 | 63.7 | ✅ **COMPLETE** (90.99% raw, 100% adj) |
 | 32 | `astraweave-materials` | 4,275 | 250 | 58.5 | ✅ **COMPLETE** (67.5% raw, 100% adj) |
 | 33 | `astraweave-embeddings` | 4,815 | 199 | 41.3 | ✅ **COMPLETE** (52.3% raw, 100% adj) |
-| 34 | `astraweave-persistence-ecs` | 6,078 | 132 | 21.7 | ECS persistence |
+| 34 | `astraweave-persistence-ecs` | 6,078 | 138 | 22.7 | ✅ **COMPLETE** (47.6% raw, 100% adj) |
 | 35 | `astract` | 7,011 | 168 | 24.0 | 1 unsafe |
 | 36 | `astraweave-pcg` | 1,969 | 59 | 30.0 | ✅ **COMPLETE** (65.3% raw, 100% adj) |
 | 37 | `astraweave-npc` | 3,661 | 113 | 30.9 | ✅ **COMPLETE** (35.8% raw, 100% adj) |
@@ -1724,8 +1749,8 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Crates mutation-tested | 29 / 53 | 25+ / 53 |
-| LOC mutation-verified | ~604K / 850K (71%) | ~600K / 850K (71%) |
+| Crates mutation-tested | 40 / 53 | 25+ / 53 |
+| LOC mutation-verified | ~650K / 850K (76%) | ~600K / 850K (71%) |
 | Tier 1 unsafe crates untested | **0** ✅ | 0 |
 | Average kill rate (tested, adj) | 99.9% | ≥97% |
 | Phase 1 (Safety-Critical) | **COMPLETE** ✅ | Complete |
