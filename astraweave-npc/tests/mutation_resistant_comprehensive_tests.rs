@@ -594,3 +594,181 @@ fn npc_profile_clone_deep_copy() {
     assert_eq!(p2.memory.facts.len(), 1);
     assert_eq!(p2.memory.facts[0], "test_fact");
 }
+
+// ========================================================================
+// MUTATION KILL TESTS — targets runtime.rs misses
+// ========================================================================
+mod mutation_kill_tests {
+    use super::*;
+    use astraweave_physics::PhysicsWorld;
+    use std::collections::HashMap;
+
+    /// Simple command sink that records all calls for assertion
+    struct TestSink {
+        moves: Vec<(u64, Vec3, f32)>,
+        says: Vec<(String, String)>,
+        shops: Vec<NpcId>,
+        guards: Vec<(Vec3, String)>,
+        quests: Vec<(NpcId, String)>,
+    }
+
+    impl TestSink {
+        fn new() -> Self {
+            Self {
+                moves: vec![],
+                says: vec![],
+                shops: vec![],
+                guards: vec![],
+                quests: vec![],
+            }
+        }
+    }
+
+    impl CommandSink for TestSink {
+        fn move_character(&mut self, body: u64, dir: Vec3, speed: f32) {
+            self.moves.push((body, dir, speed));
+        }
+        fn say(&mut self, speaker: &str, text: &str) {
+            self.says.push((speaker.into(), text.into()));
+        }
+        fn open_shop(&mut self, npc_id: NpcId) {
+            self.shops.push(npc_id);
+        }
+        fn call_guards(&mut self, pos: Vec3, reason: &str) {
+            self.guards.push((pos, reason.into()));
+        }
+        fn give_quest(&mut self, npc_id: NpcId, quest_id: &str) {
+            self.quests.push((npc_id, quest_id.into()));
+        }
+    }
+
+    /// LLM adapter that returns fixed actions
+    struct FixedPlanLlm {
+        actions: Vec<NpcAction>,
+    }
+
+    impl LlmAdapter for FixedPlanLlm {
+        fn plan_dialogue_and_behaviour(
+            &self,
+            _: &NpcProfile,
+            _: &NpcWorldView,
+            _: Option<&str>,
+        ) -> anyhow::Result<NpcPlan> {
+            Ok(NpcPlan {
+                actions: self.actions.clone(),
+            })
+        }
+    }
+
+    fn guard_profile_at(x: f32, z: f32) -> NpcProfile {
+        let mut p = make_profile(Role::Guard, "Guard");
+        p.home = [x, 0.0, z];
+        p
+    }
+
+    /// Kills: runtime.rs:124 (== → !=), :127 (< → ==, < → >), :130 (- → +, - → /)
+    #[test]
+    fn guard_patrol_close_player_moves_away() {
+        let planner = Box::new(FixedPlanLlm { actions: vec![] });
+        let mut mgr = NpcManager::new(planner);
+        let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let id = mgr.spawn_from_profile(&mut phys, guard_profile_at(1.0, 0.0));
+
+        let self_pos = Vec3::new(1.0, 0.0, 0.0);
+        let player_pos = Vec3::new(2.5, 0.0, 0.0);
+        let view = NpcWorldView::new(self_pos, 12.0).with_player(player_pos);
+        let mut views = HashMap::new();
+        views.insert(id, view);
+
+        let mut sink = TestSink::new();
+        mgr.update(1.0 / 60.0, &mut sink, &views);
+
+        assert_eq!(sink.moves.len(), 1, "guard should move away from close player");
+        let dir = sink.moves[0].1;
+        // dir = normalize(self_pos - player_pos) = normalize(-1.5, 0, 0) = (-1, 0, 0)
+        assert!(dir.x < -0.9, "guard should move in negative x, got {}", dir.x);
+        assert!(dir.z.abs() < 0.01, "z should be ~0");
+        assert!((sink.moves[0].2 - 0.6).abs() < 0.01, "speed should be 0.6");
+    }
+
+    /// Kills: runtime.rs:127 (< → <=)
+    #[test]
+    fn guard_patrol_boundary_exact_2_no_move() {
+        let planner = Box::new(FixedPlanLlm { actions: vec![] });
+        let mut mgr = NpcManager::new(planner);
+        let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let id = mgr.spawn_from_profile(&mut phys, guard_profile_at(0.0, 0.0));
+
+        let self_pos = Vec3::ZERO;
+        let player_pos = Vec3::new(2.0, 0.0, 0.0);
+        let view = NpcWorldView::new(self_pos, 12.0).with_player(player_pos);
+        let mut views = HashMap::new();
+        views.insert(id, view);
+
+        let mut sink = TestSink::new();
+        mgr.update(1.0 / 60.0, &mut sink, &views);
+
+        assert!(sink.moves.is_empty(), "guard should NOT move when player_dist == 2.0");
+    }
+
+    /// Kills: runtime.rs:124 (== → != confirmation — merchant should NOT patrol)
+    #[test]
+    fn merchant_no_patrol_close_player() {
+        let planner = Box::new(FixedPlanLlm { actions: vec![] });
+        let mut mgr = NpcManager::new(planner);
+        let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let mut prof = make_profile(Role::Merchant, "Shop");
+        prof.home = [0.0, 0.0, 0.0];
+        let id = mgr.spawn_from_profile(&mut phys, prof);
+
+        let view = NpcWorldView::new(Vec3::ZERO, 12.0).with_player(Vec3::new(1.0, 0.0, 0.0));
+        let mut views = HashMap::new();
+        views.insert(id, view);
+
+        let mut sink = TestSink::new();
+        mgr.update(1.0 / 60.0, &mut sink, &views);
+
+        assert!(sink.moves.is_empty(), "merchant should not patrol");
+    }
+
+    /// Kills: runtime.rs:179 (- → /) for both pos.x and pos.z (/ 0.0 → inf)
+    #[test]
+    fn moveto_direction_finite_matches_pos() {
+        let actions = vec![NpcAction::MoveTo {
+            pos: Vec3::new(10.0, 0.0, 5.0),
+            speed: 2.0,
+        }];
+        let planner = Box::new(FixedPlanLlm { actions });
+        let mut mgr = NpcManager::new(planner);
+        let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let prof = make_profile(Role::Civilian, "Walker");
+        let id = mgr.spawn_from_profile(&mut phys, prof);
+
+        // Add pending MoveTo via handle_player_utterance
+        let view = NpcWorldView::new(Vec3::ZERO, 12.0);
+        mgr.handle_player_utterance(id, &view, "move").unwrap();
+
+        // update() executes the pending MoveTo
+        let mut sink = TestSink::new();
+        let views = HashMap::new();
+        mgr.update(1.0 / 60.0, &mut sink, &views);
+
+        assert_eq!(sink.moves.len(), 1);
+        let dir = sink.moves[0].1;
+        assert!(dir.x.is_finite(), "dir.x should be finite, got {}", dir.x);
+        assert!(dir.z.is_finite(), "dir.z should be finite, got {}", dir.z);
+        assert!((dir.x - 10.0).abs() < 0.01, "dir.x should be 10.0, got {}", dir.x);
+        assert!((dir.z - 5.0).abs() < 0.01, "dir.z should be 5.0, got {}", dir.z);
+    }
+
+    /// Kills: runtime.rs:83 (spawn_from_profile → Default::default() returns 0)
+    #[test]
+    fn spawn_returns_nonzero_id() {
+        let planner = Box::new(FixedPlanLlm { actions: vec![] });
+        let mut mgr = NpcManager::new(planner);
+        let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
+        let prof = make_profile(Role::Civilian, "Npc1");
+        let id = mgr.spawn_from_profile(&mut phys, prof);
+        assert!(id > 0, "spawn_from_profile should return non-zero NpcId, got {}", id);
+    }
+}
