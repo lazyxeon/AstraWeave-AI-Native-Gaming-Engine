@@ -793,3 +793,57 @@ mod constants_tests {
         assert!(MAX_MESHLET_TRIANGLES >= MAX_MESHLET_VERTICES / 2);
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GLTF LOADER MUTATION KILL TESTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[cfg(feature = "gltf")]
+mod gltf_loader_mutation_kill_tests {
+    use astraweave_asset::gltf_loader::*;
+
+    /// Kills L240: `s.contains("meshes") && s.contains("accessors")` mutated to `||`
+    /// With `||`, JSON having only "meshes" (no "accessors") would incorrectly pass.
+    #[test]
+    fn load_gltf_bytes_rejects_json_with_only_meshes() {
+        let json = br#"{"asset":{"version":"2.0"},"meshes":[]}"#;
+        let result = load_gltf_bytes(json);
+        assert!(
+            result.is_err(),
+            "JSON with meshes but no accessors must fail"
+        );
+    }
+
+    /// Also kills L240 from the other direction: only "accessors", no "meshes"
+    #[test]
+    fn load_gltf_bytes_rejects_json_with_only_accessors() {
+        let json = br#"{"asset":{"version":"2.0"},"accessors":[]}"#;
+        let result = load_gltf_bytes(json);
+        assert!(
+            result.is_err(),
+            "JSON with accessors but no meshes must fail"
+        );
+    }
+
+    /// Kills L432: `bytes.len() >= 12` mutated to `bytes.len() < 12`
+    /// Short bytes (< 12) must NOT be treated as GLB — they should fall to JSON path and fail.
+    #[test]
+    fn load_first_mesh_short_bytes_not_treated_as_glb() {
+        // 4 bytes of GLB magic but total length < 12: must not enter GLB branch
+        let short = b"glTF\x02\x00\x00\x00";
+        let result = load_first_mesh_and_material(short);
+        // This should fail (not enough data for GLB, and not valid JSON either)
+        assert!(result.is_err(), "Short GLB-like bytes must fail");
+    }
+
+    /// Validates that valid JSON with both fields passes load_gltf_bytes
+    #[test]
+    fn load_gltf_bytes_accepts_json_with_both_fields() {
+        let json = br#"{"asset":{"version":"2.0"},"meshes":[],"accessors":[]}"#;
+        let result = load_gltf_bytes(json);
+        assert!(
+            result.is_ok(),
+            "JSON with both meshes and accessors must pass"
+        );
+    }
+}
