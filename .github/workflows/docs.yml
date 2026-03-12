@@ -43,23 +43,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Fetch docs LFS images
-        run: |
-          # Selective fetch via GitHub media CDN — avoids pulling all 1300+ LFS
-          # objects and the bandwidth limits that come with a full lfs checkout.
-          for f in docs/src/assets/Astraweave_logo.jpg docs/src/assets/top_series_time.png; do
-            curl -sL "https://media.githubusercontent.com/media/${{ github.repository }}/main/$f" -o "$f"
-          done
-          # Verify we got real images, not LFS pointer text
-          for f in docs/src/assets/Astraweave_logo.jpg docs/src/assets/top_series_time.png; do
-            size=$(stat --format=%s "$f")
-            if [ "$size" -lt 1000 ]; then
-              echo "::warning::$f is only ${size} bytes — may still be an LFS pointer"
-            else
-              echo "✓ $f (${size} bytes)"
-            fi
-          done
-
       - name: Install mdBook (pre-built binary)
         run: |
           curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz

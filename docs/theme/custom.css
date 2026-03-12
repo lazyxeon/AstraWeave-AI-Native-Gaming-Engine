@@ -248,12 +248,17 @@ pre::-webkit-scrollbar-thumb:hover {
     font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
     line-height: 1.03;
     letter-spacing: -0.03em;
+    color: var(--astra-ink);
 }
 
 .content .astra-landing h1 {
     margin: 1rem 0 0.8rem;
     font-size: clamp(2.8rem, 6vw, 4.9rem);
     max-width: 12ch;
+}
+
+.content .astra-landing h3 {
+    color: var(--astra-ink);
 }
 
 .astra-lead,
@@ -263,6 +268,13 @@ pre::-webkit-scrollbar-thumb:hover {
 .astra-hero__caption span {
     color: var(--astra-muted);
     line-height: 1.75;
+}
+
+.astra-proof-tile strong,
+.astra-hero__highlights span,
+.astra-hero__caption strong,
+.astra-card h3 {
+    color: var(--astra-ink);
 }
 
 .astra-note {
@@ -745,6 +757,54 @@ html.ayu .astra-landing {
     --astra-teal-deep: #5ed4c1;
     --astra-copper: #e4a06a;
     --astra-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    color: #e2dfd8;
+}
+
+/* Force text colors — mdBook theme CSS sets explicit color on h1/h2/h3/p etc.
+   which overrides the inherited color from .astra-landing. */
+html.coal .content .astra-landing h1,
+html.coal .content .astra-landing h2,
+html.coal .content .astra-landing h3,
+html.navy .content .astra-landing h1,
+html.navy .content .astra-landing h2,
+html.navy .content .astra-landing h3,
+html.ayu .content .astra-landing h1,
+html.ayu .content .astra-landing h2,
+html.ayu .content .astra-landing h3 {
+    color: #e2dfd8;
+}
+
+html.coal .content .astra-landing p,
+html.coal .content .astra-landing li,
+html.coal .content .astra-landing td,
+html.coal .content .astra-landing th,
+html.navy .content .astra-landing p,
+html.navy .content .astra-landing li,
+html.navy .content .astra-landing td,
+html.navy .content .astra-landing th,
+html.ayu .content .astra-landing p,
+html.ayu .content .astra-landing li,
+html.ayu .content .astra-landing td,
+html.ayu .content .astra-landing th {
+    color: #a8a4b0;
+}
+
+html.coal .content .astra-landing .astra-proof-tile strong,
+html.coal .content .astra-landing .astra-hero__highlights span,
+html.coal .content .astra-landing .astra-hero__caption strong,
+html.coal .content .astra-landing .astra-card h3,
+html.coal .content .astra-landing .astra-node strong,
+html.navy .content .astra-landing .astra-proof-tile strong,
+html.navy .content .astra-landing .astra-hero__highlights span,
+html.navy .content .astra-landing .astra-hero__caption strong,
+html.navy .content .astra-landing .astra-card h3,
+html.navy .content .astra-landing .astra-node strong,
+html.ayu .content .astra-landing .astra-proof-tile strong,
+html.ayu .content .astra-landing .astra-hero__highlights span,
+html.ayu .content .astra-landing .astra-hero__caption strong,
+html.ayu .content .astra-landing .astra-card h3,
+html.ayu .content .astra-landing .astra-node strong {
+    color: #e2dfd8;
 }
 
 html.coal .astra-eyebrow,
@@ -846,6 +906,28 @@ html.rust .astra-landing {
     --astra-teal-deep: #6ad6c3;
     --astra-copper: #e4a06a;
     --astra-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    color: #e8ddd4;
+}
+
+html.rust .content .astra-landing h1,
+html.rust .content .astra-landing h2,
+html.rust .content .astra-landing h3 {
+    color: #e8ddd4;
+}
+
+html.rust .content .astra-landing p,
+html.rust .content .astra-landing li,
+html.rust .content .astra-landing td,
+html.rust .content .astra-landing th {
+    color: #b0a49a;
+}
+
+html.rust .content .astra-landing .astra-proof-tile strong,
+html.rust .content .astra-landing .astra-hero__highlights span,
+html.rust .content .astra-landing .astra-hero__caption strong,
+html.rust .content .astra-landing .astra-card h3,
+html.rust .content .astra-landing .astra-node strong {
+    color: #e8ddd4;
 }
 
 html.rust .astra-eyebrow {
