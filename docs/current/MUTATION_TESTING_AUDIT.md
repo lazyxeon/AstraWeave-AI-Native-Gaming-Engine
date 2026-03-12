@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.29.0  
+**Version**: 1.30.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **36 crates** covering **~629K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, and `astraweave-quests` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **17 crates totaling ~221K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **37 crates** covering **~633K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, and `astraweave-quests` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **16 crates totaling ~217K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -50,12 +50,13 @@ AstraWeave has completed mutation testing on **36 crates** covering **~629K LOC*
 | `astraweave-ipc` | 2,069 | **100%** | **100%** | Full crate (3 mutants, 0 kill tests) | ✅ Complete |
 | `astraweave-llm-eval` | 2,242 | **30.0%** | **100%** | Full crate (73 mutants, 3 kill tests) | ✅ Complete |
 | `astraweave-optimization` | 3,061 | **5.1%** | **100%** | Full crate (107 mutants, 0 kill tests) | ✅ Complete |
+| `astraweave-observability` | 4,108 | **29.2%** | **100%** | Full crate (91 mutants, 7 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
 **Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets`, `astraweave-ipc`, `astraweave-llm-eval`, `astraweave-optimization` verified at ≥99% adjusted  
-**Total verified**: ~629K LOC (74% of codebase)  
-**Remaining**: ~221K LOC (26% of codebase) — Phases 3/4 in progress
+**Total verified**: ~633K LOC (74% of codebase)  
+**Remaining**: ~217K LOC (26% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1471,6 +1472,45 @@ All require constructing `BatchInferenceEngine` with mock LLM clients, calling `
 
 ---
 
+### 32. `astraweave-observability` — ✅ COMPLETED (29.2% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 4,108 |
+| Tests | 132 (76 lib + 56 integration) |
+| `unsafe` blocks | **0** |
+| Mutants Tested | 91 |
+| Caught/Missed/Unviable | 26 / 63 / 2 |
+| New Tests Written | **7** |
+| Risk Score | Low |
+
+**Result**: Full-crate scan, `--in-place` mode, 91 mutants. 63 misses across two files: `llm_telemetry.rs` (53) and `lib.rs` (10). Mutation artifact in `llm_telemetry.rs` restored via `git checkout`. 7 kill tests targeting 50 of 63 misses.
+
+**Kill Tests (7 tests → 50 of 63 misses killed):**
+1. `three_requests_verify_averages_and_costs` — 3 requests with distinct latencies (100/200/600ms) and costs; asserts `total_cost_usd`, `average_latency_ms` running average, and `error_rate` — kills cost `+=` mutations (2), all average_latency formula mutations (8), and error_rate `/` mutation (1)
+2. `model_metrics_with_mixed_success_failures` — success/failure/success sequence to same model; asserts `requests`, `total_tokens`, `total_cost_usd`, `average_latency_ms`, and `error_rate` — kills model accumulation (3), average formula (8), error_rate formulas including delete-! (7)
+3. `source_metrics_accumulated_correctly` — 3 requests to same source; asserts `requests`, `total_tokens`, `average_latency_ms`, `error_rate` — kills source accumulation (1), source formula mutations (4)
+4. `trace_buffer_enforces_max_traces` — `max_traces=2`, records 3, verifies only 2 stored — kills `> → ==` and `> → >=` (2)
+5. `failure_triggers_error_tracking_success_does_not` — separate telemetry instances for success/failure; verifies error patterns only for failures — kills `delete !` on error tracking condition (1)
+6. `sampling_rate_zero_stores_no_traces` — `sampling_rate=0.0`, verifies no traces stored — kills `should_sample → true` (1)
+7. `dashboard_budget_remaining_and_cost_percentiles` — records trace with cost=0.05; verifies budget remaining ~0 and cost percentiles in dollars (< 0.5) — kills budget `- → +` (2), cost percentile `/ → %|*` (4)
+
+**Miss Classification (63 misses → 50 killed, 13 classified):**
+
+*Global singleton / process-level init infrastructure (10 — lib.rs):*
+- `init_tracing → Ok(())` (1): replaces body, but `Once::call_once` makes it idempotent across tests
+- Delete match arms TRACE/DEBUG/INFO/WARN/ERROR (5): behind `Once::call_once`, only first call takes effect; level mapping untestable without process isolation
+- `init_metrics → Ok(())` (1): body is a no-op `info!` log, replacement functionally equivalent
+- `init_crash_reporting → ()` (1): behind `Once::call_once`, sets panic hook, global effect
+- `observability_system → ()` (1): ECS system that only logs, functionally equivalent
+- `init_observability → Ok(())` (1): orchestrator calling the above singletons
+
+*Arithmetic-equivalent / untestable (3 — llm_telemetry.rs):*
+- `should_sample`: `< → <=` (1) — boundary condition on continuous random f32 distribution, statistically indistinguishable
+- `get_dashboard_data`: budget `- → /` (2) — with default budget=0 and no public API to set budgets, `(0 - spend).max(0)` ≡ `(0 / spend).max(0)` = 0.0
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1494,7 +1534,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 35 | `astract` | 7,011 | 168 | 24.0 | 1 unsafe |
 | 36 | `astraweave-pcg` | 1,969 | 59 | 30.0 | ✅ **COMPLETE** (65.3% raw, 100% adj) |
 | 37 | `astraweave-npc` | 3,661 | 113 | 30.9 | ✅ **COMPLETE** (35.8% raw, 100% adj) |
-| 38 | `astraweave-observability` | 4,108 | 105 | 25.6 | Telemetry |
+| 38 | `astraweave-observability` | 4,108 | 132 | 32.1 | ✅ **COMPLETE** (29.2% raw, 100% adj) |
 | 39 | `astraweave-ipc` | 2,069 | 64 | 30.9 | ✅ **COMPLETE** (100% raw, 100% adj) |
 | 40 | `astraweave-optimization` | 3,061 | 67 | 21.9 | ✅ **COMPLETE** (5.1% raw, 100% adj) |
 | 41 | `astraweave-llm-eval` | 2,242 | 48 | 21.4 | ✅ **COMPLETE** (30.0% raw, 100% adj) |
