@@ -754,6 +754,86 @@ main:has(> .astra-landing) {
     }
 }
 
+/* ── Tables, blockquotes, and code inside astra-landing pages ── */
+.astra-landing table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--astra-line);
+    margin: 1rem 0;
+    background: var(--astra-panel);
+    box-shadow: 0 4px 14px rgba(18, 36, 48, 0.05);
+}
+
+.astra-landing table th {
+    background: var(--astra-panel-strong);
+    color: var(--astra-ink);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    padding: 0.7rem 1rem;
+    border-bottom: 2px solid var(--astra-line);
+    border-right: 1px solid var(--astra-line);
+    text-align: left;
+}
+
+.astra-landing table th:last-child {
+    border-right: none;
+}
+
+.astra-landing table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--astra-line);
+    border-right: 1px solid var(--astra-line);
+    color: var(--astra-muted);
+    font-size: 0.88rem;
+}
+
+.astra-landing table td:last-child {
+    border-right: none;
+}
+
+.astra-landing table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.astra-landing table tr:hover td {
+    background: rgba(14, 124, 116, 0.04);
+}
+
+.astra-landing table strong {
+    color: var(--astra-ink);
+    font-weight: 700;
+}
+
+.astra-landing blockquote {
+    background: rgba(14, 124, 116, 0.06);
+    border-left: 4px solid var(--astra-teal);
+    border-radius: 0 12px 12px 0;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    color: var(--astra-muted);
+}
+
+.astra-landing blockquote strong {
+    color: var(--astra-ink);
+}
+
+.astra-landing pre {
+    background: var(--astra-panel-strong);
+    border: 1px solid var(--astra-line);
+    border-radius: 12px;
+    margin: 1rem 0;
+}
+
+.astra-landing hr {
+    border: none;
+    border-top: 1px solid var(--astra-line);
+    margin: 2rem 0;
+}
+
 /* Dark theme support — Coal, Navy, Ayu */
 html.coal .astra-landing,
 html.navy .astra-landing,
