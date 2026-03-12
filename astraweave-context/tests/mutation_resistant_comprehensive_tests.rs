@@ -916,3 +916,212 @@ fn current_timestamp_reasonable() {
     assert!(ts > 1_577_836_800, "timestamp should be after 2020");
     assert!(ts < 4_102_444_800, "timestamp should be before 2100");
 }
+
+// ========================================================================
+// MUTATION KILL TESTS: ConversationHistory (history.rs)
+// ========================================================================
+
+/// Kills: `current_tokens + message_tokens` `+ with *` (L225)
+///        `current_tokens += message_tokens` `+= with *=` (L230)
+///        `current_tokens += summary_tokens` `+= with *=` (L213)
+///
+/// With max_tokens=5, adding multiple messages should truncate context.
+/// The `*` mutant on L225 keeps current_tokens=0 (0*N=0), so the break
+/// condition is never triggered — all messages included.  Similarly
+/// L230 `*=` keeps accumulator at 0.  We assert context is shorter than
+/// the full concatenation of all messages.
+#[tokio::test]
+async fn get_context_truncates_with_small_token_limit() {
+    let config = ContextConfig {
+        max_tokens: 100_000, // large — no pruning on add
+        overflow_strategy: OverflowStrategy::TruncateStart,
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config);
+
+    // Add several messages, each consuming tokens
+    for i in 0..5 {
+        history
+            .add_message(
+                Role::User,
+                format!("Message number {i} with some extra words"),
+            )
+            .await
+            .unwrap();
+    }
+
+    let full_count = history.get_recent_messages(100).len();
+    assert_eq!(full_count, 5, "all 5 messages should be stored");
+
+    // get_context with very small token limit — should NOT include all messages
+    let ctx = history.get_context(3).await.unwrap();
+
+    // The context should be much shorter than concatenating everything
+    // With the *= mutant (L230), current_tokens stays 0, ALL messages included
+    let lines: Vec<&str> = ctx.lines().collect();
+    assert!(
+        lines.len() < full_count,
+        "context with 3-token limit should not include all {} messages, got {} lines",
+        full_count,
+        lines.len()
+    );
+}
+
+/// Kills: `> with ==` on token limit check (L225)
+///        `> with >=` on token limit check (L225)
+///
+/// With a generous token limit, all messages should appear in context.
+/// The `==` mutant only breaks on exact equality, so most messages pass.
+/// The `>=` mutant is slightly more restrictive — we verify all messages
+/// are present by checking message text appears in context.
+#[tokio::test]
+async fn get_context_includes_all_when_limit_generous() {
+    let config = ContextConfig {
+        max_tokens: 100_000,
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config);
+
+    history
+        .add_message(Role::User, "Alpha".to_string())
+        .await
+        .unwrap();
+    history
+        .add_message(Role::Assistant, "Bravo".to_string())
+        .await
+        .unwrap();
+
+    let ctx = history.get_context(100_000).await.unwrap();
+    assert!(ctx.contains("Alpha"), "context should contain Alpha");
+    assert!(ctx.contains("Bravo"), "context should contain Bravo");
+}
+
+/// Kills: `total_tokens > max_tokens` `> with <` (L246)
+///        `removed_count > 0` `> with >=` (L281)
+///
+/// With sliding window size=10, adding 3 small messages should NOT trigger
+/// pruning.  The `< ` mutant would prune when tokens < max (always), so
+/// messages would be removed.  The `>=0` mutant would always increment
+/// prune_count.  We assert all messages remain and prune_count is 0.
+#[tokio::test]
+async fn no_pruning_when_under_limits() {
+    let config = ContextConfig {
+        max_tokens: 100_000,
+        sliding_window_size: 10,
+        overflow_strategy: OverflowStrategy::SlidingWindow,
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config);
+
+    for i in 0..3 {
+        history
+            .add_message(Role::User, format!("Msg {i}"))
+            .await
+            .unwrap();
+    }
+
+    let msgs = history.get_recent_messages(100);
+    assert_eq!(msgs.len(), 3, "all 3 messages should remain");
+    let metrics = history.get_metrics();
+    assert_eq!(metrics.prune_count, 0, "no pruning should have occurred");
+}
+
+/// Kills: `messages.len() > sliding_window_size` `> with >=` (L268)
+///        `message_count > sliding_window_size` `> with >=` (L248)
+///        `&& with ||` (L248)
+///
+/// Add exactly sliding_window_size messages.  With `>`, len == window
+/// does NOT prune.  With `>=`, it would prune one message.
+/// We verify all messages remain.
+#[tokio::test]
+async fn sliding_window_no_prune_at_exact_boundary() {
+    let config = ContextConfig {
+        max_tokens: 100_000,
+        sliding_window_size: 5,
+        overflow_strategy: OverflowStrategy::SlidingWindow,
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config);
+
+    for i in 0..5 {
+        history
+            .add_message(Role::User, format!("Msg {i}"))
+            .await
+            .unwrap();
+    }
+
+    let msgs = history.get_recent_messages(100);
+    assert_eq!(
+        msgs.len(),
+        5,
+        "exactly window_size messages should all remain"
+    );
+}
+
+/// Kills: `> with >=` on total_tokens > max_tokens (L246)
+///
+/// Add one message exceeding the window, verify pruning occurs and
+/// messages are removed.  With the `>` mutation to `<`, pruning would
+/// trigger backwards.
+#[tokio::test]
+async fn sliding_window_prunes_when_exceeding() {
+    let config = ContextConfig {
+        max_tokens: 100_000,
+        sliding_window_size: 3,
+        overflow_strategy: OverflowStrategy::SlidingWindow,
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config);
+
+    // Add 5 messages — should prune to 3
+    for i in 0..5 {
+        history
+            .add_message(Role::User, format!("Message {i}"))
+            .await
+            .unwrap();
+    }
+
+    let msgs = history.get_recent_messages(100);
+    assert!(
+        msgs.len() <= 3,
+        "should have pruned to <=3 messages, got {}",
+        msgs.len()
+    );
+    let metrics = history.get_metrics();
+    assert!(metrics.prune_count > 0, "pruning should have occurred");
+}
+
+/// Kills: `|| with &&` on prune_with_summarization (L291)
+///
+/// With summarization disabled and no LLM client, prune_with_summarization
+/// should fall back to prune_sliding_window.  The `&&` mutant would NOT
+/// fall back (would try to summarize without the enabled flag), potentially
+/// failing or behaving differently.
+#[tokio::test]
+async fn summarization_fallback_without_llm_client() {
+    let config = ContextConfig {
+        max_tokens: 15, // small enough to trigger pruning after a few messages
+        sliding_window_size: 3,
+        overflow_strategy: OverflowStrategy::Summarization,
+        enable_summarization: true, // enabled but no LLM client
+        ..Default::default()
+    };
+    let history = ConversationHistory::new(config); // no LLM client
+
+    // Add 5 messages — should trigger pruning via token limit
+    for i in 0..5 {
+        history
+            .add_message(Role::User, format!("FallbackMsg {i}"))
+            .await
+            .unwrap();
+    }
+
+    // Without LLM client, || branch falls back to sliding_window
+    // Messages should be pruned since total_tokens exceeds max_tokens
+    let msgs = history.get_recent_messages(100);
+    assert!(
+        msgs.len() < 5,
+        "should have pruned via fallback, got {} messages",
+        msgs.len()
+    );
+}
