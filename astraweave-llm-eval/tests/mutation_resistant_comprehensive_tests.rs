@@ -574,3 +574,104 @@ fn scoring_weights_all_one_quarter() {
     let total = w.validity + w.goal_achievement + w.safety + w.coherence;
     assert!((total - 1.0).abs() < 1e-15);
 }
+// ========================================================================
+// MUTATION KILL TESTS — target scoring function misses via evaluate()
+// ========================================================================
+mod mutation_kill_tests {
+    use super::*;
+    use astraweave_llm::LlmClient;
+    use std::sync::Arc;
+
+    /// Mock LLM returning 2 ThrowSmoke steps (non-validated types bypass tool registry check)
+    struct SmokePlanMock;
+
+    #[async_trait::async_trait]
+    impl LlmClient for SmokePlanMock {
+        async fn complete(&self, _prompt: &str) -> anyhow::Result<String> {
+            Ok(r#"{"plan_id":"test","steps":[
+                {"act":"ThrowSmoke","x":1,"y":2},
+                {"act":"Attack","target_id":1}
+            ]}"#
+            .into())
+        }
+    }
+
+    fn make_scenario(id: &str, stype: ScenarioType) -> Scenario {
+        Scenario {
+            id: id.into(),
+            scenario_type: stype,
+            description: "test".into(),
+            prompt: "test".into(),
+            expected_actions: vec![],
+            forbidden_actions: vec![],
+        }
+    }
+
+    /// Kills: score_coherence → 1.0 (line 388), == → != (line 426)
+    /// Also: evaluate_scenario overall_score arithmetic (lines 304-307)
+    /// And: evaluate >= → < (line 163), evaluate - → + (line 203)
+    #[tokio::test]
+    async fn evaluate_single_scenario_exact_scores() {
+        // SmokePlanMock: [ThrowSmoke, Attack]
+        // These pass validation catch-all (not MoveTo/Throw/CoverFire/Revive)
+        // validity = 1.0 (parsed OK)
+        // goal = 0.0 (no expected actions in match arms for ThrowSmoke/Attack)
+        // safety = 1.0 (no forbidden actions in match arms)
+        // coherence: 1 pair: ThrowSmoke→Attack, not same type, not MoveTo→CoverFire
+        //   coherence_points=0, total_checks=1 → (0/1 + 1)/2 = 0.5
+        // overall = 1.0*0.4 + 0.0*0.3 + 1.0*0.15 + 0.5*0.15 = 0.625
+        let suite = EvaluationSuite::new(vec![make_scenario("s1", ScenarioType::Combat)]);
+        let results = suite.evaluate(Arc::new(SmokePlanMock)).await;
+
+        assert_eq!(results.total_scenarios, 1);
+
+        let r = &results.scenario_results[0];
+        assert!((r.validity_score - 1.0).abs() < 0.01, "validity");
+        assert!((r.safety_score - 1.0).abs() < 0.01, "safety");
+        assert!((r.coherence_score - 0.5).abs() < 0.01,
+            "coherence should be 0.5, got {}", r.coherence_score);
+
+        let expected_overall = 1.0 * 0.4 + 0.0 * 0.3 + 1.0 * 0.15 + 0.5 * 0.15;
+        assert!((r.overall_score - expected_overall).abs() < 0.01,
+            "overall should be {}, got {}", expected_overall, r.overall_score);
+
+        // 0.625 < threshold 0.70, so failed=1, passed=0
+        assert_eq!(results.passed, 0);
+        assert_eq!(results.failed, 1);
+    }
+
+    /// Kills: average → 1.0 (line 438), average / → %,* (line 441)
+    /// Also: evaluate == → != (line 183), delete ! (line 186)
+    #[tokio::test]
+    async fn evaluate_multiple_scenarios_averages() {
+        let suite = EvaluationSuite::new(vec![
+            make_scenario("m1", ScenarioType::Combat),
+            make_scenario("m2", ScenarioType::Exploration),
+        ]);
+        let results = suite.evaluate(Arc::new(SmokePlanMock)).await;
+
+        assert_eq!(results.total_scenarios, 2);
+        // Both scenarios produce same scores → averages = individual scores
+        assert!((results.avg_validity - 1.0).abs() < 0.01);
+        assert!((results.avg_safety - 1.0).abs() < 0.01);
+        assert!((results.avg_coherence - 0.5).abs() < 0.01,
+            "avg_coherence should be 0.5, got {}", results.avg_coherence);
+
+        // results_by_type should have entries for Combat and Exploration
+        assert!(results.results_by_type.contains_key(&ScenarioType::Combat));
+        assert!(results.results_by_type.contains_key(&ScenarioType::Exploration));
+        assert!(!results.results_by_type.contains_key(&ScenarioType::Stealth));
+    }
+
+    /// Kills: score_goal_achievement → 1.0 (line 332)
+    /// With empty steps, score_goal_achievement returns 0.0.
+    /// Mutation to 1.0 would change goal_score from 0.0 to 1.0.
+    #[tokio::test]
+    async fn goal_score_zero_when_no_matching_actions() {
+        let suite = EvaluationSuite::new(vec![make_scenario("g1", ScenarioType::Combat)]);
+        let results = suite.evaluate(Arc::new(SmokePlanMock)).await;
+        let r = &results.scenario_results[0];
+        assert!((r.goal_score - 0.0).abs() < 0.01,
+            "goal should be 0.0, got {}", r.goal_score);
+    }
+}
