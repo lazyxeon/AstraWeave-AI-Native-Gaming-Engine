@@ -737,3 +737,78 @@ fn vector_store_rebuild_index_no_error() {
     // rebuild_index is a no-op but should not error
     store.rebuild_index().unwrap();
 }
+
+// ============================================================================
+// MUTATION KILL TESTS — targeting brute_force_search score formula and
+// insert_with_metadata_and_auto_prune body replacement
+// ============================================================================
+
+/// Kill: brute_force_search `_ => 1.0 / (1.0 + distance)` mutations
+/// (lines 185: /→%, /→*, +→-, +→*). Euclidean metric hits the catch-all
+/// branch. For a known distance d, score must be 1/(1+d) ∈ (0, 1).
+#[test]
+fn euclidean_search_score_formula_correct() {
+    let config = EmbeddingConfig {
+        dimensions: 2,
+        distance_metric: DistanceMetric::Euclidean,
+        ..EmbeddingConfig::default()
+    };
+    let store = VectorStore::with_config(config);
+
+    // Insert a vector at the origin and one at (3,4); distance from origin = 5.0
+    store
+        .insert("origin".into(), vec![0.0, 0.0], "origin".into())
+        .unwrap();
+    store
+        .insert("far".into(), vec![3.0, 4.0], "far".into())
+        .unwrap();
+
+    // Search from origin: "origin" has distance 0, "far" has distance 5.0
+    let results = store.search(&[0.0, 0.0], 2).unwrap();
+    assert_eq!(results.len(), 2);
+
+    // Closest result should be "origin" with score = 1/(1+0) = 1.0
+    let origin_result = results.iter().find(|r| r.vector.id == "origin").unwrap();
+    assert!(
+        (origin_result.score - 1.0).abs() < 0.01,
+        "origin score should be 1.0, got {}",
+        origin_result.score
+    );
+
+    // "far" should have score = 1/(1+5) ≈ 0.1667
+    let far_result = results.iter().find(|r| r.vector.id == "far").unwrap();
+    let expected_far = 1.0 / (1.0 + 5.0);
+    assert!(
+        (far_result.score - expected_far).abs() < 0.02,
+        "far score should be ~{:.4}, got {}",
+        expected_far,
+        far_result.score
+    );
+    // Sanity: score must be in (0, 1]
+    assert!(far_result.score > 0.0 && far_result.score < 1.0);
+}
+
+/// Kill: insert_with_metadata_and_auto_prune body → Ok(()) (line 309).
+/// The mutation replaces the entire body with Ok(()), so no vector is
+/// actually inserted. We verify the vector is retrievable after insert.
+#[test]
+fn insert_with_metadata_and_auto_prune_stores_vector() {
+    let store = VectorStore::new(2);
+    let mut meta = HashMap::new();
+    meta.insert("tag".to_string(), "test".to_string());
+    store
+        .insert_with_metadata_and_auto_prune(
+            "ap1".into(),
+            vec![1.0, 0.0],
+            "auto-pruned".into(),
+            0.5,
+            meta,
+        )
+        .unwrap();
+
+    assert_eq!(store.len(), 1, "vector should be stored");
+    let got = store.get("ap1").expect("inserted vector must be retrievable");
+    assert_eq!(got.text, "auto-pruned");
+    assert!((got.importance - 0.5).abs() < 1e-6);
+    assert_eq!(got.metadata.get("tag").unwrap(), "test");
+}
