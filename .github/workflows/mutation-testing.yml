@@ -92,7 +92,7 @@ jobs:
           fi
       
       - name: Upload mutation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutants-ecs-results
           path: mutants-ecs-results/
@@ -133,7 +133,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload mutation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutants-core-results
           path: mutants-core-results/
@@ -201,7 +201,7 @@ jobs:
           fi
       
       - name: Upload mutation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutants-ai-results
           path: mutants-ai-results/
@@ -242,7 +242,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload mutation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutants-behavior-results
           path: mutants-behavior-results/
@@ -283,7 +283,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload mutation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutants-nav-results
           path: mutants-nav-results/

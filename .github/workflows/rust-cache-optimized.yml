@@ -186,7 +186,7 @@ jobs:
         run: cargo build --locked --release -p hello_companion
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: astraweave-binaries-stable
           path: target/release/hello_companion
@@ -385,7 +385,7 @@ jobs:
           timeout 10s cargo run --release -p hello_companion || echo "Demo completed or timed out as expected"
 
       - name: Upload demo artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hello_companion-demo
           path: target/release/hello_companion
