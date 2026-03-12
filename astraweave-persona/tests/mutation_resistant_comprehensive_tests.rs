@@ -6,7 +6,12 @@
 #![allow(clippy::field_reassign_with_default)]
 
 use astraweave_persona::*;
+use astraweave_embeddings::{MockEmbeddingClient, VectorStore};
+use astraweave_llm::MockLlm;
+use astraweave_memory::Persona as BasePersona;
+use astraweave_rag::{RagConfig, RagPipeline, VectorStoreWrapper};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PersonaLlmConfig default values
@@ -1205,4 +1210,109 @@ fn load_persona_zip_invalid_file() {
     let result = astraweave_persona::load_persona_zip(path.to_str().unwrap());
     assert!(result.is_err());
     let _ = std::fs::remove_file(&path);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Mutation kill tests — LlmPersonaManager async methods
+// ═══════════════════════════════════════════════════════════════════════════
+
+async fn create_kill_test_manager() -> LlmPersonaManager {
+    let mut base_persona = BasePersona::default();
+    base_persona.voice = "mystic_oracle".to_string();
+    let llm_client = Arc::new(MockLlm);
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    let rag_pipeline = RagPipeline::new(
+        embedding_client.clone(),
+        vector_store,
+        Some(llm_client.clone()),
+        RagConfig::default(),
+    );
+    LlmPersonaManager::new(base_persona, llm_client, rag_pipeline, embedding_client)
+        .await
+        .unwrap()
+}
+
+/// Kill: get_persona_name → String::new() and → "xyzzy"
+#[tokio::test]
+async fn get_persona_name_returns_voice() {
+    let manager = create_kill_test_manager().await;
+    let name = manager.get_persona_name().await;
+    assert_eq!(name, "mystic_oracle");
+}
+
+/// Kill: evolve_personality || → && (lines 821, 825)
+/// With single keyword, || triggers evolution but && would not  
+#[tokio::test]
+async fn evolve_personality_single_keyword_triggers() {
+    let manager = create_kill_test_manager().await;
+    manager.evolve_personality("creative").await.unwrap();
+    let state = manager.get_persona_state().await;
+    let creativity = state.llm_config.personality_factors.get("creativity").unwrap();
+    assert!(*creativity > 0.7, "creativity should increase from 0.7, got {creativity}");
+}
+
+/// Kill: evolve_personality || → && — second branch (help/support/care)
+#[tokio::test]
+async fn evolve_personality_help_triggers_empathy() {
+    let manager = create_kill_test_manager().await;
+    manager.evolve_personality("help").await.unwrap();
+    let state = manager.get_persona_state().await;
+    let empathy = state.llm_config.personality_factors.get("empathy").unwrap();
+    assert!(*empathy > 0.8, "empathy should increase from 0.8, got {empathy}");
+}
+
+/// Kill: update_personality_state * → + on mood_change (line 696)
+/// After one "great" interaction, mood_change = 1 * 0.1 = 0.1
+/// With * → +, mood_change = 1 + 0.1 = 1.1 (clamped to 1.0) — detectable!
+#[tokio::test]
+async fn mood_change_uses_correct_scaling() {
+    let manager = create_kill_test_manager().await;
+    manager.generate_response("great", None).await.unwrap();
+    let state = manager.get_persona_state().await;
+    // 1 positive word * 0.1 = 0.1 mood change from 0.0 → 0.1
+    // If * → +, 1 + 0.1 = 1.1, clamped to 1.0
+    assert!(
+        state.personality_state.current_mood < 0.5,
+        "mood should be small (~0.1), got {}",
+        state.personality_state.current_mood
+    );
+}
+
+/// Kill: update_personality_state > → >= on positive/negative count comparison
+/// When positive_count == negative_count, confidence must stay unchanged.
+/// Mutation > → >= causes the first or second branch to fire on ties.
+#[tokio::test]
+async fn equal_sentiment_leaves_confidence_unchanged() {
+    let manager = create_kill_test_manager().await;
+    let initial = manager.get_persona_state().await.personality_state.confidence;
+    // "good" = 1 positive, "bad" = 1 negative → equal counts
+    manager.generate_response("good bad", None).await.unwrap();
+    let state = manager.get_persona_state().await;
+    // With >, equal counts → neither branch fires → confidence unchanged
+    // With >= on first branch → confidence += 0.02 (DETECTED)
+    // With >= on second branch → confidence -= 0.02 (DETECTED)
+    assert!(
+        (state.personality_state.confidence - initial).abs() < 0.001,
+        "equal sentiment should not change confidence: got {}, wanted {}",
+        state.personality_state.confidence,
+        initial
+    );
+}
+
+/// Kill: update_personality_state > → < on negative_count > positive_count (L716)
+/// Negative-only input must decrease confidence. Mutation > → < would skip the branch.
+#[tokio::test]
+async fn negative_input_decreases_confidence() {
+    let manager = create_kill_test_manager().await;
+    let initial = manager.get_persona_state().await.personality_state.confidence;
+    // "terrible" has 1 negative word, 0 positive → negative_count > positive_count
+    manager.generate_response("terrible", None).await.unwrap();
+    let state = manager.get_persona_state().await;
+    assert!(
+        state.personality_state.confidence < initial,
+        "negative input should decrease confidence: got {}, started {}",
+        state.personality_state.confidence,
+        initial
+    );
 }
