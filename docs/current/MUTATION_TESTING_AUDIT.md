@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.33.0  
+**Version**: 1.34.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **40 crates** covering **~650K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, and `astraweave-persistence-ecs` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **13 crates totaling ~200K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **41 crates** covering **~657K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, and `astraweave-persistence-ecs` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **12 crates totaling ~193K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -54,12 +54,13 @@ AstraWeave has completed mutation testing on **40 crates** covering **~650K LOC*
 | `astraweave-embeddings` | 4,815 | **52.3%** | **100%** | Full crate (195 mutants, 2 kill tests) | ✅ Complete |
 | `astraweave-director` | 5,639 | **65.9%** | **100%** | Full crate (179 mutants, 5 kill tests) | ✅ Complete |
 | `astraweave-persistence-ecs` | 6,078 | **47.6%** | **100%** | Full crate (21 mutants, 3 kill tests) | ✅ Complete |
+| `astract` | 7,011 | **67.1%** | **100%** | Full crate (88 mutants, 9 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
 **Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets`, `astraweave-ipc`, `astraweave-llm-eval`, `astraweave-optimization` verified at ≥99% adjusted  
-**Total verified**: ~650K LOC (76% of codebase)  
-**Remaining**: ~200K LOC (24% of codebase) — Phases 3/4 in progress
+**Total verified**: ~657K LOC (77% of codebase)  
+**Remaining**: ~193K LOC (23% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1625,6 +1626,41 @@ All misses were testable through ECS App plugin dispatch. The `replay_system` fu
 
 ---
 
+### 36. `astract` — ✅ COMPLETED (67.1% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 7,011 |
+| Tests | 176 (120 lib + 56 integration) |
+| `unsafe` blocks | **1** |
+| Mutants Tested | 88 |
+| Caught/Missed/Unviable | 55 / 27 / 6 |
+| New Tests Written | **9** |
+| Risk Score | Low |
+
+**Result**: Full-crate scan, `--in-place` mode, 88 mutants. Mutation artifact in `color_picker.rs` restored via `git checkout`. 27 misses across 4 files: `charts/mod.rs` (19), `advanced/color_picker.rs` (4), `hooks.rs` (3), `component.rs` (1). 9 kill tests targeting 23 of 27 misses, 4 classified as GUI-rendering-dependent (private fields with no getters).
+
+**Kill Tests (9 tests → 23/27 misses killed):**
+1. `calculate_nice_bounds_non_trivial_range` — min=2, max=8; asserts bounds contain input and aren't absurdly large. Kills: `+ with -` and `+ with *` on nice_max formula, `- with +` and `- with /` on range calculation
+2. `calculate_nice_bounds_equal_values_returns_spread` — min=max=5; asserts exact (4.0, 6.0) and finiteness. Kills: `< with ==` on epsilon comparison (produces NaN), boundary arithmetic
+3. `calculate_nice_bounds_asymmetric_range` — min=1, max=7; asserts bounds contain input and finiteness. Kills: additional range arithmetic mutations
+4. `transform_point_maps_correctly` — maps (5,5), (0,0), (10,10) through known bounds; asserts exact screen coordinates. Kills: `- with +` on normalization (x-min, y-min), `> with ==/</>=/` on epsilon comparisons
+5. `transform_point_degenerate_x_range` — zero x-range maps to center; asserts x=100 (midpoint). Kills: degenerate dimension handling
+6. `axis_config_with_range_sets_fields` — asserts min/max/auto_scale after with_range. Kills: `with_range → Default`
+7. `stateless_component_render_calls_closure` — uses AtomicBool to verify closure is called. Kills: `render → ()`
+8. `use_effect_runs_on_new_value_only` — runs effect 3 times with values 42/42/99; asserts counter 1/1/2. Kills: `use_effect → ()`, `!= with ==`
+9. `state_setter_call_stores_value` — sets value to 42 in frame 1, reads back in frame 2. Kills: `StateSetter::call → ()`
+
+**Miss Classification (27 misses → 23 killed, 4 classified):**
+
+*GUI-rendering-dependent, private fields with no getters (4 — color_picker.rs):*
+- `width → Default`: Field is private, no getter. Only observable through rendering width
+- `show_alpha → Default`: Private field, only observable in rendered UI
+- `show_presets → Default`: Private field, only observable in rendered UI
+- `show_hex_input → Default`: Private field, only observable in rendered UI
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1645,7 +1681,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 32 | `astraweave-materials` | 4,275 | 250 | 58.5 | ✅ **COMPLETE** (67.5% raw, 100% adj) |
 | 33 | `astraweave-embeddings` | 4,815 | 199 | 41.3 | ✅ **COMPLETE** (52.3% raw, 100% adj) |
 | 34 | `astraweave-persistence-ecs` | 6,078 | 138 | 22.7 | ✅ **COMPLETE** (47.6% raw, 100% adj) |
-| 35 | `astract` | 7,011 | 168 | 24.0 | 1 unsafe |
+| 35 | `astract` | 7,011 | 176 | 25.1 | ✅ **COMPLETE** (67.1% raw, 100% adj) |
 | 36 | `astraweave-pcg` | 1,969 | 59 | 30.0 | ✅ **COMPLETE** (65.3% raw, 100% adj) |
 | 37 | `astraweave-npc` | 3,661 | 113 | 30.9 | ✅ **COMPLETE** (35.8% raw, 100% adj) |
 | 38 | `astraweave-observability` | 4,108 | 132 | 32.1 | ✅ **COMPLETE** (29.2% raw, 100% adj) |
@@ -1749,8 +1785,8 @@ Target: All remaining Tier 3-4 crates, focused on low-density hotspots first.
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Crates mutation-tested | 40 / 53 | 25+ / 53 |
-| LOC mutation-verified | ~650K / 850K (76%) | ~600K / 850K (71%) |
+| Crates mutation-tested | 41 / 53 | 25+ / 53 |
+| LOC mutation-verified | ~657K / 850K (77%) | ~600K / 850K (71%) |
 | Tier 1 unsafe crates untested | **0** ✅ | 0 |
 | Average kill rate (tested, adj) | 99.9% | ≥97% |
 | Phase 1 (Safety-Critical) | **COMPLETE** ✅ | Complete |
