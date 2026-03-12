@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.26.0  
+**Version**: 1.27.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **33 crates** covering **~622K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, and `astraweave-quests` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **20 crates totaling ~228K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **34 crates** covering **~624K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, and `astraweave-quests` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **19 crates totaling ~226K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -47,12 +47,13 @@ AstraWeave has completed mutation testing on **33 crates** covering **~622K LOC*
 | `astraweave-quests` | 5,860 | **66.5%** | **100%** | Full crate (341 mutants, 7 kill tests) | ✅ Complete |
 | `astraweave-npc` | 3,661 | **35.8%** | **100%** | Full crate (54 mutants, 5 kill tests) | ✅ Complete |
 | `astraweave-secrets` | 1,679 | **56.3%** | **100%** | Full crate (21 mutants, 0 kill tests) | ✅ Complete |
+| `astraweave-ipc` | 2,069 | **100%** | **100%** | Full crate (3 mutants, 0 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
-**Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets` verified at ≥99% adjusted  
-**Total verified**: ~622K LOC (73% of codebase)  
-**Remaining**: ~228K LOC (27% of codebase) — Phases 3/4 in progress
+**Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets`, `astraweave-ipc` verified at ≥99% adjusted  
+**Total verified**: ~624K LOC (73% of codebase)  
+**Remaining**: ~226K LOC (27% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1377,6 +1378,24 @@ All 18 mutations are in `BossHealthBar::set_hp`, `apply_damage`, `tick`, and `dr
 
 ---
 
+### 29. `astraweave-ipc` — ✅ COMPLETED (100% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 2,069 |
+| Tests | 64 (8 lib + 56 integration) |
+| `unsafe` blocks | **0** |
+| Mutants Tested | 3 |
+| Caught/Missed/Unviable | 3 / 0 / 0 |
+| New Tests Written | **0** |
+| Risk Score | Negligible |
+
+**Result**: Full-crate scan, `--in-place` mode, 3 mutants. Perfect 100% kill rate with zero misses. Existing test suite is comprehensive for the small mutation surface.
+
+**Key Insight**: Very low mutation surface (3 mutants from 2K LOC) indicates the crate is primarily composed of type definitions, trait implementations, and message passing infrastructure with minimal branching logic — exactly the kind of code where mutation testing has limited applicability.
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1401,7 +1420,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 36 | `astraweave-pcg` | 1,969 | 59 | 30.0 | ✅ **COMPLETE** (65.3% raw, 100% adj) |
 | 37 | `astraweave-npc` | 3,661 | 113 | 30.9 | ✅ **COMPLETE** (35.8% raw, 100% adj) |
 | 38 | `astraweave-observability` | 4,108 | 105 | 25.6 | Telemetry |
-| 39 | `astraweave-ipc` | 2,069 | 57 | 27.6 | IPC layer |
+| 39 | `astraweave-ipc` | 2,069 | 64 | 30.9 | ✅ **COMPLETE** (100% raw, 100% adj) |
 | 40 | `astraweave-optimization` | 3,061 | 60 | 19.6 | Optimization passes |
 | 41 | `astraweave-llm-eval` | 2,242 | 43 | 19.2 | Eval harness |
 | 42 | `astraweave-secrets` | 1,679 | 54 | 32.2 | ✅ **COMPLETE** (56.3% raw, 100% adj) |
