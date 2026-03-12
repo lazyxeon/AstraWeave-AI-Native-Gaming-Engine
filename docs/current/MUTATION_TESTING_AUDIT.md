@@ -1,6 +1,6 @@
 # AstraWeave Mutation Testing Audit — NASA-Grade Verification Assessment
 
-**Version**: 1.35.0  
+**Version**: 1.36.0  
 **Date**: 2026-03-12  
 **Scope**: Full engine workspace (53 crates, ~850K LOC, ~35K tests)  
 **Tool**: `cargo-mutants` v26.2.0 + `nextest`
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-AstraWeave has completed mutation testing on **42 crates** covering **~664K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, and `astraweave-persistence-ecs` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **11 crates totaling ~186K LOC remain untested by mutation analysis**.
+AstraWeave has completed mutation testing on **43 crates** covering **~673K LOC** of the most critical engine subsystems — **Phase 1 (Safety-Critical) is 100% complete**, **Phase 2 (Simulation & AI) is 100% complete**, and **Phase 3/4 (Supporting Systems) is in progress** with `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, and `astraweave-persistence-ecs` verified. All 4 crates containing `unsafe` code in Tier 1 have been verified. **10 crates totaling ~177K LOC remain untested by mutation analysis**.
 
 ### Current Mutation Testing Coverage
 
@@ -56,12 +56,13 @@ AstraWeave has completed mutation testing on **42 crates** covering **~664K LOC*
 | `astraweave-persistence-ecs` | 6,078 | **47.6%** | **100%** | Full crate (21 mutants, 3 kill tests) | ✅ Complete |
 | `astract` | 7,011 | **67.1%** | **100%** | Full crate (88 mutants, 9 kill tests) | ✅ Complete |
 | `astraweave-context` | 7,407 | **76.5%** | **100%** | Full crate (75 mutants, 6 kill tests) | ✅ Complete |
+| `astraweave-rag` | 8,815 | **81.3%** | **100%** | Full crate (86 mutants, 5 kill tests) | ✅ Complete |
 
 **Phase 1 (Safety-Critical)**: 9/9 crates ✅ — ALL ≥96% raw, ALL ≥97.5% adjusted  
 **Phase 2 (Simulation & AI)**: 4/4 crates ✅ — ALL verified at ≥97.8% raw, 100% adjusted  
 **Phase 3/4 (Supporting Systems)**: 18/10+ crates ✅ — `astraweave-behavior`, `astraweave-nav`, `astraweave-security`, `astraweave-coordination`, `astraweave-scene`, `astraweave-net`, `astraweave-memory`, `astraweave-ui`, `astraweave-weaving`, `veilweaver_slice_runtime`, `astraweave-prompts`, `astraweave-cinematics`, `astraweave-input`, `astraweave-materials`, `astraweave-pcg`, `astraweave-dialogue`, `astraweave-persona`, `astraweave-quests`, `astraweave-npc`, `astraweave-secrets`, `astraweave-ipc`, `astraweave-llm-eval`, `astraweave-optimization` verified at ≥99% adjusted  
-**Total verified**: ~664K LOC (78% of codebase)  
-**Remaining**: ~186K LOC (22% of codebase) — Phases 3/4 in progress
+**Total verified**: ~673K LOC (79% of codebase)  
+**Remaining**: ~177K LOC (21% of codebase) — Phases 3/4 in progress
 
 #### Notes on astraweave-ecs
 - 401 mutants tested (excluding Kani + counting_alloc), 320 caught, 8 missed, 6 timeout, 67 unviable
@@ -1692,6 +1693,38 @@ All misses were testable through ECS App plugin dispatch. The `replay_system` fu
 
 ---
 
+### 38. `astraweave-rag` — ✅ COMPLETED (81.3% raw / 100% adjusted)
+
+| Metric | Value |
+|--------|-------|
+| LOC | 8,815 |
+| Tests | 288 (82 lib + 206 integration) |
+| `unsafe` blocks | **0** |
+| Mutants Tested | 86 |
+| Caught/Missed/Unviable | 61 / 14 / 11 |
+| New Tests Written | **5** |
+| Risk Score | Low |
+
+**Result**: Full-crate scan, `--in-place` mode, 86 mutants. Mutation artifact in `forgetting.rs` restored via `git checkout`. 14 misses across 2 files: `forgetting.rs` (13), `consolidation.rs` (1). 5 kill tests targeting 11 of 14 misses, 3 classified as equivalent/dead code.
+
+**Kill Tests (5 tests → 11/14 misses killed):**
+1. `decay_modifier_formula_importance_matters` — two memories with different importance (0.9 vs 0.1), old timestamps; asserts high-importance retains more strength. Kills: L143 `+ with *` (inverts decay modifier) and `* with +` (distorts formula)
+2. `should_forget_boundary_at_threshold` — memory with strength exactly at min_importance_threshold (1.0); asserts retention. Kills: L192 `< with <=` (off-by-one forgets at boundary)
+3. `should_forget_boundary_at_max_age` — memory aged exactly max_memory_age seconds; asserts retention. Kills: L198 `> with >=` (off-by-one forgets at boundary)
+4. `strengthen_memory_adds_boost` — decayed memory strengthened with 0.3 boost; asserts exact increase. Kills: L208 `+ with -` (weakens instead of strengthening), `+ with *` (multiplies instead of adding)
+5. `statistics_weak_count_and_average_strength` — strong memories above threshold; asserts weak_memories=0 and average_strength=1.0. Kills: L250 `< with ==`/`< with >`/`< with <=` (miscounts weak), L251 `+= with -=` (negative sum), `+= with *=` (zero product)
+
+**Miss Classification (14 misses → 11 killed, 3 classified):**
+
+*Equivalent mutant (1 — consolidation.rs):*
+- L182 `|| with &&` in `calculate_similarity`: When one input is empty and the other isn't, common_words=0 and total_unique_words=other.len(), result=0.0 — identical to early return 0.0
+
+*Dead code — private function never called (2 — forgetting.rs):*
+- L176 `should_forget → true`: `#[allow(dead_code)]` private wrapper around `should_forget_static`, never invoked
+- L176 `should_forget → false`: Same dead code wrapper
+
+---
+
 ## PRIORITY TIER 4 — LOW (Specialized / High-Density)
 
 These crates are either small, have high test density, or handle non-critical functionality.
@@ -1703,7 +1736,7 @@ These crates are either small, have high test density, or handle non-critical fu
 | 23 | `astraweave-asset` | 10,591 | 431 | 40.7 | Asset loading |
 | 24 | `astraweave-dialogue` | 6,848 | 222 | 32.4 | ✅ **COMPLETE** (92.5% raw, 100% adj) |
 | 25 | `astraweave-context` | 7,407 | 300 | 40.5 | ✅ **COMPLETE** (76.5% raw, 100% adj) |
-| 26 | `astraweave-rag` | 8,815 | 235 | 26.7 | RAG pipeline |
+| 26 | `astraweave-rag` | 8,815 | 288 | 32.7 | ✅ **COMPLETE** (81.3% raw, 100% adj) |
 | 27 | `astraweave-cinematics` | 4,917 | 335 | 68.2 | ✅ **COMPLETE** (99.12% raw, 100% adj) |
 | 28 | `astraweave-quests` | 5,860 | 227 | 38.7 | ✅ **COMPLETE** (66.5% raw, 100% adj) |
 | 29 | `astraweave-director` | 5,639 | 187 | 33.2 | ✅ **COMPLETE** (65.9% raw, 100% adj) |
