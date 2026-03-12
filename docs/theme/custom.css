@@ -539,6 +539,13 @@ main:has(> .astra-landing) {
     padding: 1.5rem;
 }
 
+.astra-card-icon {
+    width: 36px;
+    height: 36px;
+    color: var(--astra-teal);
+    opacity: 0.85;
+}
+
 .astra-kicker {
     display: inline-flex;
     color: var(--astra-copper);

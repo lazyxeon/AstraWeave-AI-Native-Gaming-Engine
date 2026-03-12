@@ -5,10 +5,9 @@
       <span class="astra-eyebrow">MIT licensed and AI-native</span>
       <h1>Build worlds where intelligent agents are a core system, not an afterthought.</h1>
       <p class="astra-lead">
-        AstraWeave is a free, MIT-licensed Rust game engine for developers who need
-        deterministic simulation, tool-validated AI behavior, and evidence-backed performance.
-        Its core loop is built around perception, reasoning, planning, validation, and action,
-        so large-scale agent logic can live inside the engine instead of fighting against it.
+        A free, MIT-licensed Rust game engine where AI agents are a first-class runtime system.
+        Deterministic simulation, tool-validated behavior, and Criterion-backed performance &mdash;
+        inspectable, reproducible, and open.
       </p>
       <div class="astra-actions">
         <a class="astra-button astra-button--primary" href="./architecture/overview.md">Explore the architecture</a>
@@ -19,10 +18,7 @@
         <span class="astra-meta-badge">Free to use, fork, and modify</span>
         <span class="astra-meta-badge">Built for engine developers</span>
       </div>
-      <p class="astra-note">
-        Open documentation, desktop-first workflows, extensive examples, and a verification
-        posture built around tests, Miri, Kani, and deterministic replay validation.
-      </p>
+
     </div>
     <div class="astra-hero__visual">
       <div class="astra-hero__frame">
@@ -30,16 +26,12 @@
           <img class="astra-hero__image" src="./assets/Astraweave_logo.jpg" alt="AstraWeave nebula logo">
         </div>
         <div class="astra-hero__caption">
-          <strong>Engine scope at a glance</strong>
-          <span>
-            AstraWeave is an open MIT-licensed engine for deterministic, agent-heavy games. The
-            goal of this front page is practical orientation: show the identity, prove the claims,
-            and move you quickly into the parts of the workspace you can build on.
-          </span>
+          <strong>Scope</strong>
+          <span>Deterministic ECS, AI planning and validation, replay-safe simulation.</span>
           <div class="astra-hero__highlights" aria-label="Hero highlights">
-            <span>Deterministic ECS and replay-safe simulation</span>
-            <span>AI planning, validation, and runtime tooling</span>
-            <span>Benchmarks, docs, and contribution paths up front</span>
+            <span>12,700+ agents at 60 FPS</span>
+            <span>977 Miri tests, 0 undefined behavior</span>
+            <span>71+ Kani proof harnesses</span>
           </div>
         </div>
       </div>
@@ -69,17 +61,13 @@
   </section>
   <section class="astra-section" id="paths">
     <div class="astra-section-heading astra-section-heading--wide">
-      <span class="astra-eyebrow">Start in the docs tree</span>
-      <h2>The homepage now maps directly to the documentation structure behind it.</h2>
-      <p>
-        If you prefer navigating by documentation area instead of landing-page copy, start here.
-        These paths mirror the mdBook sidebar so the handoff from homepage to reference material is direct.
-      </p>
+      <span class="astra-eyebrow">Quick navigation</span>
+      <h2>Jump straight to the area you need.</h2>
     </div>
     <div class="astra-grid astra-grid--three">
       <article class="astra-card">
         <span class="astra-kicker">Getting started</span>
-        <h3>Boot the workspace and get a first system running.</h3>
+        <h3>Set up the workspace and run your first system.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>Quick start</span><a href="./getting-started/quick-start.md">Open quick start</a></li>
           <li><span>Installation</span><a href="./getting-started/installation.md">Install dependencies</a></li>
@@ -88,7 +76,7 @@
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Architecture</span>
-        <h3>Understand the runtime model before touching code.</h3>
+        <h3>Understand the runtime model.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>Overview</span><a href="./architecture/overview.md">Read architecture overview</a></li>
           <li><span>AI-native design</span><a href="./architecture/ai-native.md">Inspect AI-native design</a></li>
@@ -97,7 +85,7 @@
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Core systems</span>
-        <h3>Jump into the engine subsystems that define actual capability.</h3>
+        <h3>Explore the engine subsystems.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>AI system</span><a href="./core-systems/ai/index.md">Open AI systems</a></li>
           <li><span>Physics and fluids</span><a href="./core-systems/physics.md">Inspect simulation systems</a></li>
@@ -106,7 +94,7 @@
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Examples and performance</span>
-        <h3>See working demos, benchmarks, and optimization guidance.</h3>
+        <h3>Demos, benchmarks, and optimization.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>Examples</span><a href="./examples/index.md">Browse examples</a></li>
           <li><span>Benchmarks</span><a href="./performance/benchmarks.md">Open benchmark dashboard</a></li>
@@ -115,7 +103,7 @@
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Engine development</span>
-        <h3>Contribute, build from source, and follow the repo workflow.</h3>
+        <h3>Contribute and build from source.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>Contributing</span><a href="./dev/contributing.md">Open contribution guide</a></li>
           <li><span>Building</span><a href="./dev/building.md">Build from source</a></li>
@@ -124,7 +112,7 @@
       </article>
       <article class="astra-card">
         <span class="astra-kicker">API and reference</span>
-        <h3>Use the API index when you already know what subsystem you need.</h3>
+        <h3>Subsystem APIs and crate documentation.</h3>
         <ul class="astra-link-list astra-link-list--stacked">
           <li><span>API overview</span><a href="./api/index.md">Open API reference</a></li>
           <li><span>Crate map</span><a href="./reference/crates.md">Browse crate documentation</a></li>
@@ -136,71 +124,62 @@
   <section class="astra-section" id="proof">
     <div class="astra-section-heading">
       <span class="astra-eyebrow">Why AstraWeave</span>
-      <h2>Three reasons developers can trust the claims here.</h2>
-      <p>
-        The case for AstraWeave is not branding or speculation. It is the combination of
-        AI-native architecture, deterministic simulation, open inspection, and measurable
-        engineering rigor across the stack.
-      </p>
+      <h2>Architecture, safety, and performance you can verify.</h2>
     </div>
     <div class="astra-grid astra-grid--three">
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 22c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="14" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><circle cx="26" cy="14" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><line x1="8.5" y1="14" x2="13" y2="12" stroke="currentColor" stroke-width="1" opacity=".35"/><line x1="23.5" y1="14" x2="19" y2="12" stroke="currentColor" stroke-width="1" opacity=".35"/></svg>
         <span class="astra-kicker">AI-first architecture</span>
-        <h3>Perception to action is part of the engine contract.</h3>
+        <h3>Perception &rarr; reasoning &rarr; planning &rarr; action, built into the runtime.</h3>
         <p>
-          World snapshots, plan intents, tool validation, behavior trees, GOAP, utility logic,
-          and LLM-backed planning all plug into a deterministic runtime loop instead of living in
-          disconnected gameplay scripts.
+          World snapshots, plan intents, tool validation, behavior trees, GOAP, and LLM-backed
+          planning all plug into a deterministic loop.
         </p>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 16l2.5 2.5L19.5 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="3" x2="16" y2="7" stroke="currentColor" stroke-width="1.2" opacity=".5"/><line x1="16" y1="25" x2="16" y2="29" stroke="currentColor" stroke-width="1.2" opacity=".5"/><line x1="3" y1="16" x2="7" y2="16" stroke="currentColor" stroke-width="1.2" opacity=".5"/><line x1="25" y1="16" x2="29" y2="16" stroke="currentColor" stroke-width="1.2" opacity=".5"/></svg>
         <span class="astra-kicker">Deterministic and safe</span>
-        <h3>Built for replay validation, anti-cheat integrity, and reproducibility.</h3>
+        <h3>Bit-identical replay, validator-gated actions, and formal verification.</h3>
         <p>
-          The engine emphasizes bit-identical replay, validator-gated actions, and memory-safety
-          verification. Core unsafe code paths have already been exercised under Miri, with Kani
-          proofs backing critical invariants in the ECS, math, core, and SDK layers.
+          Core unsafe paths are exercised under Miri. Kani proofs back critical ECS, math,
+          and SDK invariants. Replay validation is built in, not bolted on.
         </p>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="18" width="5" height="10" rx="1" fill="currentColor" opacity=".25"/><rect x="11" y="12" width="5" height="16" rx="1" fill="currentColor" opacity=".4"/><rect x="18" y="8" width="5" height="20" rx="1" fill="currentColor" opacity=".55"/><rect x="25" y="4" width="5" height="24" rx="1" fill="currentColor" opacity=".7"/><line x1="4" y1="29" x2="30" y2="29" stroke="currentColor" stroke-width="1" opacity=".3"/></svg>
         <span class="astra-kicker">Benchmarked subsystems</span>
-        <h3>Performance claims connect back to current benchmark reports.</h3>
+        <h3>Every performance claim links to a reproducible Criterion measurement.</h3>
         <p>
-          ECS world creation, character movement, simulation tick costs, rendering frame time,
-          SIMD math throughput, and high-agent AI validation are all documented with specific
-          measurements instead of broad claims about being fast or scalable.
+          ECS, AI planning, physics, rendering frame times, and SIMD throughput are all
+          measured with specific numbers, not broad adjectives.
         </p>
       </article>
     </div>
     <div class="astra-band">
       <div class="astra-section-heading astra-section-heading--compact">
         <span class="astra-eyebrow">Engine loop</span>
-        <h2>Perception, reasoning, planning, validation, action.</h2>
-        <p>
-          The engine's differentiator is structural. Agents observe the world, generate plans,
-          validate each available tool or action, and only then mutate simulation state.
-        </p>
+        <h2>Perception &rarr; reasoning &rarr; planning &rarr; validation &rarr; action.</h2>
       </div>
       <div class="astra-flow">
         <div class="astra-node">
           <strong>Perception</strong>
-          <span>World snapshots built from deterministic ECS state and environment context.</span>
+          <span>World snapshots from deterministic ECS state.</span>
         </div>
         <div class="astra-node">
           <strong>Reasoning</strong>
-          <span>Behavior trees, utility systems, GOAP, or LLM-backed logic interpret the current state.</span>
+          <span>Behavior trees, utility systems, GOAP, or LLM logic.</span>
         </div>
         <div class="astra-node">
           <strong>Planning</strong>
-          <span>Plan intents and action sequences are assembled with explicit costs, priorities, and fallbacks.</span>
+          <span>Action sequences with costs, priorities, and fallbacks.</span>
         </div>
         <div class="astra-node">
           <strong>Validation</strong>
-          <span>Cooldowns, LOS, pathing, and sandbox rules constrain what the engine will actually execute.</span>
+          <span>Cooldowns, LOS, pathing, and sandbox constraints.</span>
         </div>
         <div class="astra-node">
           <strong>Action</strong>
-          <span>Approved commands flow back into simulation, physics, audio, rendering, and UI systems.</span>
+          <span>Approved commands flow into simulation, physics, and rendering.</span>
         </div>
       </div>
     </div>
@@ -209,19 +188,15 @@
     <div class="astra-section-heading astra-section-heading--wide">
       <span class="astra-eyebrow">What ships today</span>
       <h2>A focused stack for intelligent, simulation-heavy games.</h2>
-      <p>
-        AstraWeave is strongest when the game depends on believable NPCs, systemic simulation,
-        deterministic networking, and a codebase developers can actually inspect, modify, and
-        embed under an MIT license.
-      </p>
     </div>
     <div class="astra-grid astra-grid--three">
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="4" fill="currentColor" opacity=".4"/><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3,3"/><circle cx="6" cy="10" r="2" fill="currentColor" opacity=".25"/><circle cx="26" cy="10" r="2" fill="currentColor" opacity=".25"/><circle cx="6" cy="22" r="2" fill="currentColor" opacity=".25"/><circle cx="26" cy="22" r="2" fill="currentColor" opacity=".25"/><line x1="8" y1="10" x2="12" y2="14" stroke="currentColor" stroke-width="1" opacity=".3"/><line x1="24" y1="10" x2="20" y2="14" stroke="currentColor" stroke-width="1" opacity=".3"/><line x1="8" y1="22" x2="12" y2="18" stroke="currentColor" stroke-width="1" opacity=".3"/><line x1="24" y1="22" x2="20" y2="18" stroke="currentColor" stroke-width="1" opacity=".3"/></svg>
         <span class="astra-kicker">AI orchestration</span>
         <h3>Six validated modes plus hybrid arbiters.</h3>
         <p>
-          Classical planners, behavior trees, utility logic, LLM orchestration, ensemble patterns,
-          and hybrid arbiters let teams mix fast deterministic control with richer strategic reasoning.
+          Classical planners, behavior trees, utility logic, LLM orchestration,
+          ensemble patterns, and hybrid arbiters.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./architecture/ai-native.md">AI-native design</a>
@@ -229,11 +204,12 @@
         </div>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="10" height="10" rx="2" fill="currentColor" opacity=".3"/><rect x="18" y="4" width="10" height="10" rx="2" fill="currentColor" opacity=".2"/><rect x="4" y="18" width="10" height="10" rx="2" fill="currentColor" opacity=".2"/><rect x="18" y="18" width="10" height="10" rx="2" fill="currentColor" opacity=".4"/><line x1="14" y1="9" x2="18" y2="9" stroke="currentColor" stroke-width="1" opacity=".4"/><line x1="9" y1="14" x2="9" y2="18" stroke="currentColor" stroke-width="1" opacity=".4"/><line x1="23" y1="14" x2="23" y2="18" stroke="currentColor" stroke-width="1" opacity=".4"/></svg>
         <span class="astra-kicker">Deterministic ECS</span>
         <h3>Ordered simulation for replay, tooling, and scale.</h3>
         <p>
-          Archetype storage, system staging, entity iteration guarantees, and event channels form a
-          reproducible simulation backbone designed for agent-heavy worlds.
+          Archetype storage, system staging, iteration guarantees, and event channels
+          form a reproducible simulation backbone.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./architecture/ecs.md">ECS architecture</a>
@@ -241,11 +217,11 @@
         </div>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="8" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="24" x2="26" y2="24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="15" r="2" fill="currentColor" opacity=".3"/><circle cx="20" cy="15" r="2" fill="currentColor" opacity=".3"/><line x1="14" y1="15" x2="18" y2="15" stroke="currentColor" stroke-width="1" opacity=".3"/></svg>
         <span class="astra-kicker">Rendering</span>
-        <h3>wgpu-based rendering tuned for real engine workloads.</h3>
+        <h3>wgpu-based rendering with real engine workloads.</h3>
         <p>
-          PBR materials, clustered lighting, GPU skinning, post-processing, LOD tooling, and
-          rendering benchmarks make the visual stack credible for actual game prototypes and showcases.
+          PBR materials, clustered lighting, GPU skinning, post-processing, and LOD tooling.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./core-systems/rendering.md">Rendering systems</a>
@@ -253,11 +229,12 @@
         </div>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 5v6M16 21v6" stroke="currentColor" stroke-width="1.2" opacity=".4"/><path d="M5 16h6M21 16h6" stroke="currentColor" stroke-width="1.2" opacity=".4"/><path d="M10 22l3-3M19 13l3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         <span class="astra-kicker">Physics and movement</span>
-        <h3>Character control, spatial hashing, fluids, cloth, and more.</h3>
+        <h3>Character control, spatial hashing, fluids, and more.</h3>
         <p>
-          AstraWeave wraps robust simulation systems around gameplay needs: collision, character
-          motion, destructibles, ragdolls, vehicles, gravity zones, and high-coverage fluid simulation.
+          Collision, character motion, destructibles, ragdolls, vehicles, gravity zones,
+          and fluid simulation.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./core-systems/physics.md">Physics</a>
@@ -265,11 +242,11 @@
         </div>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><polygon points="16,4 28,12 28,24 16,28 4,24 4,12" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="4" x2="16" y2="28" stroke="currentColor" stroke-width="1" opacity=".25"/><line x1="4" y1="12" x2="28" y2="12" stroke="currentColor" stroke-width="1" opacity=".25"/><circle cx="16" cy="16" r="2" fill="currentColor" opacity=".4"/></svg>
         <span class="astra-kicker">Navigation and world systems</span>
         <h3>Navmesh, terrain, scene streaming, and gameplay layers.</h3>
         <p>
-          Terrain, scene partitioning, procedural generation, navigation meshes, crafting, quests,
-          and dialogue systems give the engine enough surface area to support actual vertical slices.
+          Terrain generation, navigation meshes, crafting, quests, dialogue, and procedural content.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./core-systems/navigation.md">Navigation</a>
@@ -277,11 +254,11 @@
         </div>
       </article>
       <article class="astra-card">
+        <svg class="astra-card-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M10 8h12a2 2 0 012 2v12a2 2 0 01-2 2H10a2 2 0 01-2-2V10a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 14l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="4" y1="12" x2="8" y2="12" stroke="currentColor" stroke-width="1.2" opacity=".4"/><line x1="4" y1="16" x2="8" y2="16" stroke="currentColor" stroke-width="1.2" opacity=".4"/><line x1="4" y1="20" x2="8" y2="20" stroke="currentColor" stroke-width="1.2" opacity=".4"/></svg>
         <span class="astra-kicker">Tooling and integration</span>
-        <h3>Examples, editor work, and a C ABI for embedding.</h3>
+        <h3>Example suite, editor tooling, and a C ABI for embedding.</h3>
         <p>
-          The workspace includes a large example suite, tooling for editor workflows, and a stable C SDK
-          layer for teams that need to embed AstraWeave systems into a broader stack.
+          A large example suite, editor workflows, and a stable C SDK layer.
         </p>
         <div class="astra-chip-row">
           <a class="astra-chip" href="./examples/index.md">Examples</a>
@@ -294,10 +271,7 @@
     <div class="astra-split">
       <article class="astra-card astra-card--panel">
         <span class="astra-kicker">Evidence-backed metrics</span>
-        <h3>Metrics tied to the current codebase.</h3>
-        <p>
-          The right way to present AstraWeave is with the figures the codebase can actually support today.
-        </p>
+        <h3>Current measurements from the codebase.</h3>
         <ul class="astra-list">
           <li><span>Agent capacity at 60 FPS</span><strong>12,700+</strong></li>
           <li><span>AI validation throughput</span><strong>6.48M checks/sec</strong></li>
@@ -376,12 +350,7 @@
     <div class="astra-split astra-split--offset">
       <article class="astra-card astra-card--panel">
         <span class="astra-kicker">Quality posture</span>
-        <h3>Verification, testing, and measurement are part of the product story.</h3>
-        <p>
-          AstraWeave's coverage numbers are not artificially inflated. Large GPU and async subsystems lower the
-          weighted average, but high-value core crates show strong line coverage and extensive mutation, Miri,
-          and proof-based validation.
-        </p>
+        <h3>Verification and testing across the stack.</h3>
         <ul class="astra-list">
           <li><span>Weighted line coverage</span><strong>59.3% across measured crates</strong></li>
           <li><span>High-coverage crates</span><strong>14 crates at 85%+</strong></li>
@@ -393,12 +362,7 @@
       </article>
       <article class="astra-card astra-card--panel">
         <span class="astra-kicker">Developer routes</span>
-        <h3>Pick an entry point and go straight to implementation.</h3>
-        <p>
-          This homepage is meant to work like a front door, not a dead-end banner. The fastest next step depends on
-          whether you care about architecture, implementation detail, benchmarking, contribution workflow, or getting
-          the workspace running locally.
-        </p>
+        <h3>Pick an entry point.</h3>
         <ul class="astra-link-list">
           <li><span>System design</span><a href="./architecture/overview.md">Open architecture overview</a></li>
           <li><span>Performance data</span><a href="./performance/benchmarks.md">Open benchmarks</a></li>
@@ -413,44 +377,39 @@
   <section class="astra-section" id="audiences">
     <div class="astra-section-heading astra-section-heading--wide">
       <span class="astra-eyebrow">Use cases</span>
-      <h2>Four kinds of developer work this engine already supports well.</h2>
-      <p>
-        AstraWeave is not trying to be every engine for every project. It is most credible where agent behavior,
-        deterministic systems, and validation-heavy runtime guarantees are central to the game and the team wants
-        source-level control over the stack.
-      </p>
+      <h2>Where AstraWeave fits best.</h2>
     </div>
     <div class="astra-grid astra-grid--four">
       <article class="astra-card">
         <span class="astra-kicker">RPGs and immersive sims</span>
         <h3>Companions, directors, and systemic encounters.</h3>
         <p>
-          The engine is well-suited for projects where companions, enemies, or world systems need to observe,
-          plan, and react with more structure than state-machine scripting usually allows.
+          Projects where NPCs need to observe, plan, and react with more depth than
+          state-machine scripting allows.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Server-authoritative multiplayer</span>
         <h3>Validation and replayability matter.</h3>
         <p>
-          Deterministic simulation and tool-gated actions make AstraWeave a strong fit for projects that need
-          anti-cheat discipline, reproducibility, or replay validation.
+          Deterministic simulation and tool-gated actions for anti-cheat,
+          reproducibility, and replay validation.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Research and prototyping</span>
         <h3>Benchmarkable AI-native architecture.</h3>
         <p>
-          If the point is to test agent scale, planning strategies, orchestration modes, or hybrid AI control under
-          measurable conditions, this workspace already has the right instrumentation story.
+          Test agent scale, planning strategies, and hybrid AI control
+          under measurable conditions.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Embedded engine teams</span>
         <h3>Rust core with a C ABI.</h3>
         <p>
-          The SDK and modular crate structure make it possible to adopt focused subsystems instead of committing to
-          the whole stack at once.
+          Adopt focused subsystems through the modular crate structure
+          instead of committing to the whole stack.
         </p>
       </article>
     </div>
@@ -458,62 +417,49 @@
   <section class="astra-section" id="lineages">
     <div class="astra-section-heading astra-section-heading--wide">
       <span class="astra-eyebrow">Design lineages</span>
-      <h2>The kinds of games AstraWeave could help realize more fully.</h2>
-      <p>
-        This engine is a strong fit for rights-holder ports of classic systemic games, or for new
-        original projects inspired by the same design space. The goal here is not to reuse protected
-        IP without permission, but to show the kinds of simulation-heavy games that benefit from
-        AstraWeave's runtime model.
-      </p>
+      <h2>Games this engine could help realize.</h2>
     </div>
     <div class="astra-grid astra-grid--three">
       <article class="astra-card">
         <span class="astra-kicker">Colony and world simulation</span>
-        <h3>In the design lineage of Dwarf Fortress or RimWorld.</h3>
+        <h3>In the lineage of Dwarf Fortress or RimWorld.</h3>
         <p>
-          Deep agent autonomy, world-state memory, logistics, faction pressure, and emergent story
-          generation map naturally onto AstraWeave's perception, planning, and deterministic simulation layers.
+          Agent autonomy, world-state memory, logistics, and emergent story generation.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">4X and grand strategy</span>
-        <h3>In the design lineage of Civilization or Crusader Kings.</h3>
+        <h3>In the lineage of Civilization or Crusader Kings.</h3>
         <p>
-          Multi-agent diplomacy, simulation turn resolution, advisor systems, strategic planners,
-          and explainable AI behavior are exactly the kinds of workloads this architecture can support well.
+          Multi-agent diplomacy, advisor systems, strategic planners, and explainable AI.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Tactical command games</span>
-        <h3>In the design lineage of X-COM, Jagged Alliance, or Battle Brothers.</h3>
+        <h3>In the lineage of X-COM or Battle Brothers.</h3>
         <p>
-          Tool validation, cover awareness, action planning, morale systems, and replay-safe combat
-          loops make AstraWeave a good substrate for modern tactical simulation and squad AI.
+          Tool validation, cover awareness, action planning, and replay-safe combat loops.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Systemic sandboxes</span>
-        <h3>In the design lineage of Kenshi or Mount and Blade.</h3>
+        <h3>In the lineage of Kenshi or Mount and Blade.</h3>
         <p>
-          Large numbers of autonomous actors, persistent world consequences, combat behaviors,
-          navigation, and faction simulation benefit from an engine where AI is part of the core loop.
+          Large numbers of autonomous actors with persistent world consequences.
         </p>
       </article>
       <article class="astra-card">
         <span class="astra-kicker">Immersive sims and party RPGs</span>
-        <h3>In the design lineage of Ultima Underworld, Deus Ex, or Dragon Age.</h3>
+        <h3>In the lineage of Deus Ex or Dragon Age.</h3>
         <p>
-          Companion decision-making, quest-state reactivity, systemic encounters, dialogue-aware
-          behaviors, and director-style orchestration all become easier when runtime reasoning is explicit.
+          Companion decisions, quest reactivity, systemic encounters, and director-style orchestration.
         </p>
       </article>
       <article class="astra-card">
-        <span class="astra-kicker">Rights-holder remakes and successors</span>
-        <h3>Best used for licensed ports or original games built in the same spirit.</h3>
+        <span class="astra-kicker">Rights-holder remakes</span>
+        <h3>Licensed ports or original successors.</h3>
         <p>
-          AstraWeave can help teams rebuild ambitious systemic designs as they were imagined, but only
-          where the team owns the IP, holds the necessary rights, or is making an original work rather than
-          a derivative one.
+          Rebuild ambitious systemic designs with modern AI-native architecture.
         </p>
       </article>
     </div>
@@ -521,14 +467,10 @@
   <section class="astra-cta">
     <div>
       <span class="astra-eyebrow">Next step</span>
-      <h2>Build the workspace, inspect the engine, and decide from evidence.</h2>
-      <p>
-        Read the architecture, inspect the benchmarks, clone the repository, or move straight into setup. The landing
-        page is designed to get developers into the real work quickly instead of trapping them in overview copy.
-      </p>
+      <h2>Clone, build, and decide from evidence.</h2>
       <p class="astra-note astra-note--light">
-        AstraWeave is free and MIT licensed. If the architecture fits your project, you can evaluate it in depth,
-        adopt pieces of it, or contribute back without platform lock-in.
+        AstraWeave is free and MIT licensed. Evaluate, adopt subsystems, or contribute back
+        without platform lock-in.
       </p>
     </div>
     <div class="astra-actions astra-actions--stacked">
