@@ -1208,6 +1208,128 @@ fn integration_should_provide_feedback_false_when_complete() {
     ));
 }
 
+// ============================================================================
+// MUTATION KILL TESTS — targeting analyze_snapshot arithmetic,
+// threshold boundaries, and aggression/caution updates
+// ============================================================================
+
+/// Kill: analyze_snapshot aggression/caution formulas (lines 78-82).
+/// 3 enemies within dist 6 and avg_distance < 5 → aggression += 0.05,
+/// caution -= 0.03.
+/// Kills: +→-, +→*, -→+, -→/ on aggression/caution increments (4),
+///        >→== and >→< on enemies_nearby comparison (2),
+///        <→== and <→> on avg_distance comparison (2).
+#[test]
+fn analyze_snapshot_aggression_increases_with_close_pack() {
+    let mut m = PlayerBehaviorModel::default();
+    // 3 enemies all within dist 6 of player at (5,3), avg_distance < 5
+    let snap = make_snapshot(
+        IVec2 { x: 5, y: 3 },
+        vec![
+            (IVec2 { x: 7, y: 3 }, 50), // dist 2
+            (IVec2 { x: 4, y: 4 }, 50), // dist 2
+            (IVec2 { x: 6, y: 2 }, 50), // dist 2
+        ],
+    );
+    m.analyze_snapshot(&snap);
+
+    // aggression should increase from 0.5 to 0.55
+    assert!(
+        (m.aggression - 0.55).abs() < 0.01,
+        "aggression should be ~0.55, got {}",
+        m.aggression
+    );
+    // caution should decrease from 0.5 to 0.47
+    assert!(
+        (m.caution - 0.47).abs() < 0.01,
+        "caution should be ~0.47, got {}",
+        m.caution
+    );
+    // preferred_range should decrease (avg_dist 2.0 < 4.0)
+    assert!(
+        (m.preferred_range - 0.4).abs() < 0.01,
+        "preferred_range should be ~0.4, got {}",
+        m.preferred_range
+    );
+}
+
+/// Kill: boundary mutation > → >= on avg_distance > 10.0 threshold (line 62).
+/// avg_distance = exactly 10.0 should NOT trigger range increase.
+#[test]
+fn analyze_snapshot_boundary_avg_distance_10_no_range_change() {
+    let mut m = PlayerBehaviorModel::default();
+    // 1 enemy at Manhattan distance exactly 10 from player
+    let snap = make_snapshot(
+        IVec2 { x: 0, y: 0 },
+        vec![(IVec2 { x: 7, y: 3 }, 50)], // dist = 7 + 3 = 10
+    );
+    m.analyze_snapshot(&snap);
+
+    // avg_distance = 10.0, > 10.0 is false, preferred_range should stay 0.5
+    assert!(
+        (m.preferred_range - 0.5).abs() < 0.01,
+        "preferred_range should stay 0.5 at boundary, got {}",
+        m.preferred_range
+    );
+}
+
+/// Kill: /→* mutation on avg_distance division (line 56).
+/// With 2 enemies, division by len produces different result from multiplication.
+/// Also catches -→+ on distance x-component (line 54:40) since player is at
+/// non-origin position.
+#[test]
+fn analyze_snapshot_multiple_enemies_non_origin_avg_distance() {
+    let mut m = PlayerBehaviorModel::default();
+    // Player at (5,0), 2 enemies at (12,3) and (15,2)
+    // Distances: |5-12|+|0-3|=10, |5-15|+|0-2|=12. Sum=22, avg=11.0
+    // avg > 10.0 → preferred_range increases
+    let snap = make_snapshot(
+        IVec2 { x: 5, y: 0 },
+        vec![
+            (IVec2 { x: 12, y: 3 }, 50),
+            (IVec2 { x: 15, y: 2 }, 50),
+        ],
+    );
+    m.analyze_snapshot(&snap);
+
+    assert!(
+        (m.preferred_range - 0.6).abs() < 0.01,
+        "preferred_range should be ~0.6 (increased from 0.5), got {}",
+        m.preferred_range
+    );
+}
+
+/// Kill: >→>= on update_from_outcome skill threshold (line 117).
+/// With avg_performance = exactly 0.7, > 0.7 is false → no skill increase.
+#[test]
+fn update_outcome_boundary_07_no_skill_increase() {
+    let mut m = PlayerBehaviorModel::default();
+    // effectiveness = 0.7 → avg = 0.7 → NOT > 0.7
+    m.update_from_outcome(&make_outcome("t", 0.7));
+
+    assert!(
+        (m.skill_level - 0.5).abs() < 0.01,
+        "skill should stay 0.5 at boundary 0.7, got {}",
+        m.skill_level
+    );
+}
+
+/// Kill: BossDirector::plan distance formula with player at non-origin.
+/// At (2,0) with no enemies: fallback target = (8,0), dist = 6 ≤ 8 → spawn.
+/// Mutation +→* on ppos.x+6: target = (12,0), dist = 10 > 8 → fortify.
+#[test]
+fn boss_plan_non_origin_distance_spawn_not_fortify() {
+    let d = BossDirector;
+    let snap = make_snapshot(IVec2 { x: 2, y: 0 }, vec![]);
+    let plan = d.plan(&snap, &budget(5, 5, 5));
+    // dist = 6, should spawn not fortify
+    assert!(
+        plan.ops.iter().any(|op| matches!(op, DirectorOp::SpawnWave { .. })),
+        "should spawn at dist=6, got {:?}",
+        plan.ops
+    );
+}
+
 // ============================= Clone/Serde verifications =============================
 
 #[test]
