@@ -1887,6 +1887,307 @@ mod builder_tests {
             .build();
         assert!(result.is_ok());
     }
+}
+
+// ============================================================================
+// MODULE: Cache mutation kill tests — targets cache.rs misses
+// ============================================================================
+mod cache_mutation_kill_tests {
+    use super::*;
+    use astraweave_blend::cache::CacheEntry;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn make_test_version() -> BlenderVersion {
+        BlenderVersion::new(4, 0, 0)
+    }
+
+    /// Helper: set up a cache with a stored entry for round-trip tests.
+    /// Returns (cache, temp_dir, source_path, output_path, version, options).
+    fn setup_cache_with_entry() -> (
+        ConversionCache,
+        TempDir,
+        PathBuf,
+        PathBuf,
+        BlenderVersion,
+        ConversionOptions,
+    ) {
+        let temp = TempDir::new().unwrap();
+
+        let source = temp.path().join("model.blend");
+        fs::write(&source, b"BLENDER_SOURCE_DATA_FOR_TESTING").unwrap();
+
+        let output = temp.path().join("model.glb");
+        fs::write(&output, b"GLTF_BINARY_OUTPUT_DATA").unwrap();
+
+        let cache_dir = temp.path().join("cache");
+        let mut cache = ConversionCache::new(&cache_dir).unwrap();
+        let version = make_test_version();
+        let options = ConversionOptions::default();
+
+        cache
+            .store(&source, &output, &options, &version, 100, vec![], vec![])
+            .unwrap();
+
+        (cache, temp, source, output, version, options)
+    }
+
+    // --- CacheEntry::touch ---
+    #[test]
+    fn touch_updates_last_accessed() {
+        let mut entry = CacheEntry::new(
+            "hash".into(),
+            "opts".into(),
+            make_test_version(),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            100,
+            50,
+        );
+        // Force an old timestamp
+        entry.last_accessed = 1000;
+        entry.touch();
+        // After touch, last_accessed must be updated to something much larger
+        assert!(entry.last_accessed > 1000);
+    }
+
+    // --- CacheEntry::age ---
+    #[test]
+    fn age_nonzero_for_old_entry() {
+        let mut entry = CacheEntry::new(
+            "hash".into(),
+            "opts".into(),
+            make_test_version(),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            100,
+            50,
+        );
+        // Set created_at to the past
+        entry.created_at = 0;
+        let age = entry.age();
+        assert!(age > Duration::from_secs(1_000_000));
+    }
+
+    // --- CacheEntry::time_since_access ---
+    #[test]
+    fn time_since_access_nonzero_for_old_entry() {
+        let mut entry = CacheEntry::new(
+            "hash".into(),
+            "opts".into(),
+            make_test_version(),
+            PathBuf::from("out.glb"),
+            PathBuf::from("src.blend"),
+            100,
+            50,
+        );
+        entry.last_accessed = 0;
+        let tsa = entry.time_since_access();
+        assert!(tsa > Duration::from_secs(1_000_000));
+    }
+
+    // --- ConversionCache::lookup disabled ---
+    #[test]
+    fn lookup_disabled_returns_miss() {
+        let (mut cache, _temp, source, _output, version, options) = setup_cache_with_entry();
+        cache.set_enabled(false);
+
+        let result = cache.lookup(&source, &options, &version).unwrap();
+        assert!(
+            matches!(result, CacheLookup::Miss { .. }),
+            "disabled cache must return miss"
+        );
+    }
+
+    // --- lookup version mismatch ---
+    #[test]
+    fn lookup_version_mismatch_returns_miss() {
+        let (mut cache, _temp, source, _output, _version, options) = setup_cache_with_entry();
+        let different_version = BlenderVersion::new(4, 1, 0);
+
+        let result = cache.lookup(&source, &options, &different_version).unwrap();
+        match result {
+            CacheLookup::Miss { reason } => {
+                assert_eq!(reason, CacheMissReason::BlenderVersionChanged);
+            }
+            CacheLookup::Hit { .. } => panic!("expected miss for version mismatch"),
+            _ => panic!("unexpected variant"),
+        }
+    }
+
+    // --- lookup options mismatch ---
+    #[test]
+    fn lookup_options_mismatch_returns_miss() {
+        let (mut cache, _temp, source, _output, version, _options) = setup_cache_with_entry();
+        let different_options = ConversionOptions::game_runtime();
+
+        let result = cache.lookup(&source, &different_options, &version).unwrap();
+        match result {
+            CacheLookup::Miss { reason } => {
+                assert_eq!(reason, CacheMissReason::OptionsChanged);
+            }
+            CacheLookup::Hit { .. } => panic!("expected miss for options mismatch"),
+            _ => panic!("unexpected variant"),
+        }
+    }
+
+    // --- lookup source modified ---
+    #[test]
+    fn lookup_source_modified_returns_miss() {
+        let (mut cache, _temp, source, _output, version, options) = setup_cache_with_entry();
+
+        // Modify the source file so hash changes
+        fs::write(&source, b"COMPLETELY_DIFFERENT_SOURCE_CONTENT").unwrap();
+
+        let result = cache.lookup(&source, &options, &version).unwrap();
+        match result {
+            CacheLookup::Miss { reason } => {
+                assert_eq!(reason, CacheMissReason::SourceModified);
+            }
+            CacheLookup::Hit { .. } => panic!("expected miss for source modification"),
+            _ => panic!("unexpected variant"),
+        }
+    }
+
+    // --- lookup output missing ---
+    #[test]
+    fn lookup_output_missing_returns_miss() {
+        let (mut cache, temp, source, _output, version, options) = setup_cache_with_entry();
+
+        // Delete all files in cache dir that match the cached output pattern
+        let cache_dir = temp.path().join("cache");
+        for entry in fs::read_dir(&cache_dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().map_or(false, |e| e == "glb") {
+                fs::remove_file(&path).unwrap();
+            }
+        }
+
+        let result = cache.lookup(&source, &options, &version).unwrap();
+        match result {
+            CacheLookup::Miss { reason } => {
+                assert_eq!(reason, CacheMissReason::OutputMissing);
+            }
+            CacheLookup::Hit { .. } => panic!("expected miss when output file deleted"),
+            _ => panic!("unexpected variant"),
+        }
+    }
+
+    // --- lookup expired (max_age) ---
+    #[test]
+    fn lookup_expired_returns_miss() {
+        let temp = TempDir::new().unwrap();
+        let src = temp.path().join("model.blend");
+        fs::write(&src, b"SOURCE_CONTENT_EXPIRE").unwrap();
+        let out = temp.path().join("model.glb");
+        fs::write(&out, b"OUTPUT_CONTENT_EXPIRE").unwrap();
+        let cache_dir = temp.path().join("cache");
+        let v = make_test_version();
+        let o = ConversionOptions::default();
+
+        // Store an entry first (no max_age yet)
+        let mut cache = ConversionCache::new(&cache_dir).unwrap();
+        cache.store(&src, &out, &o, &v, 50, vec![], vec![]).unwrap();
+
+        // Read the manifest file, backdate created_at to epoch 0, rewrite it
+        let manifest_path = cache_dir.join("cache_manifest.ron");
+        let manifest_text = fs::read_to_string(&manifest_path).unwrap();
+        // Replace the created_at timestamp (which is a recent epoch seconds value)
+        // with 0 so the entry appears very old.
+        let backdated = manifest_text.replacen("created_at:", "created_at: 0, // was:", 1);
+        // Actually, RON has field: value format, so we need to replace the entire line.
+        // Let's use a regex to replace created_at: <number> with created_at: 0
+        let re = regex::Regex::new(r"created_at:\s*\d+").unwrap();
+        let backdated = re.replace_all(&manifest_text, "created_at: 0");
+        fs::write(&manifest_path, backdated.as_ref()).unwrap();
+
+        // Re-open cache with max_age = 1 second
+        let mut cache2 = ConversionCache::new(&cache_dir)
+            .unwrap()
+            .with_max_age(Some(Duration::from_secs(1)));
+
+        let result = cache2.lookup(&src, &o, &v).unwrap();
+        match result {
+            CacheLookup::Miss { reason } => {
+                assert_eq!(reason, CacheMissReason::Expired);
+            }
+            CacheLookup::Hit { .. } => panic!("expected miss for expired entry"),
+            _ => panic!("unexpected variant"),
+        }
+    }
+
+    // --- enforce_size_limit via store with max_size ---
+    #[test]
+    fn store_evicts_lru_when_over_max_size() {
+        let temp = TempDir::new().unwrap();
+        let cache_dir = temp.path().join("cache");
+
+        // Create cache with tiny max_size — any real file exceeds it
+        let mut cache = ConversionCache::new(&cache_dir)
+            .unwrap()
+            .with_max_size(Some(1)); // 1 byte limit
+
+        let src = temp.path().join("a.blend");
+        fs::write(&src, b"BLEND_A").unwrap();
+        let out = temp.path().join("a.glb");
+        fs::write(&out, b"OUTPUT_A_DATA_WHICH_IS_MORE_THAN_1_BYTE").unwrap();
+
+        let v = make_test_version();
+        let o = ConversionOptions::default();
+
+        cache
+            .store(&src, &out, &o, &v, 100, vec![], vec![])
+            .unwrap();
+
+        // After storing, enforced size limit should have evicted entries
+        // So entry count should be 0 (evicted) since total_size > 1
+        assert_eq!(cache.stats().entry_count, 0);
+    }
+
+    // --- normalize_path returns meaningful string ---
+    #[test]
+    fn normalize_path_via_round_trip() {
+        // normalize_path is private, but it's exercised through lookup/store.
+        // If it returns "" or "xyzzy", lookup after store would fail to find the entry.
+        let (mut cache, _temp, source, _output, version, options) = setup_cache_with_entry();
+
+        // A successful hit proves normalize_path returns a consistent, non-empty, non-"xyzzy" key.
+        let result = cache.lookup(&source, &options, &version).unwrap();
+        assert!(
+            matches!(result, CacheLookup::Hit { .. }),
+            "round-trip must hit — proves normalize_path works correctly"
+        );
+    }
+
+    // --- store disabled returns early ---
+    #[test]
+    fn store_disabled_returns_input_path() {
+        let temp = TempDir::new().unwrap();
+        let cache_dir = temp.path().join("cache");
+        let mut cache = ConversionCache::new(&cache_dir).unwrap();
+        cache.set_enabled(false);
+
+        let src = temp.path().join("s.blend");
+        fs::write(&src, b"SRC").unwrap();
+        let out = temp.path().join("s.glb");
+        fs::write(&out, b"OUT").unwrap();
+
+        let result = cache
+            .store(
+                &src,
+                &out,
+                &ConversionOptions::default(),
+                &make_test_version(),
+                10,
+                vec![],
+                vec![],
+            )
+            .unwrap();
+
+        // When disabled, store returns the output_path unchanged
+        assert_eq!(result, out);
+        assert_eq!(cache.stats().entry_count, 0);
+    }
 
     #[test]
     fn builder_with_custom_options() {

@@ -763,4 +763,42 @@ mod tests {
         let libs = job.extract_linked_libraries(stdout, stderr);
         assert!(libs.is_empty());
     }
+
+    // --- Mutation kill tests for extract_linked_libraries line 534/545 ---
+    // Verify EXACT path extraction (no leading/trailing quotes or off-by-one)
+    #[test]
+    fn extract_linked_libraries_exact_single_quote_path() {
+        let job = ConversionJob::new(
+            "/test/m.blend",
+            "/out/m.glb",
+            ConversionOptions::default(),
+            mock_installation(),
+        );
+        let stdout = "Read library: '/exact/path.blend'";
+        let libs = job.extract_linked_libraries(stdout, "");
+        assert_eq!(libs.len(), 1);
+        let p = libs[0].to_string_lossy().to_string();
+        // Must NOT start with a quote character — catches start+1→start-1/start*1
+        assert!(!p.starts_with('\''), "path must not start with quote: {p}");
+        assert_eq!(p, "/exact/path.blend");
+    }
+
+    #[test]
+    fn extract_linked_libraries_exact_double_quote_path() {
+        let job = ConversionJob::new(
+            "/test/m.blend",
+            "/out/m.glb",
+            ConversionOptions::default(),
+            mock_installation(),
+        );
+        let stderr = r#"lib_link_main: "/exact/double.blend" loaded"#;
+        let libs = job.extract_linked_libraries("", stderr);
+        assert_eq!(libs.len(), 1);
+        let p = libs[0].to_string_lossy().to_string();
+        assert!(
+            !p.starts_with('"'),
+            "path must not start with double-quote: {p}"
+        );
+        assert_eq!(p, "/exact/double.blend");
+    }
 }
