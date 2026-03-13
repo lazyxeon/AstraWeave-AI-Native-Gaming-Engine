@@ -18,7 +18,6 @@
         <span class="astra-meta-badge">Free to use, fork, and modify</span>
         <span class="astra-meta-badge">Built for engine developers</span>
       </div>
-
     </div>
     <div class="astra-hero__visual">
       <div class="astra-hero__frame">
