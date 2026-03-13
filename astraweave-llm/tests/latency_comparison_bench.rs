@@ -13,6 +13,9 @@
 //! cargo test -p astraweave-llm --test latency_comparison_bench -- --ignored --nocapture
 //! ```
 
+// This test requires the `ollama` feature to be enabled.
+#![cfg(feature = "ollama")]
+
 use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
 use astraweave_llm::qwen3_ollama::Qwen3Ollama;
 use astraweave_llm::LlmClient;
@@ -40,22 +43,37 @@ struct LatencyResult {
 
 impl LatencyResult {
     fn avg_blocking_ms(&self) -> f64 {
-        let sum: f64 = self.blocking_times.iter().map(|d| d.as_secs_f64() * 1000.0).sum();
+        let sum: f64 = self
+            .blocking_times
+            .iter()
+            .map(|d| d.as_secs_f64() * 1000.0)
+            .sum();
         sum / self.blocking_times.len() as f64
     }
 
     fn avg_streaming_ms(&self) -> f64 {
-        let sum: f64 = self.streaming_times.iter().map(|d| d.as_secs_f64() * 1000.0).sum();
+        let sum: f64 = self
+            .streaming_times
+            .iter()
+            .map(|d| d.as_secs_f64() * 1000.0)
+            .sum();
         sum / self.streaming_times.len() as f64
     }
 
     fn avg_ttfc_ms(&self) -> f64 {
-        let sum: f64 = self.ttfc_times.iter().map(|d| d.as_secs_f64() * 1000.0).sum();
+        let sum: f64 = self
+            .ttfc_times
+            .iter()
+            .map(|d| d.as_secs_f64() * 1000.0)
+            .sum();
         sum / self.ttfc_times.len() as f64
     }
 
     fn min_blocking_ms(&self) -> f64 {
-        self.blocking_times.iter().map(|d| d.as_secs_f64() * 1000.0).fold(f64::MAX, f64::min)
+        self.blocking_times
+            .iter()
+            .map(|d| d.as_secs_f64() * 1000.0)
+            .fold(f64::MAX, f64::min)
     }
 
     fn avg_response_len(&self) -> f64 {
@@ -65,10 +83,7 @@ impl LatencyResult {
 }
 
 /// Run latency benchmark for a given LlmClient implementation.
-async fn bench_model(
-    client: &dyn LlmClient,
-    model_name: &str,
-) -> LatencyResult {
+async fn bench_model(client: &dyn LlmClient, model_name: &str) -> LatencyResult {
     println!("\n============================================================");
     println!("  Benchmarking: {model_name}");
     println!("============================================================");
@@ -274,7 +289,10 @@ async fn latency_comparison_qwen3_vs_hermes2pro() {
     let hermes = Hermes2ProOllama::localhost(); // defaults: temp=0.7, max_tokens=512, ctx=8192
 
     // ── Verify both models are available ──
-    let qwen3_health = qwen3.health_check().await.expect("Qwen3 health check failed");
+    let qwen3_health = qwen3
+        .health_check()
+        .await
+        .expect("Qwen3 health check failed");
     assert!(
         qwen3_health.is_ready(),
         "Qwen3 not ready: {}",
@@ -282,7 +300,10 @@ async fn latency_comparison_qwen3_vs_hermes2pro() {
     );
     println!("\n✓ Qwen3-8B is ready");
 
-    let hermes_health = hermes.health_check().await.expect("Hermes health check failed");
+    let hermes_health = hermes
+        .health_check()
+        .await
+        .expect("Hermes health check failed");
     assert!(
         hermes_health.is_ready(),
         "Hermes 2 Pro not ready: {}",
@@ -314,7 +335,9 @@ async fn latency_comparison_qwen3_vs_hermes2pro() {
         println!("    Consider using Qwen3Ollama::fast() for game-loop inference.");
     }
 
-    println!("\n✅ Latency comparison complete. Qwen3 blocking ratio: {blocking_ratio:.2}× vs Hermes.");
+    println!(
+        "\n✅ Latency comparison complete. Qwen3 blocking ratio: {blocking_ratio:.2}× vs Hermes."
+    );
 }
 
 #[tokio::test]
@@ -351,8 +374,12 @@ async fn latency_qwen3_fast_mode() {
         );
     }
 
-    let avg_ms: f64 = times.iter().map(|d| d.as_secs_f64() * 1000.0).sum::<f64>() / times.len() as f64;
-    let min_ms: f64 = times.iter().map(|d| d.as_secs_f64() * 1000.0).fold(f64::MAX, f64::min);
+    let avg_ms: f64 =
+        times.iter().map(|d| d.as_secs_f64() * 1000.0).sum::<f64>() / times.len() as f64;
+    let min_ms: f64 = times
+        .iter()
+        .map(|d| d.as_secs_f64() * 1000.0)
+        .fold(f64::MAX, f64::min);
 
     println!("\n  Qwen3 Fast Mode Results:");
     println!("    Average: {avg_ms:.0}ms");
