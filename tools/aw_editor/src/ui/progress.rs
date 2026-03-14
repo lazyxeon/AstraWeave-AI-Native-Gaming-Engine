@@ -67,10 +67,10 @@ impl TaskCategory {
     /// Icon for the category
     pub fn icon(&self) -> &'static str {
         match self {
-            TaskCategory::SceneLoading => "📂",
+            TaskCategory::SceneLoading => "[Open]",
             TaskCategory::AssetImport => "📥",
             TaskCategory::Build => "🔨",
-            TaskCategory::PlayMode => "▶️",
+            TaskCategory::PlayMode => ">",
             TaskCategory::Export => "📤",
             TaskCategory::Other => "⚙️",
         }
@@ -338,7 +338,7 @@ impl ProgressManager {
 
                     if task.cancellable && !task.cancel_requested {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.small_button("❌").clicked() {
+                            if ui.small_button("[x]").clicked() {
                                 cancelled_task = Some(id);
                             }
                         });
@@ -365,7 +365,7 @@ impl ProgressManager {
                     ui.collapsing("Details", |ui| {
                         for sub in &task.sub_tasks {
                             ui.horizontal(|ui| {
-                                let icon = if sub.completed { "✅" } else { "⏳" };
+                                let icon = if sub.completed { "[ok]" } else { "..." };
                                 ui.label(icon);
                                 ui.label(&sub.label);
                                 ui.add(
@@ -429,7 +429,7 @@ impl ProgressManager {
 
         ui.horizontal(|ui| {
             ui.label(format!(
-                "⏳ {} task{}",
+                "... {} task{}",
                 task_count,
                 if task_count == 1 { "" } else { "s" }
             ));
@@ -576,9 +576,9 @@ mod tests {
 
     #[test]
     fn test_task_category_icons() {
-        assert_eq!(TaskCategory::SceneLoading.icon(), "📂");
+        assert_eq!(TaskCategory::SceneLoading.icon(), "[Open]");
         assert_eq!(TaskCategory::Build.icon(), "🔨");
-        assert_eq!(TaskCategory::PlayMode.icon(), "▶️");
+        assert_eq!(TaskCategory::PlayMode.icon(), ">");
     }
 
     #[test]
@@ -632,13 +632,13 @@ mod tests {
     fn test_task_category_display() {
         assert_eq!(
             format!("{}", TaskCategory::SceneLoading),
-            "📂 Scene Loading"
+            "[Open] Scene Loading"
         );
         assert_eq!(format!("{}", TaskCategory::AssetImport), "📥 Asset Import");
         assert_eq!(format!("{}", TaskCategory::Build), "🔨 Build");
-        assert_eq!(format!("{}", TaskCategory::PlayMode), "▶️ Play Mode");
+        assert_eq!(format!("{}", TaskCategory::PlayMode), "> Play Mode");
         assert_eq!(format!("{}", TaskCategory::Export), "📤 Export");
-        assert_eq!(format!("{}", TaskCategory::Other), "⚙️ Other");
+        assert_eq!(format!("{}", TaskCategory::Other), "⚙\u{fe0f} Other");
     }
 
     #[test]

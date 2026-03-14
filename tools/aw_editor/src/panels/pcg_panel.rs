@@ -62,7 +62,7 @@ impl GenerationType {
         match self {
             GenerationType::Encounter => "⚔️",
             GenerationType::Dungeon => "🏰",
-            GenerationType::Loot => "💎",
+            GenerationType::Loot => "[Gem]",
             GenerationType::Terrain => "🏔️",
             GenerationType::Vegetation => "🌲",
             GenerationType::Props => "🪑",
@@ -115,12 +115,12 @@ impl EncounterDifficulty {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            EncounterDifficulty::Trivial => "➖",
-            EncounterDifficulty::Easy => "🟢",
-            EncounterDifficulty::Medium => "🟡",
+            EncounterDifficulty::Trivial => "-",
+            EncounterDifficulty::Easy => "[G]",
+            EncounterDifficulty::Medium => "[Y]",
             EncounterDifficulty::Hard => "🟠",
-            EncounterDifficulty::Deadly => "🔴",
-            EncounterDifficulty::Boss => "💀",
+            EncounterDifficulty::Deadly => "[R]",
+            EncounterDifficulty::Boss => "[Skull]",
         }
     }
 
@@ -246,11 +246,11 @@ impl RoomType {
             RoomType::Normal => "🚪",
             RoomType::Entrance => "🚶",
             RoomType::Exit => "🏁",
-            RoomType::Treasure => "💰",
+            RoomType::Treasure => "[Gold]",
             RoomType::Boss => "👹",
             RoomType::Shop => "🛒",
             RoomType::Secret => "❓",
-            RoomType::Corridor => "➡️",
+            RoomType::Corridor => "[Rt]",
         }
     }
 }
@@ -376,8 +376,8 @@ impl LootRarity {
     pub fn icon(&self) -> &'static str {
         match self {
             LootRarity::Common => "⚪",
-            LootRarity::Uncommon => "🟢",
-            LootRarity::Rare => "🔵",
+            LootRarity::Uncommon => "[G]",
+            LootRarity::Rare => "[B]",
             LootRarity::Epic => "🟣",
             LootRarity::Legendary => "🟠",
         }
@@ -496,7 +496,7 @@ impl PcgTab {
             PcgTab::Seeds => "🌱",
             PcgTab::Encounters => "⚔️",
             PcgTab::Dungeons => "🏰",
-            PcgTab::Loot => "💎",
+            PcgTab::Loot => "[Gem]",
             PcgTab::Preview => "👁️",
             PcgTab::History => "📜",
         }
@@ -536,7 +536,7 @@ pub struct PcgPanel {
 
 impl Default for PcgPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: PcgTab::Seeds,
 
             current_seed: 12345,
@@ -559,7 +559,6 @@ impl Default for PcgPanel {
             next_id: 1,
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -673,12 +672,12 @@ impl PcgPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (PcgTab::Seeds, "🎲 Seeds"),
+                (PcgTab::Seeds, "[Dice] Seeds"),
                 (PcgTab::Encounters, "⚔️ Encounters"),
                 (PcgTab::Dungeons, "🏰 Dungeons"),
-                (PcgTab::Loot, "💎 Loot"),
-                (PcgTab::Preview, "👁️ Preview"),
-                (PcgTab::History, "📜 History"),
+                (PcgTab::Loot, "[Gem] Loot"),
+                (PcgTab::Preview, "Preview"),
+                (PcgTab::History, "History"),
             ];
 
             for (tab, label) in tabs {
@@ -697,17 +696,17 @@ impl PcgPanel {
 
         // Current seed display
         ui.horizontal(|ui| {
-            ui.label(format!("🎲 Current Seed: {}", self.current_seed));
+            ui.label(format!("[Dice] Current Seed: {}", self.current_seed));
             ui.separator();
-            ui.label(format!("📊 {} encounters", self.encounters.len()));
-            ui.label(format!("💎 {} loot tables", self.loot_tables.len()));
+            ui.label(format!("{} encounters", self.encounters.len()));
+            ui.label(format!("[Gem] {} loot tables", self.loot_tables.len()));
         });
 
         ui.separator();
     }
 
     fn show_seeds_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎲 Seed Management");
+        ui.heading("[Dice] Seed Management");
         ui.add_space(10.0);
 
         // Seed input
@@ -728,16 +727,16 @@ impl PcgPanel {
             });
 
             ui.horizontal(|ui| {
-                if ui.button("🎲 New Random Seed").clicked() {
+                if ui.button("[Dice] New Random Seed").clicked() {
                     self.current_seed = rand_seed();
                     self.seed_input = self.current_seed.to_string();
                 }
 
-                if ui.button("📋 Copy").clicked() {
+                if ui.button("Copy").clicked() {
                     // Copy to clipboard
                 }
 
-                if ui.button("💾 Save Seed").clicked() {
+                if ui.button("Save Seed").clicked() {
                     self.saved_seeds.push((
                         format!("Seed {}", self.saved_seeds.len() + 1),
                         self.current_seed,
@@ -750,7 +749,7 @@ impl PcgPanel {
 
         // Saved seeds
         ui.group(|ui| {
-            ui.label(RichText::new("💾 Saved Seeds").strong());
+            ui.label(RichText::new("Saved Seeds").strong());
 
             egui::ScrollArea::vertical()
                 .max_height(200.0)
@@ -776,7 +775,7 @@ impl PcgPanel {
 
         // Seed utilities
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Seed Utilities").strong());
+            ui.label(RichText::new("Seed Utilities").strong());
 
             ui.horizontal(|ui| {
                 if ui.button("+ 1").clicked() {
@@ -810,7 +809,7 @@ impl PcgPanel {
                 });
             }
 
-            if ui.button("🎲 Generate Random").clicked() {
+            if ui.button("[Dice] Generate Random").clicked() {
                 self.generate_random_encounter();
             }
         });
@@ -823,7 +822,7 @@ impl PcgPanel {
                 ui.horizontal(|ui| {
                     ui.label(&enemy.name);
                     ui.label(
-                        RichText::new(format!("⚡{:.1}", enemy.threat_level))
+                        RichText::new(format!("[Zap]{:.1}", enemy.threat_level))
                             .small()
                             .color(Color32::YELLOW),
                     );
@@ -955,10 +954,10 @@ impl PcgPanel {
 
         // Generation controls
         ui.horizontal(|ui| {
-            if ui.button("🎲 Generate Dungeon").clicked() {
+            if ui.button("[Dice] Generate Dungeon").clicked() {
                 self.generate_dungeon_preview();
             }
-            if ui.button("🔄 Reset Settings").clicked() {
+            if ui.button("Reset Settings").clicked() {
                 self.dungeon_settings = DungeonSettings::default();
             }
         });
@@ -970,7 +969,7 @@ impl PcgPanel {
             .show(ui, |ui| {
                 // Size settings
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Dungeon Size").strong());
+                    ui.label(RichText::new("[Sq] Dungeon Size").strong());
 
                     egui::Grid::new("dungeon_size")
                         .num_columns(2)
@@ -1011,7 +1010,7 @@ impl PcgPanel {
 
                 // Corridor settings
                 ui.group(|ui| {
-                    ui.label(RichText::new("➡️ Corridors").strong());
+                    ui.label(RichText::new("[Rt] Corridors").strong());
 
                     egui::Grid::new("corridor_settings")
                         .num_columns(2)
@@ -1062,7 +1061,7 @@ impl PcgPanel {
     }
 
     fn show_loot_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💎 Loot Tables");
+        ui.heading("[Gem] Loot Tables");
         ui.add_space(10.0);
 
         // Add loot table button
@@ -1086,7 +1085,7 @@ impl PcgPanel {
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
                             if ui
-                                .selectable_label(is_selected, format!("💎 {}", table.name))
+                                .selectable_label(is_selected, format!("[Gem] {}", table.name))
                                 .clicked()
                             {
                                 self.selected_loot_table = Some(table.id);
@@ -1158,7 +1157,7 @@ impl PcgPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("👁️ Generation Preview");
+        ui.heading("Generation Preview");
         ui.add_space(10.0);
 
         // Generation type selector
@@ -1202,13 +1201,13 @@ impl PcgPanel {
     }
 
     fn show_history_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📜 Generation History");
+        ui.heading("Generation History");
         ui.add_space(10.0);
 
         if self.generation_history.is_empty() {
             ui.label("No generation history yet. Generate some content to see it here.");
         } else {
-            if ui.button("🗑️ Clear History").clicked() {
+            if ui.button("Clear History").clicked() {
                 self.generation_history.clear();
             }
 
@@ -1422,7 +1421,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_data() {
-        let panel = PcgPanel::new();
+        let mut panel = PcgPanel::new();
+        panel.create_sample_data();
         assert!(panel.enemy_type_count() >= 3);
         assert!(panel.encounter_count() >= 2);
         assert!(panel.loot_table_count() >= 1);
@@ -1481,14 +1481,14 @@ mod tests {
     fn test_generation_type_icons() {
         assert_eq!(GenerationType::Encounter.icon(), "⚔️");
         assert_eq!(GenerationType::Dungeon.icon(), "🏰");
-        assert_eq!(GenerationType::Loot.icon(), "💎");
+        assert_eq!(GenerationType::Loot.icon(), "[Gem]");
     }
 
     #[test]
     fn test_room_type_icons() {
         assert_eq!(RoomType::Entrance.icon(), "🚶");
         assert_eq!(RoomType::Boss.icon(), "👹");
-        assert_eq!(RoomType::Treasure.icon(), "💰");
+        assert_eq!(RoomType::Treasure.icon(), "[Gold]");
     }
 
     #[test]

@@ -44,10 +44,10 @@ impl ToastLevel {
     /// Get the icon for this toast level
     pub fn icon(&self) -> &'static str {
         match self {
-            ToastLevel::Info => "ℹ️",
-            ToastLevel::Success => "✅",
-            ToastLevel::Warning => "⚠️",
-            ToastLevel::Error => "❌",
+            ToastLevel::Info => "\u{2139}\u{fe0f}",
+            ToastLevel::Success => "\u{2705}",
+            ToastLevel::Warning => "\u{26a0}\u{fe0f}",
+            ToastLevel::Error => "\u{274c}",
         }
     }
 
@@ -119,11 +119,11 @@ impl ToastAction {
     /// Get icon for this action
     pub fn icon(&self) -> &'static str {
         match self {
-            ToastAction::Undo => "↩️",
-            ToastAction::ViewDetails(_) => "🔍",
-            ToastAction::Retry => "🔄",
-            ToastAction::Open(_) => "📂",
-            ToastAction::Custom { .. } => "⚡",
+            ToastAction::Undo => "\u{21a9}\u{fe0f}",
+            ToastAction::ViewDetails(_) => "\u{1f50d}",
+            ToastAction::Retry => "\u{1f504}",
+            ToastAction::Open(_) => "\u{1f4c2}",
+            ToastAction::Custom { .. } => "\u{26a1}",
         }
     }
 
@@ -562,10 +562,10 @@ mod tests {
 
     #[test]
     fn test_toast_level_icon() {
-        assert_eq!(ToastLevel::Info.icon(), "ℹ️");
-        assert_eq!(ToastLevel::Success.icon(), "✅");
-        assert_eq!(ToastLevel::Warning.icon(), "⚠️");
-        assert_eq!(ToastLevel::Error.icon(), "❌");
+        assert_eq!(ToastLevel::Info.icon(), "\u{2139}\u{fe0f}");
+        assert_eq!(ToastLevel::Success.icon(), "\u{2705}");
+        assert_eq!(ToastLevel::Warning.icon(), "\u{26a0}\u{fe0f}");
+        assert_eq!(ToastLevel::Error.icon(), "\u{274c}");
     }
 
     #[test]
@@ -712,9 +712,9 @@ mod tests {
 
     #[test]
     fn test_toast_level_display() {
-        assert_eq!(format!("{}", ToastLevel::Info), "ℹ️ Info");
+        assert_eq!(format!("{}", ToastLevel::Info), "ℹ\u{fe0f} Info");
         assert_eq!(format!("{}", ToastLevel::Success), "✅ Success");
-        assert_eq!(format!("{}", ToastLevel::Warning), "⚠️ Warning");
+        assert_eq!(format!("{}", ToastLevel::Warning), "⚠\u{fe0f} Warning");
         assert_eq!(format!("{}", ToastLevel::Error), "❌ Error");
     }
 
@@ -787,17 +787,17 @@ mod tests {
 
     #[test]
     fn test_toast_action_icon() {
-        assert_eq!(ToastAction::Undo.icon(), "↩️");
-        assert_eq!(ToastAction::ViewDetails("x".to_string()).icon(), "🔍");
-        assert_eq!(ToastAction::Retry.icon(), "🔄");
-        assert_eq!(ToastAction::Open("x".to_string()).icon(), "📂");
+        assert_eq!(ToastAction::Undo.icon(), "\u{21a9}\u{fe0f}");
+        assert_eq!(ToastAction::ViewDetails("x".to_string()).icon(), "\u{1f50d}");
+        assert_eq!(ToastAction::Retry.icon(), "\u{1f504}");
+        assert_eq!(ToastAction::Open("x".to_string()).icon(), "\u{1f4c2}");
         assert_eq!(
             ToastAction::Custom {
                 label: "X".to_string(),
                 action_id: "y".to_string()
             }
             .icon(),
-            "⚡"
+            "\u{26a1}"
         );
     }
 

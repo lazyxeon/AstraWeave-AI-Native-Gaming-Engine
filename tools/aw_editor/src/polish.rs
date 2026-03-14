@@ -155,11 +155,11 @@ impl LoadingStyle {
     /// Returns an icon for this style.
     pub fn icon(&self) -> &'static str {
         match self {
-            LoadingStyle::Spinner => "🔄",
+            LoadingStyle::Spinner => "[Sync]",
             LoadingStyle::ProgressBar => "█",
-            LoadingStyle::FullScreen => "🖼️",
+            LoadingStyle::FullScreen => "[Img]",
             LoadingStyle::Dots => "•••",
-            LoadingStyle::ArtworkWithTips => "🎨",
+            LoadingStyle::ArtworkWithTips => "[Art]",
         }
     }
 
@@ -610,7 +610,7 @@ mod tests {
     #[test]
     fn test_loading_style_name_and_icon() {
         assert_eq!(LoadingStyle::Spinner.name(), "Spinner");
-        assert_eq!(LoadingStyle::Spinner.icon(), "🔄");
-        assert_eq!(LoadingStyle::ArtworkWithTips.icon(), "🎨");
+        assert_eq!(LoadingStyle::Spinner.icon(), "[Sync]");
+        assert_eq!(LoadingStyle::ArtworkWithTips.icon(), "[Art]");
     }
 }

@@ -45,12 +45,12 @@ impl GraphType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            GraphType::BehaviorTree => "🧠",
-            GraphType::Shader => "🎨",
-            GraphType::Dialogue => "💬",
+            GraphType::BehaviorTree => "[Brain]",
+            GraphType::Shader => "[Art]",
+            GraphType::Dialogue => "[Chat]",
             GraphType::StateMachine => "⚙️",
-            GraphType::Animation => "🎬",
-            GraphType::Custom => "📊",
+            GraphType::Animation => "[Anim]",
+            GraphType::Custom => "[Chart]",
         }
     }
 }
@@ -606,7 +606,7 @@ impl GraphPanel {
     pub fn show(&mut self, ui: &mut Ui) {
         self.init(); // Lazy init
 
-        ui.heading("📊 Graph Editor");
+        ui.heading("Graph Editor");
         ui.label("Visual scripting and node-based programming interface.");
         ui.separator();
 
@@ -651,7 +651,7 @@ impl GraphPanel {
 
             ui.separator();
 
-            ui.checkbox(&mut self.show_grid, "🔲 Grid");
+            ui.checkbox(&mut self.show_grid, "Grid");
             if self.show_grid {
                 ui.checkbox(&mut self.snap_to_grid, "🧲 Snap");
             }
@@ -664,10 +664,10 @@ impl GraphPanel {
 
         ui.horizontal(|ui| {
             // Edit controls
-            if ui.button("🔄 Auto-Layout").clicked() {
+            if ui.button("Auto-Layout").clicked() {
                 self.active_graph_mut().auto_layout();
             }
-            if ui.button("🎨 Force Layout").clicked() {
+            if ui.button("Force Layout").clicked() {
                 let params = ForceDirectedParams {
                     k: 150.0,
                     max_iterations: 300,
@@ -682,19 +682,19 @@ impl GraphPanel {
             let has_clipboard = self.clipboard.is_some();
 
             if ui
-                .add_enabled(has_selection, egui::Button::new("📋 Copy"))
+                .add_enabled(has_selection, egui::Button::new("Copy"))
                 .clicked()
             {
                 self.copy_selected();
             }
             if ui
-                .add_enabled(has_clipboard, egui::Button::new("📄 Paste"))
+                .add_enabled(has_clipboard, egui::Button::new("Paste"))
                 .clicked()
             {
                 self.paste(50.0, 50.0);
             }
             if ui
-                .add_enabled(has_selection, egui::Button::new("🗑️ Delete"))
+                .add_enabled(has_selection, egui::Button::new("Delete"))
                 .clicked()
             {
                 self.delete_selected();
@@ -716,7 +716,7 @@ impl GraphPanel {
         // SEARCH & FILTER
         // ═══════════════════════════════════════════════════════════════════════════
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.add(
                 egui::TextEdit::singleline(&mut self.search_query)
                     .hint_text("Search nodes...")
@@ -782,7 +782,7 @@ impl GraphPanel {
             cols[0].add_space(8.0);
 
             if let Some(idx) = self.selected_template {
-                if cols[0].button("➕ Add Selected Node").clicked() {
+                if cols[0].button("Add Selected Node").clicked() {
                     // Add node at center of current view
                     self.add_node_from_template(idx, 250.0, 150.0);
                 }
@@ -795,16 +795,16 @@ impl GraphPanel {
                 cols[0].heading("Graph Stats");
 
                 let stats = self.current_stats();
-                cols[0].label(format!("📦 Nodes: {}", stats.node_count));
-                cols[0].label(format!("🔗 Edges: {}", stats.edge_count));
-                cols[0].label(format!("⬅️ Inputs: {}", stats.input_ports));
-                cols[0].label(format!("➡️ Outputs: {}", stats.output_ports));
+                cols[0].label(format!("Nodes: {}", stats.node_count));
+                cols[0].label(format!("Edges: {}", stats.edge_count));
+                cols[0].label(format!("[Lt] Inputs: {}", stats.input_ports));
+                cols[0].label(format!("[Rt] Outputs: {}", stats.output_ports));
 
                 if stats.unconnected_inputs > 0 || stats.unconnected_outputs > 0 {
                     cols[0].add_space(4.0);
                     cols[0].label(
                         egui::RichText::new(format!(
-                            "⚠️ Unconnected: {} in, {} out",
+                            "Unconnected: {} in, {} out",
                             stats.unconnected_inputs, stats.unconnected_outputs
                         ))
                         .color(egui::Color32::YELLOW),
@@ -850,10 +850,10 @@ impl GraphPanel {
             cols[1].horizontal(|ui| {
                 ui.label(egui::RichText::new("Port Types:").small());
                 ui.label(egui::RichText::new("⚪ Exec").small());
-                ui.label(egui::RichText::new("🔴 Bool").small());
-                ui.label(egui::RichText::new("🟢 Number").small());
-                ui.label(egui::RichText::new("🔵 String").small());
-                ui.label(egui::RichText::new("🟡 Object").small());
+                ui.label(egui::RichText::new("[R] Bool").small());
+                ui.label(egui::RichText::new("[G] Number").small());
+                ui.label(egui::RichText::new("[B] String").small());
+                ui.label(egui::RichText::new("[Y] Object").small());
             });
         });
 
@@ -862,31 +862,31 @@ impl GraphPanel {
         // ═══════════════════════════════════════════════════════════════════════════
         // LEGACY COLLAPSING SECTIONS (for backwards compatibility and exploration)
         // ═══════════════════════════════════════════════════════════════════════════
-        ui.collapsing("📁 All Graphs (Collapsed View)", |ui| {
-            ui.collapsing("🌳 Behavior Tree (AI Logic)", |ui| {
+        ui.collapsing("All Graphs (Collapsed View)", |ui| {
+            ui.collapsing("Behavior Tree (AI Logic)", |ui| {
                 ui.label("AI behavior tree for enemy NPCs");
                 ui.horizontal(|ui| {
-                    if ui.button("🔄 Auto-Layout").clicked() {
+                    if ui.button("Auto-Layout").clicked() {
                         self.behavior_tree_graph.auto_layout();
                     }
                 });
                 self.behavior_tree_graph.show(ui);
             });
 
-            ui.collapsing("🎨 Shader Graph (Material Nodes)", |ui| {
+            ui.collapsing("Shader Graph (Material Nodes)", |ui| {
                 ui.label("Material shader composition");
                 ui.horizontal(|ui| {
-                    if ui.button("🔄 Auto-Layout").clicked() {
+                    if ui.button("Auto-Layout").clicked() {
                         self.shader_graph.auto_layout();
                     }
                 });
                 self.shader_graph.show(ui);
             });
 
-            ui.collapsing("💬 Dialogue Graph (Branching Conversations)", |ui| {
+            ui.collapsing("[Chat] Dialogue Graph (Branching Conversations)", |ui| {
                 ui.label("NPC conversation flow");
                 ui.horizontal(|ui| {
-                    if ui.button("🔄 Auto-Layout").clicked() {
+                    if ui.button("Auto-Layout").clicked() {
                         self.dialogue_graph.auto_layout();
                     }
                 });
@@ -896,7 +896,7 @@ impl GraphPanel {
 
         ui.add_space(8.0);
 
-        ui.collapsing("ℹ️ About Graph Editor", |ui| {
+        ui.collapsing("About Graph Editor", |ui| {
             ui.label(egui::RichText::new("Features:").strong());
             ui.label("• Node graph editor with drag-and-drop nodes");
             ui.label("• Bezier curve connections between ports");
@@ -1016,12 +1016,12 @@ mod tests {
 
     #[test]
     fn test_graph_type_icons() {
-        assert_eq!(GraphType::BehaviorTree.icon(), "🧠");
-        assert_eq!(GraphType::Shader.icon(), "🎨");
-        assert_eq!(GraphType::Dialogue.icon(), "💬");
+        assert_eq!(GraphType::BehaviorTree.icon(), "[Brain]");
+        assert_eq!(GraphType::Shader.icon(), "[Art]");
+        assert_eq!(GraphType::Dialogue.icon(), "[Chat]");
         assert_eq!(GraphType::StateMachine.icon(), "⚙️");
-        assert_eq!(GraphType::Animation.icon(), "🎬");
-        assert_eq!(GraphType::Custom.icon(), "📊");
+        assert_eq!(GraphType::Animation.icon(), "[Anim]");
+        assert_eq!(GraphType::Custom.icon(), "[Chart]");
     }
 
     #[test]

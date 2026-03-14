@@ -224,10 +224,10 @@ impl StatusBar {
             ui.separator();
 
             if let Some(path) = scene_path {
-                ui.label(format!("📁 {}", path))
+                ui.label(path)
                     .on_hover_text(format!("Scene file: {}", path));
             } else {
-                ui.label("📁 Untitled")
+                ui.label("Untitled")
                     .on_hover_text("Scene not saved - Press Ctrl+S to save");
             }
 
@@ -285,10 +285,10 @@ impl StatusBar {
             ui.separator();
 
             if let Some(path) = scene_path {
-                ui.label(format!("📁 {}", path))
+                ui.label(path)
                     .on_hover_text(format!("Scene file: {}", path));
             } else {
-                ui.label("📁 Untitled")
+                ui.label("Untitled")
                     .on_hover_text("Scene not saved - Press Ctrl+S to save");
             }
 
@@ -316,14 +316,14 @@ impl StatusBar {
     }
 
     fn show_gizmo_mode(ui: &mut Ui, mode: &GizmoMode) {
-        let (icon, text, hotkey) = match mode {
-            GizmoMode::Inactive => ("⏸️", "Inactive", "ESC"),
-            GizmoMode::Translate { .. } => ("🔀", "Translate", "G"),
-            GizmoMode::Rotate { .. } => ("🔄", "Rotate", "R"),
-            GizmoMode::Scale { .. } => ("📏", "Scale", "S"),
+        let (text, hotkey) = match mode {
+            GizmoMode::Inactive => ("Inactive", "ESC"),
+            GizmoMode::Translate { .. } => ("Translate", "G"),
+            GizmoMode::Rotate { .. } => ("Rotate", "R"),
+            GizmoMode::Scale { .. } => ("Scale", "S"),
         };
 
-        ui.label(format!("{} {} ({})", icon, text, hotkey))
+        ui.label(format!("{} ({})", text, hotkey))
             .on_hover_text(format!("Press {} to switch to {} mode", hotkey, text));
     }
 
@@ -346,10 +346,10 @@ impl StatusBar {
 
         if undo_count > 0 {
             let desc = undo_stack.undo_description().unwrap_or_default();
-            ui.label(format!("⏮️ Undo ({}): {}", undo_count, desc))
+            ui.label(format!("Undo ({}): {}", undo_count, desc))
                 .on_hover_text("Ctrl+Z to undo");
         } else {
-            ui.label("⏮️ Undo (0)")
+            ui.label("Undo (0)")
                 .on_hover_text("Make some changes to enable undo");
         }
 
@@ -357,27 +357,27 @@ impl StatusBar {
 
         if redo_count > 0 {
             let desc = undo_stack.redo_description().unwrap_or_default();
-            ui.label(format!("⏭️ Redo ({}): {}", redo_count, desc))
+            ui.label(format!("Redo ({}): {}", redo_count, desc))
                 .on_hover_text("Ctrl+Y to redo");
         } else {
-            ui.label("⏭️ Redo (0)")
+            ui.label("Redo (0)")
                 .on_hover_text("Undo something to enable redo");
         }
     }
 
     fn show_snap_settings(ui: &mut Ui, snap: &SnappingConfig) {
         if snap.grid_enabled {
-            ui.label(format!("🔲 Grid: {:.1}u", snap.grid_size))
+            ui.label(format!("Grid: {:.1}u", snap.grid_size))
                 .on_hover_text("Grid snapping enabled - Hold Ctrl to snap positions");
         }
 
         if snap.angle_enabled {
-            ui.label(format!("🔄 Angle: {:.0}°", snap.angle_increment))
+            ui.label(format!("Angle: {:.0}°", snap.angle_increment))
                 .on_hover_text("Angle snapping enabled - Hold Ctrl to snap rotations");
         }
 
         if !snap.grid_enabled && !snap.angle_enabled {
-            ui.label("⚡ Snap: OFF")
+            ui.label("Snap: OFF")
                 .on_hover_text("Press S to toggle snapping");
         }
     }
@@ -397,7 +397,7 @@ impl StatusBar {
         if usage.memory_total > 0 {
             ui.colored_label(
                 mem_color,
-                format!("🧠 {}", ResourceUsage::format_bytes(usage.memory_used)),
+                format!("Mem: {}", ResourceUsage::format_bytes(usage.memory_used)),
             )
             .on_hover_text(format!(
                 "Memory: {} / {} ({:.1}%)",
@@ -421,7 +421,7 @@ impl StatusBar {
             ui.add_space(4.0);
             ui.colored_label(
                 gpu_mem_color,
-                format!("🎮 {}", ResourceUsage::format_bytes(usage.gpu_memory_used)),
+                format!("GPU: {}", ResourceUsage::format_bytes(usage.gpu_memory_used)),
             )
             .on_hover_text(format!(
                 "GPU Memory: {} / {} ({:.1}%)",

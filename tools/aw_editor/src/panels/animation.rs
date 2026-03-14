@@ -41,9 +41,9 @@ impl PlaybackState {
     /// Returns the icon for this state
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Stopped => "⏹",
-            Self::Playing => "▶",
-            Self::Paused => "⏸",
+            Self::Stopped => "[]",
+            Self::Playing => ">",
+            Self::Paused => "||",
         }
     }
 
@@ -97,8 +97,8 @@ impl AnimatedProperty {
             Self::PositionX => "↔",
             Self::PositionY => "↕",
             Self::PositionZ => "↗",
-            Self::RotationY => "🔄",
-            Self::Scale => "📐",
+            Self::RotationY => "[Sync]",
+            Self::Scale => "[Sq]",
         }
     }
 
@@ -488,13 +488,13 @@ impl AnimationPanel {
         let dt = ctx.input(|i| i.stable_dt);
         self.update(dt);
 
-        egui::Window::new("🎬 Animation")
+        egui::Window::new("Animation")
             .default_size([550.0, 700.0])
             .show(ctx, |ui| {
                 // Mode toggle
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.show_editor, true, "📝 Editor");
-                    ui.selectable_value(&mut self.show_editor, false, "🎮 Demos");
+                    ui.selectable_value(&mut self.show_editor, true, "[Edit] Editor");
+                    ui.selectable_value(&mut self.show_editor, false, "Demos");
                 });
 
                 ui.separator();
@@ -544,7 +544,7 @@ impl AnimationPanel {
                     }
                 });
 
-            if ui.button("➕ New").clicked() {
+            if ui.button("New").clicked() {
                 self.clips.push(AnimationClip {
                     name: format!("Clip {}", self.clips.len() + 1),
                     ..Default::default()
@@ -559,8 +559,8 @@ impl AnimationPanel {
         ui.heading("Playback");
         ui.horizontal(|ui| {
             let (play_icon, play_tip) = match self.playback_state {
-                PlaybackState::Playing => ("⏸", "Pause"),
-                _ => ("▶", "Play"),
+                PlaybackState::Playing => ("||", "Pause"),
+                _ => (">", "Play"),
             };
 
             if ui.button(play_icon).on_hover_text(play_tip).clicked() {
@@ -570,7 +570,7 @@ impl AnimationPanel {
                 };
             }
 
-            if ui.button("⏹").on_hover_text("Stop").clicked() {
+            if ui.button("[]").on_hover_text("Stop").clicked() {
                 self.playback_state = PlaybackState::Stopped;
                 self.current_time = 0.0;
             }
@@ -614,7 +614,7 @@ impl AnimationPanel {
         if let Some(clip_idx) = self.selected_clip_idx {
             if let Some(clip) = self.clips.get_mut(clip_idx) {
                 ui.horizontal(|ui| {
-                    if ui.button("➕ Add Track").clicked() {
+                    if ui.button("Add Track").clicked() {
                         clip.tracks
                             .push(AnimationTrack::new(AnimatedProperty::PositionY));
                     }
@@ -665,7 +665,7 @@ impl AnimationPanel {
                         ui.label(format!("{}kf", track.keyframes.len()));
 
                         if ui
-                            .small_button("➕")
+                            .small_button("+")
                             .on_hover_text("Add keyframe")
                             .clicked()
                         {
@@ -682,7 +682,7 @@ impl AnimationPanel {
                             });
                         }
 
-                        if ui.small_button("🗑").clicked() {
+                        if ui.small_button("[Del]").clicked() {
                             track_to_remove = Some(track_idx);
                         }
                     });
@@ -814,18 +814,18 @@ impl AnimationPanel {
             18.0,
             Color32::GREEN,
         );
-        if ui.button("🔄 Restart").clicked() {
+        if ui.button("Restart").clicked() {
             self.bounce_tween.restart();
         }
 
         ui.add_space(10.0);
 
         // Color demo
-        ui.label("🎨 Color Tween:");
+        ui.label("Color Tween:");
         let color = self.color_tween.value();
         let (rect, _) = ui.allocate_exact_size(Vec2::new(350.0, 60.0), egui::Sense::hover());
         ui.painter().rect_filled(rect, 4.0, color);
-        if ui.button("🔄 Restart").clicked() {
+        if ui.button("Restart").clicked() {
             self.color_tween.restart();
         }
 
@@ -882,7 +882,7 @@ impl AnimationPanel {
                 }
             }
 
-            if ui.button("🔄 Restart All").clicked() {
+            if ui.button("Restart All").clicked() {
                 for (_, tw) in &mut self.easing_tweens {
                     tw.restart();
                 }
@@ -1524,9 +1524,9 @@ mod tests {
 
     #[test]
     fn test_playback_state_icon() {
-        assert_eq!(PlaybackState::Stopped.icon(), "⏹");
-        assert_eq!(PlaybackState::Playing.icon(), "▶");
-        assert_eq!(PlaybackState::Paused.icon(), "⏸");
+        assert_eq!(PlaybackState::Stopped.icon(), "[]");
+        assert_eq!(PlaybackState::Playing.icon(), ">");
+        assert_eq!(PlaybackState::Paused.icon(), "||");
     }
 
     #[test]
@@ -1571,8 +1571,8 @@ mod tests {
         assert_eq!(AnimatedProperty::PositionX.icon(), "↔");
         assert_eq!(AnimatedProperty::PositionY.icon(), "↕");
         assert_eq!(AnimatedProperty::PositionZ.icon(), "↗");
-        assert_eq!(AnimatedProperty::RotationY.icon(), "🔄");
-        assert_eq!(AnimatedProperty::Scale.icon(), "📐");
+        assert_eq!(AnimatedProperty::RotationY.icon(), "[Sync]");
+        assert_eq!(AnimatedProperty::Scale.icon(), "[Sq]");
     }
 
     #[test]

@@ -95,12 +95,12 @@ impl LayoutPreset {
     /// Get icon for this preset
     pub fn icon(&self) -> &'static str {
         match self {
-            LayoutPreset::Default => "🏠",
-            LayoutPreset::Wide => "🖥️",
-            LayoutPreset::Compact => "📐",
-            LayoutPreset::Modeling => "🔧",
-            LayoutPreset::Animation => "🎬",
-            LayoutPreset::Debug => "🔍",
+            LayoutPreset::Default => "\u{1f3e0}",
+            LayoutPreset::Wide => "\u{1f5a5}\u{fe0f}",
+            LayoutPreset::Compact => "\u{1f4d0}",
+            LayoutPreset::Modeling => "\u{1f527}",
+            LayoutPreset::Animation => "\u{1f3ac}",
+            LayoutPreset::Debug => "\u{1f50d}",
         }
     }
 
@@ -119,12 +119,12 @@ impl LayoutPreset {
     /// Get expected panel count for this preset
     pub fn expected_panel_count(&self) -> usize {
         match self {
-            LayoutPreset::Default => 6, // Viewport, Inspector, Transform, Console, Profiler, SceneStats
-            LayoutPreset::Wide => 2,    // Viewport, Inspector
-            LayoutPreset::Compact => 8, // Many panels
-            LayoutPreset::Modeling => 3, // Viewport, Transform, Inspector
-            LayoutPreset::Animation => 5, // Viewport, BehaviorGraph, Inspector, Animation, Graph
-            LayoutPreset::Debug => 5,   // Viewport, Performance, SceneStats, Console, Profiler
+            LayoutPreset::Default => 8, // Hierarchy, AssetBrowser, Viewport, Inspector, Transform, Console, Profiler, SceneStats
+            LayoutPreset::Wide => 3,    // Hierarchy, Viewport, Inspector
+            LayoutPreset::Compact => 10, // Many panels
+            LayoutPreset::Modeling => 4, // Hierarchy, Viewport, Transform, Inspector
+            LayoutPreset::Animation => 6, // Hierarchy, Viewport, BehaviorGraph, Inspector, Animation, Graph
+            LayoutPreset::Debug => 6,   // Hierarchy, Viewport, Performance, SceneStats, Console, Profiler
         }
     }
 
@@ -329,11 +329,32 @@ impl DockLayout {
     }
 
     /// Deserialize layout from JSON
+    ///
+    /// Restores visible panels from saved data.
+    /// Panel positions use the default layout as a base since
+    /// `DockState` tree structure is not serialized.
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-        let _layout_data: LayoutData = serde_json::from_str(json)?;
-        // For now, return default layout
-        // Full restoration requires more complex DockState serialization
-        Ok(Self::new())
+        let layout_data: LayoutData = serde_json::from_str(json)?;
+        let mut layout = Self::new();
+        // Sync the panel set: ensure only saved panels are present
+        let saved: std::collections::HashSet<PanelType> =
+            layout_data.panels.iter().copied().collect();
+        let current: Vec<PanelType> = layout.collect_visible_panels();
+        // Remove panels not in saved set
+        for panel in &current {
+            if !saved.contains(panel) {
+                layout.remove_panel(panel);
+            }
+        }
+        // Add panels that were saved but missing from default
+        let after_remove: std::collections::HashSet<PanelType> =
+            layout.collect_visible_panels().into_iter().collect();
+        for panel in &layout_data.panels {
+            if !after_remove.contains(panel) {
+                layout.add_panel(*panel);
+            }
+        }
+        Ok(layout)
     }
 
     /// Collect list of all visible panels
@@ -351,20 +372,23 @@ impl DockLayout {
     /// Layout structure:
     /// ```text
     /// +----------------------------------------+
-    /// |                   |  Inspector         |
-    /// |     Viewport      |  Transform         |
-    /// |                   |                    |
-    /// +-------------------+--------------------+
+    /// | Hierarchy  |            |  Inspector   |
+    /// | AssetBrowse|  Viewport  |  Transform   |
+    /// |            |            |              |
+    /// +------------+------------+--------------+
     /// |      Console | Profiler | Stats        |
     /// +----------------------------------------+
     /// ```
-    /// Note: Left panels (Hierarchy, Assets) are handled by the legacy
-    /// Astract Panels side panel, not the docking system.
     fn create_default_layout() -> DockState<PanelType> {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel here - already handled by legacy Astract Panels side panel
+        // Split left panel (18% width for hierarchy/assets)
+        let [_left_panel, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.18,
+            vec![PanelType::Hierarchy, PanelType::AssetBrowser],
+        );
 
         // Split right panel (18% width for inspector/transform)
         let [_center, _right_panel] = surface.split_right(
@@ -392,7 +416,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel - handled by legacy Astract Panels
+        // Left panel for hierarchy (12%)
+        let [_left, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.12,
+            vec![PanelType::Hierarchy],
+        );
 
         // Minimal right panel (15%)
         let [_center, _right_panel] =
@@ -406,7 +435,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel - handled by legacy Astract Panels
+        // Left panel for hierarchy/assets (20%)
+        let [_left, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.20,
+            vec![PanelType::Hierarchy, PanelType::AssetBrowser],
+        );
 
         // Right panel (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -439,7 +473,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel - handled by legacy Astract Panels
+        // Left panel for hierarchy (15%)
+        let [_left, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.15,
+            vec![PanelType::Hierarchy],
+        );
 
         // Right panel with transform tools (20%)
         let [_center, _right_panel] = surface.split_right(
@@ -456,7 +495,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel - handled by legacy Astract Panels
+        // Left panel for hierarchy (15%)
+        let [_left, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.15,
+            vec![PanelType::Hierarchy],
+        );
 
         // Right panel with animation graph (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -480,7 +524,12 @@ impl DockLayout {
         let mut dock_state = DockState::new(vec![PanelType::Viewport]);
         let surface = dock_state.main_surface_mut();
 
-        // No left panel - handled by legacy Astract Panels
+        // Left panel for hierarchy (15%)
+        let [_left, _center] = surface.split_left(
+            NodeIndex::root(),
+            0.15,
+            vec![PanelType::Hierarchy],
+        );
 
         // Right panel with performance (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -534,6 +583,7 @@ impl DockLayout {
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())
+            .draggable_tabs(false)
             .show(ctx, tab_viewer);
     }
 
@@ -554,6 +604,7 @@ impl DockLayout {
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())
+            .draggable_tabs(false)
             .show_inside(ui, tab_viewer);
     }
 
@@ -682,7 +733,8 @@ mod tests {
         // Should have console (bottom panel in dock)
         assert!(layout.is_panel_visible(&PanelType::Console));
 
-        // Note: Hierarchy and AssetBrowser are in legacy side panel, not dock
+        // Should have hierarchy (left panel in dock)
+        assert!(layout.is_panel_visible(&PanelType::Hierarchy));
     }
 
     #[test]

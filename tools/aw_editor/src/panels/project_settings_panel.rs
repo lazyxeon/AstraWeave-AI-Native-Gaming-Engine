@@ -85,12 +85,12 @@ impl TargetPlatform {
             TargetPlatform::Windows => "🪟",
             TargetPlatform::Linux => "🐧",
             TargetPlatform::MacOS => "🍎",
-            TargetPlatform::Android => "🤖",
+            TargetPlatform::Android => "[Bot]",
             TargetPlatform::Ios => "📱",
-            TargetPlatform::WebAssembly => "🌐",
-            TargetPlatform::PlayStation => "🎮",
-            TargetPlatform::Xbox => "🎮",
-            TargetPlatform::NintendoSwitch => "🎮",
+            TargetPlatform::WebAssembly => "[Net]",
+            TargetPlatform::PlayStation => "[Gp]",
+            TargetPlatform::Xbox => "[Gp]",
+            TargetPlatform::NintendoSwitch => "[Gp]",
         }
     }
 }
@@ -888,14 +888,14 @@ impl SettingsTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            SettingsTab::Project => "📁",
-            SettingsTab::Rendering => "🎨",
+            SettingsTab::Project => "[Dir]",
+            SettingsTab::Rendering => "[Art]",
             SettingsTab::Physics => "⚙️",
-            SettingsTab::Audio => "🔊",
-            SettingsTab::Input => "🎮",
-            SettingsTab::Quality => "✨",
-            SettingsTab::TagsLayers => "🏷️",
-            SettingsTab::Build => "📦",
+            SettingsTab::Audio => "[Snd]",
+            SettingsTab::Input => "[Gp]",
+            SettingsTab::Quality => "[Fx]",
+            SettingsTab::TagsLayers => "[Tag]",
+            SettingsTab::Build => "[Pkg]",
         }
     }
 
@@ -952,7 +952,7 @@ pub struct ProjectSettingsPanel {
 
 impl Default for ProjectSettingsPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: SettingsTab::Project,
 
             project_name: "AstraWeave Project".to_string(),
@@ -981,7 +981,6 @@ impl Default for ProjectSettingsPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -1216,14 +1215,14 @@ impl ProjectSettingsPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (SettingsTab::Project, "📋 Project"),
-                (SettingsTab::Rendering, "🎨 Rendering"),
-                (SettingsTab::Physics, "🧪 Physics"),
-                (SettingsTab::Audio, "🔊 Audio"),
-                (SettingsTab::Input, "🎮 Input"),
-                (SettingsTab::Quality, "⭐ Quality"),
-                (SettingsTab::TagsLayers, "🏷️ Tags/Layers"),
-                (SettingsTab::Build, "📦 Build"),
+                (SettingsTab::Project, "Project"),
+                (SettingsTab::Rendering, "Rendering"),
+                (SettingsTab::Physics, "[Test] Physics"),
+                (SettingsTab::Audio, "Audio"),
+                (SettingsTab::Input, "Input"),
+                (SettingsTab::Quality, "[Star] Quality"),
+                (SettingsTab::TagsLayers, "[Tag] Tags/Layers"),
+                (SettingsTab::Build, "Build"),
             ];
 
             for (tab, label) in tabs {
@@ -1244,11 +1243,11 @@ impl ProjectSettingsPanel {
     }
 
     fn show_project_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Project Settings");
+        ui.heading("Project Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("📁 Project Info").strong());
+            ui.label(RichText::new("Project Info").strong());
 
             egui::Grid::new("project_info")
                 .num_columns(2)
@@ -1269,7 +1268,7 @@ impl ProjectSettingsPanel {
                     ui.label("Default Scene:");
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(&mut self.default_scene);
-                        if ui.button("📂").clicked() {}
+                        if ui.button("[Open]").clicked() {}
                     });
                     ui.end_row();
                 });
@@ -1278,7 +1277,7 @@ impl ProjectSettingsPanel {
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Engine Settings").strong());
+            ui.label(RichText::new("Engine Settings").strong());
 
             egui::Grid::new("engine_settings")
                 .num_columns(2)
@@ -1357,7 +1356,7 @@ impl ProjectSettingsPanel {
     }
 
     fn show_rendering_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 Rendering Settings");
+        ui.heading("Rendering Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
@@ -1421,7 +1420,7 @@ impl ProjectSettingsPanel {
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("💡 Lighting").strong());
+            ui.label(RichText::new("Lighting").strong());
 
             egui::Grid::new("lighting_settings")
                 .num_columns(2)
@@ -1539,11 +1538,11 @@ impl ProjectSettingsPanel {
     }
 
     fn show_physics_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🧪 Physics Settings");
+        ui.heading("[Test] Physics Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🌍 World").strong());
+            ui.label(RichText::new("[Glb] World").strong());
 
             egui::Grid::new("physics_world")
                 .num_columns(2)
@@ -1641,7 +1640,7 @@ impl ProjectSettingsPanel {
     }
 
     fn show_audio_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔊 Audio Settings");
+        ui.heading("Audio Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
@@ -1691,7 +1690,7 @@ impl ProjectSettingsPanel {
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("⚙️ Settings").strong());
+            ui.label(RichText::new("Settings").strong());
 
             egui::Grid::new("audio_settings")
                 .num_columns(2)
@@ -1715,12 +1714,12 @@ impl ProjectSettingsPanel {
     }
 
     fn show_input_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎮 Input Settings");
+        ui.heading("Input Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📋 Actions").strong());
+                ui.label(RichText::new("Actions").strong());
                 if ui.button("+ Add Action").clicked() {
                     self.input_actions.push(InputAction {
                         name: format!("NewAction{}", self.input_actions.len()),
@@ -1763,7 +1762,7 @@ impl ProjectSettingsPanel {
     }
 
     fn show_quality_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⭐ Quality Levels");
+        ui.heading("[Star] Quality Levels");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -1913,14 +1912,14 @@ impl ProjectSettingsPanel {
     }
 
     fn show_tags_layers_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🏷️ Tags & Layers");
+        ui.heading("[Tag] Tags & Layers");
         ui.add_space(10.0);
 
         ui.columns(2, |cols| {
             // Tags
             cols[0].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("🏷️ Tags").strong());
+                    ui.label(RichText::new("[Tag] Tags").strong());
                     if ui.button("+ Add").clicked() {
                         let id = self.next_tag_id();
                         self.tags.push(Tag {
@@ -1938,7 +1937,7 @@ impl ProjectSettingsPanel {
                             ui.horizontal(|ui| {
                                 ui.color_edit_button_srgba(&mut tag.color);
                                 ui.text_edit_singleline(&mut tag.name);
-                                if ui.button("🗑️").clicked() {
+                                if ui.button("[Del]").clicked() {
                                     // Remove tag
                                 }
                             });
@@ -1949,7 +1948,7 @@ impl ProjectSettingsPanel {
             // Layers
             cols[1].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("📂 Layers").strong());
+                    ui.label(RichText::new("Layers").strong());
                     if ui.button("+ Add").clicked() {
                         let id = self.next_layer_id();
                         self.layers.push(Layer {
@@ -1967,7 +1966,7 @@ impl ProjectSettingsPanel {
                             ui.horizontal(|ui| {
                                 ui.label(format!("[{}]", layer.id));
                                 ui.text_edit_singleline(&mut layer.name);
-                                if ui.button("🗑️").clicked() {
+                                if ui.button("[Del]").clicked() {
                                     // Remove layer
                                 }
                             });
@@ -1978,11 +1977,11 @@ impl ProjectSettingsPanel {
     }
 
     fn show_build_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📦 Build Settings");
+        ui.heading("Build Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🎯 Target Platforms").strong());
+            ui.label(RichText::new("Target Platforms").strong());
 
             for config in &mut self.build_configs {
                 ui.horizontal(|ui| {
@@ -1996,7 +1995,7 @@ impl ProjectSettingsPanel {
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("📝 Application Info").strong());
+            ui.label(RichText::new("[Edit] Application Info").strong());
 
             if let Some(config) = self.build_configs.get_mut(self.selected_build) {
                 egui::Grid::new("build_info")
@@ -2018,7 +2017,7 @@ impl ProjectSettingsPanel {
                         ui.label("Icon:");
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut config.icon_path);
-                            if ui.button("📂").clicked() {}
+                            if ui.button("[Open]").clicked() {}
                         });
                         ui.end_row();
 
@@ -2052,7 +2051,7 @@ impl ProjectSettingsPanel {
         ui.horizontal(|ui| {
             ui.button("🔨 Build").clicked();
             ui.button("🔨 Build and Run").clicked();
-            if ui.button("📁 Open Build Folder").clicked() {}
+            if ui.button("Open Build Folder").clicked() {}
         });
     }
 
@@ -2138,12 +2137,12 @@ mod tests {
         assert_eq!(TargetPlatform::Windows.icon(), "🪟");
         assert_eq!(TargetPlatform::Linux.icon(), "🐧");
         assert_eq!(TargetPlatform::MacOS.icon(), "🍎");
-        assert_eq!(TargetPlatform::Android.icon(), "🤖");
+        assert_eq!(TargetPlatform::Android.icon(), "[Bot]");
         assert_eq!(TargetPlatform::Ios.icon(), "📱");
-        assert_eq!(TargetPlatform::WebAssembly.icon(), "🌐");
-        assert_eq!(TargetPlatform::PlayStation.icon(), "🎮");
-        assert_eq!(TargetPlatform::Xbox.icon(), "🎮");
-        assert_eq!(TargetPlatform::NintendoSwitch.icon(), "🎮");
+        assert_eq!(TargetPlatform::WebAssembly.icon(), "[Net]");
+        assert_eq!(TargetPlatform::PlayStation.icon(), "[Gp]");
+        assert_eq!(TargetPlatform::Xbox.icon(), "[Gp]");
+        assert_eq!(TargetPlatform::NintendoSwitch.icon(), "[Gp]");
     }
 
     #[test]
@@ -2730,13 +2729,15 @@ mod tests {
 
     #[test]
     fn test_project_settings_creation() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         assert!(panel.quality_level_count() >= 4);
     }
 
     #[test]
     fn test_project_settings_default() {
-        let panel = ProjectSettingsPanel::default();
+        let mut panel = ProjectSettingsPanel::default();
+        panel.create_sample_data();
         assert!(panel.quality_level_count() >= 4);
         assert!(panel.input_action_count() >= 7);
         assert!(panel.tag_count() >= 5);
@@ -2745,19 +2746,22 @@ mod tests {
 
     #[test]
     fn test_input_actions() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         assert!(panel.input_action_count() >= 7);
     }
 
     #[test]
     fn test_tags() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         assert!(panel.tag_count() >= 5);
     }
 
     #[test]
     fn test_layers() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         assert!(panel.layer_count() >= 5);
     }
 
@@ -2795,28 +2799,32 @@ mod tests {
 
     #[test]
     fn test_sample_quality_levels() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         // Should have Low, Medium, High, Ultra
         assert_eq!(panel.quality_level_count(), 4);
     }
 
     #[test]
     fn test_sample_input_actions() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         // Should have movement, jump, attack, interact
         assert!(panel.input_action_count() >= 7);
     }
 
     #[test]
     fn test_sample_tags() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         // Should have Player, Enemy, NPC, Collectible, Interactable
         assert_eq!(panel.tag_count(), 5);
     }
 
     #[test]
     fn test_sample_layers() {
-        let panel = ProjectSettingsPanel::new();
+        let mut panel = ProjectSettingsPanel::new();
+        panel.create_sample_data();
         // Should have Default, Player, Enemy, Trigger, Projectile
         assert_eq!(panel.layer_count(), 5);
     }
@@ -3182,9 +3190,9 @@ mod tests {
 
     #[test]
     fn test_settings_tab_icon() {
-        assert_eq!(SettingsTab::Project.icon(), "📁");
-        assert_eq!(SettingsTab::Rendering.icon(), "🎨");
-        assert_eq!(SettingsTab::Build.icon(), "📦");
+        assert_eq!(SettingsTab::Project.icon(), "[Dir]");
+        assert_eq!(SettingsTab::Rendering.icon(), "[Art]");
+        assert_eq!(SettingsTab::Build.icon(), "[Pkg]");
     }
 
     #[test]

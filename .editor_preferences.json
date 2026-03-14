@@ -1,21 +1,23 @@
 {
-  "show_grid": true,
+  "show_grid": false,
   "auto_save_enabled": false,
   "auto_save_interval_secs": 300.0,
+  "auto_save_keep_count": 3,
+  "auto_save_to_separate_dir": false,
   "show_hierarchy_panel": true,
   "show_inspector_panel": true,
   "show_console_panel": true,
   "camera": {
     "focal_point": [
-      155.06659,
-      -53.884987,
-      -20.314522
+      46.564663,
+      44.481995,
+      20.67714
     ],
-    "distance": 200.0,
-    "yaw": 0.8613984,
-    "pitch": 1.0595986,
+    "distance": 0.1519646,
+    "yaw": 0.42139834,
+    "pitch": 0.6407964,
     "fov": 60.0,
-    "aspect": 2.849887,
+    "aspect": 1.7958585,
     "near": 0.01,
     "far": 1000.0,
     "min_distance": 0.1,

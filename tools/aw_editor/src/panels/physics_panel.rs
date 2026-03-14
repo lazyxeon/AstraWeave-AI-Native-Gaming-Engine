@@ -65,11 +65,11 @@ impl PhysicsVisualization {
     pub fn icon(&self) -> &'static str {
         match self {
             PhysicsVisualization::None => "⚫",
-            PhysicsVisualization::Colliders => "📦",
+            PhysicsVisualization::Colliders => "[Pkg]",
             PhysicsVisualization::ContactPoints => "📍",
-            PhysicsVisualization::Joints => "🔗",
-            PhysicsVisualization::VelocityVectors => "➡️",
-            PhysicsVisualization::BroadPhase => "🗂️",
+            PhysicsVisualization::Joints => "[Link]",
+            PhysicsVisualization::VelocityVectors => "[Rt]",
+            PhysicsVisualization::BroadPhase => "[Files]",
             PhysicsVisualization::Islands => "🏝️",
             PhysicsVisualization::All => "👁️",
         }
@@ -140,9 +140,9 @@ impl SimulationMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            SimulationMode::Running => "▶️",
-            SimulationMode::Paused => "⏸️",
-            SimulationMode::StepOnce => "⏭️",
+            SimulationMode::Running => ">",
+            SimulationMode::Paused => "||",
+            SimulationMode::StepOnce => ">|",
             SimulationMode::SlowMotion => "🐌",
         }
     }
@@ -269,7 +269,7 @@ impl VehicleType {
             VehicleType::SportsCar => "🏎️",
             VehicleType::Truck => "🚚",
             VehicleType::Motorcycle => "🏍️",
-            VehicleType::Tank => "🛡️",
+            VehicleType::Tank => "[Shld]",
             VehicleType::Custom => "⚙️",
         }
     }
@@ -382,10 +382,10 @@ impl DestructionPattern {
     pub fn icon(&self) -> &'static str {
         match self {
             DestructionPattern::Voronoi => "⬡",
-            DestructionPattern::Radial => "💥",
+            DestructionPattern::Radial => "[Hit]",
             DestructionPattern::Slice => "🔪",
-            DestructionPattern::Shatter => "💎",
-            DestructionPattern::Crumble => "🧱",
+            DestructionPattern::Shatter => "[Gem]",
+            DestructionPattern::Crumble => "[Brk]",
         }
     }
 
@@ -438,10 +438,10 @@ impl GravityZoneShape {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            GravityZoneShape::Box => "📦",
+            GravityZoneShape::Box => "[Pkg]",
             GravityZoneShape::Sphere => "⚪",
             GravityZoneShape::Cylinder => "🛢️",
-            GravityZoneShape::Global => "🌍",
+            GravityZoneShape::Global => "[Glb]",
         }
     }
 
@@ -520,13 +520,13 @@ impl PhysicsTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            PhysicsTab::Overview => "📊",
+            PhysicsTab::Overview => "[Chart]",
             PhysicsTab::Visualization => "👁️",
             PhysicsTab::Ragdoll => "🚶",
             PhysicsTab::Vehicle => "🚗",
             PhysicsTab::Cloth => "👕",
-            PhysicsTab::Destruction => "💥",
-            PhysicsTab::Environment => "🌍",
+            PhysicsTab::Destruction => "[Hit]",
+            PhysicsTab::Environment => "[Glb]",
         }
     }
 }
@@ -862,13 +862,13 @@ impl PhysicsPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (PhysicsTab::Overview, "📊 Overview"),
+                (PhysicsTab::Overview, "Overview"),
                 (PhysicsTab::Visualization, "👁 Viz"),
                 (PhysicsTab::Ragdoll, "🦴 Ragdoll"),
                 (PhysicsTab::Vehicle, "🚗 Vehicle"),
                 (PhysicsTab::Cloth, "🧵 Cloth"),
-                (PhysicsTab::Destruction, "💥 Destruction"),
-                (PhysicsTab::Environment, "🌍 Environment"),
+                (PhysicsTab::Destruction, "[Hit] Destruction"),
+                (PhysicsTab::Environment, "[Glb] Environment"),
             ];
 
             for (tab, label) in tabs {
@@ -888,9 +888,9 @@ impl PhysicsPanel {
         // Simulation controls
         ui.horizontal(|ui| {
             let mode_icon = match self.simulation_mode {
-                SimulationMode::Running => "▶",
-                SimulationMode::Paused => "⏸",
-                SimulationMode::StepOnce => "⏭",
+                SimulationMode::Running => ">",
+                SimulationMode::Paused => "||",
+                SimulationMode::StepOnce => ">|",
                 SimulationMode::SlowMotion => "🐢",
             };
             ui.label(format!("{} {:?}", mode_icon, self.simulation_mode));
@@ -902,7 +902,7 @@ impl PhysicsPanel {
     }
 
     fn show_overview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Physics Overview");
+        ui.heading("Physics Overview");
         ui.add_space(10.0);
 
         // Simulation controls
@@ -911,18 +911,18 @@ impl PhysicsPanel {
 
             ui.horizontal(|ui| {
                 if ui
-                    .selectable_label(self.simulation_mode == SimulationMode::Running, "▶ Run")
+                    .selectable_label(self.simulation_mode == SimulationMode::Running, "> Run")
                     .clicked()
                 {
                     self.simulation_mode = SimulationMode::Running;
                 }
                 if ui
-                    .selectable_label(self.simulation_mode == SimulationMode::Paused, "⏸ Pause")
+                    .selectable_label(self.simulation_mode == SimulationMode::Paused, "|| Pause")
                     .clicked()
                 {
                     self.simulation_mode = SimulationMode::Paused;
                 }
-                if ui.button("⏭ Step").clicked() {
+                if ui.button(">| Step").clicked() {
                     self.simulation_mode = SimulationMode::StepOnce;
                 }
                 if ui
@@ -1034,7 +1034,7 @@ impl PhysicsPanel {
                 ui.label(format!("🧵 {} Cloth", self.stats.cloth_count));
                 ui.separator();
                 ui.label(format!(
-                    "💥 {} Destructibles",
+                    "[Hit] {} Destructibles",
                     self.stats.destructible_count
                 ));
             });
@@ -1145,10 +1145,10 @@ impl PhysicsPanel {
                 if ui.button("🦴 Spawn Ragdoll").clicked() {
                     // Spawn test ragdoll
                 }
-                if ui.button("💨 Apply Impulse").clicked() {
+                if ui.button("[Dash] Apply Impulse").clicked() {
                     // Apply test impulse
                 }
-                if ui.button("🔄 Reset All").clicked() {
+                if ui.button("Reset All").clicked() {
                     // Reset all ragdolls
                 }
             });
@@ -1230,7 +1230,7 @@ impl PhysicsPanel {
                 if ui.button("🚗 Spawn Vehicle").clicked() {
                     // Spawn test vehicle
                 }
-                if ui.button("🔄 Reset Position").clicked() {
+                if ui.button("Reset Position").clicked() {
                     // Reset vehicle position
                 }
             });
@@ -1289,10 +1289,10 @@ impl PhysicsPanel {
                 if ui.button("🧵 Spawn Cloth").clicked() {
                     // Spawn test cloth
                 }
-                if ui.button("💨 Apply Wind Gust").clicked() {
+                if ui.button("[Dash] Apply Wind Gust").clicked() {
                     // Apply wind gust
                 }
-                if ui.button("📌 Pin Corners").clicked() {
+                if ui.button("[Pin] Pin Corners").clicked() {
                     // Pin cloth corners
                 }
             });
@@ -1300,7 +1300,7 @@ impl PhysicsPanel {
     }
 
     fn show_destruction_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💥 Destruction System");
+        ui.heading("[Hit] Destruction System");
         ui.add_space(10.0);
 
         // Fracture pattern
@@ -1360,10 +1360,10 @@ impl PhysicsPanel {
             ui.label(RichText::new("Test Tools").strong());
 
             ui.horizontal(|ui| {
-                if ui.button("🧱 Spawn Destructible").clicked() {
+                if ui.button("[Brk] Spawn Destructible").clicked() {
                     // Spawn destructible
                 }
-                if ui.button("💥 Trigger Explosion").clicked() {
+                if ui.button("[Hit] Trigger Explosion").clicked() {
                     // Trigger explosion
                 }
                 if ui.button("🧹 Clear Debris").clicked() {
@@ -1374,13 +1374,13 @@ impl PhysicsPanel {
     }
 
     fn show_environment_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 Environment Physics");
+        ui.heading("[Glb] Environment Physics");
         ui.add_space(10.0);
 
         // Wind settings
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("💨 Wind").strong());
+                ui.label(RichText::new("[Dash] Wind").strong());
                 ui.checkbox(&mut self.wind_enabled, "Enabled");
             });
 
@@ -1414,8 +1414,8 @@ impl PhysicsPanel {
         // Gravity zones
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("🌐 Gravity Zones").strong());
-                if ui.button("➕ Add").clicked() {
+                ui.label(RichText::new("Gravity Zones").strong());
+                if ui.button("Add").clicked() {
                     self.gravity_zones.push(GravityZoneConfig::default());
                 }
             });
@@ -1441,7 +1441,7 @@ impl PhysicsPanel {
                                 ui.label(format!("{:?}", zone.shape));
                                 ui.label(format!("{:.1} m/s²", zone.strength));
 
-                                if ui.small_button("🗑").clicked() {
+                                if ui.small_button("[Del]").clicked() {
                                     to_remove = Some(i);
                                 }
                             });
@@ -1775,9 +1775,9 @@ mod tests {
     fn test_physics_visualization_display() {
         assert_eq!(
             format!("{}", PhysicsVisualization::Colliders),
-            "📦 Colliders"
+            "[Pkg] Colliders"
         );
-        assert_eq!(format!("{}", PhysicsVisualization::Joints), "🔗 Joints");
+        assert_eq!(format!("{}", PhysicsVisualization::Joints), "[Link] Joints");
     }
 
     #[test]
@@ -1791,7 +1791,7 @@ mod tests {
 
     #[test]
     fn test_physics_visualization_icon() {
-        assert_eq!(PhysicsVisualization::BroadPhase.icon(), "🗂️");
+        assert_eq!(PhysicsVisualization::BroadPhase.icon(), "[Files]");
         assert_eq!(PhysicsVisualization::Islands.icon(), "🏝️");
     }
 
@@ -1820,8 +1820,8 @@ mod tests {
 
     #[test]
     fn test_simulation_mode_display() {
-        assert_eq!(format!("{}", SimulationMode::Running), "▶️ Running");
-        assert_eq!(format!("{}", SimulationMode::Paused), "⏸️ Paused");
+        assert_eq!(format!("{}", SimulationMode::Running), "> Running");
+        assert_eq!(format!("{}", SimulationMode::Paused), "|| Paused");
     }
 
     #[test]
@@ -1832,7 +1832,7 @@ mod tests {
 
     #[test]
     fn test_simulation_mode_icon() {
-        assert_eq!(SimulationMode::StepOnce.icon(), "⏭️");
+        assert_eq!(SimulationMode::StepOnce.icon(), ">|");
         assert_eq!(SimulationMode::SlowMotion.icon(), "🐌");
     }
 
@@ -1996,7 +1996,7 @@ mod tests {
     #[test]
     fn test_destruction_pattern_display() {
         assert_eq!(format!("{}", DestructionPattern::Voronoi), "⬡ Voronoi");
-        assert_eq!(format!("{}", DestructionPattern::Shatter), "💎 Shatter");
+        assert_eq!(format!("{}", DestructionPattern::Shatter), "[Gem] Shatter");
     }
 
     #[test]
@@ -2008,7 +2008,7 @@ mod tests {
     #[test]
     fn test_destruction_pattern_icon() {
         assert_eq!(DestructionPattern::Slice.icon(), "🔪");
-        assert_eq!(DestructionPattern::Radial.icon(), "💥");
+        assert_eq!(DestructionPattern::Radial.icon(), "[Hit]");
     }
 
     #[test]
@@ -2040,7 +2040,7 @@ mod tests {
 
     #[test]
     fn test_gravity_zone_shape_display() {
-        assert_eq!(format!("{}", GravityZoneShape::Box), "📦 Box");
+        assert_eq!(format!("{}", GravityZoneShape::Box), "[Pkg] Box");
         assert_eq!(format!("{}", GravityZoneShape::Sphere), "⚪ Sphere");
     }
 
@@ -2053,7 +2053,7 @@ mod tests {
     #[test]
     fn test_gravity_zone_shape_icon() {
         assert_eq!(GravityZoneShape::Cylinder.icon(), "🛢️");
-        assert_eq!(GravityZoneShape::Global.icon(), "🌍");
+        assert_eq!(GravityZoneShape::Global.icon(), "[Glb]");
     }
 
     #[test]
@@ -2082,7 +2082,7 @@ mod tests {
 
     #[test]
     fn test_physics_tab_display() {
-        assert_eq!(format!("{}", PhysicsTab::Overview), "📊 Overview");
+        assert_eq!(format!("{}", PhysicsTab::Overview), "[Chart] Overview");
         assert_eq!(format!("{}", PhysicsTab::Vehicle), "🚗 Vehicle");
     }
 
@@ -2095,7 +2095,7 @@ mod tests {
     #[test]
     fn test_physics_tab_icon() {
         assert_eq!(PhysicsTab::Ragdoll.icon(), "🚶");
-        assert_eq!(PhysicsTab::Environment.icon(), "🌍");
+        assert_eq!(PhysicsTab::Environment.icon(), "[Glb]");
     }
 
     #[test]

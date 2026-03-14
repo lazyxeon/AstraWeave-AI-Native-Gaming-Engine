@@ -1,4 +1,4 @@
-//! Viewport Renderer
+﻿//! Viewport Renderer
 //!
 //! Coordinates multi-pass rendering pipeline for 3D viewport.
 //! Renders in order: Grid → Entities → Gizmos → Selection Outline
@@ -343,7 +343,7 @@ impl ViewportRenderer {
                 // DEBUG: Log gizmo mode and constraint
                 if let crate::gizmo::GizmoMode::Rotate { constraint } = &gizmo.mode {
                     debug!(
-                        "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
+                        "Renderer: Rendering Rotate gizmo, constraint = {:?}",
                         constraint
                     );
                 }

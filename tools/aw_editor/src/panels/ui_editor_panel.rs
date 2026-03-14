@@ -79,12 +79,12 @@ impl WidgetType {
         match self {
             WidgetType::Panel => "⬜",
             WidgetType::Button => "🔘",
-            WidgetType::Label => "📝",
-            WidgetType::Image => "🖼️",
+            WidgetType::Label => "[Edit]",
+            WidgetType::Image => "[Img]",
             WidgetType::Slider => "🎚️",
-            WidgetType::ProgressBar => "📊",
+            WidgetType::ProgressBar => "[Chart]",
             WidgetType::Toggle => "☑️",
-            WidgetType::Dropdown => "📋",
+            WidgetType::Dropdown => "[List]",
             WidgetType::TextField => "✏️",
             WidgetType::ScrollView => "📜",
             WidgetType::Grid => "⊞",
@@ -157,13 +157,13 @@ impl AnchorPreset {
     pub fn icon(&self) -> &'static str {
         match self {
             AnchorPreset::TopLeft => "↖️",
-            AnchorPreset::TopCenter => "⬆️",
+            AnchorPreset::TopCenter => "[Up]",
             AnchorPreset::TopRight => "↗️",
-            AnchorPreset::MiddleLeft => "⬅️",
+            AnchorPreset::MiddleLeft => "[Lt]",
             AnchorPreset::MiddleCenter => "⏺️",
-            AnchorPreset::MiddleRight => "➡️",
+            AnchorPreset::MiddleRight => "[Rt]",
             AnchorPreset::BottomLeft => "↙️",
-            AnchorPreset::BottomCenter => "⬇️",
+            AnchorPreset::BottomCenter => "[Dn]",
             AnchorPreset::BottomRight => "↘️",
             AnchorPreset::StretchHorizontal => "↔️",
             AnchorPreset::StretchVertical => "↕️",
@@ -314,7 +314,7 @@ impl ScaleMode {
         match self {
             ScaleMode::ConstantPixelSize => "📏",
             ScaleMode::ScaleWithScreenSize => "📱",
-            ScaleMode::ConstantPhysicalSize => "📐",
+            ScaleMode::ConstantPhysicalSize => "[Sq]",
         }
     }
 }
@@ -502,7 +502,7 @@ impl AnimLoopMode {
     pub fn icon(&self) -> &'static str {
         match self {
             AnimLoopMode::Once => "1️⃣",
-            AnimLoopMode::Loop => "🔄",
+            AnimLoopMode::Loop => "[Sync]",
             AnimLoopMode::PingPong => "↔",
         }
     }
@@ -953,12 +953,12 @@ impl UiEditorTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            UiEditorTab::Hierarchy => "🌳",
-            UiEditorTab::Canvas => "🖼️",
-            UiEditorTab::Widget => "🧩",
-            UiEditorTab::Style => "🎨",
-            UiEditorTab::Animation => "🎬",
-            UiEditorTab::Presets => "📋",
+            UiEditorTab::Hierarchy => "[Tree]",
+            UiEditorTab::Canvas => "[Img]",
+            UiEditorTab::Widget => "[Puz]",
+            UiEditorTab::Style => "[Art]",
+            UiEditorTab::Animation => "[Anim]",
+            UiEditorTab::Presets => "[List]",
             UiEditorTab::Preview => "👁️",
         }
     }
@@ -1008,7 +1008,7 @@ pub struct UiEditorPanel {
 
 impl Default for UiEditorPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: UiEditorTab::Hierarchy,
 
             canvases: Vec::new(),
@@ -1041,7 +1041,6 @@ impl Default for UiEditorPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -1228,13 +1227,13 @@ impl UiEditorPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (UiEditorTab::Hierarchy, "📋 Hierarchy"),
-                (UiEditorTab::Canvas, "🖼️ Canvas"),
-                (UiEditorTab::Widget, "🔲 Widget"),
-                (UiEditorTab::Style, "🎨 Style"),
-                (UiEditorTab::Animation, "🎬 Animation"),
-                (UiEditorTab::Presets, "📦 Presets"),
-                (UiEditorTab::Preview, "▶️ Preview"),
+                (UiEditorTab::Hierarchy, "Hierarchy"),
+                (UiEditorTab::Canvas, "Canvas"),
+                (UiEditorTab::Widget, "Widget"),
+                (UiEditorTab::Style, "Style"),
+                (UiEditorTab::Animation, "Animation"),
+                (UiEditorTab::Presets, "Presets"),
+                (UiEditorTab::Preview, "> Preview"),
             ];
 
             for (tab, label) in tabs {
@@ -1252,18 +1251,18 @@ impl UiEditorPanel {
         });
 
         ui.horizontal(|ui| {
-            ui.label(format!("🖼️ {} canvases", self.canvases.len()));
+            ui.label(format!("{} canvases", self.canvases.len()));
             ui.separator();
-            ui.label(format!("🔲 {} widgets", self.current_canvas.widgets.len()));
+            ui.label(format!("{} widgets", self.current_canvas.widgets.len()));
             ui.separator();
-            ui.label(format!("🎨 {} styles", self.styles.len()));
+            ui.label(format!("{} styles", self.styles.len()));
         });
 
         ui.separator();
     }
 
     fn show_hierarchy_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 UI Hierarchy");
+        ui.heading("UI Hierarchy");
         ui.add_space(10.0);
 
         // Canvas selection
@@ -1366,11 +1365,11 @@ impl UiEditorPanel {
     }
 
     fn show_canvas_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🖼️ Canvas Settings");
+        ui.heading("Canvas Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("📐 Properties").strong());
+            ui.label(RichText::new("[Sq] Properties").strong());
 
             egui::Grid::new("canvas_props")
                 .num_columns(2)
@@ -1429,7 +1428,7 @@ impl UiEditorPanel {
 
         // Editor settings
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Editor").strong());
+            ui.label(RichText::new("Editor").strong());
 
             ui.checkbox(&mut self.show_guides, "Show Guides");
             ui.checkbox(&mut self.snap_to_grid, "Snap to Grid");
@@ -1447,7 +1446,7 @@ impl UiEditorPanel {
     }
 
     fn show_widget_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔲 Widget Properties");
+        ui.heading("Widget Properties");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1455,7 +1454,7 @@ impl UiEditorPanel {
             .show(ui, |ui| {
                 // Basic
                 ui.group(|ui| {
-                    ui.label(RichText::new("📝 Basic").strong());
+                    ui.label(RichText::new("[Edit] Basic").strong());
 
                     egui::Grid::new("widget_basic")
                         .num_columns(2)
@@ -1487,7 +1486,7 @@ impl UiEditorPanel {
 
                 // Transform
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Transform").strong());
+                    ui.label(RichText::new("[Sq] Transform").strong());
 
                     egui::Grid::new("widget_transform")
                         .num_columns(2)
@@ -1573,7 +1572,7 @@ impl UiEditorPanel {
 
                 // Appearance
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎨 Appearance").strong());
+                    ui.label(RichText::new("Appearance").strong());
 
                     egui::Grid::new("widget_appearance")
                         .num_columns(2)
@@ -1624,7 +1623,7 @@ impl UiEditorPanel {
                 match self.current_widget.widget_type {
                     WidgetType::Label | WidgetType::Button => {
                         ui.group(|ui| {
-                            ui.label(RichText::new("📝 Text").strong());
+                            ui.label(RichText::new("[Edit] Text").strong());
 
                             egui::Grid::new("widget_text")
                                 .num_columns(2)
@@ -1677,12 +1676,12 @@ impl UiEditorPanel {
                     }
                     WidgetType::Image => {
                         ui.group(|ui| {
-                            ui.label(RichText::new("🖼️ Image").strong());
+                            ui.label(RichText::new("Image").strong());
 
                             ui.horizontal(|ui| {
                                 ui.label("Path:");
                                 ui.text_edit_singleline(&mut self.current_widget.image_path);
-                                if ui.button("📂").clicked() {
+                                if ui.button("[Open]").clicked() {
                                     // Open file dialog
                                 }
                             });
@@ -1694,7 +1693,7 @@ impl UiEditorPanel {
     }
 
     fn show_style_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 UI Styles");
+        ui.heading("UI Styles");
         ui.add_space(10.0);
 
         // Style selector
@@ -1731,7 +1730,7 @@ impl UiEditorPanel {
             .max_height(300.0)
             .show(ui, |ui| {
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎨 Colors").strong());
+                    ui.label(RichText::new("Colors").strong());
 
                     egui::Grid::new("style_colors")
                         .num_columns(2)
@@ -1769,7 +1768,7 @@ impl UiEditorPanel {
                 ui.add_space(10.0);
 
                 ui.group(|ui| {
-                    ui.label(RichText::new("📝 Typography").strong());
+                    ui.label(RichText::new("[Edit] Typography").strong());
 
                     egui::Grid::new("style_typography")
                         .num_columns(2)
@@ -1805,7 +1804,7 @@ impl UiEditorPanel {
                 ui.add_space(10.0);
 
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Spacing").strong());
+                    ui.label(RichText::new("[Sq] Spacing").strong());
 
                     egui::Grid::new("style_spacing")
                         .num_columns(2)
@@ -1837,7 +1836,7 @@ impl UiEditorPanel {
     }
 
     fn show_animation_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎬 UI Animations");
+        ui.heading("UI Animations");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -1942,7 +1941,7 @@ impl UiEditorPanel {
     }
 
     fn show_presets_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📦 UI Presets");
+        ui.heading("UI Presets");
         ui.add_space(10.0);
 
         let categories: Vec<_> = self
@@ -1959,7 +1958,7 @@ impl UiEditorPanel {
 
                 for preset in self.presets.iter().filter(|p| p.category == category) {
                     ui.horizontal(|ui| {
-                        if ui.button("➕").clicked() {
+                        if ui.button("+").clicked() {
                             // Add preset to canvas
                         }
                         ui.label(&preset.name);
@@ -1976,11 +1975,11 @@ impl UiEditorPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("▶️ Preview");
+        ui.heading("> Preview");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🖥️ Preview Settings").strong());
+            ui.label(RichText::new("Preview Settings").strong());
 
             ui.horizontal(|ui| {
                 if ui.button("📱 Mobile").clicked() {
@@ -1989,7 +1988,7 @@ impl UiEditorPanel {
                 if ui.button("📟 Tablet").clicked() {
                     self.current_canvas.resolution = [1024, 768];
                 }
-                if ui.button("🖥️ Desktop").clicked() {
+                if ui.button("Desktop").clicked() {
                     self.current_canvas.resolution = [1920, 1080];
                 }
                 if ui.button("📺 4K").clicked() {
@@ -2132,13 +2131,15 @@ mod tests {
 
     #[test]
     fn test_ui_editor_panel_creation() {
-        let panel = UiEditorPanel::new();
+        let mut panel = UiEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.canvas_count() >= 2);
     }
 
     #[test]
     fn test_default_sample_data() {
-        let panel = UiEditorPanel::new();
+        let mut panel = UiEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.widget_count() >= 3);
         assert!(panel.style_count() >= 2);
     }
@@ -2164,8 +2165,8 @@ mod tests {
     #[test]
     fn test_widget_type_icons() {
         assert_eq!(WidgetType::Button.icon(), "🔘");
-        assert_eq!(WidgetType::Label.icon(), "📝");
-        assert_eq!(WidgetType::Image.icon(), "🖼️");
+        assert_eq!(WidgetType::Label.icon(), "[Edit]");
+        assert_eq!(WidgetType::Image.icon(), "[Img]");
     }
 
     #[test]

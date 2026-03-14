@@ -187,14 +187,14 @@ impl StringCategory {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            StringCategory::Ui => "🖥️",
-            StringCategory::Dialogue => "💬",
+            StringCategory::Ui => "[Mon]",
+            StringCategory::Dialogue => "[Chat]",
             StringCategory::Quest => "📜",
             StringCategory::Item => "🎒",
             StringCategory::Achievement => "🏆",
             StringCategory::Tutorial => "📖",
             StringCategory::System => "⚙️",
-            StringCategory::Error => "❌",
+            StringCategory::Error => "[x]",
         }
     }
 }
@@ -251,11 +251,11 @@ impl ExportFormat {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ExportFormat::Csv => "📊",
-            ExportFormat::Xliff => "📄",
-            ExportFormat::Po => "📁",
-            ExportFormat::Json => "📝",
-            ExportFormat::Resx => "📦",
+            ExportFormat::Csv => "[Chart]",
+            ExportFormat::Xliff => "[Doc]",
+            ExportFormat::Po => "[Dir]",
+            ExportFormat::Json => "[Edit]",
+            ExportFormat::Resx => "[Pkg]",
         }
     }
 
@@ -311,9 +311,9 @@ impl LocalizationTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LocalizationTab::Strings => "📝",
-            LocalizationTab::Languages => "🌍",
-            LocalizationTab::Statistics => "📊",
+            LocalizationTab::Strings => "[Edit]",
+            LocalizationTab::Languages => "[Glb]",
+            LocalizationTab::Statistics => "[Chart]",
             LocalizationTab::ImportExport => "📥",
             LocalizationTab::Settings => "⚙️",
         }
@@ -457,7 +457,7 @@ pub struct LocalizationPanel {
 
 impl Default for LocalizationPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: LocalizationTab::Strings,
 
             strings: Vec::new(),
@@ -486,7 +486,6 @@ impl Default for LocalizationPanel {
             actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -606,11 +605,11 @@ impl LocalizationPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (LocalizationTab::Strings, "📝 Strings"),
-                (LocalizationTab::Languages, "🌍 Languages"),
-                (LocalizationTab::Statistics, "📊 Statistics"),
-                (LocalizationTab::ImportExport, "📁 Import/Export"),
-                (LocalizationTab::Settings, "⚙️ Settings"),
+                (LocalizationTab::Strings, "[Edit] Strings"),
+                (LocalizationTab::Languages, "[Glb] Languages"),
+                (LocalizationTab::Statistics, "Statistics"),
+                (LocalizationTab::ImportExport, "Import/Export"),
+                (LocalizationTab::Settings, "Settings"),
             ];
 
             for (tab, label) in tabs {
@@ -632,17 +631,17 @@ impl LocalizationPanel {
         let needs_review = self.strings.iter().filter(|s| s.needs_review).count();
 
         ui.horizontal(|ui| {
-            ui.label(format!("📝 {} strings", self.strings.len()));
+            ui.label(format!("[Edit] {} strings", self.strings.len()));
             ui.separator();
-            ui.label(format!("🌍 {} languages", self.enabled_languages.len()));
+            ui.label(format!("[Glb] {} languages", self.enabled_languages.len()));
             ui.separator();
             if missing > 0 {
-                ui.label(RichText::new(format!("⚠️ {} missing", missing)).color(Color32::YELLOW));
+                ui.label(RichText::new(format!("{} missing", missing)).color(Color32::YELLOW));
             }
             if needs_review > 0 {
                 ui.separator();
                 ui.label(
-                    RichText::new(format!("👁️ {} need review", needs_review))
+                    RichText::new(format!("{} need review", needs_review))
                         .color(Color32::LIGHT_BLUE),
                 );
             }
@@ -664,12 +663,12 @@ impl LocalizationPanel {
     }
 
     fn show_strings_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📝 String Table");
+        ui.heading("[Edit] String Table");
         ui.add_space(5.0);
 
         // Filters
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.add(egui::TextEdit::singleline(&mut self.filter_text).hint_text("Search..."));
 
             ui.separator();
@@ -713,7 +712,7 @@ impl LocalizationPanel {
             // Left: String list
             cols[0].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("📋 Strings").strong());
+                    ui.label(RichText::new("Strings").strong());
                     if ui.button("+ New").clicked() {
                         self.strings.push(LocalizedString {
                             key: format!("new.string_{}", self.strings.len()),
@@ -760,9 +759,9 @@ impl LocalizationPanel {
                             let status = if s.needs_review {
                                 "👁️"
                             } else if has_missing {
-                                "⚠️"
+                                "[!]"
                             } else {
-                                "✅"
+                                "[ok]"
                             };
 
                             let label = format!("{} {} {}", s.category.icon(), s.key, status);
@@ -826,7 +825,7 @@ impl LocalizationPanel {
                 ui.add_space(10.0);
 
                 // Translations
-                ui.label(RichText::new("🌍 Translations").strong());
+                ui.label(RichText::new("[Glb] Translations").strong());
 
                 egui::ScrollArea::vertical()
                     .max_height(180.0)
@@ -837,7 +836,7 @@ impl LocalizationPanel {
 
                             let has_translation =
                                 self.current_string.translations.contains_key(lang);
-                            let status = if has_translation { "✅" } else { "⚠️" };
+                            let status = if has_translation { "[ok]" } else { "[!]" };
 
                             ui.horizontal(|ui| {
                                 ui.label(format!("{} {} {}", flag, name, status));
@@ -855,14 +854,14 @@ impl LocalizationPanel {
     }
 
     fn show_languages_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 Languages");
+        ui.heading("[Glb] Languages");
         ui.add_space(10.0);
 
         ui.columns(2, |cols| {
             // Left: Enabled languages
             cols[0].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("✅ Enabled Languages").strong());
+                    ui.label(RichText::new("Enabled Languages").strong());
                     if ui.button("+ Add").clicked() {
                         // Show language picker
                     }
@@ -877,7 +876,7 @@ impl LocalizationPanel {
                             ui.label(RichText::new("[Source]").color(Color32::LIGHT_GREEN));
                         }
 
-                        if ui.button("🗑️").clicked() {
+                        if ui.button("[Del]").clicked() {
                             self.enabled_languages.retain(|l| l != lang);
                         }
                     });
@@ -886,7 +885,7 @@ impl LocalizationPanel {
 
             // Right: Source language & settings
             cols[1].group(|ui| {
-                ui.label(RichText::new("⚙️ Language Settings").strong());
+                ui.label(RichText::new("Language Settings").strong());
 
                 ui.horizontal(|ui| {
                     ui.label("Source Language:");
@@ -931,7 +930,7 @@ impl LocalizationPanel {
                 ui.add_space(20.0);
 
                 // Available languages to add
-                ui.label(RichText::new("📋 Available Languages").strong());
+                ui.label(RichText::new("Available Languages").strong());
 
                 let available = [
                     Language::English,
@@ -967,7 +966,7 @@ impl LocalizationPanel {
     }
 
     fn show_statistics_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Localization Statistics");
+        ui.heading("Localization Statistics");
         ui.add_space(10.0);
 
         // Overall stats
@@ -1008,7 +1007,7 @@ impl LocalizationPanel {
 
         // Per-language completion
         ui.group(|ui| {
-            ui.label(RichText::new("🌍 Per-Language Completion").strong());
+            ui.label(RichText::new("[Glb] Per-Language Completion").strong());
 
             for lang in &self.enabled_languages {
                 let total = self.strings.len();
@@ -1037,7 +1036,7 @@ impl LocalizationPanel {
 
         // Per-category breakdown
         ui.group(|ui| {
-            ui.label(RichText::new("📁 Per-Category").strong());
+            ui.label(RichText::new("Per-Category").strong());
 
             let categories = [
                 StringCategory::Ui,
@@ -1060,7 +1059,7 @@ impl LocalizationPanel {
     }
 
     fn show_import_export_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📁 Import/Export");
+        ui.heading("Import/Export");
         ui.add_space(10.0);
 
         // Export
@@ -1124,12 +1123,12 @@ impl LocalizationPanel {
 
         // Import
         ui.group(|ui| {
-            ui.label(RichText::new("📥 Import").strong());
+            ui.label(RichText::new("Import").strong());
 
             ui.horizontal(|ui| {
                 ui.label("File:");
                 ui.text_edit_singleline(&mut self.import_path);
-                if ui.button("📂 Browse").clicked() {
+                if ui.button("Browse").clicked() {
                     // Open file dialog
                 }
             });
@@ -1137,10 +1136,10 @@ impl LocalizationPanel {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
-                if ui.button("📥 Import").clicked() {
+                if ui.button("Import").clicked() {
                     // Import strings
                 }
-                if ui.button("📥 Merge").clicked() {
+                if ui.button("Merge").clicked() {
                     // Merge with existing strings
                 }
             });
@@ -1148,11 +1147,11 @@ impl LocalizationPanel {
     }
 
     fn show_settings_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ Localization Settings");
+        ui.heading("Localization Settings");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 General").strong());
+            ui.label(RichText::new("General").strong());
 
             ui.checkbox(&mut false, "Auto-detect text overflow");
             ui.checkbox(&mut false, "Warn on missing translations");
@@ -1162,7 +1161,7 @@ impl LocalizationPanel {
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("📐 Text Validation").strong());
+            ui.label(RichText::new("[Sq] Text Validation").strong());
 
             ui.checkbox(&mut false, "Check max length");
             ui.checkbox(&mut false, "Validate placeholders (e.g., {0}, {name})");
@@ -1387,20 +1386,20 @@ mod tests {
 
     #[test]
     fn test_category_icons() {
-        assert_eq!(StringCategory::Dialogue.icon(), "💬");
+        assert_eq!(StringCategory::Dialogue.icon(), "[Chat]");
         assert_eq!(StringCategory::Quest.icon(), "📜");
     }
 
     #[test]
     fn test_category_icon_all() {
-        assert_eq!(StringCategory::Ui.icon(), "🖥️");
-        assert_eq!(StringCategory::Dialogue.icon(), "💬");
+        assert_eq!(StringCategory::Ui.icon(), "[Mon]");
+        assert_eq!(StringCategory::Dialogue.icon(), "[Chat]");
         assert_eq!(StringCategory::Quest.icon(), "📜");
         assert_eq!(StringCategory::Item.icon(), "🎒");
         assert_eq!(StringCategory::Achievement.icon(), "🏆");
         assert_eq!(StringCategory::Tutorial.icon(), "📖");
         assert_eq!(StringCategory::System.icon(), "⚙️");
-        assert_eq!(StringCategory::Error.icon(), "❌");
+        assert_eq!(StringCategory::Error.icon(), "[x]");
     }
 
     #[test]
@@ -1570,13 +1569,15 @@ mod tests {
 
     #[test]
     fn test_localization_panel_creation() {
-        let panel = LocalizationPanel::new();
+        let mut panel = LocalizationPanel::new();
+        panel.create_sample_data();
         assert!(panel.string_count() >= 5);
     }
 
     #[test]
     fn test_localization_panel_default() {
-        let panel = LocalizationPanel::default();
+        let mut panel = LocalizationPanel::default();
+        panel.create_sample_data();
         assert!(panel.string_count() >= 5);
         assert!(panel.language_count() >= 5);
     }
@@ -1676,7 +1677,8 @@ mod tests {
 
     #[test]
     fn test_sample_data_exists() {
-        let panel = LocalizationPanel::new();
+        let mut panel = LocalizationPanel::new();
+        panel.create_sample_data();
         assert!(panel.string_count() >= 5); // Sample data creates at least 5 strings
     }
 

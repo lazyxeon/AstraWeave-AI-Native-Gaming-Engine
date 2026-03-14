@@ -50,15 +50,15 @@ impl PerfCategory {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            PerfCategory::Frame => "🖼️",
-            PerfCategory::Cpu => "🔧",
-            PerfCategory::Gpu => "🎮",
-            PerfCategory::Memory => "💾",
-            PerfCategory::Physics => "⚡",
-            PerfCategory::Ai => "🧠",
-            PerfCategory::Rendering => "🎨",
-            PerfCategory::Audio => "🔊",
-            PerfCategory::Network => "🌐",
+            PerfCategory::Frame => "[Img]",
+            PerfCategory::Cpu => "[Wrn]",
+            PerfCategory::Gpu => "[Gp]",
+            PerfCategory::Memory => "[Save]",
+            PerfCategory::Physics => "[Zap]",
+            PerfCategory::Ai => "[Brain]",
+            PerfCategory::Rendering => "[Art]",
+            PerfCategory::Audio => "[Snd]",
+            PerfCategory::Network => "[Net]",
             PerfCategory::Scripting => "📜",
         }
     }
@@ -420,8 +420,8 @@ impl AlertSeverity {
     pub fn icon(&self) -> &'static str {
         match self {
             AlertSeverity::Info => "ℹ️",
-            AlertSeverity::Warning => "⚠️",
-            AlertSeverity::Critical => "🔴",
+            AlertSeverity::Warning => "[!]",
+            AlertSeverity::Critical => "[R]",
         }
     }
 }
@@ -911,7 +911,7 @@ impl PerformancePanel {
                     Color32::RED
                 };
                 ui.label(
-                    RichText::new(format!("🎮 {:.0} FPS", fps))
+                    RichText::new(format!("{:.0} FPS", fps))
                         .color(color)
                         .strong(),
                 );
@@ -929,7 +929,7 @@ impl PerformancePanel {
                 } else {
                     Color32::RED
                 };
-                ui.label(RichText::new(format!("⏱️ {:.2} ms", ft)).color(color));
+                ui.label(RichText::new(format!("[Time] {:.2} ms", ft)).color(color));
             }
 
             ui.separator();
@@ -943,12 +943,12 @@ impl PerformancePanel {
             } else {
                 Color32::RED
             };
-            ui.label(RichText::new(format!("✅ {:.1}% on budget", rate)).color(color));
+            ui.label(RichText::new(format!("{:.1}% on budget", rate)).color(color));
         });
     }
 
     fn show_subsystems_section(&mut self, ui: &mut Ui) {
-        ui.collapsing("📊 Subsystem Breakdown", |ui| {
+        ui.collapsing("Subsystem Breakdown", |ui| {
             let total_time: f64 = self.subsystems.iter().map(|s| s.time_ms).sum();
 
             for subsystem in &self.subsystems {
@@ -994,7 +994,7 @@ impl PerformancePanel {
     }
 
     fn show_memory_section(&self, ui: &mut Ui) {
-        ui.collapsing("💾 Memory", |ui| {
+        ui.collapsing("Memory", |ui| {
             ui.horizontal(|ui| {
                 ui.label("Heap:");
                 ui.label(format!(
@@ -1028,7 +1028,7 @@ impl PerformancePanel {
     }
 
     fn show_gpu_section(&self, ui: &mut Ui) {
-        ui.collapsing("🎮 GPU Stats", |ui| {
+        ui.collapsing("GPU Stats", |ui| {
             ui.label(format!(
                 "Frame Time: {:.2} ms",
                 self.gpu_stats.frame_time_ms
@@ -1150,7 +1150,7 @@ impl Panel for PerformancePanel {
     }
 
     fn show(&mut self, ui: &mut Ui) {
-        ui.heading("⚡ Performance Monitor");
+        ui.heading("Performance Monitor");
         ui.separator();
 
         // Summary bar
@@ -1176,7 +1176,7 @@ impl Panel for PerformancePanel {
         // Runtime stats (if available)
         if let Some(stats) = &self.runtime_stats {
             ui.group(|ui| {
-                ui.label(RichText::new("🎮 Runtime Metrics").strong());
+                ui.label(RichText::new("Runtime Metrics").strong());
                 ui.label(format!("Frame Time: {:.2} ms", stats.frame_time_ms));
                 ui.label(format!("FPS: {:.0}", stats.fps));
                 ui.label(format!("Entities: {}", stats.entity_count));
@@ -1192,11 +1192,11 @@ impl Panel for PerformancePanel {
                 };
 
                 let msg = if stats.frame_time_ms > 20.0 {
-                    "⚠️ Over budget (>20ms)"
+                    "Over budget (>20ms)"
                 } else if stats.frame_time_ms > 16.7 {
-                    "⚠️ Near budget (16.7-20ms)"
+                    "Near budget (16.7-20ms)"
                 } else {
-                    "✅ Within 60 FPS budget"
+                    "Within 60 FPS budget"
                 };
 
                 ui.colored_label(color, msg);
@@ -1232,7 +1232,7 @@ impl Panel for PerformancePanel {
 
         // Controls
         ui.horizontal(|ui| {
-            if ui.button("🔄 Reset").clicked() {
+            if ui.button("Reset").clicked() {
                 self.widget = PerformanceBudgetWidget::new();
                 self.frame_count = 0;
                 self.runtime_stats = None;

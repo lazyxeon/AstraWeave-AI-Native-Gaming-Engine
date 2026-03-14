@@ -106,13 +106,13 @@ impl SplinePreset {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            SplinePreset::Custom => "📐",
+            SplinePreset::Custom => "[Sq]",
             SplinePreset::Road => "🛣️",
             SplinePreset::Rail => "🚃",
-            SplinePreset::River => "🌊",
-            SplinePreset::Fence => "🧱",
+            SplinePreset::River => "[Wave]",
+            SplinePreset::Fence => "[Brk]",
             SplinePreset::Cable => "🔌",
-            SplinePreset::AnimationPath => "🎬",
+            SplinePreset::AnimationPath => "[Anim]",
             SplinePreset::CameraRail => "🎥",
         }
     }
@@ -385,9 +385,9 @@ impl SplineTool {
     pub fn icon(&self) -> &'static str {
         match self {
             SplineTool::Select => "👆",
-            SplineTool::AddPoint => "➕",
+            SplineTool::AddPoint => "+",
             SplineTool::InsertPoint => "📍",
-            SplineTool::DeletePoint => "❌",
+            SplineTool::DeletePoint => "[x]",
             SplineTool::MoveTangent => "↗️",
             SplineTool::Draw => "✏️",
         }
@@ -467,10 +467,10 @@ impl SplineTab {
         match self {
             SplineTab::Splines => "〰️",
             SplineTab::Points => "📍",
-            SplineTab::Mesh => "🔷",
+            SplineTab::Mesh => "[D]",
             SplineTab::Terrain => "🏔️",
-            SplineTab::Animation => "🎬",
-            SplineTab::Profiles => "📐",
+            SplineTab::Animation => "[Anim]",
+            SplineTab::Profiles => "[Sq]",
         }
     }
 
@@ -741,7 +741,7 @@ pub struct SplineEditorPanel {
 
 impl Default for SplineEditorPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: SplineTab::Splines,
 
             current_tool: SplineTool::Select,
@@ -766,7 +766,6 @@ impl Default for SplineEditorPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -922,12 +921,12 @@ impl SplineEditorPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (SplineTab::Splines, "📐 Splines"),
-                (SplineTab::Points, "📍 Points"),
-                (SplineTab::Mesh, "🔷 Mesh"),
+                (SplineTab::Splines, "[Sq] Splines"),
+                (SplineTab::Points, "Points"),
+                (SplineTab::Mesh, "[D] Mesh"),
                 (SplineTab::Terrain, "🏔️ Terrain"),
-                (SplineTab::Animation, "🎬 Animation"),
-                (SplineTab::Profiles, "📊 Profiles"),
+                (SplineTab::Animation, "Animation"),
+                (SplineTab::Profiles, "Profiles"),
             ];
 
             for (tab, label) in tabs {
@@ -945,9 +944,9 @@ impl SplineEditorPanel {
         });
 
         ui.horizontal(|ui| {
-            ui.label(format!("📐 {} splines", self.splines.len()));
+            ui.label(format!("[Sq] {} splines", self.splines.len()));
             ui.separator();
-            ui.label(format!("📍 {} points", self.current_spline.points.len()));
+            ui.label(format!("{} points", self.current_spline.points.len()));
             ui.separator();
             ui.label(format!("📏 {:.1}m", self.current_spline.total_length));
         });
@@ -956,12 +955,12 @@ impl SplineEditorPanel {
     }
 
     fn show_splines_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📐 Splines");
+        ui.heading("[Sq] Splines");
         ui.add_space(10.0);
 
         // Tool bar
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Tools").strong());
+            ui.label(RichText::new("Tools").strong());
             ui.horizontal(|ui| {
                 let tools = [
                     SplineTool::Select,
@@ -994,7 +993,7 @@ impl SplineEditorPanel {
         // Spline list
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📋 Spline List").strong());
+                ui.label(RichText::new("Spline List").strong());
                 if ui.button("+ New").clicked() {
                     let id = self.next_spline_id();
                     let new_spline = Spline {
@@ -1036,7 +1035,7 @@ impl SplineEditorPanel {
 
         // Current spline properties
         ui.group(|ui| {
-            ui.label(RichText::new("⚙️ Properties").strong());
+            ui.label(RichText::new("Properties").strong());
 
             egui::Grid::new("spline_props")
                 .num_columns(2)
@@ -1101,13 +1100,13 @@ impl SplineEditorPanel {
     }
 
     fn show_points_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📍 Control Points");
+        ui.heading("Control Points");
         ui.add_space(10.0);
 
         // Point list
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📋 Points").strong());
+                ui.label(RichText::new("Points").strong());
                 if ui.button("+ Add").clicked() {
                     let id = self.next_point_id();
                     let last_pos = self
@@ -1153,7 +1152,7 @@ impl SplineEditorPanel {
 
         // Point properties
         ui.group(|ui| {
-            ui.label(RichText::new("📐 Point Properties").strong());
+            ui.label(RichText::new("[Sq] Point Properties").strong());
 
             egui::Grid::new("point_props")
                 .num_columns(2)
@@ -1305,7 +1304,7 @@ impl SplineEditorPanel {
     }
 
     fn show_mesh_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔷 Mesh Generation");
+        ui.heading("[D] Mesh Generation");
         ui.add_space(10.0);
 
         ui.checkbox(
@@ -1317,7 +1316,7 @@ impl SplineEditorPanel {
             ui.add_space(10.0);
 
             ui.group(|ui| {
-                ui.label(RichText::new("📊 Profile").strong());
+                ui.label(RichText::new("Profile").strong());
 
                 egui::Grid::new("mesh_profile")
                     .num_columns(2)
@@ -1394,10 +1393,10 @@ impl SplineEditorPanel {
             ui.add_space(10.0);
 
             ui.horizontal(|ui| {
-                if ui.button("🔄 Regenerate Mesh").clicked() {
+                if ui.button("Regenerate Mesh").clicked() {
                     // Trigger mesh regeneration
                 }
-                if ui.button("💾 Export Mesh").clicked() {
+                if ui.button("Export Mesh").clicked() {
                     // Export mesh to file
                 }
             });
@@ -1417,7 +1416,7 @@ impl SplineEditorPanel {
             ui.add_space(10.0);
 
             ui.group(|ui| {
-                ui.label(RichText::new("📐 Deformation Settings").strong());
+                ui.label(RichText::new("[Sq] Deformation Settings").strong());
 
                 egui::Grid::new("terrain_settings")
                     .num_columns(2)
@@ -1452,10 +1451,10 @@ impl SplineEditorPanel {
             ui.add_space(10.0);
 
             ui.horizontal(|ui| {
-                if ui.button("🔄 Apply to Terrain").clicked() {
+                if ui.button("Apply to Terrain").clicked() {
                     // Apply terrain deformation
                 }
-                if ui.button("↩️ Undo Deformation").clicked() {
+                if ui.button("Undo Deformation").clicked() {
                     // Undo terrain changes
                 }
             });
@@ -1463,11 +1462,11 @@ impl SplineEditorPanel {
     }
 
     fn show_animation_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎬 Animation Path");
+        ui.heading("Animation Path");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("⏱️ Timing").strong());
+            ui.label(RichText::new("[Time] Timing").strong());
 
             egui::Grid::new("animation_settings")
                 .num_columns(2)
@@ -1504,14 +1503,14 @@ impl SplineEditorPanel {
 
         // Preview controls
         ui.group(|ui| {
-            ui.label(RichText::new("▶️ Preview").strong());
+            ui.label(RichText::new("> Preview").strong());
 
             ui.horizontal(|ui| {
                 ui.button("⏮️").clicked();
-                ui.button("▶️").clicked();
-                ui.button("⏸️").clicked();
-                ui.button("⏹️").clicked();
-                ui.button("⏭️").clicked();
+                ui.button(">").clicked();
+                ui.button("||").clicked();
+                ui.button("[]").clicked();
+                ui.button(">|").clicked();
             });
 
             // Timeline
@@ -1521,7 +1520,7 @@ impl SplineEditorPanel {
     }
 
     fn show_profiles_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Custom Profiles");
+        ui.heading("Custom Profiles");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -1704,13 +1703,13 @@ mod tests {
 
     #[test]
     fn test_spline_preset_icons() {
-        assert_eq!(SplinePreset::Custom.icon(), "📐");
+        assert_eq!(SplinePreset::Custom.icon(), "[Sq]");
         assert_eq!(SplinePreset::Road.icon(), "🛣️");
         assert_eq!(SplinePreset::Rail.icon(), "🚃");
-        assert_eq!(SplinePreset::River.icon(), "🌊");
-        assert_eq!(SplinePreset::Fence.icon(), "🧱");
+        assert_eq!(SplinePreset::River.icon(), "[Wave]");
+        assert_eq!(SplinePreset::Fence.icon(), "[Brk]");
         assert_eq!(SplinePreset::Cable.icon(), "🔌");
-        assert_eq!(SplinePreset::AnimationPath.icon(), "🎬");
+        assert_eq!(SplinePreset::AnimationPath.icon(), "[Anim]");
         assert_eq!(SplinePreset::CameraRail.icon(), "🎥");
     }
 
@@ -1795,9 +1794,9 @@ mod tests {
     #[test]
     fn test_spline_tool_icons() {
         assert_eq!(SplineTool::Select.icon(), "👆");
-        assert_eq!(SplineTool::AddPoint.icon(), "➕");
+        assert_eq!(SplineTool::AddPoint.icon(), "+");
         assert_eq!(SplineTool::InsertPoint.icon(), "📍");
-        assert_eq!(SplineTool::DeletePoint.icon(), "❌");
+        assert_eq!(SplineTool::DeletePoint.icon(), "[x]");
         assert_eq!(SplineTool::MoveTangent.icon(), "↗️");
         assert_eq!(SplineTool::Draw.icon(), "✏️");
     }
@@ -1961,13 +1960,15 @@ mod tests {
 
     #[test]
     fn test_spline_editor_creation() {
-        let panel = SplineEditorPanel::new();
+        let mut panel = SplineEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.spline_count() >= 3);
     }
 
     #[test]
     fn test_default_points() {
-        let panel = SplineEditorPanel::new();
+        let mut panel = SplineEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.point_count() >= 5);
     }
 
@@ -2011,7 +2012,8 @@ mod tests {
 
     #[test]
     fn test_custom_profiles() {
-        let panel = SplineEditorPanel::new();
+        let mut panel = SplineEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.profile_count() >= 1);
     }
 
@@ -2248,7 +2250,7 @@ mod tests {
     fn test_spline_tab_icon() {
         assert_eq!(SplineTab::Splines.icon(), "〰️");
         assert_eq!(SplineTab::Points.icon(), "📍");
-        assert_eq!(SplineTab::Animation.icon(), "🎬");
+        assert_eq!(SplineTab::Animation.icon(), "[Anim]");
     }
 
     #[test]

@@ -1,4 +1,4 @@
-//! Dock Panel Integration
+﻿//! Dock Panel Integration
 //!
 //! This module provides the bridge between the egui_dock system and
 //! actual panel implementations. It contains context structures that
@@ -123,7 +123,7 @@ impl<'a> DockPanelContext<'a> {
             }
             PanelType::Animation => {
                 // Animation panel needs egui::Context, show placeholder
-                ui.heading("🎬 Animation");
+                ui.heading("Animation");
                 ui.separator();
                 ui.label("Animation timeline and keyframe editor");
                 ui.label("(Full rendering requires egui::Context)");
@@ -151,7 +151,7 @@ impl<'a> DockPanelContext<'a> {
             }
             PanelType::BehaviorGraph => {
                 // Behavior graph needs special context - show placeholder
-                ui.heading("🧠 Behavior Graph");
+                ui.heading("Behavior Graph");
                 ui.separator();
                 ui.label("Behavior graph editor");
                 ui.label("(Requires additional context for full rendering)");
@@ -219,7 +219,7 @@ impl<'a> DockPanelContext<'a> {
 
     /// Render the inspector panel with entity details
     fn render_inspector(&mut self, ui: &mut Ui) {
-        ui.heading("🔍 Inspector");
+        ui.heading("Inspector");
         ui.separator();
 
         if let Some(entity_id) = self.selected_entity {
@@ -275,7 +275,7 @@ impl<'a> DockPanelContext<'a> {
         ui.centered_and_justified(|ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space(20.0);
-                ui.heading("🎬 3D Viewport");
+                ui.heading("3D Viewport");
                 ui.add_space(10.0);
                 ui.label("The 3D viewport renders in its own surface.");
                 ui.add_space(10.0);
@@ -310,7 +310,7 @@ impl MinimalPanelContext {
                 ui.centered_and_justified(|ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(20.0);
-                        ui.heading("🎬 3D Viewport");
+                        ui.heading("3D Viewport");
                         ui.add_space(10.0);
                         ui.label("The 3D viewport renders separately.");
                         if self.is_playing {
@@ -320,7 +320,7 @@ impl MinimalPanelContext {
                 });
             }
             PanelType::Inspector => {
-                ui.heading("🔍 Inspector");
+                ui.heading("Inspector");
                 ui.separator();
                 if let Some(entity_id) = self.selected_entity {
                     ui.label(format!("Selected Entity: {}", entity_id));
@@ -334,12 +334,12 @@ impl MinimalPanelContext {
                 }
             }
             PanelType::Hierarchy => {
-                ui.heading("📋 Hierarchy");
+                ui.heading("Hierarchy");
                 ui.separator();
                 ui.label("(Requires world context)");
             }
             PanelType::Console => {
-                ui.heading("💬 Console");
+                ui.heading("Console");
                 ui.separator();
                 ui.label("(Requires log context)");
             }
@@ -399,7 +399,7 @@ impl<'a> TabViewer for ContextualTabViewer<'a> {
         // Play mode indicator
         if self.context.is_playing {
             ui.horizontal(|ui| {
-                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "▶ Play Mode");
+                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "> Play Mode");
             });
             ui.separator();
         }

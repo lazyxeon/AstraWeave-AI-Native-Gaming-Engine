@@ -1,0 +1,14 @@
+# Created by Kenney (www.kenney.nl)
+
+newmtl brick
+Kd 0.7568628 0.8 0.7568628
+
+newmtl brickLight
+Kd 0.8588235 0.9098039 0.8588235
+
+newmtl _defaultMat
+Kd 1 1 1
+
+newmtl grey
+Kd 0.6039216 0.6392157 0.6039216
+

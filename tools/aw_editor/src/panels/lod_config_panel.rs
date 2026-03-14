@@ -53,11 +53,11 @@ impl LodBiasMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LodBiasMode::Auto => "🤖",
-            LodBiasMode::Quality => "💎",
+            LodBiasMode::Auto => "[Bot]",
+            LodBiasMode::Quality => "[Gem]",
             LodBiasMode::Balanced => "⚖️",
-            LodBiasMode::Performance => "⚡",
-            LodBiasMode::Custom => "🔧",
+            LodBiasMode::Performance => "[Zap]",
+            LodBiasMode::Custom => "[Wrn]",
         }
     }
 }
@@ -149,8 +149,8 @@ impl FadeMode {
     pub fn icon(&self) -> &'static str {
         match self {
             FadeMode::None => "⬛",
-            FadeMode::CrossFade => "🔀",
-            FadeMode::SpeedTree => "🌳",
+            FadeMode::CrossFade => "[Shuf]",
+            FadeMode::SpeedTree => "[Tree]",
             FadeMode::Dither => "⊞",
         }
     }
@@ -271,10 +271,10 @@ impl ReductionMethod {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ReductionMethod::QuadricErrorMetric => "📐",
+            ReductionMethod::QuadricErrorMetric => "[Sq]",
             ReductionMethod::EdgeCollapse => "🔻",
             ReductionMethod::VertexClustering => "⚫",
-            ReductionMethod::Simplygon => "🔧",
+            ReductionMethod::Simplygon => "[Wrn]",
         }
     }
 }
@@ -332,10 +332,10 @@ impl LodTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LodTab::Groups => "📦",
-            LodTab::Global => "🌍",
+            LodTab::Groups => "[Pkg]",
+            LodTab::Global => "[Glb]",
             LodTab::Generation => "⚙️",
-            LodTab::Statistics => "📊",
+            LodTab::Statistics => "[Chart]",
         }
     }
 }
@@ -484,7 +484,7 @@ pub struct LodConfigPanel {
 
 impl Default for LodConfigPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: LodTab::Groups,
 
             lod_groups: Vec::new(),
@@ -502,7 +502,6 @@ impl Default for LodConfigPanel {
             actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -688,10 +687,10 @@ impl LodConfigPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (LodTab::Groups, "📦 Groups"),
-                (LodTab::Global, "🌍 Global"),
-                (LodTab::Generation, "⚙️ Generation"),
-                (LodTab::Statistics, "📊 Statistics"),
+                (LodTab::Groups, "Groups"),
+                (LodTab::Global, "[Glb] Global"),
+                (LodTab::Generation, "Generation"),
+                (LodTab::Statistics, "Statistics"),
             ];
 
             for (tab, label) in tabs {
@@ -709,7 +708,7 @@ impl LodConfigPanel {
         });
 
         ui.horizontal(|ui| {
-            ui.label(format!("📦 {} LOD groups", self.lod_groups.len()));
+            ui.label(format!("{} LOD groups", self.lod_groups.len()));
             ui.separator();
             ui.label(format!("🎚️ {:?} bias", self.global_settings.bias_mode));
         });
@@ -718,13 +717,13 @@ impl LodConfigPanel {
     }
 
     fn show_groups_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📦 LOD Groups");
+        ui.heading("LOD Groups");
         ui.add_space(10.0);
 
         // Group list
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📋 Groups").strong());
+                ui.label(RichText::new("Groups").strong());
                 if ui.button("+ New").clicked() {
                     let id = self.next_group_id();
                     let new_group = LodGroup {
@@ -762,7 +761,7 @@ impl LodConfigPanel {
 
         // Group properties
         ui.group(|ui| {
-            ui.label(RichText::new("⚙️ Properties").strong());
+            ui.label(RichText::new("Properties").strong());
 
             egui::Grid::new("group_props")
                 .num_columns(2)
@@ -775,7 +774,7 @@ impl LodConfigPanel {
                     ui.label("Asset:");
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(&mut self.current_group.asset_path);
-                        if ui.button("📂").clicked() {}
+                        if ui.button("[Open]").clicked() {}
                     });
                     ui.end_row();
 
@@ -831,7 +830,7 @@ impl LodConfigPanel {
         // LOD levels
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📊 LOD Levels").strong());
+                ui.label(RichText::new("LOD Levels").strong());
                 if ui.button("+ Add Level").clicked() {
                     let level = self.current_group.levels.len() as u32;
                     let last_distance = self
@@ -886,7 +885,7 @@ impl LodConfigPanel {
                                 ui.label(format!("{}", level.triangle_count));
                                 ui.label(format!("{:.1}%", level.reduction_percent));
 
-                                if ui.button("🗑️").clicked() {
+                                if ui.button("[Del]").clicked() {
                                     // Remove level
                                 }
                                 ui.end_row();
@@ -900,7 +899,7 @@ impl LodConfigPanel {
         // Preview
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("👁️ Preview").strong());
+                ui.label(RichText::new("Preview").strong());
                 ui.checkbox(&mut self.show_lod_colors, "Show LOD Colors");
             });
 
@@ -976,7 +975,7 @@ impl LodConfigPanel {
     }
 
     fn show_global_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 Global LOD Settings");
+        ui.heading("[Glb] Global LOD Settings");
         ui.add_space(10.0);
 
         // Quality preset
@@ -1097,7 +1096,7 @@ impl LodConfigPanel {
 
         // Screen coverage
         ui.group(|ui| {
-            ui.label(RichText::new("📐 Screen Coverage").strong());
+            ui.label(RichText::new("[Sq] Screen Coverage").strong());
 
             ui.checkbox(
                 &mut self.global_settings.screen_coverage_enabled,
@@ -1144,11 +1143,11 @@ impl LodConfigPanel {
     }
 
     fn show_generation_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ LOD Generation");
+        ui.heading("LOD Generation");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Generation Settings").strong());
+            ui.label(RichText::new("Generation Settings").strong());
 
             egui::Grid::new("generation_settings")
                 .num_columns(2)
@@ -1217,7 +1216,7 @@ impl LodConfigPanel {
 
         // Preservation settings
         ui.group(|ui| {
-            ui.label(RichText::new("🛡️ Preservation").strong());
+            ui.label(RichText::new("Preservation").strong());
 
             ui.checkbox(&mut self.generation_settings.preserve_uvs, "Preserve UVs");
             ui.checkbox(
@@ -1243,17 +1242,17 @@ impl LodConfigPanel {
 
         // Actions
         ui.horizontal(|ui| {
-            if ui.button("🔄 Generate LODs for Selected").clicked() {
+            if ui.button("Generate LODs for Selected").clicked() {
                 // Generate LODs for current group
             }
-            if ui.button("🔄 Generate All LODs").clicked() {
+            if ui.button("Generate All LODs").clicked() {
                 // Generate LODs for all groups
             }
         });
     }
 
     fn show_statistics_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 LOD Statistics");
+        ui.heading("LOD Statistics");
         ui.add_space(10.0);
 
         // Overall stats
@@ -1286,7 +1285,7 @@ impl LodConfigPanel {
 
         // Per-group breakdown
         ui.group(|ui| {
-            ui.label(RichText::new("📦 Per-Group Statistics").strong());
+            ui.label(RichText::new("Per-Group Statistics").strong());
 
             egui::ScrollArea::vertical()
                 .max_height(200.0)
@@ -1323,7 +1322,7 @@ impl LodConfigPanel {
 
         // Memory estimate
         ui.group(|ui| {
-            ui.label(RichText::new("💾 Memory Estimate").strong());
+            ui.label(RichText::new("Memory Estimate").strong());
 
             // Rough estimate: 32 bytes per vertex
             let total_vertices: u32 = self
@@ -1902,7 +1901,8 @@ mod tests {
 
     #[test]
     fn test_lod_panel_creation() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         assert!(panel.group_count() >= 3);
     }
 
@@ -1916,7 +1916,8 @@ mod tests {
 
     #[test]
     fn test_default_levels() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         assert!(panel.level_count() >= 3);
     }
 
@@ -1975,7 +1976,8 @@ mod tests {
 
     #[test]
     fn test_sample_data_character() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         let character = panel
             .lod_groups
             .iter()
@@ -1988,7 +1990,8 @@ mod tests {
 
     #[test]
     fn test_sample_data_tree() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         let tree = panel.lod_groups.iter().find(|g| g.name == "Pine Tree");
         assert!(tree.is_some());
         let tree_group = tree.unwrap();
@@ -1998,7 +2001,8 @@ mod tests {
 
     #[test]
     fn test_sample_data_building() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         let building = panel.lod_groups.iter().find(|g| g.name == "House Medium");
         assert!(building.is_some());
         let build_group = building.unwrap();
@@ -2007,7 +2011,8 @@ mod tests {
 
     #[test]
     fn test_selected_group_initially_set() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         assert!(panel.selected_group.is_some());
     }
 
@@ -2034,7 +2039,8 @@ mod tests {
 
     #[test]
     fn test_lod_level_chain() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         let char_group = panel
             .lod_groups
             .iter()
@@ -2049,7 +2055,8 @@ mod tests {
 
     #[test]
     fn test_lod_level_triangle_reduction() {
-        let panel = LodConfigPanel::new();
+        let mut panel = LodConfigPanel::new();
+        panel.create_sample_data();
         let char_group = panel
             .lod_groups
             .iter()

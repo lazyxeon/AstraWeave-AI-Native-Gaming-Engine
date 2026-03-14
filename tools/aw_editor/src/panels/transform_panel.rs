@@ -1,4 +1,4 @@
-// tools/aw_editor/src/panels/transform_panel.rs - Transform gizmo panel
+﻿// tools/aw_editor/src/panels/transform_panel.rs - Transform gizmo panel
 
 use super::Panel;
 use crate::gizmo::{
@@ -303,11 +303,11 @@ impl Panel for TransformPanel {
 
     fn show(&mut self, ui: &mut Ui) {
         // Entity list section
-        ui.label(RichText::new("📐 Scene Entities").strong());
+        ui.label(RichText::new("[Sq] Scene Entities").strong());
         ui.separator();
 
         ui.horizontal(|ui| {
-            if ui.button("➕ Add Entity").clicked() {
+            if ui.button("Add Entity").clicked() {
                 let id = self.add_entity(
                     format!("Entity_{}", self.next_entity_id),
                     Transform::default(),
@@ -315,7 +315,7 @@ impl Panel for TransformPanel {
                 self.select_entity(id);
             }
 
-            if ui.button("🗑️ Delete Selected").clicked() {
+            if ui.button("Delete Selected").clicked() {
                 if let Some(id) = self.selected_entity_id {
                     self.remove_entity(id);
                 }

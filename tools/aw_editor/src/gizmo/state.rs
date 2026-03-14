@@ -1,4 +1,4 @@
-//! Gizmo state machine implementation.
+﻿//! Gizmo state machine implementation.
 //!
 //! Manages modal state transitions (Inactive → Translate → Rotate → Scale)
 //! and constraint application (None → X → Y → Z → XY → XZ → YZ).
@@ -81,7 +81,7 @@ impl GizmoMode {
     /// Returns an icon for this mode.
     pub fn icon(&self) -> &'static str {
         match self {
-            GizmoMode::Inactive => "⏸",
+            GizmoMode::Inactive => "||",
             GizmoMode::Translate { .. } => "↔",
             GizmoMode::Rotate { .. } => "↻",
             GizmoMode::Scale { .. } => "⇲",
@@ -369,7 +369,7 @@ impl GizmoState {
             };
             self.last_mode = self.mode;
             self.reset_operation_state();
-            debug!("🔄 Rotate mode started - constraint reset to None");
+            debug!("Rotate mode started - constraint reset to None");
         }
     }
 
@@ -391,17 +391,17 @@ impl GizmoState {
             GizmoMode::Translate { constraint } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                debug!("🎯 Translate constraint: {:?} → {:?}", old, *constraint);
+                debug!("Translate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Rotate { constraint } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                debug!("🎯 Rotate constraint: {:?} → {:?}", old, *constraint);
+                debug!("Rotate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Scale { constraint, .. } => {
                 let old = *constraint;
                 *constraint = constraint.cycle(axis);
-                debug!("🎯 Scale constraint: {:?} → {:?}", old, *constraint);
+                debug!("Scale constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Inactive => {}
         }

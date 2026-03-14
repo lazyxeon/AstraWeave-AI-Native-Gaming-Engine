@@ -178,13 +178,13 @@ impl TransitionStyle {
     /// Returns the icon for this transition style
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Fade => "🌅",
-            Self::SlideRight => "➡️",
-            Self::SlideLeft => "⬅️",
-            Self::SlideTop => "⬆️",
-            Self::SlideBottom => "⬇️",
-            Self::Dissolve => "✨",
-            Self::Instant => "⚡",
+            Self::Fade => "[Dawn]",
+            Self::SlideRight => "[Rt]",
+            Self::SlideLeft => "[Lt]",
+            Self::SlideTop => "[Up]",
+            Self::SlideBottom => "[Dn]",
+            Self::Dissolve => "[Fx]",
+            Self::Instant => "[Zap]",
         }
     }
 
@@ -365,13 +365,13 @@ impl PolishPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (PolishTab::Splash, "🌟 Splash"),
-                (PolishTab::Loading, "⏳ Loading"),
-                (PolishTab::SaveLoad, "💾 Save/Load"),
-                (PolishTab::Credits, "🎬 Credits"),
-                (PolishTab::UiPolish, "✨ UI Polish"),
+                (PolishTab::Splash, "Splash"),
+                (PolishTab::Loading, "... Loading"),
+                (PolishTab::SaveLoad, "Save/Load"),
+                (PolishTab::Credits, "Credits"),
+                (PolishTab::UiPolish, "UI Polish"),
                 (PolishTab::Achievements, "🏆 Achievements"),
-                (PolishTab::GameFeel, "🎮 Game Feel"),
+                (PolishTab::GameFeel, "Game Feel"),
             ];
 
             for (tab, label) in tabs {
@@ -420,7 +420,7 @@ impl PolishPanel {
                         screen.duration.unwrap_or(Duration::ZERO).as_secs_f32()
                     ));
                     if screen.skippable {
-                        ui.label("⏭️ Skippable");
+                        ui.label(">| Skippable");
                     }
                 });
             }
@@ -434,10 +434,10 @@ impl PolishPanel {
 
         // Add screen buttons
         ui.horizontal(|ui| {
-            if ui.button("➕ Add Engine Logo").clicked() {
+            if ui.button("Add Engine Logo").clicked() {
                 self.splash_sequence = std::mem::take(&mut self.splash_sequence).with_engine_logo();
             }
-            if ui.button("➕ Add Publisher Logo").clicked() {
+            if ui.button("Add Publisher Logo").clicked() {
                 self.splash_sequence = std::mem::take(&mut self.splash_sequence)
                     .with_publisher_logo("publisher_logo.png");
             }
@@ -481,7 +481,7 @@ impl PolishPanel {
         ui.add_space(10.0);
 
         // Tips section
-        ui.collapsing("💡 Loading Tips", |ui| {
+        ui.collapsing("Loading Tips", |ui| {
             for (i, tip) in self.loading_screen.tips.iter().enumerate() {
                 ui.horizontal(|ui| {
                     ui.label(format!("{}: {}", i + 1, tip));
@@ -500,7 +500,7 @@ impl PolishPanel {
 
         // Color pickers
         ui.add_space(10.0);
-        ui.collapsing("🎨 Colors", |ui| {
+        ui.collapsing("Colors", |ui| {
             ui.horizontal(|ui| {
                 ui.label("Background:");
                 let mut bg = Color32::from_rgba_unmultiplied(
@@ -602,7 +602,7 @@ impl PolishPanel {
         // Preview
         ui.add_space(15.0);
         ui.separator();
-        ui.label(RichText::new("📋 Configuration Preview").strong());
+        ui.label(RichText::new("Configuration Preview").strong());
         ui.label(format!(
             "Save path: <game_data>/{}/slot.{}",
             self.save_config.directory, self.save_config.extension
@@ -656,7 +656,7 @@ impl PolishPanel {
                     ui.horizontal(|ui| {
                         ui.label(format!("{}.", i + 1));
                         ui.label(format!("{} - {}", name, role));
-                        if ui.button("❌").clicked() {
+                        if ui.button("[x]").clicked() {
                             to_remove = Some(i);
                         }
                     });
@@ -685,7 +685,7 @@ impl PolishPanel {
 
         // Color pickers
         ui.add_space(10.0);
-        ui.collapsing("🎨 Colors", |ui| {
+        ui.collapsing("Colors", |ui| {
             ui.horizontal(|ui| {
                 ui.label("Background:");
                 let mut bg = Color32::from_rgba_unmultiplied(
@@ -938,9 +938,9 @@ impl PolishPanel {
                         ui.label(format!("🏆 {}", achievement.name));
                         ui.label(format!("({} pts)", achievement.points));
                         if achievement.hidden {
-                            ui.label("🔒 Hidden");
+                            ui.label("[Lock] Hidden");
                         }
-                        if ui.button("❌").clicked() {
+                        if ui.button("[x]").clicked() {
                             to_remove = Some(i);
                         }
                     });
@@ -973,7 +973,7 @@ impl PolishPanel {
                 ui.end_row();
             });
 
-        if ui.button("➕ Add Achievement").clicked()
+        if ui.button("Add Achievement").clicked()
             && !self.new_achievement_id.is_empty()
             && !self.new_achievement_name.is_empty()
         {
@@ -1539,13 +1539,13 @@ mod tests {
 
     #[test]
     fn test_transition_style_icon() {
-        assert_eq!(TransitionStyle::Fade.icon(), "🌅");
-        assert_eq!(TransitionStyle::SlideRight.icon(), "➡️");
-        assert_eq!(TransitionStyle::SlideLeft.icon(), "⬅️");
-        assert_eq!(TransitionStyle::SlideTop.icon(), "⬆️");
-        assert_eq!(TransitionStyle::SlideBottom.icon(), "⬇️");
-        assert_eq!(TransitionStyle::Dissolve.icon(), "✨");
-        assert_eq!(TransitionStyle::Instant.icon(), "⚡");
+        assert_eq!(TransitionStyle::Fade.icon(), "[Dawn]");
+        assert_eq!(TransitionStyle::SlideRight.icon(), "[Rt]");
+        assert_eq!(TransitionStyle::SlideLeft.icon(), "[Lt]");
+        assert_eq!(TransitionStyle::SlideTop.icon(), "[Up]");
+        assert_eq!(TransitionStyle::SlideBottom.icon(), "[Dn]");
+        assert_eq!(TransitionStyle::Dissolve.icon(), "[Fx]");
+        assert_eq!(TransitionStyle::Instant.icon(), "[Zap]");
     }
 
     #[test]

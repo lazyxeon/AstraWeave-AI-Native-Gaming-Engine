@@ -85,11 +85,11 @@ impl DecoratorKind {
     /// Returns an icon for this decorator.
     pub fn icon(&self) -> &'static str {
         match self {
-            DecoratorKind::Inverter => "🔄",
-            DecoratorKind::Succeeder => "✅",
-            DecoratorKind::Failer => "❌",
-            DecoratorKind::Repeat(_) => "🔁",
-            DecoratorKind::Retry(_) => "🔂",
+            DecoratorKind::Inverter => "\u{1f504}",
+            DecoratorKind::Succeeder => "\u{2705}",
+            DecoratorKind::Failer => "\u{274c}",
+            DecoratorKind::Repeat(_) => "\u{1f501}",
+            DecoratorKind::Retry(_) => "\u{1f502}",
         }
     }
 
@@ -212,12 +212,12 @@ impl BehaviorGraphNodeKind {
     /// Returns an icon for this node kind.
     pub fn icon(&self) -> &'static str {
         match self {
-            BehaviorGraphNodeKind::Action { .. } => "⚡",
-            BehaviorGraphNodeKind::Condition { .. } => "❓",
-            BehaviorGraphNodeKind::Sequence { .. } => "➡️",
-            BehaviorGraphNodeKind::Selector { .. } => "🔀",
-            BehaviorGraphNodeKind::Parallel { .. } => "⏸",
-            BehaviorGraphNodeKind::Decorator(_) => "🎁",
+            BehaviorGraphNodeKind::Action { .. } => "\u{26a1}",
+            BehaviorGraphNodeKind::Condition { .. } => "\u{2753}",
+            BehaviorGraphNodeKind::Sequence { .. } => "\u{27a1}\u{fe0f}",
+            BehaviorGraphNodeKind::Selector { .. } => "\u{1f500}",
+            BehaviorGraphNodeKind::Parallel { .. } => "\u{23f8}",
+            BehaviorGraphNodeKind::Decorator(_) => "\u{1f381}",
         }
     }
 

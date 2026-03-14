@@ -86,10 +86,10 @@ impl ReloadEvent {
     /// Get icon for this event type
     pub fn icon(&self) -> &'static str {
         match self {
-            ReloadEvent::Material(_) => "🎨",
-            ReloadEvent::Texture(_) => "🖼️",
-            ReloadEvent::Prefab(_) => "📦",
-            ReloadEvent::Model(_) => "🗿",
+            ReloadEvent::Material(_) => "[Mat]",
+            ReloadEvent::Texture(_) => "[Tex]",
+            ReloadEvent::Prefab(_) => "[Pfb]",
+            ReloadEvent::Model(_) => "[Mdl]",
         }
     }
 

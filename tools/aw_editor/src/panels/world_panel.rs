@@ -53,15 +53,15 @@ impl WeatherType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            WeatherType::Clear => "☀️",
+            WeatherType::Clear => "[Sun]",
             WeatherType::Cloudy => "⛅",
-            WeatherType::Overcast => "☁️",
-            WeatherType::LightRain => "🌧️",
-            WeatherType::HeavyRain => "🌧️",
+            WeatherType::Overcast => "[Cld]",
+            WeatherType::LightRain => "[Rain]",
+            WeatherType::HeavyRain => "[Rain]",
             WeatherType::Thunderstorm => "⛈️",
             WeatherType::Snow => "🌨️",
             WeatherType::Blizzard => "❄️",
-            WeatherType::Fog => "🌫️",
+            WeatherType::Fog => "[Fog]",
             WeatherType::Sandstorm => "🏜️",
             WeatherType::Hail => "🌨️",
         }
@@ -205,15 +205,15 @@ impl TimePreset {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            TimePreset::Midnight => "🌙",
-            TimePreset::Dawn => "🌅",
+            TimePreset::Midnight => "[Moon]",
+            TimePreset::Dawn => "[Dawn]",
             TimePreset::Sunrise => "🌄",
-            TimePreset::Morning => "🌤️",
-            TimePreset::Noon => "☀️",
+            TimePreset::Morning => "[Clr]",
+            TimePreset::Noon => "[Sun]",
             TimePreset::Afternoon => "⛅",
             TimePreset::Sunset => "🌇",
             TimePreset::Dusk => "🌆",
-            TimePreset::Night => "🌃",
+            TimePreset::Night => "[Ngt]",
         }
     }
 
@@ -415,13 +415,13 @@ impl EnvironmentPreset {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            EnvironmentPreset::Sunny => "☀️",
-            EnvironmentPreset::Overcast => "☁️",
-            EnvironmentPreset::Rainy => "🌧️",
+            EnvironmentPreset::Sunny => "[Sun]",
+            EnvironmentPreset::Overcast => "[Cld]",
+            EnvironmentPreset::Rainy => "[Rain]",
             EnvironmentPreset::Stormy => "⛈️",
-            EnvironmentPreset::Foggy => "🌫️",
-            EnvironmentPreset::Sunset => "🌅",
-            EnvironmentPreset::Night => "🌙",
+            EnvironmentPreset::Foggy => "[Fog]",
+            EnvironmentPreset::Sunset => "[Dawn]",
+            EnvironmentPreset::Night => "[Moon]",
             EnvironmentPreset::DarkNight => "🌑",
             EnvironmentPreset::Arctic => "❄️",
             EnvironmentPreset::Desert => "🏜️",
@@ -512,7 +512,7 @@ impl WorldEventType {
     pub fn icon(&self) -> &'static str {
         match self {
             WorldEventType::TerrainGenerated => "🏔️",
-            WorldEventType::WeatherChanged => "🌤️",
+            WorldEventType::WeatherChanged => "[Clr]",
             WorldEventType::TimeChanged => "⏰",
             WorldEventType::BiomeChanged => "🌲",
             WorldEventType::SettingsModified => "⚙️",
@@ -668,7 +668,7 @@ impl WorldPanel {
     }
 
     pub fn show_with_level(&mut self, ui: &mut Ui, level: &mut LevelDoc) {
-        ui.heading("🌍 World Settings");
+        ui.heading("[Glb] World Settings");
         ui.separator();
 
         // Quick summary bar
@@ -701,7 +701,7 @@ impl WorldPanel {
         ui.separator();
 
         // Environment presets
-        ui.collapsing("🎨 Environment Presets", |ui| {
+        ui.collapsing("Environment Presets", |ui| {
             ui.horizontal_wrapped(|ui| {
                 for preset in EnvironmentPreset::all() {
                     let selected = self.current_preset == *preset;
@@ -740,7 +740,7 @@ impl WorldPanel {
             ui.group(|ui| {
                 ui.label("Seed");
                 ui.add(egui::Slider::new(&mut level.seed, 0..=99999).text("seed"));
-                if ui.button("🎲 Randomize").clicked() {
+                if ui.button("[Dice] Randomize").clicked() {
                     level.seed = rand::random::<u64>() % 100000;
                 }
             });
@@ -762,7 +762,7 @@ impl WorldPanel {
 
                 ui.add_space(5.0);
 
-                let generate_clicked = ui.button("⚡ Generate Terrain").clicked();
+                let generate_clicked = ui.button("Generate Terrain").clicked();
 
                 self.terrain_state.configure(level.seed, &level.biome);
 
@@ -804,7 +804,7 @@ impl WorldPanel {
 
         // Weather section
         if self.show_weather {
-            ui.collapsing("🌤️ Weather", |ui| {
+            ui.collapsing("[Clr] Weather", |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Type:");
                     egui::ComboBox::from_id_salt("weather_type")
@@ -938,9 +938,9 @@ impl WorldPanel {
                 });
 
                 let daytime_icon = if self.time.is_daytime() {
-                    "☀️"
+                    "[Sun]"
                 } else {
-                    "🌙"
+                    "[Moon]"
                 };
                 ui.label(format!(
                     "{} {} (Sun: {:.0}%)",
@@ -976,7 +976,7 @@ impl WorldPanel {
 
         // Lighting section
         if self.show_lighting {
-            ui.collapsing("💡 Lighting", |ui| {
+            ui.collapsing("Lighting", |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Sun Intensity:");
                     ui.add(egui::Slider::new(
@@ -1044,7 +1044,7 @@ impl WorldPanel {
 
         // World bounds section
         if self.show_bounds {
-            ui.collapsing("📐 World Bounds", |ui| {
+            ui.collapsing("[Sq] World Bounds", |ui| {
                 ui.checkbox(&mut self.bounds.enforce_bounds, "Enforce boundaries");
 
                 ui.add_space(5.0);
@@ -1069,7 +1069,7 @@ impl WorldPanel {
 
         // Event log section
         if self.show_events && !self.events.is_empty() {
-            ui.collapsing(format!("📋 Events ({})", self.events.len()), |ui| {
+            ui.collapsing(format!("Events ({})", self.events.len()), |ui| {
                 egui::ScrollArea::vertical()
                     .max_height(100.0)
                     .show(ui, |ui| {

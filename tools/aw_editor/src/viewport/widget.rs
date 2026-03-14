@@ -1,4 +1,4 @@
-//! Viewport Widget
+﻿//! Viewport Widget
 //!
 //! Custom egui widget that integrates wgpu 3D rendering into editor panels.
 //! Handles input, rendering coordination, and egui integration.
@@ -359,140 +359,18 @@ impl ViewportWidget {
                     egui::Color32::WHITE,
                 );
 
-                // FPS counter (top-left corner)
-                let fps_text = format!("{:.0} FPS", fps);
-                let fps_color = if fps >= 55.0 {
-                    egui::Color32::from_rgb(100, 220, 100) // Green: 55+ FPS
-                } else if fps >= 30.0 {
-                    egui::Color32::from_rgb(220, 200, 80) // Yellow: 30-55 FPS
-                } else {
-                    egui::Color32::from_rgb(220, 100, 100) // Red: <30 FPS
-                };
-                let fps_rect = egui::Rect::from_min_size(
-                    rect.left_top() + egui::vec2(10.0, 10.0),
-                    egui::vec2(80.0, 22.0),
-                );
-                ui.painter().rect_filled(
-                    fps_rect,
-                    3.0,
-                    egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
-                );
-                ui.painter().text(
-                    fps_rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    fps_text,
-                    egui::FontId::monospace(14.0),
-                    fps_color,
-                );
-
-                // Overlay camera info (top-right corner, semi-transparent)
-                let pos = self.camera.position();
-                let dist = self.camera.distance();
-                let info_text = format!(
-                    "Camera: [{:.1}, {:.1}, {:.1}] | Dist: {:.1}m",
-                    pos.x, pos.y, pos.z, dist
-                );
-
-                let info_width = 350.0;
-                ui.painter().rect_filled(
-                    egui::Rect::from_min_size(
-                        rect.right_top() + egui::vec2(-info_width - 10.0, 10.0),
-                        egui::vec2(info_width, 20.0),
-                    ),
-                    0.0,
-                    egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
-                );
-
-                ui.painter().text(
-                    rect.right_top() + egui::vec2(-info_width - 5.0, 12.0),
-                    egui::Align2::LEFT_TOP,
-                    info_text,
-                    egui::FontId::monospace(12.0),
-                    egui::Color32::from_rgb(200, 220, 240),
-                );
-
-                // Camera reset button (below camera info, top-right)
-                let button_rect = egui::Rect::from_min_size(
-                    rect.right_top() + egui::vec2(-120.0, 40.0),
-                    egui::vec2(110.0, 25.0),
-                );
-
-                // Check if mouse is over button
-                let pointer_pos = ui.ctx().pointer_latest_pos();
-                let is_hovering = pointer_pos.is_some_and(|pos| button_rect.contains(pos));
-
-                // Button background (highlight on hover)
-                let button_color = if is_hovering {
-                    egui::Color32::from_rgba_premultiplied(60, 120, 180, 220)
-                } else {
-                    egui::Color32::from_rgba_premultiplied(40, 80, 140, 200)
-                };
-
-                ui.painter().rect_filled(button_rect, 3.0, button_color);
-
-                // Button text
-                ui.painter().text(
-                    button_rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    "🎯 Reset Camera",
-                    egui::FontId::proportional(13.0),
-                    egui::Color32::WHITE,
-                );
-
-                // Handle click
-                if is_hovering && ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                    self.camera.reset_to_origin();
-                    debug!("Camera reset to origin");
-                }
-
-                // Rendering mode indicator (below camera reset button)
-                #[cfg(feature = "astraweave-render")]
-                {
-                    let (render_mode, render_color) = if let Ok(renderer) = self.renderer.lock() {
-                        if renderer.use_engine_rendering() && renderer.engine_adapter_initialized()
-                        {
-                            ("🎨 PBR Engine", egui::Color32::from_rgb(80, 200, 120))
-                        } else if renderer.engine_adapter_initialized() {
-                            (
-                                "🔷 Cube (PBR ready)",
-                                egui::Color32::from_rgb(120, 160, 200),
-                            )
-                        } else {
-                            ("🔷 Cube Renderer", egui::Color32::from_rgb(100, 140, 180))
-                        }
-                    } else {
-                        ("⚠️ Renderer Error", egui::Color32::from_rgb(200, 100, 100))
-                    };
-                    let mode_rect = egui::Rect::from_min_size(
-                        rect.left_bottom() + egui::vec2(10.0, -30.0),
-                        egui::vec2(150.0, 22.0),
-                    );
-                    ui.painter().rect_filled(
-                        mode_rect,
-                        3.0,
-                        egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
-                    );
-                    ui.painter().text(
-                        mode_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        render_mode,
-                        egui::FontId::proportional(12.0),
-                        render_color,
-                    );
-                }
-
-                // Snapping indicator (top-right, below camera info)
+                // Snapping indicator (top-right, shown when actively snapping)
                 if self.gizmo_state.is_active() {
                     let snap_enabled = ui.ctx().input(|i| i.modifiers.ctrl || i.modifiers.command);
 
                     if snap_enabled {
                         let snap_text = match self.gizmo_state.mode {
                             crate::gizmo::GizmoMode::Translate { .. } => {
-                                format!("📐 Grid Snap: {:.2}m", self.grid_snap_size)
+                                format!("Grid Snap: {:.2}m", self.grid_snap_size)
                             }
                             crate::gizmo::GizmoMode::Rotate { .. } => {
                                 format!(
-                                    "🔄 Angle Snap: {}°",
+                                    "Angle Snap: {}°",
                                     self.angle_snap_increment.to_degrees() as i32
                                 )
                             }
@@ -506,7 +384,6 @@ impl ViewportWidget {
                                 egui::vec2(snap_width, 25.0),
                             );
 
-                            // Bright background to indicate active snapping
                             ui.painter().rect_filled(
                                 snap_rect,
                                 3.0,
@@ -524,19 +401,18 @@ impl ViewportWidget {
                     }
                 }
 
-                // Update and display toolbar
+                // Update and display toolbar (provides FPS, camera info, reset, stats)
                 self.toolbar.stats.fps = fps;
                 self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
                 self.toolbar.stats.push_frame_time(avg_frame_time * 1000.0);
                 self.toolbar.stats.memory_usage_mb = estimate_memory_usage_mb();
                 self.toolbar.stats.camera_position = self.camera.position().to_array();
-                // Entity counts obtained from world via viewport_frame() above
 
                 // Sync toolbar snap settings to viewport
                 self.grid_snap_size = self.toolbar.snap_size;
                 self.angle_snap_increment = self.toolbar.angle_snap_degrees.to_radians();
 
-                self.toolbar.ui(ui, rect);
+                self.toolbar.ui(ui, rect, &mut self.camera);
             } else {
                 // First frame - texture not ready yet
                 ui.painter()
@@ -1100,13 +976,13 @@ impl ViewportWidget {
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
                         debug!(
-                            "📍 Captured constraint position: ({}, {})",
+                            "Captured constraint position: ({}, {})",
                             pose.pos.x, pose.pos.y
                         );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyX);
-                debug!("🔧 Axis constraint: X");
+                debug!("Axis constraint: X");
             }
             if i.key_pressed(egui::Key::Y) {
                 // Capture current position before applying constraint
@@ -1116,13 +992,13 @@ impl ViewportWidget {
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
                         debug!(
-                            "📍 Captured constraint position: ({}, {})",
+                            "Captured constraint position: ({}, {})",
                             pose.pos.x, pose.pos.y
                         );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyY);
-                debug!("🔧 Axis constraint: Y");
+                debug!("Axis constraint: Y");
             }
             if i.key_pressed(egui::Key::Z) {
                 // Capture current position before applying constraint
@@ -1132,23 +1008,23 @@ impl ViewportWidget {
                             glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
                         debug!(
-                            "📍 Captured constraint position: ({}, {})",
+                            "Captured constraint position: ({}, {})",
                             pose.pos.x, pose.pos.y
                         );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyZ);
-                debug!("🔧 Axis constraint: Z");
+                debug!("Axis constraint: Z");
             }
 
             // Confirm/cancel gizmo operation
             if i.key_pressed(egui::Key::Enter) {
                 self.gizmo_state.handle_key(KeyCode::Enter);
-                debug!("✅ Gizmo: Confirm");
+                debug!("Gizmo: Confirm");
             }
             if i.key_pressed(egui::Key::Escape) {
                 self.gizmo_state.handle_key(KeyCode::Escape);
-                debug!("❌ Gizmo: Cancel");
+                debug!("Gizmo: Cancel");
             }
 
             // Undo/Redo (Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z)
@@ -1156,25 +1032,25 @@ impl ViewportWidget {
                 if i.modifiers.shift {
                     // Ctrl+Shift+Z: Redo
                     if let Err(e) = undo_stack.redo(world) {
-                        warn!("❌ Redo failed: {}", e);
+                        warn!("Redo failed: {}", e);
                     } else if let Some(desc) = undo_stack.redo_description() {
-                        debug!("⏭️  Redo: {}", desc);
+                        debug!("Redo: {}", desc);
                     }
                 } else {
                     // Ctrl+Z: Undo
                     if let Err(e) = undo_stack.undo(world) {
-                        warn!("❌ Undo failed: {}", e);
+                        warn!("Undo failed: {}", e);
                     } else if let Some(desc) = undo_stack.undo_description() {
-                        debug!("⏮️  Undo: {}", desc);
+                        debug!("Undo: {}", desc);
                     }
                 }
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::Y) {
                 // Ctrl+Y: Redo (alternative to Ctrl+Shift+Z)
                 if let Err(e) = undo_stack.redo(world) {
-                    warn!("❌ Redo failed: {}", e);
+                    warn!("Redo failed: {}", e);
                 } else if let Some(desc) = undo_stack.redo_description() {
-                    debug!("⏭️  Redo: {}", desc);
+                    debug!("Redo: {}", desc);
                 }
             }
 
@@ -1197,20 +1073,20 @@ impl ViewportWidget {
                 // Ctrl+D: Duplicate selected entities
                 if !self.selected_entities.is_empty() {
                     self.duplicate_selection(world, undo_stack);
-                    debug!("📑 Duplicated {} entities", self.selected_entities.len());
+                    debug!("Duplicated {} entities", self.selected_entities.len());
                 }
             }
             if i.key_pressed(egui::Key::Delete) {
                 // Delete: Remove selected entities
                 if !self.selected_entities.is_empty() {
                     self.delete_selection(world, undo_stack);
-                    debug!("🗑️  Deleted {} entities", self.selected_entities.len());
+                    debug!("Deleted {} entities", self.selected_entities.len());
                 }
             }
             // Select All
             if i.key_pressed(egui::Key::A) {
                 debug!(
-                    "🔍 A key pressed! modifiers: ctrl={}, command={}, shift={}",
+                    "A key pressed! modifiers: ctrl={}, command={}, shift={}",
                     i.modifiers.ctrl, i.modifiers.command, i.modifiers.shift
                 );
 
@@ -1218,7 +1094,7 @@ impl ViewportWidget {
                     // Ctrl+A: Select all entities
                     self.select_all(world);
                     debug!(
-                        "🎯 Selected all entities ({} total)",
+                        "Selected all entities ({} total)",
                         self.selected_entities.len()
                     );
                 }
@@ -1238,17 +1114,17 @@ impl ViewportWidget {
                         self.camera.frame_entity(position, entity_radius);
 
                         debug!(
-                            "🎯 Frame selected World entity {} at {:.2?}",
+                            "Frame selected World entity {} at {:.2?}",
                             selected_id, position
                         );
                     } else {
                         debug!(
-                            "⚠️  Frame selected: Entity {} not found in World",
+                            "Frame selected: Entity {} not found in World",
                             selected_id
                         );
                     }
                 } else {
-                    debug!("⚠️  Frame selected: No entity selected");
+                    debug!("Frame selected: No entity selected");
                 }
             }
 
@@ -1261,7 +1137,7 @@ impl ViewportWidget {
                     x if (x - 0.5).abs() < 0.01 => 0.25,
                     _ => 2.0,
                 };
-                debug!("📐 Grid snap size: {:.2}m", self.grid_snap_size);
+                debug!("Grid snap size: {:.2}m", self.grid_snap_size);
             }
 
             if i.key_pressed(egui::Key::CloseBracket) {
@@ -1272,7 +1148,7 @@ impl ViewportWidget {
                     x if (x - 1.0).abs() < 0.01 => 2.0,
                     _ => 0.25,
                 };
-                debug!("📐 Grid snap size: {:.2}m", self.grid_snap_size);
+                debug!("Grid snap size: {:.2}m", self.grid_snap_size);
             }
 
             // Camera bookmarks: F1-F12 (restore), Shift+F1-F12 (save)
@@ -1301,17 +1177,17 @@ impl ViewportWidget {
                             yaw: self.camera.yaw(),
                             pitch: self.camera.pitch(),
                         });
-                        debug!("💾 Saved camera bookmark F{}", slot + 1);
+                        debug!("Saved camera bookmark F{}", slot + 1);
                     } else if let Some(bookmark) = &self.camera_bookmarks[slot] {
                         // RESTORE bookmark
                         self.camera.set_focal_point(bookmark.focal_point);
                         self.camera.set_distance(bookmark.distance);
                         self.camera.set_yaw(bookmark.yaw);
                         self.camera.set_pitch(bookmark.pitch);
-                        debug!("📷 Restored camera bookmark F{}", slot + 1);
+                        debug!("Restored camera bookmark F{}", slot + 1);
                     } else {
                         debug!(
-                            "⚠️  Camera bookmark F{} not set (use Shift+F{} to save)",
+                            "Camera bookmark F{} not set (use Shift+F{} to save)",
                             slot + 1,
                             slot + 1
                         );
@@ -1347,7 +1223,7 @@ impl ViewportWidget {
                         entity.rotation = snapshot.rotation;
                         entity.scale = snapshot.scale;
                         debug!(
-                            "❌ Transform cancelled - reverted to {:?}",
+                            "Transform cancelled - reverted to {:?}",
                             snapshot.position
                         );
                     }
@@ -1371,7 +1247,7 @@ impl ViewportWidget {
         // Track where mouse was pressed
         if mouse_pressed && pointer_over_viewport {
             self.mouse_pressed_pos = current_pos;
-            debug!("🖱️ Mouse pressed at: {:?}", current_pos);
+            debug!("Mouse pressed at: {:?}", current_pos);
         }
 
         // Check for click (press and release at same location without drag)
@@ -1381,7 +1257,7 @@ impl ViewportWidget {
             let is_click = drag_distance < 5.0; // 5 pixel threshold
 
             debug!(
-                "🖱️ Mouse released: press={:?}, release={:?}, drag_dist={:.1}, is_click={}",
+                "Mouse released: press={:?}, release={:?}, drag_dist={:.1}, is_click={}",
                 press_pos, release_pos, drag_distance, is_click
             );
 
@@ -1392,14 +1268,14 @@ impl ViewportWidget {
         };
 
         debug!(
-            "🔍 Selection check: clicked={}, pointer_over={}, gizmo_active={}",
+            "Selection check: clicked={}, pointer_over={}, gizmo_active={}",
             clicked,
             pointer_over_viewport,
             self.gizmo_state.is_active()
         );
 
         if clicked {
-            debug!("✅ Click detected for selection!");
+            debug!("Click detected for selection!");
 
             if let Some(pos) = current_pos {
                 let viewport_pos_vec = pos - response.rect.min;
@@ -1443,19 +1319,19 @@ impl ViewportWidget {
 
                     // Debug: Print modifier state
                     debug!(
-                        "🔍 Modifiers: ctrl={}, shift={}, alt={}, command={}",
+                        "Modifiers: ctrl={}, shift={}, alt={}, command={}",
                         modifiers.ctrl, modifiers.shift, modifiers.alt, modifiers.command
                     );
 
                     if modifiers.ctrl || modifiers.command {
                         // Ctrl+Click: Toggle selection (multi-select)
                         debug!(
-                            "🎯 Before toggle: selected_entities = {:?}",
+                            "Before toggle: selected_entities = {:?}",
                             self.selected_entities
                         );
                         self.toggle_selection(entity_id.into());
                         debug!(
-                            "🎯 Toggled World entity {} (now {} entities selected): {:?}",
+                            "Toggled World entity {} (now {} entities selected): {:?}",
                             entity_id,
                             self.selected_entities.len(),
                             self.selected_entities
@@ -1463,12 +1339,12 @@ impl ViewportWidget {
                     } else if modifiers.shift {
                         // Shift+Click: Add to selection
                         debug!(
-                            "🎯 Before add: selected_entities = {:?}",
+                            "Before add: selected_entities = {:?}",
                             self.selected_entities
                         );
                         self.add_to_selection(entity_id.into());
                         debug!(
-                            "🎯 Added World entity {} to selection ({} entities selected): {:?}",
+                            "Added World entity {} to selection ({} entities selected): {:?}",
                             entity_id,
                             self.selected_entities.len(),
                             self.selected_entities
@@ -1477,7 +1353,7 @@ impl ViewportWidget {
                         // Regular click: Single select (clears others)
                         self.set_selected_entity(Some(entity_id.into()));
                         debug!(
-                            "🎯 Selected World entity {} at distance {:.2}",
+                            "Selected World entity {} at distance {:.2}",
                             entity_id, distance
                         );
                     }
@@ -1490,7 +1366,7 @@ impl ViewportWidget {
                         self.gizmo_state.start_transform = None;
                     }
                     debug!(
-                        "🎯 Click at ({:.1}, {:.1}) - No entity hit (selection cleared)",
+                        "Click at ({:.1}, {:.1}) - No entity hit (selection cleared)",
                         viewport_pos.x, viewport_pos.y
                     );
                 }
@@ -1601,7 +1477,7 @@ impl ViewportWidget {
         // Request mapping
         buffer_slice.map_async(wgpu::MapMode::Read, |result| {
             if let Err(e) = result {
-                warn!("❌ Buffer mapping failed: {:?}", e);
+                warn!("Buffer mapping failed: {:?}", e);
             }
         });
 
@@ -1819,6 +1695,11 @@ impl ViewportWidget {
     /// Get reference to the viewport toolbar
     pub fn toolbar(&self) -> &super::toolbar::ViewportToolbar {
         &self.toolbar
+    }
+
+    /// Get mutable reference to the viewport toolbar
+    pub fn toolbar_mut(&mut self) -> &mut super::toolbar::ViewportToolbar {
+        &mut self.toolbar
     }
 
     #[cfg(feature = "astraweave-render")]
@@ -2084,7 +1965,7 @@ impl ViewportWidget {
         let entities: Vec<u32> = self.selected_entities.iter().map(|&id| id as u32).collect();
         let data = crate::clipboard::ClipboardData::from_entities(world, &entities);
         self.clipboard = Some(data.clone());
-        debug!("📋 Copied {} entities to clipboard", entities.len());
+        debug!("Copied {} entities to clipboard", entities.len());
 
         data.to_json().ok()
     }
@@ -2112,14 +1993,14 @@ impl ViewportWidget {
                 Ok(spawned) => {
                     let count = spawned.len();
                     self.selected_entities = spawned.into_iter().map(|id| id as u64).collect();
-                    debug!("📋 Pasted {} entities", count);
+                    debug!("Pasted {} entities", count);
                 }
                 Err(e) => {
-                    debug!("⚠️  Paste failed: {}", e);
+                    debug!("Paste failed: {}", e);
                 }
             }
         } else {
-            debug!("📋 Clipboard is empty");
+            debug!("Clipboard is empty");
         }
     }
 
@@ -2131,12 +2012,12 @@ impl ViewportWidget {
         undo_stack: &mut crate::command::UndoStack,
     ) {
         if self.selected_entities.is_empty() {
-            debug!("⚠️  duplicate_selection: No entities selected");
+            debug!("duplicate_selection: No entities selected");
             return;
         }
 
         debug!(
-            "🔍 duplicate_selection: Duplicating {} entities via command: {:?}",
+            "duplicate_selection: Duplicating {} entities via command: {:?}",
             self.selected_entities.len(),
             self.selected_entities
         );
@@ -2153,10 +2034,10 @@ impl ViewportWidget {
                 // Get the spawned entities from the command (they're stored in the command)
                 // For now, we don't have direct access to them after execute, so we'll
                 // keep the original selection (the new entities are in the world)
-                debug!("✅ duplicate_selection: Command executed successfully");
+                debug!("duplicate_selection: Command executed successfully");
             }
             Err(e) => {
-                debug!("⚠️  duplicate_selection failed: {}", e);
+                debug!("duplicate_selection failed: {}", e);
             }
         }
     }
@@ -2176,7 +2057,7 @@ impl ViewportWidget {
 
         let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
         if let Err(e) = undo_stack.execute(delete_cmd, world) {
-            debug!("⚠️  Delete failed: {}", e);
+            debug!("Delete failed: {}", e);
         }
 
         self.clear_selection();
@@ -2191,19 +2072,19 @@ impl ViewportWidget {
     fn select_all(&mut self, world: &World) {
         self.selected_entities.clear();
 
-        debug!("🔍 select_all: Starting scan for entities...");
+        debug!("select_all: Starting scan for entities...");
 
         // Iterate through all entities (World doesn't expose entity list, so we try a range)
         // This is a workaround - ideally World would have an entities() iterator
         for entity_id in 0..1000 {
             if world.pose(entity_id).is_some() {
                 self.selected_entities.push(entity_id.into());
-                debug!("  ✅ Found entity {}", entity_id);
+                debug!("  Found entity {}", entity_id);
             }
         }
 
         debug!(
-            "🎯 select_all: Selected {} entities total: {:?}",
+            "select_all: Selected {} entities total: {:?}",
             self.selected_entities.len(),
             self.selected_entities
         );

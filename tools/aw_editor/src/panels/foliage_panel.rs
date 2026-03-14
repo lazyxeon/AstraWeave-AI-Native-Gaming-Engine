@@ -56,12 +56,12 @@ impl FoliageCategory {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            FoliageCategory::Grass => "🌿",
-            FoliageCategory::Flowers => "🌸",
-            FoliageCategory::Shrubs => "🌳",
+            FoliageCategory::Grass => "[Leaf]",
+            FoliageCategory::Flowers => "[Flwr]",
+            FoliageCategory::Shrubs => "[Tree]",
             FoliageCategory::Trees => "🌲",
-            FoliageCategory::Rocks => "🪨",
-            FoliageCategory::Custom => "📦",
+            FoliageCategory::Rocks => "[Rock]",
+            FoliageCategory::Custom => "[Pkg]",
         }
     }
 }
@@ -198,7 +198,7 @@ impl BrushTool {
             BrushTool::Paint => "🖌️",
             BrushTool::Erase => "🧹",
             BrushTool::Select => "👆",
-            BrushTool::Reapply => "🔄",
+            BrushTool::Reapply => "[Sync]",
             BrushTool::SinglePlace => "📍",
         }
     }
@@ -286,7 +286,7 @@ impl DistributionType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            DistributionType::Random => "🎲",
+            DistributionType::Random => "[Dice]",
             DistributionType::Uniform => "⊞",
             DistributionType::Clustered => "⚫",
             DistributionType::PoissonDisc => "◎",
@@ -379,11 +379,11 @@ impl FoliageTab {
     pub fn icon(&self) -> &'static str {
         match self {
             FoliageTab::Paint => "🖌️",
-            FoliageTab::Types => "🌿",
+            FoliageTab::Types => "[Leaf]",
             FoliageTab::Settings => "⚙️",
-            FoliageTab::Procedural => "🔧",
+            FoliageTab::Procedural => "[Wrn]",
             FoliageTab::Layers => "📚",
-            FoliageTab::Statistics => "📊",
+            FoliageTab::Statistics => "[Chart]",
         }
     }
 }
@@ -642,7 +642,7 @@ pub struct FoliagePanel {
 
 impl Default for FoliagePanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: FoliageTab::Paint,
 
             current_tool: BrushTool::Paint,
@@ -671,7 +671,6 @@ impl Default for FoliagePanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -804,11 +803,11 @@ impl FoliagePanel {
         ui.horizontal(|ui| {
             let tabs = [
                 (FoliageTab::Paint, "🖌️ Paint"),
-                (FoliageTab::Types, "🌿 Types"),
-                (FoliageTab::Settings, "⚙️ Settings"),
-                (FoliageTab::Procedural, "🎲 Procedural"),
+                (FoliageTab::Types, "[Leaf] Types"),
+                (FoliageTab::Settings, "Settings"),
+                (FoliageTab::Procedural, "[Dice] Procedural"),
                 (FoliageTab::Layers, "📚 Layers"),
-                (FoliageTab::Statistics, "📊 Stats"),
+                (FoliageTab::Statistics, "Stats"),
             ];
 
             for (tab, label) in tabs {
@@ -826,11 +825,11 @@ impl FoliagePanel {
         });
 
         ui.horizontal(|ui| {
-            ui.label(format!("📊 {} instances", self.total_instances));
+            ui.label(format!("{} instances", self.total_instances));
             ui.separator();
             ui.label(format!("🔺 {} tris", self.total_triangles));
             ui.separator();
-            ui.label(format!("💾 {:.1} MB", self.memory_usage_mb));
+            ui.label(format!("{:.1} MB", self.memory_usage_mb));
         });
 
         ui.separator();
@@ -842,7 +841,7 @@ impl FoliagePanel {
 
         // Tool selection
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Tools").strong());
+            ui.label(RichText::new("Tools").strong());
             ui.horizontal(|ui| {
                 let tools = [
                     BrushTool::Paint,
@@ -873,7 +872,7 @@ impl FoliagePanel {
 
         // Brush settings
         ui.group(|ui| {
-            ui.label(RichText::new("🎨 Brush Settings").strong());
+            ui.label(RichText::new("Brush Settings").strong());
 
             egui::Grid::new("brush_settings")
                 .num_columns(2)
@@ -910,7 +909,7 @@ impl FoliagePanel {
         // Foliage type selection
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("🌿 Active Foliage Types").strong());
+                ui.label(RichText::new("[Leaf] Active Foliage Types").strong());
                 if ui.button("Select All").clicked() {
                     self.selected_types = self.foliage_types.iter().map(|ft| ft.id).collect();
                 }
@@ -943,7 +942,7 @@ impl FoliagePanel {
     }
 
     fn show_types_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌿 Foliage Types");
+        ui.heading("[Leaf] Foliage Types");
         ui.add_space(10.0);
 
         // Type list
@@ -1051,7 +1050,7 @@ impl FoliagePanel {
                     ui.label("Mesh:");
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(&mut self.current_type.mesh_path);
-                        if ui.button("📂").clicked() {}
+                        if ui.button("[Open]").clicked() {}
                     });
                     ui.end_row();
 
@@ -1063,7 +1062,7 @@ impl FoliagePanel {
     }
 
     fn show_settings_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ Foliage Settings");
+        ui.heading("Foliage Settings");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1071,7 +1070,7 @@ impl FoliagePanel {
             .show(ui, |ui| {
                 // Density & Scale
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Density & Scale").strong());
+                    ui.label(RichText::new("[Sq] Density & Scale").strong());
 
                     egui::Grid::new("density_settings")
                         .num_columns(2)
@@ -1238,7 +1237,7 @@ impl FoliagePanel {
 
                 // Collision & Rendering
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎯 Collision & Rendering").strong());
+                    ui.label(RichText::new("Collision & Rendering").strong());
 
                     ui.checkbox(&mut self.current_type.collision_enabled, "Enable Collision");
                     ui.checkbox(&mut self.current_type.cast_shadow, "Cast Shadow");
@@ -1252,7 +1251,7 @@ impl FoliagePanel {
     }
 
     fn show_procedural_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎲 Procedural Placement");
+        ui.heading("[Dice] Procedural Placement");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -1282,7 +1281,7 @@ impl FoliagePanel {
                     ui.horizontal(|ui| {
                         ui.checkbox(&mut rule.enabled, "");
                         ui.text_edit_singleline(&mut rule.name);
-                        if ui.button("🗑️").clicked() {
+                        if ui.button("[Del]").clicked() {
                             // Remove rule
                         }
                     });
@@ -1370,7 +1369,7 @@ impl FoliagePanel {
                         layer.visible = !layer.visible;
                     }
 
-                    let lock_icon = if layer.locked { "🔒" } else { "🔓" };
+                    let lock_icon = if layer.locked { "[Lock]" } else { "🔓" };
                     if ui.button(lock_icon).clicked() {
                         layer.locked = !layer.locked;
                     }
@@ -1384,7 +1383,7 @@ impl FoliagePanel {
     }
 
     fn show_statistics_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Foliage Statistics");
+        ui.heading("Foliage Statistics");
         ui.add_space(10.0);
 
         // Overall stats
@@ -1421,7 +1420,7 @@ impl FoliagePanel {
 
         // Per-type breakdown
         ui.group(|ui| {
-            ui.label(RichText::new("🌿 Per-Type Breakdown").strong());
+            ui.label(RichText::new("[Leaf] Per-Type Breakdown").strong());
 
             egui::ScrollArea::vertical()
                 .max_height(200.0)
@@ -1453,10 +1452,10 @@ impl FoliagePanel {
 
         // Actions
         ui.horizontal(|ui| {
-            if ui.button("🔄 Refresh").clicked() {
+            if ui.button("Refresh").clicked() {
                 self.calculate_statistics();
             }
-            if ui.button("🗑️ Clear All Instances").clicked() {
+            if ui.button("Clear All Instances").clicked() {
                 for ft in &mut self.foliage_types {
                     ft.instance_count = 0;
                 }
@@ -1549,17 +1548,17 @@ mod tests {
 
     #[test]
     fn test_foliage_category_icon_grass() {
-        assert_eq!(FoliageCategory::Grass.icon(), "🌿");
+        assert_eq!(FoliageCategory::Grass.icon(), "[Leaf]");
     }
 
     #[test]
     fn test_foliage_category_icon_flowers() {
-        assert_eq!(FoliageCategory::Flowers.icon(), "🌸");
+        assert_eq!(FoliageCategory::Flowers.icon(), "[Flwr]");
     }
 
     #[test]
     fn test_foliage_category_icon_shrubs() {
-        assert_eq!(FoliageCategory::Shrubs.icon(), "🌳");
+        assert_eq!(FoliageCategory::Shrubs.icon(), "[Tree]");
     }
 
     #[test]
@@ -1569,12 +1568,12 @@ mod tests {
 
     #[test]
     fn test_foliage_category_icon_rocks() {
-        assert_eq!(FoliageCategory::Rocks.icon(), "🪨");
+        assert_eq!(FoliageCategory::Rocks.icon(), "[Rock]");
     }
 
     #[test]
     fn test_foliage_category_icon_custom() {
-        assert_eq!(FoliageCategory::Custom.icon(), "📦");
+        assert_eq!(FoliageCategory::Custom.icon(), "[Pkg]");
     }
 
     #[test]
@@ -1847,7 +1846,7 @@ mod tests {
 
     #[test]
     fn test_brush_tool_icon_reapply() {
-        assert_eq!(BrushTool::Reapply.icon(), "🔄");
+        assert_eq!(BrushTool::Reapply.icon(), "[Sync]");
     }
 
     #[test]
@@ -2102,19 +2101,22 @@ mod tests {
 
     #[test]
     fn test_foliage_panel_creation() {
-        let panel = FoliagePanel::new();
+        let mut panel = FoliagePanel::new();
+        panel.create_sample_data();
         assert!(panel.foliage_type_count() >= 6);
     }
 
     #[test]
     fn test_default_layers() {
-        let panel = FoliagePanel::new();
+        let mut panel = FoliagePanel::new();
+        panel.create_sample_data();
         assert!(panel.layer_count() >= 1);
     }
 
     #[test]
     fn test_selected_types() {
-        let panel = FoliagePanel::new();
+        let mut panel = FoliagePanel::new();
+        panel.create_sample_data();
         assert!(panel.selected_type_count() >= 1);
     }
 
@@ -2157,7 +2159,8 @@ mod tests {
 
     #[test]
     fn test_statistics_calculation() {
-        let panel = FoliagePanel::new();
+        let mut panel = FoliagePanel::new();
+        panel.create_sample_data();
         assert!(panel.total_instance_count() > 0);
     }
 

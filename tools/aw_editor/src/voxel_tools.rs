@@ -37,9 +37,9 @@ impl BrushShape {
     /// Get icon for this shape
     pub fn icon(&self) -> &str {
         match self {
-            Self::Sphere => "⚫",
-            Self::Cube => "⬛",
-            Self::Cylinder => "🔘",
+            Self::Sphere => "(O)",
+            Self::Cube => "[#]",
+            Self::Cylinder => "(|)",
         }
     }
 
@@ -55,7 +55,7 @@ impl BrushShape {
 
 impl std::fmt::Display for BrushShape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -89,9 +89,9 @@ impl BrushMode {
     /// Get icon for this mode
     pub fn icon(&self) -> &str {
         match self {
-            Self::Add => "➕",
-            Self::Remove => "➖",
-            Self::Paint => "🎨",
+            Self::Add => "+",
+            Self::Remove => "-",
+            Self::Paint => "[P]",
         }
     }
 
@@ -108,7 +108,7 @@ impl BrushMode {
 
 impl std::fmt::Display for BrushMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 

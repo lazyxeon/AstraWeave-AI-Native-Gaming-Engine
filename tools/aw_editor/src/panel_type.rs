@@ -74,12 +74,12 @@ impl PanelCategory {
     /// Get icon for this category
     pub fn icon(&self) -> &'static str {
         match self {
-            PanelCategory::Scene => "🎬",
-            PanelCategory::Assets => "📁",
-            PanelCategory::Debug => "🔧",
-            PanelCategory::Tools => "🛠️",
-            PanelCategory::System => "⚙️",
-            PanelCategory::Content => "🎨",
+            PanelCategory::Scene => "[Scn]",
+            PanelCategory::Assets => "[Ast]",
+            PanelCategory::Debug => "[Dbg]",
+            PanelCategory::Tools => "[Tool]",
+            PanelCategory::System => "[Sys]",
+            PanelCategory::Content => "[Cnt]",
         }
     }
 }
@@ -270,44 +270,44 @@ impl PanelType {
     /// Icons are used in compact tab views and toolbar buttons.
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Hierarchy => "🌳",
-            Self::Inspector => "🔍",
-            Self::AssetBrowser => "📁",
-            Self::Viewport => "🎬",
-            Self::Console => "📋",
-            Self::Profiler => "📊",
-            Self::BuildManager => "🔨",
-            Self::SceneStats => "📈",
-            Self::Transform => "🔄",
-            Self::Performance => "⚡",
-            Self::Charts => "📉",
-            Self::AdvancedWidgets => "🎨",
-            Self::Graph => "🔗",
-            Self::Animation => "🎞️",
-            Self::ThemeManager => "🎭",
-            Self::World => "🌍",
-            Self::MaterialEditor => "🧱",
-            Self::EntityPanel => "📦",
-            Self::BehaviorGraph => "🧠",
-            Self::Terrain => "🏔️",
+            Self::Hierarchy => "[H]",
+            Self::Inspector => "[I]",
+            Self::AssetBrowser => "[A]",
+            Self::Viewport => "[V]",
+            Self::Console => "[C]",
+            Self::Profiler => "[P]",
+            Self::BuildManager => "[B]",
+            Self::SceneStats => "[SS]",
+            Self::Transform => "[T]",
+            Self::Performance => "[Pf]",
+            Self::Charts => "[Ch]",
+            Self::AdvancedWidgets => "[AW]",
+            Self::Graph => "[G]",
+            Self::Animation => "[An]",
+            Self::ThemeManager => "[Th]",
+            Self::World => "[W]",
+            Self::MaterialEditor => "[M]",
+            Self::EntityPanel => "[E]",
+            Self::BehaviorGraph => "[BG]",
+            Self::Terrain => "[Tr]",
             // New SOTA panels
-            Self::UiEditor => "🖼️",
-            Self::Foliage => "🌿",
-            Self::SplineEditor => "〰️",
-            Self::LodConfig => "📐",
-            Self::Localization => "🌐",
-            Self::ProjectSettings => "⚙️",
-            Self::Audio => "🔊",
-            Self::Cinematics => "🎬",
-            Self::DialogueEditor => "💬",
-            Self::Lighting => "💡",
-            Self::Navigation => "🧭",
-            Self::Networking => "🌐",
-            Self::ParticleSystem => "✨",
-            Self::Pcg => "🎲",
-            Self::Physics => "🧪",
-            Self::PostProcess => "🎨",
-            Self::InputBindings => "🎮",
+            Self::UiEditor => "[UI]",
+            Self::Foliage => "[F]",
+            Self::SplineEditor => "[Sp]",
+            Self::LodConfig => "[LD]",
+            Self::Localization => "[L]",
+            Self::ProjectSettings => "[PS]",
+            Self::Audio => "[Au]",
+            Self::Cinematics => "[Ci]",
+            Self::DialogueEditor => "[D]",
+            Self::Lighting => "[Lt]",
+            Self::Navigation => "[N]",
+            Self::Networking => "[Nw]",
+            Self::ParticleSystem => "[Pt]",
+            Self::Pcg => "[PC]",
+            Self::Physics => "[Ph]",
+            Self::PostProcess => "[PP]",
+            Self::InputBindings => "[In]",
         }
     }
 
@@ -550,9 +550,9 @@ mod tests {
 
     #[test]
     fn test_panel_type_icon() {
-        assert_eq!(PanelType::Hierarchy.icon(), "🌳");
-        assert_eq!(PanelType::Viewport.icon(), "🎬");
-        assert_eq!(PanelType::Console.icon(), "📋");
+        assert_eq!(PanelType::Hierarchy.icon(), "[H]");
+        assert_eq!(PanelType::Viewport.icon(), "[V]");
+        assert_eq!(PanelType::Console.icon(), "[C]");
     }
 
     #[test]
@@ -575,7 +575,7 @@ mod tests {
         let panel = PanelType::Hierarchy;
         let display = format!("{}", panel);
         assert!(display.contains("Hierarchy"));
-        assert!(display.contains("🌳"));
+        assert!(display.contains("[H]"));
     }
 
     #[test]

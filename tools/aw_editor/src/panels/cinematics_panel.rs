@@ -57,11 +57,11 @@ impl TrackType {
     pub fn icon(&self) -> &'static str {
         match self {
             TrackType::Camera => "📷",
-            TrackType::Animation => "🎬",
-            TrackType::Audio => "🔊",
-            TrackType::Fx => "✨",
-            TrackType::Dialogue => "💬",
-            TrackType::Event => "⚡",
+            TrackType::Animation => "[Anim]",
+            TrackType::Audio => "[Snd]",
+            TrackType::Fx => "[Fx]",
+            TrackType::Dialogue => "[Chat]",
+            TrackType::Event => "[Zap]",
         }
     }
 
@@ -150,9 +150,9 @@ impl PlaybackState {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            PlaybackState::Stopped => "⏹️",
-            PlaybackState::Playing => "▶️",
-            PlaybackState::Paused => "⏸️",
+            PlaybackState::Stopped => "[]",
+            PlaybackState::Playing => ">",
+            PlaybackState::Paused => "||",
             PlaybackState::Recording => "⏺️",
         }
     }
@@ -410,10 +410,10 @@ impl CinematicsTab {
         match self {
             CinematicsTab::Timeline => "📅",
             CinematicsTab::Camera => "📷",
-            CinematicsTab::Tracks => "🎬",
+            CinematicsTab::Tracks => "[Anim]",
             CinematicsTab::Clips => "🎞️",
             CinematicsTab::Preview => "👁️",
-            CinematicsTab::Export => "💾",
+            CinematicsTab::Export => "[Save]",
         }
     }
 }
@@ -622,12 +622,12 @@ impl CinematicsPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (CinematicsTab::Timeline, "📐 Timeline"),
+                (CinematicsTab::Timeline, "[Sq] Timeline"),
                 (CinematicsTab::Camera, "📷 Camera"),
                 (CinematicsTab::Tracks, "🎚️ Tracks"),
-                (CinematicsTab::Clips, "🎬 Clips"),
-                (CinematicsTab::Preview, "👁️ Preview"),
-                (CinematicsTab::Export, "📦 Export"),
+                (CinematicsTab::Clips, "Clips"),
+                (CinematicsTab::Preview, "Preview"),
+                (CinematicsTab::Export, "Export"),
             ];
 
             for (tab, label) in tabs {
@@ -647,10 +647,10 @@ impl CinematicsPanel {
         // Playback controls
         ui.horizontal(|ui| {
             let state_icon = match self.playback_state {
-                PlaybackState::Stopped => "⏹",
-                PlaybackState::Playing => "▶️",
-                PlaybackState::Paused => "⏸️",
-                PlaybackState::Recording => "🔴",
+                PlaybackState::Stopped => "[]",
+                PlaybackState::Playing => ">",
+                PlaybackState::Paused => "||",
+                PlaybackState::Recording => "[R]",
             };
             ui.label(state_icon);
 
@@ -663,9 +663,9 @@ impl CinematicsPanel {
             }
             if ui
                 .button(if self.playback_state == PlaybackState::Playing {
-                    "⏸️"
+                    "||"
                 } else {
-                    "▶️"
+                    ">"
                 })
                 .clicked()
             {
@@ -675,13 +675,13 @@ impl CinematicsPanel {
                     PlaybackState::Playing
                 };
             }
-            if ui.button("▶").clicked() {
+            if ui.button(">").clicked() {
                 self.current_time = (self.current_time + 1.0).min(self.settings.duration);
             }
-            if ui.button("⏭").clicked() {
+            if ui.button(">|").clicked() {
                 self.current_time = self.settings.duration;
             }
-            if ui.button("⏹").clicked() {
+            if ui.button("[]").clicked() {
                 self.playback_state = PlaybackState::Stopped;
                 self.current_time = 0.0;
             }
@@ -716,7 +716,7 @@ impl CinematicsPanel {
     }
 
     fn show_timeline_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📐 Timeline Editor");
+        ui.heading("[Sq] Timeline Editor");
         ui.add_space(5.0);
 
         // Timeline settings bar
@@ -782,7 +782,7 @@ impl CinematicsPanel {
                                         // Mute/Solo/Lock buttons
                                         if ui
                                             .small_button(if track.locked {
-                                                "🔒"
+                                                "[Lock]"
                                             } else {
                                                 "🔓"
                                             })
@@ -791,7 +791,7 @@ impl CinematicsPanel {
                                             track.locked = !track.locked;
                                         }
                                         if ui
-                                            .small_button(if track.muted { "🔇" } else { "🔊" })
+                                            .small_button(if track.muted { "[Mute]" } else { "[Snd]" })
                                             .clicked()
                                         {
                                             track.muted = !track.muted;
@@ -978,7 +978,7 @@ impl CinematicsPanel {
                                 keyframe.position.0, keyframe.position.1, keyframe.position.2
                             ));
 
-                            if ui.small_button("🗑").clicked() {
+                            if ui.small_button("[Del]").clicked() {
                                 to_remove = Some(idx);
                             }
                         });
@@ -1128,14 +1128,14 @@ impl CinematicsPanel {
                                     egui::Layout::right_to_left(egui::Align::Center),
                                     |ui| {
                                         // Delete button
-                                        if ui.small_button("🗑").clicked() {
+                                        if ui.small_button("[Del]").clicked() {
                                             // Mark for deletion
                                         }
 
                                         // Lock button
                                         if ui
                                             .small_button(if track.locked {
-                                                "🔒"
+                                                "[Lock]"
                                             } else {
                                                 "🔓"
                                             })
@@ -1146,7 +1146,7 @@ impl CinematicsPanel {
 
                                         // Mute button
                                         if ui
-                                            .small_button(if track.muted { "🔇" } else { "🔊" })
+                                            .small_button(if track.muted { "[Mute]" } else { "[Snd]" })
                                             .clicked()
                                         {
                                             track.muted = !track.muted;
@@ -1192,7 +1192,7 @@ impl CinematicsPanel {
     }
 
     fn show_clips_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎬 Clip Editor");
+        ui.heading("Clip Editor");
         ui.add_space(10.0);
 
         if self.clips.is_empty() {
@@ -1231,7 +1231,7 @@ impl CinematicsPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("👁️ Preview");
+        ui.heading("Preview");
         ui.add_space(10.0);
 
         // Preview viewport placeholder
@@ -1288,7 +1288,7 @@ impl CinematicsPanel {
     }
 
     fn show_export_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📦 Export");
+        ui.heading("Export");
         ui.add_space(10.0);
 
         // Export format
@@ -1599,7 +1599,7 @@ mod tests {
     #[test]
     fn test_track_type_properties() {
         assert_eq!(TrackType::Camera.icon(), "📷");
-        assert_eq!(TrackType::Audio.icon(), "🔊");
+        assert_eq!(TrackType::Audio.icon(), "[Snd]");
         assert_eq!(TrackType::Fx.color(), Color32::from_rgb(186, 85, 211));
     }
 
@@ -1624,11 +1624,11 @@ mod tests {
     #[test]
     fn test_track_type_display() {
         assert_eq!(format!("{}", TrackType::Camera), "📷 Camera");
-        assert_eq!(format!("{}", TrackType::Animation), "🎬 Animation");
-        assert_eq!(format!("{}", TrackType::Audio), "🔊 Audio");
-        assert_eq!(format!("{}", TrackType::Fx), "✨ VFX");
-        assert_eq!(format!("{}", TrackType::Dialogue), "💬 Dialogue");
-        assert_eq!(format!("{}", TrackType::Event), "⚡ Event");
+        assert_eq!(format!("{}", TrackType::Animation), "[Anim] Animation");
+        assert_eq!(format!("{}", TrackType::Audio), "[Snd] Audio");
+        assert_eq!(format!("{}", TrackType::Fx), "[Fx] VFX");
+        assert_eq!(format!("{}", TrackType::Dialogue), "[Chat] Dialogue");
+        assert_eq!(format!("{}", TrackType::Event), "[Zap] Event");
     }
 
     #[test]
@@ -1648,7 +1648,7 @@ mod tests {
     #[test]
     fn test_track_type_icon() {
         assert_eq!(TrackType::Camera.icon(), "📷");
-        assert_eq!(TrackType::Animation.icon(), "🎬");
+        assert_eq!(TrackType::Animation.icon(), "[Anim]");
     }
 
     #[test]
@@ -1725,9 +1725,9 @@ mod tests {
     // PlaybackState tests (7 tests)
     #[test]
     fn test_playback_state_display() {
-        assert_eq!(format!("{}", PlaybackState::Stopped), "⏹️ Stopped");
-        assert_eq!(format!("{}", PlaybackState::Playing), "▶️ Playing");
-        assert_eq!(format!("{}", PlaybackState::Paused), "⏸️ Paused");
+        assert_eq!(format!("{}", PlaybackState::Stopped), "[] Stopped");
+        assert_eq!(format!("{}", PlaybackState::Playing), "> Playing");
+        assert_eq!(format!("{}", PlaybackState::Paused), "|| Paused");
         assert_eq!(format!("{}", PlaybackState::Recording), "⏺️ Recording");
     }
 
@@ -1741,9 +1741,9 @@ mod tests {
 
     #[test]
     fn test_playback_state_icon() {
-        assert_eq!(PlaybackState::Stopped.icon(), "⏹️");
-        assert_eq!(PlaybackState::Playing.icon(), "▶️");
-        assert_eq!(PlaybackState::Paused.icon(), "⏸️");
+        assert_eq!(PlaybackState::Stopped.icon(), "[]");
+        assert_eq!(PlaybackState::Playing.icon(), ">");
+        assert_eq!(PlaybackState::Paused.icon(), "||");
         assert_eq!(PlaybackState::Recording.icon(), "⏺️");
     }
 
@@ -2040,10 +2040,10 @@ mod tests {
     fn test_cinematics_tab_display() {
         assert_eq!(format!("{}", CinematicsTab::Timeline), "📅 Timeline");
         assert_eq!(format!("{}", CinematicsTab::Camera), "📷 Camera");
-        assert_eq!(format!("{}", CinematicsTab::Tracks), "🎬 Tracks");
+        assert_eq!(format!("{}", CinematicsTab::Tracks), "[Anim] Tracks");
         assert_eq!(format!("{}", CinematicsTab::Clips), "🎞️ Clips");
         assert_eq!(format!("{}", CinematicsTab::Preview), "👁️ Preview");
-        assert_eq!(format!("{}", CinematicsTab::Export), "💾 Export");
+        assert_eq!(format!("{}", CinematicsTab::Export), "[Save] Export");
     }
 
     #[test]

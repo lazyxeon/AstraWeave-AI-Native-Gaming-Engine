@@ -479,7 +479,7 @@ impl BrushMode {
         match self {
             BrushMode::Sculpt => "🏔️",
             BrushMode::Smooth => "〰️",
-            BrushMode::Flatten => "➖",
+            BrushMode::Flatten => "-",
             BrushMode::Paint => "🖌️",
             BrushMode::Erode => "💧",
         }
@@ -631,7 +631,7 @@ impl TerrainPanel {
                     self.terrain_state.configure(self.seed, &self.primary_biome);
                 }
             }
-            if ui.button("🎲").on_hover_text("Random seed").clicked() {
+            if ui.button("[Dice]").on_hover_text("Random seed").clicked() {
                 self.seed = rand::random();
                 self.seed_string = self.seed.to_string();
                 self.terrain_state.configure(self.seed, &self.primary_biome);
@@ -671,9 +671,9 @@ impl TerrainPanel {
 
         // Generate button
         let generate_text = if self.terrain_state.is_dirty() {
-            RichText::new("🔄 Generate Terrain").color(Color32::YELLOW)
+            RichText::new("Generate Terrain").color(Color32::YELLOW)
         } else {
-            RichText::new("✅ Generate Terrain")
+            RichText::new("Generate Terrain")
         };
 
         if ui.button(generate_text).clicked() {
@@ -816,7 +816,7 @@ impl TerrainPanel {
 
     fn show_erosion_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
-        ui.collapsing("🌊 Erosion Simulation", |ui| {
+        ui.collapsing("[Wave] Erosion Simulation", |ui| {
             // Preset selection
             ui.horizontal(|ui| {
                 ui.label("Preset:");
@@ -911,7 +911,7 @@ impl TerrainPanel {
             });
 
             // Thermal erosion
-            ui.collapsing("🔥 Thermal Erosion", |ui| {
+            ui.collapsing("[Fire] Thermal Erosion", |ui| {
                 ui.checkbox(&mut self.thermal_erosion.enabled, "Enabled");
 
                 if self.thermal_erosion.enabled {
@@ -942,7 +942,7 @@ impl TerrainPanel {
             });
 
             // Wind erosion
-            ui.collapsing("💨 Wind Erosion", |ui| {
+            ui.collapsing("[Dash] Wind Erosion", |ui| {
                 ui.checkbox(&mut self.wind_erosion.enabled, "Enabled");
 
                 if self.wind_erosion.enabled {
@@ -1000,7 +1000,7 @@ impl TerrainPanel {
 
             // Apply erosion button
             if ui
-                .button(RichText::new("⚡ Apply Erosion").color(Color32::LIGHT_BLUE))
+                .button(RichText::new("Apply Erosion").color(Color32::LIGHT_BLUE))
                 .clicked()
             {
                 self.apply_erosion();
@@ -1017,7 +1017,7 @@ impl TerrainPanel {
 
     fn show_biome_blend_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
-        ui.collapsing("🌍 Biome Blending", |ui| {
+        ui.collapsing("[Glb] Biome Blending", |ui| {
             ui.checkbox(&mut self.biome_blend.enabled, "Enable Biome Blending");
 
             if self.biome_blend.enabled {
@@ -1111,7 +1111,7 @@ impl TerrainPanel {
 
     fn show_splatting_section(&mut self, ui: &mut Ui) {
         ui.add_space(10.0);
-        ui.collapsing("🎨 Texture Splatting", |ui| {
+        ui.collapsing("Texture Splatting", |ui| {
             ui.checkbox(&mut self.splat_params.enabled, "Enable Texture Splatting");
 
             if self.splat_params.enabled {
@@ -1121,7 +1121,7 @@ impl TerrainPanel {
                 // Grass rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
-                        ui.colored_label(Color32::from_rgb(100, 180, 80), "🌿");
+                        ui.colored_label(Color32::from_rgb(100, 180, 80), "[Leaf]");
                         ui.label("Grass");
                     });
                     ui.horizontal(|ui| {
@@ -1142,7 +1142,7 @@ impl TerrainPanel {
                 // Rock rules
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
-                        ui.colored_label(Color32::from_rgb(120, 110, 100), "🪨");
+                        ui.colored_label(Color32::from_rgb(120, 110, 100), "[Rock]");
                         ui.label("Rock");
                     });
                     ui.horizontal(|ui| {
@@ -1210,7 +1210,7 @@ impl TerrainPanel {
                 ui.add_space(5.0);
 
                 if ui
-                    .button(RichText::new("🔄 Regenerate Splatmaps"))
+                    .button(RichText::new("Regenerate Splatmaps"))
                     .clicked()
                 {
                     self.regenerate_splatmaps();

@@ -1,4 +1,4 @@
-//! AstraWeave Game Runtime
+﻿//! AstraWeave Game Runtime
 //!
 //! This is the standalone game runtime binary that runs games created
 //! with the AstraWeave Editor. It loads the game project configuration,
@@ -98,7 +98,7 @@ impl GameApp {
         let surface = match instance.create_surface(window.clone()) {
             Ok(s) => s,
             Err(e) => {
-                log::error!("❌ Failed to create graphics surface: {}", e);
+                log::error!("Failed to create graphics surface: {}", e);
                 log::error!("   This may indicate a display driver issue.");
                 log::error!("   Please ensure your graphics drivers are up to date.");
                 panic!("Graphics initialization failed: {}", e);
@@ -113,7 +113,7 @@ impl GameApp {
             })) {
                 Ok(a) => a,
                 Err(e) => {
-                    log::error!("❌ No compatible graphics adapter found: {}", e);
+                    log::error!("No compatible graphics adapter found: {}", e);
                     log::error!(
                         "   AstraWeave requires a GPU with Vulkan, DirectX 12, or Metal support."
                     );
@@ -134,14 +134,14 @@ impl GameApp {
             })) {
                 Ok((d, q)) => (d, q),
                 Err(e) => {
-                    log::error!("❌ Failed to create graphics device: {}", e);
+                    log::error!("Failed to create graphics device: {}", e);
                     log::error!("   GPU: {}", adapter.get_info().name);
                     log::error!("   This may indicate insufficient GPU resources.");
                     panic!("GPU device creation failed: {}", e);
                 }
             };
 
-        log::info!("🖥️ GPU initialized: {}", adapter.get_info().name);
+        log::info!("GPU initialized: {}", adapter.get_info().name);
 
         // Configure surface
         let size = window.inner_size();
@@ -239,22 +239,22 @@ impl ApplicationHandler for GameApp {
         let window = match event_loop.create_window(window_attrs) {
             Ok(w) => Arc::new(w),
             Err(e) => {
-                log::error!("❌ Failed to create game window: {}", e);
+                log::error!("Failed to create game window: {}", e);
                 log::error!("   Requested size: {}x{}", window_width, window_height);
                 log::error!("   This may indicate a display configuration issue.");
                 panic!("Window creation failed: {}", e);
             }
         };
 
-        log::info!("🪟 Created window: {}x{}", window_width, window_height);
+        log::info!("Created window: {}x{}", window_width, window_height);
 
         self.init_gpu(window);
 
         // Load entry scene
         let project_root = self.project.project_root(&self.project_path);
         let scene_path = project_root.join(&self.project.build.entry_scene);
-        log::info!("🎬 Loading entry scene: {}", scene_path.display());
-        log::info!("🎮 Entering game loop...");
+        log::info!("Loading entry scene: {}", scene_path.display());
+        log::info!("Entering game loop...");
     }
 
     fn window_event(
@@ -265,7 +265,7 @@ impl ApplicationHandler for GameApp {
     ) {
         match event {
             WindowEvent::CloseRequested => {
-                log::info!("👋 Game closing...");
+                log::info!("Game closing...");
                 event_loop.exit();
             }
             WindowEvent::Resized(new_size) => {
@@ -301,7 +301,7 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    log::info!("🎮 AstraWeave Game Runtime starting...");
+    log::info!("AstraWeave Game Runtime starting...");
 
     // Find or load game project
     let project_path = if let Some(path) = &args.project {
@@ -311,7 +311,7 @@ fn main() -> Result<()> {
             .context("Could not find game.toml in current directory or parent directories")?
     };
 
-    log::info!("📂 Loading project from: {}", project_path.display());
+    log::info!("Loading project from: {}", project_path.display());
 
     let project = GameProject::load(&project_path).context("Failed to load game project")?;
 
@@ -321,7 +321,7 @@ fn main() -> Result<()> {
         .map_err(|errors| anyhow::anyhow!("Project validation failed: {:?}", errors))?;
 
     log::info!(
-        "✅ Loaded project: {} v{}",
+        "Loaded project: {} v{}",
         project.project.name,
         project.project.version
     );

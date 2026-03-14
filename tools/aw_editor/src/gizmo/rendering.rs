@@ -199,13 +199,13 @@ impl GizmoRenderer {
             || matches!(params.hovered_axis, Some(AxisConstraint::X));
         let x_color = if x_highlighted {
             debug!(
-                "🟡 X-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
+                "X-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
             debug!(
-                "🔴 X-axis NORMAL: constraint={:?}, color=RED {:?}",
+                "X-axis NORMAL: constraint={:?}, color=RED {:?}",
                 params.constraint, COLOR_X
             );
             COLOR_X
@@ -222,13 +222,13 @@ impl GizmoRenderer {
             || matches!(params.hovered_axis, Some(AxisConstraint::Y));
         let y_color = if y_highlighted {
             debug!(
-                "🟡 Y-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
+                "Y-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
             debug!(
-                "🟢 Y-axis NORMAL: constraint={:?}, color=GREEN {:?}",
+                "Y-axis NORMAL: constraint={:?}, color=GREEN {:?}",
                 params.constraint, COLOR_Y
             );
             COLOR_Y
@@ -244,13 +244,13 @@ impl GizmoRenderer {
             || matches!(params.hovered_axis, Some(AxisConstraint::Z));
         let z_color = if z_highlighted {
             debug!(
-                "🟡 Z-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
+                "Z-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}",
                 params.constraint, COLOR_HIGHLIGHT
             );
             COLOR_HIGHLIGHT
         } else {
             debug!(
-                "🔵 Z-axis NORMAL: constraint={:?}, color=BLUE {:?}",
+                "Z-axis NORMAL: constraint={:?}, color=BLUE {:?}",
                 params.constraint, COLOR_Z
             );
             COLOR_Z

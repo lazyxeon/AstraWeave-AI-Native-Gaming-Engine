@@ -64,11 +64,11 @@ impl DialogueNodeType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            DialogueNodeType::Speech => "💬",
-            DialogueNodeType::Choice => "🔀",
+            DialogueNodeType::Speech => "[Chat]",
+            DialogueNodeType::Choice => "[Shuf]",
             DialogueNodeType::Condition => "❓",
-            DialogueNodeType::Action => "⚡",
-            DialogueNodeType::RandomBranch => "🎲",
+            DialogueNodeType::Action => "[Zap]",
+            DialogueNodeType::RandomBranch => "[Dice]",
             DialogueNodeType::Jump => "↪️",
             DialogueNodeType::End => "🏁",
         }
@@ -216,7 +216,7 @@ impl VariableType {
             VariableType::Boolean => "☑️",
             VariableType::Integer => "#️⃣",
             VariableType::Float => "🔢",
-            VariableType::String => "📝",
+            VariableType::String => "[Edit]",
         }
     }
 
@@ -313,14 +313,14 @@ impl DialogueTab {
     pub fn icon(&self) -> &'static str {
         match self {
             DialogueTab::Graph => "📈",
-            DialogueTab::Nodes => "💬",
+            DialogueTab::Nodes => "[Chat]",
             DialogueTab::Speakers => "👤",
-            DialogueTab::Variables => "📝",
-            DialogueTab::Localization => "🌐",
+            DialogueTab::Variables => "[Edit]",
+            DialogueTab::Localization => "[Net]",
             DialogueTab::Preview => "👁️",
-            DialogueTab::Validation => "✅",
+            DialogueTab::Validation => "[ok]",
             DialogueTab::Export => "📤",
-            DialogueTab::Templates => "📋",
+            DialogueTab::Templates => "[List]",
         }
     }
 }
@@ -363,10 +363,10 @@ impl LayoutAlgorithm {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LayoutAlgorithm::Hierarchical => "📊",
+            LayoutAlgorithm::Hierarchical => "[Chart]",
             LayoutAlgorithm::Radial => "◎",
             LayoutAlgorithm::ForceDirected => "🧲",
-            LayoutAlgorithm::Tree => "🌳",
+            LayoutAlgorithm::Tree => "[Tree]",
         }
     }
 
@@ -421,11 +421,11 @@ impl ExportFormat {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ExportFormat::Json => "📄",
+            ExportFormat::Json => "[Doc]",
             ExportFormat::Yarn => "🧶",
             ExportFormat::Ink => "✒️",
             ExportFormat::Xml => "📰",
-            ExportFormat::Csv => "📊",
+            ExportFormat::Csv => "[Chart]",
         }
     }
 
@@ -487,8 +487,8 @@ impl IssueSeverity {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            IssueSeverity::Error => "❌",
-            IssueSeverity::Warning => "⚠️",
+            IssueSeverity::Error => "[x]",
+            IssueSeverity::Warning => "[!]",
             IssueSeverity::Info => "ℹ️",
         }
     }
@@ -622,11 +622,11 @@ impl EditorAction {
     /// Returns the icon for this action
     pub fn icon(&self) -> &'static str {
         match self {
-            EditorAction::AddNode(_) => "➕",
-            EditorAction::DeleteNode(_) => "🗑️",
+            EditorAction::AddNode(_) => "+",
+            EditorAction::DeleteNode(_) => "[Del]",
             EditorAction::ModifyNode(_, _) => "✏️",
             EditorAction::AddSpeaker(_) => "👤",
-            EditorAction::ModifySpeaker(_, _) => "📝",
+            EditorAction::ModifySpeaker(_, _) => "[Edit]",
         }
     }
 
@@ -826,7 +826,7 @@ pub struct DialogueEditorPanel {
 
 impl Default for DialogueEditorPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: DialogueTab::Graph,
 
             graphs: Vec::new(),
@@ -888,7 +888,6 @@ impl Default for DialogueEditorPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_dialogue();
         panel
     }
 }
@@ -1026,15 +1025,15 @@ impl DialogueEditorPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (DialogueTab::Graph, "📊 Graph"),
-                (DialogueTab::Nodes, "📝 Nodes"),
+                (DialogueTab::Graph, "Graph"),
+                (DialogueTab::Nodes, "[Edit] Nodes"),
                 (DialogueTab::Speakers, "👤 Speakers"),
-                (DialogueTab::Variables, "📋 Variables"),
-                (DialogueTab::Localization, "🌍 Localization"),
-                (DialogueTab::Preview, "▶️ Preview"),
+                (DialogueTab::Variables, "Variables"),
+                (DialogueTab::Localization, "[Glb] Localization"),
+                (DialogueTab::Preview, "> Preview"),
                 (DialogueTab::Validation, "✓ Validation"),
-                (DialogueTab::Export, "💾 Export"),
-                (DialogueTab::Templates, "📋 Templates"),
+                (DialogueTab::Export, "Export"),
+                (DialogueTab::Templates, "Templates"),
             ];
 
             for (tab, label) in tabs {
@@ -1079,7 +1078,7 @@ impl DialogueEditorPanel {
 
         // Graph info
         ui.horizontal(|ui| {
-            ui.label(format!("📁 {}", self.current_graph.name));
+            ui.label(format!("{}", self.current_graph.name));
             ui.label(format!("| {} nodes", self.current_graph.nodes.len()));
             ui.label(format!("| {} speakers", self.current_graph.speakers.len()));
 
@@ -1106,13 +1105,13 @@ impl DialogueEditorPanel {
                 if error_count > 0 {
                     ui.colored_label(
                         Color32::from_rgb(255, 100, 100),
-                        format!("| ❌ {} errors", error_count),
+                        format!("| {} errors", error_count),
                     );
                 }
                 if warning_count > 0 {
                     ui.colored_label(
                         Color32::from_rgb(255, 200, 100),
-                        format!("| ⚠️ {} warnings", warning_count),
+                        format!("| {} warnings", warning_count),
                     );
                 }
             } else {
@@ -1124,7 +1123,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_graph_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Dialogue Graph");
+        ui.heading("Dialogue Graph");
         ui.add_space(5.0);
 
         // Toolbar
@@ -1412,7 +1411,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_nodes_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📝 All Nodes");
+        ui.heading("[Edit] All Nodes");
         ui.add_space(10.0);
 
         // Add node button
@@ -1536,7 +1535,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_variables_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Variables");
+        ui.heading("Variables");
         ui.add_space(10.0);
 
         // Add variable button
@@ -1605,7 +1604,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_localization_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 Localization");
+        ui.heading("[Glb] Localization");
         ui.add_space(10.0);
 
         // Language selector
@@ -1646,7 +1645,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("▶️ Dialogue Preview");
+        ui.heading("> Dialogue Preview");
         ui.add_space(10.0);
 
         // Controls
@@ -1655,7 +1654,7 @@ impl DialogueEditorPanel {
                 self.preview_node_id = self.current_graph.start_node_id;
                 self.preview_history.clear();
             }
-            if ui.button("⏪ Back").clicked() {
+            if ui.button("<< Back").clicked() {
                 if let Some(prev_id) = self.preview_history.pop() {
                     self.preview_node_id = Some(prev_id);
                 }
@@ -1773,11 +1772,11 @@ impl DialogueEditorPanel {
 
         // Validation controls
         ui.horizontal(|ui| {
-            if ui.button("🔍 Run Validation").clicked() {
+            if ui.button("Run Validation").clicked() {
                 self.validate_graph();
             }
             ui.checkbox(&mut self.auto_validate, "Auto-validate");
-            if ui.button("🗑️ Clear Issues").clicked() {
+            if ui.button("Clear Issues").clicked() {
                 self.validation_issues.clear();
             }
         });
@@ -1805,19 +1804,19 @@ impl DialogueEditorPanel {
             if error_count > 0 {
                 ui.colored_label(
                     Color32::from_rgb(255, 100, 100),
-                    format!("❌ {} Errors", error_count),
+                    format!("{} Errors", error_count),
                 );
             }
             if warning_count > 0 {
                 ui.colored_label(
                     Color32::from_rgb(255, 200, 100),
-                    format!("⚠️ {} Warnings", warning_count),
+                    format!("{} Warnings", warning_count),
                 );
             }
             if info_count > 0 {
                 ui.colored_label(
                     Color32::from_rgb(100, 200, 255),
-                    format!("ℹ️ {} Info", info_count),
+                    format!("{} Info", info_count),
                 );
             }
             if self.validation_issues.is_empty() {
@@ -1846,7 +1845,7 @@ impl DialogueEditorPanel {
                     }
                     if !issue.suggestion.is_empty() {
                         ui.label(
-                            RichText::new(format!("💡 {}", issue.suggestion))
+                            RichText::new(format!("{}", issue.suggestion))
                                 .color(Color32::from_rgb(200, 200, 100)),
                         );
                     }
@@ -1859,7 +1858,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_export_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💾 Export & Import");
+        ui.heading("Export & Import");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
@@ -1895,7 +1894,7 @@ impl DialogueEditorPanel {
             ui.label("Path:");
             ui.text_edit_singleline(&mut self.import_path);
         });
-        if ui.button("📥 Import").clicked() {
+        if ui.button("Import").clicked() {
             self.import_dialogue();
         }
 
@@ -1920,7 +1919,7 @@ impl DialogueEditorPanel {
     }
 
     fn show_templates_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Dialogue Templates");
+        ui.heading("Dialogue Templates");
         ui.add_space(10.0);
 
         ui.label("Select a template to quickly create common dialogue patterns:");
@@ -1966,7 +1965,7 @@ impl DialogueEditorPanel {
 
         // Custom template creation
         ui.heading("Create Custom Template");
-        if ui.button("💾 Save Current as Template").clicked() {
+        if ui.button("Save Current as Template").clicked() {
             let template = DialogueTemplate {
                 name: format!("Custom - {}", self.current_graph.name),
                 description: format!(
@@ -2672,7 +2671,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_dialogue() {
-        let panel = DialogueEditorPanel::new();
+        let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         assert!(panel.node_count() >= 3);
         assert!(panel.speaker_count() >= 2);
     }
@@ -2716,8 +2716,8 @@ mod tests {
 
     #[test]
     fn test_node_type_properties() {
-        assert_eq!(DialogueNodeType::Speech.icon(), "💬");
-        assert_eq!(DialogueNodeType::Choice.icon(), "🔀");
+        assert_eq!(DialogueNodeType::Speech.icon(), "[Chat]");
+        assert_eq!(DialogueNodeType::Choice.icon(), "[Shuf]");
         assert_eq!(
             DialogueNodeType::End.color(),
             Color32::from_rgb(220, 20, 60)
@@ -2756,6 +2756,7 @@ mod tests {
     #[test]
     fn test_validation_unreachable_nodes() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         let orphan_id = panel.add_node(DialogueNodeType::Speech);
 
         panel.validate_graph();
@@ -2852,8 +2853,8 @@ mod tests {
 
     #[test]
     fn test_validation_severity_levels() {
-        assert_eq!(IssueSeverity::Error.icon(), "❌");
-        assert_eq!(IssueSeverity::Warning.icon(), "⚠️");
+        assert_eq!(IssueSeverity::Error.icon(), "[x]");
+        assert_eq!(IssueSeverity::Warning.icon(), "[!]");
         assert_eq!(IssueSeverity::Info.icon(), "ℹ️");
 
         assert_eq!(IssueSeverity::Error.color(), Color32::from_rgb(220, 60, 60));
@@ -2949,6 +2950,7 @@ mod tests {
     #[test]
     fn test_search_in_text() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         panel.search_filter.query = "welcome".to_string();
 
         panel.search_nodes();
@@ -2969,6 +2971,7 @@ mod tests {
     #[test]
     fn test_search_case_insensitive() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         panel.search_filter.query = "WELCOME".to_string();
 
         panel.search_nodes();
@@ -3151,6 +3154,7 @@ mod tests {
     #[test]
     fn test_layout_hierarchical() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         panel.layout_algorithm = LayoutAlgorithm::Hierarchical;
 
         panel.auto_layout();
@@ -3162,6 +3166,7 @@ mod tests {
     #[test]
     fn test_layout_radial() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         panel.layout_algorithm = LayoutAlgorithm::Radial;
 
         panel.auto_layout();
@@ -3506,10 +3511,10 @@ mod tests {
     #[test]
     fn test_editor_action_icons() {
         let add_node = EditorAction::AddNode(DialogueNode::default());
-        assert_eq!(add_node.icon(), "➕");
+        assert_eq!(add_node.icon(), "+");
 
         let delete_node = EditorAction::DeleteNode(1);
-        assert_eq!(delete_node.icon(), "🗑️");
+        assert_eq!(delete_node.icon(), "[Del]");
 
         let add_speaker = EditorAction::AddSpeaker(DialogueSpeaker::default());
         assert_eq!(add_speaker.icon(), "👤");
@@ -3767,6 +3772,7 @@ mod tests {
     #[test]
     fn test_force_directed_layout() {
         let mut panel = DialogueEditorPanel::new();
+        panel.create_sample_dialogue();
         // Should have sample nodes
         assert!(panel.node_count() >= 3);
 

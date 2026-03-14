@@ -1,4 +1,4 @@
-use astract::advanced::{ColorPicker, RangeSlider, TreeNode, TreeView};
+﻿use astract::advanced::{ColorPicker, RangeSlider, TreeNode, TreeView};
 use egui::{Color32, Ui};
 
 /// Panel demonstrating advanced widgets with game engine use cases
@@ -85,7 +85,7 @@ impl AdvancedWidgetsPanel {
         // Scene Hierarchy: Typical game scene structure
         let _world = self
             .scene_hierarchy
-            .add_node(TreeNode::new(1, "World").with_icon("🌍"));
+            .add_node(TreeNode::new(1, "World").with_icon("[Glb]"));
 
         let environment = self
             .scene_hierarchy
@@ -93,13 +93,13 @@ impl AdvancedWidgetsPanel {
         self.scene_hierarchy
             .add_child(environment, TreeNode::new(10, "Skybox").with_icon("🌌"));
         self.scene_hierarchy
-            .add_child(environment, TreeNode::new(11, "Sun").with_icon("☀️"));
+            .add_child(environment, TreeNode::new(11, "Sun").with_icon("[Sun]"));
         self.scene_hierarchy
-            .add_child(environment, TreeNode::new(12, "Fog").with_icon("🌫️"));
+            .add_child(environment, TreeNode::new(12, "Fog").with_icon("[Fog]"));
 
         let entities = self
             .scene_hierarchy
-            .add_node(TreeNode::new(3, "Entities").with_icon("🎮"));
+            .add_node(TreeNode::new(3, "Entities").with_icon("[Gp]"));
 
         if let Some(player) = self
             .scene_hierarchy
@@ -108,7 +108,7 @@ impl AdvancedWidgetsPanel {
             self.scene_hierarchy
                 .add_child(player, TreeNode::new(21, "Camera").with_icon("📷"));
             self.scene_hierarchy
-                .add_child(player, TreeNode::new(22, "Weapon").with_icon("🔫"));
+                .add_child(player, TreeNode::new(22, "Weapon").with_icon("[Wpn]"));
         }
 
         if let Some(enemies) = self
@@ -116,11 +116,11 @@ impl AdvancedWidgetsPanel {
             .add_child(entities, TreeNode::new(23, "Enemies").with_icon("👾"))
         {
             self.scene_hierarchy
-                .add_child(enemies, TreeNode::new(24, "Enemy_1").with_icon("🤖"));
+                .add_child(enemies, TreeNode::new(24, "Enemy_1").with_icon("[Bot]"));
             self.scene_hierarchy
-                .add_child(enemies, TreeNode::new(25, "Enemy_2").with_icon("🤖"));
+                .add_child(enemies, TreeNode::new(25, "Enemy_2").with_icon("[Bot]"));
             self.scene_hierarchy
-                .add_child(enemies, TreeNode::new(26, "Enemy_3").with_icon("🤖"));
+                .add_child(enemies, TreeNode::new(26, "Enemy_3").with_icon("[Bot]"));
         }
 
         if let Some(npcs) = self
@@ -130,50 +130,50 @@ impl AdvancedWidgetsPanel {
             self.scene_hierarchy
                 .add_child(npcs, TreeNode::new(28, "Merchant").with_icon("🏪"));
             self.scene_hierarchy
-                .add_child(npcs, TreeNode::new(29, "Guard").with_icon("🛡️"));
+                .add_child(npcs, TreeNode::new(29, "Guard").with_icon("[Shld]"));
         }
 
         // Asset Browser: Game asset organization
         let assets = self
             .asset_browser
-            .add_node(TreeNode::new(100, "Assets").with_icon("📦"));
+            .add_node(TreeNode::new(100, "Assets").with_icon("[Pkg]"));
 
         if let Some(models) = self
             .asset_browser
             .add_child(assets, TreeNode::new(101, "Models").with_icon("🗿"))
         {
             self.asset_browser
-                .add_child(models, TreeNode::new(110, "character.fbx").with_icon("📄"));
+                .add_child(models, TreeNode::new(110, "character.fbx").with_icon("[Doc]"));
             self.asset_browser
-                .add_child(models, TreeNode::new(111, "weapon.fbx").with_icon("📄"));
+                .add_child(models, TreeNode::new(111, "weapon.fbx").with_icon("[Doc]"));
             self.asset_browser.add_child(
                 models,
-                TreeNode::new(112, "environment.fbx").with_icon("📄"),
+                TreeNode::new(112, "environment.fbx").with_icon("[Doc]"),
             );
         }
 
         if let Some(textures) = self
             .asset_browser
-            .add_child(assets, TreeNode::new(102, "Textures").with_icon("🖼️"))
+            .add_child(assets, TreeNode::new(102, "Textures").with_icon("[Img]"))
         {
             self.asset_browser
-                .add_child(textures, TreeNode::new(120, "albedo.png").with_icon("📄"));
+                .add_child(textures, TreeNode::new(120, "albedo.png").with_icon("[Doc]"));
             self.asset_browser
-                .add_child(textures, TreeNode::new(121, "normal.png").with_icon("📄"));
+                .add_child(textures, TreeNode::new(121, "normal.png").with_icon("[Doc]"));
             self.asset_browser
-                .add_child(textures, TreeNode::new(122, "metallic.png").with_icon("📄"));
+                .add_child(textures, TreeNode::new(122, "metallic.png").with_icon("[Doc]"));
         }
 
         if let Some(audio) = self
             .asset_browser
-            .add_child(assets, TreeNode::new(103, "Audio").with_icon("🔊"))
+            .add_child(assets, TreeNode::new(103, "Audio").with_icon("[Snd]"))
         {
             self.asset_browser
-                .add_child(audio, TreeNode::new(130, "music.ogg").with_icon("🎵"));
+                .add_child(audio, TreeNode::new(130, "music.ogg").with_icon("[Mus]"));
             self.asset_browser
-                .add_child(audio, TreeNode::new(131, "sfx_shot.wav").with_icon("🔊"));
+                .add_child(audio, TreeNode::new(131, "sfx_shot.wav").with_icon("[Snd]"));
             self.asset_browser
-                .add_child(audio, TreeNode::new(132, "sfx_step.wav").with_icon("🔊"));
+                .add_child(audio, TreeNode::new(132, "sfx_step.wav").with_icon("[Snd]"));
         }
 
         if let Some(scripts) = self
@@ -198,16 +198,16 @@ impl AdvancedWidgetsPanel {
 
     /// Show the advanced widgets panel
     pub fn show(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 Advanced Widgets");
+        ui.heading("Advanced Widgets");
         ui.add_space(8.0);
 
         // Color Pickers Section
-        ui.collapsing("🎨 Color Pickers", |ui| {
+        ui.collapsing("Color Pickers", |ui| {
             ui.label("Game engine lighting and atmosphere controls");
             ui.add_space(4.0);
 
             ui.group(|ui| {
-                ui.label("🌙 Ambient Light Color");
+                ui.label("[Moon] Ambient Light Color");
                 ui.add_space(4.0);
                 if self.ambient_color.show(ui) {
                     let color = self.ambient_color.color();
@@ -223,7 +223,7 @@ impl AdvancedWidgetsPanel {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.label("☀️ Directional Light Color");
+                ui.label("[Sun] Directional Light Color");
                 ui.add_space(4.0);
                 if self.directional_light_color.show(ui) {
                     let color = self.directional_light_color.color();
@@ -239,7 +239,7 @@ impl AdvancedWidgetsPanel {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.label("🌫️ Fog Color (with Alpha)");
+                ui.label("[Fog] Fog Color (with Alpha)");
                 ui.add_space(4.0);
                 if self.fog_color.show(ui) {
                     let color = self.fog_color.color();
@@ -257,12 +257,12 @@ impl AdvancedWidgetsPanel {
         ui.add_space(8.0);
 
         // Tree Views Section
-        ui.collapsing("🌳 Tree Views", |ui| {
+        ui.collapsing("Tree Views", |ui| {
             ui.label("Hierarchical data visualization");
             ui.add_space(4.0);
 
             ui.group(|ui| {
-                ui.label("🌍 Scene Hierarchy");
+                ui.label("[Glb] Scene Hierarchy");
                 ui.separator();
                 ui.add_space(4.0);
 
@@ -280,7 +280,7 @@ impl AdvancedWidgetsPanel {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.label("📦 Asset Browser");
+                ui.label("Asset Browser");
                 ui.separator();
                 ui.add_space(4.0);
 
@@ -320,7 +320,7 @@ impl AdvancedWidgetsPanel {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.label("🎮 Player Level Range Filter");
+                ui.label("Player Level Range Filter");
                 ui.add_space(4.0);
                 if self.player_level_range.show(ui) {
                     ui.label(format!(
@@ -336,7 +336,7 @@ impl AdvancedWidgetsPanel {
             ui.add_space(8.0);
 
             ui.group(|ui| {
-                ui.label("🔊 Audio Frequency Filter");
+                ui.label("Audio Frequency Filter");
                 ui.add_space(4.0);
                 if self.audio_frequency.show(ui) {
                     ui.label(format!(

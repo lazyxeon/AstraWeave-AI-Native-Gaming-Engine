@@ -93,15 +93,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let grid_fract = fract(grid_coord);
     
     // Compute grid line thickness (derivative-based anti-aliasing)
+    // Thicker lines (3x derivative) for better visibility
     let grid_deriv = fwidth(grid_coord);
-    let grid_line = smoothstep(vec2<f32>(0.0), grid_deriv * 2.0, abs(grid_fract - 0.5) - 0.5 + grid_deriv);
+    let grid_line = smoothstep(vec2<f32>(0.0), grid_deriv * 3.0, abs(grid_fract - 0.5) - 0.5 + grid_deriv * 1.5);
     let grid_alpha = 1.0 - min(grid_line.x, grid_line.y);
     
     // Major grid lines (every N lines)
     let major_coord = world_pos.xz / (uniforms.grid_size * uniforms.major_grid_every);
     let major_fract = fract(major_coord);
     let major_deriv = fwidth(major_coord);
-    let major_line = smoothstep(vec2<f32>(0.0), major_deriv * 2.0, abs(major_fract - 0.5) - 0.5 + major_deriv);
+    let major_line = smoothstep(vec2<f32>(0.0), major_deriv * 3.0, abs(major_fract - 0.5) - 0.5 + major_deriv * 1.5);
     let major_alpha = 1.0 - min(major_line.x, major_line.y);
     
     // Axes (X and Z)
@@ -111,9 +112,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Distance fade
     let fade = 1.0 - smoothstep(uniforms.fade_distance, uniforms.max_distance, distance);
     
-    // Ground plane base color (dark surface so entities appear to stand on something solid)
-    // Higher alpha (0.6) makes it more visible, darker color (0.12) to not overpower grid
-    let ground_base_color = vec4<f32>(0.12, 0.12, 0.15, 0.6); // Dark blue-gray, more opaque
+    // Ground plane base color (subtle dark surface so grid lines stand out)
+    let ground_base_color = vec4<f32>(0.1, 0.1, 0.12, 0.35);
     
     // Combine: Ground base → Grid → Major grid → Axes
     var color = ground_base_color; // Start with ground plane

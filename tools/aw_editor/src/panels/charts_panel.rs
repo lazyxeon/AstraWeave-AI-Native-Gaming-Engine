@@ -61,7 +61,7 @@ impl ChartType {
     pub fn icon(&self) -> &'static str {
         match self {
             ChartType::Line => "📈",
-            ChartType::Bar => "📊",
+            ChartType::Bar => "[Chart]",
             ChartType::Scatter => "⚫",
             ChartType::Stacked => "▬",
             ChartType::Normalized => "💯",
@@ -122,13 +122,13 @@ impl DataSource {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            DataSource::FrameTiming => "⏱️",
+            DataSource::FrameTiming => "[Time]",
             DataSource::EntityCounts => "🔢",
             DataSource::SpatialDistribution => "📍",
-            DataSource::MemoryUsage => "🧠",
-            DataSource::CpuLoad => "💻",
-            DataSource::GpuUtilization => "🎮",
-            DataSource::Custom => "✨",
+            DataSource::MemoryUsage => "[Brain]",
+            DataSource::CpuLoad => "[PC]",
+            DataSource::GpuUtilization => "[Gp]",
+            DataSource::Custom => "[Fx]",
         }
     }
 
@@ -170,9 +170,9 @@ impl ExportFormat {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ExportFormat::Csv => "📋",
-            ExportFormat::Json => "🔧",
-            ExportFormat::Png => "🖼️",
+            ExportFormat::Csv => "[List]",
+            ExportFormat::Json => "[Wrn]",
+            ExportFormat::Png => "[Img]",
         }
     }
 
@@ -635,7 +635,7 @@ impl ChartsPanel {
 
     fn render_chart_selector(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("📊 Chart Type:");
+            ui.label("Chart Type:");
             for chart_type in ChartType::all().iter().copied() {
                 if ui
                     .selectable_label(
@@ -652,7 +652,7 @@ impl ChartsPanel {
 
     fn render_data_source_selector(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("📂 Data:");
+            ui.label("Data:");
             egui::ComboBox::from_id_salt("data_source")
                 .selected_text(self.active_data_source.name())
                 .show_ui(ui, |ui| {
@@ -683,15 +683,15 @@ impl ChartsPanel {
 
     fn render_export_buttons(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("💾 Export:");
+            ui.label("Export:");
 
-            if ui.button("📄 CSV").clicked() {
+            if ui.button("CSV").clicked() {
                 let csv = self.export_to_csv();
                 self.pending_actions
                     .push(ChartsAction::ExportCsv { data: csv });
             }
 
-            if ui.button("📦 JSON").clicked() {
+            if ui.button("JSON").clicked() {
                 let json = self.export_to_json();
                 self.pending_actions
                     .push(ChartsAction::ExportJson { data: json });
@@ -710,7 +710,7 @@ impl ChartsPanel {
 
         if let Some(stats) = &self.frame_stats {
             ui.group(|ui| {
-                ui.heading("📊 Statistics");
+                ui.heading("Statistics");
                 ui.separator();
 
                 ui.horizontal(|ui| {
@@ -740,7 +740,7 @@ impl Panel for ChartsPanel {
     }
 
     fn show(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Chart Widgets Demo");
+        ui.heading("Chart Widgets Demo");
         ui.separator();
 
         // Control panel
@@ -773,7 +773,7 @@ impl Panel for ChartsPanel {
         ui.group(|ui| {
             ui.label(format!("📈 Frame Count: {}", self.frame_count));
             ui.label(format!(
-                "⏱️  Runtime: {:.1}s",
+                "[Time]  Runtime: {:.1}s",
                 self.start_time.elapsed().as_secs_f64()
             ));
             if let Some((_, last_frame)) = self.frame_history.last() {
@@ -783,7 +783,7 @@ impl Panel for ChartsPanel {
                 } else {
                     Color32::YELLOW
                 };
-                ui.colored_label(color, format!("🎮 Current FPS: {:.1}", fps));
+                ui.colored_label(color, format!("Current FPS: {:.1}", fps));
             }
         });
     }
@@ -797,7 +797,7 @@ impl ChartsPanel {
     fn render_line_chart(&mut self, ui: &mut Ui) {
         let data = self.get_current_data();
         if data.is_empty() {
-            ui.label("⚠️ No data available");
+            ui.label("No data available");
             return;
         }
 
@@ -1057,7 +1057,7 @@ mod tests {
     #[test]
     fn test_chart_type_icons() {
         assert_eq!(ChartType::Line.icon(), "📈");
-        assert_eq!(ChartType::Bar.icon(), "📊");
+        assert_eq!(ChartType::Bar.icon(), "[Chart]");
         assert_eq!(ChartType::Scatter.icon(), "⚫");
         assert_eq!(ChartType::Stacked.icon(), "▬");
         assert_eq!(ChartType::Normalized.icon(), "💯");
@@ -1455,7 +1455,7 @@ mod tests {
     #[test]
     fn test_chart_type_display() {
         assert_eq!(format!("{}", ChartType::Line), "📈 Line Chart");
-        assert_eq!(format!("{}", ChartType::Bar), "📊 Bar Chart");
+        assert_eq!(format!("{}", ChartType::Bar), "[Chart] Bar Chart");
         assert_eq!(format!("{}", ChartType::Scatter), "⚫ Scatter Plot");
         assert_eq!(format!("{}", ChartType::Stacked), "▬ Stacked Bar");
         assert_eq!(format!("{}", ChartType::Normalized), "💯 Normalized %");
@@ -1490,15 +1490,15 @@ mod tests {
 
     #[test]
     fn test_data_source_display() {
-        assert_eq!(format!("{}", DataSource::FrameTiming), "⏱️ Frame Timing");
+        assert_eq!(format!("{}", DataSource::FrameTiming), "[Time] Frame Timing");
         assert_eq!(format!("{}", DataSource::EntityCounts), "🔢 Entity Counts");
-        assert_eq!(format!("{}", DataSource::MemoryUsage), "🧠 Memory Usage");
-        assert_eq!(format!("{}", DataSource::CpuLoad), "💻 CPU Load");
+        assert_eq!(format!("{}", DataSource::MemoryUsage), "[Brain] Memory Usage");
+        assert_eq!(format!("{}", DataSource::CpuLoad), "[PC] CPU Load");
         assert_eq!(
             format!("{}", DataSource::GpuUtilization),
-            "🎮 GPU Utilization"
+            "[Gp] GPU Utilization"
         );
-        assert_eq!(format!("{}", DataSource::Custom), "✨ Custom Data");
+        assert_eq!(format!("{}", DataSource::Custom), "[Fx] Custom Data");
     }
 
     #[test]
@@ -1531,9 +1531,9 @@ mod tests {
 
     #[test]
     fn test_export_format_display() {
-        assert_eq!(format!("{}", ExportFormat::Csv), "📋 CSV");
-        assert_eq!(format!("{}", ExportFormat::Json), "🔧 JSON");
-        assert_eq!(format!("{}", ExportFormat::Png), "🖼️ PNG Image");
+        assert_eq!(format!("{}", ExportFormat::Csv), "[List] CSV");
+        assert_eq!(format!("{}", ExportFormat::Json), "[Wrn] JSON");
+        assert_eq!(format!("{}", ExportFormat::Png), "[Img] PNG Image");
     }
 
     #[test]

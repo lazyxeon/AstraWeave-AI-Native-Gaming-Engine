@@ -83,12 +83,12 @@ impl DistributionFormat {
     pub fn icon(&self) -> &str {
         match self {
             Self::WindowsInstaller => "💿",
-            Self::WindowsPortable => "📦",
+            Self::WindowsPortable => "[Pkg]",
             Self::MacOSBundle => "🍎",
-            Self::MacOSDmg => "💾",
+            Self::MacOSDmg => "[Save]",
             Self::LinuxAppImage => "🐧",
-            Self::LinuxTarball => "📁",
-            Self::SteamDepot => "🎮",
+            Self::LinuxTarball => "[Dir]",
+            Self::SteamDepot => "[Gp]",
         }
     }
 
