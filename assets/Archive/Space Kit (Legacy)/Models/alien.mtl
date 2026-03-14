@@ -1,0 +1,8 @@
+# Exported using Kenney Suite 1.2 
+
+newmtl alien
+Ka 0.000000 0.000000 0.000000 
+Kd 1 1 1 
+Ks 0.330000 0.330000 0.330000 
+map_Kd Textures/alien.png
+

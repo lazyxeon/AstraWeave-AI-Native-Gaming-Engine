@@ -118,18 +118,18 @@ impl SourceEngine {
     pub fn icon(&self) -> &'static str {
         match self {
             SourceEngine::Unknown => "❓",
-            SourceEngine::Unity => "🎮",
-            SourceEngine::Unreal => "🎯",
+            SourceEngine::Unity => "[Gp]",
+            SourceEngine::Unreal => "[Tgt]",
             SourceEngine::Blender => "🧊",
-            SourceEngine::Maya => "🔷",
-            SourceEngine::SubstancePainter => "🎨",
+            SourceEngine::Maya => "[D]",
+            SourceEngine::SubstancePainter => "[Art]",
             SourceEngine::SubstanceDesigner => "🔶",
-            SourceEngine::Quixel => "🌐",
-            SourceEngine::ThreeDSMax => "📐",
-            SourceEngine::Cinema4D => "🎬",
-            SourceEngine::ZBrush => "🪨",
+            SourceEngine::Quixel => "[Net]",
+            SourceEngine::ThreeDSMax => "[Sq]",
+            SourceEngine::Cinema4D => "[Anim]",
+            SourceEngine::ZBrush => "[Rock]",
             SourceEngine::Houdini => "💫",
-            SourceEngine::Photoshop => "🖼️",
+            SourceEngine::Photoshop => "[Img]",
             SourceEngine::Custom => "⚙️",
         }
     }
@@ -362,8 +362,8 @@ impl IssueSeverity {
     pub fn icon(&self) -> &'static str {
         match self {
             IssueSeverity::Info => "ℹ️",
-            IssueSeverity::Warning => "⚠️",
-            IssueSeverity::Error => "❌",
+            IssueSeverity::Warning => "[!]",
+            IssueSeverity::Error => "[x]",
             IssueSeverity::Critical => "🚨",
         }
     }
@@ -456,19 +456,19 @@ impl IssueType {
     pub fn icon(&self) -> &'static str {
         match self {
             IssueType::Unknown => "❓",
-            IssueType::NormalMapFormat => "🔵",
-            IssueType::TexturePacking => "📦",
-            IssueType::MissingTangents => "📐",
-            IssueType::NonPowerOfTwo => "⚠️",
+            IssueType::NormalMapFormat => "[B]",
+            IssueType::TexturePacking => "[Pkg]",
+            IssueType::MissingTangents => "[Sq]",
+            IssueType::NonPowerOfTwo => "[!]",
             IssueType::MissingUVs => "🗺️",
             IssueType::IncorrectScale => "📏",
-            IssueType::MissingCollider => "💥",
-            IssueType::IncorrectOrientation => "🔄",
+            IssueType::MissingCollider => "[Hit]",
+            IssueType::IncorrectOrientation => "[Sync]",
             IssueType::MissingLODs => "👁️",
-            IssueType::OversizedTexture => "📐",
+            IssueType::OversizedTexture => "[Sq]",
             IssueType::UnsupportedFormat => "🚫",
             IssueType::DuplicateMaterial => "🔁",
-            IssueType::MissingTexture => "🖼️",
+            IssueType::MissingTexture => "[Img]",
         }
     }
 
@@ -643,17 +643,17 @@ impl QuickFix {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            QuickFix::TreatAsNormalMap => "🔵",
+            QuickFix::TreatAsNormalMap => "[B]",
             QuickFix::FlipGreenChannel => "↕️",
             QuickFix::ConvertToORM => "🔶",
-            QuickFix::ConvertToMRA => "🔷",
-            QuickFix::GenerateTangents => "📐",
+            QuickFix::ConvertToMRA => "[D]",
+            QuickFix::GenerateTangents => "[Sq]",
             QuickFix::ResizePowerOfTwo => "📏",
             QuickFix::GenerateLODs => "👁️",
-            QuickFix::GenerateCollider => "💥",
+            QuickFix::GenerateCollider => "[Hit]",
             QuickFix::FixScale => "📏",
-            QuickFix::FixOrientation => "🔄",
-            QuickFix::MarkAsSRGB => "🎨",
+            QuickFix::FixOrientation => "[Sync]",
+            QuickFix::MarkAsSRGB => "[Art]",
             QuickFix::MarkAsLinear => "⬜",
         }
     }
@@ -849,7 +849,7 @@ impl ImportDoctorPanel {
     }
 
     fn render_detection_panel(&mut self, ui: &mut Ui) {
-        ui.heading("🔍 Detection");
+        ui.heading("Detection");
 
         ui.horizontal(|ui| {
             ui.label("Detected Source:");
@@ -890,7 +890,7 @@ impl ImportDoctorPanel {
     }
 
     fn render_issues_panel(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Issues");
+        ui.heading("Issues");
 
         // Summary
         ui.horizontal(|ui| {
@@ -903,17 +903,17 @@ impl ImportDoctorPanel {
                 ui.colored_label(IssueSeverity::Critical.color(), format!("{} 🚨", critical));
             }
             if errors > 0 {
-                ui.colored_label(IssueSeverity::Error.color(), format!("{} ❌", errors));
+                ui.colored_label(IssueSeverity::Error.color(), format!("{} [x]", errors));
             }
             if warnings > 0 {
-                ui.colored_label(IssueSeverity::Warning.color(), format!("{} ⚠️", warnings));
+                ui.colored_label(IssueSeverity::Warning.color(), format!("{} [!]", warnings));
             }
             if info > 0 {
                 ui.colored_label(IssueSeverity::Info.color(), format!("{} ℹ️", info));
             }
 
             if self.issues.is_empty() {
-                ui.colored_label(Color32::from_rgb(100, 200, 100), "✅ No issues detected");
+                ui.colored_label(Color32::from_rgb(100, 200, 100), "No issues detected");
             }
         });
 
@@ -939,7 +939,7 @@ impl ImportDoctorPanel {
                                 }
                             }
                         } else if issue.fix_applied {
-                            ui.label("✅ Fixed");
+                            ui.label("Fixed");
                         }
                     });
                 }
@@ -961,7 +961,7 @@ impl ImportDoctorPanel {
     }
 
     fn render_quick_fixes(&mut self, ui: &mut Ui) {
-        ui.heading("🔧 Quick Fixes");
+        ui.heading("Quick Fixes");
 
         egui::Grid::new("quick_fixes_grid")
             .num_columns(2)
@@ -1018,7 +1018,7 @@ impl ImportDoctorPanel {
     }
 
     fn render_settings(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ Import Settings");
+        ui.heading("Import Settings");
 
         egui::CollapsingHeader::new("Textures")
             .default_open(true)
@@ -1098,7 +1098,7 @@ impl ImportDoctorPanel {
     }
 
     fn render_preview(&mut self, ui: &mut Ui) {
-        ui.heading("👁️ Preview");
+        ui.heading("Preview");
 
         let (rect, response) =
             ui.allocate_exact_size(Vec2::new(200.0, 150.0), egui::Sense::click());
@@ -1113,7 +1113,7 @@ impl ImportDoctorPanel {
             ui.painter().text(
                 center,
                 egui::Align2::CENTER_CENTER,
-                "🎭",
+                "[Mask]",
                 egui::FontId::proportional(48.0),
                 Color32::from_rgb(150, 150, 160),
             );
@@ -1156,21 +1156,21 @@ impl ImportDoctorPanel {
 
         ui.horizontal(|ui| {
             if can_import {
-                if ui.button(RichText::new("✅ Import").strong()).clicked() {
+                if ui.button(RichText::new("Import").strong()).clicked() {
                     should_import = true;
                 }
             } else {
                 ui.add_enabled(
                     false,
-                    egui::Button::new(RichText::new("⚠️ Cannot Import").color(Color32::RED)),
+                    egui::Button::new(RichText::new("Cannot Import").color(Color32::RED)),
                 );
             }
 
-            if ui.button("🔧 Fix All").clicked() {
+            if ui.button("Fix All").clicked() {
                 should_fix_all = true;
             }
 
-            if ui.button("🗑️ Clear").clicked() {
+            if ui.button("Clear").clicked() {
                 should_clear = true;
             }
         });
@@ -1217,20 +1217,20 @@ impl ImportDoctorPanel {
         if !can_import {
             ui.colored_label(
                 Color32::from_rgb(255, 100, 100),
-                "❌ Critical issues must be resolved before import",
+                "Critical issues must be resolved before import",
             );
         } else if !self.issues.is_empty() {
             let fixable = self.fixable_count();
             if fixable > 0 {
                 ui.colored_label(
                     Color32::from_rgb(255, 200, 100),
-                    format!("⚠️ {} fixable issues remaining", fixable),
+                    format!("{} fixable issues remaining", fixable),
                 );
             }
         } else {
             ui.colored_label(
                 Color32::from_rgb(100, 200, 100),
-                "✅ Asset ready for import",
+                "Asset ready for import",
             );
         }
     }

@@ -1,0 +1,1 @@
+The archive includes game asset packages that were deprecated, replaced or remade.

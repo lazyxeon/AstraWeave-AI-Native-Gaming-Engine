@@ -62,7 +62,7 @@ impl BiomePaint {
     /// Returns an icon for this paint type.
     pub fn icon(&self) -> &'static str {
         match self {
-            BiomePaint::GrassDense { .. } => "🌿",
+            BiomePaint::GrassDense { .. } => "[Leaf]",
             BiomePaint::MossPath { .. } => "🛤️",
         }
     }
@@ -161,7 +161,7 @@ impl Trigger {
     /// Returns an icon for this trigger type.
     pub fn icon(&self) -> &'static str {
         match self {
-            Trigger::EnterArea { .. } => "🎯",
+            Trigger::EnterArea { .. } => "[Tgt]",
         }
     }
 
@@ -246,7 +246,7 @@ impl DirectorOp {
     pub fn icon(&self) -> &'static str {
         match self {
             DirectorOp::Fortify { .. } => "🏰",
-            DirectorOp::Collapse { .. } => "💥",
+            DirectorOp::Collapse { .. } => "[Hit]",
             DirectorOp::SpawnWave { .. } => "👾",
         }
     }
@@ -831,7 +831,7 @@ mod tests {
         assert_eq!(trigger.radius(), Some(10.0));
         assert_eq!(trigger.center(), Some([1.0, 2.0, 3.0]));
         assert_eq!(trigger.name(), "Enter Area");
-        assert_eq!(trigger.icon(), "🎯");
+        assert_eq!(trigger.icon(), "[Tgt]");
     }
 
     // === DirectorOp enum tests ===

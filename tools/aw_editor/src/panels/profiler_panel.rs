@@ -1,4 +1,4 @@
-use super::Panel;
+﻿use super::Panel;
 use egui::Ui;
 use std::collections::VecDeque;
 
@@ -150,7 +150,7 @@ impl ProfilerPanel {
             gpu_metrics: GpuMetrics::default(),
             gpu_time_history: VecDeque::with_capacity(120),
             flame_root: None,
-            memory_categories: Self::create_sample_memory_categories(),
+            memory_categories: Vec::new(),
             selected_tab: ProfilerTab::Overview,
             graph_height: 80.0,
             target_fps: 60.0,
@@ -695,42 +695,42 @@ impl ProfilerPanel {
                 let budget = 1000.0 / self.target_fps;
                 let subsystems = [
                     (
-                        "🎨 Render",
+                        "Render",
                         self.subsystem_timings.render,
                         egui::Color32::from_rgb(200, 100, 100),
                     ),
                     (
-                        "⚙️ Physics",
+                        "Physics",
                         self.subsystem_timings.physics,
                         egui::Color32::from_rgb(100, 200, 100),
                     ),
                     (
-                        "🧠 AI",
+                        "AI",
                         self.subsystem_timings.ai,
                         egui::Color32::from_rgb(100, 100, 200),
                     ),
                     (
-                        "🔊 Audio",
+                        "Audio",
                         self.subsystem_timings.audio,
                         egui::Color32::from_rgb(200, 200, 100),
                     ),
                     (
-                        "📜 Scripts",
+                        "Scripts",
                         self.subsystem_timings.scripts,
                         egui::Color32::from_rgb(200, 100, 200),
                     ),
                     (
-                        "🎬 Animation",
+                        "Animation",
                         self.subsystem_timings.animation,
                         egui::Color32::from_rgb(100, 200, 200),
                     ),
                     (
-                        "🖥️ UI",
+                        "UI",
                         self.subsystem_timings.ui,
                         egui::Color32::from_rgb(200, 150, 100),
                     ),
                     (
-                        "🌐 Network",
+                        "Network",
                         self.subsystem_timings.network,
                         egui::Color32::from_rgb(150, 100, 200),
                     ),
@@ -844,7 +844,8 @@ impl ProfilerPanel {
         ui.add_space(8.0);
 
         if self.flame_root.is_none() {
-            self.flame_root = Some(Self::create_sample_flame_graph());
+            ui.label("No flame graph data available. Profiling data will appear when subsystems are active.");
+            return;
         }
 
         if let Some(root) = &self.flame_root {
@@ -1023,7 +1024,7 @@ impl Panel for ProfilerPanel {
     fn show(&mut self, ui: &mut Ui) {
         // Header with controls
         ui.horizontal(|ui| {
-            ui.heading("📊 Performance Profiler");
+            ui.heading("Performance Profiler");
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.small_button("Reset Peaks").clicked() {
@@ -1031,9 +1032,9 @@ impl Panel for ProfilerPanel {
                 }
 
                 let pause_text = if self.pause_profiling {
-                    "▶ Resume"
+                    "> Resume"
                 } else {
-                    "⏸ Pause"
+                    "|| Pause"
                 };
                 if ui.small_button(pause_text).clicked() {
                     self.pause_profiling = !self.pause_profiling;
@@ -1055,7 +1056,7 @@ impl Panel for ProfilerPanel {
         });
 
         if self.pause_profiling {
-            ui.colored_label(egui::Color32::YELLOW, "⏸ Profiling paused");
+            ui.colored_label(egui::Color32::YELLOW, "|| Profiling paused");
         }
 
         ui.separator();
@@ -1071,26 +1072,26 @@ impl Panel for ProfilerPanel {
             if ui
                 .selectable_label(
                     self.selected_tab == ProfilerTab::Subsystems,
-                    "⚙️ Subsystems",
+                    "Subsystems",
                 )
                 .clicked()
             {
                 self.selected_tab = ProfilerTab::Subsystems;
             }
             if ui
-                .selectable_label(self.selected_tab == ProfilerTab::Gpu, "🖼️ GPU")
+                .selectable_label(self.selected_tab == ProfilerTab::Gpu, "GPU")
                 .clicked()
             {
                 self.selected_tab = ProfilerTab::Gpu;
             }
             if ui
-                .selectable_label(self.selected_tab == ProfilerTab::FlameGraph, "🔥 Flame")
+                .selectable_label(self.selected_tab == ProfilerTab::FlameGraph, "[Fire] Flame")
                 .clicked()
             {
                 self.selected_tab = ProfilerTab::FlameGraph;
             }
             if ui
-                .selectable_label(self.selected_tab == ProfilerTab::Memory, "💾 Memory")
+                .selectable_label(self.selected_tab == ProfilerTab::Memory, "Memory")
                 .clicked()
             {
                 self.selected_tab = ProfilerTab::Memory;
@@ -1315,8 +1316,10 @@ mod tests {
     #[test]
     fn test_memory_categories_created() {
         let panel = ProfilerPanel::new();
-        assert!(!panel.memory_categories.is_empty());
-        assert!(panel.memory_categories.len() >= 5);
+        // Memory categories start empty; use create_sample_memory_categories() for testing
+        let categories = ProfilerPanel::create_sample_memory_categories();
+        assert!(!categories.is_empty());
+        assert!(categories.len() >= 5);
     }
 
     #[test]

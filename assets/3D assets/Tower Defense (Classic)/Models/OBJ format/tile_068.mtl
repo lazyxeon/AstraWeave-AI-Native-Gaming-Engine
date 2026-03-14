@@ -1,0 +1,8 @@
+# Created by Kenney (www.kenney.nl)
+
+newmtl grey
+Kd 0.6039216 0.6392157 0.6039216
+
+newmtl brick
+Kd 0.7568628 0.8 0.7568628
+

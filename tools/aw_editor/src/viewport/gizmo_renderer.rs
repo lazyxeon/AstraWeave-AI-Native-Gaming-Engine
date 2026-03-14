@@ -1,4 +1,4 @@
-//! Gizmo Renderer (wgpu integration)
+﻿//! Gizmo Renderer (wgpu integration)
 //!
 //! Renders translate/rotate/scale gizmos using wgpu line rendering.
 //! Integrates with existing gizmo module for geometry generation.
@@ -234,7 +234,7 @@ impl GizmoRendererWgpu {
 
         // DEBUG: Log constraint for rotate mode
         if matches!(gizmo_state.mode, GizmoMode::Rotate { .. }) {
-            debug!("🎨 Gizmo Renderer: Rotate constraint = {:?}", constraint);
+            debug!("Gizmo Renderer: Rotate constraint = {:?}", constraint);
         }
 
         let params = GizmoRenderParams {

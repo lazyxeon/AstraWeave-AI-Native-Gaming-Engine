@@ -91,44 +91,78 @@ pub struct MenuBar;
 
 impl MenuBar {
     pub fn show(ui: &mut Ui, handler: &mut dyn MenuActionHandler) {
-        if ui.button("New").clicked() {
-            handler.on_new();
-        }
-        if ui.button("Open").clicked() {
-            handler.on_open();
-        }
-        if ui.button("Save").clicked() {
-            handler.on_save();
-        }
-        if ui.button("Save JSON").clicked() {
-            handler.on_save_json();
-        }
+        // File menu — consolidates all file operations
+        ui.menu_button("File", |ui| {
+            if ui.button("New                  Ctrl+N").clicked() {
+                handler.on_new();
+                ui.close();
+            }
+            if ui.button("Open                Ctrl+O").clicked() {
+                handler.on_open();
+                ui.close();
+            }
+            ui.separator();
+            if ui.button("Save                 Ctrl+S").clicked() {
+                handler.on_save();
+                ui.close();
+            }
+            if ui.button("Save Scene").clicked() {
+                handler.on_save_scene();
+                ui.close();
+            }
+            if ui.button("Export JSON").clicked() {
+                handler.on_save_json();
+                ui.close();
+            }
+            if ui.button("Load Scene").clicked() {
+                handler.on_load_scene();
+                ui.close();
+            }
+            ui.separator();
+            ui.menu_button("Recent Files", |ui| {
+                let files = handler.get_recent_files();
+                if files.is_empty() {
+                    ui.label("No recent files");
+                } else {
+                    for path in files {
+                        let name = path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("Unknown")
+                            .to_string();
+                        if ui.button(name).clicked() {
+                            handler.on_open_recent(path);
+                            ui.close();
+                        }
+                    }
+                    ui.separator();
+                    if ui.button("Clear Recent Files").clicked() {
+                        handler.on_clear_recent();
+                        ui.close();
+                    }
+                }
+            });
+            ui.separator();
+            if ui.button("Settings").clicked() {
+                handler.on_open_settings();
+                ui.close();
+            }
+        });
 
-        ui.separator();
-
-        if ui.button("💾 Save Scene").clicked() {
-            handler.on_save_scene();
-        }
-        if ui.button("📂 Load Scene").clicked() {
-            handler.on_load_scene();
-        }
-
-        ui.separator();
-
-        ui.menu_button("✏️ Edit", |ui| {
+        ui.menu_button("Edit", |ui| {
             let count = handler.selection_count();
 
-            if ui.button("↩️ Undo (Ctrl+Z)").clicked() {
+            if ui.button("Undo                  Ctrl+Z").clicked() {
                 handler.on_undo();
                 ui.close();
             }
-            if ui.button("↪️ Redo (Ctrl+Y)").clicked() {
+            if ui.button("Redo                  Ctrl+Y").clicked() {
                 handler.on_redo();
                 ui.close();
             }
 
             if ui
-                .add_enabled(count > 0, egui::Button::new("🗑️ Delete (Del)"))
+                .add_enabled(count > 0, egui::Button::new("Delete                    Del"))
                 .clicked()
             {
                 handler.on_delete();
@@ -137,13 +171,13 @@ impl MenuBar {
 
             ui.separator();
 
-            ui.label(format!("📦 {} selected", count));
+            ui.label(format!("{} selected", count));
             ui.separator();
 
             let has_multi = count > 1;
 
             if ui
-                .add_enabled(has_multi, egui::Button::new("🎨 Apply Material to All"))
+                .add_enabled(has_multi, egui::Button::new("Apply Material to All"))
                 .clicked()
             {
                 handler.on_apply_material();
@@ -153,25 +187,25 @@ impl MenuBar {
             ui.separator();
 
             if ui
-                .add_enabled(has_multi, egui::Button::new("📁 Group Selection (Ctrl+G)"))
+                .add_enabled(has_multi, egui::Button::new("Group              Ctrl+G"))
                 .clicked()
             {
                 handler.on_group_selection();
                 ui.close();
             }
 
-            if ui.button("📂 Ungroup (Ctrl+Shift+G)").clicked() {
+            if ui.button("Ungroup     Ctrl+Shift+G").clicked() {
                 handler.on_ungroup_selection();
                 ui.close();
             }
 
             ui.separator();
-            ui.label("📐 Align Selection:");
+            ui.label("Align Selection:");
             ui.horizontal(|ui| {
-                if ui.add_enabled(has_multi, egui::Button::new("⬅")).clicked() {
+                if ui.add_enabled(has_multi, egui::Button::new("Left")).clicked() {
                     handler.on_align_selection(AlignDirection::Left);
                 }
-                if ui.add_enabled(has_multi, egui::Button::new("➡")).clicked() {
+                if ui.add_enabled(has_multi, egui::Button::new("Right")).clicked() {
                     handler.on_align_selection(AlignDirection::Right);
                 }
             });
@@ -179,17 +213,17 @@ impl MenuBar {
             ui.separator();
 
             let can_distribute = count >= 3;
-            ui.label("📏 Distribute:");
+            ui.label("Distribute:");
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(can_distribute, egui::Button::new("↔ X"))
+                    .add_enabled(can_distribute, egui::Button::new("X"))
                     .on_hover_text("Distribute evenly along X")
                     .clicked()
                 {
                     handler.on_distribute_selection(DistributeDirection::X);
                 }
                 if ui
-                    .add_enabled(can_distribute, egui::Button::new("↕ Z"))
+                    .add_enabled(can_distribute, egui::Button::new("Z"))
                     .on_hover_text("Distribute evenly along Z")
                     .clicked()
                 {
@@ -199,43 +233,18 @@ impl MenuBar {
 
             ui.separator();
 
-            if ui.button("📦 Select All (Ctrl+A)").clicked() {
+            if ui.button("Select All          Ctrl+A").clicked() {
                 handler.on_select_all();
                 ui.close();
             }
-            if ui.button("🚫 Deselect All (Esc)").clicked() {
+            if ui.button("Deselect All              Esc").clicked() {
                 handler.on_deselect_all();
                 ui.close();
             }
         });
 
-        // Recent Files
-        ui.menu_button("📚 Recent Files", |ui| {
-            let files = handler.get_recent_files();
-            if files.is_empty() {
-                ui.label("No recent files");
-            } else {
-                for path in files {
-                    let name = path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("Unknown")
-                        .to_string();
-                    if ui.button(name).clicked() {
-                        handler.on_open_recent(path);
-                        ui.close();
-                    }
-                }
-                ui.separator();
-                if ui.button("🗑️ Clear Recent Files").clicked() {
-                    handler.on_clear_recent();
-                    ui.close();
-                }
-            }
-        });
-
         // View
-        ui.menu_button("👁 View", |ui| {
+        ui.menu_button("View", |ui| {
             let mut h = handler.is_view_hierarchy_open();
             if ui.checkbox(&mut h, "Hierarchy Panel").changed() {
                 handler.toggle_view_hierarchy();
@@ -256,36 +265,36 @@ impl MenuBar {
         });
 
         // Window
-        ui.menu_button("🪟 Window", |ui| {
+        ui.menu_button("Window", |ui| {
             let mut docking = handler.is_docking_enabled();
-            if ui.checkbox(&mut docking, "📐 Use Docking Layout").changed() {
+            if ui.checkbox(&mut docking, "Use Docking Layout").changed() {
                 handler.toggle_docking();
             }
 
             ui.separator();
             ui.label("Layout Presets:");
 
-            if ui.button("📊 Default").clicked() {
+            if ui.button("Default").clicked() {
                 handler.on_apply_layout_preset("Default");
                 ui.close();
             }
-            if ui.button("📐 Wide").clicked() {
+            if ui.button("Wide").clicked() {
                 handler.on_apply_layout_preset("Wide");
                 ui.close();
             }
-            if ui.button("📦 Compact").clicked() {
+            if ui.button("Compact").clicked() {
                 handler.on_apply_layout_preset("Compact");
                 ui.close();
             }
-            if ui.button("🎨 Modeling").clicked() {
+            if ui.button("Modeling").clicked() {
                 handler.on_apply_layout_preset("Modeling");
                 ui.close();
             }
-            if ui.button("🎬 Animation").clicked() {
+            if ui.button("Animation").clicked() {
                 handler.on_apply_layout_preset("Animation");
                 ui.close();
             }
-            if ui.button("🐛 Debug").clicked() {
+            if ui.button("Debug").clicked() {
                 handler.on_apply_layout_preset("Debug");
                 ui.close();
             }
@@ -295,87 +304,81 @@ impl MenuBar {
 
             for &panel_type in PanelType::all() {
                 let is_visible = handler.is_dock_panel_visible(panel_type);
-                let label = format!("{} {}", panel_type.icon(), panel_type.title());
-                if ui.selectable_label(is_visible, label).clicked() {
+                if ui.selectable_label(is_visible, panel_type.title()).clicked() {
                     handler.toggle_dock_panel(panel_type);
                 }
             }
         });
 
-        // Settings
-        if ui.button("⚙ Settings").clicked() {
-            handler.on_open_settings();
-        }
-
         // Debug
-        ui.menu_button("🐛 Debug", |ui| {
-            ui.label("🎨 Viewport Tests:");
+        ui.menu_button("Debug", |ui| {
+            ui.label("Viewport Tests:");
 
             #[cfg(feature = "astraweave-render")]
             {
-                if ui.button("📦 Load Test Model (barrels.glb)").clicked() {
+                if ui.button("Load barrels.glb").clicked() {
                     handler.on_load_test_model(
                         "test_barrels",
                         PathBuf::from("assets/models/barrels.glb"),
                     );
                     ui.close();
                 }
-                if ui.button("🛏️ Load Test Model (bed.glb)").clicked() {
+                if ui.button("Load bed.glb").clicked() {
                     handler.on_load_test_model("test_bed", PathBuf::from("assets/models/bed.glb"));
                     ui.close();
                 }
-                if ui.button("🌲 Load Pine Tree").clicked() {
+                if ui.button("Load Pine Tree").clicked() {
                     handler.on_load_test_model("pine_tree", PathBuf::from("PINE_TREE_AUTO"));
                     ui.close();
                 }
 
-                if ui.button("🔄 Toggle Engine Rendering").clicked() {
+                if ui.button("Toggle Engine Rendering").clicked() {
                     handler.on_toggle_engine_rendering();
                     ui.close();
                 }
             }
 
             ui.separator();
-            ui.label("📊 Diagnostics:");
-            if ui.button("📋 Show Engine Info").clicked() {
+            ui.label("Diagnostics:");
+            if ui.button("Show Engine Info").clicked() {
                 handler.on_show_engine_info();
                 ui.close();
             }
 
             ui.separator();
-            ui.label("🎨 Material Testing:");
-            if ui.button("🔴 Red Material").clicked() {
+            ui.label("Material Testing:");
+            if ui.button("Red Material").clicked() {
                 handler.on_debug_material("Red");
                 ui.close();
             }
-            if ui.button("🟢 Green Metallic").clicked() {
+            if ui.button("Green Metallic").clicked() {
                 handler.on_debug_material("Green");
                 ui.close();
             }
-            if ui.button("🔵 Blue Rough").clicked() {
+            if ui.button("Blue Rough").clicked() {
                 handler.on_debug_material("Blue");
                 ui.close();
             }
-            if ui.button("⬜ White Default").clicked() {
+            if ui.button("White Default").clicked() {
                 handler.on_debug_material("White");
                 ui.close();
             }
 
             ui.separator();
-            ui.label("☀️ Lighting / Time of Day:");
+            ui.label("Lighting / Time of Day:");
             ui.horizontal(|ui| {
-                if ui.button("🌅 Dawn (6:00)").clicked() {
+                if ui.button("Dawn (6:00)").clicked() {
                     handler.on_debug_time_set(6.0);
                 }
-                if ui.button("☀️ Noon (12:00)").clicked() {
+                if ui.button("Noon (12:00)").clicked() {
                     handler.on_debug_time_set(12.0);
                 }
             });
             ui.horizontal(|ui| {
-                if ui.button("🌇 Sunset (18:00)").clicked() {
+                if ui.button("Sunset (18:00)").clicked() {
                     handler.on_debug_time_set(18.0);
                 }
-                if ui.button("🌙 Midnight (0:00)").clicked() {
+                if ui.button("Midnight (0:00)").clicked() {
                     handler.on_debug_time_set(0.0);
                 }
             });
@@ -384,7 +387,7 @@ impl MenuBar {
             let hours = time.floor() as u32;
             let minutes = ((time - time.floor()) * 60.0) as u32;
             ui.label(format!(
-                "🕐 Current: {:02}:{:02} ({})",
+                "Current: {:02}:{:02} ({})",
                 hours,
                 minutes,
                 handler.get_time_period()
@@ -393,9 +396,9 @@ impl MenuBar {
             ui.horizontal(|ui| {
                 let shadows = handler.is_shadows_enabled();
                 let label = if shadows {
-                    "🔦 Shadows: ON"
+                    "Shadows: ON"
                 } else {
-                    "🔦 Shadows: OFF"
+                    "Shadows: OFF"
                 };
                 if ui.button(label).clicked() {
                     handler.set_shadows_enabled(!shadows);
@@ -403,9 +406,9 @@ impl MenuBar {
             });
 
             ui.separator();
-            ui.label("📁 Model Discovery:");
+            ui.label("Model Discovery:");
 
-            if ui.button("📁 Scan For Models").clicked() {
+            if ui.button("Scan For Models").clicked() {
                 handler.on_scan_for_models();
                 ui.close();
             }
@@ -415,7 +418,7 @@ impl MenuBar {
                 ui.close();
             }
 
-            if ui.button("🗑️ Clear Console").clicked() {
+            if ui.button("Clear Console").clicked() {
                 handler.on_clear_console();
                 ui.close();
             }
@@ -451,10 +454,10 @@ impl AlignDirection {
     /// Returns the icon for this alignment.
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Left => "⬅",
-            Self::Right => "➡",
-            Self::Top => "⬆",
-            Self::Bottom => "⬇",
+            Self::Left => "[Lt]",
+            Self::Right => "[Rt]",
+            Self::Top => "[Up]",
+            Self::Bottom => "[Dn]",
             Self::CenterX => "↔",
             Self::CenterZ => "↕",
         }
@@ -575,12 +578,12 @@ impl LayoutPreset {
     /// Returns the icon for this preset.
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Default => "📊",
-            Self::Wide => "📐",
-            Self::Compact => "📦",
-            Self::Modeling => "🎨",
-            Self::Animation => "🎬",
-            Self::Debug => "🐛",
+            Self::Default => "\u{1f3e0}",
+            Self::Wide => "\u{1f5a5}\u{fe0f}",
+            Self::Compact => "\u{1f4d0}",
+            Self::Modeling => "\u{1f527}",
+            Self::Animation => "\u{1f3ac}",
+            Self::Debug => "\u{1f50d}",
         }
     }
 

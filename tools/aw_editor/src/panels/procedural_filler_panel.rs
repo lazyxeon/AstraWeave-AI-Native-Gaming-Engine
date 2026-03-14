@@ -108,8 +108,8 @@ impl FillerMode {
             FillerMode::ScatterFill => "🌲",
             FillerMode::SplineRoad => "🛣️",
             FillerMode::TerrainGen => "🏔️",
-            FillerMode::EnvironmentPreset => "🌅",
-            FillerMode::FullScene => "🎬",
+            FillerMode::EnvironmentPreset => "[Dawn]",
+            FillerMode::FullScene => "[Anim]",
         }
     }
 
@@ -198,13 +198,13 @@ impl ScatterCategory {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            ScatterCategory::All => "📦",
+            ScatterCategory::All => "[Pkg]",
             ScatterCategory::Trees => "🌲",
-            ScatterCategory::Rocks => "🪨",
-            ScatterCategory::Bushes => "🌳",
-            ScatterCategory::Grass => "🌿",
-            ScatterCategory::Flowers => "🌸",
-            ScatterCategory::Debris => "🪵",
+            ScatterCategory::Rocks => "[Rock]",
+            ScatterCategory::Bushes => "[Tree]",
+            ScatterCategory::Grass => "[Leaf]",
+            ScatterCategory::Flowers => "[Flwr]",
+            ScatterCategory::Debris => "[Log]",
             ScatterCategory::Props => "🪑",
         }
     }
@@ -315,12 +315,12 @@ impl BiomePreset {
             BiomePreset::TropicalJungle => "🌴",
             BiomePreset::DesertDunes => "🏜️",
             BiomePreset::ArcticTundra => "❄️",
-            BiomePreset::MediterraneanCoast => "🌊",
+            BiomePreset::MediterraneanCoast => "[Wave]",
             BiomePreset::AlpineMeadow => "⛰️",
             BiomePreset::Swampland => "🐊",
             BiomePreset::GrasslandPrairie => "🌾",
             BiomePreset::VolcanicWasteland => "🌋",
-            BiomePreset::MysticWoods => "🔮",
+            BiomePreset::MysticWoods => "[Orb]",
         }
     }
 
@@ -463,19 +463,19 @@ impl EnvironmentPreset {
     pub fn icon(&self) -> &'static str {
         match self {
             EnvironmentPreset::Custom => "⚙️",
-            EnvironmentPreset::SunnyDay => "☀️",
-            EnvironmentPreset::GoldenHour => "🌅",
-            EnvironmentPreset::Overcast => "☁️",
-            EnvironmentPreset::Foggy => "🌫️",
+            EnvironmentPreset::SunnyDay => "[Sun]",
+            EnvironmentPreset::GoldenHour => "[Dawn]",
+            EnvironmentPreset::Overcast => "[Cld]",
+            EnvironmentPreset::Foggy => "[Fog]",
             EnvironmentPreset::Night => "🌑",
-            EnvironmentPreset::Moonlit => "🌙",
+            EnvironmentPreset::Moonlit => "[Moon]",
             EnvironmentPreset::Stormy => "⛈️",
             EnvironmentPreset::Sunset => "🌇",
             EnvironmentPreset::Sunrise => "🌄",
             EnvironmentPreset::Industrial => "🏭",
-            EnvironmentPreset::Fantasy => "✨",
-            EnvironmentPreset::SciFi => "🚀",
-            EnvironmentPreset::Horror => "💀",
+            EnvironmentPreset::Fantasy => "[Fx]",
+            EnvironmentPreset::SciFi => "[Rkt]",
+            EnvironmentPreset::Horror => "[Skull]",
             EnvironmentPreset::Underwater => "🐟",
         }
     }
@@ -691,8 +691,8 @@ impl RoadPreset {
             RoadPreset::Custom => "⚙️",
             RoadPreset::Asphalt => "🛣️",
             RoadPreset::DirtPath => "🚶",
-            RoadPreset::CobbleStone => "🧱",
-            RoadPreset::GravelRoad => "🪨",
+            RoadPreset::CobbleStone => "[Brk]",
+            RoadPreset::GravelRoad => "[Rock]",
             RoadPreset::ForestTrail => "🌲",
             RoadPreset::DesertTrack => "🏜️",
             RoadPreset::SnowPath => "❄️",
@@ -972,19 +972,19 @@ impl ProceduralFillerPanel {
                 self.render_scatter_settings(ui, &mut self.scatter_trees.clone());
             });
 
-        egui::CollapsingHeader::new("🪨 Rocks")
+        egui::CollapsingHeader::new("[Rock] Rocks")
             .default_open(false)
             .show(ui, |ui| {
                 self.render_scatter_settings(ui, &mut self.scatter_rocks.clone());
             });
 
-        egui::CollapsingHeader::new("🌳 Bushes")
+        egui::CollapsingHeader::new("Bushes")
             .default_open(false)
             .show(ui, |ui| {
                 self.render_scatter_settings(ui, &mut self.scatter_bushes.clone());
             });
 
-        egui::CollapsingHeader::new("🌿 Grass")
+        egui::CollapsingHeader::new("[Leaf] Grass")
             .default_open(false)
             .show(ui, |ui| {
                 self.render_scatter_settings(ui, &mut self.scatter_grass.clone());
@@ -1074,7 +1074,7 @@ impl ProceduralFillerPanel {
     }
 
     fn render_environment_mode(&mut self, ui: &mut Ui) {
-        ui.heading("🌅 Environment Preset");
+        ui.heading("[Dawn] Environment Preset");
 
         egui::ComboBox::from_id_salt("env_preset")
             .selected_text(format!("{}", self.environment_preset))
@@ -1131,12 +1131,12 @@ impl ProceduralFillerPanel {
 
     fn render_generation_controls(&mut self, ui: &mut Ui) {
         ui.separator();
-        ui.heading("⚙️ Generation");
+        ui.heading("Generation");
 
         ui.horizontal(|ui| {
             ui.label("Seed:");
             ui.add(egui::DragValue::new(&mut self.seed));
-            if ui.button("🎲").clicked() {
+            if ui.button("[Dice]").clicked() {
                 self.seed = rand::random();
             }
         });
@@ -1231,7 +1231,7 @@ impl Panel for ProceduralFillerPanel {
                 }
                 FillerMode::EnvironmentPreset => self.render_environment_mode(ui),
                 FillerMode::FullScene => {
-                    ui.heading("🎬 Full Scene Generation");
+                    ui.heading("Full Scene Generation");
                     ui.label("Generates terrain, scatter, roads, and environment in one click.");
                     self.render_scatter_mode(ui);
                     ui.separator();

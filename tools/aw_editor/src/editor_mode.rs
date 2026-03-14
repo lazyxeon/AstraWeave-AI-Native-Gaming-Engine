@@ -29,8 +29,8 @@ impl EditorMode {
     pub fn status_text(&self) -> &'static str {
         match self {
             EditorMode::Edit => "Edit Mode",
-            EditorMode::Play => "▶️ Playing",
-            EditorMode::Paused => "⏸️ Paused",
+            EditorMode::Play => "\u{25b6}\u{fe0f} Playing",
+            EditorMode::Paused => "\u{23f8}\u{fe0f} Paused",
         }
     }
 
@@ -83,9 +83,9 @@ impl EditorMode {
     /// Get the icon for this mode
     pub fn icon(&self) -> &'static str {
         match self {
-            EditorMode::Edit => "🔧",
-            EditorMode::Play => "▶️",
-            EditorMode::Paused => "⏸️",
+            EditorMode::Edit => "\u{1f527}",
+            EditorMode::Play => "\u{25b6}\u{fe0f}",
+            EditorMode::Paused => "\u{23f8}\u{fe0f}",
         }
     }
 

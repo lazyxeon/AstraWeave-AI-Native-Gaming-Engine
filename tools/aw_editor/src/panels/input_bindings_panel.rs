@@ -84,8 +84,8 @@ impl InputDevice {
         match self {
             InputDevice::Keyboard => "⌨️",
             InputDevice::Mouse => "🖱️",
-            InputDevice::Gamepad => "🎮",
-            InputDevice::All => "🔧",
+            InputDevice::Gamepad => "[Gp]",
+            InputDevice::All => "[Wrn]",
         }
     }
 
@@ -144,7 +144,7 @@ impl ActionCategory {
             ActionCategory::Movement => "🚶",
             ActionCategory::Combat => "⚔️",
             ActionCategory::Interaction => "🤝",
-            ActionCategory::UI => "📋",
+            ActionCategory::UI => "[List]",
             ActionCategory::Camera => "📷",
             ActionCategory::Vehicle => "🚗",
             ActionCategory::Debug => "🐛",
@@ -210,8 +210,8 @@ impl BindingPreset {
     pub fn icon(&self) -> &'static str {
         match self {
             BindingPreset::Default => "⚙️",
-            BindingPreset::FPS => "🔫",
-            BindingPreset::ThirdPerson => "🎮",
+            BindingPreset::FPS => "[Wpn]",
+            BindingPreset::ThirdPerson => "[Gp]",
             BindingPreset::RTS => "🗺️",
             BindingPreset::Racing => "🏎️",
             BindingPreset::LeftHanded => "🫲",
@@ -248,7 +248,7 @@ pub enum GamepadButton {
 
 impl std::fmt::Display for GamepadButton {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "🎮 {}", self.display_name())
+        write!(f, "{}", self.display_name())
     }
 }
 
@@ -812,11 +812,11 @@ impl InputTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            InputTab::Actions => "⚡",
+            InputTab::Actions => "[Zap]",
             InputTab::Axes => "↔️",
-            InputTab::Gamepad => "🎮",
-            InputTab::Testing => "🧪",
-            InputTab::Presets => "📋",
+            InputTab::Gamepad => "[Gp]",
+            InputTab::Testing => "[Test]",
+            InputTab::Presets => "[List]",
         }
     }
 }
@@ -968,7 +968,7 @@ impl InputTarget {
             InputTarget::KeyboardPrimary(_) => "⌨️",
             InputTarget::KeyboardSecondary(_) => "⌨️",
             InputTarget::MouseButton(_) => "🖱️",
-            InputTarget::GamepadButton(_) => "🎮",
+            InputTarget::GamepadButton(_) => "[Gp]",
         }
     }
 
@@ -1203,9 +1203,9 @@ impl InputBindingsPanel {
             let tabs = [
                 (InputTab::Actions, "⌨️ Actions"),
                 (InputTab::Axes, "🕹️ Axes"),
-                (InputTab::Gamepad, "🎮 Gamepad"),
-                (InputTab::Testing, "🧪 Testing"),
-                (InputTab::Presets, "📋 Presets"),
+                (InputTab::Gamepad, "Gamepad"),
+                (InputTab::Testing, "[Test] Testing"),
+                (InputTab::Presets, "Presets"),
             ];
 
             for (tab, label) in tabs {
@@ -1228,11 +1228,11 @@ impl InputBindingsPanel {
             if !self.conflicts.is_empty() {
                 ui.colored_label(
                     Color32::YELLOW,
-                    format!("⚠ {} conflicts", self.conflicts.len()),
+                    format!("[!] {} conflicts", self.conflicts.len()),
                 );
             }
             if self.gamepad_connected {
-                ui.label("🎮 Connected");
+                ui.label("Connected");
             }
         });
 
@@ -1266,7 +1266,7 @@ impl InputBindingsPanel {
             ui.separator();
 
             // Search
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.text_edit_singleline(&mut self.search_text);
         });
 
@@ -1376,20 +1376,20 @@ impl InputBindingsPanel {
                                 .gamepad_button
                                 .map(|g| g.display_name())
                                 .unwrap_or("---");
-                            if ui.button(format!("🎮 {}", gp_text)).clicked() {
+                            if ui.button(format!("{}", gp_text)).clicked() {
                                 self.editing_action = Some(idx);
                                 self.waiting_for_input = true;
                                 self.input_target = Some(InputTarget::GamepadButton(idx));
                             }
 
                             // Clear button
-                            if ui.small_button("🗑").clicked() {
+                            if ui.small_button("[Del]").clicked() {
                                 clear_action_idx = Some(idx);
                             }
                         });
 
                         if is_editing && self.waiting_for_input {
-                            ui.colored_label(Color32::YELLOW, "⏳ Press a key/button...");
+                            ui.colored_label(Color32::YELLOW, "... Press a key/button...");
                         }
                     });
                 }
@@ -1439,7 +1439,7 @@ impl InputBindingsPanel {
 
         // Gamepad axes
         ui.group(|ui| {
-            ui.label(RichText::new("🎮 Gamepad Axes").strong());
+            ui.label(RichText::new("Gamepad Axes").strong());
 
             for axis in &mut self.axes {
                 ui.collapsing(&axis.name, |ui| {
@@ -1455,7 +1455,7 @@ impl InputBindingsPanel {
     }
 
     fn show_gamepad_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎮 Gamepad Settings");
+        ui.heading("Gamepad Settings");
         ui.add_space(10.0);
 
         // Track previous values for change detection
@@ -1468,7 +1468,7 @@ impl InputBindingsPanel {
 
             if self.gamepad_connected {
                 ui.horizontal(|ui| {
-                    ui.colored_label(Color32::GREEN, "🟢 Connected");
+                    ui.colored_label(Color32::GREEN, "[G] Connected");
                     ui.label(&self.gamepad_name);
                 });
             } else {
@@ -1476,7 +1476,7 @@ impl InputBindingsPanel {
                 ui.label("Connect a gamepad to configure it.");
             }
 
-            if ui.button("🔄 Refresh").clicked() {
+            if ui.button("Refresh").clicked() {
                 // Refresh gamepad detection
             }
         });
@@ -1524,7 +1524,7 @@ impl InputBindingsPanel {
     }
 
     fn show_testing_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🧪 Input Testing");
+        ui.heading("[Test] Input Testing");
         ui.add_space(10.0);
 
         // Last input
@@ -1607,7 +1607,7 @@ impl InputBindingsPanel {
     }
 
     fn show_presets_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Binding Presets");
+        ui.heading("Binding Presets");
         ui.add_space(10.0);
 
         // Track selected preset for action queuing
@@ -1658,16 +1658,16 @@ impl InputBindingsPanel {
             ui.label(RichText::new("Management").strong());
 
             ui.horizontal(|ui| {
-                if ui.button("💾 Save as Custom").clicked() {
+                if ui.button("Save as Custom").clicked() {
                     save_bindings = true;
                 }
-                if ui.button("📥 Import").clicked() {
+                if ui.button("Import").clicked() {
                     load_bindings = true;
                 }
                 if ui.button("📤 Export").clicked() {
                     save_bindings = true;
                 }
-                if ui.button("🔄 Reset to Default").clicked() {
+                if ui.button("Reset to Default").clicked() {
                     reset_defaults = true;
                 }
             });
@@ -1698,7 +1698,7 @@ impl InputBindingsPanel {
         if !self.conflicts.is_empty() {
             ui.group(|ui| {
                 ui.label(
-                    RichText::new("⚠️ Binding Conflicts")
+                    RichText::new("Binding Conflicts")
                         .strong()
                         .color(Color32::YELLOW),
                 );
@@ -2348,7 +2348,7 @@ mod tests {
         assert_eq!(mouse.icon(), "🖱️");
 
         let gamepad = InputTarget::GamepadButton(0);
-        assert_eq!(gamepad.icon(), "🎮");
+        assert_eq!(gamepad.icon(), "[Gp]");
     }
 
     #[test]

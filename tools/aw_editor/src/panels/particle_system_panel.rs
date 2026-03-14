@@ -114,7 +114,7 @@ impl SimulationSpace {
     pub fn icon(&self) -> &'static str {
         match self {
             SimulationSpace::Local => "📍",
-            SimulationSpace::World => "🌍",
+            SimulationSpace::World => "[Glb]",
         }
     }
 }
@@ -157,8 +157,8 @@ impl ParticleBlendMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ParticleBlendMode::Alpha => "🔲",
-            ParticleBlendMode::Additive => "✨",
+            ParticleBlendMode::Alpha => "[Sq]",
+            ParticleBlendMode::Additive => "[Fx]",
             ParticleBlendMode::Multiply => "✖️",
             ParticleBlendMode::Premultiply => "🔳",
         }
@@ -214,11 +214,11 @@ impl ParticleRenderMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ParticleRenderMode::Billboard => "📄",
+            ParticleRenderMode::Billboard => "[Doc]",
             ParticleRenderMode::StretchedBillboard => "📏",
-            ParticleRenderMode::HorizontalBillboard => "➡️",
-            ParticleRenderMode::VerticalBillboard => "⬆️",
-            ParticleRenderMode::Mesh => "🔷",
+            ParticleRenderMode::HorizontalBillboard => "[Rt]",
+            ParticleRenderMode::VerticalBillboard => "[Up]",
+            ParticleRenderMode::Mesh => "[D]",
             ParticleRenderMode::Trail => "〰️",
         }
     }
@@ -282,12 +282,12 @@ impl CurveType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            CurveType::Constant => "➖",
+            CurveType::Constant => "-",
             CurveType::Linear => "📈",
             CurveType::EaseIn => "⤴️",
             CurveType::EaseOut => "⤵️",
             CurveType::EaseInOut => "〰️",
-            CurveType::Random => "🎲",
+            CurveType::Random => "[Dice]",
             CurveType::Curve => "✏️",
         }
     }
@@ -457,16 +457,16 @@ impl ModuleType {
     /// Returns the icon for the module type
     pub fn icon(&self) -> &'static str {
         match self {
-            ModuleType::Velocity { .. } => "➡️",
-            ModuleType::Force { .. } => "💨",
-            ModuleType::Gravity { .. } => "⬇️",
-            ModuleType::Noise { .. } => "🌊",
-            ModuleType::Collision { .. } => "💥",
+            ModuleType::Velocity { .. } => "[Rt]",
+            ModuleType::Force { .. } => "[Dash]",
+            ModuleType::Gravity { .. } => "[Dn]",
+            ModuleType::Noise { .. } => "[Wave]",
+            ModuleType::Collision { .. } => "[Hit]",
             ModuleType::SubEmitter { .. } => "🎇",
-            ModuleType::TextureAnimation { .. } => "🎬",
-            ModuleType::Trail { .. } => "✨",
-            ModuleType::Light { .. } => "💡",
-            ModuleType::Rotation { .. } => "🔄",
+            ModuleType::TextureAnimation { .. } => "[Anim]",
+            ModuleType::Trail { .. } => "[Fx]",
+            ModuleType::Light { .. } => "[Lgt]",
+            ModuleType::Rotation { .. } => "[Sync]",
         }
     }
 
@@ -537,9 +537,9 @@ impl SubEmitterEvent {
     pub fn icon(&self) -> &'static str {
         match self {
             SubEmitterEvent::Birth => "🌟",
-            SubEmitterEvent::Death => "💀",
-            SubEmitterEvent::Collision => "💥",
-            SubEmitterEvent::Trigger => "⚡",
+            SubEmitterEvent::Death => "[Skull]",
+            SubEmitterEvent::Collision => "[Hit]",
+            SubEmitterEvent::Trigger => "[Zap]",
         }
     }
 }
@@ -655,10 +655,10 @@ impl SortMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            SortMode::None => "➖",
+            SortMode::None => "-",
             SortMode::ByDistance => "📏",
-            SortMode::OldestFirst => "⏪",
-            SortMode::YoungestFirst => "⏩",
+            SortMode::OldestFirst => "<<",
+            SortMode::YoungestFirst => ">>",
         }
     }
 
@@ -861,14 +861,14 @@ impl ParticleTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ParticleTab::Emitter => "💨",
+            ParticleTab::Emitter => "[Dash]",
             ParticleTab::Shape => "▲",
-            ParticleTab::Particles => "✨",
+            ParticleTab::Particles => "[Fx]",
             ParticleTab::Lifetime => "⌛",
-            ParticleTab::Rendering => "🎨",
-            ParticleTab::Modules => "🔧",
-            ParticleTab::Presets => "💾",
-            ParticleTab::Stats => "📊",
+            ParticleTab::Rendering => "[Art]",
+            ParticleTab::Modules => "[Wrn]",
+            ParticleTab::Presets => "[Save]",
+            ParticleTab::Stats => "[Chart]",
         }
     }
 }
@@ -1007,7 +1007,7 @@ pub struct ParticleSystemPanel {
 
 impl Default for ParticleSystemPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: ParticleTab::Emitter,
 
             particle_systems: Vec::new(),
@@ -1035,7 +1035,6 @@ impl Default for ParticleSystemPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -1150,14 +1149,14 @@ impl ParticleSystemPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (ParticleTab::Emitter, "💨 Emitter"),
-                (ParticleTab::Shape, "📐 Shape"),
-                (ParticleTab::Particles, "✨ Particles"),
-                (ParticleTab::Lifetime, "⏱️ Lifetime"),
-                (ParticleTab::Rendering, "🖼️ Rendering"),
-                (ParticleTab::Modules, "🧩 Modules"),
-                (ParticleTab::Presets, "📋 Presets"),
-                (ParticleTab::Stats, "📊 Stats"),
+                (ParticleTab::Emitter, "[Dash] Emitter"),
+                (ParticleTab::Shape, "[Sq] Shape"),
+                (ParticleTab::Particles, "Particles"),
+                (ParticleTab::Lifetime, "[Time] Lifetime"),
+                (ParticleTab::Rendering, "Rendering"),
+                (ParticleTab::Modules, "Modules"),
+                (ParticleTab::Presets, "Presets"),
+                (ParticleTab::Stats, "Stats"),
             ];
 
             for (tab, label) in tabs {
@@ -1176,25 +1175,25 @@ impl ParticleSystemPanel {
 
         // System info and preview controls
         ui.horizontal(|ui| {
-            ui.label(format!("✨ {}", self.current_system.name));
+            ui.label(format!("{}", self.current_system.name));
 
             ui.separator();
 
             if ui
                 .button(if self.preview_playing {
-                    "⏸️"
+                    "||"
                 } else {
-                    "▶️"
+                    ">"
                 })
                 .clicked()
             {
                 self.preview_playing = !self.preview_playing;
             }
-            if ui.button("⏹️").clicked() {
+            if ui.button("[]").clicked() {
                 self.preview_playing = false;
                 self.preview_time = 0.0;
             }
-            if ui.button("🔄").clicked() {
+            if ui.button("[Sync]").clicked() {
                 self.preview_time = 0.0;
             }
 
@@ -1205,7 +1204,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_emitter_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💨 Emitter Settings");
+        ui.heading("[Dash] Emitter Settings");
         ui.add_space(10.0);
 
         // System selector
@@ -1235,7 +1234,7 @@ impl ParticleSystemPanel {
                 self.selected_system = Some(id);
             }
 
-            if ui.button("📋 Duplicate").clicked() {
+            if ui.button("Duplicate").clicked() {
                 let id = self.next_id();
                 let mut dup = self.current_system.clone();
                 dup.id = id;
@@ -1251,7 +1250,7 @@ impl ParticleSystemPanel {
             .show(ui, |ui| {
                 // Basic settings
                 ui.group(|ui| {
-                    ui.label(RichText::new("📝 Basic").strong());
+                    ui.label(RichText::new("[Edit] Basic").strong());
 
                     egui::Grid::new("emitter_basic")
                         .num_columns(2)
@@ -1343,7 +1342,7 @@ impl ParticleSystemPanel {
                     ui.add_space(5.0);
 
                     // Bursts
-                    ui.collapsing("💥 Bursts", |ui| {
+                    ui.collapsing("[Hit] Bursts", |ui| {
                         if ui.button("+ Add Burst").clicked() {
                             self.current_system.bursts.push(EmissionBurst::default());
                         }
@@ -1370,7 +1369,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_shape_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📐 Emitter Shape");
+        ui.heading("[Sq] Emitter Shape");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1512,7 +1511,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_particles_tab(&mut self, ui: &mut Ui) {
-        ui.heading("✨ Particle Properties");
+        ui.heading("Particle Properties");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1520,7 +1519,7 @@ impl ParticleSystemPanel {
             .show(ui, |ui| {
                 // Start properties
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎬 Start Properties").strong());
+                    ui.label(RichText::new("Start Properties").strong());
 
                     egui::Grid::new("start_props")
                         .num_columns(2)
@@ -1625,7 +1624,7 @@ impl ParticleSystemPanel {
 
                 // Physics
                 ui.group(|ui| {
-                    ui.label(RichText::new("🌍 Physics").strong());
+                    ui.label(RichText::new("[Glb] Physics").strong());
 
                     egui::Grid::new("particle_physics")
                         .num_columns(2)
@@ -1663,7 +1662,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_lifetime_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⏱️ Over Lifetime");
+        ui.heading("[Time] Over Lifetime");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1725,7 +1724,7 @@ impl ParticleSystemPanel {
 
                 // Color over lifetime
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎨 Color Over Lifetime").strong());
+                    ui.label(RichText::new("Color Over Lifetime").strong());
 
                     // Display gradient stops
                     let gradient_height = 20.0;
@@ -1800,7 +1799,7 @@ impl ParticleSystemPanel {
 
                 // Velocity over lifetime
                 ui.group(|ui| {
-                    ui.label(RichText::new("🚀 Velocity Over Lifetime").strong());
+                    ui.label(RichText::new("[Rkt] Velocity Over Lifetime").strong());
 
                     ui.horizontal(|ui| {
                         ui.label("X:");
@@ -1831,7 +1830,7 @@ impl ParticleSystemPanel {
 
                 // Rotation over lifetime
                 ui.group(|ui| {
-                    ui.label(RichText::new("🔄 Rotation Over Lifetime").strong());
+                    ui.label(RichText::new("Rotation Over Lifetime").strong());
 
                     ui.horizontal(|ui| {
                         ui.label("Angular Velocity:");
@@ -1848,7 +1847,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_rendering_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🖼️ Rendering");
+        ui.heading("Rendering");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1959,12 +1958,12 @@ impl ParticleSystemPanel {
 
                 // Texture
                 ui.group(|ui| {
-                    ui.label(RichText::new("🖼️ Texture").strong());
+                    ui.label(RichText::new("Texture").strong());
 
                     ui.horizontal(|ui| {
                         ui.label("Path:");
                         ui.text_edit_singleline(&mut self.current_system.texture_path);
-                        if ui.button("📂").clicked() {
+                        if ui.button("[Open]").clicked() {
                             // Open file dialog
                         }
                     });
@@ -1983,7 +1982,7 @@ impl ParticleSystemPanel {
     }
 
     fn show_modules_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🧩 Modules");
+        ui.heading("Modules");
         ui.add_space(10.0);
 
         // Add module button
@@ -2048,7 +2047,7 @@ impl ParticleSystemPanel {
                                 ui.checkbox(&mut module.enabled, "");
                                 ui.label(RichText::new(&module.name).strong());
 
-                                if ui.button("🗑️").clicked() {
+                                if ui.button("[Del]").clicked() {
                                     to_remove = Some(idx);
                                 }
                             });
@@ -2183,12 +2182,12 @@ impl ParticleSystemPanel {
     }
 
     fn show_presets_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Presets");
+        ui.heading("Presets");
         ui.add_space(10.0);
 
         // Filter
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.text_edit_singleline(&mut self.preset_filter);
         });
 
@@ -2237,14 +2236,14 @@ impl ParticleSystemPanel {
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
-            if ui.button("💾 Save as Preset").clicked() {
+            if ui.button("Save as Preset").clicked() {
                 // Save current system as preset
             }
         });
     }
 
     fn show_stats_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Performance Stats");
+        ui.heading("Performance Stats");
         ui.add_space(10.0);
 
         // Live stats
@@ -2279,7 +2278,7 @@ impl ParticleSystemPanel {
 
         // Timing
         ui.group(|ui| {
-            ui.label(RichText::new("⏱️ Timing").strong());
+            ui.label(RichText::new("[Time] Timing").strong());
 
             egui::Grid::new("timing_stats")
                 .num_columns(2)
@@ -2333,7 +2332,7 @@ impl ParticleSystemPanel {
 
         // Current system stats
         ui.group(|ui| {
-            ui.label(RichText::new("📊 Current System").strong());
+            ui.label(RichText::new("Current System").strong());
 
             ui.label(format!("Name: {}", self.current_system.name));
             ui.label(format!(
@@ -2475,7 +2474,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_data() {
-        let panel = ParticleSystemPanel::new();
+        let mut panel = ParticleSystemPanel::new();
+        panel.create_sample_data();
         assert!(panel.system_count() >= 3);
         assert!(panel.preset_count() >= 10);
     }
@@ -2858,21 +2858,21 @@ mod tests {
             direction: [1.0, 0.0, 0.0],
             speed: RangeValue::constant(5.0),
         };
-        assert_eq!(velocity.icon(), "➡️");
+        assert_eq!(velocity.icon(), "[Rt]");
 
         let light = ModuleType::Light {
             color: [1.0, 1.0, 1.0],
             intensity: RangeValue::constant(1.0),
             range: RangeValue::constant(10.0),
         };
-        assert_eq!(light.icon(), "💡");
+        assert_eq!(light.icon(), "[Lgt]");
 
         let trail = ModuleType::Trail {
             width: RangeValue::constant(0.1),
             lifetime: 1.0,
             min_vertex_distance: 0.1,
         };
-        assert_eq!(trail.icon(), "✨");
+        assert_eq!(trail.icon(), "[Fx]");
     }
 
     #[test]
@@ -3198,7 +3198,8 @@ mod tests {
 
     #[test]
     fn test_selected_system_with_sample_data() {
-        let panel = ParticleSystemPanel::default();
+        let mut panel = ParticleSystemPanel::default();
+        panel.create_sample_data();
         // Default panel has sample data, so a system should be selected
         assert!(panel.system_count() > 0);
     }

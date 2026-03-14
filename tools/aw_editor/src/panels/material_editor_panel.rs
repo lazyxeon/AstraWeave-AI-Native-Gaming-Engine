@@ -67,16 +67,16 @@ impl MaterialType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            MaterialType::StandardPBR => "🎨",
-            MaterialType::Unlit => "💡",
+            MaterialType::StandardPBR => "[Art]",
+            MaterialType::Unlit => "[Lgt]",
             MaterialType::Subsurface => "🧴",
-            MaterialType::Glass => "🔮",
+            MaterialType::Glass => "[Orb]",
             MaterialType::Water => "💧",
-            MaterialType::Foliage => "🌿",
+            MaterialType::Foliage => "[Leaf]",
             MaterialType::Hair => "💇",
             MaterialType::Cloth => "👕",
             MaterialType::Terrain => "🏔️",
-            MaterialType::Decal => "🏷️",
+            MaterialType::Decal => "[Tag]",
         }
     }
 }
@@ -123,10 +123,10 @@ impl BlendMode {
     pub fn icon(&self) -> &'static str {
         match self {
             BlendMode::Opaque => "⬛",
-            BlendMode::Masked => "🎭",
-            BlendMode::Translucent => "🔲",
-            BlendMode::Additive => "➕",
-            BlendMode::Modulate => "🔀",
+            BlendMode::Masked => "[Mask]",
+            BlendMode::Translucent => "[Sq]",
+            BlendMode::Additive => "+",
+            BlendMode::Modulate => "[Shuf]",
         }
     }
 
@@ -174,12 +174,12 @@ impl TextureChannel {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            TextureChannel::Albedo => "🎨",
+            TextureChannel::Albedo => "[Art]",
             TextureChannel::Normal => "🗺️",
-            TextureChannel::Metallic => "✨",
+            TextureChannel::Metallic => "[Fx]",
             TextureChannel::Roughness => "🔨",
             TextureChannel::AO => "🌑",
-            TextureChannel::Emissive => "💡",
+            TextureChannel::Emissive => "[Lgt]",
             TextureChannel::Height => "⛰️",
             TextureChannel::Opacity => "👻",
         }
@@ -433,10 +433,10 @@ impl PreviewLighting {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            PreviewLighting::Studio => "🎬",
-            PreviewLighting::Outdoor => "☀️",
-            PreviewLighting::Indoor => "💡",
-            PreviewLighting::Dramatic => "🎭",
+            PreviewLighting::Studio => "[Anim]",
+            PreviewLighting::Outdoor => "[Sun]",
+            PreviewLighting::Indoor => "[Lgt]",
+            PreviewLighting::Dramatic => "[Mask]",
             PreviewLighting::Custom => "⚙️",
         }
     }
@@ -486,10 +486,10 @@ impl MaterialTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            MaterialTab::Properties => "🎨",
-            MaterialTab::Textures => "🖼️",
+            MaterialTab::Properties => "[Art]",
+            MaterialTab::Textures => "[Img]",
             MaterialTab::Advanced => "⚙️",
-            MaterialTab::Presets => "📋",
+            MaterialTab::Presets => "[List]",
             MaterialTab::Preview => "👁️",
             MaterialTab::Library => "📚",
         }
@@ -678,7 +678,7 @@ pub struct MaterialEditorPanel {
 
 impl Default for MaterialEditorPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: MaterialTab::Properties,
 
             materials: Vec::new(),
@@ -700,7 +700,6 @@ impl Default for MaterialEditorPanel {
             actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -813,12 +812,12 @@ impl MaterialEditorPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (MaterialTab::Properties, "🎨 Properties"),
-                (MaterialTab::Textures, "🖼️ Textures"),
-                (MaterialTab::Advanced, "⚙️ Advanced"),
-                (MaterialTab::Presets, "📋 Presets"),
-                (MaterialTab::Preview, "👁️ Preview"),
-                (MaterialTab::Library, "📁 Library"),
+                (MaterialTab::Properties, "Properties"),
+                (MaterialTab::Textures, "Textures"),
+                (MaterialTab::Advanced, "Advanced"),
+                (MaterialTab::Presets, "Presets"),
+                (MaterialTab::Preview, "Preview"),
+                (MaterialTab::Library, "Library"),
             ];
 
             for (tab, label) in tabs {
@@ -851,7 +850,7 @@ impl MaterialEditorPanel {
     }
 
     fn show_properties_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 Material Properties");
+        ui.heading("Material Properties");
         ui.add_space(10.0);
 
         // Material selector
@@ -889,7 +888,7 @@ impl MaterialEditorPanel {
             .show(ui, |ui| {
                 // Basic properties
                 ui.group(|ui| {
-                    ui.label(RichText::new("📝 Basic").strong());
+                    ui.label(RichText::new("[Edit] Basic").strong());
 
                     egui::Grid::new("basic_props")
                         .num_columns(2)
@@ -950,7 +949,7 @@ impl MaterialEditorPanel {
 
                 // PBR properties
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎨 PBR Properties").strong());
+                    ui.label(RichText::new("PBR Properties").strong());
 
                     egui::Grid::new("pbr_props")
                         .num_columns(2)
@@ -993,7 +992,7 @@ impl MaterialEditorPanel {
 
                 // Emissive
                 ui.group(|ui| {
-                    ui.label(RichText::new("✨ Emissive").strong());
+                    ui.label(RichText::new("Emissive").strong());
 
                     egui::Grid::new("emissive_props")
                         .num_columns(2)
@@ -1026,7 +1025,7 @@ impl MaterialEditorPanel {
     }
 
     fn show_textures_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🖼️ Texture Slots");
+        ui.heading("Texture Slots");
         ui.add_space(10.0);
 
         // Add texture slot
@@ -1054,7 +1053,7 @@ impl MaterialEditorPanel {
                                 ui.checkbox(&mut slot.enabled, "");
                                 ui.label(RichText::new(slot.channel.name()).strong());
 
-                                if ui.button("🗑️").clicked() {
+                                if ui.button("[Del]").clicked() {
                                     to_remove = Some(idx);
                                 }
                             });
@@ -1114,7 +1113,7 @@ impl MaterialEditorPanel {
                                         ui.label("Path:");
                                         ui.horizontal(|ui| {
                                             ui.text_edit_singleline(&mut slot.texture_path);
-                                            if ui.button("📂").clicked() {
+                                            if ui.button("[Open]").clicked() {
                                                 // Open file dialog
                                             }
                                         });
@@ -1166,7 +1165,7 @@ impl MaterialEditorPanel {
     }
 
     fn show_advanced_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ Advanced Properties");
+        ui.heading("Advanced Properties");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1174,7 +1173,7 @@ impl MaterialEditorPanel {
             .show(ui, |ui| {
                 // Rendering options
                 ui.group(|ui| {
-                    ui.label(RichText::new("🖥️ Rendering").strong());
+                    ui.label(RichText::new("Rendering").strong());
 
                     ui.checkbox(&mut self.current_material.two_sided, "Two Sided");
                     ui.checkbox(&mut self.current_material.cast_shadows, "Cast Shadows");
@@ -1237,7 +1236,7 @@ impl MaterialEditorPanel {
                     || self.current_material.blend_mode == BlendMode::Translucent
                 {
                     ui.group(|ui| {
-                        ui.label(RichText::new("🔮 Transmission").strong());
+                        ui.label(RichText::new("Transmission").strong());
 
                         egui::Grid::new("trans_props")
                             .num_columns(2)
@@ -1263,12 +1262,12 @@ impl MaterialEditorPanel {
     }
 
     fn show_presets_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Material Presets");
+        ui.heading("Material Presets");
         ui.add_space(10.0);
 
         // Filter
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.text_edit_singleline(&mut self.preset_filter);
         });
 
@@ -1328,7 +1327,7 @@ impl MaterialEditorPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("👁️ Material Preview");
+        ui.heading("Material Preview");
         ui.add_space(10.0);
 
         // Preview controls
@@ -1416,14 +1415,14 @@ impl MaterialEditorPanel {
     }
 
     fn show_library_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📁 Material Library");
+        ui.heading("Material Library");
         ui.add_space(10.0);
 
         // Library path
         ui.horizontal(|ui| {
             ui.label("Path:");
             ui.text_edit_singleline(&mut self.library_path);
-            if ui.button("🔄 Refresh").clicked() {
+            if ui.button("Refresh").clicked() {
                 // Refresh library
             }
         });
@@ -1432,13 +1431,13 @@ impl MaterialEditorPanel {
 
         // Actions
         ui.horizontal(|ui| {
-            if ui.button("💾 Save Current").clicked() {
+            if ui.button("Save Current").clicked() {
                 // Save current material
             }
-            if ui.button("📁 Load").clicked() {
+            if ui.button("Load").clicked() {
                 // Load material
             }
-            if ui.button("📋 Duplicate").clicked() {
+            if ui.button("Duplicate").clicked() {
                 // Duplicate material
             }
         });
@@ -1454,7 +1453,7 @@ impl MaterialEditorPanel {
                 .show(ui, |ui| {
                     for mat_path in &self.library_materials {
                         ui.horizontal(|ui| {
-                            ui.label("📄");
+                            ui.label("[Doc]");
                             if ui.selectable_label(false, mat_path).clicked() {
                                 // Load this material
                             }
@@ -1543,7 +1542,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_data() {
-        let panel = MaterialEditorPanel::new();
+        let mut panel = MaterialEditorPanel::new();
+        panel.create_sample_data();
         assert!(panel.material_count() >= 3);
         assert!(panel.preset_count() >= 10);
     }
@@ -1583,8 +1583,8 @@ mod tests {
 
     #[test]
     fn test_material_type_icons() {
-        assert_eq!(MaterialType::StandardPBR.icon(), "🎨");
-        assert_eq!(MaterialType::Glass.icon(), "🔮");
+        assert_eq!(MaterialType::StandardPBR.icon(), "[Art]");
+        assert_eq!(MaterialType::Glass.icon(), "[Orb]");
         assert_eq!(MaterialType::Water.icon(), "💧");
     }
 
@@ -1615,16 +1615,16 @@ mod tests {
     // MaterialType tests (7 tests)
     #[test]
     fn test_material_type_display() {
-        assert_eq!(format!("{}", MaterialType::StandardPBR), "🎨 Standard PBR");
-        assert_eq!(format!("{}", MaterialType::Unlit), "💡 Unlit");
+        assert_eq!(format!("{}", MaterialType::StandardPBR), "[Art] Standard PBR");
+        assert_eq!(format!("{}", MaterialType::Unlit), "[Lgt] Unlit");
         assert_eq!(format!("{}", MaterialType::Subsurface), "🧴 Subsurface");
-        assert_eq!(format!("{}", MaterialType::Glass), "🔮 Glass");
+        assert_eq!(format!("{}", MaterialType::Glass), "[Orb] Glass");
         assert_eq!(format!("{}", MaterialType::Water), "💧 Water");
-        assert_eq!(format!("{}", MaterialType::Foliage), "🌿 Foliage");
+        assert_eq!(format!("{}", MaterialType::Foliage), "[Leaf] Foliage");
         assert_eq!(format!("{}", MaterialType::Hair), "💇 Hair");
         assert_eq!(format!("{}", MaterialType::Cloth), "👕 Cloth");
         assert_eq!(format!("{}", MaterialType::Terrain), "🏔️ Terrain");
-        assert_eq!(format!("{}", MaterialType::Decal), "🏷️ Decal");
+        assert_eq!(format!("{}", MaterialType::Decal), "[Tag] Decal");
     }
 
     #[test]
@@ -1644,9 +1644,9 @@ mod tests {
 
     #[test]
     fn test_material_type_icon() {
-        assert_eq!(MaterialType::StandardPBR.icon(), "🎨");
+        assert_eq!(MaterialType::StandardPBR.icon(), "[Art]");
         assert_eq!(MaterialType::Water.icon(), "💧");
-        assert_eq!(MaterialType::Decal.icon(), "🏷️");
+        assert_eq!(MaterialType::Decal.icon(), "[Tag]");
     }
 
     #[test]
@@ -1676,10 +1676,10 @@ mod tests {
     #[test]
     fn test_blend_mode_display() {
         assert_eq!(format!("{}", BlendMode::Opaque), "⬛ Opaque");
-        assert_eq!(format!("{}", BlendMode::Masked), "🎭 Masked");
-        assert_eq!(format!("{}", BlendMode::Translucent), "🔲 Translucent");
-        assert_eq!(format!("{}", BlendMode::Additive), "➕ Additive");
-        assert_eq!(format!("{}", BlendMode::Modulate), "🔀 Modulate");
+        assert_eq!(format!("{}", BlendMode::Masked), "[Mask] Masked");
+        assert_eq!(format!("{}", BlendMode::Translucent), "[Sq] Translucent");
+        assert_eq!(format!("{}", BlendMode::Additive), "+ Additive");
+        assert_eq!(format!("{}", BlendMode::Modulate), "[Shuf] Modulate");
     }
 
     #[test]
@@ -1702,10 +1702,10 @@ mod tests {
     #[test]
     fn test_blend_mode_icon() {
         assert_eq!(BlendMode::Opaque.icon(), "⬛");
-        assert_eq!(BlendMode::Masked.icon(), "🎭");
-        assert_eq!(BlendMode::Translucent.icon(), "🔲");
-        assert_eq!(BlendMode::Additive.icon(), "➕");
-        assert_eq!(BlendMode::Modulate.icon(), "🔀");
+        assert_eq!(BlendMode::Masked.icon(), "[Mask]");
+        assert_eq!(BlendMode::Translucent.icon(), "[Sq]");
+        assert_eq!(BlendMode::Additive.icon(), "+");
+        assert_eq!(BlendMode::Modulate.icon(), "[Shuf]");
     }
 
     #[test]
@@ -1744,12 +1744,12 @@ mod tests {
     // TextureChannel tests (7 tests)
     #[test]
     fn test_texture_channel_display() {
-        assert_eq!(format!("{}", TextureChannel::Albedo), "🎨 Albedo");
+        assert_eq!(format!("{}", TextureChannel::Albedo), "[Art] Albedo");
         assert_eq!(format!("{}", TextureChannel::Normal), "🗺️ Normal");
-        assert_eq!(format!("{}", TextureChannel::Metallic), "✨ Metallic");
+        assert_eq!(format!("{}", TextureChannel::Metallic), "[Fx] Metallic");
         assert_eq!(format!("{}", TextureChannel::Roughness), "🔨 Roughness");
         assert_eq!(format!("{}", TextureChannel::AO), "🌑 Ambient Occlusion");
-        assert_eq!(format!("{}", TextureChannel::Emissive), "💡 Emissive");
+        assert_eq!(format!("{}", TextureChannel::Emissive), "[Lgt] Emissive");
         assert_eq!(format!("{}", TextureChannel::Height), "⛰️ Height");
         assert_eq!(format!("{}", TextureChannel::Opacity), "👻 Opacity");
     }
@@ -1771,10 +1771,10 @@ mod tests {
 
     #[test]
     fn test_texture_channel_icon() {
-        assert_eq!(TextureChannel::Albedo.icon(), "🎨");
+        assert_eq!(TextureChannel::Albedo.icon(), "[Art]");
         assert_eq!(TextureChannel::Normal.icon(), "🗺️");
-        assert_eq!(TextureChannel::Metallic.icon(), "✨");
-        assert_eq!(TextureChannel::Emissive.icon(), "💡");
+        assert_eq!(TextureChannel::Metallic.icon(), "[Fx]");
+        assert_eq!(TextureChannel::Emissive.icon(), "[Lgt]");
     }
 
     #[test]
@@ -1812,10 +1812,10 @@ mod tests {
     // PreviewLighting tests (7 tests)
     #[test]
     fn test_preview_lighting_display() {
-        assert_eq!(format!("{}", PreviewLighting::Studio), "🎬 Studio");
-        assert_eq!(format!("{}", PreviewLighting::Outdoor), "☀️ Outdoor");
-        assert_eq!(format!("{}", PreviewLighting::Indoor), "💡 Indoor");
-        assert_eq!(format!("{}", PreviewLighting::Dramatic), "🎭 Dramatic");
+        assert_eq!(format!("{}", PreviewLighting::Studio), "[Anim] Studio");
+        assert_eq!(format!("{}", PreviewLighting::Outdoor), "[Sun] Outdoor");
+        assert_eq!(format!("{}", PreviewLighting::Indoor), "[Lgt] Indoor");
+        assert_eq!(format!("{}", PreviewLighting::Dramatic), "[Mask] Dramatic");
         assert_eq!(format!("{}", PreviewLighting::Custom), "⚙️ Custom");
     }
 
@@ -1838,10 +1838,10 @@ mod tests {
 
     #[test]
     fn test_preview_lighting_icon() {
-        assert_eq!(PreviewLighting::Studio.icon(), "🎬");
-        assert_eq!(PreviewLighting::Outdoor.icon(), "☀️");
-        assert_eq!(PreviewLighting::Indoor.icon(), "💡");
-        assert_eq!(PreviewLighting::Dramatic.icon(), "🎭");
+        assert_eq!(PreviewLighting::Studio.icon(), "[Anim]");
+        assert_eq!(PreviewLighting::Outdoor.icon(), "[Sun]");
+        assert_eq!(PreviewLighting::Indoor.icon(), "[Lgt]");
+        assert_eq!(PreviewLighting::Dramatic.icon(), "[Mask]");
         assert_eq!(PreviewLighting::Custom.icon(), "⚙️");
     }
 
@@ -1871,10 +1871,10 @@ mod tests {
     // MaterialTab tests (6 tests)
     #[test]
     fn test_material_tab_display() {
-        assert_eq!(format!("{}", MaterialTab::Properties), "🎨 Properties");
-        assert_eq!(format!("{}", MaterialTab::Textures), "🖼️ Textures");
+        assert_eq!(format!("{}", MaterialTab::Properties), "[Art] Properties");
+        assert_eq!(format!("{}", MaterialTab::Textures), "[Img] Textures");
         assert_eq!(format!("{}", MaterialTab::Advanced), "⚙️ Advanced");
-        assert_eq!(format!("{}", MaterialTab::Presets), "📋 Presets");
+        assert_eq!(format!("{}", MaterialTab::Presets), "[List] Presets");
         assert_eq!(format!("{}", MaterialTab::Preview), "👁️ Preview");
         assert_eq!(format!("{}", MaterialTab::Library), "📚 Library");
     }
@@ -1899,10 +1899,10 @@ mod tests {
 
     #[test]
     fn test_material_tab_icon() {
-        assert_eq!(MaterialTab::Properties.icon(), "🎨");
-        assert_eq!(MaterialTab::Textures.icon(), "🖼️");
+        assert_eq!(MaterialTab::Properties.icon(), "[Art]");
+        assert_eq!(MaterialTab::Textures.icon(), "[Img]");
         assert_eq!(MaterialTab::Advanced.icon(), "⚙️");
-        assert_eq!(MaterialTab::Presets.icon(), "📋");
+        assert_eq!(MaterialTab::Presets.icon(), "[List]");
         assert_eq!(MaterialTab::Preview.icon(), "👁️");
         assert_eq!(MaterialTab::Library.icon(), "📚");
     }

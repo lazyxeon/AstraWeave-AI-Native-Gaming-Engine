@@ -1,4 +1,4 @@
-//! Editor command system - Undo/Redo infrastructure
+﻿//! Editor command system - Undo/Redo infrastructure
 //!
 //! Implements the Command pattern for all editor operations.
 //! Every action (transform, create, delete, edit) is wrapped in a command
@@ -176,10 +176,10 @@ impl UndoStackIssue {
     /// Get icon for this issue
     pub fn icon(&self) -> &'static str {
         match self {
-            UndoStackIssue::NearCapacity { .. } => "⚠️",
-            UndoStackIssue::AtCapacity => "🔴",
-            UndoStackIssue::AutoMergeDisabled => "ℹ️",
-            UndoStackIssue::NoHistory => "📝",
+            UndoStackIssue::NearCapacity { .. } => "[!]",
+            UndoStackIssue::AtCapacity => "[!!]",
+            UndoStackIssue::AutoMergeDisabled => "[i]",
+            UndoStackIssue::NoHistory => "[--]",
         }
     }
 }
@@ -281,7 +281,7 @@ impl UndoStack {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
                     // Merge successful, don't add new command
-                    debug!("🔄 Merged command: {}", command.describe());
+                    debug!("Merged command: {}", command.describe());
                     return Ok(());
                 }
             }
@@ -314,7 +314,7 @@ impl UndoStack {
         self.cursor -= 1;
         let cmd = &mut self.commands[self.cursor];
 
-        debug!("⏮️  Undo: {}", cmd.describe());
+        debug!("Undo: {}", cmd.describe());
         cmd.undo(world)?;
 
         Ok(())
@@ -332,7 +332,7 @@ impl UndoStack {
 
         let cmd = &mut self.commands[self.cursor];
 
-        debug!("⏭️  Redo: {}", cmd.describe());
+        debug!(">|  Redo: {}", cmd.describe());
         cmd.execute(world)?;
 
         self.cursor += 1;
@@ -521,7 +521,7 @@ impl UndoStack {
         if self.auto_merge && self.cursor > 0 {
             if let Some(last_cmd) = self.commands.last_mut() {
                 if last_cmd.try_merge(command.as_ref()) {
-                    debug!("🔄 Merged command: {}", command.describe());
+                    debug!("Merged command: {}", command.describe());
                     return;
                 }
             }
@@ -618,7 +618,7 @@ impl EditorCommand for BatchCommand {
                     // Rollback previously executed commands in reverse order
                     for j in (0..i).rev() {
                         if let Err(undo_err) = self.commands[j].undo(world) {
-                            debug!("⚠️ Rollback failed for command {}: {}", j, undo_err);
+                            debug!("Rollback failed for command {}: {}", j, undo_err);
                         }
                     }
                     return Err(e);

@@ -223,9 +223,9 @@ impl PluginError {
         match self {
             Self::InitFailed(_) => "🚫",
             Self::ConfigError(_) => "⚙️",
-            Self::MissingDependency(_) => "📦",
+            Self::MissingDependency(_) => "[Pkg]",
             Self::IncompatibleVersion { .. } => "🔢",
-            Self::Other(_) => "⚠️",
+            Self::Other(_) => "[!]",
         }
     }
 
@@ -338,10 +338,10 @@ impl PluginState {
     /// Returns the icon for this state.
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Loaded => "📦",
-            Self::Active => "✅",
-            Self::Error => "❌",
-            Self::Disabled => "⏸",
+            Self::Loaded => "[Pkg]",
+            Self::Active => "[ok]",
+            Self::Error => "[x]",
+            Self::Disabled => "||",
         }
     }
 
@@ -769,7 +769,7 @@ impl PluginManagerPanel {
         if let Some(error) = &self.last_error {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new("⚠️").color(egui::Color32::RED));
+                    ui.label(egui::RichText::new("[!]").color(egui::Color32::RED));
                     ui.label(egui::RichText::new(error).color(egui::Color32::RED));
                     if ui.button("Dismiss").clicked() {
                         dismiss = true;
@@ -784,7 +784,7 @@ impl PluginManagerPanel {
 
         // Search filter
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("Filter:");
             ui.text_edit_singleline(&mut self.filter_text);
         });
 
@@ -836,10 +836,10 @@ impl PluginManagerPanel {
             ui.horizontal(|ui| {
                 // State indicator
                 let (state_icon, state_color) = match info.state {
-                    PluginState::Active => ("✅", egui::Color32::GREEN),
-                    PluginState::Loaded => ("⏳", egui::Color32::YELLOW),
-                    PluginState::Disabled => ("⏸️", egui::Color32::GRAY),
-                    PluginState::Error => ("❌", egui::Color32::RED),
+                    PluginState::Active => ("OK", egui::Color32::GREEN),
+                    PluginState::Loaded => ("...", egui::Color32::YELLOW),
+                    PluginState::Disabled => ("--", egui::Color32::GRAY),
+                    PluginState::Error => ("ERR", egui::Color32::RED),
                 };
                 ui.label(egui::RichText::new(state_icon).color(state_color));
 
@@ -853,7 +853,7 @@ impl PluginManagerPanel {
 
                 // Panel indicator
                 if info.has_panel {
-                    ui.label(egui::RichText::new("📋").small());
+                    ui.label(egui::RichText::new("[P]").small());
                 }
             });
 
@@ -915,7 +915,7 @@ impl PluginManagerPanel {
                     }
                 }
 
-                if ui.button("🗑️").clicked() {
+                if ui.button("Remove").clicked() {
                     if let Err(e) = manager.unload(&info.id, ctx) {
                         self.last_error = Some(format!(
                             "Failed to unload plugin '{}': {}",
@@ -981,13 +981,13 @@ impl EditorPlugin for ExamplePlugin {
         ui.label(format!("Counter: {}", self.counter));
 
         ui.horizontal(|ui| {
-            if ui.button("➕ Increment").clicked() {
+            if ui.button("Increment").clicked() {
                 self.counter += 1;
             }
-            if ui.button("➖ Decrement").clicked() {
+            if ui.button("- Decrement").clicked() {
                 self.counter = self.counter.saturating_sub(1);
             }
-            if ui.button("🔄 Reset").clicked() {
+            if ui.button("Reset").clicked() {
                 self.counter = 0;
             }
         });

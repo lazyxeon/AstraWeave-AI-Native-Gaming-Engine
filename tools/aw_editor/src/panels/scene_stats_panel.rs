@@ -1,4 +1,4 @@
-use super::Panel;
+﻿use super::Panel;
 use egui::Ui;
 
 pub struct SceneStatsPanel {
@@ -117,7 +117,7 @@ impl SceneStatsPanel {
         let stats = &self.cached_stats;
 
         ui.horizontal(|ui| {
-            ui.heading("📊 Scene Statistics");
+            ui.heading("Scene Statistics");
             if stats.is_dirty {
                 ui.label(
                     egui::RichText::new("(unsaved)")
@@ -132,7 +132,7 @@ impl SceneStatsPanel {
         if let Some(warning) = self.generate_performance_warning() {
             ui.horizontal(|ui| {
                 ui.label(
-                    egui::RichText::new("⚠️ Performance Warning")
+                    egui::RichText::new("Performance Warning")
                         .color(egui::Color32::from_rgb(255, 100, 100))
                         .strong(),
                 );
@@ -146,7 +146,7 @@ impl SceneStatsPanel {
         }
 
         // Entity section
-        ui.collapsing("🎮 Entities", |ui| {
+        ui.collapsing("Entities", |ui| {
             egui::Grid::new("entity_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -171,7 +171,7 @@ impl SceneStatsPanel {
         });
 
         // Mesh statistics section
-        ui.collapsing("🔷 Meshes", |ui| {
+        ui.collapsing("[D] Meshes", |ui| {
             egui::Grid::new("mesh_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -202,7 +202,7 @@ impl SceneStatsPanel {
         });
 
         // Texture statistics section
-        ui.collapsing("🖼️ Textures", |ui| {
+        ui.collapsing("Textures", |ui| {
             egui::Grid::new("texture_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -231,7 +231,7 @@ impl SceneStatsPanel {
         });
 
         // Material statistics section
-        ui.collapsing("🎨 Materials", |ui| {
+        ui.collapsing("Materials", |ui| {
             egui::Grid::new("material_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -248,7 +248,7 @@ impl SceneStatsPanel {
         });
 
         // Performance estimates section
-        ui.collapsing("⚡ Performance Estimates", |ui| {
+        ui.collapsing("Performance Estimates", |ui| {
             egui::Grid::new("perf_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -290,7 +290,7 @@ impl SceneStatsPanel {
         });
 
         // Undo/Redo section
-        ui.collapsing("↩️ Undo History", |ui| {
+        ui.collapsing("Undo History", |ui| {
             egui::Grid::new("undo_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -313,7 +313,7 @@ impl SceneStatsPanel {
         if let Some(path) = &stats.scene_path {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                ui.label("📁 Scene:");
+                ui.label("Scene:");
                 ui.monospace(path);
             });
         }

@@ -2,6 +2,15 @@ use super::Panel;
 use egui::Ui;
 use std::collections::VecDeque;
 
+/// Actions that console commands can request from the editor
+#[derive(Debug, Clone, PartialEq)]
+pub enum ConsoleAction {
+    None,
+    Clear,
+    SpawnEntity(String),
+    ListEntities,
+}
+
 /// Log entry with full metadata
 #[derive(Debug, Clone)]
 pub struct LogEntry {
@@ -92,12 +101,13 @@ impl LogLevel {
     }
 
     pub fn matches(&self, log: &str) -> bool {
+        let lower = log.to_lowercase();
         match self {
             LogLevel::All => true,
-            LogLevel::Debug => log.contains("🔍") || log.to_lowercase().contains("[debug]"),
-            LogLevel::Info => !log.contains("⚠️") && !log.contains("❌") && !log.contains("🔍"),
-            LogLevel::Warning => log.contains("⚠️"),
-            LogLevel::Error => log.contains("❌"),
+            LogLevel::Debug => lower.contains("debug"),
+            LogLevel::Info => !lower.contains("warning") && !lower.contains("error") && !lower.contains("debug"),
+            LogLevel::Warning => lower.contains("warning"),
+            LogLevel::Error => lower.contains("error"),
         }
     }
 
@@ -120,11 +130,11 @@ impl LogLevel {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LogLevel::All => "📋",
-            LogLevel::Debug => "🔍",
+            LogLevel::All => "[List]",
+            LogLevel::Debug => "[Srch]",
             LogLevel::Info => "ℹ️",
-            LogLevel::Warning => "⚠️",
-            LogLevel::Error => "❌",
+            LogLevel::Warning => "[!]",
+            LogLevel::Error => "[x]",
         }
     }
 
@@ -251,8 +261,8 @@ impl ConsolePanel {
     /// Legacy counting for string-based logs
     pub fn get_counts_legacy(logs: &[String]) -> (usize, usize, usize, usize) {
         let total = logs.len();
-        let warnings = logs.iter().filter(|l| l.contains("⚠️")).count();
-        let errors = logs.iter().filter(|l| l.contains("❌")).count();
+        let warnings = logs.iter().filter(|l| l.to_lowercase().contains("warning")).count();
+        let errors = logs.iter().filter(|l| l.to_lowercase().contains("error")).count();
         let infos = total - warnings - errors;
         (total, infos, warnings, errors)
     }
@@ -384,6 +394,83 @@ impl ConsolePanel {
         }
     }
 
+    /// Execute a command, appending output to legacy logs, and returning an action
+    fn execute_command_ext(&mut self, command: &str, logs: &mut Vec<String>) -> ConsoleAction {
+        let cmd = command.trim();
+        if cmd.is_empty() {
+            return ConsoleAction::None;
+        }
+
+        // Add to history
+        self.command_history.push_front(cmd.to_string());
+        if self.command_history.len() > 50 {
+            self.command_history.pop_back();
+        }
+        self.command_history_index = None;
+
+        let parts: Vec<&str> = cmd.split_whitespace().collect();
+        match parts.first() {
+            Some(&"clear") => {
+                logs.clear();
+                self.clear();
+                ConsoleAction::Clear
+            }
+            Some(&"help") => {
+                logs.push("Available commands: clear, help, pause, resume, filter <level>, spawn <type>, list".into());
+                ConsoleAction::None
+            }
+            Some(&"pause") => {
+                self.is_paused = true;
+                logs.push("Logging paused".into());
+                ConsoleAction::None
+            }
+            Some(&"resume") => {
+                let skipped = self.paused_entry_count;
+                self.is_paused = false;
+                self.paused_entry_count = 0;
+                logs.push(format!("Logging resumed ({} entries skipped)", skipped));
+                ConsoleAction::None
+            }
+            Some(&"filter") => {
+                if let Some(&level) = parts.get(1) {
+                    match level.to_lowercase().as_str() {
+                        "all" => self.filter_level = LogLevel::All,
+                        "debug" => self.filter_level = LogLevel::Debug,
+                        "info" => self.filter_level = LogLevel::Info,
+                        "warning" | "warn" => self.filter_level = LogLevel::Warning,
+                        "error" => self.filter_level = LogLevel::Error,
+                        _ => {
+                            logs.push(format!("Unknown filter level: {}", level));
+                        }
+                    }
+                }
+                ConsoleAction::None
+            }
+            Some(&"spawn") => {
+                let entity_type = parts.get(1..).map(|p| p.join(" ")).unwrap_or_default();
+                if entity_type.is_empty() {
+                    logs.push("Usage: spawn <type> (e.g., spawn cube, spawn light)".into());
+                    ConsoleAction::None
+                } else {
+                    logs.push(format!("Spawning: {}", entity_type));
+                    ConsoleAction::SpawnEntity(entity_type)
+                }
+            }
+            Some(&"list") => {
+                logs.push("Listing entities...".into());
+                ConsoleAction::ListEntities
+            }
+            Some(unknown) => {
+                logs.push(format!(
+                    "Unknown command: {}. Type 'help' for available commands.",
+                    unknown
+                ));
+                ConsoleAction::None
+            }
+            None => ConsoleAction::None,
+        }
+    }
+
     /// Export logs to string
     pub fn export_logs(&self) -> String {
         let mut output = String::new();
@@ -402,8 +489,8 @@ impl ConsolePanel {
         output
     }
 
-    pub fn show_with_logs(&mut self, ui: &mut Ui, logs: &mut Vec<String>) -> bool {
-        let mut cleared = false;
+    pub fn show_with_logs(&mut self, ui: &mut Ui, logs: &mut Vec<String>) -> ConsoleAction {
+        let mut action = ConsoleAction::None;
 
         let (total_count, info_count, warning_count, error_count) = Self::get_counts_legacy(logs);
 
@@ -429,6 +516,14 @@ impl ConsolePanel {
                     egui::RichText::new(format!("{} err", error_count)).color(egui::Color32::RED),
                 );
             }
+
+            if self.is_paused {
+                ui.separator();
+                ui.label(
+                    egui::RichText::new(format!("⏸ Paused ({} skipped)", self.paused_entry_count))
+                        .color(egui::Color32::YELLOW),
+                );
+            }
         });
 
         ui.separator();
@@ -439,6 +534,7 @@ impl ConsolePanel {
                 .width(90.0)
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter_level, LogLevel::All, "All");
+                    ui.selectable_value(&mut self.filter_level, LogLevel::Debug, "Debug");
                     ui.selectable_value(&mut self.filter_level, LogLevel::Info, "Info");
                     ui.selectable_value(&mut self.filter_level, LogLevel::Warning, "Warnings");
                     ui.selectable_value(&mut self.filter_level, LogLevel::Error, "Errors");
@@ -460,7 +556,8 @@ impl ConsolePanel {
 
             if ui.button("Clear").on_hover_text("Clear all logs").clicked() {
                 logs.clear();
-                cleared = true;
+                self.clear();
+                action = ConsoleAction::Clear;
             }
 
             if ui
@@ -477,8 +574,11 @@ impl ConsolePanel {
 
         let filtered_logs = self.filter_logs(logs);
 
+        // Build collapsed log groups for display
+        let collapsed = Self::collapse_repeated(&filtered_logs);
+
         let scroll_area = egui::ScrollArea::vertical()
-            .max_height(200.0)
+            .max_height(ui.available_height() - 30.0)
             .auto_shrink([false, false]);
 
         let scroll = if self.auto_scroll {
@@ -488,7 +588,7 @@ impl ConsolePanel {
         };
 
         scroll.show(ui, |ui| {
-            if filtered_logs.is_empty() {
+            if collapsed.is_empty() {
                 ui.colored_label(
                     egui::Color32::GRAY,
                     if logs.is_empty() {
@@ -498,23 +598,104 @@ impl ConsolePanel {
                     },
                 );
             } else {
-                for log in filtered_logs {
-                    let color = if log.contains("❌") {
+                for (msg, count) in &collapsed {
+                    let color = if msg.contains("[x]") || msg.to_lowercase().contains("error") {
                         egui::Color32::from_rgb(255, 100, 100)
-                    } else if log.contains("⚠️") {
+                    } else if msg.contains("[!]") || msg.to_lowercase().contains("warning") {
                         egui::Color32::from_rgb(255, 200, 100)
-                    } else if log.contains("✅") {
+                    } else if msg.contains("[ok]") {
                         egui::Color32::from_rgb(100, 255, 100)
                     } else {
                         egui::Color32::LIGHT_GRAY
                     };
 
-                    ui.colored_label(color, log);
+                    if *count > 1 {
+                        ui.horizontal(|ui| {
+                            ui.colored_label(color, *msg);
+                            ui.label(
+                                egui::RichText::new(format!("×{}", count))
+                                    .color(egui::Color32::from_rgb(180, 180, 255))
+                                    .small(),
+                            );
+                        });
+                    } else {
+                        ui.colored_label(color, *msg);
+                    }
                 }
             }
         });
 
-        cleared
+        // Command input field at bottom
+        ui.separator();
+        let response = ui.horizontal(|ui| {
+            ui.label(">");
+            let input_response = ui.add(
+                egui::TextEdit::singleline(&mut self.command_input)
+                    .hint_text("Type command... (help for list)")
+                    .desired_width(ui.available_width() - 60.0)
+                    .id(egui::Id::new("console_command_input")),
+            );
+
+            // Handle Up/Down arrow for command history
+            if input_response.has_focus() {
+                let up = ui.input(|i| i.key_pressed(egui::Key::ArrowUp));
+                let down = ui.input(|i| i.key_pressed(egui::Key::ArrowDown));
+
+                if up && !self.command_history.is_empty() {
+                    let idx = match self.command_history_index {
+                        Some(i) => (i + 1).min(self.command_history.len() - 1),
+                        None => 0,
+                    };
+                    self.command_history_index = Some(idx);
+                    self.command_input = self.command_history[idx].clone();
+                }
+                if down {
+                    match self.command_history_index {
+                        Some(0) => {
+                            self.command_history_index = None;
+                            self.command_input.clear();
+                        }
+                        Some(i) => {
+                            let idx = i - 1;
+                            self.command_history_index = Some(idx);
+                            self.command_input = self.command_history[idx].clone();
+                        }
+                        None => {}
+                    }
+                }
+            }
+
+            // Handle Enter to execute command
+            if input_response.lost_focus()
+                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                && !self.command_input.is_empty()
+            {
+                let cmd = self.command_input.clone();
+                action = self.execute_command_ext(&cmd, logs);
+                self.command_input.clear();
+                input_response.request_focus();
+            }
+
+            input_response
+        });
+        let _ = response;
+
+        action
+    }
+
+    /// Collapse consecutive identical log messages into (message, count) pairs
+    fn collapse_repeated<'a>(logs: &[&'a String]) -> Vec<(&'a str, usize)> {
+        let mut collapsed: Vec<(&'a str, usize)> = Vec::new();
+        for log in logs {
+            if let Some(last) = collapsed.last_mut() {
+                if last.0 == log.as_str() {
+                    last.1 += 1;
+                    continue;
+                }
+            }
+            collapsed.push((log.as_str(), 1));
+        }
+        collapsed
     }
 }
 
@@ -539,20 +720,20 @@ mod tests {
     #[test]
     fn test_log_level_filter() {
         assert!(LogLevel::All.matches("Any log"));
-        assert!(LogLevel::All.matches("⚠️ Warning"));
-        assert!(LogLevel::All.matches("❌ Error"));
+        assert!(LogLevel::All.matches("Warning"));
+        assert!(LogLevel::All.matches("Error"));
 
-        assert!(LogLevel::Warning.matches("⚠️ Warning message"));
+        assert!(LogLevel::Warning.matches("Warning message"));
         assert!(!LogLevel::Warning.matches("Normal message"));
-        assert!(!LogLevel::Warning.matches("❌ Error message"));
+        assert!(!LogLevel::Warning.matches("Error message"));
 
-        assert!(LogLevel::Error.matches("❌ Error message"));
+        assert!(LogLevel::Error.matches("Error message"));
         assert!(!LogLevel::Error.matches("Normal message"));
-        assert!(!LogLevel::Error.matches("⚠️ Warning message"));
+        assert!(!LogLevel::Error.matches("Warning message"));
 
         assert!(LogLevel::Info.matches("Normal info message"));
-        assert!(!LogLevel::Info.matches("⚠️ Warning"));
-        assert!(!LogLevel::Info.matches("❌ Error"));
+        assert!(!LogLevel::Info.matches("Warning"));
+        assert!(!LogLevel::Info.matches("Error"));
     }
 
     #[test]
@@ -576,21 +757,21 @@ mod tests {
 
     #[test]
     fn test_log_level_icons() {
-        assert_eq!(LogLevel::All.icon(), "📋");
-        assert_eq!(LogLevel::Debug.icon(), "🔍");
+        assert_eq!(LogLevel::All.icon(), "[List]");
+        assert_eq!(LogLevel::Debug.icon(), "[Srch]");
         assert_eq!(LogLevel::Info.icon(), "ℹ️");
-        assert_eq!(LogLevel::Warning.icon(), "⚠️");
-        assert_eq!(LogLevel::Error.icon(), "❌");
+        assert_eq!(LogLevel::Warning.icon(), "[!]");
+        assert_eq!(LogLevel::Error.icon(), "[x]");
     }
 
     #[test]
     fn test_log_counting_legacy() {
         let logs = vec![
             "Info message".to_string(),
-            "⚠️ Warning message".to_string(),
-            "❌ Error message".to_string(),
+            "Warning message".to_string(),
+            "Error message".to_string(),
             "Another info".to_string(),
-            "❌ Another error".to_string(),
+            "Another error".to_string(),
         ];
 
         let (total, infos, warnings, errors) = ConsolePanel::get_counts_legacy(&logs);
@@ -698,8 +879,8 @@ mod tests {
     fn test_filtering_level() {
         let logs = vec![
             "Info".to_string(),
-            "⚠️ Warning".to_string(),
-            "❌ Error".to_string(),
+            "Warning".to_string(),
+            "Error".to_string(),
         ];
 
         let mut panel = ConsolePanel::new();
@@ -718,13 +899,13 @@ mod tests {
         panel.filter_level = LogLevel::Warning;
         let filtered = panel.filter_logs(&logs);
         assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0], "⚠️ Warning");
+        assert_eq!(filtered[0], "Warning");
 
         // Error
         panel.filter_level = LogLevel::Error;
         let filtered = panel.filter_logs(&logs);
         assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0], "❌ Error");
+        assert_eq!(filtered[0], "Error");
     }
 
     #[test]
@@ -757,8 +938,8 @@ mod tests {
     fn test_filtering_combined() {
         let logs = vec![
             "Info Apple".to_string(),
-            "⚠️ Warning Apple".to_string(),
-            "❌ Error Banana".to_string(),
+            "Warning Apple".to_string(),
+            "Error Banana".to_string(),
         ];
 
         let mut panel = ConsolePanel::new();
@@ -774,7 +955,7 @@ mod tests {
         panel.filter_level = LogLevel::Warning;
         let filtered = panel.filter_logs(&logs);
         assert_eq!(filtered.len(), 1);
-        assert_eq!(filtered[0], "⚠️ Warning Apple");
+        assert_eq!(filtered[0], "Warning Apple");
 
         // Filter Error + Search "Apple" (Mismatch)
         panel.filter_level = LogLevel::Error;
@@ -850,5 +1031,148 @@ mod tests {
     #[test]
     fn test_log_level_default() {
         assert_eq!(LogLevel::default(), LogLevel::Info);
+    }
+
+    // ========== Console Action Tests ==========
+
+    #[test]
+    fn test_console_action_spawn() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("spawn cube", &mut logs);
+        assert_eq!(action, ConsoleAction::SpawnEntity("cube".to_string()));
+        assert!(logs.iter().any(|l| l.contains("Spawning: cube")));
+    }
+
+    #[test]
+    fn test_console_action_spawn_multi_word() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("spawn point light", &mut logs);
+        assert_eq!(
+            action,
+            ConsoleAction::SpawnEntity("point light".to_string())
+        );
+    }
+
+    #[test]
+    fn test_console_action_spawn_empty() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("spawn", &mut logs);
+        assert_eq!(action, ConsoleAction::None);
+        assert!(logs.iter().any(|l| l.contains("Usage:")));
+    }
+
+    #[test]
+    fn test_console_action_list() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("list", &mut logs);
+        assert_eq!(action, ConsoleAction::ListEntities);
+    }
+
+    #[test]
+    fn test_console_action_clear() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = vec!["test".into()];
+        let action = panel.execute_command_ext("clear", &mut logs);
+        assert_eq!(action, ConsoleAction::Clear);
+        assert!(logs.is_empty());
+    }
+
+    #[test]
+    fn test_console_action_help() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("help", &mut logs);
+        assert_eq!(action, ConsoleAction::None);
+        assert!(logs.iter().any(|l| l.contains("Available commands")));
+    }
+
+    #[test]
+    fn test_console_ext_history() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        panel.execute_command_ext("help", &mut logs);
+        panel.execute_command_ext("list", &mut logs);
+        assert_eq!(panel.command_history.len(), 2);
+        assert_eq!(panel.command_history[0], "list");
+        assert_eq!(panel.command_history[1], "help");
+    }
+
+    #[test]
+    fn test_console_ext_pause_resume() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        panel.execute_command_ext("pause", &mut logs);
+        assert!(panel.is_paused);
+        panel.execute_command_ext("resume", &mut logs);
+        assert!(!panel.is_paused);
+    }
+
+    #[test]
+    fn test_console_ext_filter() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        panel.execute_command_ext("filter warning", &mut logs);
+        assert_eq!(panel.filter_level, LogLevel::Warning);
+    }
+
+    #[test]
+    fn test_console_ext_unknown_command() {
+        let mut panel = ConsolePanel::new();
+        let mut logs = Vec::new();
+        let action = panel.execute_command_ext("foobar", &mut logs);
+        assert_eq!(action, ConsoleAction::None);
+        assert!(logs.iter().any(|l| l.contains("Unknown command")));
+    }
+
+    // ========== Collapse Repeated Messages Tests ==========
+
+    #[test]
+    fn test_collapse_repeated_basic() {
+        let logs: Vec<String> = vec![
+            "A".into(),
+            "A".into(),
+            "A".into(),
+            "B".into(),
+            "C".into(),
+            "C".into(),
+        ];
+        let refs: Vec<&String> = logs.iter().collect();
+        let collapsed = ConsolePanel::collapse_repeated(&refs);
+        assert_eq!(collapsed.len(), 3);
+        assert_eq!(collapsed[0], ("A", 3));
+        assert_eq!(collapsed[1], ("B", 1));
+        assert_eq!(collapsed[2], ("C", 2));
+    }
+
+    #[test]
+    fn test_collapse_repeated_no_repeats() {
+        let logs: Vec<String> = vec!["A".into(), "B".into(), "C".into()];
+        let refs: Vec<&String> = logs.iter().collect();
+        let collapsed = ConsolePanel::collapse_repeated(&refs);
+        assert_eq!(collapsed.len(), 3);
+        for (_, count) in &collapsed {
+            assert_eq!(*count, 1);
+        }
+    }
+
+    #[test]
+    fn test_collapse_repeated_all_same() {
+        let logs: Vec<String> = vec!["X".into(), "X".into(), "X".into(), "X".into(), "X".into()];
+        let refs: Vec<&String> = logs.iter().collect();
+        let collapsed = ConsolePanel::collapse_repeated(&refs);
+        assert_eq!(collapsed.len(), 1);
+        assert_eq!(collapsed[0], ("X", 5));
+    }
+
+    #[test]
+    fn test_collapse_repeated_empty() {
+        let logs: Vec<String> = vec![];
+        let refs: Vec<&String> = logs.iter().collect();
+        let collapsed = ConsolePanel::collapse_repeated(&refs);
+        assert!(collapsed.is_empty());
     }
 }

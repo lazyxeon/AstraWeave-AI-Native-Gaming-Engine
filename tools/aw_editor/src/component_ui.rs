@@ -53,17 +53,17 @@ impl ComponentEdit {
     pub fn description(&self) -> String {
         match self {
             ComponentEdit::Health { old_hp, new_hp, .. } => {
-                format!("HP: {} → {}", old_hp, new_hp)
+                format!("HP: {} -> {}", old_hp, new_hp)
             }
             ComponentEdit::Team { old_id, new_id, .. } => {
-                format!("Team: {} → {}", old_id, new_id)
+                format!("Team: {} -> {}", old_id, new_id)
             }
             ComponentEdit::Ammo {
                 old_rounds,
                 new_rounds,
                 ..
             } => {
-                format!("Ammo: {} → {}", old_rounds, new_rounds)
+                format!("Ammo: {} -> {}", old_rounds, new_rounds)
             }
         }
     }
@@ -289,7 +289,7 @@ impl InspectorUI for Ammo {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ComponentType {
     Pose,
@@ -320,9 +320,9 @@ impl ComponentType {
     /// Get icon for this component type
     pub fn icon(&self) -> &'static str {
         match self {
-            ComponentType::Pose => "📍",
+            ComponentType::Pose => "📐",
             ComponentType::Health => "❤️",
-            ComponentType::Team => "👥",
+            ComponentType::Team => "🏴",
             ComponentType::Ammo => "🔫",
         }
     }
@@ -365,7 +365,7 @@ impl ComponentType {
 
     /// Show component UI with optional override indicators
     ///
-    /// If overrides are provided, displays visual indicators (⚠️ icon + colored label) for modified components
+    /// If overrides are provided, displays visual indicators (icon + colored label) for modified components
     pub fn show_ui_with_overrides(
         &self,
         world: &mut World,
@@ -378,9 +378,9 @@ impl ComponentType {
                 if let Some(pose) = world.pose_mut(entity) {
                     let is_overridden = overrides.is_some_and(|o| o.has_pose_override());
                     let label = if is_overridden {
-                        "⚠️ 📍 Pose *"
+                        "Pose *"
                     } else {
-                        "📍 Pose"
+                        "Pose"
                     };
 
                     if is_overridden {
@@ -400,9 +400,9 @@ impl ComponentType {
                     let old_hp = health.hp;
                     let is_overridden = overrides.is_some_and(|o| o.has_health_override());
                     let label = if is_overridden {
-                        "⚠️ ❤️ Health *"
+                        "Health *"
                     } else {
-                        "❤️ Health"
+                        "Health"
                     };
 
                     let changed = if is_overridden {
@@ -429,7 +429,7 @@ impl ComponentType {
             ComponentType::Team => {
                 if let Some(team) = world.team_mut(entity) {
                     let old_id = team.id;
-                    let changed = team.ui(ui, "👥 Team");
+                    let changed = team.ui(ui, "Team");
                     if changed {
                         return Some(ComponentEdit::Team {
                             entity,
@@ -443,7 +443,7 @@ impl ComponentType {
             ComponentType::Ammo => {
                 if let Some(ammo) = world.ammo_mut(entity) {
                     let old_rounds = ammo.rounds;
-                    let changed = ammo.ui(ui, "🔫 Ammo");
+                    let changed = ammo.ui(ui, "Ammo");
                     if changed {
                         return Some(ComponentEdit::Ammo {
                             entity,

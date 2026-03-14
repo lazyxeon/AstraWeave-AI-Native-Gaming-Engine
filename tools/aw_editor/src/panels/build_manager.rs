@@ -54,7 +54,7 @@ impl BuildTarget {
             BuildTarget::Windows => "🪟",
             BuildTarget::Linux => "🐧",
             BuildTarget::MacOS => "🍎",
-            BuildTarget::Web => "🌐",
+            BuildTarget::Web => "[Net]",
         }
     }
 
@@ -110,7 +110,7 @@ impl BuildProfile {
     pub fn icon(&self) -> &str {
         match self {
             BuildProfile::Debug => "🐛",
-            BuildProfile::Release => "🚀",
+            BuildProfile::Release => "[Rkt]",
         }
     }
 
@@ -154,7 +154,7 @@ pub enum BuildStatus {
 impl std::fmt::Display for BuildStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuildStatus::Idle => write!(f, "⏸ Idle"),
+            BuildStatus::Idle => write!(f, "|| Idle"),
             BuildStatus::Building {
                 progress,
                 current_step,
@@ -167,10 +167,10 @@ impl std::fmt::Display for BuildStatus {
                 )
             }
             BuildStatus::Success { duration_secs, .. } => {
-                write!(f, "✅ Success ({:.1}s)", duration_secs)
+                write!(f, "Success ({:.1}s)", duration_secs)
             }
             BuildStatus::Failed { error_message } => {
-                write!(f, "❌ Failed: {}", error_message)
+                write!(f, "Failed: {}", error_message)
             }
         }
     }
@@ -195,10 +195,10 @@ impl BuildStatus {
     /// Returns the icon for this status
     pub fn icon(&self) -> &str {
         match self {
-            BuildStatus::Idle => "⏸",
+            BuildStatus::Idle => "||",
             BuildStatus::Building { .. } => "🔨",
-            BuildStatus::Success { .. } => "✅",
-            BuildStatus::Failed { .. } => "❌",
+            BuildStatus::Success { .. } => "[ok]",
+            BuildStatus::Failed { .. } => "[x]",
         }
     }
 }
@@ -251,10 +251,10 @@ impl std::fmt::Display for BuildMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BuildMessage::Progress { percent, step } => {
-                write!(f, "📊 Progress ({:.0}%): {}", percent * 100.0, step)
+                write!(f, "Progress ({:.0}%): {}", percent * 100.0, step)
             }
             BuildMessage::LogLine(line) => {
-                write!(f, "📝 {}", line)
+                write!(f, "[Edit] {}", line)
             }
             BuildMessage::Complete {
                 output_path,
@@ -262,13 +262,13 @@ impl std::fmt::Display for BuildMessage {
             } => {
                 write!(
                     f,
-                    "✅ Complete: {} ({:.1}s)",
+                    "Complete: {} ({:.1}s)",
                     output_path.display(),
                     duration_secs
                 )
             }
             BuildMessage::Failed { error } => {
-                write!(f, "❌ Failed: {}", error)
+                write!(f, "Failed: {}", error)
             }
         }
     }
@@ -278,10 +278,10 @@ impl BuildMessage {
     /// Returns the icon for this message type
     pub fn icon(&self) -> &str {
         match self {
-            BuildMessage::Progress { .. } => "📊",
-            BuildMessage::LogLine(_) => "📝",
-            BuildMessage::Complete { .. } => "✅",
-            BuildMessage::Failed { .. } => "❌",
+            BuildMessage::Progress { .. } => "[Chart]",
+            BuildMessage::LogLine(_) => "[Edit]",
+            BuildMessage::Complete { .. } => "[ok]",
+            BuildMessage::Failed { .. } => "[x]",
         }
     }
 
@@ -375,7 +375,7 @@ impl BuildManagerPanel {
                 self.game_project_path = Some(path.to_path_buf());
                 self.game_project_error = None;
                 self.build_logs
-                    .push(format!("✅ Created game.toml at {}", path.display()));
+                    .push(format!("Created game.toml at {}", path.display()));
             }
             Err(e) => {
                 self.game_project_error = Some(format!("Failed to create game.toml: {}", e));
@@ -415,7 +415,7 @@ impl BuildManagerPanel {
         self.cancel_requested
             .store(true, std::sync::atomic::Ordering::SeqCst);
         self.build_logs
-            .push("⚠️ Build cancellation requested...".to_string());
+            .push("Build cancellation requested...".to_string());
     }
 
     /// Launch the built executable
@@ -428,20 +428,20 @@ impl BuildManagerPanel {
 
         if executable.exists() {
             self.build_logs
-                .push(format!("🚀 Launching {}...", executable.display()));
+                .push(format!("[Rkt] Launching {}...", executable.display()));
 
             match Command::new(&executable).spawn() {
                 Ok(_) => {
                     self.build_logs
-                        .push("✅ Application launched successfully".to_string());
+                        .push("Application launched successfully".to_string());
                 }
                 Err(e) => {
-                    self.build_logs.push(format!("❌ Failed to launch: {}", e));
+                    self.build_logs.push(format!("Failed to launch: {}", e));
                 }
             }
         } else {
             self.build_logs
-                .push(format!("❌ Executable not found: {}", executable.display()));
+                .push(format!("Executable not found: {}", executable.display()));
         }
     }
 
@@ -458,7 +458,7 @@ impl BuildManagerPanel {
             percent: 0.05,
             step: "Validating configuration...".to_string(),
         });
-        let _ = tx.send(BuildMessage::LogLine("📋 Build configuration:".to_string()));
+        let _ = tx.send(BuildMessage::LogLine("Build configuration:".to_string()));
         let _ = tx.send(BuildMessage::LogLine(format!(
             "   Target: {} {}",
             config.target.icon(),
@@ -492,7 +492,7 @@ impl BuildManagerPanel {
             step: "Compiling Rust code...".to_string(),
         });
         let _ = tx.send(BuildMessage::LogLine(
-            "🔧 Running cargo build...".to_string(),
+            "Running cargo build...".to_string(),
         ));
 
         let mut cmd = Command::new("cargo");
@@ -510,7 +510,7 @@ impl BuildManagerPanel {
         cmd.stderr(Stdio::piped());
 
         let _ = tx.send(BuildMessage::LogLine(
-            "🔧 Running cargo build...".to_string(),
+            "Running cargo build...".to_string(),
         ));
 
         let mut child = match cmd.spawn() {
@@ -586,7 +586,7 @@ impl BuildManagerPanel {
             step: "Bundling assets...".to_string(),
         });
         let _ = tx.send(BuildMessage::LogLine(
-            "📦 Bundling game assets...".to_string(),
+            "Bundling game assets...".to_string(),
         ));
 
         use std::fs;
@@ -597,7 +597,7 @@ impl BuildManagerPanel {
 
         if asset_src.exists() {
             let _ = tx.send(BuildMessage::LogLine(format!(
-                "   📂 Copying assets from {} to {}",
+                "   Copying assets from {} to {}",
                 asset_src.display(),
                 asset_dst.display()
             )));
@@ -619,17 +619,17 @@ impl BuildManagerPanel {
 
             if let Err(e) = copy_dir_all(&asset_src, &asset_dst) {
                 let _ = tx.send(BuildMessage::LogLine(format!(
-                    "   ⚠️ Warning: Asset bundle error: {}",
+                    "   Warning: Asset bundle error: {}",
                     e
                 )));
             } else {
                 let _ = tx.send(BuildMessage::LogLine(
-                    "   ✅ Assets bundled successfully".to_string(),
+                    "   Assets bundled successfully".to_string(),
                 ));
             }
         } else {
             let _ = tx.send(BuildMessage::LogLine(
-                "   ⚠️ No assets directory found to bundle".to_string(),
+                "   No assets directory found to bundle".to_string(),
             ));
         }
 
@@ -672,11 +672,11 @@ impl BuildManagerPanel {
         let duration = start_time.elapsed().as_secs_f32();
 
         let _ = tx.send(BuildMessage::LogLine(format!(
-            "✅ Build complete: {}",
+            "Build complete: {}",
             output_path.display()
         )));
         let _ = tx.send(BuildMessage::LogLine(format!(
-            "⏱️ Duration: {:.2}s",
+            "[Time] Duration: {:.2}s",
             duration
         )));
 
@@ -748,13 +748,13 @@ impl BuildManagerPanel {
                 duration_secs,
             } => {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("✅ Build Successful").color(Color32::GREEN));
+                    ui.label(RichText::new("Build Successful").color(Color32::GREEN));
                     ui.label(format!("({:.2}s)", duration_secs));
                 });
                 ui.label(format!("Output: {}", output_path.display()));
             }
             BuildStatus::Failed { error_message } => {
-                ui.label(RichText::new("❌ Build Failed").color(Color32::RED));
+                ui.label(RichText::new("Build Failed").color(Color32::RED));
                 ui.label(
                     RichText::new(error_message)
                         .color(Color32::LIGHT_RED)
@@ -765,7 +765,7 @@ impl BuildManagerPanel {
     }
 
     fn show_build_logs(&mut self, ui: &mut Ui) {
-        ui.collapsing("📜 Build Log", |ui| {
+        ui.collapsing("Build Log", |ui| {
             egui::ScrollArea::vertical()
                 .max_height(150.0)
                 .stick_to_bottom(true)
@@ -824,7 +824,7 @@ impl Panel for BuildManagerPanel {
                 ui.selectable_value(
                     &mut self.config.profile,
                     BuildProfile::Release,
-                    "🚀 Release",
+                    "[Rkt] Release",
                 );
             });
         });
@@ -851,7 +851,7 @@ impl Panel for BuildManagerPanel {
         ui.add_space(4.0);
 
         // Advanced Options
-        ui.collapsing("⚙️ Advanced Options", |ui| {
+        ui.collapsing("Advanced Options", |ui| {
             ui.checkbox(
                 &mut self.config.include_debug_symbols,
                 "Include debug symbols",
@@ -880,7 +880,7 @@ impl Panel for BuildManagerPanel {
             if ui
                 .add_enabled(
                     !is_building,
-                    egui::Button::new("📦 Build & Run").min_size(egui::vec2(100.0, 30.0)),
+                    egui::Button::new("Build & Run").min_size(egui::vec2(100.0, 30.0)),
                 )
                 .clicked()
             {
@@ -888,7 +888,7 @@ impl Panel for BuildManagerPanel {
                 self.start_build();
             }
 
-            if is_building && ui.button("❌ Cancel").clicked() {
+            if is_building && ui.button("Cancel").clicked() {
                 self.cancel_build();
             }
         });
@@ -945,7 +945,7 @@ mod tests {
         assert_eq!(BuildTarget::Windows.icon(), "🪟");
         assert_eq!(BuildTarget::Linux.icon(), "🐧");
         assert_eq!(BuildTarget::MacOS.icon(), "🍎");
-        assert_eq!(BuildTarget::Web.icon(), "🌐");
+        assert_eq!(BuildTarget::Web.icon(), "[Net]");
     }
 
     #[test]
@@ -1258,7 +1258,7 @@ mod tests {
 
         let target = BuildTarget::Web;
         assert_eq!(target.name(), "Web (WASM)");
-        assert_eq!(target.icon(), "🌐");
+        assert_eq!(target.icon(), "[Net]");
     }
 
     #[test]
@@ -1450,7 +1450,7 @@ mod tests {
     #[test]
     fn test_build_profile_icon() {
         assert_eq!(BuildProfile::Debug.icon(), "🐛");
-        assert_eq!(BuildProfile::Release.icon(), "🚀");
+        assert_eq!(BuildProfile::Release.icon(), "[Rkt]");
     }
 
     #[test]
@@ -1522,7 +1522,7 @@ mod tests {
 
     #[test]
     fn test_build_status_icon() {
-        assert_eq!(BuildStatus::Idle.icon(), "⏸");
+        assert_eq!(BuildStatus::Idle.icon(), "||");
         assert_eq!(
             BuildStatus::Building {
                 progress: 0.0,
@@ -1537,14 +1537,14 @@ mod tests {
                 duration_secs: 0.0
             }
             .icon(),
-            "✅"
+            "[ok]"
         );
         assert_eq!(
             BuildStatus::Failed {
                 error_message: String::new()
             }
             .icon(),
-            "❌"
+            "[x]"
         );
     }
 
@@ -1586,23 +1586,23 @@ mod tests {
                 step: String::new()
             }
             .icon(),
-            "📊"
+            "[Chart]"
         );
-        assert_eq!(BuildMessage::LogLine(String::new()).icon(), "📝");
+        assert_eq!(BuildMessage::LogLine(String::new()).icon(), "[Edit]");
         assert_eq!(
             BuildMessage::Complete {
                 output_path: PathBuf::new(),
                 duration_secs: 0.0
             }
             .icon(),
-            "✅"
+            "[ok]"
         );
         assert_eq!(
             BuildMessage::Failed {
                 error: String::new()
             }
             .icon(),
-            "❌"
+            "[x]"
         );
     }
 

@@ -75,10 +75,10 @@ impl LoopMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LoopMode::Once => "▶️",
+            LoopMode::Once => ">",
             LoopMode::Loop => "🔁",
-            LoopMode::PingPong => "🔀",
-            LoopMode::ClampForever => "⏸️",
+            LoopMode::PingPong => "[Shuf]",
+            LoopMode::ClampForever => "||",
         }
     }
 
@@ -164,9 +164,9 @@ impl TangentMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            TangentMode::Auto => "🔄",
+            TangentMode::Auto => "[Sync]",
             TangentMode::Linear => "📈",
-            TangentMode::Constant => "⏸️",
+            TangentMode::Constant => "||",
             TangentMode::Free => "✏️",
             TangentMode::Broken => "💔",
         }
@@ -357,7 +357,7 @@ impl ParameterType {
             ParameterType::Float => "🔢",
             ParameterType::Int => "#️⃣",
             ParameterType::Bool => "☑️",
-            ParameterType::Trigger => "⚡",
+            ParameterType::Trigger => "[Zap]",
         }
     }
 
@@ -407,7 +407,7 @@ impl ParameterValue {
             ParameterValue::Float(_) => "🔢",
             ParameterValue::Int(_) => "🔟",
             ParameterValue::Bool(_) => "✓",
-            ParameterValue::Trigger => "⚡",
+            ParameterValue::Trigger => "[Zap]",
         }
     }
 
@@ -499,10 +499,10 @@ impl BlendTreeType {
     pub fn icon(&self) -> &'static str {
         match self {
             BlendTreeType::Simple1D => "↔️",
-            BlendTreeType::Simple2D => "🔀",
-            BlendTreeType::FreeformDirectional => "🧭",
-            BlendTreeType::FreeformCartesian => "📊",
-            BlendTreeType::Direct => "▶️",
+            BlendTreeType::Simple2D => "[Shuf]",
+            BlendTreeType::FreeformDirectional => "[Comp]",
+            BlendTreeType::FreeformCartesian => "[Chart]",
+            BlendTreeType::Direct => ">",
         }
     }
 
@@ -608,8 +608,8 @@ impl BlendingMode {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            BlendingMode::Override => "🔄",
-            BlendingMode::Additive => "➕",
+            BlendingMode::Override => "[Sync]",
+            BlendingMode::Additive => "+",
         }
     }
 
@@ -743,9 +743,9 @@ impl AnimationTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            AnimationTab::Clips => "🎬",
-            AnimationTab::StateMachine => "🔀",
-            AnimationTab::BlendTrees => "🌳",
+            AnimationTab::Clips => "[Anim]",
+            AnimationTab::StateMachine => "[Shuf]",
+            AnimationTab::BlendTrees => "[Tree]",
             AnimationTab::Layers => "📚",
             AnimationTab::Parameters => "⚙️",
             AnimationTab::IK => "🦴",
@@ -875,6 +875,11 @@ pub struct AnimationPanel {
     timeline_zoom: f32,
     timeline_scroll: f32,
 
+    // Keyframe editing
+    selected_curve: Option<u32>,
+    selected_keyframe: Option<usize>,
+    dragging_keyframe: bool,
+
     // State machine editor
     selected_state: Option<u32>,
     selected_transition: Option<u32>,
@@ -892,7 +897,7 @@ pub struct AnimationPanel {
 
 impl Default for AnimationPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: AnimationTab::Clips,
 
             clips: Vec::new(),
@@ -910,6 +915,10 @@ impl Default for AnimationPanel {
             timeline_zoom: 1.0,
             timeline_scroll: 0.0,
 
+            selected_curve: None,
+            selected_keyframe: None,
+            dragging_keyframe: false,
+
             selected_state: None,
             selected_transition: None,
 
@@ -922,7 +931,6 @@ impl Default for AnimationPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -1118,13 +1126,13 @@ impl AnimationPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (AnimationTab::Clips, "🎬 Clips"),
-                (AnimationTab::StateMachine, "📊 States"),
-                (AnimationTab::BlendTrees, "🌳 Blend Trees"),
+                (AnimationTab::Clips, "Clips"),
+                (AnimationTab::StateMachine, "States"),
+                (AnimationTab::BlendTrees, "Blend Trees"),
                 (AnimationTab::Layers, "📚 Layers"),
-                (AnimationTab::Parameters, "🔧 Parameters"),
+                (AnimationTab::Parameters, "Parameters"),
                 (AnimationTab::IK, "🦴 IK"),
-                (AnimationTab::Preview, "▶️ Preview"),
+                (AnimationTab::Preview, "> Preview"),
             ];
 
             for (tab, label) in tabs {
@@ -1143,15 +1151,15 @@ impl AnimationPanel {
 
         // Info bar
         ui.horizontal(|ui| {
-            ui.label(format!("🎬 {} clips", self.clips.len()));
+            ui.label(format!("{} clips", self.clips.len()));
             ui.separator();
             ui.label(format!(
-                "📊 {} states",
+                "{} states",
                 self.current_controller.states.len()
             ));
             ui.separator();
             ui.label(format!(
-                "🔧 {} params",
+                "{} params",
                 self.current_controller.parameters.len()
             ));
         });
@@ -1160,7 +1168,7 @@ impl AnimationPanel {
     }
 
     fn show_clips_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎬 Animation Clips");
+        ui.heading("Animation Clips");
         ui.add_space(10.0);
 
         // Clip selector
@@ -1190,7 +1198,7 @@ impl AnimationPanel {
                 self.selected_clip = Some(id);
             }
 
-            if ui.button("📋 Duplicate").clicked() {
+            if ui.button("Duplicate").clicked() {
                 let id = self.next_clip_id();
                 let mut dup = self.current_clip.clone();
                 dup.id = id;
@@ -1203,7 +1211,7 @@ impl AnimationPanel {
 
         // Clip properties
         ui.group(|ui| {
-            ui.label(RichText::new("📝 Properties").strong());
+            ui.label(RichText::new("[Edit] Properties").strong());
 
             egui::Grid::new("clip_props")
                 .num_columns(2)
@@ -1262,28 +1270,28 @@ impl AnimationPanel {
 
         // Simple timeline
         ui.group(|ui| {
-            ui.label(RichText::new("⏱️ Timeline").strong());
+            ui.label(RichText::new("⏱ Timeline").strong());
 
             // Playback controls
             ui.horizontal(|ui| {
                 if ui
                     .button(if self.preview_playing {
-                        "⏸️"
+                        "⏸"
                     } else {
-                        "▶️"
+                        "▶"
                     })
                     .clicked()
                 {
                     self.preview_playing = !self.preview_playing;
                 }
-                if ui.button("⏹️").clicked() {
+                if ui.button("⏹").clicked() {
                     self.preview_playing = false;
                     self.preview_time = 0.0;
                 }
-                if ui.button("⏮️").clicked() {
+                if ui.button("⏮").clicked() {
                     self.preview_time = 0.0;
                 }
-                if ui.button("⏭️").clicked() {
+                if ui.button("⏭").clicked() {
                     self.preview_time = self.current_clip.duration;
                 }
 
@@ -1300,34 +1308,156 @@ impl AnimationPanel {
                 );
             });
 
-            // Timeline visualization
-            let timeline_height = 60.0;
+            // === Enhanced timeline visualization ===
+            let ruler_height = 20.0;
+            let track_height = 24.0;
+            let num_curves = self.current_clip.curves.len();
+            let tracks_height = if num_curves > 0 {
+                num_curves as f32 * track_height
+            } else {
+                track_height // minimum 1 track
+            };
+            let total_height = ruler_height + tracks_height;
             let timeline_width = ui.available_width();
-            let (rect, _) = ui.allocate_exact_size(
-                Vec2::new(timeline_width, timeline_height),
+            let (rect, response) = ui.allocate_exact_size(
+                Vec2::new(timeline_width, total_height),
                 egui::Sense::click_and_drag(),
             );
 
             let painter = ui.painter();
             painter.rect_filled(rect, 4.0, Color32::from_rgb(40, 40, 45));
 
-            // Time markers
             let duration = self.current_clip.duration;
             if duration > 0.0 {
+                // --- Ruler area ---
+                let ruler_rect = egui::Rect::from_min_size(
+                    rect.min,
+                    Vec2::new(timeline_width, ruler_height),
+                );
+                painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(30, 30, 35));
+
+                // Time markers on ruler
                 let steps = 10;
                 for i in 0..=steps {
                     let t = i as f32 / steps as f32;
                     let x = rect.min.x + t * timeline_width;
+                    let tick_h = if i % 5 == 0 { 12.0 } else { 6.0 };
                     painter.line_segment(
                         [
-                            egui::Pos2::new(x, rect.min.y),
-                            egui::Pos2::new(x, rect.min.y + 10.0),
+                            egui::Pos2::new(x, ruler_rect.min.y),
+                            egui::Pos2::new(x, ruler_rect.min.y + tick_h),
                         ],
                         egui::Stroke::new(1.0, Color32::GRAY),
                     );
+                    if i % 5 == 0 {
+                        painter.text(
+                            egui::Pos2::new(x + 2.0, ruler_rect.min.y + 8.0),
+                            egui::Align2::LEFT_TOP,
+                            format!("{:.1}s", t * duration),
+                            egui::FontId::proportional(9.0),
+                            Color32::from_rgb(140, 140, 140),
+                        );
+                    }
                 }
 
-                // Playhead
+                // --- Track lanes ---
+                let tracks_top = rect.min.y + ruler_height;
+                let track_colors = [
+                    Color32::from_rgb(80, 140, 220),  // blue
+                    Color32::from_rgb(100, 190, 100),  // green
+                    Color32::from_rgb(220, 160, 60),   // orange
+                    Color32::from_rgb(180, 100, 200),  // purple
+                    Color32::from_rgb(200, 80, 80),    // red
+                ];
+
+                // Draw alternating track rows
+                for track_idx in 0..num_curves.max(1) {
+                    let track_y = tracks_top + track_idx as f32 * track_height;
+                    let bg = if track_idx % 2 == 0 {
+                        Color32::from_rgb(35, 35, 40)
+                    } else {
+                        Color32::from_rgb(42, 42, 47)
+                    };
+                    painter.rect_filled(
+                        egui::Rect::from_min_size(
+                            egui::Pos2::new(rect.min.x, track_y),
+                            Vec2::new(timeline_width, track_height),
+                        ),
+                        0.0,
+                        bg,
+                    );
+                }
+
+                // Draw track labels and keyframe diamonds
+                let diamond_size = 5.0;
+                for (curve_idx, curve) in self.current_clip.curves.iter().enumerate() {
+                    let track_y = tracks_top + curve_idx as f32 * track_height;
+                    let center_y = track_y + track_height / 2.0;
+                    let color = track_colors[curve_idx % track_colors.len()];
+
+                    // Track label
+                    let label = if curve.property_path.len() > 12 {
+                        &curve.property_path[curve.property_path.len() - 12..]
+                    } else {
+                        &curve.property_path
+                    };
+                    painter.text(
+                        egui::Pos2::new(rect.min.x + 4.0, center_y),
+                        egui::Align2::LEFT_CENTER,
+                        label,
+                        egui::FontId::proportional(10.0),
+                        Color32::from_rgb(150, 150, 150),
+                    );
+
+                    // Draw connecting line between keyframes
+                    if curve.keyframes.len() >= 2 {
+                        for pair in curve.keyframes.windows(2) {
+                            let x1 = rect.min.x + (pair[0].time / duration) * timeline_width;
+                            let x2 = rect.min.x + (pair[1].time / duration) * timeline_width;
+                            painter.line_segment(
+                                [
+                                    egui::Pos2::new(x1, center_y),
+                                    egui::Pos2::new(x2, center_y),
+                                ],
+                                egui::Stroke::new(1.0, color.linear_multiply(0.5)),
+                            );
+                        }
+                    }
+
+                    // Draw keyframe diamonds
+                    for (kf_idx, kf) in curve.keyframes.iter().enumerate() {
+                        let kf_x = rect.min.x + (kf.time / duration) * timeline_width;
+                        let is_selected = self.selected_curve == Some(curve.id)
+                            && self.selected_keyframe == Some(kf_idx);
+
+                        // Diamond shape: 4 points rotated 45°
+                        let fill = if is_selected {
+                            Color32::WHITE
+                        } else {
+                            color
+                        };
+                        let points = vec![
+                            egui::Pos2::new(kf_x, center_y - diamond_size),
+                            egui::Pos2::new(kf_x + diamond_size, center_y),
+                            egui::Pos2::new(kf_x, center_y + diamond_size),
+                            egui::Pos2::new(kf_x - diamond_size, center_y),
+                        ];
+                        painter.add(egui::Shape::convex_polygon(
+                            points,
+                            fill,
+                            egui::Stroke::new(
+                                if is_selected { 2.0 } else { 1.0 },
+                                if is_selected {
+                                    Color32::YELLOW
+                                } else {
+                                    Color32::from_rgb(200, 200, 200)
+                                },
+                            ),
+                        ));
+                    }
+                }
+
+                // --- Playhead ---
                 let playhead_x = rect.min.x + (self.preview_time / duration) * timeline_width;
                 painter.line_segment(
                     [
@@ -1336,10 +1466,156 @@ impl AnimationPanel {
                     ],
                     egui::Stroke::new(2.0, Color32::RED),
                 );
-                painter.circle_filled(
-                    egui::Pos2::new(playhead_x, rect.min.y + 5.0),
-                    5.0,
+                // Playhead handle (triangle)
+                let tri_size = 6.0;
+                painter.add(egui::Shape::convex_polygon(
+                    vec![
+                        egui::Pos2::new(playhead_x - tri_size, rect.min.y),
+                        egui::Pos2::new(playhead_x + tri_size, rect.min.y),
+                        egui::Pos2::new(playhead_x, rect.min.y + tri_size + 2.0),
+                    ],
                     Color32::RED,
+                    egui::Stroke::NONE,
+                ));
+
+                // --- Interaction ---
+                if let Some(pointer_pos) = response.interact_pointer_pos() {
+                    let rel_x = (pointer_pos.x - rect.min.x).clamp(0.0, timeline_width);
+                    let click_time = (rel_x / timeline_width) * duration;
+
+                    if response.clicked() {
+                        // Check if clicking on a keyframe diamond
+                        let mut hit_kf = false;
+                        let tracks_top = rect.min.y + ruler_height;
+                        for (ci, curve) in self.current_clip.curves.iter().enumerate() {
+                            let center_y =
+                                tracks_top + ci as f32 * track_height + track_height / 2.0;
+                            for (ki, kf) in curve.keyframes.iter().enumerate() {
+                                let kf_x =
+                                    rect.min.x + (kf.time / duration) * timeline_width;
+                                let dist = ((pointer_pos.x - kf_x).powi(2)
+                                    + (pointer_pos.y - center_y).powi(2))
+                                .sqrt();
+                                if dist <= diamond_size + 3.0 {
+                                    self.selected_curve = Some(curve.id);
+                                    self.selected_keyframe = Some(ki);
+                                    self.dragging_keyframe = true;
+                                    hit_kf = true;
+                                    break;
+                                }
+                            }
+                            if hit_kf {
+                                break;
+                            }
+                        }
+
+                        if !hit_kf {
+                            // Click on ruler = seek; click on track = deselect
+                            if pointer_pos.y < tracks_top {
+                                self.preview_time = click_time;
+                            }
+                            self.selected_curve = None;
+                            self.selected_keyframe = None;
+                            self.dragging_keyframe = false;
+                        }
+                    }
+
+                    // Drag to seek on ruler, or drag selected keyframe
+                    if response.dragged() {
+                        if self.dragging_keyframe {
+                            if let (Some(curve_id), Some(kf_idx)) =
+                                (self.selected_curve, self.selected_keyframe)
+                            {
+                                if let Some(curve) = self
+                                    .current_clip
+                                    .curves
+                                    .iter_mut()
+                                    .find(|c| c.id == curve_id)
+                                {
+                                    if let Some(kf) = curve.keyframes.get_mut(kf_idx) {
+                                        kf.time = click_time.clamp(0.0, duration);
+                                    }
+                                }
+                            }
+                        } else if pointer_pos.y < rect.min.y + ruler_height {
+                            self.preview_time = click_time;
+                        }
+                    }
+                }
+
+                if response.drag_stopped() {
+                    self.dragging_keyframe = false;
+                }
+
+                // Right-click: delete selected keyframe
+                if response.secondary_clicked() {
+                    if let (Some(curve_id), Some(kf_idx)) =
+                        (self.selected_curve, self.selected_keyframe)
+                    {
+                        if let Some(curve) = self
+                            .current_clip
+                            .curves
+                            .iter_mut()
+                            .find(|c| c.id == curve_id)
+                        {
+                            if kf_idx < curve.keyframes.len() {
+                                curve.keyframes.remove(kf_idx);
+                                self.queue_action(AnimationAction::DeleteKeyframe {
+                                    clip_id: self.current_clip.id,
+                                    keyframe_index: kf_idx,
+                                });
+                            }
+                        }
+                        self.selected_keyframe = None;
+                        self.selected_curve = None;
+                    }
+                }
+
+                // Double-click on track: add keyframe
+                if response.double_clicked() {
+                    if let Some(pointer_pos) = response.interact_pointer_pos() {
+                        let tracks_top = rect.min.y + ruler_height;
+                        if pointer_pos.y >= tracks_top {
+                            let track_idx = ((pointer_pos.y - tracks_top) / track_height) as usize;
+                            if track_idx < self.current_clip.curves.len() {
+                                let rel_x =
+                                    (pointer_pos.x - rect.min.x).clamp(0.0, timeline_width);
+                                let t = (rel_x / timeline_width) * duration;
+                                self.current_clip.curves[track_idx]
+                                    .keyframes
+                                    .push(Keyframe {
+                                        time: t,
+                                        value: 0.0,
+                                        in_tangent: 0.0,
+                                        out_tangent: 0.0,
+                                        tangent_mode: TangentMode::Auto,
+                                    });
+                                self.current_clip.curves[track_idx]
+                                    .keyframes
+                                    .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+                                let curve_id = self.current_clip.curves[track_idx].id;
+                                self.queue_action(AnimationAction::AddKeyframe {
+                                    clip_id: self.current_clip.id,
+                                    time: t,
+                                });
+                                self.selected_curve = Some(curve_id);
+                                let kf_idx = self.current_clip.curves[track_idx]
+                                    .keyframes
+                                    .iter()
+                                    .position(|k| (k.time - t).abs() < 0.001)
+                                    .unwrap_or(0);
+                                self.selected_keyframe = Some(kf_idx);
+                            }
+                        }
+                    }
+                }
+            } else {
+                painter.text(
+                    rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    "Set clip duration > 0",
+                    egui::FontId::proportional(12.0),
+                    Color32::GRAY,
                 );
             }
         });
@@ -1349,7 +1625,7 @@ impl AnimationPanel {
         // Events
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("⚡ Events").strong());
+                ui.label(RichText::new("Events").strong());
                 if ui.button("+ Add Event").clicked() {
                     self.current_clip.events.push(AnimationEvent {
                         id: self.current_clip.events.len() as u32 + 1,
@@ -1376,7 +1652,7 @@ impl AnimationPanel {
     }
 
     fn show_state_machine_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 State Machine");
+        ui.heading("State Machine");
         ui.add_space(10.0);
 
         // Controller selector
@@ -1416,7 +1692,7 @@ impl AnimationPanel {
         // State list
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("📋 States").strong());
+                ui.label(RichText::new("States").strong());
                 if ui.button("+ Add State").clicked() {
                     let id = self.next_state_id();
                     self.current_controller.states.push(AnimationState {
@@ -1438,7 +1714,7 @@ impl AnimationPanel {
                         ui.horizontal(|ui| {
                             let is_selected = self.selected_state == Some(state.id);
                             let label = if state.is_default {
-                                format!("🟢 {}", state.name)
+                                format!("[G] {}", state.name)
                             } else {
                                 format!("   {}", state.name)
                             };
@@ -1477,7 +1753,7 @@ impl AnimationPanel {
         // Transition list
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("🔀 Transitions").strong());
+                ui.label(RichText::new("Transitions").strong());
                 if ui.button("+ Add").clicked() && self.current_controller.states.len() >= 2 {
                     let from = self.current_controller.states[0].id;
                     let to = self.current_controller.states[1].id;
@@ -1525,7 +1801,7 @@ impl AnimationPanel {
     }
 
     fn show_blend_trees_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌳 Blend Trees");
+        ui.heading("Blend Trees");
         ui.add_space(10.0);
 
         // Blend tree list
@@ -1672,7 +1948,7 @@ impl AnimationPanel {
     }
 
     fn show_parameters_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔧 Parameters");
+        ui.heading("Parameters");
         ui.add_space(10.0);
 
         // Add parameter buttons
@@ -1727,7 +2003,7 @@ impl AnimationPanel {
                             ParameterType::Float => "🔢",
                             ParameterType::Int => "🔢",
                             ParameterType::Bool => "☑️",
-                            ParameterType::Trigger => "⚡",
+                            ParameterType::Trigger => "[Zap]",
                         };
 
                         ui.label(type_icon);
@@ -1884,29 +2160,29 @@ impl AnimationPanel {
     }
 
     fn show_preview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("▶️ Preview");
+        ui.heading("> Preview");
         ui.add_space(10.0);
 
         // Playback controls
         ui.group(|ui| {
-            ui.label(RichText::new("🎮 Playback").strong());
+            ui.label(RichText::new("Playback").strong());
 
             ui.horizontal(|ui| {
                 if ui
                     .button(if self.preview_playing {
-                        "⏸️ Pause"
+                        "|| Pause"
                     } else {
-                        "▶️ Play"
+                        "> Play"
                     })
                     .clicked()
                 {
                     self.preview_playing = !self.preview_playing;
                 }
-                if ui.button("⏹️ Stop").clicked() {
+                if ui.button("[] Stop").clicked() {
                     self.preview_playing = false;
                     self.preview_time = 0.0;
                 }
-                if ui.button("🔄 Reset").clicked() {
+                if ui.button("Reset").clicked() {
                     self.preview_time = 0.0;
                 }
             });
@@ -1930,7 +2206,7 @@ impl AnimationPanel {
 
         // Current state
         ui.group(|ui| {
-            ui.label(RichText::new("📊 Current State").strong());
+            ui.label(RichText::new("Current State").strong());
 
             let default_state = self
                 .current_controller
@@ -1960,7 +2236,7 @@ impl AnimationPanel {
 
         // Parameter values
         ui.group(|ui| {
-            ui.label(RichText::new("🔧 Live Parameters").strong());
+            ui.label(RichText::new("Live Parameters").strong());
 
             for param in &self.current_controller.parameters {
                 ui.horizontal(|ui| {
@@ -2467,13 +2743,15 @@ mod tests {
 
     #[test]
     fn test_animation_panel_creation() {
-        let panel = AnimationPanel::new();
+        let mut panel = AnimationPanel::new();
+        panel.create_sample_data();
         assert!(panel.clip_count() >= 6);
     }
 
     #[test]
     fn test_default_sample_data() {
-        let panel = AnimationPanel::new();
+        let mut panel = AnimationPanel::new();
+        panel.create_sample_data();
         assert!(panel.controller_count() >= 1);
         assert!(panel.state_count() >= 3);
         assert!(panel.parameter_count() >= 3);
@@ -2966,7 +3244,7 @@ mod tests {
         assert_eq!(ParameterValue::Float(0.0).icon(), "🔢");
         assert_eq!(ParameterValue::Int(0).icon(), "🔟");
         assert_eq!(ParameterValue::Bool(false).icon(), "✓");
-        assert_eq!(ParameterValue::Trigger.icon(), "⚡");
+        assert_eq!(ParameterValue::Trigger.icon(), "[Zap]");
     }
 
     #[test]
@@ -3276,5 +3554,123 @@ mod tests {
         assert_eq!(action.name(), "Create Controller");
         assert!(!action.is_playback());
         assert!(!action.is_clip_edit());
+    }
+
+    #[test]
+    fn test_keyframe_selection_defaults() {
+        let panel = AnimationPanel::new();
+        assert!(panel.selected_curve.is_none());
+        assert!(panel.selected_keyframe.is_none());
+        assert!(!panel.dragging_keyframe);
+    }
+
+    #[test]
+    fn test_keyframe_selection_state() {
+        let mut panel = AnimationPanel::new();
+        panel.selected_curve = Some(1);
+        panel.selected_keyframe = Some(2);
+        panel.dragging_keyframe = true;
+        assert_eq!(panel.selected_curve, Some(1));
+        assert_eq!(panel.selected_keyframe, Some(2));
+        assert!(panel.dragging_keyframe);
+    }
+
+    #[test]
+    fn test_animation_curve_keyframe_sort() {
+        let mut curve = AnimationCurve {
+            id: 1,
+            property_path: "position.x".to_string(),
+            keyframes: vec![
+                Keyframe {
+                    time: 2.0,
+                    value: 10.0,
+                    in_tangent: 0.0,
+                    out_tangent: 0.0,
+                    tangent_mode: TangentMode::Auto,
+                },
+                Keyframe {
+                    time: 0.5,
+                    value: 5.0,
+                    in_tangent: 0.0,
+                    out_tangent: 0.0,
+                    tangent_mode: TangentMode::Linear,
+                },
+                Keyframe {
+                    time: 1.0,
+                    value: 7.0,
+                    in_tangent: 0.0,
+                    out_tangent: 0.0,
+                    tangent_mode: TangentMode::Auto,
+                },
+            ],
+        };
+        curve
+            .keyframes
+            .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+        assert!((curve.keyframes[0].time - 0.5).abs() < 0.001);
+        assert!((curve.keyframes[1].time - 1.0).abs() < 0.001);
+        assert!((curve.keyframes[2].time - 2.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_clip_with_curves_and_keyframes() {
+        let clip = AnimationClip {
+            id: 1,
+            name: "Walk".to_string(),
+            duration: 2.0,
+            fps: 30.0,
+            loop_mode: LoopMode::Loop,
+            events: vec![],
+            curves: vec![
+                AnimationCurve {
+                    id: 1,
+                    property_path: "position.x".to_string(),
+                    keyframes: vec![
+                        Keyframe {
+                            time: 0.0,
+                            value: 0.0,
+                            in_tangent: 0.0,
+                            out_tangent: 0.0,
+                            tangent_mode: TangentMode::Auto,
+                        },
+                        Keyframe {
+                            time: 1.0,
+                            value: 5.0,
+                            in_tangent: 0.0,
+                            out_tangent: 0.0,
+                            tangent_mode: TangentMode::Linear,
+                        },
+                    ],
+                },
+                AnimationCurve {
+                    id: 2,
+                    property_path: "rotation.y".to_string(),
+                    keyframes: vec![
+                        Keyframe {
+                            time: 0.0,
+                            value: 0.0,
+                            in_tangent: 0.0,
+                            out_tangent: 0.0,
+                            tangent_mode: TangentMode::Auto,
+                        },
+                    ],
+                },
+            ],
+        };
+        assert_eq!(clip.curves.len(), 2);
+        assert_eq!(clip.curves[0].keyframes.len(), 2);
+        assert_eq!(clip.curves[1].keyframes.len(), 1);
+        assert_eq!(clip.curves[0].property_path, "position.x");
+    }
+
+    #[test]
+    fn test_keyframe_clamp_time() {
+        let duration = 3.0_f32;
+        let raw_time = 5.0_f32;
+        let clamped = raw_time.clamp(0.0, duration);
+        assert!((clamped - 3.0).abs() < 0.001);
+
+        let negative = (-1.0_f32).clamp(0.0, duration);
+        assert!((negative - 0.0).abs() < 0.001);
     }
 }

@@ -28,20 +28,20 @@ impl std::fmt::Display for EditorTheme {
 impl EditorTheme {
     pub fn name(&self) -> &str {
         match self {
-            EditorTheme::Dark => "🌙 Dark",
-            EditorTheme::Light => "☀️ Light",
-            EditorTheme::HighContrast => "👁️ High Contrast",
-            EditorTheme::Custom => "🎨 Custom",
+            EditorTheme::Dark => "[Moon] Dark",
+            EditorTheme::Light => "[Sun] Light",
+            EditorTheme::HighContrast => "High Contrast",
+            EditorTheme::Custom => "Custom",
         }
     }
 
     /// Returns the icon for this theme
     pub fn icon(&self) -> &str {
         match self {
-            EditorTheme::Dark => "🌙",
-            EditorTheme::Light => "☀️",
+            EditorTheme::Dark => "[Moon]",
+            EditorTheme::Light => "[Sun]",
             EditorTheme::HighContrast => "👁️",
-            EditorTheme::Custom => "🎨",
+            EditorTheme::Custom => "[Art]",
         }
     }
 
@@ -181,10 +181,10 @@ impl std::fmt::Display for LayoutPreset {
 impl LayoutPreset {
     pub fn name(&self) -> &str {
         match self {
-            LayoutPreset::Default => "📐 Default",
+            LayoutPreset::Default => "[Sq] Default",
             LayoutPreset::Modeling => "🗿 Modeling",
-            LayoutPreset::Animation => "🎬 Animation",
-            LayoutPreset::Scripting => "💻 Scripting",
+            LayoutPreset::Animation => "Animation",
+            LayoutPreset::Scripting => "Scripting",
             LayoutPreset::Debugging => "🐛 Debugging",
             LayoutPreset::Compact => "📱 Compact",
         }
@@ -193,10 +193,10 @@ impl LayoutPreset {
     /// Returns the icon for this layout preset
     pub fn icon(&self) -> &str {
         match self {
-            LayoutPreset::Default => "📐",
+            LayoutPreset::Default => "[Sq]",
             LayoutPreset::Modeling => "🗿",
-            LayoutPreset::Animation => "🎬",
-            LayoutPreset::Scripting => "💻",
+            LayoutPreset::Animation => "[Anim]",
+            LayoutPreset::Scripting => "[PC]",
             LayoutPreset::Debugging => "🐛",
             LayoutPreset::Compact => "📱",
         }
@@ -433,7 +433,7 @@ impl ThemeManagerPanel {
     }
 
     pub fn show(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 Theme & Layout");
+        ui.heading("Theme & Layout");
         ui.add_space(8.0);
 
         // Theme selection
@@ -456,7 +456,7 @@ impl ThemeManagerPanel {
         // Custom colors (only show when Custom theme is selected)
         if self.preferences.theme == EditorTheme::Custom || self.show_custom_colors {
             ui.add_space(4.0);
-            ui.collapsing("🎨 Custom Colors", |ui| {
+            ui.collapsing("Custom Colors", |ui| {
                 let colors = &mut self.preferences.custom_colors;
 
                 Self::color_picker(ui, "Background", &mut colors.background);
@@ -528,7 +528,7 @@ impl ThemeManagerPanel {
         ui.add_space(8.0);
 
         // Panel visibility toggles
-        ui.collapsing("📐 Panel Visibility", |ui| {
+        ui.collapsing("[Sq] Panel Visibility", |ui| {
             let layout = &mut self.preferences.layout_state;
 
             if ui
@@ -587,7 +587,7 @@ impl ThemeManagerPanel {
             if ui
                 .add_enabled(
                     self.unsaved_changes,
-                    egui::Button::new("💾 Save Preferences"),
+                    egui::Button::new("Save Preferences"),
                 )
                 .clicked()
             {
@@ -598,7 +598,7 @@ impl ThemeManagerPanel {
                 }
             }
 
-            if ui.button("🔄 Reset to Default").clicked() {
+            if ui.button("Reset to Default").clicked() {
                 self.preferences = EditorPreferences::default();
                 self.unsaved_changes = true;
             }
@@ -607,7 +607,7 @@ impl ThemeManagerPanel {
         if self.unsaved_changes {
             ui.add_space(4.0);
             ui.label(
-                egui::RichText::new("⚠️ Unsaved changes")
+                egui::RichText::new("Unsaved changes")
                     .color(Color32::YELLOW)
                     .small(),
             );
@@ -639,10 +639,10 @@ mod tests {
 
     #[test]
     fn test_editor_theme_names() {
-        assert_eq!(EditorTheme::Dark.name(), "🌙 Dark");
-        assert_eq!(EditorTheme::Light.name(), "☀️ Light");
-        assert_eq!(EditorTheme::HighContrast.name(), "👁️ High Contrast");
-        assert_eq!(EditorTheme::Custom.name(), "🎨 Custom");
+        assert_eq!(EditorTheme::Dark.name(), "[Moon] Dark");
+        assert_eq!(EditorTheme::Light.name(), "[Sun] Light");
+        assert_eq!(EditorTheme::HighContrast.name(), "High Contrast");
+        assert_eq!(EditorTheme::Custom.name(), "Custom");
     }
 
     #[test]
@@ -738,10 +738,10 @@ mod tests {
 
     #[test]
     fn test_layout_preset_names() {
-        assert_eq!(LayoutPreset::Default.name(), "📐 Default");
+        assert_eq!(LayoutPreset::Default.name(), "[Sq] Default");
         assert_eq!(LayoutPreset::Modeling.name(), "🗿 Modeling");
-        assert_eq!(LayoutPreset::Animation.name(), "🎬 Animation");
-        assert_eq!(LayoutPreset::Scripting.name(), "💻 Scripting");
+        assert_eq!(LayoutPreset::Animation.name(), "Animation");
+        assert_eq!(LayoutPreset::Scripting.name(), "Scripting");
         assert_eq!(LayoutPreset::Debugging.name(), "🐛 Debugging");
         assert_eq!(LayoutPreset::Compact.name(), "📱 Compact");
     }
@@ -1130,10 +1130,10 @@ mod tests {
 
     #[test]
     fn test_editor_theme_icon() {
-        assert_eq!(EditorTheme::Dark.icon(), "🌙");
-        assert_eq!(EditorTheme::Light.icon(), "☀️");
+        assert_eq!(EditorTheme::Dark.icon(), "[Moon]");
+        assert_eq!(EditorTheme::Light.icon(), "[Sun]");
         assert_eq!(EditorTheme::HighContrast.icon(), "👁️");
-        assert_eq!(EditorTheme::Custom.icon(), "🎨");
+        assert_eq!(EditorTheme::Custom.icon(), "[Art]");
     }
 
     #[test]
@@ -1176,10 +1176,10 @@ mod tests {
 
     #[test]
     fn test_layout_preset_icon() {
-        assert_eq!(LayoutPreset::Default.icon(), "📐");
+        assert_eq!(LayoutPreset::Default.icon(), "[Sq]");
         assert_eq!(LayoutPreset::Modeling.icon(), "🗿");
-        assert_eq!(LayoutPreset::Animation.icon(), "🎬");
-        assert_eq!(LayoutPreset::Scripting.icon(), "💻");
+        assert_eq!(LayoutPreset::Animation.icon(), "[Anim]");
+        assert_eq!(LayoutPreset::Scripting.icon(), "[PC]");
         assert_eq!(LayoutPreset::Debugging.icon(), "🐛");
         assert_eq!(LayoutPreset::Compact.icon(), "📱");
     }

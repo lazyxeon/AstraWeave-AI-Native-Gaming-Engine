@@ -60,8 +60,8 @@ impl Tonemapper {
             Tonemapper::None => "⚫",
             Tonemapper::Reinhard => "🌈",
             Tonemapper::ACES => "🎞️",
-            Tonemapper::Filmic => "🎬",
-            Tonemapper::AgX => "🖼️",
+            Tonemapper::Filmic => "[Anim]",
+            Tonemapper::AgX => "[Img]",
             Tonemapper::Neutral => "⚖️",
         }
     }
@@ -122,9 +122,9 @@ impl AntiAliasing {
     pub fn icon(&self) -> &'static str {
         match self {
             AntiAliasing::None => "⚫",
-            AntiAliasing::FXAA => "🖼️",
-            AntiAliasing::SMAA => "🖼️",
-            AntiAliasing::TAA => "⏱️",
+            AntiAliasing::FXAA => "[Img]",
+            AntiAliasing::SMAA => "[Img]",
+            AntiAliasing::TAA => "[Time]",
             AntiAliasing::MSAA2x => "□",
             AntiAliasing::MSAA4x => "□",
             AntiAliasing::MSAA8x => "□",
@@ -185,8 +185,8 @@ impl DofMode {
     pub fn icon(&self) -> &'static str {
         match self {
             DofMode::Disabled => "⚫",
-            DofMode::Gaussian => "🌫️",
-            DofMode::Bokeh => "✨",
+            DofMode::Gaussian => "[Fog]",
+            DofMode::Bokeh => "[Fx]",
             DofMode::CircleOfConfusion => "○",
         }
     }
@@ -638,13 +638,13 @@ impl PostProcessTab {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            PostProcessTab::Overview => "📋",
-            PostProcessTab::Bloom => "✨",
+            PostProcessTab::Overview => "[List]",
+            PostProcessTab::Bloom => "[Fx]",
             PostProcessTab::DepthOfField => "📷",
             PostProcessTab::MotionBlur => "🎿",
-            PostProcessTab::ColorGrading => "🎨",
+            PostProcessTab::ColorGrading => "[Art]",
             PostProcessTab::Effects => "🌟",
-            PostProcessTab::Presets => "💾",
+            PostProcessTab::Presets => "[Save]",
         }
     }
 }
@@ -674,7 +674,7 @@ pub struct PostProcessPanel {
 
 impl Default for PostProcessPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: PostProcessTab::Overview,
 
             profiles: Vec::new(),
@@ -691,7 +691,6 @@ impl Default for PostProcessPanel {
             next_id: 1,
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -779,13 +778,13 @@ impl PostProcessPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (PostProcessTab::Overview, "📊 Overview"),
-                (PostProcessTab::Bloom, "✨ Bloom"),
+                (PostProcessTab::Overview, "Overview"),
+                (PostProcessTab::Bloom, "Bloom"),
                 (PostProcessTab::DepthOfField, "📷 DoF"),
-                (PostProcessTab::MotionBlur, "💨 Motion"),
-                (PostProcessTab::ColorGrading, "🎨 Color"),
-                (PostProcessTab::Effects, "🎭 Effects"),
-                (PostProcessTab::Presets, "📋 Presets"),
+                (PostProcessTab::MotionBlur, "[Dash] Motion"),
+                (PostProcessTab::ColorGrading, "Color"),
+                (PostProcessTab::Effects, "Effects"),
+                (PostProcessTab::Presets, "Presets"),
             ];
 
             for (tab, label) in tabs {
@@ -804,7 +803,7 @@ impl PostProcessPanel {
 
         // Profile info
         ui.horizontal(|ui| {
-            ui.label(format!("🎬 {}", self.current_profile.name));
+            ui.label(format!("{}", self.current_profile.name));
 
             ui.separator();
 
@@ -820,7 +819,7 @@ impl PostProcessPanel {
     }
 
     fn show_overview_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Post-Processing Overview");
+        ui.heading("Post-Processing Overview");
         ui.add_space(10.0);
 
         // Profile selector
@@ -854,7 +853,7 @@ impl PostProcessPanel {
                 self.selected_profile = Some(id);
             }
 
-            if ui.button("📋 Duplicate").clicked() {
+            if ui.button("Duplicate").clicked() {
                 let id = self.next_id();
                 let mut dup = self.current_profile.clone();
                 dup.id = id;
@@ -870,7 +869,7 @@ impl PostProcessPanel {
             .show(ui, |ui| {
                 // Global settings
                 ui.group(|ui| {
-                    ui.label(RichText::new("🌐 Global Settings").strong());
+                    ui.label(RichText::new("Global Settings").strong());
 
                     egui::Grid::new("global_settings")
                         .num_columns(2)
@@ -942,17 +941,17 @@ impl PostProcessPanel {
 
                 // Effect status summary
                 ui.group(|ui| {
-                    ui.label(RichText::new("📋 Effect Status").strong());
+                    ui.label(RichText::new("Effect Status").strong());
 
                     let effects = [
-                        ("✨ Bloom", self.current_profile.bloom.enabled),
+                        ("Bloom", self.current_profile.bloom.enabled),
                         (
                             "📷 Depth of Field",
                             self.current_profile.dof.mode != DofMode::Disabled,
                         ),
-                        ("💨 Motion Blur", self.current_profile.motion_blur.enabled),
+                        ("[Dash] Motion Blur", self.current_profile.motion_blur.enabled),
                         (
-                            "🎨 Color Grading",
+                            "Color Grading",
                             self.current_profile.color_grading.enabled,
                         ),
                         ("🌑 Ambient Occlusion", self.current_profile.ao.enabled),
@@ -962,7 +961,7 @@ impl PostProcessPanel {
                             "🌈 Chromatic Aberration",
                             self.current_profile.chromatic_aberration.enabled,
                         ),
-                        ("🎬 Film Grain", self.current_profile.film_grain.enabled),
+                        ("Film Grain", self.current_profile.film_grain.enabled),
                     ];
 
                     for (name, enabled) in effects {
@@ -981,7 +980,7 @@ impl PostProcessPanel {
     }
 
     fn show_bloom_tab(&mut self, ui: &mut Ui) {
-        ui.heading("✨ Bloom");
+        ui.heading("Bloom");
         ui.add_space(10.0);
 
         ui.checkbox(&mut self.current_profile.bloom.enabled, "Enabled");
@@ -1043,7 +1042,7 @@ impl PostProcessPanel {
                     ui.horizontal(|ui| {
                         ui.label("Texture:");
                         ui.text_edit_singleline(&mut self.current_profile.bloom.dirt_mask_path);
-                        if ui.button("📂").clicked() {
+                        if ui.button("[Open]").clicked() {
                             // Open file dialog
                         }
                     });
@@ -1142,7 +1141,7 @@ impl PostProcessPanel {
     }
 
     fn show_motion_blur_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💨 Motion Blur");
+        ui.heading("[Dash] Motion Blur");
         ui.add_space(10.0);
 
         ui.checkbox(&mut self.current_profile.motion_blur.enabled, "Enabled");
@@ -1190,7 +1189,7 @@ impl PostProcessPanel {
     }
 
     fn show_color_grading_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎨 Color Grading");
+        ui.heading("Color Grading");
         ui.add_space(10.0);
 
         ui.checkbox(&mut self.current_profile.color_grading.enabled, "Enabled");
@@ -1201,7 +1200,7 @@ impl PostProcessPanel {
                 .show(ui, |ui| {
                     // White balance
                     ui.group(|ui| {
-                        ui.label(RichText::new("☀️ White Balance").strong());
+                        ui.label(RichText::new("[Sun] White Balance").strong());
 
                         egui::Grid::new("white_balance")
                             .num_columns(2)
@@ -1318,7 +1317,7 @@ impl PostProcessPanel {
                                 ui.text_edit_singleline(
                                     &mut self.current_profile.color_grading.lut_path,
                                 );
-                                if ui.button("📂").clicked() {
+                                if ui.button("[Open]").clicked() {
                                     // Open file dialog
                                 }
                             });
@@ -1337,7 +1336,7 @@ impl PostProcessPanel {
     }
 
     fn show_effects_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎭 Screen Effects");
+        ui.heading("Screen Effects");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1503,7 +1502,7 @@ impl PostProcessPanel {
                 ui.group(|ui| {
                     ui.checkbox(
                         &mut self.current_profile.film_grain.enabled,
-                        RichText::new("🎬 Film Grain").strong(),
+                        RichText::new("Film Grain").strong(),
                     );
 
                     if self.current_profile.film_grain.enabled {
@@ -1531,12 +1530,12 @@ impl PostProcessPanel {
     }
 
     fn show_presets_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📋 Presets");
+        ui.heading("Presets");
         ui.add_space(10.0);
 
         // Filter
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.text_edit_singleline(&mut self.preset_filter);
         });
 
@@ -1585,13 +1584,13 @@ impl PostProcessPanel {
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
-            if ui.button("💾 Save as Preset").clicked() {
+            if ui.button("Save as Preset").clicked() {
                 // Save current profile as preset
             }
             if ui.button("📤 Export").clicked() {
                 // Export profile
             }
-            if ui.button("📥 Import").clicked() {
+            if ui.button("Import").clicked() {
                 // Import profile
             }
         });
@@ -1669,7 +1668,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_data() {
-        let panel = PostProcessPanel::new();
+        let mut panel = PostProcessPanel::new();
+        panel.create_sample_data();
         assert!(panel.profile_count() >= 3);
         assert!(panel.preset_count() >= 10);
     }

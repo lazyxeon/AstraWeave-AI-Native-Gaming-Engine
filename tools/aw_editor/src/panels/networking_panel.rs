@@ -52,9 +52,9 @@ impl NetworkRole {
     pub fn icon(&self) -> &'static str {
         match self {
             NetworkRole::Offline => "📴",
-            NetworkRole::Server => "🖥️",
-            NetworkRole::Client => "💻",
-            NetworkRole::ListenServer => "🎮",
+            NetworkRole::Server => "[Mon]",
+            NetworkRole::Client => "[PC]",
+            NetworkRole::ListenServer => "[Gp]",
         }
     }
 
@@ -128,10 +128,10 @@ impl ConnectionState {
     pub fn icon(&self) -> &'static str {
         match self {
             ConnectionState::Disconnected => "⚫",
-            ConnectionState::Connecting => "🔄",
-            ConnectionState::Connected => "🟢",
-            ConnectionState::Reconnecting => "🟡",
-            ConnectionState::Error => "🔴",
+            ConnectionState::Connecting => "[Sync]",
+            ConnectionState::Connected => "[G]",
+            ConnectionState::Reconnecting => "[Y]",
+            ConnectionState::Error => "[R]",
         }
     }
 
@@ -190,10 +190,10 @@ impl InterestPolicy {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            InterestPolicy::Full => "🌐",
+            InterestPolicy::Full => "[Net]",
             InterestPolicy::Radius => "⭕",
             InterestPolicy::FieldOfView => "👁️",
-            InterestPolicy::FieldOfViewWithLOS => "🔍",
+            InterestPolicy::FieldOfViewWithLOS => "[Srch]",
             InterestPolicy::Custom => "⚙️",
         }
     }
@@ -355,9 +355,9 @@ impl NetworkTab {
     pub fn icon(&self) -> &'static str {
         match self {
             NetworkTab::Connection => "🔌",
-            NetworkTab::Clients => "👥",
-            NetworkTab::Replication => "🔄",
-            NetworkTab::Statistics => "📊",
+            NetworkTab::Clients => "[Grp]",
+            NetworkTab::Replication => "[Sync]",
+            NetworkTab::Statistics => "[Chart]",
             NetworkTab::Debug => "🐛",
         }
     }
@@ -538,9 +538,9 @@ impl NetworkingPanel {
         ui.horizontal(|ui| {
             let tabs = [
                 (NetworkTab::Connection, "🔌 Connection"),
-                (NetworkTab::Clients, "👥 Clients"),
-                (NetworkTab::Replication, "🔄 Replication"),
-                (NetworkTab::Statistics, "📊 Statistics"),
+                (NetworkTab::Clients, "[Grp] Clients"),
+                (NetworkTab::Replication, "Replication"),
+                (NetworkTab::Statistics, "Statistics"),
                 (NetworkTab::Debug, "🐛 Debug"),
             ];
 
@@ -617,18 +617,18 @@ impl NetworkingPanel {
         if self.role != NetworkRole::Offline {
             ui.horizontal(|ui| match self.connection_state {
                 ConnectionState::Disconnected | ConnectionState::Error => {
-                    if ui.button("▶ Start").clicked() {
+                    if ui.button("> Start").clicked() {
                         self.start_networking();
                     }
                 }
                 ConnectionState::Connecting | ConnectionState::Reconnecting => {
-                    if ui.button("⏹ Cancel").clicked() {
+                    if ui.button("[] Cancel").clicked() {
                         self.stop_networking();
                     }
                     ui.spinner();
                 }
                 ConnectionState::Connected => {
-                    if ui.button("⏹ Stop").clicked() {
+                    if ui.button("[] Stop").clicked() {
                         self.stop_networking();
                     }
                     ui.label(format!("Uptime: {:.0}s", self.uptime_seconds));
@@ -639,7 +639,7 @@ impl NetworkingPanel {
         // Error display
         if let Some(ref error) = self.error_message {
             ui.add_space(10.0);
-            ui.colored_label(Color32::RED, format!("❌ Error: {}", error));
+            ui.colored_label(Color32::RED, format!("Error: {}", error));
         }
     }
 
@@ -714,7 +714,7 @@ impl NetworkingPanel {
     }
 
     fn show_clients_tab(&mut self, ui: &mut Ui) {
-        ui.heading("👥 Connected Clients");
+        ui.heading("[Grp] Connected Clients");
         ui.add_space(10.0);
 
         if self.role == NetworkRole::Client {
@@ -758,7 +758,7 @@ impl NetworkingPanel {
                 self.clients.len(),
                 self.max_clients
             ));
-            if ui.button("🔄 Refresh").clicked() {
+            if ui.button("Refresh").clicked() {
                 // Refresh client list
             }
         });
@@ -863,7 +863,7 @@ impl NetworkingPanel {
     }
 
     fn show_replication_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔄 Entity Replication");
+        ui.heading("Entity Replication");
         ui.add_space(10.0);
 
         // Interest policy
@@ -976,7 +976,7 @@ impl NetworkingPanel {
     }
 
     fn show_statistics_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📊 Network Statistics");
+        ui.heading("Network Statistics");
         ui.add_space(10.0);
 
         // Bandwidth stats
@@ -1079,7 +1079,7 @@ impl NetworkingPanel {
         // Lag simulation
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("🌐 Lag Simulation").strong());
+                ui.label(RichText::new("Lag Simulation").strong());
                 ui.checkbox(&mut self.lag_sim.enabled, "Enable");
             });
 
@@ -1114,12 +1114,12 @@ impl NetworkingPanel {
 
                 ui.add_space(5.0);
                 ui.horizontal(|ui| {
-                    if ui.button("🏠 Home (0ms)").clicked() {
+                    if ui.button("Home (0ms)").clicked() {
                         self.lag_sim.latency_ms = 0;
                         self.lag_sim.jitter_ms = 0;
                         self.lag_sim.packet_loss_percent = 0.0;
                     }
-                    if ui.button("🌐 Broadband (20ms)").clicked() {
+                    if ui.button("Broadband (20ms)").clicked() {
                         self.lag_sim.latency_ms = 20;
                         self.lag_sim.jitter_ms = 5;
                         self.lag_sim.packet_loss_percent = 0.5;
@@ -1187,13 +1187,13 @@ impl NetworkingPanel {
                 if ui.button("📤 Force Sync").clicked() {
                     // Force full snapshot sync
                 }
-                if ui.button("🔄 Reconnect All").clicked() {
+                if ui.button("Reconnect All").clicked() {
                     // Reconnect all clients
                 }
-                if ui.button("📊 Export Stats").clicked() {
+                if ui.button("Export Stats").clicked() {
                     // Export statistics to file
                 }
-                if ui.button("🧪 Send Test Packet").clicked() {
+                if ui.button("[Test] Send Test Packet").clicked() {
                     // Send test packet
                 }
             });
@@ -1418,9 +1418,9 @@ mod tests {
     #[test]
     fn test_network_role_icons() {
         assert_eq!(NetworkRole::Offline.icon(), "📴");
-        assert_eq!(NetworkRole::Server.icon(), "🖥️");
-        assert_eq!(NetworkRole::Client.icon(), "💻");
-        assert_eq!(NetworkRole::ListenServer.icon(), "🎮");
+        assert_eq!(NetworkRole::Server.icon(), "[Mon]");
+        assert_eq!(NetworkRole::Client.icon(), "[PC]");
+        assert_eq!(NetworkRole::ListenServer.icon(), "[Gp]");
     }
 
     #[test]
@@ -1461,10 +1461,10 @@ mod tests {
     #[test]
     fn test_connection_state_icons() {
         assert_eq!(ConnectionState::Disconnected.icon(), "⚫");
-        assert_eq!(ConnectionState::Connecting.icon(), "🔄");
-        assert_eq!(ConnectionState::Connected.icon(), "🟢");
-        assert_eq!(ConnectionState::Reconnecting.icon(), "🟡");
-        assert_eq!(ConnectionState::Error.icon(), "🔴");
+        assert_eq!(ConnectionState::Connecting.icon(), "[Sync]");
+        assert_eq!(ConnectionState::Connected.icon(), "[G]");
+        assert_eq!(ConnectionState::Reconnecting.icon(), "[Y]");
+        assert_eq!(ConnectionState::Error.icon(), "[R]");
     }
 
     #[test]
@@ -1843,8 +1843,8 @@ mod tests {
     // NEW: NetworkRole Display and helper tests (only non-duplicates)
     #[test]
     fn test_network_role_display() {
-        assert_eq!(format!("{}", NetworkRole::Server), "🖥️ Server");
-        assert_eq!(format!("{}", NetworkRole::Client), "💻 Client");
+        assert_eq!(format!("{}", NetworkRole::Server), "[Mon] Server");
+        assert_eq!(format!("{}", NetworkRole::Client), "[PC] Client");
     }
 
     #[test]
@@ -1885,8 +1885,8 @@ mod tests {
 
     #[test]
     fn test_connection_state_display() {
-        assert_eq!(format!("{}", ConnectionState::Connected), "🟢 Connected");
-        assert_eq!(format!("{}", ConnectionState::Error), "🔴 Error");
+        assert_eq!(format!("{}", ConnectionState::Connected), "[G] Connected");
+        assert_eq!(format!("{}", ConnectionState::Error), "[R] Error");
     }
 
     #[test]
@@ -1924,7 +1924,7 @@ mod tests {
     #[test]
     fn test_interest_policy_display() {
         assert_eq!(format!("{}", InterestPolicy::Radius), "⭕ Radius");
-        assert_eq!(format!("{}", InterestPolicy::Full), "🌐 Full");
+        assert_eq!(format!("{}", InterestPolicy::Full), "[Net] Full");
     }
 
     #[test]
@@ -2008,7 +2008,7 @@ mod tests {
     #[test]
     fn test_network_tab_display() {
         assert_eq!(format!("{}", NetworkTab::Connection), "🔌 Connection");
-        assert_eq!(format!("{}", NetworkTab::Statistics), "📊 Statistics");
+        assert_eq!(format!("{}", NetworkTab::Statistics), "[Chart] Statistics");
     }
 
     #[test]
@@ -2020,7 +2020,7 @@ mod tests {
     #[test]
     fn test_network_tab_icon() {
         assert_eq!(NetworkTab::Debug.icon(), "🐛");
-        assert_eq!(NetworkTab::Clients.icon(), "👥");
+        assert_eq!(NetworkTab::Clients.icon(), "[Grp]");
     }
 
     #[test]

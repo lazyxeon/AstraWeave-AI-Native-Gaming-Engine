@@ -158,9 +158,9 @@ impl DisplayMode {
     /// Get icon for this mode
     pub fn icon(&self) -> &str {
         match self {
-            Self::Albedo => "🎨",
+            Self::Albedo => "[Art]",
             Self::Normal => "↗️",
-            Self::Orm => "🔧",
+            Self::Orm => "[Wrn]",
             Self::Split => "⊞",
         }
     }
@@ -183,7 +183,7 @@ impl DisplayMode {
 
 impl std::fmt::Display for DisplayMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -219,9 +219,9 @@ impl ChannelFilter {
     pub fn icon(&self) -> &str {
         match self {
             Self::All => "🔳",
-            Self::Red => "🔴",
-            Self::Green => "🟢",
-            Self::Blue => "🔵",
+            Self::Red => "[R]",
+            Self::Green => "[G]",
+            Self::Blue => "[B]",
             Self::Alpha => "⚪",
         }
     }
@@ -245,7 +245,7 @@ impl ChannelFilter {
 
 impl std::fmt::Display for ChannelFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -286,8 +286,8 @@ impl ColorSpace {
     /// Get icon for this color space
     pub fn icon(&self) -> &str {
         match self {
-            Self::Linear => "📊",
-            Self::Srgb => "🖥️",
+            Self::Linear => "[Chart]",
+            Self::Srgb => "[Mon]",
         }
     }
 
@@ -307,7 +307,7 @@ impl ColorSpace {
 
 impl std::fmt::Display for ColorSpace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "{} {}", self.icon(), self.name())
     }
 }
 
@@ -628,10 +628,10 @@ impl MaterialInspector {
                                 path.display()
                             );
                             if let Err(e) = self.load_material(&path) {
-                                self.status = format!("⚠ Hot-reload failed: {}", e);
+                                self.status = format!("[!] Hot-reload failed: {}", e);
                             } else {
                                 self.status = format!(
-                                    "✅ Hot-reloaded: {} ({})",
+                                    "Hot-reloaded: {} ({})",
                                     path.file_name().unwrap_or_default().to_string_lossy(),
                                     self.reload_count + 1
                                 );
@@ -670,10 +670,10 @@ impl MaterialInspector {
                         // Reload the entire material (simplest approach)
                         if let Some(mat_path) = self.material_path.clone() {
                             if let Err(e) = self.load_material(&mat_path) {
-                                self.status = format!("⚠ Texture reload failed: {}", e);
+                                self.status = format!("[!] Texture reload failed: {}", e);
                             } else {
                                 self.status = format!(
-                                    "✅ Texture hot-reloaded: {}",
+                                    "Texture hot-reloaded: {}",
                                     path.file_name().unwrap_or_default().to_string_lossy()
                                 );
                                 self.last_reload_time = Some(std::time::Instant::now());
@@ -888,7 +888,7 @@ impl MaterialInspector {
         ui.add_space(8.0);
 
         // Task 2.3: Material Browser & History
-        ui.collapsing("📁 Material Browser", |ui| {
+        ui.collapsing("Material Browser", |ui| {
             ui.add_space(4.0);
 
             // History dropdown
@@ -926,7 +926,7 @@ impl MaterialInspector {
                     .button(if self.show_browser {
                         "▼ Hide Browser"
                     } else {
-                        "▶ Show Browser"
+                        "> Show Browser"
                     })
                     .on_hover_text("Toggle material list visibility")
                     .clicked()
@@ -934,7 +934,7 @@ impl MaterialInspector {
                     self.show_browser = !self.show_browser;
                 }
                 if ui
-                    .button("🔄 Refresh")
+                    .button("Refresh")
                     .on_hover_text("Rescan assets/materials/ directory")
                     .clicked()
                 {
@@ -956,7 +956,7 @@ impl MaterialInspector {
                         if self.available_materials.is_empty() {
                             ui.colored_label(
                                 egui::Color32::from_rgb(200, 150, 100),
-                                "⚠ No materials found in assets/materials/",
+                                "[!] No materials found in assets/materials/",
                             );
                             ui.label("Create .toml files or click Refresh to scan again.");
                         } else {
@@ -1004,7 +1004,7 @@ impl MaterialInspector {
         // File picker (legacy, kept for compatibility)
         ui.horizontal(|ui| {
             if ui
-                .button("📂 Load Demo Material")
+                .button("Load Demo Material")
                 .on_hover_text("Load grassland_demo.toml (for quick testing)")
                 .clicked()
             {
@@ -1012,18 +1012,18 @@ impl MaterialInspector {
                 if let Err(e) =
                     self.load_material(Path::new("assets/materials/terrain/grassland_demo.toml"))
                 {
-                    self.status = format!("❌ Error: {}", e);
+                    self.status = format!("Error: {}", e);
                 } else {
-                    self.status = "✅ Loaded: grassland_demo.toml".to_string();
+                    self.status = "Loaded: grassland_demo.toml".to_string();
                 }
             }
 
             // Status with color coding
-            let status_color = if self.status.starts_with("✅") {
+            let status_color = if self.status.starts_with("Loaded") || self.status.starts_with("Hot-reloaded") || self.status.starts_with("Texture hot-reloaded") {
                 egui::Color32::from_rgb(100, 200, 100)
-            } else if self.status.starts_with("⚠") {
+            } else if self.status.starts_with("[!]") {
                 egui::Color32::from_rgb(200, 150, 100)
-            } else if self.status.starts_with("❌") {
+            } else if self.status.starts_with("Error") {
                 egui::Color32::from_rgb(200, 100, 100)
             } else {
                 egui::Color32::GRAY
@@ -1033,7 +1033,7 @@ impl MaterialInspector {
             // Hot-reload indicator (Task 3)
             if self.file_watcher.is_some() {
                 ui.add_space(8.0);
-                ui.label("🔄").on_hover_text(format!(
+                ui.label("Watching").on_hover_text(format!(
                     "Hot-reload: ENABLED\nReload count: {}\nLast reload: {}",
                     self.reload_count,
                     self.last_reload_time
@@ -1100,7 +1100,7 @@ impl MaterialInspector {
         ui.add_space(8.0);
 
         // Task 4: Debug UI components
-        ui.collapsing("🔧 Debug Tools", |ui| {
+        ui.collapsing("Debug Tools", |ui| {
             ui.add_space(4.0);
 
             // UV Grid overlay
@@ -1227,8 +1227,13 @@ impl MaterialInspector {
                 ui.label("No validation results");
             } else {
                 for result in &self.validation_results {
-                    let icon = if result.passed { "✅" } else { "❌" };
-                    ui.label(format!("{} {}", icon, result.asset_path));
+                    let color = if result.passed {
+                        egui::Color32::from_rgb(100, 200, 100)
+                    } else {
+                        egui::Color32::from_rgb(200, 100, 100)
+                    };
+                    let prefix = if result.passed { "PASS" } else { "FAIL" };
+                    ui.colored_label(color, format!("{}: {}", prefix, result.asset_path));
 
                     for error in &result.errors {
                         ui.colored_label(egui::Color32::RED, format!("  ERROR: {}", error));
@@ -1244,10 +1249,30 @@ impl MaterialInspector {
         });
 
         // Material data
-        if let Some(data) = &self.material_data {
+        if let Some(data) = &mut self.material_data {
             ui.collapsing("Material Data", |ui| {
                 ui.label(format!("Name: {}", data.name));
                 ui.label(format!("Layers: {}", data.layers.len()));
+
+                // Base color picker
+                ui.horizontal(|ui| {
+                    ui.label("Base Color:");
+                    let mut color = egui::Rgba::from_rgba_premultiplied(
+                        data.base_color[0],
+                        data.base_color[1],
+                        data.base_color[2],
+                        data.base_color[3],
+                    );
+                    if egui::color_picker::color_edit_button_rgba(
+                        ui,
+                        &mut color,
+                        egui::color_picker::Alpha::BlendOrAdditive,
+                    )
+                    .changed()
+                    {
+                        data.base_color = [color.r(), color.g(), color.b(), color.a()];
+                    }
+                });
 
                 for (i, layer) in data.layers.iter().enumerate() {
                     ui.collapsing(format!("Layer {}: {}", i, layer.name), |ui| {
@@ -1578,5 +1603,18 @@ mod tests {
     fn test_material_inspector_default() {
         let inspector = MaterialInspector::default();
         assert_eq!(inspector.zoom_level, 1.0);
+    }
+
+    #[test]
+    fn test_material_data_base_color() {
+        let data = MaterialData {
+            name: "test".to_string(),
+            layers: vec![],
+            metallic: 0.5,
+            roughness: 0.5,
+            base_color: [1.0, 0.0, 0.0, 1.0],
+        };
+        assert_eq!(data.base_color[0], 1.0);
+        assert_eq!(data.base_color[3], 1.0);
     }
 }

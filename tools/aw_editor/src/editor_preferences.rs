@@ -20,6 +20,9 @@ pub struct EditorPreferences {
     pub show_console_panel: bool,
     pub camera: Option<OrbitCamera>,
     pub snapping: Option<SnappingConfig>,
+    /// Serialized dock layout JSON for persistence
+    #[serde(default)]
+    pub layout_json: Option<String>,
 }
 
 fn default_auto_save_count() -> usize {
@@ -39,6 +42,7 @@ impl Default for EditorPreferences {
             show_console_panel: true,
             camera: None,
             snapping: None,
+            layout_json: None,
         }
     }
 }
@@ -106,6 +110,7 @@ mod tests {
             show_console_panel: false,
             camera: None,
             snapping: None,
+            layout_json: None,
         };
 
         let json = serde_json::to_string(&prefs).expect("serialize");

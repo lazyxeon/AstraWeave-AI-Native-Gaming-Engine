@@ -111,18 +111,18 @@ impl TimeOfDay {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            TimeOfDay::Dawn => "🌅",
-            TimeOfDay::EarlyMorning => "🌤️",
-            TimeOfDay::Morning => "☀️",
+            TimeOfDay::Dawn => "[Dawn]",
+            TimeOfDay::EarlyMorning => "[Clr]",
+            TimeOfDay::Morning => "[Sun]",
             TimeOfDay::Noon => "🌞",
             TimeOfDay::Afternoon => "⛅",
             TimeOfDay::GoldenHour => "🌇",
             TimeOfDay::Sunset => "🌆",
-            TimeOfDay::Dusk => "🌃",
+            TimeOfDay::Dusk => "[Ngt]",
             TimeOfDay::BlueHour => "🌌",
-            TimeOfDay::Night => "🌙",
+            TimeOfDay::Night => "[Moon]",
             TimeOfDay::Midnight => "🌑",
-            TimeOfDay::LateNight => "✨",
+            TimeOfDay::LateNight => "[Fx]",
         }
     }
 
@@ -261,20 +261,20 @@ impl WeatherCondition {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            WeatherCondition::Clear => "☀️",
+            WeatherCondition::Clear => "[Sun]",
             WeatherCondition::PartlyCloudy => "⛅",
-            WeatherCondition::Overcast => "☁️",
-            WeatherCondition::LightRain => "🌧️",
+            WeatherCondition::Overcast => "[Cld]",
+            WeatherCondition::LightRain => "[Rain]",
             WeatherCondition::HeavyRain => "⛈️",
             WeatherCondition::Thunderstorm => "🌩️",
             WeatherCondition::LightSnow => "🌨️",
             WeatherCondition::HeavySnow => "❄️",
             WeatherCondition::Blizzard => "🌬️",
-            WeatherCondition::Foggy => "🌫️",
+            WeatherCondition::Foggy => "[Fog]",
             WeatherCondition::DenseFog => "🌁",
-            WeatherCondition::Sandstorm => "💨",
-            WeatherCondition::Haze => "😶‍🌫️",
-            WeatherCondition::Windy => "💨",
+            WeatherCondition::Sandstorm => "[Dash]",
+            WeatherCondition::Haze => "[Haze]",
+            WeatherCondition::Windy => "[Dash]",
         }
     }
 
@@ -398,9 +398,9 @@ impl SkyType {
     pub fn icon(&self) -> &'static str {
         match self {
             SkyType::Procedural => "🌈",
-            SkyType::Hdri => "🖼️",
-            SkyType::SolidColor => "🔵",
-            SkyType::Gradient => "🎨",
+            SkyType::Hdri => "[Img]",
+            SkyType::SolidColor => "[B]",
+            SkyType::Gradient => "[Art]",
         }
     }
 
@@ -462,11 +462,11 @@ impl FogType {
     pub fn icon(&self) -> &'static str {
         match self {
             FogType::None => "🚫",
-            FogType::Linear => "➖",
+            FogType::Linear => "-",
             FogType::Exponential => "📈",
             FogType::ExponentialSquared => "📈",
-            FogType::Height => "⬆️",
-            FogType::Volumetric => "🌫️",
+            FogType::Height => "[Up]",
+            FogType::Volumetric => "[Fog]",
         }
     }
 
@@ -641,19 +641,19 @@ impl MoodPreset {
     pub fn icon(&self) -> &'static str {
         match self {
             MoodPreset::Neutral => "⚪",
-            MoodPreset::Bright => "☀️",
-            MoodPreset::Moody => "🌧️",
-            MoodPreset::Dramatic => "🎭",
+            MoodPreset::Bright => "[Sun]",
+            MoodPreset::Moody => "[Rain]",
+            MoodPreset::Dramatic => "[Mask]",
             MoodPreset::Horror => "👻",
-            MoodPreset::Cinematic => "🎬",
+            MoodPreset::Cinematic => "[Anim]",
             MoodPreset::Dreamy => "💭",
             MoodPreset::Vintage => "📷",
-            MoodPreset::CyberPunk => "🤖",
+            MoodPreset::CyberPunk => "[Bot]",
             MoodPreset::Desert => "🏜️",
             MoodPreset::Arctic => "❄️",
             MoodPreset::Tropical => "🌴",
             MoodPreset::Noir => "🎩",
-            MoodPreset::Fantasy => "🔮",
+            MoodPreset::Fantasy => "[Orb]",
         }
     }
 
@@ -866,7 +866,7 @@ impl EnvironmentPresetPanel {
     }
 
     fn render_quick_presets(&mut self, ui: &mut Ui) {
-        ui.heading("⏱️ Quick Time Presets");
+        ui.heading("[Time] Quick Time Presets");
 
         ui.horizontal_wrapped(|ui| {
             for time in TimeOfDay::all() {
@@ -878,7 +878,7 @@ impl EnvironmentPresetPanel {
         });
 
         ui.add_space(8.0);
-        ui.heading("🌤️ Weather");
+        ui.heading("[Clr] Weather");
 
         ui.horizontal_wrapped(|ui| {
             for weather in &[
@@ -899,7 +899,7 @@ impl EnvironmentPresetPanel {
         });
 
         ui.add_space(8.0);
-        ui.heading("🎨 Mood Presets");
+        ui.heading("Mood Presets");
 
         ui.horizontal_wrapped(|ui| {
             for mood in MoodPreset::all() {
@@ -912,7 +912,7 @@ impl EnvironmentPresetPanel {
     }
 
     fn render_sky_settings(&mut self, ui: &mut Ui) {
-        egui::CollapsingHeader::new("☁️ Sky")
+        egui::CollapsingHeader::new("[Cld] Sky")
             .default_open(true)
             .show(ui, |ui| {
                 egui::ComboBox::from_label("Sky Type")
@@ -939,7 +939,7 @@ impl EnvironmentPresetPanel {
     }
 
     fn render_fog_settings(&mut self, ui: &mut Ui) {
-        egui::CollapsingHeader::new("🌫️ Fog")
+        egui::CollapsingHeader::new("[Fog] Fog")
             .default_open(true)
             .show(ui, |ui| {
                 egui::ComboBox::from_label("Fog Type")
@@ -976,7 +976,7 @@ impl EnvironmentPresetPanel {
     }
 
     fn render_lighting_settings(&mut self, ui: &mut Ui) {
-        egui::CollapsingHeader::new("💡 Lighting")
+        egui::CollapsingHeader::new("Lighting")
             .default_open(true)
             .show(ui, |ui| {
                 ui.add(
@@ -992,7 +992,7 @@ impl EnvironmentPresetPanel {
     }
 
     fn render_post_process_settings(&mut self, ui: &mut Ui) {
-        egui::CollapsingHeader::new("🎬 Post-Processing")
+        egui::CollapsingHeader::new("Post-Processing")
             .default_open(true)
             .show(ui, |ui| {
                 egui::ComboBox::from_label("Tonemapper")
@@ -1032,7 +1032,7 @@ impl EnvironmentPresetPanel {
         let preset_name_to_save = self.new_preset_name.clone();
 
         ui.horizontal(|ui| {
-            ui.label("💾 Save Preset:");
+            ui.label("Save Preset:");
             ui.add(
                 egui::TextEdit::singleline(&mut self.new_preset_name)
                     .hint_text("Preset name...")
@@ -1083,7 +1083,7 @@ impl Panel for EnvironmentPresetPanel {
 
     fn show(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.toggle_value(&mut self.preview_enabled, "👁️ Live Preview");
+            ui.toggle_value(&mut self.preview_enabled, "Live Preview");
             ui.separator();
             ui.add(
                 egui::Slider::new(&mut self.transition_duration, 0.0..=10.0).text("Transition (s)"),
@@ -1097,7 +1097,7 @@ impl Panel for EnvironmentPresetPanel {
             ui.separator();
 
             ui.horizontal(|ui| {
-                ui.heading("⚙️ Settings");
+                ui.heading("Settings");
                 ui.toggle_value(&mut self.show_advanced, "Advanced");
             });
 
@@ -1116,13 +1116,13 @@ impl Panel for EnvironmentPresetPanel {
 
         ui.horizontal(|ui| {
             if ui
-                .button(RichText::new("✅ Apply").color(Color32::from_rgb(100, 200, 100)))
+                .button(RichText::new("Apply").color(Color32::from_rgb(100, 200, 100)))
                 .clicked()
             {
                 should_apply = true;
             }
 
-            if ui.button("↩️ Reset").clicked() {
+            if ui.button("Reset").clicked() {
                 should_reset = true;
             }
         });

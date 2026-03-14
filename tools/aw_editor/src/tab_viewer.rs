@@ -1,4 +1,4 @@
-//! Tab Viewer Implementation for egui_dock
+﻿//! Tab Viewer Implementation for egui_dock
 //!
 //! This module provides the `SimpleTabViewer` struct which implements
 //! `egui_dock::TabViewer` to render each panel type in the docking system.
@@ -216,7 +216,7 @@ impl TabViewer for SimpleTabViewer {
             PanelType::Viewport => {
                 // Viewport needs special handling - show placeholder
                 ui.centered_and_justified(|ui| {
-                    ui.label("🎬 3D Viewport");
+                    ui.label("3D Viewport");
                     ui.label("(Rendering not yet integrated with docking)");
                 });
             }
@@ -237,7 +237,7 @@ impl TabViewer for SimpleTabViewer {
                 ui.separator();
                 ui.label(format!("{} panel content", tab.title()));
                 if self.is_playing {
-                    ui.label("🎮 Play mode active");
+                    ui.label("Play mode active");
                 }
             }
         }
@@ -312,8 +312,10 @@ pub enum PanelEvent {
         scale_x: f32,
         scale_y: f32,
     },
-    /// Request to create a new entity
+    /// Request to create a new empty entity
     CreateEntity,
+    /// Request to spawn an entity from a named archetype (e.g. "Player", "Light", "Camera")
+    SpawnArchetype { archetype: String },
     /// Request to delete an entity
     DeleteEntity(u64),
     /// Request to duplicate an entity
@@ -362,6 +364,14 @@ pub enum PanelEvent {
         entity_id: u64,
         component_type: String,
     },
+    /// Health component value changed
+    HealthChanged { entity_id: u64, new_hp: i32 },
+    /// Team component value changed
+    TeamChanged { entity_id: u64, new_team_id: u8 },
+    /// Ammo component value changed
+    AmmoChanged { entity_id: u64, new_ammo: i32 },
+    /// Entity name changed
+    EntityRenamed { entity_id: u64, new_name: String },
     /// Viewport view mode changed (0=Shaded, 1=Wireframe, 2=Unlit, 3=Normals, 4=UVs)
     ViewportViewModeChanged(usize),
     /// Viewport gizmo mode changed (0=Translate, 1=Rotate, 2=Scale)
@@ -405,6 +415,9 @@ impl std::fmt::Display for PanelEvent {
                 write!(f, "Transform Scale Changed: {}", entity_id)
             }
             PanelEvent::CreateEntity => write!(f, "Create Entity"),
+            PanelEvent::SpawnArchetype { ref archetype } => {
+                write!(f, "Spawn Archetype: {}", archetype)
+            }
             PanelEvent::DeleteEntity(id) => write!(f, "Delete Entity: {}", id),
             PanelEvent::DuplicateEntity(id) => write!(f, "Duplicate Entity: {}", id),
             PanelEvent::MaterialChanged { name, property, .. } => {
@@ -444,6 +457,18 @@ impl std::fmt::Display for PanelEvent {
             PanelEvent::RemoveComponent { component_type, .. } => {
                 write!(f, "Remove Component: {}", component_type)
             }
+            PanelEvent::HealthChanged { entity_id, new_hp } => {
+                write!(f, "Health Changed: {} -> {}", entity_id, new_hp)
+            }
+            PanelEvent::TeamChanged { entity_id, new_team_id } => {
+                write!(f, "Team Changed: {} -> {}", entity_id, new_team_id)
+            }
+            PanelEvent::AmmoChanged { entity_id, new_ammo } => {
+                write!(f, "Ammo Changed: {} -> {}", entity_id, new_ammo)
+            }
+            PanelEvent::EntityRenamed { entity_id, ref new_name } => {
+                write!(f, "Entity Renamed: {} -> {}", entity_id, new_name)
+            }
             PanelEvent::ViewportViewModeChanged(mode) => {
                 write!(f, "Viewport View Mode: {}", mode)
             }
@@ -478,6 +503,7 @@ impl PanelEvent {
             PanelEvent::EntitySelected(_)
             | PanelEvent::EntityDeselected
             | PanelEvent::CreateEntity
+            | PanelEvent::SpawnArchetype { .. }
             | PanelEvent::DeleteEntity(_)
             | PanelEvent::DuplicateEntity(_) => "Entity",
             PanelEvent::TransformPositionChanged { .. }
@@ -494,7 +520,12 @@ impl PanelEvent {
             PanelEvent::BehaviorNodeSelected(_) | PanelEvent::GraphNodeSelected(_) => "Graph",
             PanelEvent::HierarchySearchChanged(_) => "Hierarchy",
             PanelEvent::RefreshSceneStats => "Scene",
-            PanelEvent::AddComponent { .. } | PanelEvent::RemoveComponent { .. } => "Component",
+            PanelEvent::AddComponent { .. }
+            | PanelEvent::RemoveComponent { .. }
+            | PanelEvent::HealthChanged { .. }
+            | PanelEvent::TeamChanged { .. }
+            | PanelEvent::AmmoChanged { .. } => "Component",
+            PanelEvent::EntityRenamed { .. } => "Entity",
             PanelEvent::ViewportViewModeChanged(_)
             | PanelEvent::ViewportGizmoModeChanged(_)
             | PanelEvent::ViewportGizmoSpaceChanged(_)
@@ -580,6 +611,14 @@ pub struct EntityInfo {
     pub name: String,
     pub components: Vec<String>,
     pub entity_type: String,
+    /// World component values for inspector editing
+    pub hp: Option<i32>,
+    pub team_id: Option<u8>,
+    pub ammo: Option<i32>,
+    pub pos_x: Option<i32>,
+    pub pos_y: Option<i32>,
+    pub rotation: Option<f32>,
+    pub scale: Option<f32>,
 }
 
 /// Runtime statistics for profiler display
@@ -900,12 +939,12 @@ impl BehaviorNodeType {
     /// Returns an icon for this node type.
     pub fn icon(&self) -> &'static str {
         match self {
-            BehaviorNodeType::Root => "🌳",
-            BehaviorNodeType::Sequence => "➡️",
-            BehaviorNodeType::Selector => "❓",
-            BehaviorNodeType::Condition => "⁉️",
-            BehaviorNodeType::Action => "⚡",
-            BehaviorNodeType::Decorator => "🎁",
+            BehaviorNodeType::Root => "R",
+            BehaviorNodeType::Sequence => ">",
+            BehaviorNodeType::Selector => "?",
+            BehaviorNodeType::Condition => "?!",
+            BehaviorNodeType::Action => "A",
+            BehaviorNodeType::Decorator => "D",
         }
     }
 
@@ -1731,61 +1770,36 @@ impl TabViewer for EditorTabViewer {
     type Tab = PanelType;
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
-        // Enhanced dynamic tab titles with contextual information
+        // Clean tab titles — no emoji prefixes, contextual suffixes only
         match tab {
             PanelType::Viewport => {
-                // Show gizmo mode and play state in tab
-                let gizmo = match self.viewport_gizmo_mode {
-                    0 => "⬌", // Translate
-                    1 => "↻", // Rotate
-                    2 => "⤢", // Scale
-                    _ => "",
-                };
                 if self.is_playing {
-                    format!("{} {} {} ▶", tab.icon(), tab.title(), gizmo).into()
+                    format!("{} >", tab.title()).into()
                 } else {
-                    format!("{} {} {}", tab.icon(), tab.title(), gizmo).into()
+                    tab.title().into()
                 }
             }
             PanelType::Hierarchy => {
                 let count = self.entity_list.len();
                 let modified = if self.scene_modified { " •" } else { "" };
-                if self.selected_entity.is_some() {
-                    format!("{} {} ({}){} ●", tab.icon(), tab.title(), count, modified).into()
-                } else {
-                    format!("{} {} ({}){}", tab.icon(), tab.title(), count, modified).into()
-                }
+                format!("{} ({}){}", tab.title(), count, modified).into()
             }
             PanelType::Console => {
                 let total = self.console_logs.len();
                 let error_count = self.console_error_count;
                 if error_count > 0 {
-                    format!(
-                        "{} {} ({}) ❌{}",
-                        tab.icon(),
-                        tab.title(),
-                        total,
-                        error_count
-                    )
-                    .into()
+                    format!("{} ({}) !{}", tab.title(), total, error_count).into()
                 } else if total > 0 {
-                    format!("{} {} ({})", tab.icon(), tab.title(), total).into()
+                    format!("{} ({})", tab.title(), total).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title()).into()
+                    tab.title().into()
                 }
             }
             PanelType::Inspector => {
-                // Build title with entity name and optional undo/redo indicators
-                let base_title = if let Some(ref info) = self.selected_entity_info {
-                    format!("{} {} - {}", tab.icon(), tab.title(), info.name)
+                if let Some(ref info) = self.selected_entity_info {
+                    format!("{} - {}", tab.title(), info.name).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title())
-                };
-                // Show undo/redo counts when available (production-quality UX)
-                if self.undo_count > 0 || self.redo_count > 0 {
-                    format!("{} [↩{}↪{}]", base_title, self.undo_count, self.redo_count).into()
-                } else {
-                    base_title.into()
+                    tab.title().into()
                 }
             }
             PanelType::Performance => {
@@ -1801,187 +1815,91 @@ impl TabViewer for EditorTabViewer {
                     "D"
                 };
                 if self.runtime_stats.is_playing {
-                    format!(
-                        "{} {} [{} {:.0}fps]",
-                        tab.icon(),
-                        tab.title(),
-                        grade,
-                        self.runtime_stats.fps
-                    )
-                    .into()
+                    format!("{} [{} {:.0}fps]", tab.title(), grade, self.runtime_stats.fps).into()
                 } else {
-                    format!("{} {} [{}]", tab.icon(), tab.title(), grade).into()
+                    format!("{} [{}]", tab.title(), grade).into()
                 }
             }
             PanelType::Profiler => {
-                let state = if self.runtime_stats.is_playing {
-                    if self.runtime_stats.is_paused {
-                        "⏸"
-                    } else {
-                        "▶"
-                    }
-                } else {
-                    "■"
-                };
-                // Show tick count when simulation is running
                 if self.runtime_stats.tick_count > 0 {
-                    format!(
-                        "{} {} {} T{}",
-                        tab.icon(),
-                        tab.title(),
-                        state,
-                        self.runtime_stats.tick_count
-                    )
-                    .into()
+                    format!("{} T{}", tab.title(), self.runtime_stats.tick_count).into()
                 } else {
-                    format!("{} {} {}", tab.icon(), tab.title(), state).into()
+                    tab.title().into()
                 }
             }
             PanelType::Animation => {
-                let state = if self.animation_state.is_playing {
-                    if self.animation_state.loop_enabled {
-                        "🔁"
-                    } else {
-                        "▶"
-                    }
-                } else {
-                    "■"
-                };
-                // Show current frame / total frames when animation has content
                 if self.animation_state.total_frames > 0 {
                     format!(
-                        "{} {} {} {}/{}",
-                        tab.icon(),
+                        "{} {}/{}",
                         tab.title(),
-                        state,
                         self.animation_state.current_frame,
                         self.animation_state.total_frames
                     )
                     .into()
                 } else {
-                    format!("{} {} {}", tab.icon(), tab.title(), state).into()
+                    tab.title().into()
                 }
             }
             PanelType::BuildManager => {
                 let status = match self.build_status {
-                    1 => format!("🔄 {:.0}%", self.build_progress * 100.0),
-                    2 => "✅".to_string(),
-                    3 => "❌".to_string(),
+                    1 => format!(" {:.0}%", self.build_progress * 100.0),
+                    2 => " OK".to_string(),
+                    3 => " ERR".to_string(),
                     _ => String::new(),
                 };
-                if status.is_empty() {
-                    format!("{} {}", tab.icon(), tab.title()).into()
-                } else {
-                    format!("{} {} {}", tab.icon(), tab.title(), status).into()
-                }
+                format!("{}{}", tab.title(), status).into()
             }
             PanelType::AssetBrowser => {
                 let count = self.asset_entries.len();
                 if count > 0 {
-                    format!("{} {} ({})", tab.icon(), tab.title(), count).into()
+                    format!("{} ({})", tab.title(), count).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title()).into()
+                    tab.title().into()
                 }
             }
             PanelType::Graph => {
                 let count = self.graph_nodes.len();
                 if count > 0 {
-                    format!("{} {} ({})", tab.icon(), tab.title(), count).into()
+                    format!("{} ({})", tab.title(), count).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title()).into()
+                    tab.title().into()
                 }
             }
             PanelType::BehaviorGraph => {
                 let count = self.behavior_graph.nodes.len();
                 if count > 0 {
-                    format!("{} {} ({})", tab.icon(), tab.title(), count).into()
+                    format!("{} ({})", tab.title(), count).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title()).into()
+                    tab.title().into()
                 }
             }
             PanelType::SceneStats => {
                 let entity_count = self.entity_list.len();
                 let modified = if self.scene_modified { " •" } else { "" };
-                format!(
-                    "{} {} ({}){}",
-                    tab.icon(),
-                    tab.title(),
-                    entity_count,
-                    modified
-                )
-                .into()
+                format!("{} ({}){}", tab.title(), entity_count, modified).into()
             }
             PanelType::EntityPanel => {
                 if let Some(ref info) = self.selected_entity_info {
-                    format!("{} {} - {}", tab.icon(), tab.title(), info.name).into()
-                } else if self.selected_entity.is_some() {
-                    format!("{} {} - ...", tab.icon(), tab.title()).into()
+                    format!("{} - {}", tab.title(), info.name).into()
                 } else {
-                    format!("{} {}", tab.icon(), tab.title()).into()
+                    tab.title().into()
                 }
             }
             PanelType::MaterialEditor => {
-                // Show material name and modification indicator
                 let modified = if self.current_material.name != "Default" {
                     " •"
                 } else {
                     ""
                 };
-                format!(
-                    "{} {} - {}{}",
-                    tab.icon(),
-                    tab.title(),
-                    self.current_material.name,
-                    modified
-                )
-                .into()
+                format!("{} - {}{}", tab.title(), self.current_material.name, modified).into()
             }
-            PanelType::ThemeManager => {
-                // Show current theme in tab
-                let theme = match self.current_theme {
-                    EditorTheme::Dark => "🌙",
-                    EditorTheme::Light => "☀️",
-                    EditorTheme::Nord => "❄️",
-                    EditorTheme::Solarized => "🌅",
-                };
-                format!("{} {} {}", tab.icon(), tab.title(), theme).into()
-            }
+            PanelType::ThemeManager => tab.title().into(),
             PanelType::World => {
-                // Show scene name and time of day indicator
-                let time_icon = if self.world_time_of_day < 6.0 || self.world_time_of_day >= 20.0 {
-                    "🌙" // Night
-                } else if self.world_time_of_day < 8.0 || self.world_time_of_day >= 18.0 {
-                    "🌅" // Dawn/Dusk
-                } else {
-                    "☀️" // Day
-                };
                 let modified = if self.scene_modified { " •" } else { "" };
-                format!(
-                    "{} {} - {}{} {}",
-                    tab.icon(),
-                    tab.title(),
-                    self.scene_name,
-                    modified,
-                    time_icon
-                )
-                .into()
+                format!("{} - {}{}", tab.title(), self.scene_name, modified).into()
             }
-            PanelType::Transform => {
-                // Show gizmo mode and snap indicator
-                let mode = match self.viewport_gizmo_mode {
-                    0 => "⬌", // Translate
-                    1 => "↻", // Rotate
-                    2 => "⤢", // Scale
-                    _ => "",
-                };
-                let snap = if self.transform_snap_value > 0.0 {
-                    " 🧲"
-                } else {
-                    ""
-                };
-                format!("{} {} {}{}", tab.icon(), tab.title(), mode, snap).into()
-            }
-            _ => format!("{} {}", tab.icon(), tab.title()).into(),
+            PanelType::Transform => tab.title().into(),
+            _ => tab.title().into(),
         }
     }
 
@@ -1989,7 +1907,7 @@ impl TabViewer for EditorTabViewer {
         // Play mode indicator
         if self.is_playing {
             ui.horizontal(|ui| {
-                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "▶ Play Mode");
+                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "> Play Mode");
             });
             ui.separator();
         }
@@ -2021,7 +1939,7 @@ impl TabViewer for EditorTabViewer {
                     ui.separator();
 
                     // Gizmo mode buttons with keyboard shortcuts
-                    let gizmo_labels = ["⬌ Move", "↻ Rotate", "⤢ Scale"];
+                    let gizmo_labels = ["Move", "Rotate", "Scale"];
                     let gizmo_shortcuts = ["G", "R", "S"];
                     for (i, (label, shortcut)) in
                         gizmo_labels.iter().zip(gizmo_shortcuts.iter()).enumerate()
@@ -2094,14 +2012,14 @@ impl TabViewer for EditorTabViewer {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Focus and reset buttons
                         if ui
-                            .small_button("🏠")
+                            .small_button("H")
                             .on_hover_text("Reset camera (Home)")
                             .clicked()
                         {
                             viewport_events.push(PanelEvent::ViewportResetCamera);
                         }
                         if ui
-                            .small_button("🎯")
+                            .small_button("F")
                             .on_hover_text("Focus on selection (F)")
                             .clicked()
                         {
@@ -2173,7 +2091,7 @@ impl TabViewer for EditorTabViewer {
                     painter.text(
                         viewport_rect.center(),
                         egui::Align2::CENTER_CENTER,
-                        "🎬 3D Viewport\n(Rendered separately)",
+                        "3D Viewport\n(Rendered separately)",
                         egui::FontId::proportional(18.0),
                         egui::Color32::from_gray(120),
                     );
@@ -2234,7 +2152,7 @@ impl TabViewer for EditorTabViewer {
 
                 // Camera settings (collapsible at bottom)
                 let mut camera_changed = false;
-                ui.collapsing("📷 Camera Settings", |ui| {
+                ui.collapsing("Camera Settings", |ui| {
                     // Camera presets
                     ui.horizontal(|ui| {
                         ui.label("Preset:");
@@ -2414,13 +2332,13 @@ impl TabViewer for EditorTabViewer {
                 // Enhanced header with entity name and component count
                 ui.horizontal(|ui| {
                     if let Some(ref info) = self.selected_entity_info {
-                        ui.heading(format!("🔍 Inspector - {}", info.name));
+                        ui.heading(format!("Inspector - {}", info.name));
                         ui.weak(format!("• {} components", info.components.len()));
                     } else if self.selected_entity.is_some() {
-                        ui.heading("🔍 Inspector");
+                        ui.heading("Inspector");
                         ui.weak("• Loading...");
                     } else {
-                        ui.heading("🔍 Inspector");
+                        ui.heading("Inspector");
                     }
                 });
                 ui.separator();
@@ -2551,7 +2469,7 @@ impl TabViewer for EditorTabViewer {
                                 ui.horizontal(|ui| {
                                     ui.label(format!("• {}", comp));
                                     if ui
-                                        .small_button("🗑")
+                                        .small_button("x")
                                         .on_hover_text("Remove component")
                                         .clicked()
                                     {
@@ -2568,7 +2486,7 @@ impl TabViewer for EditorTabViewer {
 
                             // Add component menu
                             ui.separator();
-                            ui.menu_button("➕ Add Component", |ui| {
+                            ui.menu_button("Add Component", |ui| {
                                 let available = [
                                     "Physics",
                                     "Sprite",
@@ -2617,9 +2535,9 @@ impl TabViewer for EditorTabViewer {
 
                 ui.horizontal(|ui| {
                     if visible_count == total_count {
-                        ui.heading(format!("📋 Hierarchy ({})", total_count));
+                        ui.heading(format!("Hierarchy ({})", total_count));
                     } else {
-                        ui.heading(format!("📋 Hierarchy ({}/{})", visible_count, total_count));
+                        ui.heading(format!("Hierarchy ({}/{})", visible_count, total_count));
                     }
                     if let Some(entity_id) = self.selected_entity {
                         ui.weak(format!("• Selected: {}", entity_id));
@@ -2630,43 +2548,49 @@ impl TabViewer for EditorTabViewer {
                 // Toolbar row with create options
                 ui.horizontal(|ui| {
                     // Create dropdown with entity types
-                    ui.menu_button("➕ Create", |ui| {
-                        if ui.button("📦 Empty Entity").clicked() {
+                    ui.menu_button("+ Add", |ui| {
+                        ui.label(egui::RichText::new("Game Objects").strong().small());
+                        if ui.button("  Empty Entity").on_hover_text("Create a blank entity").clicked() {
                             self.emit_event(PanelEvent::CreateEntity);
                             ui.close();
                         }
+                        if ui.button("  Player").on_hover_text("Spawn player entity (HP: 100, Team: 0)").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Player".into() });
+                            ui.close();
+                        }
+                        if ui.button("  Companion").on_hover_text("Spawn companion entity (HP: 80, Team: 0)").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Companion".into() });
+                            ui.close();
+                        }
+                        if ui.button("  Enemy").on_hover_text("Spawn enemy entity (HP: 50, Team: 1)").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Enemy".into() });
+                            ui.close();
+                        }
+                        if ui.button("  Boss").on_hover_text("Spawn boss entity (HP: 500, Team: 1)").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Boss".into() });
+                            ui.close();
+                        }
+                        if ui.button("  NPC").on_hover_text("Spawn NPC entity (HP: 100, Team: 2)").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "NPC".into() });
+                            ui.close();
+                        }
+                        if ui.button("  Prop").on_hover_text("Spawn a static prop entity").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Prop".into() });
+                            ui.close();
+                        }
+
                         ui.separator();
-                        if ui
-                            .button("💡 Point Light")
-                            .on_hover_text("Create point light entity")
-                            .clicked()
-                        {
-                            self.emit_event(PanelEvent::CreateEntity);
+                        ui.label(egui::RichText::new("Environment").strong().small());
+                        if ui.button("  Light").on_hover_text("Add a point light to the scene").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Light".into() });
                             ui.close();
                         }
-                        if ui
-                            .button("🎥 Camera")
-                            .on_hover_text("Create camera entity")
-                            .clicked()
-                        {
-                            self.emit_event(PanelEvent::CreateEntity);
+                        if ui.button("  Camera").on_hover_text("Add a camera to the scene").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Camera".into() });
                             ui.close();
                         }
-                        if ui
-                            .button("🎨 Mesh")
-                            .on_hover_text("Create mesh entity")
-                            .clicked()
-                        {
-                            self.emit_event(PanelEvent::CreateEntity);
-                            ui.close();
-                        }
-                        ui.separator();
-                        if ui
-                            .button("📁 Empty Group")
-                            .on_hover_text("Create empty group for organizing")
-                            .clicked()
-                        {
-                            self.emit_event(PanelEvent::CreateEntity);
+                        if ui.button("  Trigger").on_hover_text("Add a trigger volume").clicked() {
+                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Trigger".into() });
                             ui.close();
                         }
                     });
@@ -2681,14 +2605,14 @@ impl TabViewer for EditorTabViewer {
                         self.hierarchy_search.clear();
                     }
                     if ui
-                        .small_button("📷")
+                        .small_button("C")
                         .on_hover_text("Show only cameras")
                         .clicked()
                     {
                         self.hierarchy_search = "camera".to_string();
                     }
                     if ui
-                        .small_button("💡")
+                        .small_button("L")
                         .on_hover_text("Show only lights")
                         .clicked()
                     {
@@ -2701,7 +2625,7 @@ impl TabViewer for EditorTabViewer {
                     ui.add_sized(
                         [ui.available_width() - 30.0, 20.0],
                         egui::TextEdit::singleline(&mut self.hierarchy_search)
-                            .hint_text("🔍 Search entities..."),
+                            .hint_text("Search entities..."),
                     );
                     if ui.small_button("✕").on_hover_text("Clear search").clicked() {
                         self.hierarchy_search.clear();
@@ -2718,8 +2642,36 @@ impl TabViewer for EditorTabViewer {
                 // Display entity list from cached data
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     if self.entity_list.is_empty() {
-                        ui.centered_and_justified(|ui| {
-                            ui.weak("No entities in scene\n\nClick ➕ Create to add one");
+                        ui.add_space(20.0);
+                        ui.vertical_centered(|ui| {
+                            ui.heading("Scene is Empty");
+                            ui.add_space(12.0);
+                            ui.label("Get started by adding entities to your scene:");
+                            ui.add_space(8.0);
+
+                            let btn_width = 180.0;
+                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Player")).clicked() {
+                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Player".into() });
+                            }
+                            ui.add_space(2.0);
+                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Light")).clicked() {
+                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Light".into() });
+                            }
+                            ui.add_space(2.0);
+                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Camera")).clicked() {
+                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Camera".into() });
+                            }
+                            ui.add_space(2.0);
+                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Empty Entity")).clicked() {
+                                self.emit_event(PanelEvent::CreateEntity);
+                            }
+
+                            ui.add_space(16.0);
+                            ui.separator();
+                            ui.add_space(8.0);
+                            ui.weak("Or use the + Add dropdown above for more options.");
+                            ui.add_space(4.0);
+                            ui.weak("Ctrl+S to save  |  Ctrl+O to open  |  F5 to play");
                         });
                     } else {
                         let search_lower = self.hierarchy_search.to_lowercase();
@@ -2757,18 +2709,18 @@ impl TabViewer for EditorTabViewer {
                             // Determine entity icon based on name patterns (cache lowercase)
                             let name_lower = entity.name.to_lowercase();
                             let icon = if name_lower.contains("light") {
-                                "💡"
+                                "[L]"
                             } else if name_lower.contains("camera") {
-                                "📷"
+                                "[C]"
                             } else if name_lower.contains("player") {
-                                "🎮"
+                                "[P]"
                             } else if name_lower.contains("enemy") {
-                                "👾"
+                                "[E]"
                             } else if name_lower.contains("group") || name_lower.contains("folder")
                             {
-                                "📁"
+                                "[G]"
                             } else {
-                                "📦"
+                                "[.]"
                             };
 
                             let label = format!("{} {} ({})", icon, entity.name, entity.id);
@@ -2790,21 +2742,21 @@ impl TabViewer for EditorTabViewer {
 
                                 // Context menu
                                 response.context_menu(|ui| {
-                                    if ui.button("✏ Rename").clicked() {
+                                    if ui.button("Rename").clicked() {
                                         entity_to_rename = Some(entity.id);
                                         ui.close();
                                     }
-                                    if ui.button("📋 Duplicate").clicked() {
+                                    if ui.button("Duplicate").clicked() {
                                         entity_to_duplicate = Some(entity.id);
                                         ui.close();
                                     }
                                     ui.separator();
-                                    if ui.button("📍 Focus in Viewport").clicked() {
+                                    if ui.button("Focus in Viewport").clicked() {
                                         // Would focus viewport on this entity
                                         ui.close();
                                     }
                                     ui.separator();
-                                    if ui.button("🗑 Delete").clicked() {
+                                    if ui.button("Delete").clicked() {
                                         entity_to_delete = Some(entity.id);
                                         ui.close();
                                     }
@@ -2812,11 +2764,11 @@ impl TabViewer for EditorTabViewer {
 
                                 // Alternative menu button
                                 ui.menu_button("⋮", |ui| {
-                                    if ui.button("📋 Duplicate").clicked() {
+                                    if ui.button("Duplicate").clicked() {
                                         entity_to_duplicate = Some(entity.id);
                                         ui.close();
                                     }
-                                    if ui.button("🗑 Delete").clicked() {
+                                    if ui.button("Delete").clicked() {
                                         entity_to_delete = Some(entity.id);
                                         ui.close();
                                     }
@@ -2855,23 +2807,23 @@ impl TabViewer for EditorTabViewer {
                     .saturating_sub(warn_count);
 
                 ui.horizontal(|ui| {
-                    ui.heading(format!("💬 Console ({})", self.console_logs.len()));
+                    ui.heading(format!("Console ({})", self.console_logs.len()));
                     ui.separator();
                     // Message count badges
                     if error_count > 0 {
                         ui.colored_label(
                             egui::Color32::from_rgb(255, 100, 100),
-                            format!("❌ {}", error_count),
+                            format!("{}", error_count),
                         );
                     }
                     if warn_count > 0 {
                         ui.colored_label(
                             egui::Color32::from_rgb(255, 200, 100),
-                            format!("⚠ {}", warn_count),
+                            format!("W: {}", warn_count),
                         );
                     }
                     if info_count > 0 {
-                        ui.weak(format!("ℹ {}", info_count));
+                        ui.weak(format!("i: {}", info_count));
                     }
                 });
                 ui.separator();
@@ -2882,21 +2834,21 @@ impl TabViewer for EditorTabViewer {
                 let mut copy_filtered = false;
                 ui.horizontal(|ui| {
                     if ui
-                        .button("🗑 Clear")
+                        .button("Clear")
                         .on_hover_text("Clear all logs")
                         .clicked()
                     {
                         should_clear = true;
                     }
                     if ui
-                        .button("📋 Copy All")
+                        .button("Copy All")
                         .on_hover_text("Copy all logs to clipboard")
                         .clicked()
                     {
                         copy_all = true;
                     }
                     if ui
-                        .button("📋 Copy Filtered")
+                        .button("Copy Filtered")
                         .on_hover_text("Copy only filtered logs")
                         .clicked()
                     {
@@ -2911,14 +2863,14 @@ impl TabViewer for EditorTabViewer {
                 // Console controls - second row (filters)
                 ui.horizontal(|ui| {
                     // Log level filters
-                    ui.toggle_value(&mut self.show_errors, "❌ Errors");
-                    ui.toggle_value(&mut self.show_warnings, "⚠ Warnings");
-                    ui.toggle_value(&mut self.show_info, "ℹ Info");
+                    ui.toggle_value(&mut self.show_errors, "Errors");
+                    ui.toggle_value(&mut self.show_warnings, "Warnings");
+                    ui.toggle_value(&mut self.show_info, "Info");
                     ui.separator();
                     ui.add_sized(
                         [ui.available_width(), 20.0],
                         egui::TextEdit::singleline(&mut self.console_search)
-                            .hint_text("🔍 Filter..."),
+                            .hint_text("Filter..."),
                     );
                 });
 
@@ -3024,7 +2976,7 @@ impl TabViewer for EditorTabViewer {
 
                 ui.horizontal(|ui| {
                     ui.heading(format!(
-                        "📁 Assets ({})",
+                        "Assets ({})",
                         if asset_count > 0 {
                             asset_count.to_string()
                         } else {
@@ -3032,17 +2984,17 @@ impl TabViewer for EditorTabViewer {
                         }
                     ));
                     if asset_count > 0 {
-                        ui.weak(format!("• {} 📁 {} 📄", folder_count, file_count));
+                        ui.weak(format!("{} dirs, {} files", folder_count, file_count));
                     }
                 });
                 ui.separator();
 
                 // Toolbar with navigation and view controls
                 ui.horizontal(|ui| {
-                    if ui.button("⬅").on_hover_text("Go up").clicked() {
+                    if ui.button("<").on_hover_text("Go up").clicked() {
                         // Would go up a directory
                     }
-                    ui.label(format!("📁 {}", self.asset_current_path));
+                    ui.label(format!("{}", self.asset_current_path));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("⟳").on_hover_text("Refresh").clicked() {
                             // Would refresh
@@ -3068,10 +3020,10 @@ impl TabViewer for EditorTabViewer {
                     ui.add_sized(
                         [ui.available_width() - 100.0, 20.0],
                         egui::TextEdit::singleline(&mut self.asset_search)
-                            .hint_text("🔍 Search assets..."),
+                            .hint_text("Search assets..."),
                     );
                     // Type filter
-                    let filter_labels = ["All", "🖼", "🎨", "🔊", "📄"];
+                    let filter_labels = ["All", "Tex", "3D", "Audio", "Doc"];
                     let filter_tips = ["All types", "Textures", "Models", "Audio", "Scripts"];
                     egui::ComboBox::from_id_salt("asset_filter")
                         .width(60.0)
@@ -3092,13 +3044,13 @@ impl TabViewer for EditorTabViewer {
                     if self.asset_entries.is_empty() {
                         // Default folders when no entries provided
                         let default_folders = [
-                            ("📁 materials/", "materials/"),
-                            ("📁 meshes/", "meshes/"),
-                            ("📁 textures/", "textures/"),
-                            ("📁 scenes/", "scenes/"),
-                            ("📁 prefabs/", "prefabs/"),
-                            ("📁 audio/", "audio/"),
-                            ("📁 scripts/", "scripts/"),
+                            ("materials/", "materials/"),
+                            ("meshes/", "meshes/"),
+                            ("textures/", "textures/"),
+                            ("scenes/", "scenes/"),
+                            ("prefabs/", "prefabs/"),
+                            ("audio/", "audio/"),
+                            ("scripts/", "scripts/"),
                         ];
                         for (label, path) in default_folders {
                             if (search_lower.is_empty() || path.contains(&search_lower))
@@ -3134,15 +3086,15 @@ impl TabViewer for EditorTabViewer {
                             }
 
                             let icon = if entry.is_folder {
-                                "📁"
+                                "[D]"
                             } else {
                                 match entry.file_type.as_str() {
-                                    "png" | "jpg" | "jpeg" | "tga" | "bmp" => "🖼",
-                                    "gltf" | "glb" | "obj" | "fbx" => "🎨",
-                                    "ron" | "toml" | "json" => "📄",
-                                    "wav" | "ogg" | "mp3" | "flac" => "🔊",
-                                    "rs" | "rhai" | "lua" => "📜",
-                                    _ => "📄",
+                                    "png" | "jpg" | "jpeg" | "tga" | "bmp" => "[I]",
+                                    "gltf" | "glb" | "obj" | "fbx" => "[M]",
+                                    "ron" | "toml" | "json" => "[D]",
+                                    "wav" | "ogg" | "mp3" | "flac" => "[A]",
+                                    "rs" | "rhai" | "lua" => "[S]",
+                                    _ => "[F]",
                                 }
                             };
 
@@ -3185,15 +3137,15 @@ impl TabViewer for EditorTabViewer {
                 // Enhanced header with tick count and runtime state
                 let state_indicator = if stats.is_playing {
                     if stats.is_paused {
-                        "⏸"
+                        "||"
                     } else {
-                        "▶"
+                        ">"
                     }
                 } else {
-                    "⏹"
+                    "--"
                 };
                 ui.heading(format!(
-                    "📊 Profiler {} (Tick: {})",
+                    "Profiler {} (Tick: {})",
                     state_indicator, stats.tick_count
                 ));
                 ui.separator();
@@ -3202,17 +3154,17 @@ impl TabViewer for EditorTabViewer {
                 ui.horizontal(|ui| {
                     if stats.is_playing {
                         if stats.is_paused {
-                            ui.colored_label(egui::Color32::YELLOW, "⏸ Paused");
+                            ui.colored_label(egui::Color32::YELLOW, "Paused");
                         } else {
-                            ui.colored_label(egui::Color32::GREEN, "▶ Running");
+                            ui.colored_label(egui::Color32::GREEN, "Running");
                         }
                     } else {
-                        ui.label("⏹ Editing");
+                        ui.label("Editing");
                     }
                     ui.separator();
                     ui.label(format!("Tick: {}", stats.tick_count));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.small_button("📋 Copy").on_hover_text("Copy stats to clipboard").clicked() {
+                        if ui.small_button("Copy").on_hover_text("Copy stats to clipboard").clicked() {
                             let report = format!(
                                 "Frame: {:.2}ms | FPS: {:.1} | Draw Calls: {} | Triangles: {} | Entities: {}",
                                 stats.frame_time_ms, stats.fps, stats.draw_calls, stats.triangles, stats.entity_count
@@ -3270,7 +3222,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Subsystem timing breakdown
-                ui.collapsing("⏱ Subsystem Timing", |ui| {
+                ui.collapsing("Subsystem Timing", |ui| {
                     let total = stats.render_time_ms
                         + stats.physics_time_ms
                         + stats.ai_time_ms
@@ -3338,12 +3290,12 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // GPU Statistics
-                ui.collapsing("🎮 GPU Stats", |ui| {
+                ui.collapsing("GPU Stats", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Draw Calls:");
                         ui.strong(format!("{}", stats.draw_calls));
                         if stats.draw_calls > 1000 {
-                            ui.colored_label(egui::Color32::YELLOW, "⚠");
+                            ui.colored_label(egui::Color32::YELLOW, "!");
                         }
                     });
                     ui.horizontal(|ui| {
@@ -3387,7 +3339,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Memory Statistics
-                ui.collapsing("💾 Memory Stats", |ui| {
+                ui.collapsing("Memory Stats", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Entities:");
                         ui.label(format!("{}", stats.entity_count));
@@ -3400,14 +3352,15 @@ impl TabViewer for EditorTabViewer {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Components/Entity:");
-                        ui.label("~3-5 avg");
+                        let avg = if stats.entity_count > 0 { "varies" } else { "0" };
+                        ui.label(avg);
                     });
                 });
 
                 // Frame time graph (custom painted)
                 if !self.frame_time_history.is_empty() {
                     ui.add_space(8.0);
-                    ui.collapsing("📈 Frame History", |ui| {
+                    ui.collapsing("Frame History", |ui| {
                         let max_time = self
                             .frame_time_history
                             .iter()
@@ -3523,21 +3476,21 @@ impl TabViewer for EditorTabViewer {
                 // Header with entity count and modified indicator
                 ui.horizontal(|ui| {
                     ui.heading(format!(
-                        "📈 Scene Stats ({} entities)",
+                        "Scene Stats ({} entities)",
                         stats.total_entities
                     ));
                     if stats.is_modified {
                         ui.colored_label(egui::Color32::YELLOW, " ● Modified");
                     } else {
-                        ui.colored_label(egui::Color32::GREEN, " ✓ Saved");
+                        ui.colored_label(egui::Color32::GREEN, " Saved");
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Undo/Redo indicators
                         if undo_count > 0 || redo_count > 0 {
-                            ui.small(format!("↩{} ↪{}", undo_count, redo_count));
+                            ui.small(format!("U:{} R:{}", undo_count, redo_count));
                         }
                         if ui
-                            .small_button("🔄")
+                            .small_button("R")
                             .on_hover_text("Refresh statistics")
                             .clicked()
                         {
@@ -3553,9 +3506,9 @@ impl TabViewer for EditorTabViewer {
 
                 // Scene file info
                 if let Some(ref path) = stats.scene_path {
-                    ui.small(format!("📁 {}", path));
+                    ui.small(format!("{}", path));
                     if let Some(ref time) = stats.last_save_time {
-                        ui.small(format!("💾 Last saved: {}", time));
+                        ui.small(format!("Last saved: {}", time));
                     }
                 }
                 ui.separator();
@@ -3571,7 +3524,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Entity Statistics
-                ui.collapsing("👤 Entities", |ui| {
+                ui.collapsing("Entities", |ui| {
                     let stat_row = |ui: &mut egui::Ui, label: &str, value: usize| {
                         ui.horizontal(|ui| {
                             ui.label(format!("{}:", label));
@@ -3585,7 +3538,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Component Statistics with categories
-                ui.collapsing("🧩 Components", |ui| {
+                ui.collapsing("Components", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Total:");
                         ui.strong(format!("{}", stats.total_components));
@@ -3598,46 +3551,46 @@ impl TabViewer for EditorTabViewer {
                     egui::Grid::new("component_grid")
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label("🎨 Mesh Renderers:");
+                            ui.label("Mesh Renderers:");
                             ui.label(format!("{}", stats.mesh_count));
                             ui.end_row();
 
-                            ui.label("💡 Lights:");
+                            ui.label("Lights:");
                             ui.label(format!("{}", stats.light_count));
                             ui.end_row();
 
-                            ui.label("📷 Cameras:");
+                            ui.label("Cameras:");
                             ui.label(format!("{}", stats.camera_count));
                             ui.end_row();
 
-                            ui.label("✨ Particle Systems:");
+                            ui.label("Particle Systems:");
                             ui.label(format!("{}", stats.particle_systems));
                             ui.end_row();
 
-                            ui.label("⚛️ Physics Bodies:");
+                            ui.label("Physics Bodies:");
                             ui.label(format!("{}", stats.physics_bodies));
                             ui.end_row();
 
-                            ui.label("🔲 Colliders:");
+                            ui.label("Colliders:");
                             ui.label(format!("{}", stats.collider_count));
                             ui.end_row();
 
-                            ui.label("🔊 Audio Sources:");
+                            ui.label("Audio Sources:");
                             ui.label(format!("{}", stats.audio_sources));
                             ui.end_row();
 
-                            ui.label("📜 Scripts:");
+                            ui.label("Scripts:");
                             ui.label(format!("{}", stats.script_count));
                             ui.end_row();
 
-                            ui.label("🖼️ UI Elements:");
+                            ui.label("UI Elements:");
                             ui.label(format!("{}", stats.ui_element_count));
                             ui.end_row();
                         });
                 });
 
                 // System Statistics
-                ui.collapsing("⚙️ Systems & Resources", |ui| {
+                ui.collapsing("Systems & Resources", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Active Systems:");
                         ui.strong(format!("{}", stats.active_systems));
@@ -3683,7 +3636,7 @@ impl TabViewer for EditorTabViewer {
 
                 // Undo/Redo status
                 ui.horizontal(|ui| {
-                    ui.label("📝 Undo Stack:");
+                    ui.label("Undo Stack:");
                     ui.strong(format!("{}", self.undo_count));
                     ui.label("|");
                     ui.label("Redo Stack:");
@@ -3694,12 +3647,12 @@ impl TabViewer for EditorTabViewer {
                 // Enhanced header with selected entity info
                 let header = if let Some(id) = self.selected_entity {
                     if let Some(ref info) = self.selected_entity_info {
-                        format!("🔄 Transform - {} (ID: {})", info.name, id)
+                        format!("Transform - {} (ID: {})", info.name, id)
                     } else {
-                        format!("🔄 Transform (ID: {})", id)
+                        format!("Transform (ID: {})", id)
                     }
                 } else {
-                    "🔄 Transform".to_string()
+                    "Transform".to_string()
                 };
                 ui.heading(header);
                 ui.separator();
@@ -3736,7 +3689,7 @@ impl TabViewer for EditorTabViewer {
                     ui.separator();
 
                     // Position with increment buttons
-                    ui.label("📍 Position");
+                    ui.label("Position");
                     ui.horizontal(|ui| {
                         ui.label("X:");
                         if ui.small_button("-").on_hover_text("Decrease X").clicked() {
@@ -3781,7 +3734,7 @@ impl TabViewer for EditorTabViewer {
                     // Rotation with quick angles
                     let mut rotation_degrees = rotation.to_degrees();
                     let orig_rot_degrees = rotation_degrees;
-                    ui.label("↻ Rotation");
+                    ui.label("Rotation");
                     ui.horizontal(|ui| {
                         ui.label("Z:");
                         if ui
@@ -3869,7 +3822,7 @@ impl TabViewer for EditorTabViewer {
                     // Copy/Paste and Reset buttons
                     ui.horizontal(|ui| {
                         if ui
-                            .button("📋 Copy")
+                            .button("Copy")
                             .on_hover_text("Copy transform to clipboard")
                             .clicked()
                         {
@@ -3961,11 +3914,11 @@ impl TabViewer for EditorTabViewer {
                 } else {
                     String::new()
                 };
-                ui.heading(format!("🌍 World ({} entities{})", entity_count, sim_time));
+                ui.heading(format!("World ({} entities{})", entity_count, sim_time));
                 ui.separator();
 
                 // Statistics section
-                egui::CollapsingHeader::new("📊 Statistics")
+                egui::CollapsingHeader::new("Statistics")
                     .default_open(true)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -3994,7 +3947,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Skybox section
-                egui::CollapsingHeader::new("🌅 Skybox")
+                egui::CollapsingHeader::new("Skybox")
                     .default_open(true)
                     .show(ui, |ui| {
                         let skybox_presets = [
@@ -4055,7 +4008,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Time of Day section
-                egui::CollapsingHeader::new("🕐 Time of Day")
+                egui::CollapsingHeader::new("Time of Day")
                     .default_open(true)
                     .show(ui, |ui| {
                         // Time slider
@@ -4113,7 +4066,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Weather section
-                egui::CollapsingHeader::new("🌤 Weather")
+                egui::CollapsingHeader::new("Weather")
                     .default_open(true)
                     .show(ui, |ui| {
                         let weather_presets = [
@@ -4125,7 +4078,7 @@ impl TabViewer for EditorTabViewer {
                             "Fog",
                             "Sandstorm",
                         ];
-                        let weather_icons = ["☀️", "☁️", "🌧️", "⛈️", "❄️", "🌫️", "💨"];
+                        let weather_icons = ["Clear", "Cloud", "Rain", "Storm", "Snow", "Fog", "Sand"];
 
                         ui.horizontal(|ui| {
                             ui.label("Weather:");
@@ -4134,12 +4087,12 @@ impl TabViewer for EditorTabViewer {
                                 .unwrap_or(&"Clear");
                             let current_icon = weather_icons
                                 .get(self.world_weather_preset)
-                                .unwrap_or(&"☀️");
+                                .unwrap_or(&"Clear");
                             egui::ComboBox::from_id_salt("weather_preset")
                                 .selected_text(format!("{} {}", current_icon, current_weather))
                                 .show_ui(ui, |ui| {
                                     for (i, name) in weather_presets.iter().enumerate() {
-                                        let icon = weather_icons.get(i).unwrap_or(&"☀️");
+                                        let icon = weather_icons.get(i).unwrap_or(&"Clear");
                                         ui.selectable_value(
                                             &mut self.world_weather_preset,
                                             i,
@@ -4169,7 +4122,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Environment settings section
-                egui::CollapsingHeader::new("🌤 Environment")
+                egui::CollapsingHeader::new("Environment")
                     .default_open(false)
                     .show(ui, |ui| {
                         // Ambient color
@@ -4218,7 +4171,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Physics settings section
-                egui::CollapsingHeader::new("⚛ Physics")
+                egui::CollapsingHeader::new("Physics")
                     .default_open(false)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -4266,11 +4219,11 @@ impl TabViewer for EditorTabViewer {
                 // Quick Actions section
                 ui.label("Quick Actions:");
                 ui.horizontal(|ui| {
-                    if ui.button("➕ Add Entity").clicked() {
+                    if ui.button("Add Entity").clicked() {
                         self.emit_event(PanelEvent::CreateEntity);
                     }
                     if ui
-                        .button("🗑 Clear All")
+                        .button("Clear All")
                         .on_hover_text("Clear all entities (requires confirmation)")
                         .clicked()
                     {
@@ -4299,7 +4252,7 @@ impl TabViewer for EditorTabViewer {
                 };
 
                 ui.horizontal(|ui| {
-                    ui.heading("⚡ Performance");
+                    ui.heading("Performance");
                     ui.separator();
                     ui.colored_label(grade_color, format!("{:.1} FPS", stats.fps));
                     ui.colored_label(grade_color, format!("[{}]", grade));
@@ -4346,7 +4299,7 @@ impl TabViewer for EditorTabViewer {
                 ui.separator();
 
                 // Detailed metrics
-                ui.collapsing("📊 Detailed Metrics", |ui| {
+                ui.collapsing("Detailed Metrics", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Target FPS:");
                         ui.strong("60");
@@ -4413,7 +4366,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Rendering stats
-                ui.collapsing("🎨 Rendering Stats", |ui| {
+                ui.collapsing("Rendering Stats", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Draw Calls:");
                         let dc_color = if stats.draw_calls < 500 {
@@ -4463,7 +4416,7 @@ impl TabViewer for EditorTabViewer {
                 let has_textures = self.current_material.albedo_texture.is_some()
                     || self.current_material.normal_texture.is_some()
                     || self.current_material.metallic_roughness_texture.is_some();
-                let texture_indicator = if has_textures { " 🖼" } else { "" };
+                let texture_indicator = if has_textures { " [T]" } else { "" };
                 let material_type = if self.current_material.metallic > 0.5 {
                     "Metal"
                 } else if self.current_material.alpha < 1.0 {
@@ -4472,7 +4425,7 @@ impl TabViewer for EditorTabViewer {
                     "Dielectric"
                 };
                 ui.heading(format!(
-                    "🎨 Material - {}{} [{}]",
+                    "Material - {}{} [{}]",
                     self.current_material.name, texture_indicator, material_type
                 ));
                 ui.separator();
@@ -4486,14 +4439,14 @@ impl TabViewer for EditorTabViewer {
                     );
                     ui.separator();
                     if ui
-                        .small_button("📋")
+                        .small_button("C")
                         .on_hover_text("Duplicate material")
                         .clicked()
                     {
                         // Would duplicate material
                     }
                     if ui
-                        .small_button("🗑")
+                        .small_button("x")
                         .on_hover_text("Delete material")
                         .clicked()
                     {
@@ -4506,12 +4459,12 @@ impl TabViewer for EditorTabViewer {
                     ui.label("Preset:");
                     let presets = [
                         "Custom",
-                        "🔩 Metal",
-                        "🪵 Wood",
-                        "🧱 Brick",
-                        "🪨 Stone",
-                        "🌊 Water",
-                        "🔮 Glass",
+                        "Metal",
+                        "Wood",
+                        "Brick",
+                        "Stone",
+                        "Water",
+                        "Glass",
                     ];
                     ui.menu_button(presets[0], |ui| {
                         for (i, preset) in presets.iter().enumerate().skip(1) {
@@ -4641,7 +4594,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(8.0);
 
                 // Additional properties collapsible
-                ui.collapsing("🔧 Additional Properties", |ui| {
+                ui.collapsing("Additional Properties", |ui| {
                     // Normal strength
                     ui.horizontal(|ui| {
                         ui.label("Normal Strength:");
@@ -4674,7 +4627,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Texture slots collapsible
-                ui.collapsing("🖼 Texture Slots", |ui| {
+                ui.collapsing("Texture Slots", |ui| {
                     let texture_slot =
                         |ui: &mut egui::Ui, label: &str, texture: &Option<String>| {
                             ui.horizontal(|ui| {
@@ -4687,7 +4640,7 @@ impl TabViewer for EditorTabViewer {
                                 } else {
                                     ui.weak("None");
                                     if ui
-                                        .small_button("📁")
+                                        .small_button("...")
                                         .on_hover_text("Select texture")
                                         .clicked()
                                     {
@@ -4818,21 +4771,21 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     if ui
-                        .button("💾 Save")
+                        .button("Save")
                         .on_hover_text("Save material to file")
                         .clicked()
                     {
                         // Would save material
                     }
                     if ui
-                        .button("🔄 Reset")
+                        .button("Reset")
                         .on_hover_text("Reset to default values")
                         .clicked()
                     {
                         self.current_material = MaterialInfo::default();
                     }
                     if ui
-                        .button("📤 Export")
+                        .button("Export")
                         .on_hover_text("Export as .mat file")
                         .clicked()
                     {
@@ -4849,7 +4802,7 @@ impl TabViewer for EditorTabViewer {
                     EditorTheme::Solarized => "Solarized",
                 };
                 ui.horizontal(|ui| {
-                    ui.heading("🎭 Theme Manager");
+                    ui.heading("Theme Manager");
                     ui.weak(format!("• {}", theme_name));
                 });
                 ui.separator();
@@ -4858,15 +4811,15 @@ impl TabViewer for EditorTabViewer {
 
                 ui.label("Editor Theme");
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.current_theme, EditorTheme::Dark, "🌙 Dark");
-                    ui.selectable_value(&mut self.current_theme, EditorTheme::Light, "☀️ Light");
+                    ui.selectable_value(&mut self.current_theme, EditorTheme::Dark, "Dark");
+                    ui.selectable_value(&mut self.current_theme, EditorTheme::Light, "Light");
                 });
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.current_theme, EditorTheme::Nord, "❄️ Nord");
+                    ui.selectable_value(&mut self.current_theme, EditorTheme::Nord, "Nord");
                     ui.selectable_value(
                         &mut self.current_theme,
                         EditorTheme::Solarized,
-                        "🌅 Solarized",
+                        "Solarized",
                     );
                 });
 
@@ -4878,7 +4831,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(8.0);
 
                 // Font & Text Settings (collapsible)
-                ui.collapsing("📝 Font & Text", |ui| {
+                ui.collapsing("Font & Text", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Font Size:");
                         ui.add(egui::Slider::new(&mut self.font_size, 10.0..=20.0).suffix("px"));
@@ -4890,7 +4843,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Layout Settings (collapsible)
-                ui.collapsing("📐 Layout", |ui| {
+                ui.collapsing("Layout", |ui| {
                     ui.horizontal(|ui| {
                         ui.label("UI Scale:");
                         ui.add(egui::Slider::new(&mut self.ui_scale, 0.75..=2.0).text("x"));
@@ -4902,7 +4855,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Viewport Settings (collapsible)
-                ui.collapsing("🎬 Viewport", |ui| {
+                ui.collapsing("Viewport", |ui| {
                     ui.checkbox(&mut self.grid_enabled, "Show Grid");
                     ui.checkbox(&mut self.snap_enabled, "Snap to Grid");
                     ui.horizontal(|ui| {
@@ -4912,7 +4865,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Behavior Settings (collapsible)
-                ui.collapsing("⚙️ Behavior", |ui| {
+                ui.collapsing("Behavior", |ui| {
                     ui.checkbox(&mut self.show_tooltips, "Show Tooltips");
                     ui.horizontal(|ui| {
                         ui.label("Auto-Save:");
@@ -4993,7 +4946,7 @@ impl TabViewer for EditorTabViewer {
 
                 // Reset button
                 ui.horizontal(|ui| {
-                    if ui.button("🔄 Reset to Defaults").clicked() {
+                    if ui.button("Reset to Defaults").clicked() {
                         self.current_theme = EditorTheme::Dark;
                         self.ui_scale = 1.0;
                         self.font_size = 13.0;
@@ -5011,65 +4964,235 @@ impl TabViewer for EditorTabViewer {
                 // Enhanced header with selected entity name
                 let header = if let Some(ref info) = self.selected_entity_info {
                     format!(
-                        "📦 Entity - {} ({} components)",
+                        "Entity - {} ({} components)",
                         info.name,
                         info.components.len()
                     )
                 } else if self.selected_entity.is_some() {
-                    "📦 Entity - Loading...".to_string()
+                    "Entity - Loading...".to_string()
                 } else {
-                    "📦 Entity - None Selected".to_string()
+                    "Entity - None Selected".to_string()
                 };
                 ui.heading(header);
                 ui.separator();
 
                 if let Some(entity_id) = self.selected_entity {
-                    if let Some(ref info) = self.selected_entity_info {
-                        // Entity header
+                    // Clone entity info to avoid borrow conflicts with closures
+                    let info_snapshot = self.selected_entity_info.clone();
+                    if let Some(info) = info_snapshot {
+                        // Editable entity name
+                        let mut name_buf = info.name.clone();
                         ui.horizontal(|ui| {
-                            ui.strong(&info.name);
-                            ui.weak(format!("(ID: {})", entity_id));
-                        });
-                        ui.label(format!("Type: {}", info.entity_type));
-
-                        ui.add_space(8.0);
-                        ui.separator();
-
-                        // Quick stats
-                        ui.horizontal(|ui| {
-                            ui.label("Components:");
-                            ui.strong(format!("{}", info.components.len()));
-                        });
-
-                        ui.add_space(8.0);
-
-                        // Components list with icons
-                        ui.collapsing("Components", |ui| {
-                            for comp in &info.components {
-                                let icon = match comp.as_str() {
-                                    "Transform" => "📍",
-                                    "Sprite" | "Renderer" => "🖼",
-                                    "Collider" | "RigidBody" => "⬜",
-                                    "Script" => "📜",
-                                    "Audio" => "🔊",
-                                    "Light" => "💡",
-                                    "Camera" => "📷",
-                                    _ => "•",
-                                };
-                                ui.label(format!("{} {}", icon, comp));
+                            ui.label("Name:");
+                            if ui.text_edit_singleline(&mut name_buf).lost_focus()
+                                && name_buf != info.name
+                            {
+                                self.emit_event(PanelEvent::EntityRenamed {
+                                    entity_id,
+                                    new_name: name_buf,
+                                });
                             }
                         });
+                        ui.horizontal(|ui| {
+                            ui.weak(format!("ID: {}", entity_id));
+                            ui.weak(format!("Type: {}", info.entity_type));
+                        });
+
+                        ui.add_space(4.0);
+                        ui.separator();
+
+                        // -- Transform (Pose) editor --
+                        if info.pos_x.is_some() || info.pos_y.is_some() || info.rotation.is_some() || info.scale.is_some() {
+                            egui::CollapsingHeader::new("Transform")
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    if let (Some(px), Some(py)) = (info.pos_x, info.pos_y) {
+                                        let mut x = px as f32;
+                                        let mut y = py as f32;
+                                        ui.horizontal(|ui| {
+                                            ui.label("Position:");
+                                            let cx = ui.add(egui::DragValue::new(&mut x).prefix("X: ").speed(1.0)).changed();
+                                            let cy = ui.add(egui::DragValue::new(&mut y).prefix("Y: ").speed(1.0)).changed();
+                                            if cx || cy {
+                                                self.emit_event(PanelEvent::TransformPositionChanged {
+                                                    entity_id,
+                                                    x,
+                                                    y,
+                                                });
+                                            }
+                                        });
+                                    }
+                                    if let Some(rot) = info.rotation {
+                                        let mut rot_deg = rot.to_degrees();
+                                        ui.horizontal(|ui| {
+                                            ui.label("Rotation:");
+                                            if ui.add(egui::DragValue::new(&mut rot_deg).suffix("\u{00b0}").speed(1.0)).changed() {
+                                                self.emit_event(PanelEvent::TransformRotationChanged {
+                                                    entity_id,
+                                                    rotation: rot_deg.to_radians(),
+                                                });
+                                            }
+                                        });
+                                    }
+                                    if let Some(sc) = info.scale {
+                                        let mut s = sc;
+                                        ui.horizontal(|ui| {
+                                            ui.label("Scale:");
+                                            if ui.add(egui::DragValue::new(&mut s).speed(0.01).range(0.01..=100.0)).changed() {
+                                                self.emit_event(PanelEvent::TransformScaleChanged {
+                                                    entity_id,
+                                                    scale_x: s,
+                                                    scale_y: s,
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                        }
+
+                        // -- Health editor --
+                        if let Some(hp) = info.hp {
+                            egui::CollapsingHeader::new("Health")
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    let mut hp_val = hp;
+                                    ui.horizontal(|ui| {
+                                        ui.label("HP:");
+                                        if ui.add(egui::DragValue::new(&mut hp_val).speed(1.0).range(0..=10000)).changed() {
+                                            self.emit_event(PanelEvent::HealthChanged { entity_id, new_hp: hp_val });
+                                        }
+                                    });
+                                    // Health bar visualization
+                                    let pct = (hp_val as f32 / 100.0).clamp(0.0, 1.0);
+                                    let bar_color = if pct > 0.6 {
+                                        egui::Color32::GREEN
+                                    } else if pct > 0.3 {
+                                        egui::Color32::YELLOW
+                                    } else {
+                                        egui::Color32::RED
+                                    };
+                                    let (rect, _) = ui.allocate_exact_size(egui::vec2(ui.available_width().min(200.0), 8.0), egui::Sense::hover());
+                                    ui.painter().rect_filled(rect, 2.0, egui::Color32::DARK_GRAY);
+                                    let filled = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width() * pct, rect.height()));
+                                    ui.painter().rect_filled(filled, 2.0, bar_color);
+                                });
+                        }
+
+                        // -- Team editor --
+                        if let Some(tid) = info.team_id {
+                            egui::CollapsingHeader::new("Team")
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    let mut id_val = tid as i32;
+                                    ui.horizontal(|ui| {
+                                        ui.label("Team ID:");
+                                        if ui.add(egui::DragValue::new(&mut id_val).speed(1.0).range(0..=255)).changed() {
+                                            self.emit_event(PanelEvent::TeamChanged { entity_id, new_team_id: id_val as u8 });
+                                        }
+                                        let team_name = match id_val as u8 {
+                                            0 => "Player",
+                                            1 => "Enemy",
+                                            2 => "Neutral",
+                                            _ => "Custom",
+                                        };
+                                        ui.weak(format!("({})", team_name));
+                                    });
+                                });
+                        }
+
+                        // -- Ammo editor --
+                        if let Some(ammo_val) = info.ammo {
+                            egui::CollapsingHeader::new("Ammo")
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    let mut rounds = ammo_val;
+                                    ui.horizontal(|ui| {
+                                        ui.label("Rounds:");
+                                        if ui.add(egui::DragValue::new(&mut rounds).speed(1.0).range(0..=10000)).changed() {
+                                            self.emit_event(PanelEvent::AmmoChanged { entity_id, new_ammo: rounds });
+                                        }
+                                    });
+                                });
+                        }
+
+                        // -- Other components (display-only with remove buttons) --
+                        let other_comps: Vec<String> = info.components.iter()
+                            .filter(|c| !matches!(c.as_str(), "Transform" | "Health" | "Team" | "Ammo"))
+                            .cloned()
+                            .collect();
+                        if !other_comps.is_empty() {
+                            let mut comp_to_remove = None;
+                            egui::CollapsingHeader::new(format!("Other Components ({})", other_comps.len()))
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    for comp in &other_comps {
+                                        let icon = match comp.as_str() {
+                                            "Sprite" | "Renderer" => "R",
+                                            "Collider" | "RigidBody" => "⬜",
+                                            "Script" => "S",
+                                            "Audio" => "A",
+                                            "Light" => "L",
+                                            "Camera" => "[C]",
+                                            _ => "•",
+                                        };
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{} {}", icon, comp));
+                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                if ui.small_button("X").on_hover_text(format!("Remove {}", comp)).clicked() {
+                                                    comp_to_remove = Some(comp.clone());
+                                                }
+                                            });
+                                        });
+                                    }
+                                });
+                            if let Some(comp) = comp_to_remove {
+                                self.emit_event(PanelEvent::RemoveComponent {
+                                    entity_id,
+                                    component_type: comp,
+                                });
+                            }
+                        }
+
+                        ui.add_space(4.0);
+
+                        // Add Component dropdown
+                        let components_snapshot = info.components.clone();
+                        let mut add_comp_event = None;
+                        ui.menu_button("+ Add Component", |ui| {
+                            let available = ["Transform", "Health", "Team", "Ammo",
+                                             "Sprite", "Collider", "RigidBody", "Script",
+                                             "Audio", "Light", "Camera"];
+                            for comp_name in &available {
+                                let already_has = components_snapshot.iter().any(|c| c == comp_name);
+                                let btn = ui.add_enabled(!already_has,
+                                    egui::Button::new(if already_has {
+                                        format!("  {} (added)", comp_name)
+                                    } else {
+                                        format!("  {}", comp_name)
+                                    }));
+                                if btn.clicked() {
+                                    add_comp_event = Some(comp_name.to_string());
+                                    ui.close();
+                                }
+                            }
+                        });
+                        if let Some(comp) = add_comp_event {
+                            self.emit_event(PanelEvent::AddComponent {
+                                entity_id,
+                                component_type: comp,
+                            });
+                        }
 
                         ui.add_space(8.0);
                         ui.separator();
 
                         // Actions
                         ui.horizontal(|ui| {
-                            if ui.button("📋 Duplicate").clicked() {
+                            if ui.button("Duplicate").clicked() {
                                 self.emit_event(PanelEvent::DuplicateEntity(entity_id));
                             }
                             if ui
-                                .button("🗑 Delete")
+                                .button("Delete")
                                 .on_hover_text("Delete entity")
                                 .clicked()
                             {
@@ -5081,32 +5204,38 @@ impl TabViewer for EditorTabViewer {
                         ui.label("Loading entity info...");
                     }
                 } else {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("No entity selected");
+                    // Empty state with guidance
+                    ui.add_space(40.0);
+                    ui.vertical_centered(|ui| {
+                        ui.heading("No Entity Selected");
+                        ui.add_space(8.0);
+                        ui.weak("Select an entity in the Hierarchy panel\nor the 3D Viewport to inspect it.");
+                        ui.add_space(16.0);
+                        ui.weak("Tip: Use the + Add button in the Hierarchy\npanel to create new entities.");
                     });
                 }
             }
             PanelType::BuildManager => {
                 // Build status for header
                 let (status_icon, status_text, status_color) = match self.build_status {
-                    1 => ("🔄", "Building...", egui::Color32::YELLOW),
-                    2 => ("✅", "Success", egui::Color32::GREEN),
-                    3 => ("❌", "Failed", egui::Color32::RED),
-                    _ => ("⏸", "Idle", egui::Color32::GRAY),
+                    1 => ("...", "Building...", egui::Color32::YELLOW),
+                    2 => ("OK", "Success", egui::Color32::GREEN),
+                    3 => ("!!", "Failed", egui::Color32::RED),
+                    _ => ("--", "Idle", egui::Color32::GRAY),
                 };
                 let targets = [
-                    "🪟 Windows",
-                    "🐧 Linux",
-                    "🍎 macOS",
-                    "🌐 WebGL",
-                    "📱 Android",
-                    "🍏 iOS",
+                    "Windows",
+                    "Linux",
+                    "macOS",
+                    "WebGL",
+                    "Android",
+                    "iOS",
                 ];
                 let target_names = ["windows", "linux", "macos", "webgl", "android", "ios"];
                 let profiles = ["Debug", "Release", "Profile"];
 
                 ui.horizontal(|ui| {
-                    ui.heading("🔨 Build Manager");
+                    ui.heading("Build Manager");
                     ui.colored_label(status_color, format!("{} {}", status_icon, status_text));
                     if self.build_status != 1 {
                         // Show current target when not building
@@ -5147,7 +5276,7 @@ impl TabViewer for EditorTabViewer {
                     ui.add_space(4.0);
 
                     // Cancel button during build
-                    if ui.button("⏹ Cancel Build").clicked() {
+                    if ui.button("Cancel Build").clicked() {
                         // Would cancel build
                         self.build_status = 0;
                     }
@@ -5155,7 +5284,7 @@ impl TabViewer for EditorTabViewer {
                 }
 
                 // Build target selection
-                egui::CollapsingHeader::new("🎯 Target Platform")
+                egui::CollapsingHeader::new("Target Platform")
                     .default_open(true)
                     .show(ui, |ui| {
                         egui::Grid::new("target_grid")
@@ -5188,7 +5317,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Build configuration
-                egui::CollapsingHeader::new("⚙️ Configuration")
+                egui::CollapsingHeader::new("Configuration")
                     .default_open(true)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -5215,7 +5344,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(4.0);
 
                 // Build options
-                egui::CollapsingHeader::new("📦 Build Options")
+                egui::CollapsingHeader::new("Build Options")
                     .default_open(true)
                     .show(ui, |ui| {
                         ui.checkbox(
@@ -5252,7 +5381,7 @@ impl TabViewer for EditorTabViewer {
 
                     ui.add_enabled_ui(can_build, |ui| {
                         if ui
-                            .button("🔨 Build")
+                            .button("Build")
                             .on_hover_text("Build for selected platform")
                             .clicked()
                         {
@@ -5273,7 +5402,7 @@ impl TabViewer for EditorTabViewer {
                             });
                         }
                         if ui
-                            .button("▶️ Build & Run")
+                            .button("Build & Run")
                             .on_hover_text("Build and launch")
                             .clicked()
                         {
@@ -5296,7 +5425,7 @@ impl TabViewer for EditorTabViewer {
                     });
 
                     if ui
-                        .button("📂 Open Output")
+                        .button("Open Output")
                         .on_hover_text("Open build output folder")
                         .clicked()
                     {
@@ -5307,14 +5436,14 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(8.0);
 
                 // Build output log
-                egui::CollapsingHeader::new(format!("📜 Build Log ({})", self.build_output.len()))
+                egui::CollapsingHeader::new(format!("Build Log ({})", self.build_output.len()))
                     .default_open(true)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            if ui.small_button("🗑 Clear").clicked() {
+                            if ui.small_button("Clear").clicked() {
                                 self.build_output.clear();
                             }
-                            if ui.small_button("📋 Copy").clicked() {
+                            if ui.small_button("Copy").clicked() {
                                 let text = self.build_output.join("\n");
                                 ui.ctx().copy_text(text);
                             }
@@ -5349,13 +5478,13 @@ impl TabViewer for EditorTabViewer {
             }
             PanelType::AdvancedWidgets => {
                 ui.horizontal(|ui| {
-                    ui.heading("🔧 Advanced Widgets");
+                    ui.heading("Advanced Widgets");
                     ui.weak("• 5 widget demos");
                 });
                 ui.separator();
 
                 // Color picker demo
-                ui.collapsing("🎨 Color Picker", |ui| {
+                ui.collapsing("Color Picker", |ui| {
                     let mut color = [0.5f32, 0.3, 0.8];
                     ui.horizontal(|ui| {
                         ui.label("Primary:");
@@ -5398,7 +5527,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Gradient demo
-                ui.collapsing("🌈 Gradient Editor", |ui| {
+                ui.collapsing("Gradient Editor", |ui| {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(180.0, 24.0), egui::Sense::hover());
                     let painter = ui.painter();
@@ -5429,7 +5558,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Curve editor placeholder
-                ui.collapsing("📈 Curve Editor", |ui| {
+                ui.collapsing("Curve Editor", |ui| {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(180.0, 80.0), egui::Sense::hover());
                     let painter = ui.painter();
@@ -5463,7 +5592,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Range Slider
-                ui.collapsing("📏 Range Slider", |ui| {
+                ui.collapsing("Range Slider", |ui| {
                     ui.label("Range selection demo:");
                     let mut min_val = 20.0f32;
                     let mut max_val = 80.0f32;
@@ -5497,7 +5626,7 @@ impl TabViewer for EditorTabViewer {
                 });
 
                 // Knob / Dial
-                ui.collapsing("🎛️ Dial Controls", |ui| {
+                ui.collapsing("Dial Controls", |ui| {
                     // Draw two dials side by side
                     let dial_size = 50.0;
                     let total_width = dial_size * 2.0 + 16.0;
@@ -5565,12 +5694,12 @@ impl TabViewer for EditorTabViewer {
                 let current_time =
                     self.animation_state.current_frame as f32 / self.animation_state.fps;
                 let state_icon = if self.animation_state.is_playing {
-                    "▶"
+                    ">"
                 } else {
-                    "⏸"
+                    "||"
                 };
                 let loop_icon = if self.animation_state.loop_enabled {
-                    "🔁"
+                    "L"
                 } else {
                     ""
                 };
@@ -5580,7 +5709,7 @@ impl TabViewer for EditorTabViewer {
                     String::new()
                 };
                 ui.heading(format!(
-                    "🎬 Animation {} ({} tracks) - {:.2}s{}{}",
+                    "Animation {} ({} tracks) - {:.2}s{}{}",
                     state_icon, track_count, current_time, speed_text, loop_icon
                 ));
                 ui.separator();
@@ -5590,13 +5719,13 @@ impl TabViewer for EditorTabViewer {
                 let mut frame_changed = None;
 
                 ui.horizontal(|ui| {
-                    if ui.button("⏮").on_hover_text("Go to start (Home)").clicked() {
+                    if ui.button("|<").on_hover_text("Go to start (Home)").clicked() {
                         frame_changed = Some(0);
                     }
                     let play_btn = if self.animation_state.is_playing {
-                        "⏸"
+                        "||"
                     } else {
-                        "▶"
+                        ">"
                     };
                     let play_tip = if self.animation_state.is_playing {
                         "Pause (Space)"
@@ -5606,11 +5735,11 @@ impl TabViewer for EditorTabViewer {
                     if ui.button(play_btn).on_hover_text(play_tip).clicked() {
                         play_state_changed = Some(!self.animation_state.is_playing);
                     }
-                    if ui.button("⏹").on_hover_text("Stop").clicked() {
+                    if ui.button("[]").on_hover_text("Stop").clicked() {
                         play_state_changed = Some(false);
                         frame_changed = Some(0);
                     }
-                    if ui.button("⏭").on_hover_text("Go to end (End)").clicked() {
+                    if ui.button(">|").on_hover_text("Go to end (End)").clicked() {
                         frame_changed = Some(self.animation_state.total_frames);
                     }
 
@@ -5662,13 +5791,13 @@ impl TabViewer for EditorTabViewer {
                     ui.separator();
 
                     // Loop mode toggle
-                    ui.toggle_value(&mut self.animation_state.loop_enabled, "🔁 Loop")
+                    ui.toggle_value(&mut self.animation_state.loop_enabled, "Loop")
                         .on_hover_text("Enable looping playback")
                         .changed();
 
                     // Ping-pong mode toggle
                     if ui
-                        .toggle_value(&mut self.animation_state.ping_pong, "↔ Ping-Pong")
+                        .toggle_value(&mut self.animation_state.ping_pong, "Ping-Pong")
                         .on_hover_text("Play forward then backward")
                         .changed()
                     {}
@@ -5748,7 +5877,7 @@ impl TabViewer for EditorTabViewer {
                 ui.label("Tracks");
                 for (i, track) in self.animation_state.tracks.iter().enumerate() {
                     ui.horizontal(|ui| {
-                        let icon = if track.is_visible { "👁" } else { "○" };
+                        let icon = if track.is_visible { "*" } else { "o" };
                         ui.label(icon);
 
                         let selected = self.animation_state.selected_track == Some(i);
@@ -5759,7 +5888,7 @@ impl TabViewer for EditorTabViewer {
                         ui.weak(format!("{} keys", track.keyframes.len()));
 
                         if track.is_locked {
-                            ui.label("🔒");
+                            ui.label("[L]");
                         }
                     });
 
@@ -5794,10 +5923,10 @@ impl TabViewer for EditorTabViewer {
 
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    if ui.button("➕ Add Track").clicked() {
+                    if ui.button("Add Track").clicked() {
                         // Would add new track
                     }
-                    if ui.button("🔑 Add Keyframe").clicked() {
+                    if ui.button("Add Keyframe").clicked() {
                         // Would add keyframe at current frame
                     }
                 });
@@ -5819,10 +5948,10 @@ impl TabViewer for EditorTabViewer {
                     .count();
 
                 ui.horizontal(|ui| {
-                    ui.heading(format!("📊 Visual Script ({} nodes)", node_count));
+                    ui.heading(format!("Visual Script ({} nodes)", node_count));
                     if node_count > 0 {
                         ui.weak(format!(
-                            "• ⚡{} ƒ{} 🔗{}",
+                            "E:{} F:{} L:{}",
                             event_count, func_count, connection_count
                         ));
                     }
@@ -5832,28 +5961,28 @@ impl TabViewer for EditorTabViewer {
                 // Enhanced toolbar with node type quick-add
                 ui.horizontal(|ui| {
                     if ui
-                        .button("➕ Event")
+                        .button("Event")
                         .on_hover_text("Add Event Node")
                         .clicked()
                     {
                         // Would add event node
                     }
                     if ui
-                        .button("➕ Function")
+                        .button("Function")
                         .on_hover_text("Add Function Node")
                         .clicked()
                     {
                         // Would add function node
                     }
                     if ui
-                        .button("➕ Math")
+                        .button("Math")
                         .on_hover_text("Add Math Node")
                         .clicked()
                     {
                         // Would add math node
                     }
                     if ui
-                        .button("➕ Variable")
+                        .button("Variable")
                         .on_hover_text("Add Variable Node")
                         .clicked()
                     {
@@ -5861,13 +5990,13 @@ impl TabViewer for EditorTabViewer {
                     }
                     ui.separator();
                     if ui
-                        .button("🔗 Connect")
+                        .button("Connect")
                         .on_hover_text("Enter connection mode")
                         .clicked()
                     {
                         // Would enter connection mode
                     }
-                    if ui.button("🗑").on_hover_text("Delete selected").clicked() {
+                    if ui.button("x").on_hover_text("Delete selected").clicked() {
                         // Would delete selected
                     }
                 });
@@ -5875,14 +6004,14 @@ impl TabViewer for EditorTabViewer {
                 // Second toolbar row with view controls
                 ui.horizontal(|ui| {
                     if ui
-                        .button("📐 Align")
+                        .button("Align")
                         .on_hover_text("Auto-align nodes")
                         .clicked()
                     {
                         // Would align nodes
                     }
                     if ui
-                        .button("🔍 Fit")
+                        .button("Fit")
                         .on_hover_text("Fit all nodes in view")
                         .clicked()
                     {
@@ -6041,10 +6170,10 @@ impl TabViewer for EditorTabViewer {
 
                     // Node type icon
                     let type_icon = match node.node_type.as_str() {
-                        "Event" => "⚡",
+                        "Event" => "E",
                         "Function" => "ƒ",
                         "Math" => "∑",
-                        "Variable" => "📦",
+                        "Variable" => "V",
                         _ => "•",
                     };
                     painter.text(
@@ -6106,7 +6235,7 @@ impl TabViewer for EditorTabViewer {
                 ui.add_space(8.0);
 
                 // Node list (enhanced with grouping)
-                egui::CollapsingHeader::new("📋 Node List")
+                egui::CollapsingHeader::new("Node List")
                     .default_open(true)
                     .show(ui, |ui| {
                         // Group by type
@@ -6155,10 +6284,10 @@ impl TabViewer for EditorTabViewer {
                     .count();
 
                 ui.horizontal(|ui| {
-                    ui.heading(format!("🧠 Behavior Graph ({} nodes)", node_count));
+                    ui.heading(format!("Behavior Graph ({} nodes)", node_count));
                     if node_count > 0 {
                         ui.weak(format!(
-                            "• ▶{} ❓{} 🔗{}",
+                            "S:{} Q:{} L:{}",
                             action_count, condition_count, connection_count
                         ));
                     }
@@ -6167,10 +6296,10 @@ impl TabViewer for EditorTabViewer {
 
                 // Toolbar
                 ui.horizontal(|ui| {
-                    ui.button("➕ Sequence").clicked();
-                    ui.button("➕ Selector").clicked();
-                    ui.button("➕ Action").clicked();
-                    ui.button("➕ Condition").clicked();
+                    ui.button("Sequence").clicked();
+                    ui.button("Selector").clicked();
+                    ui.button("Action").clicked();
+                    ui.button("Condition").clicked();
                 });
 
                 ui.add_space(8.0);
@@ -6246,7 +6375,7 @@ impl TabViewer for EditorTabViewer {
                     // Node styling based on type
                     let (bg_color, icon) = match node.node_type {
                         BehaviorNodeType::Root => (egui::Color32::from_rgb(100, 60, 120), "◉"),
-                        BehaviorNodeType::Sequence => (egui::Color32::from_rgb(60, 100, 140), "→"),
+                        BehaviorNodeType::Sequence => (egui::Color32::from_rgb(60, 100, 140), ">"),
                         BehaviorNodeType::Selector => (egui::Color32::from_rgb(140, 100, 60), "?"),
                         BehaviorNodeType::Condition => (egui::Color32::from_rgb(60, 140, 100), "◇"),
                         BehaviorNodeType::Action => (egui::Color32::from_rgb(80, 80, 140), "■"),
@@ -6307,7 +6436,7 @@ impl TabViewer for EditorTabViewer {
                 }
             }
             PanelType::Charts => {
-                ui.heading("📈 Charts & Graphs");
+                ui.heading("Charts & Graphs");
                 ui.separator();
 
                 // Performance chart
@@ -6610,12 +6739,12 @@ impl TabViewer for EditorTabViewer {
         _surface: egui_dock::SurfaceIndex,
         _node: egui_dock::NodeIndex,
     ) {
-        ui.heading("➕ Add Panel");
+        ui.heading("Add Panel");
         ui.separator();
 
         // Search filter
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("Filter:");
             ui.add_sized(
                 [ui.available_width() - 10.0, 20.0],
                 egui::TextEdit::singleline(&mut self.hierarchy_search)
@@ -6661,7 +6790,7 @@ impl TabViewer for EditorTabViewer {
         // Group panels by category with descriptions and shortcuts
         show_panels_with_desc(
             ui,
-            "🎯 Core",
+            "Core",
             &[
                 (
                     PanelType::Viewport,
@@ -6688,7 +6817,7 @@ impl TabViewer for EditorTabViewer {
 
         show_panels_with_desc(
             ui,
-            "📁 Assets & Scene",
+            "Assets & Scene",
             &[
                 (
                     PanelType::AssetBrowser,
@@ -6715,7 +6844,7 @@ impl TabViewer for EditorTabViewer {
 
         show_panels_with_desc(
             ui,
-            "📊 Debug & Profiling",
+            "Debug & Profiling",
             &[
                 (
                     PanelType::Console,
@@ -6738,7 +6867,7 @@ impl TabViewer for EditorTabViewer {
 
         show_panels_with_desc(
             ui,
-            "✏️ Visual Editors",
+            "Visual Editors",
             &[
                 (PanelType::Animation, "Timeline and keyframe animation", ""),
                 (PanelType::Graph, "Visual node-based scripting", ""),
@@ -6749,7 +6878,7 @@ impl TabViewer for EditorTabViewer {
 
         show_panels_with_desc(
             ui,
-            "⚙️ Tools & Settings",
+            "Tools & Settings",
             &[
                 (
                     PanelType::ThemeManager,
@@ -6787,7 +6916,7 @@ impl TabViewer for EditorTabViewer {
         ui.add_space(4.0);
 
         // Tips
-        ui.weak("💡 Tip: Drag tabs to rearrange • Right-click tab for options");
+        ui.weak("Tip: Drag tabs to rearrange • Right-click tab for options");
     }
 }
 

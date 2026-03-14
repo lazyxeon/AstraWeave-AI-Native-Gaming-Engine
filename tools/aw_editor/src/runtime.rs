@@ -76,9 +76,9 @@ impl RuntimeState {
     pub fn icon(&self) -> &'static str {
         match self {
             RuntimeState::Editing => "✏️",
-            RuntimeState::Playing => "▶️",
-            RuntimeState::Paused => "⏸️",
-            RuntimeState::SteppingOneFrame => "⏭️",
+            RuntimeState::Playing => ">",
+            RuntimeState::Paused => "||",
+            RuntimeState::SteppingOneFrame => ">|",
         }
     }
 
@@ -240,10 +240,10 @@ impl RuntimeIssue {
     /// Get icon for this issue
     pub fn icon(&self) -> &'static str {
         match self.severity() {
-            5 => "🔴", // Critical
+            5 => "[R]", // Critical
             4 => "🟠", // High
-            3 => "🟡", // Medium
-            2 => "🟢", // Low
+            3 => "[Y]", // Medium
+            2 => "[G]", // Low
             _ => "ℹ️", // Info
         }
     }
@@ -1441,7 +1441,7 @@ mod tests {
 
     #[test]
     fn runtime_issue_icon() {
-        assert_eq!(RuntimeIssue::MissingSimulation.icon(), "🔴"); // Severity 5
+        assert_eq!(RuntimeIssue::MissingSimulation.icon(), "[R]"); // Severity 5
         assert_eq!(RuntimeIssue::MissingEditSnapshot.icon(), "🟠"); // Severity 4
         assert_eq!(
             RuntimeIssue::EntityCountMismatch {
@@ -1449,7 +1449,7 @@ mod tests {
                 actual: 95
             }
             .icon(),
-            "🟡"
+            "[Y]"
         ); // Severity 3
         assert_eq!(
             RuntimeIssue::FrameTimeExceeded {
@@ -1457,7 +1457,7 @@ mod tests {
                 threshold_ms: 33
             }
             .icon(),
-            "🟢"
+            "[G]"
         ); // Severity 2
         assert_eq!(
             RuntimeIssue::LowFps {

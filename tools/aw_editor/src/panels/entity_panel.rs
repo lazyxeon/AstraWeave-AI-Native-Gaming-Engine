@@ -14,7 +14,7 @@
 //! - Health/status visualization (bars, colors, icons)
 
 use super::Panel;
-use crate::component_ui::{ComponentEdit, ComponentRegistry};
+use crate::component_ui::{ComponentEdit, ComponentRegistry, ComponentType};
 use crate::scene_state::{EditorSceneState, TransformableScene};
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
@@ -30,6 +30,8 @@ pub enum PrefabAction {
     ApplyChangesToFile(Entity),
     RevertAllToOriginal(Entity), // Revert all entities in prefab instance (entity is any member)
     ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
+    EditPrefab(Entity),             // Open prefab source for editing
+    BreakConnection(Entity),        // Detach entity from prefab tracking
 }
 
 impl std::fmt::Display for PrefabAction {
@@ -45,15 +47,19 @@ impl PrefabAction {
             PrefabAction::ApplyChangesToFile(_) => "Apply Changes",
             PrefabAction::RevertAllToOriginal(_) => "Revert All",
             PrefabAction::ApplyAllChangesToFile(_) => "Apply All Changes",
+            PrefabAction::EditPrefab(_) => "Edit Prefab",
+            PrefabAction::BreakConnection(_) => "Break Connection",
         }
     }
 
     pub fn icon(&self) -> &'static str {
         match self {
             PrefabAction::RevertToOriginal(_) => "↩️",
-            PrefabAction::ApplyChangesToFile(_) => "✅",
-            PrefabAction::RevertAllToOriginal(_) => "🔄",
-            PrefabAction::ApplyAllChangesToFile(_) => "💾",
+            PrefabAction::ApplyChangesToFile(_) => "[ok]",
+            PrefabAction::RevertAllToOriginal(_) => "[Sync]",
+            PrefabAction::ApplyAllChangesToFile(_) => "[Save]",
+            PrefabAction::EditPrefab(_) => "✏️",
+            PrefabAction::BreakConnection(_) => "🔗",
         }
     }
 
@@ -261,14 +267,14 @@ impl EntityArchetype {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Player => "🎮",
+            Self::Player => "[Gp]",
             Self::Companion => "🤝",
             Self::Enemy => "👾",
             Self::Boss => "👹",
             Self::NPC => "👤",
-            Self::Prop => "📦",
-            Self::Trigger => "⚡",
-            Self::Light => "💡",
+            Self::Prop => "[Pkg]",
+            Self::Trigger => "[Zap]",
+            Self::Light => "[Lgt]",
             Self::Camera => "📷",
         }
     }
@@ -363,8 +369,8 @@ impl ValidationSeverity {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Error => "❌",
-            Self::Warning => "⚠️",
+            Self::Error => "[x]",
+            Self::Warning => "[!]",
             Self::Info => "ℹ️",
         }
     }
@@ -412,6 +418,11 @@ pub struct EntityPanel {
 
     // Action queue for external processing
     pending_actions: Vec<EntityAction>,
+
+    /// Property/component search filter for the inspector.
+    property_search: String,
+    /// Disabled components: (entity, component_type) pairs skipped during simulation.
+    disabled_components: HashSet<(Entity, crate::component_ui::ComponentType)>,
 }
 
 impl EntityPanel {
@@ -428,7 +439,19 @@ impl EntityPanel {
             show_stats: true,
             search_results: Vec::new(),
             pending_actions: Vec::new(),
+            property_search: String::new(),
+            disabled_components: HashSet::new(),
         }
+    }
+
+    /// Check if a component is disabled for an entity.
+    pub fn is_component_disabled(&self, entity: Entity, ct: crate::component_ui::ComponentType) -> bool {
+        self.disabled_components.contains(&(entity, ct))
+    }
+
+    /// Get all disabled components (for simulation filtering).
+    pub fn disabled_components(&self) -> &HashSet<(Entity, crate::component_ui::ComponentType)> {
+        &self.disabled_components
     }
 
     // ==================== Action Queue Methods ====================
@@ -644,7 +667,7 @@ impl EntityPanel {
         selected_entity: Option<Entity>,
         prefab_instance: Option<&crate::prefab::PrefabInstance>,
     ) -> (Option<ComponentEdit>, Option<PrefabAction>) {
-        ui.heading("🎮 Entity Inspector");
+        ui.heading("Entity Inspector");
         ui.separator();
 
         // Update statistics if needed
@@ -659,7 +682,7 @@ impl EntityPanel {
 
         // Archetype template selector
         ui.group(|ui| {
-            ui.label("📋 Entity Templates");
+            ui.label("Entity Templates");
             ui.horizontal_wrapped(|ui| {
                 for archetype in EntityArchetype::all() {
                     let is_selected = self.selected_archetype.as_ref() == Some(&archetype);
@@ -682,11 +705,13 @@ impl EntityPanel {
         let mut apply_to_prefab = false;
         let mut revert_all_to_prefab = false;
         let mut apply_all_to_prefab = false;
+        let mut edit_prefab = false;
+        let mut break_prefab_connection = false;
 
         ui.horizontal(|ui| {
             if let Some(ref archetype) = self.selected_archetype {
                 if ui
-                    .button(format!("➕ Spawn {}", archetype.icon()))
+                    .button(format!("Spawn {}", archetype.icon()))
                     .clicked()
                 {
                     spawn_selected = true;
@@ -698,15 +723,15 @@ impl EntityPanel {
                     .speed(1.0)
                     .range(1..=100),
             );
-            if ui.button("➕➕ Spawn Multiple").clicked() {
+            if ui.button("+Spawn Multiple").clicked() {
                 spawn_bulk = true;
             }
 
-            if ui.button("🗑️ Clear All").clicked() {
+            if ui.button("Clear All").clicked() {
                 clear_all = true;
             }
 
-            if ui.button("🔍 Validate").clicked() {
+            if ui.button("Validate").clicked() {
                 validate_all = true;
             }
         });
@@ -715,7 +740,7 @@ impl EntityPanel {
 
         // Search & Filter
         ui.group(|ui| {
-            ui.label("🔍 Search & Filter");
+            ui.label("Search & Filter");
             ui.horizontal(|ui| {
                 ui.label("Query:");
                 let response = ui.text_edit_singleline(&mut self.entity_filter.query);
@@ -768,7 +793,7 @@ impl EntityPanel {
         if !self.validation_issues.is_empty() || validate_all {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label("⚠️ Validation Issues");
+                    ui.label("Validation Issues");
                     ui.checkbox(&mut self.auto_validate, "Auto-validate");
                     if ui.button("Clear").clicked() {
                         self.validation_issues.clear();
@@ -790,13 +815,13 @@ impl EntityPanel {
                     if error_count > 0 {
                         ui.colored_label(
                             Color32::from_rgb(255, 100, 100),
-                            format!("❌ {} Errors", error_count),
+                            format!("{} Errors", error_count),
                         );
                     }
                     if warning_count > 0 {
                         ui.colored_label(
                             Color32::from_rgb(255, 200, 100),
-                            format!("⚠️ {} Warnings", warning_count),
+                            format!("{} Warnings", warning_count),
                         );
                     }
                     if self.validation_issues.is_empty() {
@@ -827,8 +852,8 @@ impl EntityPanel {
         if self.show_stats {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label("📊 Statistics");
-                    if ui.button("🔄 Refresh").clicked() {
+                    ui.label("Statistics");
+                    if ui.button("Refresh").clicked() {
                         if let Some(scene_state) = scene_state.as_ref() {
                             self.update_statistics(scene_state.world());
                         }
@@ -853,7 +878,7 @@ impl EntityPanel {
         ui.add_space(10.0);
 
         let Some(scene_state) = scene_state else {
-            ui.label("⚠️ No world initialized");
+            ui.label("No world initialized");
             return (None, None);
         };
 
@@ -867,7 +892,7 @@ impl EntityPanel {
                 let entity = self.spawn_from_archetype(scene_state.world_mut(), archetype, pos);
                 scene_state.sync_entity(entity);
                 debug!(
-                    "✅ Spawned {:?} entity #{} at ({}, {})",
+                    "Spawned {:?} entity #{} at ({}, {})",
                     archetype, entity, pos.x, pos.y
                 );
             }
@@ -885,7 +910,7 @@ impl EntityPanel {
                     scene_state.sync_entity(entity);
                 }
                 debug!(
-                    "✅ Spawned {} {:?} entities",
+                    "Spawned {} {:?} entities",
                     self.bulk_spawn_count, archetype
                 );
             }
@@ -901,7 +926,7 @@ impl EntityPanel {
             self.validation_issues.clear();
             self.search_results.clear();
             scene_state.sync_all();
-            debug!("🗑️ Cleared all entities");
+            debug!("Cleared all entities");
         }
 
         // Handle validation
@@ -909,7 +934,7 @@ impl EntityPanel {
             self.validate_entities(scene_state.world());
             if self.auto_validate {
                 debug!(
-                    "✅ Auto-validated entities: {} issues",
+                    "Auto-validated entities: {} issues",
                     self.validation_issues.len()
                 );
             }
@@ -943,7 +968,7 @@ impl EntityPanel {
                 if let Some(instance) = prefab_instance {
                     ui.separator();
                     ui.horizontal(|ui| {
-                        ui.label("💾 Prefab Instance:");
+                        ui.label("Prefab Instance:");
                         ui.monospace(
                             instance
                                 .source
@@ -954,23 +979,33 @@ impl EntityPanel {
                         );
                     });
 
+                    // Edit Prefab & Break Connection buttons (always visible)
+                    ui.horizontal(|ui| {
+                        if ui.button("✏️ Edit Prefab").clicked() {
+                            edit_prefab = true;
+                        }
+                        if ui.button("🔗 Break Connection").clicked() {
+                            break_prefab_connection = true;
+                        }
+                    });
+
                     if instance.has_overrides(entity) {
                         ui.colored_label(
                             egui::Color32::from_rgb(100, 150, 255),
-                            "⚠️ Modified components (blue text indicates overrides)",
+                            "Modified components (blue text indicates overrides)",
                         );
 
                         // Single entity operations
                         ui.horizontal(|ui| {
-                            if ui.button("💾 Apply to Prefab").clicked() {
+                            if ui.button("Apply to Prefab").clicked() {
                                 apply_to_prefab = true;
                             }
-                            if ui.button("🔄 Revert to Prefab").clicked() {
+                            if ui.button("Revert to Prefab").clicked() {
                                 revert_to_prefab = true;
                             }
                         });
-                        ui.label("💾 Apply: save changes back to prefab file");
-                        ui.label("🔄 Revert: discard changes and restore original");
+                        ui.label("Apply: save changes back to prefab file");
+                        ui.label("Revert: discard changes and restore original");
 
                         ui.add_space(8.0);
                         ui.separator();
@@ -979,22 +1014,28 @@ impl EntityPanel {
                         // Bulk operations for entire prefab instance
                         ui.colored_label(
                             egui::Color32::from_rgb(255, 180, 100),
-                            "⚠️ Bulk Operations (affects ALL entities in prefab)",
+                            "Bulk Operations (affects ALL entities in prefab)",
                         );
                         ui.horizontal(|ui| {
-                            if ui.button("💾 Apply All to Prefab").clicked() {
+                            if ui.button("Apply All to Prefab").clicked() {
                                 apply_all_to_prefab = true;
                             }
-                            if ui.button("🔄 Revert All to Prefab").clicked() {
+                            if ui.button("Revert All to Prefab").clicked() {
                                 revert_all_to_prefab = true;
                             }
                         });
-                        ui.label("💾 Apply All: save ALL entity changes to prefab file");
-                        ui.label("🔄 Revert All: discard ALL changes and restore all entities");
+                        ui.label("Apply All: save ALL entity changes to prefab file");
+                        ui.label("Revert All: discard ALL changes and restore all entities");
                     }
                 }
 
                 ui.separator();
+
+                // Property search field
+                ui.horizontal(|ui| {
+                    ui.label("Filter:");
+                    ui.text_edit_singleline(&mut self.property_search);
+                });
 
                 let components = {
                     let world = scene_state.world_mut();
@@ -1004,11 +1045,45 @@ impl EntityPanel {
                 if components.is_empty() {
                     ui.label("No components");
                 } else {
+                    let search_lower = self.property_search.to_lowercase();
                     // Get override information for this entity
                     let entity_overrides =
                         prefab_instance.and_then(|inst| inst.overrides.get(&entity));
 
                     for component_type in components {
+                        // Filter by property search
+                        if !search_lower.is_empty()
+                            && !component_type
+                                .name()
+                                .to_lowercase()
+                                .contains(&search_lower)
+                        {
+                            continue;
+                        }
+
+                        // Enable/disable checkbox
+                        let key = (entity, component_type);
+                        let mut enabled = !self.disabled_components.contains(&key);
+                        ui.horizontal(|ui| {
+                            if ui.checkbox(&mut enabled, "").changed() {
+                                if enabled {
+                                    self.disabled_components.remove(&key);
+                                } else {
+                                    self.disabled_components.insert(key);
+                                }
+                            }
+                            if !enabled {
+                                ui.colored_label(
+                                    Color32::from_rgb(120, 120, 120),
+                                    format!("{} (disabled)", component_type.name()),
+                                );
+                            }
+                        });
+
+                        if !enabled {
+                            continue;
+                        }
+
                         let edit = {
                             let world = scene_state.world_mut();
                             component_type.show_ui_with_overrides(
@@ -1034,7 +1109,7 @@ impl EntityPanel {
 
         // Display entity count
         let entity_count = scene_state.world().entities().len();
-        ui.label(format!("📊 Total Entities: {}", entity_count));
+        ui.label(format!("Total Entities: {}", entity_count));
 
         ui.separator();
 
@@ -1064,7 +1139,7 @@ impl EntityPanel {
                                 ui.label(egui::RichText::new(team_name).color(team_color));
                             });
 
-                            ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
+                            ui.label(format!("Position: ({}, {})", pose.pos.x, pose.pos.y));
                             ui.label(format!("❤️  Health: {}", health.hp));
                             ui.label(format!("🔫 Ammo: {}", ammo.rounds));
                         });
@@ -1094,11 +1169,140 @@ impl EntityPanel {
             selected_entity.map(PrefabAction::RevertAllToOriginal)
         } else if apply_all_to_prefab {
             selected_entity.map(PrefabAction::ApplyAllChangesToFile)
+        } else if edit_prefab {
+            selected_entity.map(PrefabAction::EditPrefab)
+        } else if break_prefab_connection {
+            selected_entity.map(PrefabAction::BreakConnection)
         } else {
             None
         };
 
         (component_edit, prefab_action)
+    }
+
+    /// Show multi-entity editing panel when multiple entities are selected.
+    ///
+    /// Displays shared components across all selected entities and allows
+    /// batch editing. Returns a list of edits to apply.
+    pub fn show_multi_edit(
+        &mut self,
+        ui: &mut Ui,
+        scene_state: &mut EditorSceneState,
+        selected_entities: &[Entity],
+    ) -> Vec<ComponentEdit> {
+        let mut edits = Vec::new();
+
+        if selected_entities.is_empty() {
+            return edits;
+        }
+
+        if selected_entities.len() == 1 {
+            // Single entity — delegate to normal flow
+            let (edit, _) =
+                self.show_with_scene_state(ui, Some(scene_state), Some(selected_entities[0]), None);
+            if let Some(e) = edit {
+                edits.push(e);
+            }
+            return edits;
+        }
+
+        ui.heading(format!("Multi-Edit ({} entities)", selected_entities.len()));
+        ui.separator();
+
+        ui.label(
+            egui::RichText::new("Editing shared components across selected entities")
+                .color(Color32::from_rgb(100, 200, 255)),
+        );
+
+        // Find shared components across all selected entities
+        let mut shared_components: Option<Vec<ComponentType>> = None;
+        for &entity in selected_entities {
+            let components = self
+                .component_registry
+                .get_entity_components(scene_state.world_mut(), entity);
+            match &mut shared_components {
+                None => shared_components = Some(components),
+                Some(shared) => {
+                    shared.retain(|ct| components.contains(ct));
+                }
+            }
+        }
+
+        let shared = shared_components.unwrap_or_default();
+        if shared.is_empty() {
+            ui.label("No shared components across selection");
+            return edits;
+        }
+
+        ui.label(format!("Shared components: {}", shared.len()));
+        ui.add_space(4.0);
+
+        // Display shared components with batch editing
+        for component_type in &shared {
+            ui.collapsing(
+                format!("{} {} (batch)", component_type.icon(), component_type.name()),
+                |ui| {
+                    ui.label(format!(
+                        "Applied to {} entities",
+                        selected_entities.len()
+                    ));
+
+                    // Show the first entity's values as the editing baseline
+                    let first = selected_entities[0];
+                    let edit = {
+                        let world = scene_state.world_mut();
+                        component_type.show_ui_with_overrides(world, first, ui, None)
+                    };
+
+                    if let Some(edit) = edit {
+                        // Apply same edit to all selected entities
+                        for &entity in selected_entities {
+                            let batch_edit = match edit {
+                                ComponentEdit::Health { new_hp, .. } => {
+                                    let old_hp = scene_state
+                                        .world()
+                                        .health(entity)
+                                        .map(|h| h.hp)
+                                        .unwrap_or(0);
+                                    ComponentEdit::Health {
+                                        entity,
+                                        old_hp,
+                                        new_hp,
+                                    }
+                                }
+                                ComponentEdit::Team { new_id, .. } => {
+                                    let old_id = scene_state
+                                        .world()
+                                        .team(entity)
+                                        .map(|t| t.id)
+                                        .unwrap_or(0);
+                                    ComponentEdit::Team {
+                                        entity,
+                                        old_id,
+                                        new_id,
+                                    }
+                                }
+                                ComponentEdit::Ammo { new_rounds, .. } => {
+                                    let old_rounds = scene_state
+                                        .world()
+                                        .ammo(entity)
+                                        .map(|a| a.rounds)
+                                        .unwrap_or(0);
+                                    ComponentEdit::Ammo {
+                                        entity,
+                                        old_rounds,
+                                        new_rounds,
+                                    }
+                                }
+                            };
+                            edits.push(batch_edit);
+                        }
+                    }
+                },
+            );
+        }
+
+        edits
     }
 }
 
@@ -1114,16 +1318,16 @@ impl Panel for EntityPanel {
     }
 
     fn show(&mut self, ui: &mut Ui) {
-        ui.heading("🎮 Entity Inspector");
+        ui.heading("Entity Inspector");
         ui.separator();
 
         // Top-level controls
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.show_stats, "📊 Show Statistics");
-            ui.checkbox(&mut self.auto_validate, "🔍 Auto-validate");
+            ui.checkbox(&mut self.show_stats, "Show Statistics");
+            ui.checkbox(&mut self.auto_validate, "Auto-validate");
 
-            if ui.button("🔄 Refresh All").clicked() {
-                debug!("🔄 Refreshing entity data");
+            if ui.button("Refresh All").clicked() {
+                debug!("Refreshing entity data");
             }
         });
 
@@ -1131,7 +1335,7 @@ impl Panel for EntityPanel {
 
         // Archetype selector
         ui.group(|ui| {
-            ui.label("📋 Entity Templates");
+            ui.label("Entity Templates");
             ui.horizontal_wrapped(|ui| {
                 for archetype in EntityArchetype::all() {
                     let is_selected = self.selected_archetype.as_ref() == Some(&archetype);
@@ -1174,7 +1378,7 @@ impl Panel for EntityPanel {
 
         // Search/filter UI
         ui.group(|ui| {
-            ui.label("🔍 Search");
+            ui.label("Search");
             let mut filter_val = filter.clone();
             if ui.text_edit_singleline(&mut filter_val).changed() {
                 set_filter.set(ui, filter_val);
@@ -1186,7 +1390,7 @@ impl Panel for EntityPanel {
 
         // Entity list
         ui.group(|ui| {
-            ui.label("📜 Entity List");
+            ui.label("Entity List");
             egui::ScrollArea::vertical()
                 .max_height(200.0)
                 .show(ui, |ui| {
@@ -1211,7 +1415,7 @@ impl Panel for EntityPanel {
             let (name, archetype, health, damage) = entities[selected_entity];
 
             ui.group(|ui| {
-                ui.heading(format!("📋 {}", name));
+                ui.heading(format!("{}", name));
                 ui.separator();
 
                 ui.label(format!("Type: {}", archetype));
@@ -1256,13 +1460,13 @@ impl Panel for EntityPanel {
 
                 ui.horizontal(|ui| {
                     if ui.button("🔫 Damage").clicked() {
-                        debug!("💥 Damaged {}", name);
+                        debug!("[Hit] Damaged {}", name);
                     }
                     if ui.button("❤️‍🩹 Heal").clicked() {
                         debug!("💚 Healed {}", name);
                     }
-                    if ui.button("🗑️ Delete").clicked() {
-                        debug!("🗑️ Deleted {}", name);
+                    if ui.button("Delete").clicked() {
+                        debug!("Deleted {}", name);
                     }
                 });
             });
@@ -1273,7 +1477,7 @@ impl Panel for EntityPanel {
         // Effect: log when selection changes
         use_effect(ui, "entity_selection_log", selected_entity, |&idx| {
             if idx < entities.len() {
-                debug!("🎯 Selected entity: {}", entities[idx].0);
+                debug!("Selected entity: {}", entities[idx].0);
             }
         });
     }
@@ -1297,8 +1501,8 @@ mod tests {
     fn test_archetype_player_has_correct_icon() {
         assert_eq!(
             EntityArchetype::Player.icon(),
-            "🎮",
-            "Player icon should be 🎮"
+            "[Gp]",
+            "Player icon should be [Gp]"
         );
     }
 
@@ -1332,15 +1536,15 @@ mod tests {
 
     #[test]
     fn test_archetype_prop_has_correct_icon() {
-        assert_eq!(EntityArchetype::Prop.icon(), "📦", "Prop icon should be 📦");
+        assert_eq!(EntityArchetype::Prop.icon(), "[Pkg]", "Prop icon should be [Pkg]");
     }
 
     #[test]
     fn test_archetype_trigger_has_correct_icon() {
         assert_eq!(
             EntityArchetype::Trigger.icon(),
-            "⚡",
-            "Trigger icon should be ⚡"
+            "[Zap]",
+            "Trigger icon should be [Zap]"
         );
     }
 
@@ -1348,8 +1552,8 @@ mod tests {
     fn test_archetype_light_has_correct_icon() {
         assert_eq!(
             EntityArchetype::Light.icon(),
-            "💡",
-            "Light icon should be 💡"
+            "[Lgt]",
+            "Light icon should be [Lgt]"
         );
     }
 
@@ -1586,12 +1790,12 @@ mod tests {
 
     #[test]
     fn test_validation_severity_error_icon() {
-        assert_eq!(ValidationSeverity::Error.icon(), "❌");
+        assert_eq!(ValidationSeverity::Error.icon(), "[x]");
     }
 
     #[test]
     fn test_validation_severity_warning_icon() {
-        assert_eq!(ValidationSeverity::Warning.icon(), "⚠️");
+        assert_eq!(ValidationSeverity::Warning.icon(), "[!]");
     }
 
     #[test]
@@ -1680,6 +1884,8 @@ mod tests {
         assert!(panel.auto_validate);
         assert_eq!(panel.selected_archetype, Some(EntityArchetype::Companion));
         assert!(panel.show_stats);
+        assert!(panel.property_search.is_empty());
+        assert!(panel.disabled_components.is_empty());
     }
 
     #[test]
@@ -2220,6 +2426,8 @@ mod tests {
             PrefabAction::ApplyAllChangesToFile(1).name(),
             "Apply All Changes"
         );
+        assert_eq!(PrefabAction::EditPrefab(1).name(), "Edit Prefab");
+        assert_eq!(PrefabAction::BreakConnection(1).name(), "Break Connection");
     }
 
     #[test]
@@ -2228,6 +2436,8 @@ mod tests {
         assert!(PrefabAction::ApplyAllChangesToFile(1).is_bulk_action());
         assert!(!PrefabAction::RevertToOriginal(1).is_bulk_action());
         assert!(!PrefabAction::ApplyChangesToFile(1).is_bulk_action());
+        assert!(!PrefabAction::EditPrefab(1).is_bulk_action());
+        assert!(!PrefabAction::BreakConnection(1).is_bulk_action());
     }
 
     #[test]
@@ -2236,8 +2446,10 @@ mod tests {
         let mut set = HashSet::new();
         set.insert(PrefabAction::RevertToOriginal(1));
         set.insert(PrefabAction::ApplyChangesToFile(1));
+        set.insert(PrefabAction::EditPrefab(1));
+        set.insert(PrefabAction::BreakConnection(1));
         set.insert(PrefabAction::RevertToOriginal(1)); // Duplicate
-        assert_eq!(set.len(), 2);
+        assert_eq!(set.len(), 4);
     }
 
     // =====================================================================
@@ -2523,5 +2735,57 @@ mod tests {
         let action = EntityAction::SetFilterQuery("test".to_string());
         let cloned = action.clone();
         assert_eq!(action, cloned);
+    }
+
+    // ===== Property Search & Component Toggle Tests =====
+
+    #[test]
+    fn test_property_search_default_empty() {
+        let panel = EntityPanel::new();
+        assert!(panel.property_search.is_empty());
+    }
+
+    #[test]
+    fn test_disabled_components_default_empty() {
+        let panel = EntityPanel::new();
+        assert!(panel.disabled_components.is_empty());
+    }
+
+    #[test]
+    fn test_is_component_disabled() {
+        use crate::component_ui::ComponentType;
+        let mut panel = EntityPanel::new();
+
+        assert!(!panel.is_component_disabled(1, ComponentType::Health));
+
+        panel.disabled_components.insert((1, ComponentType::Health));
+        assert!(panel.is_component_disabled(1, ComponentType::Health));
+        assert!(!panel.is_component_disabled(1, ComponentType::Pose));
+        assert!(!panel.is_component_disabled(2, ComponentType::Health));
+    }
+
+    #[test]
+    fn test_disabled_components_accessor() {
+        use crate::component_ui::ComponentType;
+        let mut panel = EntityPanel::new();
+        panel.disabled_components.insert((1, ComponentType::Health));
+        panel.disabled_components.insert((2, ComponentType::Ammo));
+
+        let disabled = panel.disabled_components();
+        assert_eq!(disabled.len(), 2);
+    }
+
+    #[test]
+    fn test_multi_edit_method_exists() {
+        // Verify multi-edit method signature compiles correctly
+        let panel = EntityPanel::new();
+        // Method should accept &[Entity] for multi-select editing
+        let _fn_ptr: fn(
+            &mut EntityPanel,
+            &mut egui::Ui,
+            &mut EditorSceneState,
+            &[Entity],
+        ) -> Vec<ComponentEdit> = EntityPanel::show_multi_edit;
+        assert!(true); // Method exists and compiles
     }
 }

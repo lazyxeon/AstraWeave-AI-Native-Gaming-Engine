@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use astraweave_behavior::BehaviorGraph;
 use astraweave_core::{Entity, IVec2, World};
 use astraweave_security::path::{safe_under, validate_extension};
@@ -151,7 +151,7 @@ impl SceneData {
         fs::write(&safe_path, ron_string)
             .context(format!("Failed to write scene to {:?}", safe_path))?;
 
-        debug!("💾 Saved scene to {:?}", safe_path);
+        debug!("Saved scene to {:?}", safe_path);
         Ok(())
     }
 
@@ -174,7 +174,7 @@ impl SceneData {
         let scene: SceneData = ron::from_str(&contents)
             .context(format!("Failed to deserialize scene from {:?}", safe_path))?;
 
-        debug!("📂 Loaded scene from {:?}", safe_path);
+        debug!("Loaded scene from {:?}", safe_path);
         Ok(scene)
     }
 
@@ -301,8 +301,8 @@ impl SceneValidationIssue {
     /// Returns an icon for this issue type.
     pub fn icon(&self) -> &'static str {
         match self {
-            SceneValidationIssue::Error(_) => "❌",
-            SceneValidationIssue::Warning(_) => "⚠️",
+            SceneValidationIssue::Error(_) => "[x]",
+            SceneValidationIssue::Warning(_) => "[!]",
         }
     }
 
@@ -1033,12 +1033,12 @@ mod tests {
         assert!(error.is_error());
         assert!(!error.is_warning());
         assert_eq!(error.name(), "Error");
-        assert_eq!(error.icon(), "❌");
+        assert_eq!(error.icon(), "[x]");
 
         assert!(!warning.is_error());
         assert!(warning.is_warning());
         assert_eq!(warning.name(), "Warning");
-        assert_eq!(warning.icon(), "⚠️");
+        assert_eq!(warning.icon(), "[!]");
     }
 
     #[test]

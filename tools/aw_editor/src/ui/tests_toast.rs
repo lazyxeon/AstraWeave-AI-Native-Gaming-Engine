@@ -5,10 +5,10 @@ mod tests {
 
     #[test]
     fn test_toast_levels() {
-        assert_eq!(ToastLevel::Info.icon(), "ℹ️");
-        assert_eq!(ToastLevel::Success.icon(), "✅");
-        assert_eq!(ToastLevel::Warning.icon(), "⚠️");
-        assert_eq!(ToastLevel::Error.icon(), "❌");
+        assert_eq!(ToastLevel::Info.icon(), "\u{2139}\u{fe0f}");
+        assert_eq!(ToastLevel::Success.icon(), "\u{2705}");
+        assert_eq!(ToastLevel::Warning.icon(), "\u{26a0}\u{fe0f}");
+        assert_eq!(ToastLevel::Error.icon(), "\u{274c}");
     }
 
     #[test]

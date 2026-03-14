@@ -102,6 +102,30 @@ pub struct ViewportToolbar {
 
     /// Performance stats (updated by viewport)
     pub stats: PerformanceStats,
+
+    /// Current play state (mirrored from EditorMode)
+    pub play_state: PlayState,
+
+    /// Pending play action from toolbar buttons
+    play_action: Option<PlayAction>,
+}
+
+/// Editor play state for toolbar display
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PlayState {
+    #[default]
+    Editing,
+    Playing,
+    Paused,
+}
+
+/// Action requested by toolbar play controls
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayAction {
+    Play,
+    Pause,
+    Stop,
+    Step,
 }
 
 impl Default for ViewportToolbar {
@@ -116,6 +140,8 @@ impl Default for ViewportToolbar {
             angle_snap_degrees: 15.0,
             show_stats: true,
             stats: PerformanceStats::default(),
+            play_state: PlayState::default(),
+            play_action: None,
         }
     }
 }
@@ -124,7 +150,7 @@ impl ViewportToolbar {
     /// Render toolbar UI
     ///
     /// Displays as floating panel at top-left of viewport.
-    pub fn ui(&mut self, ui: &mut egui::Ui, viewport_rect: egui::Rect) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, viewport_rect: egui::Rect, camera: &mut super::camera::OrbitCamera) {
         // Position at top-left of viewport
         let toolbar_pos = viewport_rect.left_top() + egui::vec2(10.0, 10.0);
 
@@ -145,17 +171,17 @@ impl ViewportToolbar {
                                     ui.selectable_value(
                                         &mut self.shading_mode,
                                         ShadingMode::Lit,
-                                        "💡 Lit",
+                                        "Lit",
                                     );
                                     ui.selectable_value(
                                         &mut self.shading_mode,
                                         ShadingMode::Unlit,
-                                        "🎨 Unlit",
+                                        "Unlit",
                                     );
                                     ui.selectable_value(
                                         &mut self.shading_mode,
                                         ShadingMode::Wireframe,
-                                        "🕸 Wireframe",
+                                        "Wireframe",
                                     );
                                 });
 
@@ -317,9 +343,9 @@ impl ViewportToolbar {
                 });
         }
 
-        // Camera & Selection info panel (top-right, offset from toolbar)
-        if self.show_stats {
-            let info_pos = viewport_rect.right_top() + egui::vec2(-130.0, 45.0);
+        // Camera & Selection info panel (top-right, below toolbar)
+        {
+            let info_pos = viewport_rect.right_top() + egui::vec2(-140.0, 10.0);
 
             egui::Area::new(egui::Id::new("viewport_info"))
                 .fixed_pos(info_pos)
@@ -345,9 +371,81 @@ impl ViewportToolbar {
                             } else {
                                 ui.label(format!("{} selected", sel));
                             }
+                            ui.separator();
+                            if ui
+                                .button("Reset Camera")
+                                .on_hover_text("Reset camera to default position")
+                                .clicked()
+                            {
+                                camera.reset_to_origin();
+                            }
                         });
                 });
         }
+
+        // Play controls overlay (top-center of viewport, Unreal/Unity style)
+        {
+            let play_bar_width = 160.0;
+            let play_pos = egui::pos2(
+                viewport_rect.center().x - play_bar_width / 2.0,
+                viewport_rect.min.y + 10.0,
+            );
+
+            egui::Area::new(egui::Id::new("viewport_play_controls"))
+                .fixed_pos(play_pos)
+                .order(egui::Order::Foreground)
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::new()
+                        .fill(egui::Color32::from_rgba_premultiplied(25, 25, 30, 220))
+                        .corner_radius(6.0)
+                        .inner_margin(4.0)
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                let play_enabled = self.play_state == PlayState::Editing
+                                    || self.play_state == PlayState::Paused;
+                                if ui
+                                    .add_enabled(play_enabled, egui::Button::new("\u{25b6}"))
+                                    .on_hover_text("Play (F5)")
+                                    .clicked()
+                                {
+                                    self.play_action = Some(PlayAction::Play);
+                                }
+
+                                let pause_enabled = self.play_state == PlayState::Playing;
+                                if ui
+                                    .add_enabled(pause_enabled, egui::Button::new("\u{23f8}"))
+                                    .on_hover_text("Pause (F6)")
+                                    .clicked()
+                                {
+                                    self.play_action = Some(PlayAction::Pause);
+                                }
+
+                                let stop_enabled = self.play_state != PlayState::Editing;
+                                if ui
+                                    .add_enabled(stop_enabled, egui::Button::new("\u{23f9}"))
+                                    .on_hover_text("Stop (F7)")
+                                    .clicked()
+                                {
+                                    self.play_action = Some(PlayAction::Stop);
+                                }
+
+                                let step_enabled = self.play_state == PlayState::Paused;
+                                if ui
+                                    .add_enabled(step_enabled, egui::Button::new("\u{23ed}"))
+                                    .on_hover_text("Step Frame (F8)")
+                                    .clicked()
+                                {
+                                    self.play_action = Some(PlayAction::Step);
+                                }
+                            });
+                        });
+                });
+        }
+    }
+
+    /// Take the pending play action, if any
+    pub fn take_play_action(&mut self) -> Option<PlayAction> {
+        self.play_action.take()
     }
 }
 
@@ -383,9 +481,9 @@ impl ShadingMode {
     /// Get icon for this shading mode
     pub fn icon(&self) -> &'static str {
         match self {
-            ShadingMode::Lit => "💡",
-            ShadingMode::Unlit => "🎨",
-            ShadingMode::Wireframe => "🕸",
+            ShadingMode::Lit => "[Lt]",
+            ShadingMode::Unlit => "[Un]",
+            ShadingMode::Wireframe => "[Wf]",
         }
     }
 
@@ -591,9 +689,9 @@ mod tests {
 
     #[test]
     fn test_shading_mode_display() {
-        assert_eq!(format!("{}", ShadingMode::Lit), "💡 Lit");
-        assert_eq!(format!("{}", ShadingMode::Unlit), "🎨 Unlit");
-        assert_eq!(format!("{}", ShadingMode::Wireframe), "🕸 Wireframe");
+        assert_eq!(format!("{}", ShadingMode::Lit), "[Lt] Lit");
+        assert_eq!(format!("{}", ShadingMode::Unlit), "[Un] Unlit");
+        assert_eq!(format!("{}", ShadingMode::Wireframe), "[Wf] Wireframe");
     }
 
     #[test]
@@ -605,9 +703,9 @@ mod tests {
 
     #[test]
     fn test_shading_mode_icon() {
-        assert_eq!(ShadingMode::Lit.icon(), "💡");
-        assert_eq!(ShadingMode::Unlit.icon(), "🎨");
-        assert_eq!(ShadingMode::Wireframe.icon(), "🕸");
+        assert_eq!(ShadingMode::Lit.icon(), "[Lt]");
+        assert_eq!(ShadingMode::Unlit.icon(), "[Un]");
+        assert_eq!(ShadingMode::Wireframe.icon(), "[Wf]");
     }
 
     #[test]
@@ -638,5 +736,55 @@ mod tests {
         set.insert(ShadingMode::Lit);
         set.insert(ShadingMode::Wireframe);
         assert_eq!(set.len(), 2);
+    }
+
+    // ========== Play Controls Tests ==========
+
+    #[test]
+    fn test_play_state_default() {
+        assert_eq!(PlayState::default(), PlayState::Editing);
+    }
+
+    #[test]
+    fn test_play_action_variants() {
+        let actions = [
+            PlayAction::Play,
+            PlayAction::Pause,
+            PlayAction::Stop,
+            PlayAction::Step,
+        ];
+        // Ensure all variants are distinct
+        for (i, a) in actions.iter().enumerate() {
+            for (j, b) in actions.iter().enumerate() {
+                if i == j {
+                    assert_eq!(a, b);
+                } else {
+                    assert_ne!(a, b);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_toolbar_take_play_action() {
+        let mut toolbar = ViewportToolbar::default();
+        assert!(toolbar.take_play_action().is_none());
+
+        toolbar.play_action = Some(PlayAction::Play);
+        assert_eq!(toolbar.take_play_action(), Some(PlayAction::Play));
+        // Should be None after take
+        assert!(toolbar.take_play_action().is_none());
+    }
+
+    #[test]
+    fn test_toolbar_play_state_sync() {
+        let mut toolbar = ViewportToolbar::default();
+        assert_eq!(toolbar.play_state, PlayState::Editing);
+
+        toolbar.play_state = PlayState::Playing;
+        assert_eq!(toolbar.play_state, PlayState::Playing);
+
+        toolbar.play_state = PlayState::Paused;
+        assert_eq!(toolbar.play_state, PlayState::Paused);
     }
 }

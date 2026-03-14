@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use astraweave_core::{Entity, Health, Pose, World};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -272,9 +272,9 @@ impl PrefabIssue {
         match self {
             PrefabIssue::MissingFile { .. } => "❓",
             PrefabIssue::OrphanedEntity { .. } => "👻",
-            PrefabIssue::EmptyPrefab { .. } => "📦",
+            PrefabIssue::EmptyPrefab { .. } => "[Pkg]",
             PrefabIssue::EmptyMapping { .. } => "🗺️",
-            PrefabIssue::CyclicReference { .. } => "🔄",
+            PrefabIssue::CyclicReference { .. } => "[Sync]",
             PrefabIssue::InvalidRootIndex { .. } => "#️⃣",
         }
     }
@@ -664,7 +664,7 @@ impl PrefabInstance {
         // Clear all overrides since we've reverted all entities
         self.overrides.clear();
 
-        debug!("✅ Reverted {} entities to prefab state", reverted_count);
+        debug!("Reverted {} entities to prefab state", reverted_count);
         Ok(())
     }
 
@@ -732,7 +732,7 @@ impl PrefabInstance {
         // Clear all overrides since current state is now the prefab state
         self.overrides.clear();
 
-        debug!("✅ Applied {} entities to prefab file", applied_count);
+        debug!("Applied {} entities to prefab file", applied_count);
         Ok(())
     }
 }

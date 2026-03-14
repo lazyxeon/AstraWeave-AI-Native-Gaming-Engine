@@ -60,9 +60,9 @@ impl BuildProfile {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            BuildProfile::Debug => "🔧",
-            BuildProfile::Release => "📦",
-            BuildProfile::ReleaseOptimized => "⚡",
+            BuildProfile::Debug => "[Wrn]",
+            BuildProfile::Release => "[Pkg]",
+            BuildProfile::ReleaseOptimized => "[Zap]",
             BuildProfile::MinSize => "📎",
         }
     }
@@ -281,7 +281,7 @@ impl TargetPlatform {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            TargetPlatform::Native => "🖥️",
+            TargetPlatform::Native => "[Mon]",
             TargetPlatform::Windows64 | TargetPlatform::Windows32 => "🪟",
             TargetPlatform::MacOSArm64
             | TargetPlatform::MacOSx64
@@ -426,11 +426,11 @@ impl TextureFormat {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            TextureFormat::None => "🖼️",
-            TextureFormat::BC7 => "💻",
-            TextureFormat::BC5 => "🔵",
+            TextureFormat::None => "[Img]",
+            TextureFormat::BC7 => "[PC]",
+            TextureFormat::BC5 => "[B]",
             TextureFormat::ASTC => "📱",
-            TextureFormat::ETC2 => "🧱",
+            TextureFormat::ETC2 => "[Brk]",
         }
     }
 
@@ -480,10 +480,10 @@ impl AudioFormat {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            AudioFormat::None => "🔊",
-            AudioFormat::Vorbis => "🎵",
-            AudioFormat::Opus => "🎼",
-            AudioFormat::MP3 => "🎶",
+            AudioFormat::None => "[Snd]",
+            AudioFormat::Vorbis => "[Mus]",
+            AudioFormat::Opus => "[Score]",
+            AudioFormat::MP3 => "[Note]",
             AudioFormat::AAC => "🎧",
         }
     }
@@ -551,18 +551,18 @@ impl BuildStep {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            BuildStep::Preparing => "🔄",
+            BuildStep::Preparing => "[Sync]",
             BuildStep::CleaningBuild => "🧹",
-            BuildStep::RunningTests => "🧪",
+            BuildStep::RunningTests => "[Test]",
             BuildStep::CompilingCode => "🔨",
-            BuildStep::ProcessingAssets => "🎨",
-            BuildStep::PackagingFiles => "📦",
+            BuildStep::ProcessingAssets => "[Art]",
+            BuildStep::PackagingFiles => "[Pkg]",
             BuildStep::SigningBinary => "🔐",
             BuildStep::GeneratingChecksums => "✓",
             BuildStep::CreatingInstaller => "💿",
-            BuildStep::Finalizing => "✨",
-            BuildStep::Complete => "✅",
-            BuildStep::Failed => "❌",
+            BuildStep::Finalizing => "[Fx]",
+            BuildStep::Complete => "[ok]",
+            BuildStep::Failed => "[x]",
         }
     }
 
@@ -928,7 +928,7 @@ impl DistributionPanel {
             ui.separator();
             ui.label(format!("{} {}", self.profile.icon(), self.profile.name()));
             ui.separator();
-            ui.label(format!("📦 {}", self.selected_format.name()));
+            ui.label(format!("{}", self.selected_format.name()));
 
             if self.is_building {
                 ui.separator();
@@ -943,7 +943,7 @@ impl DistributionPanel {
     }
 
     fn show_config_section(&mut self, ui: &mut Ui) {
-        ui.heading("📦 Game Configuration");
+        ui.heading("Game Configuration");
         ui.separator();
 
         egui::Grid::new("config_grid")
@@ -970,7 +970,7 @@ impl DistributionPanel {
         ui.add_space(10.0);
 
         // Steam settings (collapsible)
-        ui.collapsing("🎮 Steam Settings", |ui| {
+        ui.collapsing("Steam Settings", |ui| {
             egui::Grid::new("steam_grid")
                 .num_columns(2)
                 .spacing([20.0, 8.0])
@@ -1002,7 +1002,7 @@ impl DistributionPanel {
 
     fn show_platform_section(&mut self, ui: &mut Ui) {
         ui.add_space(15.0);
-        ui.heading("🎯 Target Platform");
+        ui.heading("Target Platform");
         ui.separator();
 
         ui.horizontal_wrapped(|ui| {
@@ -1018,7 +1018,7 @@ impl DistributionPanel {
 
     fn show_profile_section(&mut self, ui: &mut Ui) {
         ui.add_space(15.0);
-        ui.heading("⚙️ Build Profile");
+        ui.heading("Build Profile");
         ui.separator();
 
         ui.horizontal_wrapped(|ui| {
@@ -1038,14 +1038,14 @@ impl DistributionPanel {
 
     fn show_format_section(&mut self, ui: &mut Ui) {
         ui.add_space(15.0);
-        ui.heading("🖥️ Distribution Format");
+        ui.heading("Distribution Format");
         ui.separator();
 
         ui.horizontal_wrapped(|ui| {
             let formats = [
                 (
                     DistributionFormat::WindowsPortable,
-                    "📁 Windows ZIP",
+                    "Windows ZIP",
                     "Portable ZIP archive",
                 ),
                 (
@@ -1070,12 +1070,12 @@ impl DistributionPanel {
                 ),
                 (
                     DistributionFormat::LinuxAppImage,
-                    "📦 Linux AppImage",
+                    "Linux AppImage",
                     "Portable executable",
                 ),
                 (
                     DistributionFormat::SteamDepot,
-                    "🎮 Steam Depot",
+                    "Steam Depot",
                     "Steam content depot",
                 ),
             ];
@@ -1097,7 +1097,7 @@ impl DistributionPanel {
 
     fn show_paths_section(&mut self, ui: &mut Ui) {
         ui.add_space(15.0);
-        ui.heading("📂 Paths");
+        ui.heading("Paths");
         ui.separator();
 
         // Handle pending directory selections from file dialogs
@@ -1116,7 +1116,7 @@ impl DistributionPanel {
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut self.build_dir);
                     if ui
-                        .button("📁")
+                        .button("[Dir]")
                         .on_hover_text("Browse for build directory")
                         .clicked()
                     {
@@ -1135,7 +1135,7 @@ impl DistributionPanel {
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut self.output_dir);
                     if ui
-                        .button("📁")
+                        .button("[Dir]")
                         .on_hover_text("Browse for output directory")
                         .clicked()
                     {
@@ -1153,7 +1153,7 @@ impl DistributionPanel {
     }
 
     fn show_build_options_section(&mut self, ui: &mut Ui) {
-        ui.collapsing("🔧 Build Options", |ui| {
+        ui.collapsing("Build Options", |ui| {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.build_options.strip_symbols, "Strip symbols");
                 ui.checkbox(&mut self.build_options.compress_assets, "Compress assets");
@@ -1193,7 +1193,7 @@ impl DistributionPanel {
     }
 
     fn show_asset_options_section(&mut self, ui: &mut Ui) {
-        ui.collapsing("🎨 Asset Options", |ui| {
+        ui.collapsing("Asset Options", |ui| {
             ui.horizontal(|ui| {
                 ui.checkbox(
                     &mut self.asset_options.compress_textures,
@@ -1274,27 +1274,27 @@ impl DistributionPanel {
         if !self.validation.errors.is_empty() || !self.validation.warnings.is_empty() {
             ui.collapsing(
                 format!(
-                    "⚠️ Validation ({} errors, {} warnings)",
+                    "Validation ({} errors, {} warnings)",
                     self.validation.errors.len(),
                     self.validation.warnings.len()
                 ),
                 |ui| {
                     for error in &self.validation.errors {
                         ui.horizontal(|ui| {
-                            ui.label(RichText::new("❌").color(Color32::RED));
+                            ui.label(RichText::new("[x]").color(Color32::RED));
                             ui.label(
                                 RichText::new(format!("[{}] {}", error.category, error.message))
                                     .color(Color32::RED),
                             );
                         });
                         if let Some(fix) = &error.fix_suggestion {
-                            ui.label(RichText::new(format!("   💡 {}", fix)).weak().small());
+                            ui.label(RichText::new(format!("   {}", fix)).weak().small());
                         }
                     }
 
                     for warning in &self.validation.warnings {
                         ui.horizontal(|ui| {
-                            ui.label(RichText::new("⚠️").color(Color32::YELLOW));
+                            ui.label(RichText::new("[!]").color(Color32::YELLOW));
                             ui.label(
                                 RichText::new(format!(
                                     "[{}] {}",
@@ -1331,7 +1331,7 @@ impl DistributionPanel {
                 });
 
                 // Elapsed time
-                ui.label(format!("⏱️ Elapsed: {:.1}s", self.progress.elapsed_secs()));
+                ui.label(format!("[Time] Elapsed: {:.1}s", self.progress.elapsed_secs()));
 
                 // Step progress
                 if !self.progress.current_step.is_terminal() {
@@ -1351,7 +1351,7 @@ impl DistributionPanel {
         ui.horizontal(|ui| {
             let can_build = !self.is_building && self.validation.valid;
 
-            let build_button = egui::Button::new(RichText::new("🚀 Build Distribution").size(16.0))
+            let build_button = egui::Button::new(RichText::new("[Rkt] Build Distribution").size(16.0))
                 .fill(if can_build {
                     Color32::from_rgb(40, 120, 80)
                 } else {
@@ -1363,13 +1363,13 @@ impl DistributionPanel {
                 self.start_build();
             }
 
-            if self.is_building && ui.button("❌ Cancel").clicked() {
+            if self.is_building && ui.button("Cancel").clicked() {
                 self.is_building = false;
                 self.progress
                     .set_step(BuildStep::Failed, "Build cancelled by user");
             }
 
-            if ui.button("🔄 Validate").clicked() {
+            if ui.button("Validate").clicked() {
                 self.validate();
             }
         });
@@ -1385,7 +1385,7 @@ impl DistributionPanel {
             match result {
                 Ok(dist) => {
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new("✅ Success!").color(Color32::GREEN));
+                        ui.label(RichText::new("Success!").color(Color32::GREEN));
                         ui.label(format!(
                             "Created {} ({:.2} MB in {:.1}s)",
                             dist.output_path.display(),
@@ -1395,7 +1395,7 @@ impl DistributionPanel {
                     });
                 }
                 Err(e) => {
-                    ui.label(RichText::new(format!("❌ Error: {}", e)).color(Color32::RED));
+                    ui.label(RichText::new(format!("Error: {}", e)).color(Color32::RED));
                 }
             }
         }
@@ -1404,13 +1404,13 @@ impl DistributionPanel {
     fn show_history_section(&mut self, ui: &mut Ui) {
         if !self.build_history.is_empty() {
             ui.collapsing(
-                format!("📋 Build History ({})", self.build_history.len()),
+                format!("Build History ({})", self.build_history.len()),
                 |ui| {
                     egui::ScrollArea::vertical()
                         .max_height(150.0)
                         .show(ui, |ui| {
                             for entry in self.build_history.iter().take(10) {
-                                let status_icon = if entry.success { "✅" } else { "❌" };
+                                let status_icon = if entry.success { "[ok]" } else { "[x]" };
                                 let text = format!(
                                     "{} v{} {} {} - {} ({:.1}s)",
                                     status_icon,
@@ -1428,7 +1428,7 @@ impl DistributionPanel {
                             }
                         });
 
-                    if ui.button("🗑️ Clear History").clicked() {
+                    if ui.button("Clear History").clicked() {
                         self.build_history.clear();
                     }
                 },

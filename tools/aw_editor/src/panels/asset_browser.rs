@@ -150,7 +150,7 @@ impl TextureType {
             TextureType::Albedo => "🎨",
             TextureType::Normal => "🔵",
             TextureType::ORM => "🔶",
-            TextureType::MRA => "🔷",
+            TextureType::MRA => "🟣",
             TextureType::Roughness => "◽",
             TextureType::Metallic => "⬜",
             TextureType::AO => "⬛",
@@ -254,14 +254,14 @@ impl AssetCategory {
     /// Icon for category button
     pub fn icon(&self) -> &'static str {
         match self {
-            AssetCategory::All => "📦",
-            AssetCategory::Models => "🎭",
-            AssetCategory::Textures => "🖼️",
+            AssetCategory::All => "📂",
+            AssetCategory::Models => "🎲",
+            AssetCategory::Textures => "🖼",
             AssetCategory::Materials => "💎",
-            AssetCategory::Prefabs => "💾",
-            AssetCategory::Scenes => "🌍",
-            AssetCategory::Audio => "🔊",
-            AssetCategory::Configs => "⚙️",
+            AssetCategory::Prefabs => "📦",
+            AssetCategory::Scenes => "🌐",
+            AssetCategory::Audio => "🎵",
+            AssetCategory::Configs => "⚙",
         }
     }
 
@@ -348,10 +348,10 @@ impl AssetAction {
     pub fn icon(&self) -> &'static str {
         match self {
             AssetAction::ImportModel { .. } => "📥",
-            AssetAction::LoadToViewport { .. } => "👁️",
+            AssetAction::LoadToViewport { .. } => "👁",
             AssetAction::ApplyTexture { .. } => "🎨",
-            AssetAction::ApplyMaterial { .. } => "🪨",
-            AssetAction::LoadScene { .. } => "🌍",
+            AssetAction::ApplyMaterial { .. } => "💎",
+            AssetAction::LoadScene { .. } => "🌐",
             AssetAction::SpawnPrefab { .. } => "📦",
             AssetAction::OpenExternal { .. } => "🔗",
             AssetAction::InspectAsset { .. } => "🔍",
@@ -492,13 +492,13 @@ impl AssetType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            AssetType::Model => "🎭",
-            AssetType::Texture => "🖼️",
-            AssetType::Scene => "🌍",
+            AssetType::Model => "🎲",
+            AssetType::Texture => "🖼",
+            AssetType::Scene => "🌐",
             AssetType::Material => "💎",
-            AssetType::Audio => "🔊",
-            AssetType::Config => "⚙️",
-            AssetType::Prefab => "💾",
+            AssetType::Audio => "🎵",
+            AssetType::Config => "⚙",
+            AssetType::Prefab => "📦",
             AssetType::Directory => "📁",
             AssetType::Unknown => "📄",
         }
@@ -599,7 +599,7 @@ impl ViewMode {
     /// Get the icon
     pub fn icon(&self) -> &'static str {
         match self {
-            ViewMode::List => "📄",
+            ViewMode::List => "📋",
             ViewMode::Grid => "📰",
         }
     }
@@ -811,22 +811,22 @@ impl AssetBrowser {
     }
 
     pub fn show(&mut self, ui: &mut Ui) {
-        ui.heading("📦 Asset Browser");
+        ui.heading("Asset Browser");
         ui.separator();
 
         // Navigation bar
         ui.horizontal(|ui| {
-            if ui.button("⬆️ Up").clicked() {
+            if ui.button("[Up] Up").clicked() {
                 self.navigate_up();
             }
 
-            if ui.button("🏠 Root").clicked() {
+            if ui.button("Root").clicked() {
                 self.navigate_to(self.root_path.clone());
             }
 
             ui.separator();
 
-            ui.label("🔍");
+            ui.label("[Srch]");
             if ui.text_edit_singleline(&mut self.search_query).changed() {
                 self.scan_current_directory();
             }
@@ -834,13 +834,13 @@ impl AssetBrowser {
             ui.separator();
 
             if ui
-                .selectable_label(self.view_mode == ViewMode::List, "📄 List")
+                .selectable_label(self.view_mode == ViewMode::List, "List")
                 .clicked()
             {
                 self.view_mode = ViewMode::List;
             }
             if ui
-                .selectable_label(self.view_mode == ViewMode::Grid, "🔲 Grid")
+                .selectable_label(self.view_mode == ViewMode::Grid, "Grid")
                 .clicked()
             {
                 self.view_mode = ViewMode::Grid;
@@ -848,7 +848,7 @@ impl AssetBrowser {
 
             ui.separator();
 
-            ui.checkbox(&mut self.show_texture_badges, "🏷️");
+            ui.checkbox(&mut self.show_texture_badges, "[Tag]");
             if ui
                 .small_button("⚙️")
                 .on_hover_text("Thumbnail size")
@@ -933,7 +933,7 @@ impl AssetBrowser {
 
         // Current path display
         ui.label(format!(
-            "📂 {}",
+            "{}",
             self.current_path
                 .strip_prefix(&self.root_path)
                 .unwrap_or(&self.current_path)
@@ -1202,7 +1202,7 @@ impl AssetBrowser {
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label("📂");
+                    ui.label("[Open]");
                     ui.monospace(selected.parent().unwrap_or(selected).display().to_string());
                 });
 
@@ -1210,17 +1210,17 @@ impl AssetBrowser {
                     // Context-appropriate action buttons
                     match asset_type {
                         AssetType::Model => {
-                            if ui.button("👁️ Load to Viewport").clicked() {
+                            if ui.button("Load to Viewport").clicked() {
                                 self.pending_actions.push(AssetAction::LoadToViewport {
                                     path: selected.clone(),
                                 });
                             }
-                            if ui.button("➕ Import to Scene").clicked() {
+                            if ui.button("Import to Scene").clicked() {
                                 self.pending_actions.push(AssetAction::ImportModel {
                                     path: selected.clone(),
                                 });
                             }
-                            if ui.button("🔍 Inspect").clicked() {
+                            if ui.button("Inspect").clicked() {
                                 self.pending_actions.push(AssetAction::InspectAsset {
                                     path: selected.clone(),
                                 });
@@ -1229,7 +1229,7 @@ impl AssetBrowser {
                         AssetType::Texture => {
                             let tex_type = texture_type.unwrap_or(TextureType::Albedo);
                             if ui
-                                .button(format!("🎨 Apply as {}", tex_type.label()))
+                                .button(format!("Apply as {}", tex_type.label()))
                                 .clicked()
                             {
                                 self.pending_actions.push(AssetAction::ApplyTexture {
@@ -1237,7 +1237,7 @@ impl AssetBrowser {
                                     texture_type: tex_type,
                                 });
                             }
-                            if ui.button("🔍 Inspect").clicked() {
+                            if ui.button("Inspect").clicked() {
                                 self.pending_actions.push(AssetAction::InspectAsset {
                                     path: selected.clone(),
                                 });
@@ -1251,14 +1251,14 @@ impl AssetBrowser {
                             }
                         }
                         AssetType::Scene => {
-                            if ui.button("🌍 Load Scene").clicked() {
+                            if ui.button("🌐 Load Scene").clicked() {
                                 self.pending_actions.push(AssetAction::LoadScene {
                                     path: selected.clone(),
                                 });
                             }
                         }
                         AssetType::Prefab => {
-                            if ui.button("💾 Spawn Prefab").clicked() {
+                            if ui.button("Spawn Prefab").clicked() {
                                 self.pending_actions.push(AssetAction::SpawnPrefab {
                                     path: selected.clone(),
                                 });
@@ -1268,7 +1268,7 @@ impl AssetBrowser {
                     }
 
                     // Common actions
-                    if ui.button("📂 Open Folder").clicked() {
+                    if ui.button("Open Folder").clicked() {
                         if let Some(parent) = selected.parent() {
                             self.pending_actions.push(AssetAction::OpenExternal {
                                 path: parent.to_path_buf(),
@@ -1316,7 +1316,7 @@ impl AssetBrowser {
                     // Context-appropriate action buttons
                     match asset_type {
                         AssetType::Model => {
-                            if ui.button("➕ Import to Scene").clicked() {
+                            if ui.button("Import to Scene").clicked() {
                                 self.pending_actions.push(AssetAction::ImportModel {
                                     path: selected.clone(),
                                 });
@@ -1325,7 +1325,7 @@ impl AssetBrowser {
                         AssetType::Texture => {
                             let tex_type = texture_type.unwrap_or(TextureType::Albedo);
                             if ui
-                                .button(format!("🎨 Apply as {}", tex_type.label()))
+                                .button(format!("Apply as {}", tex_type.label()))
                                 .clicked()
                             {
                                 self.pending_actions.push(AssetAction::ApplyTexture {
@@ -1342,14 +1342,14 @@ impl AssetBrowser {
                             }
                         }
                         AssetType::Scene => {
-                            if ui.button("🌍 Load Scene").clicked() {
+                            if ui.button("🌐 Load Scene").clicked() {
                                 self.pending_actions.push(AssetAction::LoadScene {
                                     path: selected.clone(),
                                 });
                             }
                         }
                         AssetType::Prefab => {
-                            if ui.button("💾 Spawn Prefab").clicked() {
+                            if ui.button("Spawn Prefab").clicked() {
                                 self.pending_actions.push(AssetAction::SpawnPrefab {
                                     path: selected.clone(),
                                 });
@@ -1555,7 +1555,7 @@ mod tests {
         assert_eq!(TextureType::Albedo.icon(), "🎨");
         assert_eq!(TextureType::Normal.icon(), "🔵");
         assert_eq!(TextureType::ORM.icon(), "🔶");
-        assert_eq!(TextureType::MRA.icon(), "🔷");
+        assert_eq!(TextureType::MRA.icon(), "🟣");
         assert_eq!(TextureType::Roughness.icon(), "◽");
         assert_eq!(TextureType::Metallic.icon(), "⬜");
         assert_eq!(TextureType::AO.icon(), "⬛");
@@ -1622,14 +1622,14 @@ mod tests {
 
     #[test]
     fn test_asset_category_icons() {
-        assert_eq!(AssetCategory::All.icon(), "📦");
-        assert_eq!(AssetCategory::Models.icon(), "🎭");
-        assert_eq!(AssetCategory::Textures.icon(), "🖼️");
+        assert_eq!(AssetCategory::All.icon(), "📂");
+        assert_eq!(AssetCategory::Models.icon(), "🎲");
+        assert_eq!(AssetCategory::Textures.icon(), "🖼");
         assert_eq!(AssetCategory::Materials.icon(), "💎");
-        assert_eq!(AssetCategory::Prefabs.icon(), "💾");
-        assert_eq!(AssetCategory::Scenes.icon(), "🌍");
-        assert_eq!(AssetCategory::Audio.icon(), "🔊");
-        assert_eq!(AssetCategory::Configs.icon(), "⚙️");
+        assert_eq!(AssetCategory::Prefabs.icon(), "📦");
+        assert_eq!(AssetCategory::Scenes.icon(), "🌐");
+        assert_eq!(AssetCategory::Audio.icon(), "🎵");
+        assert_eq!(AssetCategory::Configs.icon(), "⚙");
     }
 
     #[test]
@@ -1754,14 +1754,14 @@ mod tests {
 
     #[test]
     fn test_asset_type_icon() {
-        assert_eq!(AssetType::Model.icon(), "🎭");
-        assert_eq!(AssetType::Texture.icon(), "🖼️");
-        assert_eq!(AssetType::Scene.icon(), "🌍");
+        assert_eq!(AssetType::Model.icon(), "🎲");
+        assert_eq!(AssetType::Texture.icon(), "🖼");
+        assert_eq!(AssetType::Scene.icon(), "🌐");
         assert_eq!(AssetType::Directory.icon(), "📁");
         assert_eq!(AssetType::Material.icon(), "💎");
-        assert_eq!(AssetType::Audio.icon(), "🔊");
-        assert_eq!(AssetType::Config.icon(), "⚙️");
-        assert_eq!(AssetType::Prefab.icon(), "💾");
+        assert_eq!(AssetType::Audio.icon(), "🎵");
+        assert_eq!(AssetType::Config.icon(), "⚙");
+        assert_eq!(AssetType::Prefab.icon(), "📦");
         assert_eq!(AssetType::Unknown.icon(), "📄");
     }
 
@@ -2113,7 +2113,7 @@ mod tests {
         assert_eq!(format!("{}", TextureType::Albedo), "🎨 Albedo");
         assert_eq!(format!("{}", TextureType::Normal), "🔵 Normal");
         assert_eq!(format!("{}", TextureType::ORM), "🔶 ORM");
-        assert_eq!(format!("{}", TextureType::MRA), "🔷 MRA");
+        assert_eq!(format!("{}", TextureType::MRA), "🟣 MRA");
         assert_eq!(format!("{}", TextureType::Unknown), "❓ Unknown");
     }
 
@@ -2152,10 +2152,10 @@ mod tests {
 
     #[test]
     fn test_asset_category_display() {
-        assert_eq!(format!("{}", AssetCategory::All), "📦 All");
-        assert_eq!(format!("{}", AssetCategory::Models), "🎭 Models");
-        assert_eq!(format!("{}", AssetCategory::Textures), "🖼️ Textures");
-        assert_eq!(format!("{}", AssetCategory::Audio), "🔊 Audio");
+        assert_eq!(format!("{}", AssetCategory::All), "📂 All");
+        assert_eq!(format!("{}", AssetCategory::Models), "🎲 Models");
+        assert_eq!(format!("{}", AssetCategory::Textures), "🖼 Textures");
+        assert_eq!(format!("{}", AssetCategory::Audio), "🎵 Audio");
     }
 
     #[test]
@@ -2185,9 +2185,9 @@ mod tests {
 
     #[test]
     fn test_asset_type_display() {
-        assert_eq!(format!("{}", AssetType::Model), "🎭 Model");
-        assert_eq!(format!("{}", AssetType::Texture), "🖼️ Texture");
-        assert_eq!(format!("{}", AssetType::Scene), "🌍 Scene");
+        assert_eq!(format!("{}", AssetType::Model), "🎲 Model");
+        assert_eq!(format!("{}", AssetType::Texture), "🖼 Texture");
+        assert_eq!(format!("{}", AssetType::Scene), "🌐 Scene");
         assert_eq!(format!("{}", AssetType::Directory), "📁 Directory");
         assert_eq!(format!("{}", AssetType::Unknown), "📄 Unknown");
     }
@@ -2232,7 +2232,7 @@ mod tests {
 
     #[test]
     fn test_view_mode_display() {
-        assert_eq!(format!("{}", ViewMode::List), "📄 List");
+        assert_eq!(format!("{}", ViewMode::List), "📋 List");
         assert_eq!(format!("{}", ViewMode::Grid), "📰 Grid");
     }
 
@@ -2252,7 +2252,7 @@ mod tests {
 
     #[test]
     fn test_view_mode_icon() {
-        assert_eq!(ViewMode::List.icon(), "📄");
+        assert_eq!(ViewMode::List.icon(), "📋");
         assert_eq!(ViewMode::Grid.icon(), "📰");
     }
 

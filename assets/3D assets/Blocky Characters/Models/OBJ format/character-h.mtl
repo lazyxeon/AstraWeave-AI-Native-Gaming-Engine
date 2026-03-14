@@ -1,0 +1,6 @@
+# Created by Kenney (www.kenney.nl)
+
+newmtl texture-h
+Kd 1 1 1
+map_Kd Textures/texture-h.png
+

@@ -45,12 +45,12 @@ impl HierarchyAction {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            HierarchyAction::CreatePrefab(_) => "📦",
-            HierarchyAction::DeleteEntity(_) => "🗑️",
-            HierarchyAction::DuplicateEntity(_) => "📋",
-            HierarchyAction::FocusEntity(_) => "🎯",
-            HierarchyAction::BreakPrefabConnection(_) => "🔗",
-            HierarchyAction::ApplyOverridesToPrefab(_) => "✅",
+            HierarchyAction::CreatePrefab(_) => "[Pkg]",
+            HierarchyAction::DeleteEntity(_) => "[Del]",
+            HierarchyAction::DuplicateEntity(_) => "[List]",
+            HierarchyAction::FocusEntity(_) => "[Tgt]",
+            HierarchyAction::BreakPrefabConnection(_) => "[Link]",
+            HierarchyAction::ApplyOverridesToPrefab(_) => "[ok]",
             HierarchyAction::RevertToOriginalPrefab(_) => "↩️",
         }
     }
@@ -94,6 +94,11 @@ pub struct HierarchyPanel {
 
     /// Week 5 Day 3-4: Track which entities are prefab instances
     prefab_instances: HashSet<Entity>,
+
+    /// Entities hidden from viewport rendering (eye icon toggle).
+    hidden_entities: HashSet<Entity>,
+    /// Entities locked from selection/transform (lock icon toggle).
+    locked_entities: HashSet<Entity>,
 }
 
 impl HierarchyPanel {
@@ -111,7 +116,29 @@ impl HierarchyPanel {
             pending_actions: Vec::new(),
             search_filter: String::new(),
             prefab_instances: HashSet::new(),
+            hidden_entities: HashSet::new(),
+            locked_entities: HashSet::new(),
         }
+    }
+
+    /// Check if an entity is hidden from viewport.
+    pub fn is_hidden(&self, entity: Entity) -> bool {
+        self.hidden_entities.contains(&entity)
+    }
+
+    /// Get all hidden entities (for viewport filtering).
+    pub fn hidden_entities(&self) -> &HashSet<Entity> {
+        &self.hidden_entities
+    }
+
+    /// Check if an entity is locked from selection/transform.
+    pub fn is_locked(&self, entity: Entity) -> bool {
+        self.locked_entities.contains(&entity)
+    }
+
+    /// Get all locked entities.
+    pub fn locked_entities(&self) -> &HashSet<Entity> {
+        &self.locked_entities
     }
 
     /// Week 5 Day 3-4: Mark an entity as a prefab instance
@@ -253,31 +280,74 @@ impl HierarchyPanel {
     pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut World) -> Option<Entity> {
         let mut selected_changed = None;
 
-        ui.heading("🌲 Hierarchy");
+        ui.heading("Hierarchy");
         ui.separator();
 
         ui.horizontal(|ui| {
-            if ui.button("➕ Empty").clicked() {
-                self.empty_node_counter += 1;
-                let empty_name = format!("Empty_{}", self.empty_node_counter);
-                let entity = world.spawn(
-                    &empty_name,
-                    astraweave_core::IVec2 { x: 0, y: 0 },
-                    astraweave_core::Team { id: 0 },
-                    0,
-                    0,
-                );
-                self.hierarchy.insert(
-                    entity,
-                    HierarchyNode {
-                        entity,
-                        children: Vec::new(),
-                    },
-                );
-                self.root_entities.push(entity);
-            }
+            // Add entity dropdown with archetypes
+            ui.menu_button("+ Add", |ui| {
+                ui.label(egui::RichText::new("Game Objects").strong().small());
+                let archetypes: &[(&str, u8, i32, i32)] = &[
+                    ("Empty", 0, 0, 0),
+                    ("Player", 0, 100, 30),
+                    ("Companion", 0, 80, 20),
+                    ("Enemy", 1, 50, 20),
+                    ("Boss", 1, 500, 50),
+                    ("NPC", 2, 100, 0),
+                    ("Prop", 2, 10, 0),
+                ];
+                for (name, team, hp, ammo) in archetypes {
+                    if ui.button(format!("  {}", name)).clicked() {
+                        self.empty_node_counter += 1;
+                        let entity_name = format!("{}_{}", name, self.empty_node_counter);
+                        let entity = world.spawn(
+                            &entity_name,
+                            astraweave_core::IVec2 { x: 0, y: 0 },
+                            astraweave_core::Team { id: *team },
+                            *hp,
+                            *ammo,
+                        );
+                        self.hierarchy.insert(
+                            entity,
+                            HierarchyNode {
+                                entity,
+                                children: Vec::new(),
+                            },
+                        );
+                        self.root_entities.push(entity);
+                        selected_changed = Some(entity);
+                        ui.close();
+                    }
+                }
 
-            if ui.button("🔄 Refresh").clicked() {
+                ui.separator();
+                ui.label(egui::RichText::new("Environment").strong().small());
+                for name in &["Light", "Camera", "Trigger"] {
+                    if ui.button(format!("  {}", name)).clicked() {
+                        self.empty_node_counter += 1;
+                        let entity_name = format!("{}_{}", name, self.empty_node_counter);
+                        let entity = world.spawn(
+                            &entity_name,
+                            astraweave_core::IVec2 { x: 0, y: 0 },
+                            astraweave_core::Team { id: 2 },
+                            1,
+                            0,
+                        );
+                        self.hierarchy.insert(
+                            entity,
+                            HierarchyNode {
+                                entity,
+                                children: Vec::new(),
+                            },
+                        );
+                        self.root_entities.push(entity);
+                        selected_changed = Some(entity);
+                        ui.close();
+                    }
+                }
+            });
+
+            if ui.button("Refresh").clicked() {
                 self.sync_with_world(world);
             }
         });
@@ -335,6 +405,8 @@ impl HierarchyPanel {
 
         let name = world.name(entity).unwrap_or("Unknown");
         let is_selected = self.selected_entities.contains(&entity);
+        let is_hidden = self.hidden_entities.contains(&entity);
+        let is_locked = self.locked_entities.contains(&entity);
 
         let children = if let Some(node) = self.hierarchy.get(&entity) {
             node.children.clone()
@@ -407,19 +479,19 @@ impl HierarchyPanel {
             response.context_menu(|ui| {
                 self.context_menu_entity = Some(entity);
 
-                if ui.button("📝 Rename").clicked() {
+                if ui.button("[Edit] Rename").clicked() {
                     self.rename_entity = Some(entity);
                     self.rename_buffer = name.to_string();
                     ui.close();
                 }
 
-                if ui.button("📋 Duplicate").clicked() {
+                if ui.button("Duplicate").clicked() {
                     self.pending_actions
                         .push(HierarchyAction::DuplicateEntity(entity));
                     ui.close();
                 }
 
-                if ui.button("🗑️ Delete").clicked() {
+                if ui.button("Delete").clicked() {
                     self.pending_actions
                         .push(HierarchyAction::DeleteEntity(entity));
                     ui.close();
@@ -427,7 +499,7 @@ impl HierarchyPanel {
 
                 ui.separator();
 
-                if ui.button("💾 Create Prefab").clicked() {
+                if ui.button("Create Prefab").clicked() {
                     self.pending_actions
                         .push(HierarchyAction::CreatePrefab(entity));
                     ui.close();
@@ -437,21 +509,21 @@ impl HierarchyPanel {
                 let is_prefab = self.prefab_instances.contains(&entity);
                 if is_prefab {
                     ui.separator();
-                    ui.label("📦 Prefab Instance");
+                    ui.label("Prefab Instance");
 
-                    if ui.button("⬆️ Apply Overrides to Prefab").clicked() {
+                    if ui.button("[Up] Apply Overrides to Prefab").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::ApplyOverridesToPrefab(entity));
                         ui.close();
                     }
 
-                    if ui.button("⬇️ Revert to Original").clicked() {
+                    if ui.button("[Dn] Revert to Original").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::RevertToOriginalPrefab(entity));
                         ui.close();
                     }
 
-                    if ui.button("🔗 Break Prefab Connection").clicked() {
+                    if ui.button("Break Prefab Connection").clicked() {
                         self.pending_actions
                             .push(HierarchyAction::BreakPrefabConnection(entity));
                         ui.close();
@@ -505,7 +577,7 @@ impl HierarchyPanel {
                 }) {
                     "▼"
                 } else {
-                    "▶"
+                    ">"
                 };
                 painter.text(
                     rect.min + egui::vec2(5.0, rect.height() * 0.5 - 7.0),
@@ -549,17 +621,146 @@ impl HierarchyPanel {
                     self.rename_entity = None;
                 }
             } else {
-                painter.text(
-                    text_pos,
-                    egui::Align2::LEFT_TOP,
-                    name,
-                    egui::FontId::default(),
-                    if is_selected {
-                        egui::Color32::WHITE
+                // Draw entity name with optional search highlighting
+                let search_lower = self.search_filter.to_lowercase();
+                let name_lower = name.to_lowercase();
+                if !search_lower.is_empty() {
+                    if let Some(match_start) = name_lower.find(&search_lower) {
+                        // Draw name in three parts: before, highlighted, after
+                        let before = &name[..match_start];
+                        let matched = &name[match_start..match_start + search_lower.len()];
+                        let after = &name[match_start + search_lower.len()..];
+
+                        let text_color = if is_selected {
+                            egui::Color32::WHITE
+                        } else if is_hidden {
+                            egui::Color32::from_rgb(100, 100, 100)
+                        } else {
+                            egui::Color32::LIGHT_GRAY
+                        };
+
+                        let mut x_offset = text_pos.x;
+                        let font = egui::FontId::default();
+
+                        if !before.is_empty() {
+                            let galley = painter.layout_no_wrap(before.to_string(), font.clone(), text_color);
+                            let w = galley.rect.width();
+                            painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, text_color);
+                            x_offset += w;
+                        }
+
+                        // Highlighted match
+                        let galley = painter.layout_no_wrap(matched.to_string(), font.clone(), egui::Color32::BLACK);
+                        let w = galley.rect.width();
+                        let highlight_rect = egui::Rect::from_min_size(
+                            egui::Pos2::new(x_offset, text_pos.y),
+                            egui::vec2(w, 14.0),
+                        );
+                        painter.rect_filled(highlight_rect, 2.0, egui::Color32::from_rgb(255, 200, 50));
+                        painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, egui::Color32::BLACK);
+                        x_offset += w;
+
+                        if !after.is_empty() {
+                            let galley = painter.layout_no_wrap(after.to_string(), font, text_color);
+                            painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, text_color);
+                        }
                     } else {
-                        egui::Color32::LIGHT_GRAY
-                    },
+                        painter.text(
+                            text_pos,
+                            egui::Align2::LEFT_TOP,
+                            name,
+                            egui::FontId::default(),
+                            if is_selected {
+                                egui::Color32::WHITE
+                            } else if is_hidden {
+                                egui::Color32::from_rgb(100, 100, 100)
+                            } else {
+                                egui::Color32::LIGHT_GRAY
+                            },
+                        );
+                    }
+                } else {
+                    painter.text(
+                        text_pos,
+                        egui::Align2::LEFT_TOP,
+                        name,
+                        egui::FontId::default(),
+                        if is_selected {
+                            egui::Color32::WHITE
+                        } else if is_hidden {
+                            egui::Color32::from_rgb(100, 100, 100)
+                        } else {
+                            egui::Color32::LIGHT_GRAY
+                        },
+                    );
+                }
+
+                // Eye icon (visibility toggle)
+                let icon_area_x = rect.max.x - 40.0;
+                let eye_rect = egui::Rect::from_min_size(
+                    egui::Pos2::new(icon_area_x, rect.min.y + 2.0),
+                    egui::vec2(16.0, 16.0),
                 );
+                let eye_resp = ui.interact(
+                    eye_rect,
+                    egui::Id::new(format!("eye_{}", entity)),
+                    egui::Sense::click(),
+                );
+                let eye_icon = if is_hidden { "○" } else { "◉" };
+                let eye_color = if is_hidden {
+                    egui::Color32::from_rgb(80, 80, 80)
+                } else if eye_resp.hovered() {
+                    egui::Color32::from_rgb(180, 220, 255)
+                } else {
+                    egui::Color32::from_rgb(140, 140, 140)
+                };
+                painter.text(
+                    eye_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    eye_icon,
+                    egui::FontId::proportional(12.0),
+                    eye_color,
+                );
+                if eye_resp.clicked() {
+                    if is_hidden {
+                        self.hidden_entities.remove(&entity);
+                    } else {
+                        self.hidden_entities.insert(entity);
+                    }
+                }
+
+                // Lock icon (lock toggle)
+                let lock_rect = egui::Rect::from_min_size(
+                    egui::Pos2::new(icon_area_x + 18.0, rect.min.y + 2.0),
+                    egui::vec2(16.0, 16.0),
+                );
+                let lock_resp = ui.interact(
+                    lock_rect,
+                    egui::Id::new(format!("lock_{}", entity)),
+                    egui::Sense::click(),
+                );
+                let lock_icon = if is_locked { "■" } else { "□" };
+                let lock_color = if is_locked {
+                    egui::Color32::from_rgb(255, 160, 60)
+                } else if lock_resp.hovered() {
+                    egui::Color32::from_rgb(180, 180, 180)
+                } else {
+                    egui::Color32::from_rgb(100, 100, 100)
+                };
+                painter.text(
+                    lock_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    lock_icon,
+                    egui::FontId::proportional(12.0),
+                    lock_color,
+                );
+                if lock_resp.clicked() {
+                    if is_locked {
+                        self.locked_entities.remove(&entity);
+                    } else {
+                        self.locked_entities.insert(entity);
+                    }
+                }
             }
         });
 
@@ -626,6 +827,8 @@ mod tests {
         let panel = HierarchyPanel::new();
         assert_eq!(panel.root_entities.len(), 0);
         assert_eq!(panel.selected_entities.len(), 0);
+        assert!(panel.hidden_entities.is_empty());
+        assert!(panel.locked_entities.is_empty());
     }
 
     #[test]
@@ -920,5 +1123,55 @@ mod tests {
         set.insert(HierarchyAction::DeleteEntity(1));
         set.insert(HierarchyAction::CreatePrefab(1)); // Duplicate
         assert_eq!(set.len(), 2);
+    }
+
+    // ===== Visibility & Lock Tests =====
+
+    #[test]
+    fn test_visibility_toggle() {
+        let mut panel = HierarchyPanel::new();
+        assert!(!panel.is_hidden(1));
+
+        panel.hidden_entities.insert(1);
+        assert!(panel.is_hidden(1));
+        assert!(!panel.is_hidden(2));
+
+        panel.hidden_entities.remove(&1);
+        assert!(!panel.is_hidden(1));
+    }
+
+    #[test]
+    fn test_lock_toggle() {
+        let mut panel = HierarchyPanel::new();
+        assert!(!panel.is_locked(1));
+
+        panel.locked_entities.insert(1);
+        assert!(panel.is_locked(1));
+        assert!(!panel.is_locked(2));
+
+        panel.locked_entities.remove(&1);
+        assert!(!panel.is_locked(1));
+    }
+
+    #[test]
+    fn test_hidden_entities_accessor() {
+        let mut panel = HierarchyPanel::new();
+        panel.hidden_entities.insert(1);
+        panel.hidden_entities.insert(3);
+
+        let hidden = panel.hidden_entities();
+        assert_eq!(hidden.len(), 2);
+        assert!(hidden.contains(&1));
+        assert!(hidden.contains(&3));
+    }
+
+    #[test]
+    fn test_locked_entities_accessor() {
+        let mut panel = HierarchyPanel::new();
+        panel.locked_entities.insert(5);
+
+        let locked = panel.locked_entities();
+        assert_eq!(locked.len(), 1);
+        assert!(locked.contains(&5));
     }
 }

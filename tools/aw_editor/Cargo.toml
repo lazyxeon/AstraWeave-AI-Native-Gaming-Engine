@@ -25,7 +25,6 @@ eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
 egui-wgpu = "0.32.0"
 egui_dock = { workspace = true }
-egui_graphs = { workspace = true }
 wgpu = { workspace = true }
 bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }

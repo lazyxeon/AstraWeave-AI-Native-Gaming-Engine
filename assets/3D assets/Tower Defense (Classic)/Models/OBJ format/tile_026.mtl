@@ -1,0 +1,14 @@
+# Created by Kenney (www.kenney.nl)
+
+newmtl brick
+Kd 0.7568628 0.8 0.7568628
+
+newmtl _defaultMat
+Kd 1 1 1
+
+newmtl brickLight
+Kd 0.8588235 0.9098039 0.8588235
+
+newmtl roof
+Kd 0.7764706 0.3647059 0.3647059
+

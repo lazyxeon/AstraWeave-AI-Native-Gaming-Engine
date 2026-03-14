@@ -208,12 +208,12 @@ impl std::fmt::Display for GizmoMeasurement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Translate { from, to } => {
-                write!(f, "Move ({},{})→({},{})", from.x, from.y, to.x, to.y)
+                write!(f, "Move ({},{}) -> ({},{})", from.x, from.y, to.x, to.y)
             }
             Self::Rotate { from, to } => {
                 write!(
                     f,
-                    "Rotate ({:.1}°,{:.1}°,{:.1}°)→({:.1}°,{:.1}°,{:.1}°)",
+                    "Rotate ({:.1}°,{:.1}°,{:.1}°) -> ({:.1}°,{:.1}°,{:.1}°)",
                     from.0.to_degrees(),
                     from.1.to_degrees(),
                     from.2.to_degrees(),
@@ -223,7 +223,7 @@ impl std::fmt::Display for GizmoMeasurement {
                 )
             }
             Self::Scale { from, to } => {
-                write!(f, "Scale {:.2}→{:.2}", from, to)
+                write!(f, "Scale {:.2} -> {:.2}", from, to)
             }
         }
     }

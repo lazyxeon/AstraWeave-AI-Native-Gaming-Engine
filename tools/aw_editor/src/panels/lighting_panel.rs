@@ -54,11 +54,11 @@ impl LightType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LightType::Directional => "☀️",
-            LightType::Point => "💡",
+            LightType::Directional => "[Sun]",
+            LightType::Point => "[Lgt]",
             LightType::Spot => "🔦",
             LightType::Area => "⬜",
-            LightType::Ambient => "🌐",
+            LightType::Ambient => "[Net]",
         }
     }
 
@@ -125,8 +125,8 @@ impl ShadowQuality {
             ShadowQuality::Off => "⚫",
             ShadowQuality::Low => "🔅",
             ShadowQuality::Medium => "🔆",
-            ShadowQuality::High => "💎",
-            ShadowQuality::Ultra => "✨",
+            ShadowQuality::High => "[Gem]",
+            ShadowQuality::Ultra => "[Fx]",
         }
     }
 
@@ -186,7 +186,7 @@ impl ShadowType {
             ShadowType::None => "⚫",
             ShadowType::Hard => "🟥",
             ShadowType::Soft => "🟧",
-            ShadowType::PCSS => "🟢",
+            ShadowType::PCSS => "[G]",
         }
     }
 
@@ -245,10 +245,10 @@ impl LightUnit {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            LightUnit::Unitless => "📊",
-            LightUnit::Lumen => "💡",
+            LightUnit::Unitless => "[Chart]",
+            LightUnit::Lumen => "[Lgt]",
             LightUnit::Candela => "🕯️",
-            LightUnit::Lux => "☀️",
+            LightUnit::Lux => "[Sun]",
             LightUnit::Nit => "📺",
         }
     }
@@ -387,8 +387,8 @@ impl GiMode {
         match self {
             GiMode::None => "⚫",
             GiMode::BakedLightmaps => "🗺️",
-            GiMode::RealtimeGI => "⚡",
-            GiMode::Hybrid => "🔀",
+            GiMode::RealtimeGI => "[Zap]",
+            GiMode::Hybrid => "[Shuf]",
         }
     }
 
@@ -524,8 +524,8 @@ impl RefreshMode {
     /// Returns the icon for this refresh mode
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::OnAwake => "🔄",
-            Self::EveryFrame => "⚡",
+            Self::OnAwake => "[Sync]",
+            Self::EveryFrame => "[Zap]",
             Self::ViaScript => "📜",
         }
     }
@@ -621,8 +621,8 @@ impl AmbientMode {
     /// Returns the icon for this ambient mode
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Skybox => "🌅",
-            Self::Color => "🎨",
+            Self::Skybox => "[Dawn]",
+            Self::Color => "[Art]",
             Self::Gradient => "🌈",
         }
     }
@@ -669,7 +669,7 @@ impl FogMode {
         match self {
             Self::Linear => "📏",
             Self::Exponential => "📈",
-            Self::ExponentialSquared => "📊",
+            Self::ExponentialSquared => "[Chart]",
             Self::Height => "⛰️",
         }
     }
@@ -905,11 +905,11 @@ impl LightingTab {
     /// Returns the icon for this tab
     pub fn icon(&self) -> &'static str {
         match self {
-            Self::Lights => "💡",
+            Self::Lights => "[Lgt]",
             Self::Shadows => "🌑",
             Self::GI => "🌞",
-            Self::Probes => "🔮",
-            Self::Environment => "🌍",
+            Self::Probes => "[Orb]",
+            Self::Environment => "[Glb]",
             Self::Debug => "🐛",
         }
     }
@@ -962,7 +962,7 @@ pub struct LightingPanel {
 
 impl Default for LightingPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: LightingTab::Lights,
 
             lights: Vec::new(),
@@ -987,7 +987,6 @@ impl Default for LightingPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -1112,12 +1111,12 @@ impl LightingPanel {
     fn show_tab_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             let tabs = [
-                (LightingTab::Lights, "💡 Lights"),
+                (LightingTab::Lights, "Lights"),
                 (LightingTab::Shadows, "🌑 Shadows"),
-                (LightingTab::GI, "🌍 GI"),
-                (LightingTab::Probes, "🔮 Probes"),
-                (LightingTab::Environment, "☁️ Environment"),
-                (LightingTab::Debug, "🔧 Debug"),
+                (LightingTab::GI, "[Glb] GI"),
+                (LightingTab::Probes, "Probes"),
+                (LightingTab::Environment, "[Cld] Environment"),
+                (LightingTab::Debug, "Debug"),
             ];
 
             for (tab, label) in tabs {
@@ -1136,10 +1135,10 @@ impl LightingPanel {
 
         // Light count info
         ui.horizontal(|ui| {
-            ui.label(format!("💡 {} lights", self.lights.len()));
+            ui.label(format!("{} lights", self.lights.len()));
             ui.separator();
             ui.label(format!(
-                "🔮 {} probes",
+                "{} probes",
                 self.light_probes.len() + self.reflection_probes.len()
             ));
         });
@@ -1148,7 +1147,7 @@ impl LightingPanel {
     }
 
     fn show_lights_tab(&mut self, ui: &mut Ui) {
-        ui.heading("💡 Scene Lights");
+        ui.heading("Scene Lights");
         ui.add_space(10.0);
 
         // Light list and add button
@@ -1183,7 +1182,7 @@ impl LightingPanel {
                 self.selected_light = Some(id);
             }
 
-            if ui.button("🗑️").clicked() && self.lights.len() > 1 {
+            if ui.button("[Del]").clicked() && self.lights.len() > 1 {
                 if let Some(sel_id) = self.selected_light {
                     self.lights.retain(|l| l.id != sel_id);
                     if !self.lights.is_empty() {
@@ -1201,7 +1200,7 @@ impl LightingPanel {
             .show(ui, |ui| {
                 // Basic settings
                 ui.group(|ui| {
-                    ui.label(RichText::new("📝 Basic").strong());
+                    ui.label(RichText::new("[Edit] Basic").strong());
 
                     egui::Grid::new("light_basic")
                         .num_columns(2)
@@ -1239,7 +1238,7 @@ impl LightingPanel {
 
                 // Color and intensity
                 ui.group(|ui| {
-                    ui.label(RichText::new("🎨 Color & Intensity").strong());
+                    ui.label(RichText::new("Color & Intensity").strong());
 
                     egui::Grid::new("light_color")
                         .num_columns(2)
@@ -1287,7 +1286,7 @@ impl LightingPanel {
                 // Type-specific settings
                 ui.group(|ui| match self.current_light.light_type {
                     LightType::Point => {
-                        ui.label(RichText::new("💡 Point Light").strong());
+                        ui.label(RichText::new("Point Light").strong());
                         ui.horizontal(|ui| {
                             ui.label("Range:");
                             ui.add(egui::Slider::new(
@@ -1356,11 +1355,11 @@ impl LightingPanel {
                             });
                     }
                     LightType::Directional => {
-                        ui.label(RichText::new("☀️ Directional Light").strong());
+                        ui.label(RichText::new("[Sun] Directional Light").strong());
                         ui.label("Affects entire scene from rotation direction");
                     }
                     LightType::Ambient => {
-                        ui.label(RichText::new("🌐 Ambient Light").strong());
+                        ui.label(RichText::new("Ambient Light").strong());
                         ui.label("Uniform lighting throughout scene");
                     }
                 });
@@ -1373,7 +1372,7 @@ impl LightingPanel {
 
         // Global shadow quality
         ui.group(|ui| {
-            ui.label(RichText::new("🌐 Global Quality").strong());
+            ui.label(RichText::new("Global Quality").strong());
 
             ui.horizontal(|ui| {
                 ui.label("Shadow Quality:");
@@ -1401,7 +1400,7 @@ impl LightingPanel {
 
         // Current light shadow settings
         ui.group(|ui| {
-            ui.label(RichText::new(format!("🔧 {} Shadows", self.current_light.name)).strong());
+            ui.label(RichText::new(format!("{} Shadows", self.current_light.name)).strong());
 
             egui::Grid::new("shadow_settings")
                 .num_columns(2)
@@ -1500,12 +1499,12 @@ impl LightingPanel {
     }
 
     fn show_gi_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🌍 Global Illumination");
+        ui.heading("[Glb] Global Illumination");
         ui.add_space(10.0);
 
         // GI Mode
         ui.group(|ui| {
-            ui.label(RichText::new("📊 Mode").strong());
+            ui.label(RichText::new("Mode").strong());
 
             egui::ComboBox::from_id_salt("gi_mode")
                 .selected_text(format!("{:?}", self.gi_settings.mode))
@@ -1588,7 +1587,7 @@ impl LightingPanel {
                 if matches!(self.gi_settings.mode, GiMode::RealtimeGI | GiMode::Hybrid) {
                     ui.add_space(10.0);
                     ui.group(|ui| {
-                        ui.label(RichText::new("⚡ Realtime GI").strong());
+                        ui.label(RichText::new("Realtime GI").strong());
 
                         egui::Grid::new("realtime_gi")
                             .num_columns(2)
@@ -1651,13 +1650,13 @@ impl LightingPanel {
     }
 
     fn show_probes_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔮 Light & Reflection Probes");
+        ui.heading("Light & Reflection Probes");
         ui.add_space(10.0);
 
         // Light probes
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("💡 Light Probes").strong());
+                ui.label(RichText::new("Light Probes").strong());
                 if ui.button("+ Add").clicked() {
                     let id = self.next_probe_id();
                     self.light_probes.push(LightProbe {
@@ -1753,7 +1752,7 @@ impl LightingPanel {
     }
 
     fn show_environment_tab(&mut self, ui: &mut Ui) {
-        ui.heading("☁️ Environment");
+        ui.heading("[Cld] Environment");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
@@ -1774,7 +1773,7 @@ impl LightingPanel {
                                 ui.label("Texture:");
                                 ui.horizontal(|ui| {
                                     ui.text_edit_singleline(&mut self.environment.skybox_path);
-                                    if ui.button("📂").clicked() {
+                                    if ui.button("[Open]").clicked() {
                                         // Open file dialog
                                     }
                                 });
@@ -1804,7 +1803,7 @@ impl LightingPanel {
 
                 // Ambient
                 ui.group(|ui| {
-                    ui.label(RichText::new("🌐 Ambient Light").strong());
+                    ui.label(RichText::new("Ambient Light").strong());
 
                     ui.horizontal(|ui| {
                         ui.label("Mode:");
@@ -1871,7 +1870,7 @@ impl LightingPanel {
                 ui.group(|ui| {
                     ui.checkbox(
                         &mut self.environment.fog_enabled,
-                        RichText::new("🌫️ Fog").strong(),
+                        RichText::new("[Fog] Fog").strong(),
                     );
 
                     if self.environment.fog_enabled {
@@ -1968,11 +1967,11 @@ impl LightingPanel {
     }
 
     fn show_debug_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔧 Debug Visualization");
+        ui.heading("Debug Visualization");
         ui.add_space(10.0);
 
         ui.group(|ui| {
-            ui.label(RichText::new("📊 Debug Modes").strong());
+            ui.label(RichText::new("Debug Modes").strong());
 
             ui.checkbox(&mut self.debug_shadows, "Show Shadow Maps");
             ui.checkbox(&mut self.debug_lightmaps, "Show Lightmaps");
@@ -2081,12 +2080,12 @@ mod tests {
 
     #[test]
     fn test_light_type_icon_directional() {
-        assert_eq!(LightType::Directional.icon(), "☀️");
+        assert_eq!(LightType::Directional.icon(), "[Sun]");
     }
 
     #[test]
     fn test_light_type_icon_point() {
-        assert_eq!(LightType::Point.icon(), "💡");
+        assert_eq!(LightType::Point.icon(), "[Lgt]");
     }
 
     #[test]
@@ -2101,7 +2100,7 @@ mod tests {
 
     #[test]
     fn test_light_type_icon_ambient() {
-        assert_eq!(LightType::Ambient.icon(), "🌐");
+        assert_eq!(LightType::Ambient.icon(), "[Net]");
     }
 
     #[test]
@@ -2522,7 +2521,8 @@ mod tests {
 
     #[test]
     fn test_default_sample_data() {
-        let panel = LightingPanel::new();
+        let mut panel = LightingPanel::new();
+        panel.create_sample_data();
         assert!(panel.light_count() >= 3);
         assert!(panel.light_probe_count() >= 4);
         assert!(panel.reflection_probe_count() >= 1);
@@ -2957,11 +2957,11 @@ mod tests {
 
     #[test]
     fn test_lighting_tab_icon() {
-        assert_eq!(LightingTab::Lights.icon(), "💡");
+        assert_eq!(LightingTab::Lights.icon(), "[Lgt]");
         assert_eq!(LightingTab::Shadows.icon(), "🌑");
         assert_eq!(LightingTab::GI.icon(), "🌞");
-        assert_eq!(LightingTab::Probes.icon(), "🔮");
-        assert_eq!(LightingTab::Environment.icon(), "🌍");
+        assert_eq!(LightingTab::Probes.icon(), "[Orb]");
+        assert_eq!(LightingTab::Environment.icon(), "[Glb]");
         assert_eq!(LightingTab::Debug.icon(), "🐛");
     }
 

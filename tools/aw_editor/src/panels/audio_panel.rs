@@ -76,15 +76,15 @@ impl MusicMood {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            MusicMood::Ambient => "🌿",
-            MusicMood::Calm => "☁️",
+            MusicMood::Ambient => "[Leaf]",
+            MusicMood::Calm => "[Cld]",
             MusicMood::Exploration => "🗺️",
             MusicMood::Combat => "⚔️",
-            MusicMood::Tension => "⚡",
+            MusicMood::Tension => "[Zap]",
             MusicMood::Victory => "🏆",
-            MusicMood::Defeat => "💀",
+            MusicMood::Defeat => "[Skull]",
             MusicMood::Boss => "👹",
-            MusicMood::Menu => "📋",
+            MusicMood::Menu => "[List]",
         }
     }
 
@@ -151,10 +151,10 @@ impl SpatialPreset {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            SpatialPreset::Standard => "🔊",
+            SpatialPreset::Standard => "[Snd]",
             SpatialPreset::Headphones => "🎧",
             SpatialPreset::Speakers => "🔉",
-            SpatialPreset::Surround => "🎵",
+            SpatialPreset::Surround => "[Mus]",
             SpatialPreset::VR => "🥽",
         }
     }
@@ -234,13 +234,13 @@ impl ReverbEnvironment {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            ReverbEnvironment::None => "🔇",
+            ReverbEnvironment::None => "[Mute]",
             ReverbEnvironment::SmallRoom => "🚪",
-            ReverbEnvironment::LargeRoom => "🏠",
+            ReverbEnvironment::LargeRoom => "[Home]",
             ReverbEnvironment::Hall => "🏛️",
             ReverbEnvironment::Cave => "🕳️",
             ReverbEnvironment::Forest => "🌲",
-            ReverbEnvironment::Underwater => "🌊",
+            ReverbEnvironment::Underwater => "[Wave]",
             ReverbEnvironment::Cathedral => "⛪",
         }
     }
@@ -343,10 +343,10 @@ impl AudioTab {
     pub fn icon(&self) -> &'static str {
         match self {
             AudioTab::Mixer => "🎚️",
-            AudioTab::Music => "🎵",
+            AudioTab::Music => "[Mus]",
             AudioTab::Spatial => "📍",
-            AudioTab::Emitters => "🔊",
-            AudioTab::Preview => "▶️",
+            AudioTab::Emitters => "[Snd]",
+            AudioTab::Preview => ">",
         }
     }
 }
@@ -622,9 +622,9 @@ impl AudioPanel {
         ui.horizontal(|ui| {
             let tabs = [
                 (AudioTab::Mixer, "🎚️ Mixer"),
-                (AudioTab::Music, "🎵 Music"),
-                (AudioTab::Spatial, "🔊 Spatial"),
-                (AudioTab::Emitters, "📍 Emitters"),
+                (AudioTab::Music, "Music"),
+                (AudioTab::Spatial, "Spatial"),
+                (AudioTab::Emitters, "Emitters"),
                 (AudioTab::Preview, "🎧 Preview"),
             ];
 
@@ -653,7 +653,7 @@ impl AudioPanel {
             ui.horizontal(|ui| {
                 ui.heading("Master");
                 if ui
-                    .button(if self.master_muted { "🔇" } else { "🔊" })
+                    .button(if self.master_muted { "[Mute]" } else { "[Snd]" })
                     .clicked()
                 {
                     self.master_muted = !self.master_muted;
@@ -681,9 +681,9 @@ impl AudioPanel {
             // Music channel
             columns[0].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("🎵 Music").strong());
+                    ui.label(RichText::new("Music").strong());
                     if ui
-                        .button(if self.music_muted { "🔇" } else { "🔊" })
+                        .button(if self.music_muted { "[Mute]" } else { "[Snd]" })
                         .clicked()
                     {
                         self.music_muted = !self.music_muted;
@@ -704,7 +704,7 @@ impl AudioPanel {
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("🗣️ Voice").strong());
                     if ui
-                        .button(if self.voice_muted { "🔇" } else { "🔊" })
+                        .button(if self.voice_muted { "[Mute]" } else { "[Snd]" })
                         .clicked()
                     {
                         self.voice_muted = !self.voice_muted;
@@ -723,9 +723,9 @@ impl AudioPanel {
             // SFX channel
             columns[2].group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("💥 SFX").strong());
+                    ui.label(RichText::new("[Hit] SFX").strong());
                     if ui
-                        .button(if self.sfx_muted { "🔇" } else { "🔊" })
+                        .button(if self.sfx_muted { "[Mute]" } else { "[Snd]" })
                         .clicked()
                     {
                         self.sfx_muted = !self.sfx_muted;
@@ -834,7 +834,7 @@ impl AudioPanel {
     }
 
     fn show_audio_stats(&self, ui: &mut Ui) {
-        ui.collapsing("📊 Audio Statistics", |ui| {
+        ui.collapsing("Audio Statistics", |ui| {
             egui::Grid::new("audio_stats_grid")
                 .num_columns(2)
                 .spacing([20.0, 4.0])
@@ -880,7 +880,7 @@ impl AudioPanel {
     }
 
     fn show_music_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🎵 Music Management");
+        ui.heading("Music Management");
         ui.add_space(10.0);
 
         // Playback controls
@@ -888,23 +888,23 @@ impl AudioPanel {
             if ui.button("⏮ Prev").clicked() {
                 // Previous track
             }
-            if ui.button("▶ Play").clicked() {
+            if ui.button("> Play").clicked() {
                 // Play current
             }
-            if ui.button("⏸ Pause").clicked() {
+            if ui.button("|| Pause").clicked() {
                 // Pause
             }
-            if ui.button("⏹ Stop").clicked() {
+            if ui.button("[] Stop").clicked() {
                 // Stop
             }
-            if ui.button("⏭ Next").clicked() {
+            if ui.button(">| Next").clicked() {
                 // Next track
             }
 
             ui.separator();
 
             if ui
-                .selectable_label(self.playlist_shuffle, "🔀 Shuffle")
+                .selectable_label(self.playlist_shuffle, "Shuffle")
                 .clicked()
             {
                 self.playlist_shuffle = !self.playlist_shuffle;
@@ -993,7 +993,7 @@ impl AudioPanel {
         ui.add_space(10.0);
 
         // Add track button
-        if ui.button("➕ Add Music Track").clicked() {
+        if ui.button("Add Music Track").clicked() {
             self.music_tracks.push(MusicTrackEntry {
                 name: format!("Track {}", self.music_tracks.len() + 1),
                 path: String::new(),
@@ -1005,7 +1005,7 @@ impl AudioPanel {
     }
 
     fn show_spatial_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔊 Spatial Audio");
+        ui.heading("Spatial Audio");
         ui.add_space(10.0);
 
         // Spatial preset selection
@@ -1047,7 +1047,7 @@ impl AudioPanel {
         ui.add_space(10.0);
 
         // Doppler settings
-        ui.collapsing("💨 Doppler Effect", |ui| {
+        ui.collapsing("[Dash] Doppler Effect", |ui| {
             ui.checkbox(&mut self.doppler_enabled, "Enable Doppler Effect");
             ui.add_enabled(
                 self.doppler_enabled,
@@ -1087,7 +1087,7 @@ impl AudioPanel {
         ui.add_space(10.0);
 
         // Reverb settings
-        ui.collapsing("🔊 Reverb / Environment", |ui| {
+        ui.collapsing("Reverb / Environment", |ui| {
             ui.checkbox(&mut self.reverb_enabled, "Enable Reverb");
 
             ui.add_space(5.0);
@@ -1123,11 +1123,11 @@ impl AudioPanel {
     }
 
     fn show_emitters_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📍 Audio Emitters");
+        ui.heading("Audio Emitters");
         ui.add_space(10.0);
 
         ui.horizontal(|ui| {
-            if ui.button("➕ Add Emitter").clicked() {
+            if ui.button("Add Emitter").clicked() {
                 let id = self.next_emitter_id;
                 self.next_emitter_id += 1;
                 self.emitters.insert(
@@ -1163,7 +1163,7 @@ impl AudioPanel {
                         if let Some(emitter) = self.emitters.get(&id) {
                             let is_selected = self.selected_emitter_id == Some(id);
                             ui.horizontal(|ui| {
-                                let status_icon = if emitter.is_playing { "🔊" } else { "🔇" };
+                                let status_icon = if emitter.is_playing { "[Snd]" } else { "[Mute]" };
                                 if ui
                                     .selectable_label(
                                         is_selected,
@@ -1237,10 +1237,10 @@ impl AudioPanel {
                     ui.add_space(5.0);
 
                     ui.horizontal(|ui| {
-                        if ui.button("▶ Play Test").clicked() {
+                        if ui.button("> Play Test").clicked() {
                             emitter.is_playing = true;
                         }
-                        if ui.button("⏹ Stop").clicked() {
+                        if ui.button("[] Stop").clicked() {
                             emitter.is_playing = false;
                         }
                     });
@@ -1248,7 +1248,7 @@ impl AudioPanel {
             }
 
             // Delete button outside the borrow scope
-            if ui.button("🗑 Delete Selected Emitter").clicked() {
+            if ui.button("Delete Selected Emitter").clicked() {
                 should_delete_emitter = true;
             }
         }
@@ -1268,7 +1268,7 @@ impl AudioPanel {
 
         // Test tone generator
         ui.group(|ui| {
-            ui.label(RichText::new("🎵 Test Tone Generator").strong());
+            ui.label(RichText::new("Test Tone Generator").strong());
             ui.separator();
 
             ui.add(
@@ -1284,10 +1284,10 @@ impl AudioPanel {
             );
 
             ui.horizontal(|ui| {
-                if ui.button("▶ Play Tone").clicked() {
+                if ui.button("> Play Tone").clicked() {
                     self.is_previewing = true;
                 }
-                if ui.button("⏹ Stop").clicked() {
+                if ui.button("[] Stop").clicked() {
                     self.is_previewing = false;
                 }
             });
@@ -1316,7 +1316,7 @@ impl AudioPanel {
 
         // 3D Position test
         ui.group(|ui| {
-            ui.label(RichText::new("📍 3D Position Test").strong());
+            ui.label(RichText::new("3D Position Test").strong());
             ui.separator();
 
             egui::Grid::new("preview_pos_grid")
@@ -1339,7 +1339,7 @@ impl AudioPanel {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
-                if ui.button("▶ Play at Position").clicked() {
+                if ui.button("> Play at Position").clicked() {
                     // Play 3D positioned test sound
                 }
 
@@ -1363,23 +1363,23 @@ impl AudioPanel {
 
         // Quick audio tests
         ui.group(|ui| {
-            ui.label(RichText::new("🧪 Quick Tests").strong());
+            ui.label(RichText::new("[Test] Quick Tests").strong());
             ui.separator();
 
             ui.horizontal_wrapped(|ui| {
-                if ui.button("🎵 Music Fade").clicked() {
+                if ui.button("Music Fade").clicked() {
                     // Test music crossfade
                 }
-                if ui.button("💥 SFX Burst").clicked() {
+                if ui.button("[Hit] SFX Burst").clicked() {
                     // Play rapid SFX
                 }
                 if ui.button("🗣️ Voice Test").clicked() {
                     // Test voice with ducking
                 }
-                if ui.button("🔊 Surround Test").clicked() {
+                if ui.button("Surround Test").clicked() {
                     // Circle around listener
                 }
-                if ui.button("🌊 Reverb Test").clicked() {
+                if ui.button("[Wave] Reverb Test").clicked() {
                     // Test reverb settings
                 }
             });
@@ -1583,7 +1583,7 @@ mod tests {
     #[test]
     fn test_music_mood_icons() {
         assert_eq!(MusicMood::Combat.icon(), "⚔️");
-        assert_eq!(MusicMood::Ambient.icon(), "🌿");
+        assert_eq!(MusicMood::Ambient.icon(), "[Leaf]");
         assert_eq!(MusicMood::Boss.icon(), "👹");
     }
 
@@ -1675,7 +1675,7 @@ mod tests {
 
     #[test]
     fn test_spatial_preset_display() {
-        assert_eq!(format!("{}", SpatialPreset::Standard), "🔊 Standard");
+        assert_eq!(format!("{}", SpatialPreset::Standard), "[Snd] Standard");
         assert_eq!(format!("{}", SpatialPreset::Headphones), "🎧 Headphones");
     }
 
@@ -1794,7 +1794,7 @@ mod tests {
     #[test]
     fn test_audio_tab_display() {
         assert_eq!(format!("{}", AudioTab::Mixer), "🎚️ Mixer");
-        assert_eq!(format!("{}", AudioTab::Music), "🎵 Music");
+        assert_eq!(format!("{}", AudioTab::Music), "[Mus] Music");
     }
 
     #[test]
@@ -1805,7 +1805,7 @@ mod tests {
 
     #[test]
     fn test_audio_tab_icon() {
-        assert_eq!(AudioTab::Preview.icon(), "▶️");
+        assert_eq!(AudioTab::Preview.icon(), ">");
         assert_eq!(AudioTab::Mixer.icon(), "🎚️");
     }
 

@@ -1,0 +1,10 @@
+# Created by Kenney (www.kenney.nl)
+
+newmtl grass
+Kd 1 1 1
+map_Kd Textures/grass.png
+
+newmtl rock
+Kd 1 1 1
+map_Kd Textures/rock.png
+

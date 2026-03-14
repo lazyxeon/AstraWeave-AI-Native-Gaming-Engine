@@ -1,10 +1,11 @@
-use astraweave_behavior::BehaviorNode;
+﻿use astraweave_behavior::BehaviorNode;
 use egui::{self, ComboBox, Slider};
 
 use super::document::{
     BehaviorGraphDocument, BehaviorGraphDocumentError, BehaviorGraphNodeKind, DecoratorKind,
     DecoratorNode, NodeId,
 };
+use super::node_graph_widget::NodeGraphWidget;
 
 pub struct BehaviorGraphEditorUi {
     selected_node: Option<NodeId>,
@@ -12,6 +13,10 @@ pub struct BehaviorGraphEditorUi {
     new_node_label: String,
     path_input: String,
     status_line: Option<String>,
+    /// Visual node graph canvas.
+    node_graph: NodeGraphWidget,
+    /// Whether to use the visual graph view (true) or the legacy text list (false).
+    visual_mode: bool,
 }
 
 impl Default for BehaviorGraphEditorUi {
@@ -22,6 +27,8 @@ impl Default for BehaviorGraphEditorUi {
             new_node_label: "new_action".into(),
             path_input: "content/sample.behavior.ron".into(),
             status_line: None,
+            node_graph: NodeGraphWidget::default(),
+            visual_mode: true,
         }
     }
 }
@@ -34,18 +41,67 @@ impl BehaviorGraphEditorUi {
         self.ensure_selection(doc);
 
         self.draw_file_toolbar(ui, doc, &mut push_log);
-        if let Some(status) = &self.status_line {
-            ui.label(status);
+        if let Some(status) = self.node_graph.status.take().or(self.status_line.take()) {
+            ui.label(&status);
         }
 
         ui.separator();
-        self.draw_palette(ui, doc);
+
+        // Toggle between visual graph and legacy text list
+        ui.horizontal(|ui| {
+            ui.label("View:");
+            if ui.selectable_label(self.visual_mode, "Graph").clicked() {
+                self.visual_mode = true;
+            }
+            if ui.selectable_label(!self.visual_mode, "List").clicked() {
+                self.visual_mode = false;
+            }
+            ui.separator();
+            self.draw_palette_inline(ui, doc);
+        });
 
         ui.separator();
-        ui.columns(2, |columns| {
-            self.draw_node_list(&mut columns[0], doc);
-            self.draw_node_details(&mut columns[1], doc);
-        });
+
+        if self.visual_mode {
+            // Auto-layout on first open if all nodes at origin
+            if self.node_graph.needs_auto_layout(doc) {
+                self.node_graph.auto_layout(doc);
+            }
+
+            // Sync selection: details panel → widget
+            self.node_graph.selected_node = self.selected_node;
+
+            let details_width = 260.0;
+            let available = ui.available_size();
+
+            ui.horizontal(|ui| {
+                // Left: visual node graph canvas
+                let graph_width = (available.x - details_width - 8.0).max(200.0);
+                ui.allocate_ui(egui::vec2(graph_width, available.y), |ui| {
+                    self.node_graph.show(ui, doc);
+                });
+
+                // Sync selection: widget → details panel
+                self.selected_node = self.node_graph.selected_node;
+
+                ui.separator();
+
+                // Right: property details for selected node
+                ui.allocate_ui(egui::vec2(details_width, available.y), |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        self.draw_node_details(ui, doc);
+                    });
+                });
+            });
+        } else {
+            // Legacy text-list mode
+            self.draw_palette(ui, doc);
+            ui.separator();
+            ui.columns(2, |columns| {
+                self.draw_node_list(&mut columns[0], doc);
+                self.draw_node_details(&mut columns[1], doc);
+            });
+        }
     }
 
     fn ensure_selection(&mut self, doc: &BehaviorGraphDocument) {
@@ -67,14 +123,14 @@ impl BehaviorGraphEditorUi {
             ui.text_edit_singleline(&mut self.path_input);
             if ui.button("Save").clicked() {
                 if self.path_input.trim().is_empty() {
-                    self.status_line = Some("⚠️ Provide a file path before saving".into());
+                    self.status_line = Some("Provide a file path before saving".into());
                 } else {
                     match doc.save_to_path(&self.path_input) {
                         Ok(()) => {
-                            push_log(format!("💾 Saved behavior graph to {}", self.path_input));
+                            push_log(format!("Saved behavior graph to {}", self.path_input));
                             self.status_line = Some("Saved graph".into());
                         }
-                        Err(err) => self.status_line = Some(format!("❌ Save failed: {err}")),
+                        Err(err) => self.status_line = Some(format!("Save failed: {err}")),
                     }
                 }
             }
@@ -83,20 +139,20 @@ impl BehaviorGraphEditorUi {
                     Ok(loaded) => {
                         *doc = loaded;
                         self.selected_node = Some(doc.root_id());
-                        push_log(format!("📂 Loaded behavior graph from {}", self.path_input));
+                        push_log(format!("Loaded behavior graph from {}", self.path_input));
                         self.status_line = Some("Loaded graph".into());
                     }
-                    Err(err) => self.status_line = Some(format!("❌ Load failed: {err}")),
+                    Err(err) => self.status_line = Some(format!("Load failed: {err}")),
                 }
             }
             if ui.button("Validate").clicked() {
                 match doc.to_runtime() {
                     Ok(graph) => {
                         let node_count = count_runtime_nodes(&graph.root);
-                        push_log(format!("✅ Behavior graph valid ({node_count} nodes)"));
+                        push_log(format!("Behavior graph valid ({node_count} nodes)"));
                         self.status_line = Some(format!("Validated graph ({node_count} nodes)"));
                     }
-                    Err(err) => self.status_line = Some(format!("❌ Validation failed: {err}")),
+                    Err(err) => self.status_line = Some(format!("Validation failed: {err}")),
                 }
             }
         });
@@ -104,27 +160,31 @@ impl BehaviorGraphEditorUi {
 
     fn draw_palette(&mut self, ui: &mut egui::Ui, doc: &mut BehaviorGraphDocument) {
         ui.horizontal(|ui| {
-            ui.label("Palette");
-            ComboBox::new("behavior_node_kind", "Node Type")
-                .selected_text(self.new_node_kind.label())
-                .show_ui(ui, |ui| {
-                    for kind in NodeTemplate::ALL {
-                        ui.selectable_value(&mut self.new_node_kind, *kind, kind.label());
-                    }
-                });
-            ui.text_edit_singleline(&mut self.new_node_label);
-            let can_add_child = self
-                .selected_node
-                .and_then(|id| doc.node(id))
-                .map(|node| node.kind.supports_children())
-                .unwrap_or(false);
-            let add_child = ui.add_enabled(can_add_child, egui::Button::new("Add Child"));
-            if add_child.clicked() {
-                if let Err(err) = self.add_child_to_selection(doc) {
-                    self.status_line = Some(format!("❌ {err}"));
-                }
-            }
+            self.draw_palette_inline(ui, doc);
         });
+    }
+
+    /// Compact palette controls that can be placed inline in a horizontal layout.
+    fn draw_palette_inline(&mut self, ui: &mut egui::Ui, doc: &mut BehaviorGraphDocument) {
+        ComboBox::new("behavior_node_kind", "Node Type")
+            .selected_text(self.new_node_kind.label())
+            .show_ui(ui, |ui| {
+                for kind in NodeTemplate::ALL {
+                    ui.selectable_value(&mut self.new_node_kind, *kind, kind.label());
+                }
+            });
+        ui.text_edit_singleline(&mut self.new_node_label);
+        let can_add_child = self
+            .selected_node
+            .and_then(|id| doc.node(id))
+            .map(|node| node.kind.supports_children())
+            .unwrap_or(false);
+        let add_child = ui.add_enabled(can_add_child, egui::Button::new("Add Child"));
+        if add_child.clicked() {
+            if let Err(err) = self.add_child_to_selection(doc) {
+                self.status_line = Some(format!("{err}"));
+            }
+        }
     }
 
     fn draw_node_list(&mut self, ui: &mut egui::Ui, doc: &BehaviorGraphDocument) {
@@ -219,12 +279,12 @@ impl BehaviorGraphEditorUi {
         ui.horizontal(|ui| {
             if ui.button("Set As Root").clicked() {
                 if let Err(err) = doc.set_root(node_id) {
-                    self.status_line = Some(format!("❌ {err}"));
+                    self.status_line = Some(format!("{err}"));
                 }
             }
             if ui.button("Delete").clicked() {
                 if let Err(err) = doc.remove_node(node_id) {
-                    self.status_line = Some(format!("❌ {err}"));
+                    self.status_line = Some(format!("{err}"));
                 } else {
                     self.selected_node = Some(doc.root_id());
                 }
@@ -253,7 +313,7 @@ impl BehaviorGraphEditorUi {
                 }
                 if ui.button("Remove").clicked() {
                     if let Err(err) = doc.remove_node(*child_id) {
-                        self.status_line = Some(format!("❌ {err}"));
+                        self.status_line = Some(format!("{err}"));
                     }
                 }
             });
@@ -307,7 +367,7 @@ impl BehaviorGraphEditorUi {
             }
             if ui.button("Remove Child").clicked() {
                 if let Err(err) = doc.remove_node(child_id) {
-                    self.status_line = Some(format!("❌ {err}"));
+                    self.status_line = Some(format!("{err}"));
                 }
             }
         } else {
@@ -929,5 +989,7 @@ mod tests {
         assert_eq!(ui.new_node_label, "new_action");
         assert_eq!(ui.path_input, "content/sample.behavior.ron");
         assert!(ui.status_line.is_none());
+        assert!(ui.visual_mode);
+        assert!(ui.node_graph.selected_node.is_none());
     }
 }

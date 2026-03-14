@@ -86,11 +86,11 @@ impl ReadinessLevel {
     /// Icon/badge
     pub fn icon(&self) -> &'static str {
         match self {
-            ReadinessLevel::NotReady => "⚠️",
-            ReadinessLevel::Basic => "🔵",
-            ReadinessLevel::Standard => "🟢",
-            ReadinessLevel::Production => "⭐",
-            ReadinessLevel::Premium => "💎",
+            ReadinessLevel::NotReady => "[!]",
+            ReadinessLevel::Basic => "[B]",
+            ReadinessLevel::Standard => "[G]",
+            ReadinessLevel::Production => "[Star]",
+            ReadinessLevel::Premium => "[Gem]",
         }
     }
 
@@ -231,19 +231,19 @@ impl ChecklistItem {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            ChecklistItem::HasMesh => "🎭",
-            ChecklistItem::HasMaterial => "💎",
-            ChecklistItem::HasCollider => "💥",
+            ChecklistItem::HasMesh => "[Mask]",
+            ChecklistItem::HasMaterial => "[Gem]",
+            ChecklistItem::HasCollider => "[Hit]",
             ChecklistItem::HasLODs => "👁️",
             ChecklistItem::HasLightmapUVs => "🗺️",
             ChecklistItem::HasOcclusionFlags => "👻",
             ChecklistItem::HasShadowFlags => "🌑",
-            ChecklistItem::HasTags => "🏷️",
-            ChecklistItem::HasThumbnail => "🖼️",
-            ChecklistItem::HasVariants => "🎨",
-            ChecklistItem::HasAnimations => "🎬",
-            ChecklistItem::PowerOfTwoTextures => "📐",
-            ChecklistItem::MaterialsComplete => "✅",
+            ChecklistItem::HasTags => "[Tag]",
+            ChecklistItem::HasThumbnail => "[Img]",
+            ChecklistItem::HasVariants => "[Art]",
+            ChecklistItem::HasAnimations => "[Anim]",
+            ChecklistItem::PowerOfTwoTextures => "[Sq]",
+            ChecklistItem::MaterialsComplete => "[ok]",
             ChecklistItem::ScaleCorrect => "📏",
         }
     }
@@ -413,8 +413,8 @@ impl AssetStoreCategory {
     /// Icon for UI
     pub fn icon(&self) -> &'static str {
         match self {
-            AssetStoreCategory::All => "📦",
-            AssetStoreCategory::Environment => "🌍",
+            AssetStoreCategory::All => "[Pkg]",
+            AssetStoreCategory::Environment => "[Glb]",
             AssetStoreCategory::Props => "🪑",
             AssetStoreCategory::Characters => "👤",
             AssetStoreCategory::Vehicles => "🚗",
@@ -422,10 +422,10 @@ impl AssetStoreCategory {
             AssetStoreCategory::Architecture => "🏛️",
             AssetStoreCategory::Nature => "🌲",
             AssetStoreCategory::Industrial => "🏭",
-            AssetStoreCategory::SciFi => "🚀",
-            AssetStoreCategory::Fantasy => "🔮",
-            AssetStoreCategory::Effects => "✨",
-            AssetStoreCategory::UI => "🖼️",
+            AssetStoreCategory::SciFi => "[Rkt]",
+            AssetStoreCategory::Fantasy => "[Orb]",
+            AssetStoreCategory::Effects => "[Fx]",
+            AssetStoreCategory::UI => "[Img]",
         }
     }
 
@@ -631,7 +631,7 @@ impl ReadyAssetStorePanel {
 
     fn render_filters(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("🔍");
+            ui.label("[Srch]");
             ui.add(
                 egui::TextEdit::singleline(&mut self.search_query)
                     .hint_text("Search assets...")
@@ -922,7 +922,7 @@ impl ReadyAssetStorePanel {
             .show(ui, |ui| {
                 for item in ChecklistItem::core_items() {
                     let passed = asset.checklist.is_passed(*item);
-                    let icon = if passed { "✅" } else { "❌" };
+                    let icon = if passed { "[ok]" } else { "[x]" };
                     ui.label(format!("{} {}", icon, item.name()));
                 }
             });
@@ -931,10 +931,10 @@ impl ReadyAssetStorePanel {
 
         // Actions
         ui.horizontal(|ui| {
-            if ui.button("📦 Add to Scene").clicked() {
+            if ui.button("Add to Scene").clicked() {
                 should_spawn = true;
             }
-            if ui.button("👁️ Preview").clicked() {
+            if ui.button("Preview").clicked() {
                 should_preview = true;
             }
         });

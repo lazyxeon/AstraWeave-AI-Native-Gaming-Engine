@@ -165,14 +165,14 @@ impl MaterialSlot {
     /// Get icon for slot
     pub fn icon(&self) -> &'static str {
         match self {
-            MaterialSlot::Albedo => "🎨",
+            MaterialSlot::Albedo => "[Alb]",
             MaterialSlot::Normal => "↗",
             MaterialSlot::Roughness => "◐",
             MaterialSlot::Metallic => "⚙",
             MaterialSlot::AO => "◑",
-            MaterialSlot::ORM => "📦",
-            MaterialSlot::Emission => "💡",
-            MaterialSlot::Height => "📈",
+            MaterialSlot::ORM => "[ORM]",
+            MaterialSlot::Emission => "[Em]",
+            MaterialSlot::Height => "[Ht]",
         }
     }
 

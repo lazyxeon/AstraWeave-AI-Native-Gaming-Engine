@@ -496,7 +496,7 @@ impl PackResult {
     pub fn summary(&self) -> String {
         let ratio_percent = (1.0 - self.compression_ratio) * 100.0;
         format!(
-            "Packed {} assets: {} → {} ({:.1}% reduction) in {:.2}s",
+            "Packed {} assets: {} -> {} ({:.1}% reduction) in {:.2}s",
             self.asset_count,
             format_bytes(self.total_uncompressed_size),
             format_bytes(self.total_compressed_size),

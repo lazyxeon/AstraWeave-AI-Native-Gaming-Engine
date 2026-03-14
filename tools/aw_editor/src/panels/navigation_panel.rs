@@ -53,7 +53,7 @@ impl NavAreaType {
             NavAreaType::Walkable => "🚶",
             NavAreaType::Road => "🛣️",
             NavAreaType::Water => "💧",
-            NavAreaType::Grass => "🌿",
+            NavAreaType::Grass => "[Leaf]",
             NavAreaType::Mud => "🟫",
             NavAreaType::Ice => "❄️",
             NavAreaType::Ladder => "🪜",
@@ -209,9 +209,9 @@ impl NavLinkType {
         match self {
             NavLinkType::Walk => "🚶",
             NavLinkType::Jump => "🦘",
-            NavLinkType::Drop => "⬇️",
+            NavLinkType::Drop => "[Dn]",
             NavLinkType::Ladder => "🪜",
-            NavLinkType::Teleport => "✨",
+            NavLinkType::Teleport => "[Fx]",
         }
     }
 }
@@ -321,10 +321,10 @@ impl NavigationTab {
     pub fn icon(&self) -> &'static str {
         match self {
             NavigationTab::Mesh => "🗺️",
-            NavigationTab::Agents => "🤖",
+            NavigationTab::Agents => "[Bot]",
             NavigationTab::Obstacles => "🚧",
-            NavigationTab::Links => "🔗",
-            NavigationTab::PathTest => "🎯",
+            NavigationTab::Links => "[Link]",
+            NavigationTab::PathTest => "[Tgt]",
             NavigationTab::Settings => "⚙️",
         }
     }
@@ -602,7 +602,7 @@ pub struct NavigationPanel {
 
 impl Default for NavigationPanel {
     fn default() -> Self {
-        let mut panel = Self {
+        let panel = Self {
             active_tab: NavigationTab::Mesh,
 
             regions: Vec::new(),
@@ -632,7 +632,6 @@ impl Default for NavigationPanel {
             pending_actions: Vec::new(),
         };
 
-        panel.create_sample_data();
         panel
     }
 }
@@ -751,11 +750,11 @@ impl NavigationPanel {
         ui.horizontal(|ui| {
             let tabs = [
                 (NavigationTab::Mesh, "🗺️ Mesh"),
-                (NavigationTab::Agents, "🏃 Agents"),
+                (NavigationTab::Agents, "[Run] Agents"),
                 (NavigationTab::Obstacles, "🚧 Obstacles"),
-                (NavigationTab::Links, "🔗 Links"),
-                (NavigationTab::PathTest, "📍 Path Test"),
-                (NavigationTab::Settings, "⚙️ Settings"),
+                (NavigationTab::Links, "Links"),
+                (NavigationTab::PathTest, "Path Test"),
+                (NavigationTab::Settings, "Settings"),
             ];
 
             for (tab, label) in tabs {
@@ -782,7 +781,7 @@ impl NavigationPanel {
             let status_text = if self.is_baked {
                 "✓ Baked"
             } else {
-                "⚠ Not Baked"
+                "[!] Not Baked"
             };
             ui.label(RichText::new(status_text).color(status_color));
             ui.separator();
@@ -803,7 +802,7 @@ impl NavigationPanel {
             if ui.button("🔨 Bake NavMesh").clicked() {
                 self.is_baked = true;
             }
-            if ui.button("🗑️ Clear").clicked() {
+            if ui.button("Clear").clicked() {
                 self.regions.clear();
                 self.total_triangles = 0;
                 self.total_vertices = 0;
@@ -815,7 +814,7 @@ impl NavigationPanel {
 
         // Statistics
         ui.group(|ui| {
-            ui.label(RichText::new("📊 Statistics").strong());
+            ui.label(RichText::new("Statistics").strong());
 
             egui::Grid::new("mesh_stats")
                 .num_columns(2)
@@ -861,7 +860,7 @@ impl NavigationPanel {
                             ui.painter()
                                 .rect_filled(color_rect, 3.0, region.area_type.color());
 
-                            let valid_icon = if region.is_valid { "✓" } else { "⚠" };
+                            let valid_icon = if region.is_valid { "✓" } else { "[!]" };
                             ui.label(format!(
                                 "{} Region #{} - {:?}",
                                 valid_icon, region.id, region.area_type
@@ -880,7 +879,7 @@ impl NavigationPanel {
 
         // Debug visualization options
         ui.group(|ui| {
-            ui.label(RichText::new("👁️ Visualization").strong());
+            ui.label(RichText::new("Visualization").strong());
 
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.debug_options.show_triangles, "Triangles");
@@ -897,7 +896,7 @@ impl NavigationPanel {
     }
 
     fn show_agents_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🏃 Agent Types");
+        ui.heading("[Run] Agent Types");
         ui.add_space(10.0);
 
         // Add agent button
@@ -1025,7 +1024,7 @@ impl NavigationPanel {
 
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
-                                let icon = if obstacle.is_dynamic { "🔄" } else { "🧱" };
+                                let icon = if obstacle.is_dynamic { "[Sync]" } else { "[Brk]" };
                                 if ui
                                     .selectable_label(
                                         is_selected,
@@ -1102,7 +1101,7 @@ impl NavigationPanel {
     }
 
     fn show_links_tab(&mut self, ui: &mut Ui) {
-        ui.heading("🔗 Off-Mesh Links");
+        ui.heading("Off-Mesh Links");
         ui.add_space(10.0);
 
         // Add link button
@@ -1134,15 +1133,15 @@ impl NavigationPanel {
                             ui.horizontal(|ui| {
                                 let icon = match link.link_type {
                                     NavLinkType::Walk => "🚶",
-                                    NavLinkType::Jump => "⬆️",
-                                    NavLinkType::Drop => "⬇️",
+                                    NavLinkType::Jump => "[Up]",
+                                    NavLinkType::Drop => "[Dn]",
                                     NavLinkType::Ladder => "🪜",
-                                    NavLinkType::Teleport => "✨",
+                                    NavLinkType::Teleport => "[Fx]",
                                 };
                                 let direction = if link.bidirectional {
                                     "↔️"
                                 } else {
-                                    "➡️"
+                                    "[Rt]"
                                 };
                                 if ui
                                     .selectable_label(
@@ -1254,12 +1253,12 @@ impl NavigationPanel {
     }
 
     fn show_path_test_tab(&mut self, ui: &mut Ui) {
-        ui.heading("📍 Path Testing");
+        ui.heading("Path Testing");
         ui.add_space(10.0);
 
         // Path endpoints
         ui.group(|ui| {
-            ui.label(RichText::new("🎯 Path Endpoints").strong());
+            ui.label(RichText::new("Path Endpoints").strong());
 
             egui::Grid::new("path_endpoints")
                 .num_columns(2)
@@ -1311,7 +1310,7 @@ impl NavigationPanel {
 
         // Test controls
         ui.horizontal(|ui| {
-            if ui.button("🔍 Find Path").clicked() {
+            if ui.button("Find Path").clicked() {
                 self.test_path();
             }
             ui.checkbox(&mut self.auto_update_path, "Auto-update");
@@ -1358,7 +1357,7 @@ impl NavigationPanel {
 
                     // Path waypoints
                     ui.add_space(5.0);
-                    ui.collapsing("📋 Waypoints", |ui| {
+                    ui.collapsing("Waypoints", |ui| {
                         egui::ScrollArea::vertical()
                             .max_height(100.0)
                             .show(ui, |ui| {
@@ -1418,14 +1417,14 @@ impl NavigationPanel {
     }
 
     fn show_settings_tab(&mut self, ui: &mut Ui) {
-        ui.heading("⚙️ Bake Settings");
+        ui.heading("Bake Settings");
         ui.add_space(10.0);
 
         egui::ScrollArea::vertical()
             .max_height(350.0)
             .show(ui, |ui| {
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Rasterization").strong());
+                    ui.label(RichText::new("[Sq] Rasterization").strong());
 
                     egui::Grid::new("raster_settings")
                         .num_columns(2)
@@ -1452,7 +1451,7 @@ impl NavigationPanel {
                 ui.add_space(10.0);
 
                 ui.group(|ui| {
-                    ui.label(RichText::new("🏃 Agent").strong());
+                    ui.label(RichText::new("[Run] Agent").strong());
 
                     egui::Grid::new("agent_settings")
                         .num_columns(2)
@@ -1520,7 +1519,7 @@ impl NavigationPanel {
                 ui.add_space(10.0);
 
                 ui.group(|ui| {
-                    ui.label(RichText::new("📐 Polygonization").strong());
+                    ui.label(RichText::new("[Sq] Polygonization").strong());
 
                     egui::Grid::new("poly_settings")
                         .num_columns(2)
@@ -1911,13 +1910,15 @@ mod tests {
 
     #[test]
     fn test_navigation_panel_creation() {
-        let panel = NavigationPanel::new();
+        let mut panel = NavigationPanel::new();
+        panel.create_sample_data();
         assert!(panel.is_baked());
     }
 
     #[test]
     fn test_default_sample_data() {
-        let panel = NavigationPanel::new();
+        let mut panel = NavigationPanel::new();
+        panel.create_sample_data();
         assert!(panel.region_count() >= 3);
         assert!(panel.agent_count() >= 3);
         assert!(panel.obstacle_count() >= 1);
@@ -1978,7 +1979,8 @@ mod tests {
 
     #[test]
     fn test_total_triangles() {
-        let panel = NavigationPanel::new();
+        let mut panel = NavigationPanel::new();
+        panel.create_sample_data();
         assert!(panel.total_triangles() > 0);
     }
 
@@ -2043,7 +2045,7 @@ mod tests {
         assert_eq!(format!("{}", NavAreaType::Walkable), "🚶 Walkable");
         assert_eq!(format!("{}", NavAreaType::Road), "�️ Road");
         assert_eq!(format!("{}", NavAreaType::Water), "💧 Water");
-        assert_eq!(format!("{}", NavAreaType::Grass), "🌿 Grass");
+        assert_eq!(format!("{}", NavAreaType::Grass), "[Leaf] Grass");
         assert_eq!(format!("{}", NavAreaType::Mud), "🟫 Mud");
         assert_eq!(format!("{}", NavAreaType::Ice), "❄️ Ice");
         assert_eq!(format!("{}", NavAreaType::Ladder), "🪜 Ladder");
@@ -2108,9 +2110,9 @@ mod tests {
     fn test_nav_link_type_display() {
         assert_eq!(format!("{}", NavLinkType::Walk), "🚶 Walk");
         assert_eq!(format!("{}", NavLinkType::Jump), "🦘 Jump");
-        assert_eq!(format!("{}", NavLinkType::Drop), "⬇️ Drop");
+        assert_eq!(format!("{}", NavLinkType::Drop), "[Dn] Drop");
         assert_eq!(format!("{}", NavLinkType::Ladder), "🪜 Ladder");
-        assert_eq!(format!("{}", NavLinkType::Teleport), "✨ Teleport");
+        assert_eq!(format!("{}", NavLinkType::Teleport), "[Fx] Teleport");
     }
 
     #[test]
@@ -2134,9 +2136,9 @@ mod tests {
     fn test_nav_link_type_icon() {
         assert_eq!(NavLinkType::Walk.icon(), "🚶");
         assert_eq!(NavLinkType::Jump.icon(), "🦘");
-        assert_eq!(NavLinkType::Drop.icon(), "⬇️");
+        assert_eq!(NavLinkType::Drop.icon(), "[Dn]");
         assert_eq!(NavLinkType::Ladder.icon(), "🪜");
-        assert_eq!(NavLinkType::Teleport.icon(), "✨");
+        assert_eq!(NavLinkType::Teleport.icon(), "[Fx]");
     }
 
     #[test]
@@ -2168,10 +2170,10 @@ mod tests {
     #[test]
     fn test_navigation_tab_display() {
         assert_eq!(format!("{}", NavigationTab::Mesh), "🗺️ Mesh");
-        assert_eq!(format!("{}", NavigationTab::Agents), "🤖 Agents");
+        assert_eq!(format!("{}", NavigationTab::Agents), "[Bot] Agents");
         assert_eq!(format!("{}", NavigationTab::Obstacles), "🚧 Obstacles");
-        assert_eq!(format!("{}", NavigationTab::Links), "🔗 Links");
-        assert_eq!(format!("{}", NavigationTab::PathTest), "🎯 Path Test");
+        assert_eq!(format!("{}", NavigationTab::Links), "[Link] Links");
+        assert_eq!(format!("{}", NavigationTab::PathTest), "[Tgt] Path Test");
         assert_eq!(format!("{}", NavigationTab::Settings), "⚙️ Settings");
     }
 
@@ -2196,10 +2198,10 @@ mod tests {
     #[test]
     fn test_navigation_tab_icon() {
         assert_eq!(NavigationTab::Mesh.icon(), "🗺️");
-        assert_eq!(NavigationTab::Agents.icon(), "🤖");
+        assert_eq!(NavigationTab::Agents.icon(), "[Bot]");
         assert_eq!(NavigationTab::Obstacles.icon(), "🚧");
-        assert_eq!(NavigationTab::Links.icon(), "🔗");
-        assert_eq!(NavigationTab::PathTest.icon(), "🎯");
+        assert_eq!(NavigationTab::Links.icon(), "[Link]");
+        assert_eq!(NavigationTab::PathTest.icon(), "[Tgt]");
         assert_eq!(NavigationTab::Settings.icon(), "⚙️");
     }
 
