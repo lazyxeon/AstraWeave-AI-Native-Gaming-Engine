@@ -28,6 +28,7 @@ pub trait MenuActionHandler {
     fn on_save_json(&mut self);
     fn on_save_scene(&mut self);
     fn on_load_scene(&mut self);
+    fn on_exit(&mut self);
 
     fn on_undo(&mut self);
     fn on_redo(&mut self);
@@ -145,6 +146,11 @@ impl MenuBar {
             ui.separator();
             if ui.button("Settings").clicked() {
                 handler.on_open_settings();
+                ui.close();
+            }
+            ui.separator();
+            if ui.button("Exit").clicked() {
+                handler.on_exit();
                 ui.close();
             }
         });

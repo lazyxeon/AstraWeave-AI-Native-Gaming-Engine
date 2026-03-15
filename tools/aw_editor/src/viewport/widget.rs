@@ -811,6 +811,19 @@ impl ViewportWidget {
         // Only left-drag is captured by gizmo
         let can_control_camera = response.hovered() || self.has_focus;
 
+        // Middle mouse drag: Orbit camera (standard 3D viewport control)
+        if can_control_camera && response.dragged_by(egui::PointerButton::Middle) {
+            let delta = response.drag_delta();
+            let is_shift = ctx.input(|i| i.modifiers.shift);
+            if is_shift {
+                // Shift + Middle drag: Pan
+                self.camera.pan(delta.x, delta.y);
+            } else {
+                // Middle drag: Orbit
+                self.camera.orbit(delta.x, delta.y);
+            }
+        }
+
         // Orbit camera (left mouse drag) - DISABLED during gizmo operation
         if can_control_camera
             && response.dragged_by(egui::PointerButton::Primary)
