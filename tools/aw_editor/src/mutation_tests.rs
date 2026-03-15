@@ -1305,7 +1305,10 @@ mod exact_value_tests {
         use crate::panel_type::PanelType;
         let mut layout = DockLayout::from_preset(LayoutPreset::Default);
         let removed = layout.remove_panel(&PanelType::Inspector);
-        assert!(removed, "remove_panel should return true for a present closable panel");
+        assert!(
+            removed,
+            "remove_panel should return true for a present closable panel"
+        );
         assert!(!layout.is_panel_visible(&PanelType::Inspector));
     }
 
@@ -1375,7 +1378,10 @@ mod exact_value_tests {
         let json_result = layout.to_json();
         assert!(json_result.is_ok(), "to_json should succeed");
         let json = json_result.unwrap();
-        assert!(json.contains("Viewport"), "JSON should contain Viewport panel");
+        assert!(
+            json.contains("Viewport"),
+            "JSON should contain Viewport panel"
+        );
         assert!(!json.is_empty());
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&json);
         assert!(parsed.is_ok(), "to_json output must be valid JSON");
@@ -1395,7 +1401,10 @@ mod exact_value_tests {
         let layout = DockLayout::from_preset(LayoutPreset::Default);
         let json = layout.to_json().unwrap();
         let result = DockLayout::from_json(&json);
-        assert!(result.is_ok(), "from_json must accept valid JSON from to_json");
+        assert!(
+            result.is_ok(),
+            "from_json must accept valid JSON from to_json"
+        );
     }
 
     #[test]
@@ -1408,7 +1417,10 @@ mod exact_value_tests {
     fn test_from_json_rejects_wrong_structure() {
         // Valid JSON but wrong structure (missing "panels" field)
         let result = DockLayout::from_json(r#"{"foo": "bar"}"#);
-        assert!(result.is_err(), "from_json must reject wrong JSON structure");
+        assert!(
+            result.is_err(),
+            "from_json must reject wrong JSON structure"
+        );
     }
 
     // --- DockLayout::missing_panels_for_preset ---
@@ -1417,7 +1429,10 @@ mod exact_value_tests {
         use crate::panel_type::PanelType;
         let layout = DockLayout::from_preset(LayoutPreset::Default);
         let missing = layout.missing_panels_for_preset(LayoutPreset::Default);
-        assert!(missing.is_empty(), "Default layout should have no missing panels for Default preset");
+        assert!(
+            missing.is_empty(),
+            "Default layout should have no missing panels for Default preset"
+        );
     }
 
     #[test]
@@ -1425,7 +1440,10 @@ mod exact_value_tests {
         use crate::panel_type::PanelType;
         let layout = DockLayout::from_preset(LayoutPreset::Wide);
         let missing = layout.missing_panels_for_preset(LayoutPreset::Default);
-        assert!(!missing.is_empty(), "Wide layout should be missing panels for Default preset");
+        assert!(
+            !missing.is_empty(),
+            "Wide layout should be missing panels for Default preset"
+        );
         // Wide has only Viewport + Inspector, Default has 6 panels, so at least 4 are missing
         assert!(missing.len() >= 4, "Should be missing at least 4 panels");
     }
@@ -1583,10 +1601,7 @@ mod interaction_exact_tests {
     }
     #[test]
     fn test_measurement_kind_scale() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.0,
-            to: 2.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.0, to: 2.0 };
         assert_eq!(m.kind(), GizmoOperationKind::Scale);
     }
 
@@ -1617,10 +1632,7 @@ mod interaction_exact_tests {
     }
     #[test]
     fn test_magnitude_scale_abs() {
-        let m = GizmoMeasurement::Scale {
-            from: 3.0,
-            to: 1.0,
-        };
+        let m = GizmoMeasurement::Scale { from: 3.0, to: 1.0 };
         assert!((m.magnitude() - 2.0).abs() < 1e-6);
     }
     #[test]
@@ -1673,10 +1685,7 @@ mod interaction_exact_tests {
     }
     #[test]
     fn test_summary_scale_contains_values() {
-        let m = GizmoMeasurement::Scale {
-            from: 1.5,
-            to: 2.5,
-        };
+        let m = GizmoMeasurement::Scale { from: 1.5, to: 2.5 };
         let s = m.summary();
         assert!(s.contains("1.50"), "should contain from scale");
         assert!(s.contains("2.50"), "should contain to scale");
@@ -1730,10 +1739,7 @@ mod interaction_exact_tests {
         let meta = GizmoCommitMetadata {
             entity: 1,
             operation: GizmoOperationKind::Scale,
-            measurement: GizmoMeasurement::Scale {
-                from: 1.0,
-                to: 2.0,
-            },
+            measurement: GizmoMeasurement::Scale { from: 1.0, to: 2.0 },
             constraint: None,
         };
         let s = meta.summary();
@@ -1880,10 +1886,7 @@ mod toast_exact_tests {
     }
     #[test]
     fn test_toast_action_label_open() {
-        assert_eq!(
-            ToastAction::Open("/path".to_string()).label(),
-            "Open"
-        );
+        assert_eq!(ToastAction::Open("/path".to_string()).label(), "Open");
     }
     #[test]
     fn test_toast_action_label_custom() {
@@ -2260,16 +2263,12 @@ mod behavior_graph_exact_tests {
     }
     #[test]
     fn test_node_kind_display_name_sequence() {
-        let kind = BehaviorGraphNodeKind::Sequence {
-            children: vec![],
-        };
+        let kind = BehaviorGraphNodeKind::Sequence { children: vec![] };
         assert_eq!(kind.display_name(), "Sequence");
     }
     #[test]
     fn test_node_kind_display_name_selector() {
-        let kind = BehaviorGraphNodeKind::Selector {
-            children: vec![],
-        };
+        let kind = BehaviorGraphNodeKind::Selector { children: vec![] };
         assert_eq!(kind.display_name(), "Selector");
     }
     #[test]
@@ -2290,31 +2289,19 @@ mod behavior_graph_exact_tests {
     #[test]
     fn test_node_kind_icon_each() {
         assert_eq!(
-            BehaviorGraphNodeKind::Action {
-                name: "x".into()
-            }
-            .icon(),
+            BehaviorGraphNodeKind::Action { name: "x".into() }.icon(),
             "\u{26a1}"
         );
         assert_eq!(
-            BehaviorGraphNodeKind::Condition {
-                name: "x".into()
-            }
-            .icon(),
+            BehaviorGraphNodeKind::Condition { name: "x".into() }.icon(),
             "\u{2753}"
         );
         assert_eq!(
-            BehaviorGraphNodeKind::Sequence {
-                children: vec![]
-            }
-            .icon(),
+            BehaviorGraphNodeKind::Sequence { children: vec![] }.icon(),
             "\u{27a1}\u{fe0f}"
         );
         assert_eq!(
-            BehaviorGraphNodeKind::Selector {
-                children: vec![]
-            }
-            .icon(),
+            BehaviorGraphNodeKind::Selector { children: vec![] }.icon(),
             "\u{1f500}"
         );
         assert_eq!(
@@ -2334,9 +2321,7 @@ mod behavior_graph_exact_tests {
     // --- BehaviorGraphNodeKind::child_count() ---
     #[test]
     fn test_node_kind_child_count_leaf() {
-        let kind = BehaviorGraphNodeKind::Action {
-            name: "x".into(),
-        };
+        let kind = BehaviorGraphNodeKind::Action { name: "x".into() };
         assert_eq!(kind.child_count(), 0);
     }
     #[test]
@@ -2355,8 +2340,7 @@ mod behavior_graph_exact_tests {
     }
     #[test]
     fn test_node_kind_child_count_decorator_without_child() {
-        let kind =
-            BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
+        let kind = BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter));
         assert_eq!(kind.child_count(), 0);
     }
 
@@ -2463,13 +2447,17 @@ mod dock_layout_v4_tests {
 
 /// Additional scene_state.rs tests for v4 mutations
 mod scene_state_v4_tests {
-    use crate::scene_state::{EditorSceneState, TransformableScene};
     use crate::gizmo::state::TransformSnapshot;
+    use crate::scene_state::{EditorSceneState, TransformableScene};
     use astraweave_core::{IVec2, Team, World};
     use glam::{Quat, Vec3};
 
     /// Helper: build world + EditorSceneState with one entity
-    fn state_with_entity(name: &str, x: i32, y: i32) -> (EditorSceneState, astraweave_core::Entity) {
+    fn state_with_entity(
+        name: &str,
+        x: i32,
+        y: i32,
+    ) -> (EditorSceneState, astraweave_core::Entity) {
         let mut w = World::new();
         let e = w.spawn(name, IVec2 { x, y }, Team { id: 0 }, 100, 10);
         let state = EditorSceneState::new(w);
@@ -2493,7 +2481,10 @@ mod scene_state_v4_tests {
     fn test_world_mut_returns_actual_world() {
         let (mut state, entity) = state_with_entity("probe", 5, 10);
         // Mutate through world_mut, then read back through world
-        let new_entity = state.world_mut().spawn("new_entity", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 50, 5);
+        let new_entity =
+            state
+                .world_mut()
+                .spawn("new_entity", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 50, 5);
         assert!(
             state.world().pose(new_entity).is_some(),
             "world_mut() must return the actual internal world"
@@ -2544,8 +2535,13 @@ mod scene_state_v4_tests {
     #[test]
     fn test_transformable_scene_world_mut() {
         let (mut state, _) = state_with_entity("ts_probe", 7, 8);
-        let new_e = TransformableScene::world_mut(&mut state)
-            .spawn("added", IVec2 { x: 1, y: 2 }, Team { id: 0 }, 50, 5);
+        let new_e = TransformableScene::world_mut(&mut state).spawn(
+            "added",
+            IVec2 { x: 1, y: 2 },
+            Team { id: 0 },
+            50,
+            5,
+        );
         assert!(
             TransformableScene::world(&state).pose(new_e).is_some(),
             "TransformableScene::world_mut() must modify the actual world"

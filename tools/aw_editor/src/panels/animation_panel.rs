@@ -1153,10 +1153,7 @@ impl AnimationPanel {
         ui.horizontal(|ui| {
             ui.label(format!("{} clips", self.clips.len()));
             ui.separator();
-            ui.label(format!(
-                "{} states",
-                self.current_controller.states.len()
-            ));
+            ui.label(format!("{} states", self.current_controller.states.len()));
             ui.separator();
             ui.label(format!(
                 "{} params",
@@ -1275,11 +1272,7 @@ impl AnimationPanel {
             // Playback controls
             ui.horizontal(|ui| {
                 if ui
-                    .button(if self.preview_playing {
-                        "⏸"
-                    } else {
-                        "▶"
-                    })
+                    .button(if self.preview_playing { "⏸" } else { "▶" })
                     .clicked()
                 {
                     self.preview_playing = !self.preview_playing;
@@ -1330,10 +1323,8 @@ impl AnimationPanel {
             let duration = self.current_clip.duration;
             if duration > 0.0 {
                 // --- Ruler area ---
-                let ruler_rect = egui::Rect::from_min_size(
-                    rect.min,
-                    Vec2::new(timeline_width, ruler_height),
-                );
+                let ruler_rect =
+                    egui::Rect::from_min_size(rect.min, Vec2::new(timeline_width, ruler_height));
                 painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(30, 30, 35));
 
                 // Time markers on ruler
@@ -1364,10 +1355,10 @@ impl AnimationPanel {
                 let tracks_top = rect.min.y + ruler_height;
                 let track_colors = [
                     Color32::from_rgb(80, 140, 220),  // blue
-                    Color32::from_rgb(100, 190, 100),  // green
-                    Color32::from_rgb(220, 160, 60),   // orange
-                    Color32::from_rgb(180, 100, 200),  // purple
-                    Color32::from_rgb(200, 80, 80),    // red
+                    Color32::from_rgb(100, 190, 100), // green
+                    Color32::from_rgb(220, 160, 60),  // orange
+                    Color32::from_rgb(180, 100, 200), // purple
+                    Color32::from_rgb(200, 80, 80),   // red
                 ];
 
                 // Draw alternating track rows
@@ -1415,10 +1406,7 @@ impl AnimationPanel {
                             let x1 = rect.min.x + (pair[0].time / duration) * timeline_width;
                             let x2 = rect.min.x + (pair[1].time / duration) * timeline_width;
                             painter.line_segment(
-                                [
-                                    egui::Pos2::new(x1, center_y),
-                                    egui::Pos2::new(x2, center_y),
-                                ],
+                                [egui::Pos2::new(x1, center_y), egui::Pos2::new(x2, center_y)],
                                 egui::Stroke::new(1.0, color.linear_multiply(0.5)),
                             );
                         }
@@ -1431,11 +1419,7 @@ impl AnimationPanel {
                             && self.selected_keyframe == Some(kf_idx);
 
                         // Diamond shape: 4 points rotated 45°
-                        let fill = if is_selected {
-                            Color32::WHITE
-                        } else {
-                            color
-                        };
+                        let fill = if is_selected { Color32::WHITE } else { color };
                         let points = vec![
                             egui::Pos2::new(kf_x, center_y - diamond_size),
                             egui::Pos2::new(kf_x + diamond_size, center_y),
@@ -1491,8 +1475,7 @@ impl AnimationPanel {
                             let center_y =
                                 tracks_top + ci as f32 * track_height + track_height / 2.0;
                             for (ki, kf) in curve.keyframes.iter().enumerate() {
-                                let kf_x =
-                                    rect.min.x + (kf.time / duration) * timeline_width;
+                                let kf_x = rect.min.x + (kf.time / duration) * timeline_width;
                                 let dist = ((pointer_pos.x - kf_x).powi(2)
                                     + (pointer_pos.y - center_y).powi(2))
                                 .sqrt();
@@ -1578,8 +1561,7 @@ impl AnimationPanel {
                         if pointer_pos.y >= tracks_top {
                             let track_idx = ((pointer_pos.y - tracks_top) / track_height) as usize;
                             if track_idx < self.current_clip.curves.len() {
-                                let rel_x =
-                                    (pointer_pos.x - rect.min.x).clamp(0.0, timeline_width);
+                                let rel_x = (pointer_pos.x - rect.min.x).clamp(0.0, timeline_width);
                                 let t = (rel_x / timeline_width) * duration;
                                 self.current_clip.curves[track_idx]
                                     .keyframes
@@ -1592,7 +1574,11 @@ impl AnimationPanel {
                                     });
                                 self.current_clip.curves[track_idx]
                                     .keyframes
-                                    .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+                                    .sort_by(|a, b| {
+                                        a.time
+                                            .partial_cmp(&b.time)
+                                            .unwrap_or(std::cmp::Ordering::Equal)
+                                    });
                                 let curve_id = self.current_clip.curves[track_idx].id;
                                 self.queue_action(AnimationAction::AddKeyframe {
                                     clip_id: self.current_clip.id,
@@ -3604,9 +3590,11 @@ mod tests {
                 },
             ],
         };
-        curve
-            .keyframes
-            .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap_or(std::cmp::Ordering::Equal));
+        curve.keyframes.sort_by(|a, b| {
+            a.time
+                .partial_cmp(&b.time)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         assert!((curve.keyframes[0].time - 0.5).abs() < 0.001);
         assert!((curve.keyframes[1].time - 1.0).abs() < 0.001);
         assert!((curve.keyframes[2].time - 2.0).abs() < 0.001);
@@ -3645,15 +3633,13 @@ mod tests {
                 AnimationCurve {
                     id: 2,
                     property_path: "rotation.y".to_string(),
-                    keyframes: vec![
-                        Keyframe {
-                            time: 0.0,
-                            value: 0.0,
-                            in_tangent: 0.0,
-                            out_tangent: 0.0,
-                            tangent_mode: TangentMode::Auto,
-                        },
-                    ],
+                    keyframes: vec![Keyframe {
+                        time: 0.0,
+                        value: 0.0,
+                        in_tangent: 0.0,
+                        out_tangent: 0.0,
+                        tangent_mode: TangentMode::Auto,
+                    }],
                 },
             ],
         };

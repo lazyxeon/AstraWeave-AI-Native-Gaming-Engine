@@ -105,7 +105,9 @@ impl LogLevel {
         match self {
             LogLevel::All => true,
             LogLevel::Debug => lower.contains("debug"),
-            LogLevel::Info => !lower.contains("warning") && !lower.contains("error") && !lower.contains("debug"),
+            LogLevel::Info => {
+                !lower.contains("warning") && !lower.contains("error") && !lower.contains("debug")
+            }
             LogLevel::Warning => lower.contains("warning"),
             LogLevel::Error => lower.contains("error"),
         }
@@ -261,8 +263,14 @@ impl ConsolePanel {
     /// Legacy counting for string-based logs
     pub fn get_counts_legacy(logs: &[String]) -> (usize, usize, usize, usize) {
         let total = logs.len();
-        let warnings = logs.iter().filter(|l| l.to_lowercase().contains("warning")).count();
-        let errors = logs.iter().filter(|l| l.to_lowercase().contains("error")).count();
+        let warnings = logs
+            .iter()
+            .filter(|l| l.to_lowercase().contains("warning"))
+            .count();
+        let errors = logs
+            .iter()
+            .filter(|l| l.to_lowercase().contains("error"))
+            .count();
         let infos = total - warnings - errors;
         (total, infos, warnings, errors)
     }

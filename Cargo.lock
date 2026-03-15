@@ -2049,6 +2049,7 @@ dependencies = [
  "egui_kittest",
  "env_logger",
  "glam",
+ "gltf",
  "image",
  "log",
  "lz4_flex",

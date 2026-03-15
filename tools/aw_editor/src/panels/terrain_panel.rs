@@ -1209,10 +1209,7 @@ impl TerrainPanel {
 
                 ui.add_space(5.0);
 
-                if ui
-                    .button(RichText::new("Regenerate Splatmaps"))
-                    .clicked()
-                {
+                if ui.button(RichText::new("Regenerate Splatmaps")).clicked() {
                     self.regenerate_splatmaps();
                 }
 

@@ -124,7 +124,7 @@ impl LayoutPreset {
             LayoutPreset::Compact => 10, // Many panels
             LayoutPreset::Modeling => 4, // Hierarchy, Viewport, Transform, Inspector
             LayoutPreset::Animation => 6, // Hierarchy, Viewport, BehaviorGraph, Inspector, Animation, Graph
-            LayoutPreset::Debug => 6,   // Hierarchy, Viewport, Performance, SceneStats, Console, Profiler
+            LayoutPreset::Debug => 6, // Hierarchy, Viewport, Performance, SceneStats, Console, Profiler
         }
     }
 
@@ -417,11 +417,8 @@ impl DockLayout {
         let surface = dock_state.main_surface_mut();
 
         // Left panel for hierarchy (12%)
-        let [_left, _center] = surface.split_left(
-            NodeIndex::root(),
-            0.12,
-            vec![PanelType::Hierarchy],
-        );
+        let [_left, _center] =
+            surface.split_left(NodeIndex::root(), 0.12, vec![PanelType::Hierarchy]);
 
         // Minimal right panel (15%)
         let [_center, _right_panel] =
@@ -474,11 +471,8 @@ impl DockLayout {
         let surface = dock_state.main_surface_mut();
 
         // Left panel for hierarchy (15%)
-        let [_left, _center] = surface.split_left(
-            NodeIndex::root(),
-            0.15,
-            vec![PanelType::Hierarchy],
-        );
+        let [_left, _center] =
+            surface.split_left(NodeIndex::root(), 0.15, vec![PanelType::Hierarchy]);
 
         // Right panel with transform tools (20%)
         let [_center, _right_panel] = surface.split_right(
@@ -496,11 +490,8 @@ impl DockLayout {
         let surface = dock_state.main_surface_mut();
 
         // Left panel for hierarchy (15%)
-        let [_left, _center] = surface.split_left(
-            NodeIndex::root(),
-            0.15,
-            vec![PanelType::Hierarchy],
-        );
+        let [_left, _center] =
+            surface.split_left(NodeIndex::root(), 0.15, vec![PanelType::Hierarchy]);
 
         // Right panel with animation graph (25%)
         let [_center, _right_panel] = surface.split_right(
@@ -525,11 +516,8 @@ impl DockLayout {
         let surface = dock_state.main_surface_mut();
 
         // Left panel for hierarchy (15%)
-        let [_left, _center] = surface.split_left(
-            NodeIndex::root(),
-            0.15,
-            vec![PanelType::Hierarchy],
-        );
+        let [_left, _center] =
+            surface.split_left(NodeIndex::root(), 0.15, vec![PanelType::Hierarchy]);
 
         // Right panel with performance (25%)
         let [_center, _right_panel] = surface.split_right(

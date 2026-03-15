@@ -4,8 +4,8 @@
 //! supporting drag-to-move, drag-to-connect, selection, and context menus.
 
 use egui::{
-    self, Color32, CursorIcon, Id, Pos2, Rect, RichText, Sense, Stroke, Vec2,
-    epaint::CubicBezierShape,
+    self, epaint::CubicBezierShape, Color32, CursorIcon, Id, Pos2, Rect, RichText, Sense, Stroke,
+    Vec2,
 };
 
 use super::document::{
@@ -30,12 +30,12 @@ const ROOT_BADGE_COLOR: Color32 = Color32::from_rgb(255, 200, 50);
 
 fn node_header_color(kind: &BehaviorGraphNodeKind) -> Color32 {
     match kind {
-        BehaviorGraphNodeKind::Action { .. } => Color32::from_rgb(50, 100, 180),   // Blue
-        BehaviorGraphNodeKind::Condition { .. } => Color32::from_rgb(50, 150, 80),  // Green
-        BehaviorGraphNodeKind::Sequence { .. } => Color32::from_rgb(200, 120, 40),  // Orange
-        BehaviorGraphNodeKind::Selector { .. } => Color32::from_rgb(140, 70, 170),  // Purple
-        BehaviorGraphNodeKind::Parallel { .. } => Color32::from_rgb(170, 60, 60),   // Red
-        BehaviorGraphNodeKind::Decorator(_) => Color32::from_rgb(180, 160, 50),     // Yellow
+        BehaviorGraphNodeKind::Action { .. } => Color32::from_rgb(50, 100, 180), // Blue
+        BehaviorGraphNodeKind::Condition { .. } => Color32::from_rgb(50, 150, 80), // Green
+        BehaviorGraphNodeKind::Sequence { .. } => Color32::from_rgb(200, 120, 40), // Orange
+        BehaviorGraphNodeKind::Selector { .. } => Color32::from_rgb(140, 70, 170), // Purple
+        BehaviorGraphNodeKind::Parallel { .. } => Color32::from_rgb(170, 60, 60), // Red
+        BehaviorGraphNodeKind::Decorator(_) => Color32::from_rgb(180, 160, 50),  // Yellow
     }
 }
 
@@ -135,10 +135,8 @@ impl NodeGraphWidget {
         let mut changed = false;
 
         // Allocate a large interactive area for the canvas
-        let (canvas_rect, canvas_response) = ui.allocate_exact_size(
-            ui.available_size(),
-            Sense::click_and_drag(),
-        );
+        let (canvas_rect, canvas_response) =
+            ui.allocate_exact_size(ui.available_size(), Sense::click_and_drag());
 
         // Handle canvas panning (middle-mouse drag or right-drag on empty space)
         if canvas_response.dragged_by(egui::PointerButton::Middle) {
@@ -184,16 +182,24 @@ impl NodeGraphWidget {
 
                 if let Some(mouse) = ui.ctx().pointer_hover_pos() {
                     // Input port hover
-                    if (mouse - input_pos).length() < PORT_HIT_RADIUS && canvas_rect.contains(mouse) {
-                        let pref = PortRef { node_id: node.id, port: PortKind::Input };
+                    if (mouse - input_pos).length() < PORT_HIT_RADIUS && canvas_rect.contains(mouse)
+                    {
+                        let pref = PortRef {
+                            node_id: node.id,
+                            port: PortKind::Input,
+                        };
                         painter.circle_filled(input_pos, PORT_RADIUS, PORT_HOVER_COLOR);
                         ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                         port_hit = Some(pref);
                     }
                     // Output port hover
                     for (i, &opos) in output_positions.iter().enumerate() {
-                        if (mouse - opos).length() < PORT_HIT_RADIUS && canvas_rect.contains(mouse) {
-                            let pref = PortRef { node_id: node.id, port: PortKind::Output(i) };
+                        if (mouse - opos).length() < PORT_HIT_RADIUS && canvas_rect.contains(mouse)
+                        {
+                            let pref = PortRef {
+                                node_id: node.id,
+                                port: PortKind::Output(i),
+                            };
                             painter.circle_filled(opos, PORT_RADIUS, PORT_HOVER_COLOR);
                             ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                             port_hit = Some(pref);
@@ -263,10 +269,7 @@ impl NodeGraphWidget {
         let origin = canvas_rect.left_top().to_vec2() + self.pan_offset;
 
         for node in doc.nodes() {
-            let top_left = Pos2::new(
-                node.position.x + origin.x,
-                node.position.y + origin.y,
-            );
+            let top_left = Pos2::new(node.position.x + origin.x, node.position.y + origin.y);
             let height = NODE_HEADER_HEIGHT + NODE_BODY_HEIGHT;
             let rect = Rect::from_min_size(top_left, Vec2::new(NODE_WIDTH, height));
             rects.insert(node.id, rect);
@@ -310,7 +313,11 @@ impl NodeGraphWidget {
         painter.rect_filled(join_rect, 0.0, header_color);
 
         // Body background
-        let body_color = if is_selected { NODE_BODY_SELECTED } else { NODE_BODY_COLOR };
+        let body_color = if is_selected {
+            NODE_BODY_SELECTED
+        } else {
+            NODE_BODY_COLOR
+        };
         painter.rect_filled(body_rect, 0.0, body_color);
         // Round bottom corners
         let bottom_rect = Rect::from_min_size(
@@ -340,9 +347,16 @@ impl NodeGraphWidget {
         let body_text = match &node.kind {
             BehaviorGraphNodeKind::Action { name } => format!("⚡ {}", name),
             BehaviorGraphNodeKind::Condition { name } => format!("❓ {}", name),
-            BehaviorGraphNodeKind::Sequence { children } => format!("→ {} children", children.len()),
-            BehaviorGraphNodeKind::Selector { children } => format!("⑂ {} children", children.len()),
-            BehaviorGraphNodeKind::Parallel { children, success_threshold } => {
+            BehaviorGraphNodeKind::Sequence { children } => {
+                format!("→ {} children", children.len())
+            }
+            BehaviorGraphNodeKind::Selector { children } => {
+                format!("⑂ {} children", children.len())
+            }
+            BehaviorGraphNodeKind::Parallel {
+                children,
+                success_threshold,
+            } => {
                 format!("∥ {} / {}", success_threshold, children.len())
             }
             BehaviorGraphNodeKind::Decorator(d) => format!("◇ {}", d.decorator),
@@ -358,14 +372,22 @@ impl NodeGraphWidget {
         // Input port (top center) — not for root node
         let input_pos = port_pos_input(rect);
         painter.circle_filled(input_pos, PORT_RADIUS, PORT_COLOR);
-        painter.circle_stroke(input_pos, PORT_RADIUS, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
+        painter.circle_stroke(
+            input_pos,
+            PORT_RADIUS,
+            Stroke::new(1.0, Color32::from_rgb(80, 80, 90)),
+        );
 
         // Output ports (bottom) — only for nodes that can have children
         if node.kind.supports_children() {
             let positions = self.output_port_positions(node, rect);
             for pos in &positions {
                 painter.circle_filled(*pos, PORT_RADIUS, PORT_COLOR);
-                painter.circle_stroke(*pos, PORT_RADIUS, Stroke::new(1.0, Color32::from_rgb(80, 80, 90)));
+                painter.circle_stroke(
+                    *pos,
+                    PORT_RADIUS,
+                    Stroke::new(1.0, Color32::from_rgb(80, 80, 90)),
+                );
             }
         }
     }
@@ -507,7 +529,9 @@ impl NodeGraphWidget {
             // Complete pending wire
             if let Some(wire) = self.pending_wire.take() {
                 if let Some(target_port) = &port_hit {
-                    if matches!(target_port.port, PortKind::Input) && target_port.node_id != wire.from.node_id {
+                    if matches!(target_port.port, PortKind::Input)
+                        && target_port.node_id != wire.from.node_id
+                    {
                         // Connect: wire.from (output of parent) → target_port (input of child)
                         changed |= self.connect_nodes(doc, wire.from.node_id, target_port.node_id);
                     }
@@ -534,7 +558,12 @@ impl NodeGraphWidget {
         changed
     }
 
-    fn connect_nodes(&mut self, doc: &mut BehaviorGraphDocument, parent_id: NodeId, child_id: NodeId) -> bool {
+    fn connect_nodes(
+        &mut self,
+        doc: &mut BehaviorGraphDocument,
+        parent_id: NodeId,
+        child_id: NodeId,
+    ) -> bool {
         // Verify parent supports children and child exists
         let parent = match doc.node(parent_id) {
             Some(n) => n,
@@ -630,10 +659,8 @@ impl NodeGraphWidget {
                 let origin = canvas_rect.left_top().to_vec2() + self.pan_offset;
                 let mut found_node = None;
                 for node in doc.nodes() {
-                    let top_left = Pos2::new(
-                        node.position.x + origin.x,
-                        node.position.y + origin.y,
-                    );
+                    let top_left =
+                        Pos2::new(node.position.x + origin.x, node.position.y + origin.y);
                     let height = NODE_HEADER_HEIGHT + NODE_BODY_HEIGHT;
                     let rect = Rect::from_min_size(top_left, Vec2::new(NODE_WIDTH, height));
                     if rect.contains(mouse) {
@@ -661,7 +688,12 @@ impl NodeGraphWidget {
                     ContextMenu::Node { node_id } => {
                         let origin = canvas_rect.left_top().to_vec2() + self.pan_offset;
                         doc.node(*node_id)
-                            .map(|n| Pos2::new(n.position.x + origin.x + NODE_WIDTH, n.position.y + origin.y))
+                            .map(|n| {
+                                Pos2::new(
+                                    n.position.x + origin.x + NODE_WIDTH,
+                                    n.position.y + origin.y,
+                                )
+                            })
                             .unwrap_or(canvas_rect.center())
                     }
                 })
@@ -672,75 +704,122 @@ impl NodeGraphWidget {
                         .corner_radius(4.0)
                         .inner_margin(4.0)
                         .stroke(Stroke::new(1.0, Color32::from_rgb(70, 70, 80)))
-                        .show(ui, |ui| {
-                            match menu {
-                                ContextMenu::Canvas { pos } => {
-                                    ui.label(RichText::new("Add Node").strong());
-                                    ui.separator();
-                                    let add_pos = self.screen_to_doc(*pos, canvas_rect);
-                                    if ui.button("⚡ Action").clicked() {
-                                        let id = doc.add_node("New Action", BehaviorGraphNodeKind::Action { name: "action".into() });
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
+                        .show(ui, |ui| match menu {
+                            ContextMenu::Canvas { pos } => {
+                                ui.label(RichText::new("Add Node").strong());
+                                ui.separator();
+                                let add_pos = self.screen_to_doc(*pos, canvas_rect);
+                                if ui.button("⚡ Action").clicked() {
+                                    let id = doc.add_node(
+                                        "New Action",
+                                        BehaviorGraphNodeKind::Action {
+                                            name: "action".into(),
+                                        },
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
                                     }
-                                    if ui.button("❓ Condition").clicked() {
-                                        let id = doc.add_node("New Condition", BehaviorGraphNodeKind::Condition { name: "condition".into() });
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
-                                    }
-                                    if ui.button("→ Sequence").clicked() {
-                                        let id = doc.add_node("New Sequence", BehaviorGraphNodeKind::Sequence { children: Vec::new() });
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
-                                    }
-                                    if ui.button("⑂ Selector").clicked() {
-                                        let id = doc.add_node("New Selector", BehaviorGraphNodeKind::Selector { children: Vec::new() });
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
-                                    }
-                                    if ui.button("∥ Parallel").clicked() {
-                                        let id = doc.add_node("New Parallel", BehaviorGraphNodeKind::Parallel { children: Vec::new(), success_threshold: 1 });
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
-                                    }
-                                    if ui.button("◇ Decorator (Inverter)").clicked() {
-                                        let id = doc.add_node("New Inverter", BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter)));
-                                        if let Some(n) = doc.node_mut(id) { n.position = add_pos; }
-                                        self.selected_node = Some(id);
-                                        changed = true; close = true;
-                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
                                 }
-                                ContextMenu::Node { node_id } => {
-                                    let is_root = *node_id == doc.root_id();
-                                    ui.label(RichText::new("Node").strong());
-                                    ui.separator();
-                                    if ui.button("🎯 Set as Root").clicked() {
-                                        if doc.set_root(*node_id).is_ok() {
-                                            self.status = Some("Root changed".into());
+                                if ui.button("❓ Condition").clicked() {
+                                    let id = doc.add_node(
+                                        "New Condition",
+                                        BehaviorGraphNodeKind::Condition {
+                                            name: "condition".into(),
+                                        },
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
+                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
+                                }
+                                if ui.button("→ Sequence").clicked() {
+                                    let id = doc.add_node(
+                                        "New Sequence",
+                                        BehaviorGraphNodeKind::Sequence {
+                                            children: Vec::new(),
+                                        },
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
+                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
+                                }
+                                if ui.button("⑂ Selector").clicked() {
+                                    let id = doc.add_node(
+                                        "New Selector",
+                                        BehaviorGraphNodeKind::Selector {
+                                            children: Vec::new(),
+                                        },
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
+                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
+                                }
+                                if ui.button("∥ Parallel").clicked() {
+                                    let id = doc.add_node(
+                                        "New Parallel",
+                                        BehaviorGraphNodeKind::Parallel {
+                                            children: Vec::new(),
+                                            success_threshold: 1,
+                                        },
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
+                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
+                                }
+                                if ui.button("◇ Decorator (Inverter)").clicked() {
+                                    let id = doc.add_node(
+                                        "New Inverter",
+                                        BehaviorGraphNodeKind::Decorator(DecoratorNode::new(
+                                            DecoratorKind::Inverter,
+                                        )),
+                                    );
+                                    if let Some(n) = doc.node_mut(id) {
+                                        n.position = add_pos;
+                                    }
+                                    self.selected_node = Some(id);
+                                    changed = true;
+                                    close = true;
+                                }
+                            }
+                            ContextMenu::Node { node_id } => {
+                                let is_root = *node_id == doc.root_id();
+                                ui.label(RichText::new("Node").strong());
+                                ui.separator();
+                                if ui.button("🎯 Set as Root").clicked() {
+                                    if doc.set_root(*node_id).is_ok() {
+                                        self.status = Some("Root changed".into());
+                                        changed = true;
+                                    }
+                                    close = true;
+                                }
+                                if ui.button("✂ Disconnect from Parent").clicked() {
+                                    self.disconnect_child_from_all_parents(doc, *node_id);
+                                    self.status = Some("Disconnected".into());
+                                    changed = true;
+                                    close = true;
+                                }
+                                if !is_root {
+                                    if ui.button("🗑 Delete Node").clicked() {
+                                        if doc.remove_node(*node_id).is_ok() {
+                                            self.selected_node = Some(doc.root_id());
+                                            self.status = Some("Node deleted".into());
                                             changed = true;
                                         }
                                         close = true;
-                                    }
-                                    if ui.button("✂ Disconnect from Parent").clicked() {
-                                        self.disconnect_child_from_all_parents(doc, *node_id);
-                                        self.status = Some("Disconnected".into());
-                                        changed = true;
-                                        close = true;
-                                    }
-                                    if !is_root {
-                                        if ui.button("🗑 Delete Node").clicked() {
-                                            if doc.remove_node(*node_id).is_ok() {
-                                                self.selected_node = Some(doc.root_id());
-                                                self.status = Some("Node deleted".into());
-                                                changed = true;
-                                            }
-                                            close = true;
-                                        }
                                     }
                                 }
                             }
@@ -788,7 +867,8 @@ impl NodeGraphWidget {
         if !visited.insert(node_id) {
             return NODE_WIDTH + 20.0;
         }
-        let children: Vec<NodeId> = doc.node(node_id)
+        let children: Vec<NodeId> = doc
+            .node(node_id)
             .map(|n| match &n.kind {
                 BehaviorGraphNodeKind::Sequence { children }
                 | BehaviorGraphNodeKind::Selector { children }
@@ -802,7 +882,8 @@ impl NodeGraphWidget {
             return NODE_WIDTH + 20.0;
         }
 
-        let total: f32 = children.iter()
+        let total: f32 = children
+            .iter()
             .map(|&cid| self.compute_subtree_width(doc, cid, visited, column_widths, _depth + 1))
             .sum();
         total.max(NODE_WIDTH + 20.0)
@@ -827,7 +908,8 @@ impl NodeGraphWidget {
             node.position = NodePosition { x, y };
         }
 
-        let children: Vec<NodeId> = doc.node(node_id)
+        let children: Vec<NodeId> = doc
+            .node(node_id)
             .map(|n| match &n.kind {
                 BehaviorGraphNodeKind::Sequence { children }
                 | BehaviorGraphNodeKind::Selector { children }
@@ -845,7 +927,8 @@ impl NodeGraphWidget {
         let mut child_widths: Vec<f32> = Vec::new();
         let mut temp_visited = visited.clone();
         for &cid in &children {
-            let w = self.compute_subtree_width(doc, cid, &mut temp_visited, &mut Vec::new(), depth + 1);
+            let w =
+                self.compute_subtree_width(doc, cid, &mut temp_visited, &mut Vec::new(), depth + 1);
             child_widths.push(w);
         }
 
@@ -875,7 +958,9 @@ impl NodeGraphWidget {
         if doc.nodes().len() <= 1 {
             return false;
         }
-        doc.nodes().iter().all(|n| n.position.x == 0.0 && n.position.y == 0.0)
+        doc.nodes()
+            .iter()
+            .all(|n| n.position.x == 0.0 && n.position.y == 0.0)
     }
 }
 
@@ -931,13 +1016,21 @@ mod tests {
     fn test_needs_auto_layout_multiple_at_origin() {
         let widget = NodeGraphWidget::default();
         let mut doc = BehaviorGraphDocument::new_default();
-        doc.add_node("test", BehaviorGraphNodeKind::Action { name: "test".into() });
+        doc.add_node(
+            "test",
+            BehaviorGraphNodeKind::Action {
+                name: "test".into(),
+            },
+        );
         assert!(widget.needs_auto_layout(&doc));
     }
 
     #[test]
     fn test_port_pos_input() {
-        let rect = Rect::from_min_size(Pos2::new(100.0, 200.0), Vec2::new(NODE_WIDTH, NODE_HEADER_HEIGHT + NODE_BODY_HEIGHT));
+        let rect = Rect::from_min_size(
+            Pos2::new(100.0, 200.0),
+            Vec2::new(NODE_WIDTH, NODE_HEADER_HEIGHT + NODE_BODY_HEIGHT),
+        );
         let pos = port_pos_input(rect);
         assert!((pos.x - (100.0 + NODE_WIDTH / 2.0)).abs() < 0.01);
         assert!((pos.y - 200.0).abs() < 0.01);
@@ -950,13 +1043,22 @@ mod tests {
             node_header_color(&BehaviorGraphNodeKind::Condition { name: "c".into() }),
             node_header_color(&BehaviorGraphNodeKind::Sequence { children: vec![] }),
             node_header_color(&BehaviorGraphNodeKind::Selector { children: vec![] }),
-            node_header_color(&BehaviorGraphNodeKind::Parallel { children: vec![], success_threshold: 1 }),
-            node_header_color(&BehaviorGraphNodeKind::Decorator(DecoratorNode::new(DecoratorKind::Inverter))),
+            node_header_color(&BehaviorGraphNodeKind::Parallel {
+                children: vec![],
+                success_threshold: 1,
+            }),
+            node_header_color(&BehaviorGraphNodeKind::Decorator(DecoratorNode::new(
+                DecoratorKind::Inverter,
+            ))),
         ];
         // All colors should be different
         for i in 0..colors.len() {
             for j in (i + 1)..colors.len() {
-                assert_ne!(colors[i], colors[j], "Colors at {} and {} should differ", i, j);
+                assert_ne!(
+                    colors[i], colors[j],
+                    "Colors at {} and {} should differ",
+                    i, j
+                );
             }
         }
     }
@@ -968,9 +1070,17 @@ mod tests {
         let root = doc.root_id();
         // Make root a sequence so it can have children
         if let Some(node) = doc.node_mut(root) {
-            node.kind = BehaviorGraphNodeKind::Sequence { children: Vec::new() };
+            node.kind = BehaviorGraphNodeKind::Sequence {
+                children: Vec::new(),
+            };
         }
-        let child = doc.add_child_node(root, "child", BehaviorGraphNodeKind::Action { name: "act".into() }).unwrap();
+        let child = doc
+            .add_child_node(
+                root,
+                "child",
+                BehaviorGraphNodeKind::Action { name: "act".into() },
+            )
+            .unwrap();
 
         widget.auto_layout(&mut doc);
 
@@ -978,7 +1088,10 @@ mod tests {
         let child_node = doc.node(child).unwrap();
 
         // Root should be at depth 0, child at depth 1
-        assert!(root_node.position.y < child_node.position.y, "Child should be below root");
+        assert!(
+            root_node.position.y < child_node.position.y,
+            "Child should be below root"
+        );
     }
 
     #[test]
@@ -988,9 +1101,14 @@ mod tests {
         let root = doc.root_id();
         // Make root a sequence
         if let Some(node) = doc.node_mut(root) {
-            node.kind = BehaviorGraphNodeKind::Sequence { children: Vec::new() };
+            node.kind = BehaviorGraphNodeKind::Sequence {
+                children: Vec::new(),
+            };
         }
-        let child = doc.add_node("child", BehaviorGraphNodeKind::Action { name: "act".into() });
+        let child = doc.add_node(
+            "child",
+            BehaviorGraphNodeKind::Action { name: "act".into() },
+        );
 
         let connected = widget.connect_nodes(&mut doc, root, child);
         assert!(connected);
@@ -1011,9 +1129,14 @@ mod tests {
         let mut doc = BehaviorGraphDocument::new_default();
         let root = doc.root_id();
         if let Some(node) = doc.node_mut(root) {
-            node.kind = BehaviorGraphNodeKind::Sequence { children: Vec::new() };
+            node.kind = BehaviorGraphNodeKind::Sequence {
+                children: Vec::new(),
+            };
         }
-        let child = doc.add_node("child", BehaviorGraphNodeKind::Action { name: "act".into() });
+        let child = doc.add_node(
+            "child",
+            BehaviorGraphNodeKind::Action { name: "act".into() },
+        );
 
         widget.connect_nodes(&mut doc, root, child);
         let second = widget.connect_nodes(&mut doc, root, child);
@@ -1025,7 +1148,10 @@ mod tests {
         let mut widget = NodeGraphWidget::default();
         let mut doc = BehaviorGraphDocument::new_default();
         let root = doc.root_id(); // root is Action by default
-        let child = doc.add_node("child", BehaviorGraphNodeKind::Action { name: "act".into() });
+        let child = doc.add_node(
+            "child",
+            BehaviorGraphNodeKind::Action { name: "act".into() },
+        );
 
         let connected = widget.connect_nodes(&mut doc, root, child);
         assert!(!connected, "Action node should not accept children");
@@ -1037,9 +1163,14 @@ mod tests {
         let mut doc = BehaviorGraphDocument::new_default();
         let root = doc.root_id();
         if let Some(node) = doc.node_mut(root) {
-            node.kind = BehaviorGraphNodeKind::Sequence { children: Vec::new() };
+            node.kind = BehaviorGraphNodeKind::Sequence {
+                children: Vec::new(),
+            };
         }
-        let child = doc.add_node("child", BehaviorGraphNodeKind::Action { name: "act".into() });
+        let child = doc.add_node(
+            "child",
+            BehaviorGraphNodeKind::Action { name: "act".into() },
+        );
         widget.connect_nodes(&mut doc, root, child);
 
         widget.disconnect_child_from_all_parents(&mut doc, child);

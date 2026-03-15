@@ -377,11 +377,7 @@ impl ComponentType {
             ComponentType::Pose => {
                 if let Some(pose) = world.pose_mut(entity) {
                     let is_overridden = overrides.is_some_and(|o| o.has_pose_override());
-                    let label = if is_overridden {
-                        "Pose *"
-                    } else {
-                        "Pose"
-                    };
+                    let label = if is_overridden { "Pose *" } else { "Pose" };
 
                     if is_overridden {
                         ui.push_id("pose_override", |ui| {
@@ -399,11 +395,7 @@ impl ComponentType {
                 if let Some(health) = world.health_mut(entity) {
                     let old_hp = health.hp;
                     let is_overridden = overrides.is_some_and(|o| o.has_health_override());
-                    let label = if is_overridden {
-                        "Health *"
-                    } else {
-                        "Health"
-                    };
+                    let label = if is_overridden { "Health *" } else { "Health" };
 
                     let changed = if is_overridden {
                         ui.push_id("health_override", |ui| {

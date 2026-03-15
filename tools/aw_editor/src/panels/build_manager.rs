@@ -491,9 +491,7 @@ impl BuildManagerPanel {
             percent: 0.15,
             step: "Compiling Rust code...".to_string(),
         });
-        let _ = tx.send(BuildMessage::LogLine(
-            "Running cargo build...".to_string(),
-        ));
+        let _ = tx.send(BuildMessage::LogLine("Running cargo build...".to_string()));
 
         let mut cmd = Command::new("cargo");
         cmd.arg("build");
@@ -509,9 +507,7 @@ impl BuildManagerPanel {
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
 
-        let _ = tx.send(BuildMessage::LogLine(
-            "Running cargo build...".to_string(),
-        ));
+        let _ = tx.send(BuildMessage::LogLine("Running cargo build...".to_string()));
 
         let mut child = match cmd.spawn() {
             Ok(c) => c,
@@ -585,9 +581,7 @@ impl BuildManagerPanel {
             percent: 0.85,
             step: "Bundling assets...".to_string(),
         });
-        let _ = tx.send(BuildMessage::LogLine(
-            "Bundling game assets...".to_string(),
-        ));
+        let _ = tx.send(BuildMessage::LogLine("Bundling game assets...".to_string()));
 
         use std::fs;
         use std::path::Path;

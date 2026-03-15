@@ -178,10 +178,9 @@ impl OrbitCamera {
     ///
     /// O(1), typically <0.01ms
     pub fn zoom(&mut self, delta: f32) {
-        // Simple distance-based zoom (no focal point movement)
-        // Ultra-smooth zoom: 1.5% per scroll tick (reduced from 3% for finer control)
-        // This gives ~7 scroll ticks to double/halve the distance
-        let zoom_factor = 1.0 + (delta * 0.015); // 0.015 = 1.5% per tick
+        // Distance-based zoom with responsive 8% per scroll tick
+        // This gives ~3 scroll ticks to meaningfully change the view
+        let zoom_factor = 1.0 + (delta * 0.08); // 0.08 = 8% per tick
         self.distance = (self.distance / zoom_factor).clamp(self.min_distance, self.max_distance);
     }
 
@@ -392,6 +391,66 @@ impl OrbitCamera {
 
     pub fn extract_frustum(&self) -> Frustum {
         Frustum::from_view_projection(self.view_projection_matrix())
+    }
+
+    /// Validate and sanitize camera state after deserialization.
+    /// Ensures all fields have reasonable values to prevent broken camera behavior.
+    pub fn sanitize(&mut self) {
+        let defaults = OrbitCamera::default();
+
+        // Ensure min/max constraints are sane
+        if self.min_distance <= 0.0 || self.min_distance.is_nan() {
+            self.min_distance = defaults.min_distance;
+        }
+        if self.max_distance <= self.min_distance || self.max_distance.is_nan() {
+            self.max_distance = defaults.max_distance;
+        }
+
+        // Clamp distance
+        if self.distance.is_nan() || self.distance <= 0.0 {
+            self.distance = defaults.distance;
+        }
+        self.distance = self.distance.clamp(self.min_distance, self.max_distance);
+
+        // Validate pitch constraints
+        if self.min_pitch.is_nan() || self.max_pitch.is_nan() || self.min_pitch >= self.max_pitch {
+            self.min_pitch = defaults.min_pitch;
+            self.max_pitch = defaults.max_pitch;
+        }
+
+        // Clamp pitch/yaw
+        if self.pitch.is_nan() {
+            self.pitch = defaults.pitch;
+        }
+        self.pitch = self.pitch.clamp(self.min_pitch, self.max_pitch);
+
+        if self.yaw.is_nan() {
+            self.yaw = defaults.yaw;
+        }
+
+        // Validate focal point
+        if self.focal_point.x.is_nan() || self.focal_point.y.is_nan() || self.focal_point.z.is_nan()
+        {
+            self.focal_point = Vec3::ZERO;
+        }
+
+        // Validate FOV
+        if self.fov.is_nan() || self.fov < 10.0 || self.fov > 170.0 {
+            self.fov = defaults.fov;
+        }
+
+        // Validate aspect
+        if self.aspect.is_nan() || self.aspect <= 0.0 {
+            self.aspect = defaults.aspect;
+        }
+
+        // Validate clip planes
+        if self.near.is_nan() || self.near <= 0.0 {
+            self.near = defaults.near;
+        }
+        if self.far.is_nan() || self.far <= self.near {
+            self.far = defaults.far;
+        }
     }
 
     #[cfg(feature = "astraweave-render")]

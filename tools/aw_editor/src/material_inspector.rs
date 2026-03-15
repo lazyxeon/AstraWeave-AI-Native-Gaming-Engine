@@ -1019,7 +1019,10 @@ impl MaterialInspector {
             }
 
             // Status with color coding
-            let status_color = if self.status.starts_with("Loaded") || self.status.starts_with("Hot-reloaded") || self.status.starts_with("Texture hot-reloaded") {
+            let status_color = if self.status.starts_with("Loaded")
+                || self.status.starts_with("Hot-reloaded")
+                || self.status.starts_with("Texture hot-reloaded")
+            {
                 egui::Color32::from_rgb(100, 200, 100)
             } else if self.status.starts_with("[!]") {
                 egui::Color32::from_rgb(200, 150, 100)

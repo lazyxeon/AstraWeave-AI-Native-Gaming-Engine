@@ -168,7 +168,10 @@ impl MenuBar {
             }
 
             if ui
-                .add_enabled(count > 0, egui::Button::new("Delete                    Del"))
+                .add_enabled(
+                    count > 0,
+                    egui::Button::new("Delete                    Del"),
+                )
                 .clicked()
             {
                 handler.on_delete();
@@ -208,10 +211,16 @@ impl MenuBar {
             ui.separator();
             ui.label("Align Selection:");
             ui.horizontal(|ui| {
-                if ui.add_enabled(has_multi, egui::Button::new("Left")).clicked() {
+                if ui
+                    .add_enabled(has_multi, egui::Button::new("Left"))
+                    .clicked()
+                {
                     handler.on_align_selection(AlignDirection::Left);
                 }
-                if ui.add_enabled(has_multi, egui::Button::new("Right")).clicked() {
+                if ui
+                    .add_enabled(has_multi, egui::Button::new("Right"))
+                    .clicked()
+                {
                     handler.on_align_selection(AlignDirection::Right);
                 }
             });
@@ -310,7 +319,10 @@ impl MenuBar {
 
             for &panel_type in PanelType::all() {
                 let is_visible = handler.is_dock_panel_visible(panel_type);
-                if ui.selectable_label(is_visible, panel_type.title()).clicked() {
+                if ui
+                    .selectable_label(is_visible, panel_type.title())
+                    .clicked()
+                {
                     handler.toggle_dock_panel(panel_type);
                 }
             }

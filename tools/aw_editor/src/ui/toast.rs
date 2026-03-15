@@ -788,7 +788,10 @@ mod tests {
     #[test]
     fn test_toast_action_icon() {
         assert_eq!(ToastAction::Undo.icon(), "\u{21a9}\u{fe0f}");
-        assert_eq!(ToastAction::ViewDetails("x".to_string()).icon(), "\u{1f50d}");
+        assert_eq!(
+            ToastAction::ViewDetails("x".to_string()).icon(),
+            "\u{1f50d}"
+        );
         assert_eq!(ToastAction::Retry.icon(), "\u{1f504}");
         assert_eq!(ToastAction::Open("x".to_string()).icon(), "\u{1f4c2}");
         assert_eq!(

@@ -659,9 +659,11 @@ pub struct AssetBrowser {
 
 impl AssetBrowser {
     pub fn new(root_path: PathBuf) -> Self {
+        // Canonicalize the root path to ensure consistent path operations
+        let canonical_root = root_path.canonicalize().unwrap_or(root_path);
         let mut browser = Self {
-            root_path: root_path.clone(),
-            current_path: root_path,
+            root_path: canonical_root.clone(),
+            current_path: canonical_root,
             entries: Vec::new(),
             selected_asset: None,
             show_hidden: false,
@@ -700,7 +702,10 @@ impl AssetBrowser {
 
         let mut entries: Vec<AssetEntry> = read_dir
             .filter_map(|entry| entry.ok())
-            .filter_map(|entry| AssetEntry::from_path(entry.path()))
+            .filter_map(|entry| {
+                let path = entry.path().canonicalize().unwrap_or_else(|_| entry.path());
+                AssetEntry::from_path(path)
+            })
             .filter(|entry| {
                 // Hidden file filter
                 if !self.show_hidden && entry.name.starts_with('.') {
@@ -758,16 +763,19 @@ impl AssetBrowser {
     }
 
     pub fn navigate_to(&mut self, path: PathBuf) {
-        if path.is_dir() {
-            self.current_path = path;
+        // Try canonicalizing first for reliable is_dir check
+        let check_path = path.canonicalize().unwrap_or(path.clone());
+        if check_path.is_dir() {
+            self.current_path = check_path;
             self.scan_current_directory();
         }
     }
 
     pub fn navigate_up(&mut self) {
         if let Some(parent) = self.current_path.parent() {
-            if parent >= self.root_path.as_path() {
-                self.current_path = parent.to_path_buf();
+            let parent_buf = parent.to_path_buf();
+            if parent_buf >= self.root_path {
+                self.current_path = parent_buf;
                 self.scan_current_directory();
             }
         }
@@ -821,6 +829,10 @@ impl AssetBrowser {
                     }
                 }
             }
+            AssetType::Model | AssetType::Audio | AssetType::Material | AssetType::Prefab => {
+                // Generate a colored placeholder thumbnail for non-image assets
+                return self.generate_placeholder_thumbnail(ctx, path, asset_type);
+            }
             _ => return None,
         };
 
@@ -841,6 +853,105 @@ impl AssetBrowser {
         );
 
         // Evict oldest if cache full
+        if self.thumbnail_cache.len() >= self.max_cache_size {
+            if let Some(oldest) = self.thumbnail_lru.pop_front() {
+                self.thumbnail_cache.remove(&oldest);
+            }
+        }
+
+        self.thumbnail_cache
+            .insert(path.to_path_buf(), texture.clone());
+        self.thumbnail_lru.push_back(path.to_path_buf());
+
+        Some(texture)
+    }
+
+    /// Generate a colored placeholder thumbnail for non-image assets (models, audio, etc.)
+    fn generate_placeholder_thumbnail(
+        &mut self,
+        ctx: &egui::Context,
+        path: &Path,
+        asset_type: AssetType,
+    ) -> Option<TextureHandle> {
+        let size = 64usize;
+        let mut pixels = vec![0u8; size * size * 4];
+        let color = asset_type.color();
+        let [r, g, b, _] = color.to_array();
+
+        // Fill with a darker version of the type color for the background
+        let bg_r = (r as u16 * 40 / 100) as u8;
+        let bg_g = (g as u16 * 40 / 100) as u8;
+        let bg_b = (b as u16 * 40 / 100) as u8;
+        for pixel in pixels.chunks_exact_mut(4) {
+            pixel[0] = bg_r;
+            pixel[1] = bg_g;
+            pixel[2] = bg_b;
+            pixel[3] = 255;
+        }
+
+        // Draw a centered icon-like shape based on asset type
+        let center = size / 2;
+        let radius = size / 4;
+        match asset_type {
+            AssetType::Model => {
+                // Draw a diamond shape for 3D models
+                for y in 0..size {
+                    for x in 0..size {
+                        let dx = (x as i32 - center as i32).unsigned_abs() as usize;
+                        let dy = (y as i32 - center as i32).unsigned_abs() as usize;
+                        if dx + dy <= radius {
+                            let idx = (y * size + x) * 4;
+                            pixels[idx] = r;
+                            pixels[idx + 1] = g;
+                            pixels[idx + 2] = b;
+                            pixels[idx + 3] = 255;
+                        }
+                    }
+                }
+            }
+            AssetType::Audio => {
+                // Draw horizontal bars for audio
+                for y in 0..size {
+                    let bar_h = size / 8;
+                    let in_bar = (y / bar_h) % 2 == 0
+                        && y > size / 4
+                        && y < size * 3 / 4;
+                    if in_bar {
+                        for x in size / 4..size * 3 / 4 {
+                            let idx = (y * size + x) * 4;
+                            pixels[idx] = r;
+                            pixels[idx + 1] = g;
+                            pixels[idx + 2] = b;
+                            pixels[idx + 3] = 255;
+                        }
+                    }
+                }
+            }
+            _ => {
+                // Draw a simple circle for other types
+                for y in 0..size {
+                    for x in 0..size {
+                        let dx = x as i32 - center as i32;
+                        let dy = y as i32 - center as i32;
+                        if (dx * dx + dy * dy) <= (radius * radius) as i32 {
+                            let idx = (y * size + x) * 4;
+                            pixels[idx] = r;
+                            pixels[idx + 1] = g;
+                            pixels[idx + 2] = b;
+                            pixels[idx + 3] = 255;
+                        }
+                    }
+                }
+            }
+        }
+
+        let color_image = ColorImage::from_rgba_unmultiplied([size, size], &pixels);
+        let texture = ctx.load_texture(
+            path.display().to_string(),
+            ImageData::Color(std::sync::Arc::new(color_image)),
+            egui::TextureOptions::LINEAR,
+        );
+
         if self.thumbnail_cache.len() >= self.max_cache_size {
             if let Some(oldest) = self.thumbnail_lru.pop_front() {
                 self.thumbnail_cache.remove(&oldest);
@@ -1033,10 +1144,8 @@ impl AssetBrowser {
                                     .on_hover_text(entry.path.display().to_string());
                             }
 
-                            if matches!(
-                                entry.asset_type,
-                                AssetType::Prefab | AssetType::Model
-                            ) && response.drag_started()
+                            if matches!(entry.asset_type, AssetType::Prefab | AssetType::Model)
+                                && response.drag_started()
                             {
                                 self.dragged_prefab = Some(entry.path.clone());
                             }
@@ -1083,11 +1192,16 @@ impl AssetBrowser {
                                     let entry_texture_type = entry.texture_type;
                                     let show_badges = self.show_texture_badges;
 
-                                    // Load thumbnails for textures AND directories (Kenney pack previews)
+                                    // Load thumbnails for all supported asset types
                                     let ctx = ui.ctx().clone();
                                     let thumbnail = if matches!(
                                         entry_asset_type,
-                                        AssetType::Texture | AssetType::Directory
+                                        AssetType::Texture
+                                            | AssetType::Directory
+                                            | AssetType::Model
+                                            | AssetType::Audio
+                                            | AssetType::Material
+                                            | AssetType::Prefab
                                     ) {
                                         self.load_thumbnail(&ctx, &entry_path)
                                     } else {
@@ -1957,9 +2071,10 @@ mod tests {
     #[test]
     fn test_asset_browser_creation() {
         let temp_dir = env::temp_dir();
-        let browser = AssetBrowser::new(temp_dir.clone());
-        assert_eq!(browser.root_path, temp_dir);
-        assert_eq!(browser.current_path, temp_dir);
+        let canonical = temp_dir.canonicalize().unwrap_or(temp_dir.clone());
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.root_path, canonical);
+        assert_eq!(browser.current_path, canonical);
     }
 
     #[test]
@@ -2000,10 +2115,11 @@ mod tests {
     #[test]
     fn test_asset_browser_navigation() {
         let temp_dir = env::temp_dir();
-        let mut browser = AssetBrowser::new(temp_dir.clone());
+        let canonical = temp_dir.canonicalize().unwrap_or(temp_dir.clone());
+        let mut browser = AssetBrowser::new(temp_dir);
         browser.navigate_up();
-        browser.navigate_to(temp_dir.clone());
-        assert_eq!(browser.current_path, temp_dir);
+        browser.navigate_to(canonical.clone());
+        assert_eq!(browser.current_path, canonical);
     }
 
     #[test]
@@ -2034,8 +2150,9 @@ mod tests {
     #[test]
     fn test_asset_browser_get_current_directory() {
         let temp_dir = env::temp_dir();
-        let browser = AssetBrowser::new(temp_dir.clone());
-        assert_eq!(browser.get_current_directory(), temp_dir.as_path());
+        let canonical = temp_dir.canonicalize().unwrap_or(temp_dir.clone());
+        let browser = AssetBrowser::new(temp_dir);
+        assert_eq!(browser.get_current_directory(), canonical.as_path());
     }
 
     #[test]
@@ -2474,7 +2591,10 @@ mod tests {
 
     #[test]
     fn test_prettify_name_snake_case() {
-        assert_eq!(prettify_name("bridge_center_stone.glb"), "Bridge Center Stone");
+        assert_eq!(
+            prettify_name("bridge_center_stone.glb"),
+            "Bridge Center Stone"
+        );
     }
 
     #[test]

@@ -643,26 +643,51 @@ impl HierarchyPanel {
                         let font = egui::FontId::default();
 
                         if !before.is_empty() {
-                            let galley = painter.layout_no_wrap(before.to_string(), font.clone(), text_color);
+                            let galley = painter.layout_no_wrap(
+                                before.to_string(),
+                                font.clone(),
+                                text_color,
+                            );
                             let w = galley.rect.width();
-                            painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, text_color);
+                            painter.galley(
+                                egui::Pos2::new(x_offset, text_pos.y),
+                                galley,
+                                text_color,
+                            );
                             x_offset += w;
                         }
 
                         // Highlighted match
-                        let galley = painter.layout_no_wrap(matched.to_string(), font.clone(), egui::Color32::BLACK);
+                        let galley = painter.layout_no_wrap(
+                            matched.to_string(),
+                            font.clone(),
+                            egui::Color32::BLACK,
+                        );
                         let w = galley.rect.width();
                         let highlight_rect = egui::Rect::from_min_size(
                             egui::Pos2::new(x_offset, text_pos.y),
                             egui::vec2(w, 14.0),
                         );
-                        painter.rect_filled(highlight_rect, 2.0, egui::Color32::from_rgb(255, 200, 50));
-                        painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, egui::Color32::BLACK);
+                        painter.rect_filled(
+                            highlight_rect,
+                            2.0,
+                            egui::Color32::from_rgb(255, 200, 50),
+                        );
+                        painter.galley(
+                            egui::Pos2::new(x_offset, text_pos.y),
+                            galley,
+                            egui::Color32::BLACK,
+                        );
                         x_offset += w;
 
                         if !after.is_empty() {
-                            let galley = painter.layout_no_wrap(after.to_string(), font, text_color);
-                            painter.galley(egui::Pos2::new(x_offset, text_pos.y), galley, text_color);
+                            let galley =
+                                painter.layout_no_wrap(after.to_string(), font, text_color);
+                            painter.galley(
+                                egui::Pos2::new(x_offset, text_pos.y),
+                                galley,
+                                text_color,
+                            );
                         }
                     } else {
                         painter.text(

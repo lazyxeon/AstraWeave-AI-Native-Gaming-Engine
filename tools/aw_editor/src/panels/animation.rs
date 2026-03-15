@@ -664,11 +664,7 @@ impl AnimationPanel {
 
                         ui.label(format!("{}kf", track.keyframes.len()));
 
-                        if ui
-                            .small_button("+")
-                            .on_hover_text("Add keyframe")
-                            .clicked()
-                        {
+                        if ui.small_button("+").on_hover_text("Add keyframe").clicked() {
                             let val = track.evaluate(self.current_time);
                             track.keyframes.push(Keyframe {
                                 time: self.current_time,

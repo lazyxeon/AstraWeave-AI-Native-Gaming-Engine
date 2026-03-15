@@ -1331,7 +1331,10 @@ impl DistributionPanel {
                 });
 
                 // Elapsed time
-                ui.label(format!("[Time] Elapsed: {:.1}s", self.progress.elapsed_secs()));
+                ui.label(format!(
+                    "[Time] Elapsed: {:.1}s",
+                    self.progress.elapsed_secs()
+                ));
 
                 // Step progress
                 if !self.progress.current_step.is_terminal() {
@@ -1351,13 +1354,14 @@ impl DistributionPanel {
         ui.horizontal(|ui| {
             let can_build = !self.is_building && self.validation.valid;
 
-            let build_button = egui::Button::new(RichText::new("[Rkt] Build Distribution").size(16.0))
-                .fill(if can_build {
-                    Color32::from_rgb(40, 120, 80)
-                } else {
-                    Color32::from_rgb(80, 80, 80)
-                })
-                .min_size(egui::vec2(200.0, 40.0));
+            let build_button =
+                egui::Button::new(RichText::new("[Rkt] Build Distribution").size(16.0))
+                    .fill(if can_build {
+                        Color32::from_rgb(40, 120, 80)
+                    } else {
+                        Color32::from_rgb(80, 80, 80)
+                    })
+                    .min_size(egui::vec2(200.0, 40.0));
 
             if ui.add_enabled(can_build, build_button).clicked() {
                 self.start_build();

@@ -1024,7 +1024,11 @@ impl NavigationPanel {
 
                         ui.group(|ui| {
                             ui.horizontal(|ui| {
-                                let icon = if obstacle.is_dynamic { "[Sync]" } else { "[Brk]" };
+                                let icon = if obstacle.is_dynamic {
+                                    "[Sync]"
+                                } else {
+                                    "[Brk]"
+                                };
                                 if ui
                                     .selectable_label(
                                         is_selected,
@@ -1138,11 +1142,7 @@ impl NavigationPanel {
                                     NavLinkType::Ladder => "🪜",
                                     NavLinkType::Teleport => "[Fx]",
                                 };
-                                let direction = if link.bidirectional {
-                                    "↔️"
-                                } else {
-                                    "[Rt]"
-                                };
+                                let direction = if link.bidirectional { "↔️" } else { "[Rt]" };
                                 if ui
                                     .selectable_label(
                                         is_selected,

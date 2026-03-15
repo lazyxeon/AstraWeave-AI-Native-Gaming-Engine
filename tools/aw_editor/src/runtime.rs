@@ -241,10 +241,10 @@ impl RuntimeIssue {
     pub fn icon(&self) -> &'static str {
         match self.severity() {
             5 => "[R]", // Critical
-            4 => "🟠", // High
+            4 => "🟠",  // High
             3 => "[Y]", // Medium
             2 => "[G]", // Low
-            _ => "ℹ️", // Info
+            _ => "ℹ️",  // Info
         }
     }
 }
