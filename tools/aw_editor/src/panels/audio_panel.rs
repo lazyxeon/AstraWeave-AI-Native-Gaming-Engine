@@ -1163,7 +1163,11 @@ impl AudioPanel {
                         if let Some(emitter) = self.emitters.get(&id) {
                             let is_selected = self.selected_emitter_id == Some(id);
                             ui.horizontal(|ui| {
-                                let status_icon = if emitter.is_playing { "[Snd]" } else { "[Mute]" };
+                                let status_icon = if emitter.is_playing {
+                                    "[Snd]"
+                                } else {
+                                    "[Mute]"
+                                };
                                 if ui
                                     .selectable_label(
                                         is_selected,

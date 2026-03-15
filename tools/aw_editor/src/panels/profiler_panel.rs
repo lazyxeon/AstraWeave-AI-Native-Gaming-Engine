@@ -1,4 +1,4 @@
-﻿use super::Panel;
+use super::Panel;
 use egui::Ui;
 use std::collections::VecDeque;
 
@@ -1070,10 +1070,7 @@ impl Panel for ProfilerPanel {
                 self.selected_tab = ProfilerTab::Overview;
             }
             if ui
-                .selectable_label(
-                    self.selected_tab == ProfilerTab::Subsystems,
-                    "Subsystems",
-                )
+                .selectable_label(self.selected_tab == ProfilerTab::Subsystems, "Subsystems")
                 .clicked()
             {
                 self.selected_tab = ProfilerTab::Subsystems;

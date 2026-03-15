@@ -1228,10 +1228,7 @@ impl ImportDoctorPanel {
                 );
             }
         } else {
-            ui.colored_label(
-                Color32::from_rgb(100, 200, 100),
-                "Asset ready for import",
-            );
+            ui.colored_label(Color32::from_rgb(100, 200, 100), "Asset ready for import");
         }
     }
 }

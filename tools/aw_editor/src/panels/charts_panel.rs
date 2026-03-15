@@ -1490,9 +1490,15 @@ mod tests {
 
     #[test]
     fn test_data_source_display() {
-        assert_eq!(format!("{}", DataSource::FrameTiming), "[Time] Frame Timing");
+        assert_eq!(
+            format!("{}", DataSource::FrameTiming),
+            "[Time] Frame Timing"
+        );
         assert_eq!(format!("{}", DataSource::EntityCounts), "🔢 Entity Counts");
-        assert_eq!(format!("{}", DataSource::MemoryUsage), "[Brain] Memory Usage");
+        assert_eq!(
+            format!("{}", DataSource::MemoryUsage),
+            "[Brain] Memory Usage"
+        );
         assert_eq!(format!("{}", DataSource::CpuLoad), "[PC] CPU Load");
         assert_eq!(
             format!("{}", DataSource::GpuUtilization),

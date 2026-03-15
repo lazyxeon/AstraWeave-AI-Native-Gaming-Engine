@@ -1354,12 +1354,21 @@ mod tests {
         // With the mutation, format!() produces an empty string
         let e = PluginError::InitFailed("gpu crash".into());
         let msg = format!("{}", e);
-        assert!(msg.contains("gpu crash"), "Display must include message, got: {msg}");
-        assert!(msg.contains("initialization"), "Display must describe error type, got: {msg}");
+        assert!(
+            msg.contains("gpu crash"),
+            "Display must include message, got: {msg}"
+        );
+        assert!(
+            msg.contains("initialization"),
+            "Display must describe error type, got: {msg}"
+        );
 
         let e2 = PluginError::MissingDependency("wgpu".into());
         let msg2 = format!("{}", e2);
-        assert!(msg2.contains("wgpu"), "Display must include dep name, got: {msg2}");
+        assert!(
+            msg2.contains("wgpu"),
+            "Display must include dep name, got: {msg2}"
+        );
     }
 
     #[test]
@@ -1369,13 +1378,19 @@ mod tests {
             PluginError::InitFailed("x".into()),
             PluginError::ConfigError("x".into()),
             PluginError::MissingDependency("x".into()),
-            PluginError::IncompatibleVersion { required: "1".into(), actual: "2".into() },
+            PluginError::IncompatibleVersion {
+                required: "1".into(),
+                actual: "2".into(),
+            },
             PluginError::Other("x".into()),
         ];
         for e in &errors {
             let icon = e.icon();
             assert_ne!(icon, "xyzzy", "{:?} icon must not be sentinel", e);
-            assert!(icon.len() <= 8, "icon should be a single emoji, got: {icon}");
+            assert!(
+                icon.len() <= 8,
+                "icon should be a single emoji, got: {icon}"
+            );
         }
     }
 
@@ -1406,6 +1421,9 @@ mod tests {
             }
         }
         let p = MinimalPlugin;
-        assert!(p.menu_items().is_empty(), "default menu_items must be empty");
+        assert!(
+            p.menu_items().is_empty(),
+            "default menu_items must be empty"
+        );
     }
 }

@@ -585,10 +585,7 @@ impl ThemeManagerPanel {
         // Save/Reset buttons
         ui.horizontal(|ui| {
             if ui
-                .add_enabled(
-                    self.unsaved_changes,
-                    egui::Button::new("Save Preferences"),
-                )
+                .add_enabled(self.unsaved_changes, egui::Button::new("Save Preferences"))
                 .clicked()
             {
                 if let Err(e) = self.preferences.save() {

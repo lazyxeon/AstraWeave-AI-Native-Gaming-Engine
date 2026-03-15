@@ -30,8 +30,8 @@ pub enum PrefabAction {
     ApplyChangesToFile(Entity),
     RevertAllToOriginal(Entity), // Revert all entities in prefab instance (entity is any member)
     ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
-    EditPrefab(Entity),             // Open prefab source for editing
-    BreakConnection(Entity),        // Detach entity from prefab tracking
+    EditPrefab(Entity),          // Open prefab source for editing
+    BreakConnection(Entity),     // Detach entity from prefab tracking
 }
 
 impl std::fmt::Display for PrefabAction {
@@ -445,7 +445,11 @@ impl EntityPanel {
     }
 
     /// Check if a component is disabled for an entity.
-    pub fn is_component_disabled(&self, entity: Entity, ct: crate::component_ui::ComponentType) -> bool {
+    pub fn is_component_disabled(
+        &self,
+        entity: Entity,
+        ct: crate::component_ui::ComponentType,
+    ) -> bool {
         self.disabled_components.contains(&(entity, ct))
     }
 
@@ -710,10 +714,7 @@ impl EntityPanel {
 
         ui.horizontal(|ui| {
             if let Some(ref archetype) = self.selected_archetype {
-                if ui
-                    .button(format!("Spawn {}", archetype.icon()))
-                    .clicked()
-                {
+                if ui.button(format!("Spawn {}", archetype.icon())).clicked() {
                     spawn_selected = true;
                 }
             }
@@ -909,10 +910,7 @@ impl EntityPanel {
                     let entity = self.spawn_from_archetype(scene_state.world_mut(), archetype, pos);
                     scene_state.sync_entity(entity);
                 }
-                debug!(
-                    "Spawned {} {:?} entities",
-                    self.bulk_spawn_count, archetype
-                );
+                debug!("Spawned {} {:?} entities", self.bulk_spawn_count, archetype);
             }
         }
 
@@ -1053,10 +1051,7 @@ impl EntityPanel {
                     for component_type in components {
                         // Filter by property search
                         if !search_lower.is_empty()
-                            && !component_type
-                                .name()
-                                .to_lowercase()
-                                .contains(&search_lower)
+                            && !component_type.name().to_lowercase().contains(&search_lower)
                         {
                             continue;
                         }
@@ -1240,12 +1235,13 @@ impl EntityPanel {
         // Display shared components with batch editing
         for component_type in &shared {
             ui.collapsing(
-                format!("{} {} (batch)", component_type.icon(), component_type.name()),
+                format!(
+                    "{} {} (batch)",
+                    component_type.icon(),
+                    component_type.name()
+                ),
                 |ui| {
-                    ui.label(format!(
-                        "Applied to {} entities",
-                        selected_entities.len()
-                    ));
+                    ui.label(format!("Applied to {} entities", selected_entities.len()));
 
                     // Show the first entity's values as the editing baseline
                     let first = selected_entities[0];
@@ -1271,11 +1267,8 @@ impl EntityPanel {
                                     }
                                 }
                                 ComponentEdit::Team { new_id, .. } => {
-                                    let old_id = scene_state
-                                        .world()
-                                        .team(entity)
-                                        .map(|t| t.id)
-                                        .unwrap_or(0);
+                                    let old_id =
+                                        scene_state.world().team(entity).map(|t| t.id).unwrap_or(0);
                                     ComponentEdit::Team {
                                         entity,
                                         old_id,
@@ -1536,7 +1529,11 @@ mod tests {
 
     #[test]
     fn test_archetype_prop_has_correct_icon() {
-        assert_eq!(EntityArchetype::Prop.icon(), "[Pkg]", "Prop icon should be [Pkg]");
+        assert_eq!(
+            EntityArchetype::Prop.icon(),
+            "[Pkg]",
+            "Prop icon should be [Pkg]"
+        );
     }
 
     #[test]

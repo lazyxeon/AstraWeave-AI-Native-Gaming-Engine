@@ -1,4 +1,4 @@
-﻿use astract::advanced::{ColorPicker, RangeSlider, TreeNode, TreeView};
+use astract::advanced::{ColorPicker, RangeSlider, TreeNode, TreeView};
 use egui::{Color32, Ui};
 
 /// Panel demonstrating advanced widgets with game engine use cases
@@ -142,8 +142,10 @@ impl AdvancedWidgetsPanel {
             .asset_browser
             .add_child(assets, TreeNode::new(101, "Models").with_icon("🗿"))
         {
-            self.asset_browser
-                .add_child(models, TreeNode::new(110, "character.fbx").with_icon("[Doc]"));
+            self.asset_browser.add_child(
+                models,
+                TreeNode::new(110, "character.fbx").with_icon("[Doc]"),
+            );
             self.asset_browser
                 .add_child(models, TreeNode::new(111, "weapon.fbx").with_icon("[Doc]"));
             self.asset_browser.add_child(
@@ -156,12 +158,18 @@ impl AdvancedWidgetsPanel {
             .asset_browser
             .add_child(assets, TreeNode::new(102, "Textures").with_icon("[Img]"))
         {
-            self.asset_browser
-                .add_child(textures, TreeNode::new(120, "albedo.png").with_icon("[Doc]"));
-            self.asset_browser
-                .add_child(textures, TreeNode::new(121, "normal.png").with_icon("[Doc]"));
-            self.asset_browser
-                .add_child(textures, TreeNode::new(122, "metallic.png").with_icon("[Doc]"));
+            self.asset_browser.add_child(
+                textures,
+                TreeNode::new(120, "albedo.png").with_icon("[Doc]"),
+            );
+            self.asset_browser.add_child(
+                textures,
+                TreeNode::new(121, "normal.png").with_icon("[Doc]"),
+            );
+            self.asset_browser.add_child(
+                textures,
+                TreeNode::new(122, "metallic.png").with_icon("[Doc]"),
+            );
         }
 
         if let Some(audio) = self

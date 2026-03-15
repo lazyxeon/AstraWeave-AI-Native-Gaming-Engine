@@ -217,3 +217,22 @@ astraweave-observability = { path = "astraweave-observability" }
 astraweave-profiling = { path = "astraweave-profiling" }
 astraweave-scripting = { path = "astraweave-scripting" }
 
+# ============================================================================
+# Build profiles — optimize for fast iteration and reasonable release builds
+# ============================================================================
+
+[profile.dev]
+opt-level = 0         # Fast compile for workspace code
+debug = true
+
+# Optimize all dependencies even in dev mode — substantial runtime speedup
+# with minimal impact on incremental compile times (deps are cached)
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+opt-level = 3
+lto = "thin"          # Much faster than "fat" LTO, still good size/perf gains
+codegen-units = 16    # More parallelism during codegen
+strip = "debuginfo"   # Smaller binary, keep symbols for backtraces
+

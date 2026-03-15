@@ -1,4 +1,4 @@
-﻿//! Viewport Widget
+//! Viewport Widget
 //!
 //! Custom egui widget that integrates wgpu 3D rendering into editor panels.
 //! Handles input, rendering coordination, and egui integration.
@@ -298,12 +298,22 @@ impl ViewportWidget {
             self.last_size = size;
         }
 
-        // Update renderer selected entities
+        // Update renderer selected entities and entity mesh map
         {
             if let Ok(mut renderer) = self.renderer.lock() {
                 let entities_u32: Vec<u32> =
                     self.selected_entities.iter().map(|&id| id as u32).collect();
                 renderer.set_selected_entities(&entities_u32);
+
+                // Build entity-to-mesh mapping from EntityManager
+                let mesh_map: std::collections::HashMap<u32, String> = entity_manager
+                    .entities()
+                    .iter()
+                    .filter_map(|(&id, entity)| {
+                        entity.mesh.as_ref().map(|path| (id as u32, path.clone()))
+                    })
+                    .collect();
+                renderer.set_entity_meshes(mesh_map);
             }
         }
 
@@ -407,6 +417,7 @@ impl ViewportWidget {
                 self.toolbar.stats.push_frame_time(avg_frame_time * 1000.0);
                 self.toolbar.stats.memory_usage_mb = estimate_memory_usage_mb();
                 self.toolbar.stats.camera_position = self.camera.position().to_array();
+                self.toolbar.stats.entity_count = entity_manager.count() as u32;
 
                 // Sync toolbar snap settings to viewport
                 self.grid_snap_size = self.toolbar.snap_size;
@@ -892,9 +903,8 @@ impl ViewportWidget {
                 // Use raw scroll delta
                 let scroll = i.smooth_scroll_delta.y;
                 if scroll.abs() > 0.1 {
-                    // CAMERA ZOOM: Normal camera control
-                    // Clamp to ±1.0 for very smooth zoom
-                    let clamped_scroll = scroll.clamp(-1.0, 1.0);
+                    // CAMERA ZOOM: Clamp to ±3.0 for responsive yet smooth zoom
+                    let clamped_scroll = scroll.clamp(-3.0, 3.0);
                     self.camera.zoom(clamped_scroll);
                 }
             });
@@ -1131,10 +1141,7 @@ impl ViewportWidget {
                             selected_id, position
                         );
                     } else {
-                        debug!(
-                            "Frame selected: Entity {} not found in World",
-                            selected_id
-                        );
+                        debug!("Frame selected: Entity {} not found in World", selected_id);
                     }
                 } else {
                     debug!("Frame selected: No entity selected");
@@ -1235,10 +1242,7 @@ impl ViewportWidget {
                         entity.position = snapshot.position;
                         entity.rotation = snapshot.rotation;
                         entity.scale = snapshot.scale;
-                        debug!(
-                            "Transform cancelled - reverted to {:?}",
-                            snapshot.position
-                        );
+                        debug!("Transform cancelled - reverted to {:?}", snapshot.position);
                     }
                 }
             }

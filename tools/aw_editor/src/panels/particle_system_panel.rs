@@ -1180,11 +1180,7 @@ impl ParticleSystemPanel {
             ui.separator();
 
             if ui
-                .button(if self.preview_playing {
-                    "||"
-                } else {
-                    ">"
-                })
+                .button(if self.preview_playing { "||" } else { ">" })
                 .clicked()
             {
                 self.preview_playing = !self.preview_playing;

@@ -150,7 +150,12 @@ impl ViewportToolbar {
     /// Render toolbar UI
     ///
     /// Displays as floating panel at top-left of viewport.
-    pub fn ui(&mut self, ui: &mut egui::Ui, viewport_rect: egui::Rect, camera: &mut super::camera::OrbitCamera) {
+    pub fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        viewport_rect: egui::Rect,
+        camera: &mut super::camera::OrbitCamera,
+    ) {
         // Position at top-left of viewport
         let toolbar_pos = viewport_rect.left_top() + egui::vec2(10.0, 10.0);
 

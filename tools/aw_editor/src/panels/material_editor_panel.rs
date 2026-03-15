@@ -1615,7 +1615,10 @@ mod tests {
     // MaterialType tests (7 tests)
     #[test]
     fn test_material_type_display() {
-        assert_eq!(format!("{}", MaterialType::StandardPBR), "[Art] Standard PBR");
+        assert_eq!(
+            format!("{}", MaterialType::StandardPBR),
+            "[Art] Standard PBR"
+        );
         assert_eq!(format!("{}", MaterialType::Unlit), "[Lgt] Unlit");
         assert_eq!(format!("{}", MaterialType::Subsurface), "🧴 Subsurface");
         assert_eq!(format!("{}", MaterialType::Glass), "[Orb] Glass");

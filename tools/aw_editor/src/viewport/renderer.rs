@@ -99,7 +99,7 @@ impl ViewportRenderer {
         let skybox_renderer =
             SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
         let entity_renderer =
-            EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
+            EntityRenderer::new(device.clone(), 10000).context("Failed to create entity renderer")?;
         let gizmo_renderer = GizmoRendererWgpu::new((*device).clone(), (*queue).clone(), 10000)
             .context("Failed to create gizmo renderer")?;
         let physics_renderer =
@@ -428,6 +428,11 @@ impl ViewportRenderer {
     /// Set selected entities (for highlighting) - supports multi-selection
     pub fn set_selected_entities(&mut self, entities: &[Entity]) {
         self.selected_entities = entities.to_vec();
+    }
+
+    /// Set the entity-to-mesh mapping so models render with actual GLTF geometry
+    pub fn set_entity_meshes(&mut self, meshes: std::collections::HashMap<Entity, String>) {
+        self.entity_renderer.set_entity_meshes(meshes);
     }
 
     /// Set selected entity (for backward compatibility)

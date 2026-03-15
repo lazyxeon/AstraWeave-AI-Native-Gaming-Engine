@@ -1,4 +1,4 @@
-﻿#![allow(dead_code)]
+#![allow(dead_code)]
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct DialogueDoc {
@@ -492,7 +492,7 @@ impl Default for EditorApp {
             nav_max_step: 0.4,
             nav_max_slope_deg: 60.0,
             scene_state: Some(EditorSceneState::new(World::new())), // Start with empty scene
-            material_inspector: MaterialInspector::new(), // NEW - Phase PBR-G Task 2
+            material_inspector: MaterialInspector::new(),           // NEW - Phase PBR-G Task 2
             // Phase 1: Entity management
             entity_manager: EntityManager::new(),
             selected_entity: None,
@@ -890,7 +890,8 @@ impl EditorApp {
 
                 // Sync hierarchy panel with loaded world
                 if let Some(scene_state) = self.scene_state.as_mut() {
-                    self.hierarchy_panel.sync_with_world(scene_state.world_mut());
+                    self.hierarchy_panel
+                        .sync_with_world(scene_state.world_mut());
                 }
 
                 info!("Loaded scene: {}", scene_name);
@@ -917,10 +918,7 @@ impl EditorApp {
         self.selection_set.primary = None;
 
         for entity_id in world.entities() {
-            let name = world
-                .name(entity_id)
-                .unwrap_or("Entity")
-                .to_string();
+            let name = world.name(entity_id).unwrap_or("Entity").to_string();
             let em_id = entity_id as u64;
 
             let mut editor_entity = entity_manager::EditorEntity::new(em_id, name);
@@ -936,18 +934,16 @@ impl EditorApp {
 
             // Populate Health component
             if let Some(health) = world.health(entity_id) {
-                editor_entity.components.insert(
-                    "Health".to_string(),
-                    serde_json::json!({"hp": health.hp}),
-                );
+                editor_entity
+                    .components
+                    .insert("Health".to_string(), serde_json::json!({"hp": health.hp}));
             }
 
             // Populate Team component
             if let Some(team) = world.team(entity_id) {
-                editor_entity.components.insert(
-                    "Team".to_string(),
-                    serde_json::json!({"id": team.id}),
-                );
+                editor_entity
+                    .components
+                    .insert("Team".to_string(), serde_json::json!({"id": team.id}));
             }
 
             // Populate Ammo component
@@ -962,10 +958,8 @@ impl EditorApp {
         }
 
         let count = world.entities().len();
-        self.console_logs.push(format!(
-            "Synced {} entities from loaded scene",
-            count
-        ));
+        self.console_logs
+            .push(format!("Synced {} entities from loaded scene", count));
     }
 
     /// Week 7: Request to open a scene, shows confirmation if dirty
@@ -2050,8 +2044,7 @@ impl EditorApp {
         }
 
         for path in paths_to_open {
-            self.console_logs
-                .push(format!("Open requested: {}", path));
+            self.console_logs.push(format!("Open requested: {}", path));
             self.status = format!("Open: {}", path);
         }
 
@@ -2061,27 +2054,105 @@ impl EditorApp {
         }
     }
 
+    /// Scan asset packs for available 3D models (e.g. Kenney packs)
+    fn scan_spawnable_models() -> Vec<(String, String)> {
+        let mut models = Vec::new();
+        let assets_3d = PathBuf::from("assets").join("3D assets");
+
+        if let Ok(packs) = std::fs::read_dir(&assets_3d) {
+            for pack in packs.flatten() {
+                let pack_path = pack.path();
+                if !pack_path.is_dir() {
+                    continue;
+                }
+                let pack_name = pack_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+
+                // Look for GLTF/GLB models in common locations
+                let search_dirs = [
+                    pack_path.join("Models").join("GLTF format"),
+                    pack_path.join("Models").join("GLB format"),
+                    pack_path.join("Models"),
+                    pack_path.clone(),
+                ];
+
+                let pack_start = models.len();
+                for search_dir in &search_dirs {
+                    if let Ok(files) = std::fs::read_dir(search_dir) {
+                        for file in files.flatten() {
+                            let file_path = file.path();
+                            if let Some(ext) = file_path.extension() {
+                                if ext == "glb" || ext == "gltf" {
+                                    let file_stem = file_path
+                                        .file_stem()
+                                        .unwrap_or_default()
+                                        .to_string_lossy()
+                                        .to_string();
+                                    let display_name = format!(
+                                        "{} / {}",
+                                        pack_name,
+                                        file_stem.replace('_', " ").replace('-', " ")
+                                    );
+                                    let rel_path = file_path.display().to_string();
+                                    models.push((display_name, rel_path));
+                                }
+                            }
+                        }
+                        // If we found models in this search dir for this pack, skip other dirs
+                        if models.len() > pack_start {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        models.sort_by(|a, b| a.0.cmp(&b.0));
+        models
+    }
+
     /// Initialize sample entities for viewport testing
-    fn init_sample_entities(entity_manager: &mut EntityManager) {
-        use glam::{Quat, Vec3};
+    fn init_sample_entities(
+        entity_manager: &mut EntityManager,
+        scene_state: &mut scene_state::EditorSceneState,
+    ) {
+        use glam::Vec3;
 
-        // Create a few test entities
-        let cube1 = entity_manager.create("Cube_1".to_string());
-        entity_manager.update_transform(cube1, Vec3::new(0.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        let samples = [
+            ("Cube_1", Vec3::new(0.0, 0.0, 0.0), Vec3::ONE),
+            ("Cube_2", Vec3::new(3.0, 0.0, 0.0), Vec3::ONE),
+            ("Cube_3", Vec3::new(0.0, 0.0, 3.0), Vec3::ONE),
+            ("Sphere_1", Vec3::new(-3.0, 1.0, 0.0), Vec3::splat(1.5)),
+        ];
 
-        let cube2 = entity_manager.create("Cube_2".to_string());
-        entity_manager.update_transform(cube2, Vec3::new(3.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        for (name, pos, scale) in &samples {
+            // Spawn in World
+            let world_id = scene_state.world_mut().spawn(
+                name,
+                astraweave_core::IVec2 {
+                    x: pos.x as i32,
+                    y: pos.z as i32,
+                },
+                astraweave_core::Team { id: 0 },
+                0,
+                0,
+            );
+            scene_state.sync_entity(world_id);
 
-        let cube3 = entity_manager.create("Cube_3".to_string());
-        entity_manager.update_transform(cube3, Vec3::new(0.0, 0.0, 3.0), Quat::IDENTITY, Vec3::ONE);
-
-        let sphere = entity_manager.create("Sphere_1".to_string());
-        entity_manager.update_transform(
-            sphere,
-            Vec3::new(-3.0, 1.0, 0.0),
-            Quat::IDENTITY,
-            Vec3::splat(1.5),
-        );
+            // Add to EntityManager with matching ID
+            let em_id = world_id as u64;
+            let mut em_entity = entity_manager::EditorEntity::new(em_id, name.to_string());
+            em_entity.position = *pos;
+            em_entity.scale = *scale;
+            em_entity.components.insert(
+                "Transform".to_string(),
+                serde_json::json!({"x": pos.x, "y": pos.y, "z": pos.z}),
+            );
+            entity_manager.add(em_entity);
+        }
     }
 
     /// Create a default world with sample entities for viewport testing
@@ -2232,14 +2303,18 @@ impl EditorApp {
         // Load preferences again to ensure we have the latest
         let prefs = editor_preferences::EditorPreferences::load();
 
-        // Initialize sample entities for testing
-        Self::init_sample_entities(&mut app.entity_manager);
+        // Initialize sample entities for testing (synced to both World and EntityManager)
+        if let Some(scene_state) = app.scene_state.as_mut() {
+            Self::init_sample_entities(&mut app.entity_manager, scene_state);
+            app.hierarchy_panel.sync_with_world(scene_state.world_mut());
+        }
 
         // Initialize viewport (requires wgpu render state from CreationContext)
         match ViewportWidget::new(cc) {
             Ok(mut viewport) => {
                 // Apply persisted camera and snapping settings
-                if let Some(camera) = prefs.camera {
+                if let Some(mut camera) = prefs.camera {
+                    camera.sanitize();
                     viewport.set_camera(camera);
                 }
                 if let Some(snapping) = prefs.snapping {
@@ -2262,6 +2337,15 @@ impl EditorApp {
         let default_world = astraweave_core::World::new();
         app.scene_state = Some(EditorSceneState::new(default_world));
         app.console_logs.push("Default scene created".into());
+
+        // Scan for available 3D models from asset packs (Kenney etc.)
+        let spawnable_models = Self::scan_spawnable_models();
+        let model_count = spawnable_models.len();
+        app.dock_tab_viewer.set_spawnable_models(spawnable_models);
+        if model_count > 0 {
+            app.console_logs
+                .push(format!("Found {} 3D models in asset packs", model_count));
+        }
 
         // Week 7 Day 5: Check for crash recovery
         app.check_for_crash_recovery();
@@ -2324,9 +2408,8 @@ impl EditorApp {
                 let mut do_cancel = false;
 
                 ui.horizontal(|ui| {
-                    let save_btn =
-                        egui::Button::new(egui::RichText::new("Save & Quit").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45));
+                    let save_btn = egui::Button::new(egui::RichText::new("Save & Quit").strong())
+                        .fill(egui::Color32::from_rgb(45, 125, 45));
                     if ui.add(save_btn).clicked() {
                         do_save_quit = true;
                     }
@@ -2890,11 +2973,7 @@ impl EditorApp {
             self.last_resource_sample = std::time::Instant::now();
         }
 
-        let bottom_entity_count = self
-            .scene_state
-            .as_ref()
-            .map(|s| s.world().entities().len())
-            .unwrap_or(0);
+        let bottom_entity_count = self.entity_manager.count();
 
         // Clone the path string to avoid borrow conflicts
         let bottom_scene_path_str: Option<String> = self
@@ -2975,7 +3054,8 @@ impl EditorApp {
             .iter()
             .map(|(id, entity)| {
                 let eid = *id as u32;
-                let (hp, team_id, ammo, pos_x, pos_y, rotation, scale) = if let Some(w) = &world_ref {
+                let (hp, team_id, ammo, pos_x, pos_y, rotation, scale) = if let Some(w) = &world_ref
+                {
                     (
                         w.health(eid).map(|h| h.hp),
                         w.team(eid).map(|t| t.id),
@@ -3255,7 +3335,8 @@ impl EditorApp {
                         scene_state.sync_entity(entity);
                     }
                     // Sync EntityManager position
-                    self.entity_manager.update_position(entity_id, glam::Vec3::new(x, y, 0.0));
+                    self.entity_manager
+                        .update_position(entity_id, glam::Vec3::new(x, y, 0.0));
                     self.status = format!("Entity {} position: ({:.2}, {:.2})", entity_id, x, y);
                 }
                 tab_viewer::PanelEvent::TransformRotationChanged {
@@ -3269,7 +3350,11 @@ impl EditorApp {
                         }
                         scene_state.sync_entity(entity);
                     }
-                    self.status = format!("Entity {} rotation: {:.1}deg", entity_id, rotation.to_degrees());
+                    self.status = format!(
+                        "Entity {} rotation: {:.1}deg",
+                        entity_id,
+                        rotation.to_degrees()
+                    );
                 }
                 tab_viewer::PanelEvent::TransformScaleChanged {
                     entity_id,
@@ -3304,7 +3389,8 @@ impl EditorApp {
                         scene_state.sync_entity(entity);
                         // Add to EntityManager using World entity ID for consistent lookups
                         let em_id = entity as u64;
-                        let mut editor_entity = entity_manager::EditorEntity::new(em_id, name.clone());
+                        let mut editor_entity =
+                            entity_manager::EditorEntity::new(em_id, name.clone());
                         editor_entity.components.insert(
                             "Transform".to_string(),
                             serde_json::json!({"x": 0, "y": 0, "z": 0}),
@@ -3313,7 +3399,8 @@ impl EditorApp {
                         self.selected_entity = Some(em_id);
                         self.selection_set.primary = Some(em_id);
                         self.is_dirty = true;
-                        self.hierarchy_panel.sync_with_world(scene_state.world_mut());
+                        self.hierarchy_panel
+                            .sync_with_world(scene_state.world_mut());
                         self.console_logs
                             .push(format!("Created empty entity: {}", name));
                         self.status = format!("Created entity: {}", name);
@@ -3347,7 +3434,8 @@ impl EditorApp {
 
                         // Add to EntityManager using World entity ID for consistent lookups
                         let em_id = entity as u64;
-                        let mut em_entity_new = entity_manager::EditorEntity::new(em_id, name.clone());
+                        let mut em_entity_new =
+                            entity_manager::EditorEntity::new(em_id, name.clone());
                         {
                             let em_entity = &mut em_entity_new;
                             em_entity.components.insert(
@@ -3395,10 +3483,50 @@ impl EditorApp {
                         self.selected_entity = Some(em_id);
                         self.selection_set.primary = Some(em_id);
                         self.is_dirty = true;
-                        self.hierarchy_panel.sync_with_world(scene_state.world_mut());
+                        self.hierarchy_panel
+                            .sync_with_world(scene_state.world_mut());
                         self.console_logs
                             .push(format!("Spawned {} entity: {}", archetype, name));
                         self.status = format!("Spawned {}: {}", archetype, name);
+                    }
+                }
+                tab_viewer::PanelEvent::SpawnModel { ref name, ref path } => {
+                    // Spawn an entity representing a 3D model from the asset pack
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        let entity_count = scene_state.world().entities().len();
+                        let entity_name = format!("{}_{}", name, entity_count);
+                        // Offset each spawned model so they don't overlap
+                        let offset = entity_count as i32 * 3;
+                        let entity = scene_state.world_mut().spawn(
+                            &entity_name,
+                            astraweave_core::IVec2 { x: offset, y: 0 },
+                            astraweave_core::Team { id: 0 },
+                            0,
+                            0,
+                        );
+                        scene_state.sync_entity(entity);
+
+                        let em_id = entity as u64;
+                        let mut em_entity =
+                            entity_manager::EditorEntity::new(em_id, entity_name.clone());
+                        em_entity.components.insert(
+                            "Transform".to_string(),
+                            serde_json::json!({"x": 0, "y": 0, "z": 0}),
+                        );
+                        em_entity
+                            .components
+                            .insert("Model".to_string(), serde_json::json!({"path": path}));
+                        em_entity.mesh = Some(path.clone());
+                        self.entity_manager.add(em_entity);
+
+                        self.selected_entity = Some(em_id);
+                        self.selection_set.primary = Some(em_id);
+                        self.is_dirty = true;
+                        self.hierarchy_panel
+                            .sync_with_world(scene_state.world_mut());
+                        self.console_logs
+                            .push(format!("Spawned model entity: {} ({})", entity_name, path));
+                        self.status = format!("Spawned model: {}", entity_name);
                     }
                 }
                 tab_viewer::PanelEvent::DeleteEntity(entity_id) => {
@@ -3407,14 +3535,13 @@ impl EditorApp {
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let entity = entity_id as u32;
                         let delete_cmd = command::DeleteEntitiesCommand::new(vec![entity]);
-                        if let Err(e) =
-                            self.undo_stack.execute(delete_cmd, scene_state.world_mut())
+                        if let Err(e) = self.undo_stack.execute(delete_cmd, scene_state.world_mut())
                         {
-                            self.console_logs
-                                .push(format!("Delete failed: {}", e));
+                            self.console_logs.push(format!("Delete failed: {}", e));
                         } else {
                             scene_state.sync_entity(entity);
-                            self.hierarchy_panel.sync_with_world(scene_state.world_mut());
+                            self.hierarchy_panel
+                                .sync_with_world(scene_state.world_mut());
                         }
                     }
                     if self.selected_entity == Some(entity_id) {
@@ -3447,11 +3574,13 @@ impl EditorApp {
                                         new_em_id = Some(*e as u64);
                                     }
                                 }
-                                self.hierarchy_panel.sync_with_world(scene_state.world_mut());
+                                self.hierarchy_panel
+                                    .sync_with_world(scene_state.world_mut());
                             }
                         }
                         if let Some(em_id) = new_em_id {
-                            let mut new_em = entity_manager::EditorEntity::new(em_id, new_name.clone());
+                            let mut new_em =
+                                entity_manager::EditorEntity::new(em_id, new_name.clone());
                             new_em.components = source.components.clone();
                             new_em.position = source.position + glam::Vec3::new(1.0, 0.0, 1.0);
                             new_em.mesh = source.mesh.clone();
@@ -3461,8 +3590,7 @@ impl EditorApp {
                             self.selection_set.primary = Some(em_id);
                         }
                         self.is_dirty = true;
-                        self.status =
-                            format!("Duplicated entity {} as {}", entity_id, new_name);
+                        self.status = format!("Duplicated entity {} as {}", entity_id, new_name);
                     }
                 }
                 tab_viewer::PanelEvent::PanelClosed(panel) => {
@@ -3599,8 +3727,7 @@ impl EditorApp {
                             component_type, entity.name
                         ));
                     }
-                    self.status =
-                        format!("Removed {} from entity {}", component_type, entity_id);
+                    self.status = format!("Removed {} from entity {}", component_type, entity_id);
                 }
                 tab_viewer::PanelEvent::HealthChanged { entity_id, new_hp } => {
                     if let Some(scene_state) = self.scene_state.as_mut() {
@@ -3612,11 +3739,16 @@ impl EditorApp {
                     }
                     // Also update EntityManager JSON
                     if let Some(entity) = self.entity_manager.get_mut(entity_id) {
-                        entity.components.insert("Health".to_string(), serde_json::json!({"hp": new_hp}));
+                        entity
+                            .components
+                            .insert("Health".to_string(), serde_json::json!({"hp": new_hp}));
                     }
                     self.is_dirty = true;
                 }
-                tab_viewer::PanelEvent::TeamChanged { entity_id, new_team_id } => {
+                tab_viewer::PanelEvent::TeamChanged {
+                    entity_id,
+                    new_team_id,
+                } => {
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let eid = entity_id as u32;
                         if let Some(t) = scene_state.world_mut().team_mut(eid) {
@@ -3625,11 +3757,16 @@ impl EditorApp {
                         scene_state.sync_entity(eid);
                     }
                     if let Some(entity) = self.entity_manager.get_mut(entity_id) {
-                        entity.components.insert("Team".to_string(), serde_json::json!({"id": new_team_id}));
+                        entity
+                            .components
+                            .insert("Team".to_string(), serde_json::json!({"id": new_team_id}));
                     }
                     self.is_dirty = true;
                 }
-                tab_viewer::PanelEvent::AmmoChanged { entity_id, new_ammo } => {
+                tab_viewer::PanelEvent::AmmoChanged {
+                    entity_id,
+                    new_ammo,
+                } => {
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let eid = entity_id as u32;
                         if let Some(a) = scene_state.world_mut().ammo_mut(eid) {
@@ -3638,16 +3775,22 @@ impl EditorApp {
                         scene_state.sync_entity(eid);
                     }
                     if let Some(entity) = self.entity_manager.get_mut(entity_id) {
-                        entity.components.insert("Ammo".to_string(), serde_json::json!({"count": new_ammo}));
+                        entity
+                            .components
+                            .insert("Ammo".to_string(), serde_json::json!({"count": new_ammo}));
                     }
                     self.is_dirty = true;
                 }
-                tab_viewer::PanelEvent::EntityRenamed { entity_id, ref new_name } => {
+                tab_viewer::PanelEvent::EntityRenamed {
+                    entity_id,
+                    ref new_name,
+                } => {
                     if let Some(entity) = self.entity_manager.get_mut(entity_id) {
                         entity.name = new_name.clone();
                     }
                     self.is_dirty = true;
-                    self.console_logs.push(format!("Renamed entity {} to '{}'", entity_id, new_name));
+                    self.console_logs
+                        .push(format!("Renamed entity {} to '{}'", entity_id, new_name));
                     self.status = format!("Renamed entity to '{}'", new_name);
                 }
                 tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
@@ -3717,7 +3860,10 @@ impl EditorApp {
 
     fn show_top_panel(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top")
-            .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(egui::Margin::symmetric(6, 2)))
+            .frame(
+                egui::Frame::side_top_panel(&ctx.style())
+                    .inner_margin(egui::Margin::symmetric(6, 2)),
+            )
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
                     ui.label(egui::RichText::new("AstraWeave").strong().size(14.0));
@@ -4190,19 +4336,22 @@ impl EditorApp {
     }
 
     fn show_console(&mut self, ui: &mut egui::Ui) {
-        let action = self.console_panel
+        let action = self
+            .console_panel
             .show_with_logs(ui, &mut self.console_logs);
         match action {
             panels::console_panel::ConsoleAction::SpawnEntity(entity_type) => {
                 let id = self.entity_manager.create(entity_type.clone());
-                self.console_logs.push(format!("Spawned entity '{}' (id: {})", entity_type, id));
+                self.console_logs
+                    .push(format!("Spawned entity '{}' (id: {})", entity_type, id));
             }
             panels::console_panel::ConsoleAction::ListEntities => {
                 let entities = self.entity_manager.entities();
                 if entities.is_empty() {
                     self.console_logs.push("No entities in scene.".into());
                 } else {
-                    self.console_logs.push(format!("Entities ({}):", entities.len()));
+                    self.console_logs
+                        .push(format!("Entities ({}):", entities.len()));
                     let mut sorted: Vec<_> = entities.iter().collect();
                     sorted.sort_by_key(|(id, _)| *id);
                     for (id, e) in &sorted {
@@ -4210,7 +4359,8 @@ impl EditorApp {
                     }
                 }
             }
-            panels::console_panel::ConsoleAction::Clear | panels::console_panel::ConsoleAction::None => {}
+            panels::console_panel::ConsoleAction::Clear
+            | panels::console_panel::ConsoleAction::None => {}
         }
     }
 
@@ -4410,10 +4560,7 @@ impl EditorApp {
             .apply_overrides_to_prefab(entity, scene_state.world())
         {
             Ok(()) => {
-                self.log(format!(
-                    "Applied overrides to prefab for entity {}",
-                    entity
-                ));
+                self.log(format!("Applied overrides to prefab for entity {}", entity));
                 self.toast_success("Applied overrides to prefab".to_string());
                 self.status = "Applied overrides to prefab".to_string();
             }
@@ -4518,10 +4665,7 @@ impl EditorApp {
                                 if let Some(&first) = spawned.first() {
                                     self.selected_entity = Some(first as u64);
                                 }
-                                self.log(format!(
-                                    "Duplicated entity {} -> {:?}",
-                                    entity, spawned
-                                ));
+                                self.log(format!("Duplicated entity {} -> {:?}", entity, spawned));
                             }
                             Err(e) => {
                                 self.log(format!("Duplicate failed: {}", e));
@@ -4548,12 +4692,20 @@ impl EditorApp {
 
     /// Process pending asset browser actions (button clicks, drag-drop, double-clicks)
     fn process_asset_browser_actions(&mut self) {
-        // Collect pending actions from asset browser
-        let actions = self.asset_browser.take_pending_actions();
+        // Collect pending actions from the dock tab viewer's asset browser
+        let actions = self.dock_tab_viewer.take_asset_browser_actions();
         for action in actions {
             self.handle_asset_action(action);
         }
-        // Handle drag-drop from asset browser (models and prefabs)
+        // Handle drag-drop from the dock tab viewer's asset browser
+        if let Some(dragged_path) = self.dock_tab_viewer.take_asset_browser_dragged_prefab() {
+            self.spawn_prefab_from_drag(dragged_path, (0, 0));
+        }
+        // Also check the standalone asset browser (backward compat)
+        let standalone_actions = self.asset_browser.take_pending_actions();
+        for action in standalone_actions {
+            self.handle_asset_action(action);
+        }
         if let Some(dragged_path) = self.asset_browser.take_dragged_prefab() {
             self.spawn_prefab_from_drag(dragged_path, (0, 0));
         }
@@ -4741,8 +4893,7 @@ impl EditorApp {
                         .spawn()
                     {
                         error!("Failed to open external: {}", err);
-                        self.console_logs
-                            .push(format!("Failed to open: {}", err));
+                        self.console_logs.push(format!("Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
@@ -4751,8 +4902,7 @@ impl EditorApp {
                 {
                     if let Err(err) = std::process::Command::new("open").arg(&path).spawn() {
                         error!("Failed to open external: {}", err);
-                        self.console_logs
-                            .push(format!("Failed to open: {}", err));
+                        self.console_logs.push(format!("Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
@@ -4761,8 +4911,7 @@ impl EditorApp {
                 {
                     if let Err(err) = std::process::Command::new("xdg-open").arg(&path).spawn() {
                         error!("Failed to open external: {}", err);
-                        self.console_logs
-                            .push(format!("Failed to open: {}", err));
+                        self.console_logs.push(format!("Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
@@ -5215,9 +5364,8 @@ impl EditorApp {
                         if grid.len() == 10 && grid.iter().all(|r| r.len() == 10) {
                             self.terrain_grid = grid;
                             self.status = "Loaded terrain grid".into();
-                            self.console_logs.push(
-                                "Terrain grid loaded from assets/terrain_grid.json".into(),
-                            );
+                            self.console_logs
+                                .push("Terrain grid loaded from assets/terrain_grid.json".into());
                         } else {
                             self.status = "Invalid terrain grid format".into();
                             self.console_logs
@@ -5457,8 +5605,7 @@ impl MenuActionHandler for EditorApp {
                 }
             }
         } else {
-            self.console_logs
-                .push(format!("File not found: {:?}", p));
+            self.console_logs.push(format!("File not found: {:?}", p));
             self.status = "File not found".into();
         }
     }
@@ -5540,8 +5687,7 @@ impl MenuActionHandler for EditorApp {
                         "Saved scene: {:?}",
                         path.file_name().unwrap_or_default()
                     ));
-                    self.console_logs
-                        .push(format!("Scene saved: {:?}", path));
+                    self.console_logs.push(format!("Scene saved: {:?}", path));
                     self.last_auto_save = std::time::Instant::now();
                 }
                 Err(e) => {
@@ -5818,8 +5964,7 @@ impl MenuActionHandler for EditorApp {
                             .push(format!("Loaded model: {:?}", target));
                     }
                     Err(e) => {
-                        self.console_logs
-                            .push(format!("Model load failed: {}", e));
+                        self.console_logs.push(format!("Model load failed: {}", e));
                     }
                 }
             }
@@ -6015,10 +6160,12 @@ impl eframe::App for EditorApp {
                 let path_display = event.path().display().to_string();
                 match &event {
                     file_watcher::ReloadEvent::Material(_) => {
-                        self.console_logs.push(format!("Hot-reload: Material changed: {}", path_display));
+                        self.console_logs
+                            .push(format!("Hot-reload: Material changed: {}", path_display));
                     }
                     file_watcher::ReloadEvent::Texture(_) => {
-                        self.console_logs.push(format!("Hot-reload: Texture changed: {}", path_display));
+                        self.console_logs
+                            .push(format!("Hot-reload: Texture changed: {}", path_display));
                     }
                     file_watcher::ReloadEvent::Prefab(path) => {
                         // Auto-update all instances of this prefab
@@ -6051,11 +6198,15 @@ impl eframe::App for EditorApp {
                                     .to_string_lossy()
                             ));
                         } else {
-                            self.console_logs.push(format!("Hot-reload: Prefab changed (no instances): {}", path_display));
+                            self.console_logs.push(format!(
+                                "Hot-reload: Prefab changed (no instances): {}",
+                                path_display
+                            ));
                         }
                     }
                     file_watcher::ReloadEvent::Model(_) => {
-                        self.console_logs.push(format!("Hot-reload: Model changed: {}", path_display));
+                        self.console_logs
+                            .push(format!("Hot-reload: Model changed: {}", path_display));
                     }
                 }
             }
@@ -6249,10 +6400,8 @@ impl eframe::App for EditorApp {
                         self.clipboard =
                             Some(clipboard::ClipboardData::from_entities(world, &selected));
                         self.status = format!("Copied {} entities", selected.len());
-                        self.console_logs.push(format!(
-                            "Copied {} entities to clipboard",
-                            selected.len()
-                        ));
+                        self.console_logs
+                            .push(format!("Copied {} entities to clipboard", selected.len()));
                     } else {
                         self.console_logs
                             .push("No entities selected to copy".into());
@@ -6274,8 +6423,7 @@ impl eframe::App for EditorApp {
                             Ok(()) => {
                                 let count = clipboard_data.entities.len();
                                 self.status = format!("Pasted {} entities", count);
-                                self.console_logs
-                                    .push(format!("Pasted {} entities", count));
+                                self.console_logs.push(format!("Pasted {} entities", count));
                             }
                             Err(e) => {
                                 self.status = format!("Paste failed: {}", e);
@@ -6306,8 +6454,7 @@ impl eframe::App for EditorApp {
                             }
                             Err(e) => {
                                 self.status = format!("Duplicate failed: {}", e);
-                                self.console_logs
-                                    .push(format!("Duplicate failed: {}", e));
+                                self.console_logs.push(format!("Duplicate failed: {}", e));
                             }
                         }
                     } else {
@@ -6439,6 +6586,11 @@ impl eframe::App for EditorApp {
             if i.key_pressed(egui::Key::Escape) && self.editor_mode.can_edit() {
                 self.hierarchy_panel.set_selected(None);
                 self.selected_entity = None;
+                self.selection_set.primary = None;
+                // Clear viewport selection to stay in sync
+                if let Some(viewport) = &mut self.viewport {
+                    viewport.clear_selection();
+                }
                 self.status = "Selection cleared".to_string();
             }
 
@@ -6593,8 +6745,7 @@ impl eframe::App for EditorApp {
                         self.last_auto_save = std::time::Instant::now();
                     }
                     Err(e) => {
-                        self.console_logs
-                            .push(format!("Autosave failed: {}", e));
+                        self.console_logs.push(format!("Autosave failed: {}", e));
                         self.last_auto_save = std::time::Instant::now();
                     }
                 }

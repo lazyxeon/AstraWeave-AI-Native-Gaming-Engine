@@ -19,19 +19,32 @@
 //! - Instanced draw call: ~5ms
 //! - Total: ~7ms (12% under budget)
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
+use std::collections::HashMap;
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 use super::camera::{Frustum, OrbitCamera};
 use astraweave_core::{Entity, World};
+
+/// A loaded mesh with GPU buffers ready for rendering
+struct LoadedMesh {
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    index_count: u32,
+    index_format: wgpu::IndexFormat,
+}
 
 /// Entity renderer for viewport
 ///
 /// Renders all entities in the World as simple colored cubes.
 /// Uses instanced rendering for performance.
 pub struct EntityRenderer {
+    /// GPU device for buffer creation
+    device: Arc<wgpu::Device>,
+
     /// Render pipeline
     pipeline: wgpu::RenderPipeline,
 
@@ -44,10 +57,10 @@ pub struct EntityRenderer {
     /// Camera uniform buffer
     uniform_buffer: wgpu::Buffer,
 
-    /// Vertex buffer (cube vertices)
+    /// Vertex buffer (default cube vertices)
     vertex_buffer: wgpu::Buffer,
 
-    /// Index buffer (cube indices)
+    /// Index buffer (default cube indices)
     index_buffer: wgpu::Buffer,
 
     /// Instance buffer (per-entity transforms + colors)
@@ -58,6 +71,12 @@ pub struct EntityRenderer {
 
     /// Number of indices per cube
     index_count: u32,
+
+    /// Cache of loaded GLTF meshes keyed by file path
+    mesh_cache: HashMap<String, LoadedMesh>,
+
+    /// Mapping from World entity ID to mesh file path
+    entity_meshes: HashMap<Entity, String>,
 }
 
 impl EntityRenderer {
@@ -71,7 +90,7 @@ impl EntityRenderer {
     /// # Errors
     ///
     /// Returns error if shader compilation or buffer creation fails.
-    pub fn new(device: &wgpu::Device, max_instances: u32) -> Result<Self> {
+    pub fn new(device: Arc<wgpu::Device>, max_instances: u32) -> Result<Self> {
         // Load shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Entity Shader"),
@@ -108,7 +127,7 @@ impl EntityRenderer {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[
-                    // Vertex buffer (position + normal)
+                    // Vertex buffer (position + normal + color)
                     wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
@@ -123,6 +142,11 @@ impl EntityRenderer {
                                 shader_location: 1,
                                 format: wgpu::VertexFormat::Float32x3, // normal
                             },
+                            wgpu::VertexAttribute {
+                                offset: 24,
+                                shader_location: 2,
+                                format: wgpu::VertexFormat::Float32x4, // vertex color
+                            },
                         ],
                     },
                     // Instance buffer (model matrix + color)
@@ -133,28 +157,28 @@ impl EntityRenderer {
                             // Model matrix (mat4, split into 4 vec4s)
                             wgpu::VertexAttribute {
                                 offset: 0,
-                                shader_location: 2,
-                                format: wgpu::VertexFormat::Float32x4,
-                            },
-                            wgpu::VertexAttribute {
-                                offset: 16,
                                 shader_location: 3,
                                 format: wgpu::VertexFormat::Float32x4,
                             },
                             wgpu::VertexAttribute {
-                                offset: 32,
+                                offset: 16,
                                 shader_location: 4,
                                 format: wgpu::VertexFormat::Float32x4,
                             },
                             wgpu::VertexAttribute {
-                                offset: 48,
+                                offset: 32,
                                 shader_location: 5,
+                                format: wgpu::VertexFormat::Float32x4,
+                            },
+                            wgpu::VertexAttribute {
+                                offset: 48,
+                                shader_location: 6,
                                 format: wgpu::VertexFormat::Float32x4,
                             },
                             // Color (vec4)
                             wgpu::VertexAttribute {
                                 offset: 64,
-                                shader_location: 6,
+                                shader_location: 7,
                                 format: wgpu::VertexFormat::Float32x4,
                             },
                         ],
@@ -240,6 +264,7 @@ impl EntityRenderer {
         });
 
         Ok(Self {
+            device,
             pipeline,
             bind_group_layout,
             bind_group,
@@ -249,28 +274,107 @@ impl EntityRenderer {
             instance_buffer,
             max_instances,
             index_count,
+            mesh_cache: HashMap::new(),
+            entity_meshes: HashMap::new(),
         })
     }
 
+    /// Set the entity-to-mesh mapping for the next render. Call before render().
+    pub fn set_entity_meshes(&mut self, meshes: HashMap<Entity, String>) {
+        self.entity_meshes = meshes;
+    }
+
+    /// Load a GLTF/GLB mesh from disk and cache the GPU buffers.
+    fn load_gltf_mesh(&mut self, path: &str) -> Result<()> {
+        let (document, buffers, _images) =
+            gltf::import(path).with_context(|| format!("Failed to import glTF: {path}"))?;
+
+        let mesh = document.meshes().next().context("No meshes in glTF file")?;
+        let primitive = mesh.primitives().next().context("No primitives in mesh")?;
+
+        let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+
+        let positions: Vec<[f32; 3]> = reader
+            .read_positions()
+            .context("No position data in mesh")?
+            .collect();
+
+        let normals: Vec<[f32; 3]> = if let Some(normals) = reader.read_normals() {
+            normals.collect()
+        } else {
+            // Generate default up-facing normals as fallback
+            vec![[0.0, 1.0, 0.0]; positions.len()]
+        };
+
+        // Read per-vertex colors (common in Kenney models)
+        let vertex_colors: Vec<[f32; 4]> = if let Some(colors) = reader.read_colors(0) {
+            colors.into_rgba_f32().collect()
+        } else {
+            // Fall back to material base color factor
+            let base_color = primitive
+                .material()
+                .pbr_metallic_roughness()
+                .base_color_factor();
+            vec![base_color; positions.len()]
+        };
+
+        let indices: Vec<u32> = reader
+            .read_indices()
+            .context("No index data in mesh")?
+            .into_u32()
+            .collect();
+
+        let vertices: Vec<Vertex> = positions
+            .iter()
+            .zip(normals.iter())
+            .zip(vertex_colors.iter())
+            .map(|((p, n), c)| Vertex {
+                position: *p,
+                normal: *n,
+                color: *c,
+            })
+            .collect();
+
+        let vertex_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("Mesh VB: {path}")),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        let index_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("Mesh IB: {path}")),
+                contents: bytemuck::cast_slice(&indices),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
+        tracing::info!(
+            "Loaded glTF mesh '{}': {} vertices, {} indices",
+            path,
+            vertices.len(),
+            indices.len()
+        );
+
+        self.mesh_cache.insert(
+            path.to_string(),
+            LoadedMesh {
+                vertex_buffer,
+                index_buffer,
+                index_count: indices.len() as u32,
+                index_format: wgpu::IndexFormat::Uint32,
+            },
+        );
+
+        Ok(())
+    }
+
     /// Render all entities in the World
-    ///
-    /// # Arguments
-    ///
-    /// * `encoder` - Command encoder for recording render pass
-    /// * `target` - Render target view
-    /// * `depth` - Depth buffer view
-    /// * `camera` - Camera for view-projection matrix
-    /// * `world` - World containing entities
-    /// * `selected_entity` - Currently selected entity (for highlighting)
-    /// * `queue` - wgpu queue for buffer writes
-    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
-    ///
-    /// # Errors
-    ///
-    /// Returns error if buffer write or rendering fails.
     #[allow(clippy::too_many_arguments)]
     pub fn render(
-        &self,
+        &mut self,
         encoder: &mut wgpu::CommandEncoder,
         target: &wgpu::TextureView,
         depth: &wgpu::TextureView,
@@ -293,32 +397,49 @@ impl EntityRenderer {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
         let frustum = camera.extract_frustum();
-        let instances = self.collect_instances(world, selected_entities, &frustum);
 
-        if instances.is_empty() {
-            return Ok(()); // Nothing to render
+        // Collect instances grouped by mesh
+        let (all_instances, draw_groups) =
+            self.collect_instances_grouped(world, selected_entities, &frustum);
+
+        if all_instances.is_empty() {
+            return Ok(());
         }
 
-        let instance_count = instances.len().min(self.max_instances as usize) as u32;
+        // Lazy-load any GLTF meshes not yet cached
+        let paths_to_load: Vec<String> = draw_groups
+            .iter()
+            .filter_map(|(mesh, _, _)| mesh.clone())
+            .filter(|p| !self.mesh_cache.contains_key(p))
+            .collect();
+        for path in paths_to_load {
+            if let Err(e) = self.load_gltf_mesh(&path) {
+                tracing::warn!("Failed to load mesh {}: {}", path, e);
+            }
+        }
 
-        // Write instance data to buffer
-        queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
+        let total = all_instances.len().min(self.max_instances as usize);
+        queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(&all_instances[..total]),
+        );
 
-        // Render pass
+        // Single render pass with multiple draw calls (one per mesh group)
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Entity Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: target,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load, // Don't clear (append to grid)
+                    load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 },
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: depth,
                 depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Load, // Use existing depth
+                    load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 }),
                 stencil_ops: None,
@@ -329,25 +450,42 @@ impl EntityRenderer {
 
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
-        pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        pass.draw_indexed(0..self.index_count, 0, 0..instance_count);
+
+        for (mesh_path, start, count) in &draw_groups {
+            if *count == 0 || (*start + *count) as usize > total {
+                continue;
+            }
+
+            match mesh_path {
+                Some(path) if self.mesh_cache.contains_key(path) => {
+                    let mesh = &self.mesh_cache[path];
+                    pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                    pass.set_index_buffer(mesh.index_buffer.slice(..), mesh.index_format);
+                    pass.draw_indexed(0..mesh.index_count, 0, *start..*start + *count);
+                }
+                _ => {
+                    // Fallback to default cube
+                    pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                    pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    pass.draw_indexed(0..self.index_count, 0, *start..*start + *count);
+                }
+            }
+        }
 
         Ok(())
     }
 
-    /// Collect instance data from World
-    ///
-    /// Creates Instance data for each entity with a Position component.
-    /// Selected entity is highlighted with orange color.
-    fn collect_instances(
+    /// Collect instance data grouped by mesh.
+    /// Returns (flat instance list, draw groups: Vec<(mesh_path, start_idx, count)>).
+    fn collect_instances_grouped(
         &self,
         world: &World,
         selected_entities: &[Entity],
         frustum: &Frustum,
-    ) -> Vec<Instance> {
-        let mut instances = Vec::new();
+    ) -> (Vec<Instance>, Vec<(Option<String>, u32, u32)>) {
+        let mut default_instances = Vec::new();
+        let mut mesh_instances: HashMap<String, Vec<Instance>> = HashMap::new();
         const ENTITY_RADIUS: f32 = 0.866;
 
         for entity in world.entities() {
@@ -371,8 +509,13 @@ impl EntityRenderer {
                 let model = translation * rotation * scale;
 
                 let is_selected = selected_entities.contains(&entity);
+                let has_mesh = self.entity_meshes.contains_key(&entity);
+
                 let color = if is_selected {
                     [1.0, 0.6, 0.2, 1.0]
+                } else if has_mesh {
+                    // White tint for mesh entities — vertex colors carry the actual color
+                    [1.0, 1.0, 1.0, 1.0]
                 } else if let Some(team) = world.team(entity) {
                     match team.id {
                         0 => [0.2, 0.8, 0.3, 1.0],
@@ -384,23 +527,51 @@ impl EntityRenderer {
                     [0.6, 0.6, 0.7, 1.0]
                 };
 
-                instances.push(Instance {
+                let instance = Instance {
                     model_matrix: model.to_cols_array_2d(),
                     color,
-                });
+                };
+
+                if let Some(mesh_path) = self.entity_meshes.get(&entity) {
+                    mesh_instances
+                        .entry(mesh_path.clone())
+                        .or_default()
+                        .push(instance);
+                } else {
+                    default_instances.push(instance);
+                }
             }
         }
 
-        instances
+        // Flatten into a single buffer with draw group offsets
+        let mut all_instances = Vec::new();
+        let mut draw_groups = Vec::new();
+
+        if !default_instances.is_empty() {
+            let start = all_instances.len() as u32;
+            let count = default_instances.len() as u32;
+            all_instances.append(&mut default_instances);
+            draw_groups.push((None, start, count));
+        }
+
+        for (path, mut instances) in mesh_instances {
+            let start = all_instances.len() as u32;
+            let count = instances.len() as u32;
+            all_instances.append(&mut instances);
+            draw_groups.push((Some(path), start, count));
+        }
+
+        (all_instances, draw_groups)
     }
 }
 
-/// Vertex data (position + normal)
+/// Vertex data (position + normal + color)
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
+    color: [f32; 4],
 }
 
 /// Instance data (per-entity transform + color)
@@ -424,108 +595,133 @@ struct EntityUniforms {
 ///
 /// Returns (vertices, indices) for a 1×1×1 cube centered at origin.
 fn create_cube_mesh() -> (Vec<Vertex>, Vec<u16>) {
+    let white = [1.0, 1.0, 1.0, 1.0];
     let vertices = vec![
         // Front face (+Z)
         Vertex {
             position: [-0.5, -0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
+            color: white,
         },
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
+            color: white,
         },
         // Back face (-Z)
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
+            color: white,
         },
         // Right face (+X)
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [1.0, 0.0, 0.0],
+            color: white,
         },
         // Left face (-X)
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [-1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, -0.5, 0.5],
             normal: [-1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [-1.0, 0.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [-1.0, 0.0, 0.0],
+            color: white,
         },
         // Top face (+Y)
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [0.0, 1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [0.0, 1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [0.0, 1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [0.0, 1.0, 0.0],
+            color: white,
         },
         // Bottom face (-Y)
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [0.0, -1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [0.0, -1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [0.0, -1.0, 0.0],
+            color: white,
         },
         Vertex {
             position: [-0.5, -0.5, 0.5],
             normal: [0.0, -1.0, 0.0],
+            color: white,
         },
     ];
 

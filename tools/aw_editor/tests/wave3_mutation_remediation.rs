@@ -4,22 +4,17 @@
 //! Pins exact values, boundary operators, state-machine transitions, and
 //! division-by-zero guards.
 
-use aw_editor_lib::{
-    EditorEntity, EntityManager, SelectionSet,
-    UndoStack,
-    DockLayout, LayoutPreset,
-    EditorMode,
-    EditorRuntime, RuntimeState, RuntimeStats,
-    PluginEvent, PluginError,
-    PrefabHierarchySnapshot,
-};
-use aw_editor_lib::entity_manager::{EntityMaterial, MaterialSlot};
+use astraweave_core::IVec2;
 use aw_editor_lib::clipboard::{
     ClipboardData, ClipboardEntityData, ClipboardValidation, CLIPBOARD_SCHEMA_VERSION,
 };
+use aw_editor_lib::entity_manager::{EntityMaterial, MaterialSlot};
 use aw_editor_lib::plugin::{PluginManagerStats, PluginState};
 use aw_editor_lib::prefab::EntityOverrides;
-use astraweave_core::IVec2;
+use aw_editor_lib::{
+    DockLayout, EditorEntity, EditorMode, EditorRuntime, EntityManager, LayoutPreset, PluginError,
+    PluginEvent, PrefabHierarchySnapshot, RuntimeState, RuntimeStats, SelectionSet, UndoStack,
+};
 use glam::{Quat, Vec3, Vec4};
 
 // ============================================================================
@@ -92,7 +87,10 @@ mod entity_material_defaults {
         let mut mat = EntityMaterial::new();
 
         mat.metallic = 0.5;
-        assert!(!mat.is_metallic(), "metallic=0.5 should NOT be metallic (> 0.5 required)");
+        assert!(
+            !mat.is_metallic(),
+            "metallic=0.5 should NOT be metallic (> 0.5 required)"
+        );
 
         mat.metallic = 0.501;
         assert!(mat.is_metallic(), "metallic=0.501 should be metallic");
@@ -106,7 +104,10 @@ mod entity_material_defaults {
         let mut mat = EntityMaterial::new();
 
         mat.roughness = 0.5;
-        assert!(!mat.is_rough(), "roughness=0.5 should NOT be rough (> 0.5 required)");
+        assert!(
+            !mat.is_rough(),
+            "roughness=0.5 should NOT be rough (> 0.5 required)"
+        );
 
         mat.roughness = 0.501;
         assert!(mat.is_rough(), "roughness=0.501 should be rough");
@@ -208,7 +209,10 @@ mod entity_validate_boundary {
         e.rotation = Quat::from_xyzw(0.0, 0.0, 0.0, 1.02);
         let v = e.validate();
         // length = 1.02, deviation = 0.02 > 0.01 → should flag
-        assert!(!v.errors.is_empty() || !v.warnings.is_empty(), "Unnormalized rotation should flag");
+        assert!(
+            !v.errors.is_empty() || !v.warnings.is_empty(),
+            "Unnormalized rotation should flag"
+        );
     }
 
     #[test]
@@ -250,7 +254,10 @@ mod entity_manager_region {
 
         // Exact match at boundary should be found (>= min, <= max)
         let found = mgr.find_in_region(Vec3::new(5.0, 5.0, 5.0), Vec3::new(5.0, 5.0, 5.0));
-        assert!(found.contains(&id), "Entity at exact boundary should be found");
+        assert!(
+            found.contains(&id),
+            "Entity at exact boundary should be found"
+        );
     }
 
     #[test]
@@ -260,7 +267,10 @@ mod entity_manager_region {
         mgr.update_position(id, Vec3::new(10.0, 10.0, 10.0));
 
         let found = mgr.find_in_region(Vec3::new(0.0, 0.0, 0.0), Vec3::new(5.0, 5.0, 5.0));
-        assert!(!found.contains(&id), "Entity outside region should not be found");
+        assert!(
+            !found.contains(&id),
+            "Entity outside region should not be found"
+        );
     }
 
     #[test]
@@ -268,8 +278,14 @@ mod entity_manager_region {
         let mut mgr = EntityManager::new();
         let _id = mgr.create("MyEntity".to_string());
 
-        assert!(!mgr.find_by_name("myentity").is_empty(), "Should find case-insensitive");
-        assert!(!mgr.find_by_name("MYENTITY").is_empty(), "Should find uppercase");
+        assert!(
+            !mgr.find_by_name("myentity").is_empty(),
+            "Should find case-insensitive"
+        );
+        assert!(
+            !mgr.find_by_name("MYENTITY").is_empty(),
+            "Should find uppercase"
+        );
     }
 
     #[test]
@@ -291,7 +307,11 @@ mod entity_manager_region {
     fn success_rate_zero_entities_is_100() {
         let mgr = EntityManager::new();
         let validation = mgr.validate_all();
-        assert_eq!(validation.success_rate(), 100.0, "Zero entities → 100% success rate");
+        assert_eq!(
+            validation.success_rate(),
+            100.0,
+            "Zero entities → 100% success rate"
+        );
     }
 }
 
@@ -355,7 +375,10 @@ mod selection_exact {
     fn summary_matches_count() {
         let mut sel = SelectionSet::default();
         let s0 = sel.summary();
-        assert!(s0.contains("0") || s0.to_lowercase().contains("no"), "Empty summary");
+        assert!(
+            s0.contains("0") || s0.to_lowercase().contains("no"),
+            "Empty summary"
+        );
 
         sel.add(1, true);
         let s1 = sel.summary();
@@ -363,7 +386,10 @@ mod selection_exact {
 
         sel.add(2, false);
         let s2 = sel.summary();
-        assert!(s2.contains("2"), "Multi-selection summary should mention count");
+        assert!(
+            s2.contains("2"),
+            "Multi-selection summary should mention count"
+        );
     }
 }
 
@@ -401,7 +427,10 @@ mod undo_stack_exact {
         let issues = stack.validate();
         // Empty stack with max_size=1: might report NoHistory
         // Just verify it doesn't panic and returns something
-        assert!(!issues.iter().any(|i| i.is_error()), "Empty stack should not have error issues");
+        assert!(
+            !issues.iter().any(|i| i.is_error()),
+            "Empty stack should not have error issues"
+        );
     }
 
     #[test]
@@ -492,13 +521,22 @@ mod editor_mode_transitions {
     #[test]
     fn valid_transitions_edit() {
         let t = EditorMode::Edit.valid_transitions();
-        assert!(t.contains(&EditorMode::Play), "Edit should list Play as valid");
-        assert!(!t.contains(&EditorMode::Paused), "Edit should not list Paused");
+        assert!(
+            t.contains(&EditorMode::Play),
+            "Edit should list Play as valid"
+        );
+        assert!(
+            !t.contains(&EditorMode::Paused),
+            "Edit should not list Paused"
+        );
     }
 
     #[test]
     fn shortcut_hints_unique() {
-        let hints: Vec<&str> = EditorMode::all().iter().map(|m| m.shortcut_hint()).collect();
+        let hints: Vec<&str> = EditorMode::all()
+            .iter()
+            .map(|m| m.shortcut_hint())
+            .collect();
         let mut deduped = hints.clone();
         deduped.sort();
         deduped.dedup();
@@ -646,7 +684,11 @@ mod runtime_stats_exact {
         let mut stats = RuntimeStats::default();
         stats.frame_time_ms = 16.667;
         let pct = stats.frame_budget_percentage();
-        assert!((pct - 100.0).abs() < 0.1, "16.667ms should be ~100%, got {}", pct);
+        assert!(
+            (pct - 100.0).abs() < 0.1,
+            "16.667ms should be ~100%, got {}",
+            pct
+        );
     }
 
     #[test]
@@ -657,11 +699,17 @@ mod runtime_stats_exact {
         assert!(stats.is_running_smoothly());
 
         stats.fps = 59.0;
-        assert!(!stats.is_running_smoothly(), "fps < 60 should not be smooth");
+        assert!(
+            !stats.is_running_smoothly(),
+            "fps < 60 should not be smooth"
+        );
 
         stats.fps = 60.0;
         stats.frame_time_ms = 17.0;
-        assert!(!stats.is_running_smoothly(), "frame_time > 16.67 should not be smooth");
+        assert!(
+            !stats.is_running_smoothly(),
+            "frame_time > 16.67 should not be smooth"
+        );
     }
 }
 
@@ -686,7 +734,10 @@ mod editor_runtime_exact {
     fn fixed_dt_is_60hz() {
         let rt = EditorRuntime::new();
         let expected = 1.0 / 60.0;
-        assert!((rt.fixed_dt() - expected).abs() < 1e-6, "fixed_dt should be 1/60");
+        assert!(
+            (rt.fixed_dt() - expected).abs() < 1e-6,
+            "fixed_dt should be 1/60"
+        );
     }
 }
 
@@ -796,10 +847,16 @@ mod clipboard_exact {
         assert!(!entity.is_scaled(), "scale=1.0 should not be scaled");
 
         entity.scale = 1.002;
-        assert!(entity.is_scaled(), "scale=1.002 should be scaled (> 0.001 from 1.0)");
+        assert!(
+            entity.is_scaled(),
+            "scale=1.002 should be scaled (> 0.001 from 1.0)"
+        );
 
         entity.scale = 1.0005;
-        assert!(!entity.is_scaled(), "scale=1.0005 should not be scaled (within 0.001)");
+        assert!(
+            !entity.is_scaled(),
+            "scale=1.0005 should not be scaled (within 0.001)"
+        );
     }
 
     #[test]
@@ -838,7 +895,10 @@ mod clipboard_exact {
             version: CLIPBOARD_SCHEMA_VERSION + 1,
             entities: vec![],
         };
-        assert!(!future.is_compatible(), "Future version should not be compatible");
+        assert!(
+            !future.is_compatible(),
+            "Future version should not be compatible"
+        );
 
         let old = ClipboardData {
             version: 1,
@@ -945,7 +1005,11 @@ mod plugin_state_exact {
     #[test]
     fn plugin_error_is_fatal() {
         assert!(PluginError::InitFailed("".into()).is_fatal());
-        assert!(PluginError::IncompatibleVersion { required: "".into(), actual: "".into() }.is_fatal());
+        assert!(PluginError::IncompatibleVersion {
+            required: "".into(),
+            actual: "".into()
+        }
+        .is_fatal());
         assert!(PluginError::MissingDependency("".into()).is_fatal());
         assert!(!PluginError::ConfigError("".into()).is_fatal());
         assert!(!PluginError::Other("".into()).is_fatal());
@@ -954,13 +1018,20 @@ mod plugin_state_exact {
     #[test]
     fn health_percentage_zero_total_is_100() {
         let stats = PluginManagerStats::default();
-        assert_eq!(stats.health_percentage(), 100.0, "Zero plugins → 100% health");
+        assert_eq!(
+            stats.health_percentage(),
+            100.0,
+            "Zero plugins → 100% health"
+        );
     }
 
     #[test]
     fn all_active_requires_nonzero_total() {
         let stats = PluginManagerStats::default();
-        assert!(!stats.all_active(), "Zero plugins → not all_active (need total>0)");
+        assert!(
+            !stats.all_active(),
+            "Zero plugins → not all_active (need total>0)"
+        );
     }
 }
 
@@ -1004,7 +1075,11 @@ mod layout_preset_exact {
     #[test]
     fn shortcut_hints_all_present() {
         for preset in LayoutPreset::all() {
-            assert!(preset.shortcut_hint().is_some(), "{:?} should have shortcut", preset);
+            assert!(
+                preset.shortcut_hint().is_some(),
+                "{:?} should have shortcut",
+                preset
+            );
         }
     }
 
@@ -1050,19 +1125,31 @@ mod prefab_overrides_exact {
 
     #[test]
     fn has_pose_override_checks_both() {
-        let ov = EntityOverrides { pos_x: Some(1), ..Default::default() };
+        let ov = EntityOverrides {
+            pos_x: Some(1),
+            ..Default::default()
+        };
         assert!(ov.has_pose_override(), "pos_x alone → has pose override");
 
-        let ov = EntityOverrides { pos_y: Some(1), ..Default::default() };
+        let ov = EntityOverrides {
+            pos_y: Some(1),
+            ..Default::default()
+        };
         assert!(ov.has_pose_override(), "pos_y alone → has pose override");
     }
 
     #[test]
     fn has_health_override_checks_both() {
-        let ov = EntityOverrides { health: Some(50), ..Default::default() };
+        let ov = EntityOverrides {
+            health: Some(50),
+            ..Default::default()
+        };
         assert!(ov.has_health_override());
 
-        let ov = EntityOverrides { max_health: Some(200), ..Default::default() };
+        let ov = EntityOverrides {
+            max_health: Some(200),
+            ..Default::default()
+        };
         assert!(ov.has_health_override());
     }
 
@@ -1085,13 +1172,19 @@ mod dock_layout_exact {
     #[test]
     fn new_layout_is_valid() {
         let layout = DockLayout::new();
-        assert!(layout.is_valid(), "Default layout should be valid (has viewport)");
+        assert!(
+            layout.is_valid(),
+            "Default layout should be valid (has viewport)"
+        );
     }
 
     #[test]
     fn panel_count_nonzero_default() {
         let layout = DockLayout::new();
-        assert!(layout.panel_count() > 0, "Default layout should have panels");
+        assert!(
+            layout.panel_count() > 0,
+            "Default layout should have panels"
+        );
     }
 
     #[test]

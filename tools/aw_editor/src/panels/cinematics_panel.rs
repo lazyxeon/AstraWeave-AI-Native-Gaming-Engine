@@ -791,7 +791,11 @@ impl CinematicsPanel {
                                             track.locked = !track.locked;
                                         }
                                         if ui
-                                            .small_button(if track.muted { "[Mute]" } else { "[Snd]" })
+                                            .small_button(if track.muted {
+                                                "[Mute]"
+                                            } else {
+                                                "[Snd]"
+                                            })
                                             .clicked()
                                         {
                                             track.muted = !track.muted;
@@ -1146,7 +1150,11 @@ impl CinematicsPanel {
 
                                         // Mute button
                                         if ui
-                                            .small_button(if track.muted { "[Mute]" } else { "[Snd]" })
+                                            .small_button(if track.muted {
+                                                "[Mute]"
+                                            } else {
+                                                "[Snd]"
+                                            })
                                             .clicked()
                                         {
                                             track.muted = !track.muted;

@@ -1,6 +1,6 @@
 // Entity Shader
 //
-// Renders entities as simple lit cubes with instance rendering.
+// Renders entities with instance rendering and per-vertex colors.
 // Uses basic directional lighting for 3D perception.
 // Supports shading modes: 0=Lit, 1=Unlit, 2=Wireframe
 
@@ -13,14 +13,15 @@ struct Uniforms {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
+    @location(2) vertex_color: vec4<f32>,
 }
 
 struct InstanceInput {
-    @location(2) model_matrix_0: vec4<f32>,
-    @location(3) model_matrix_1: vec4<f32>,
-    @location(4) model_matrix_2: vec4<f32>,
-    @location(5) model_matrix_3: vec4<f32>,
-    @location(6) color: vec4<f32>,
+    @location(3) model_matrix_0: vec4<f32>,
+    @location(4) model_matrix_1: vec4<f32>,
+    @location(5) model_matrix_2: vec4<f32>,
+    @location(6) model_matrix_3: vec4<f32>,
+    @location(7) color: vec4<f32>,
 }
 
 struct VertexOutput {
@@ -52,7 +53,8 @@ fn vs_main(
     output.clip_position = uniforms.view_proj * world_position;
     output.world_position = world_position.xyz;
     output.world_normal = normalize(world_normal);
-    output.color = instance.color;
+    // Multiply vertex color by instance tint (white tint = pass-through vertex colors)
+    output.color = vertex.vertex_color * instance.color;
     return output;
 }
 

@@ -1,4 +1,4 @@
-﻿//! Tab Viewer Implementation for egui_dock
+//! Tab Viewer Implementation for egui_dock
 //!
 //! This module provides the `SimpleTabViewer` struct which implements
 //! `egui_dock::TabViewer` to render each panel type in the docking system.
@@ -18,10 +18,10 @@ use egui_dock::egui;
 use crate::command::UndoStack;
 use crate::entity_manager::EntityManager;
 use crate::panels::{
-    AudioPanel, CinematicsPanel, DialogueEditorPanel, FoliagePanel, InputBindingsPanel,
-    LightingPanel, LocalizationPanel, LodConfigPanel, MaterialEditorPanel, NavigationPanel,
-    NetworkingPanel, ParticleSystemPanel, PcgPanel, PhysicsPanel, PostProcessPanel,
-    ProjectSettingsPanel, SplineEditorPanel, TerrainPanel, UiEditorPanel,
+    AssetBrowser, AudioPanel, CinematicsPanel, DialogueEditorPanel, FoliagePanel,
+    InputBindingsPanel, LightingPanel, LocalizationPanel, LodConfigPanel, MaterialEditorPanel,
+    NavigationPanel, NetworkingPanel, ParticleSystemPanel, PcgPanel, PhysicsPanel,
+    PostProcessPanel, ProjectSettingsPanel, SplineEditorPanel, TerrainPanel, UiEditorPanel,
 };
 use crate::prefab::PrefabManager;
 use crate::viewport::ViewportWidget;
@@ -316,6 +316,8 @@ pub enum PanelEvent {
     CreateEntity,
     /// Request to spawn an entity from a named archetype (e.g. "Player", "Light", "Camera")
     SpawnArchetype { archetype: String },
+    /// Request to spawn an entity from a 3D model asset path
+    SpawnModel { name: String, path: String },
     /// Request to delete an entity
     DeleteEntity(u64),
     /// Request to duplicate an entity
@@ -418,6 +420,9 @@ impl std::fmt::Display for PanelEvent {
             PanelEvent::SpawnArchetype { ref archetype } => {
                 write!(f, "Spawn Archetype: {}", archetype)
             }
+            PanelEvent::SpawnModel { ref name, .. } => {
+                write!(f, "Spawn Model: {}", name)
+            }
             PanelEvent::DeleteEntity(id) => write!(f, "Delete Entity: {}", id),
             PanelEvent::DuplicateEntity(id) => write!(f, "Duplicate Entity: {}", id),
             PanelEvent::MaterialChanged { name, property, .. } => {
@@ -460,13 +465,22 @@ impl std::fmt::Display for PanelEvent {
             PanelEvent::HealthChanged { entity_id, new_hp } => {
                 write!(f, "Health Changed: {} -> {}", entity_id, new_hp)
             }
-            PanelEvent::TeamChanged { entity_id, new_team_id } => {
+            PanelEvent::TeamChanged {
+                entity_id,
+                new_team_id,
+            } => {
                 write!(f, "Team Changed: {} -> {}", entity_id, new_team_id)
             }
-            PanelEvent::AmmoChanged { entity_id, new_ammo } => {
+            PanelEvent::AmmoChanged {
+                entity_id,
+                new_ammo,
+            } => {
                 write!(f, "Ammo Changed: {} -> {}", entity_id, new_ammo)
             }
-            PanelEvent::EntityRenamed { entity_id, ref new_name } => {
+            PanelEvent::EntityRenamed {
+                entity_id,
+                ref new_name,
+            } => {
                 write!(f, "Entity Renamed: {} -> {}", entity_id, new_name)
             }
             PanelEvent::ViewportViewModeChanged(mode) => {
@@ -504,6 +518,7 @@ impl PanelEvent {
             | PanelEvent::EntityDeselected
             | PanelEvent::CreateEntity
             | PanelEvent::SpawnArchetype { .. }
+            | PanelEvent::SpawnModel { .. }
             | PanelEvent::DeleteEntity(_)
             | PanelEvent::DuplicateEntity(_) => "Entity",
             PanelEvent::TransformPositionChanged { .. }
@@ -1159,6 +1174,10 @@ pub struct EditorTabViewer {
     input_bindings_panel: InputBindingsPanel,
     /// Material editor panel
     material_editor_panel: MaterialEditorPanel,
+    /// Available 3D models from asset packs (name, path)
+    spawnable_models: Vec<(String, String)>,
+    /// Real filesystem-backed asset browser panel
+    asset_browser_panel: AssetBrowser,
 }
 
 impl Default for EditorTabViewer {
@@ -1389,6 +1408,8 @@ impl EditorTabViewer {
             post_process_panel: PostProcessPanel::new(),
             input_bindings_panel: InputBindingsPanel::new(),
             material_editor_panel: MaterialEditorPanel::new(),
+            spawnable_models: Vec::new(),
+            asset_browser_panel: AssetBrowser::new(std::path::PathBuf::from("assets")),
         }
     }
 
@@ -1546,6 +1567,11 @@ impl EditorTabViewer {
         self.scene_stats = stats;
     }
 
+    /// Set available 3D models for spawning from asset packs
+    pub fn set_spawnable_models(&mut self, models: Vec<(String, String)>) {
+        self.spawnable_models = models;
+    }
+
     /// Update asset browser entries
     pub fn set_asset_entries(&mut self, entries: Vec<AssetEntry>, path: String) {
         self.asset_entries = entries;
@@ -1571,6 +1597,16 @@ impl EditorTabViewer {
     /// Drain and return events that were emitted this frame
     pub fn take_events(&mut self) -> Vec<PanelEvent> {
         std::mem::take(&mut self.events)
+    }
+
+    /// Drain pending asset browser actions (import, apply texture, etc.)
+    pub fn take_asset_browser_actions(&mut self) -> Vec<crate::panels::AssetAction> {
+        self.asset_browser_panel.take_pending_actions()
+    }
+
+    /// Take dragged prefab from the asset browser
+    pub fn take_asset_browser_dragged_prefab(&mut self) -> Option<std::path::PathBuf> {
+        self.asset_browser_panel.take_dragged_prefab()
     }
 
     /// Emit a panel event
@@ -1815,7 +1851,13 @@ impl TabViewer for EditorTabViewer {
                     "D"
                 };
                 if self.runtime_stats.is_playing {
-                    format!("{} [{} {:.0}fps]", tab.title(), grade, self.runtime_stats.fps).into()
+                    format!(
+                        "{} [{} {:.0}fps]",
+                        tab.title(),
+                        grade,
+                        self.runtime_stats.fps
+                    )
+                    .into()
                 } else {
                     format!("{} [{}]", tab.title(), grade).into()
                 }
@@ -1891,7 +1933,13 @@ impl TabViewer for EditorTabViewer {
                 } else {
                     ""
                 };
-                format!("{} - {}{}", tab.title(), self.current_material.name, modified).into()
+                format!(
+                    "{} - {}{}",
+                    tab.title(),
+                    self.current_material.name,
+                    modified
+                )
+                .into()
             }
             PanelType::ThemeManager => tab.title().into(),
             PanelType::World => {
@@ -2550,48 +2598,125 @@ impl TabViewer for EditorTabViewer {
                     // Create dropdown with entity types
                     ui.menu_button("+ Add", |ui| {
                         ui.label(egui::RichText::new("Game Objects").strong().small());
-                        if ui.button("  Empty Entity").on_hover_text("Create a blank entity").clicked() {
+                        if ui
+                            .button("  Empty Entity")
+                            .on_hover_text("Create a blank entity")
+                            .clicked()
+                        {
                             self.emit_event(PanelEvent::CreateEntity);
                             ui.close();
                         }
-                        if ui.button("  Player").on_hover_text("Spawn player entity (HP: 100, Team: 0)").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Player".into() });
+                        if ui
+                            .button("  Player")
+                            .on_hover_text("Spawn player entity (HP: 100, Team: 0)")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Player".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Companion").on_hover_text("Spawn companion entity (HP: 80, Team: 0)").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Companion".into() });
+                        if ui
+                            .button("  Companion")
+                            .on_hover_text("Spawn companion entity (HP: 80, Team: 0)")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Companion".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Enemy").on_hover_text("Spawn enemy entity (HP: 50, Team: 1)").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Enemy".into() });
+                        if ui
+                            .button("  Enemy")
+                            .on_hover_text("Spawn enemy entity (HP: 50, Team: 1)")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Enemy".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Boss").on_hover_text("Spawn boss entity (HP: 500, Team: 1)").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Boss".into() });
+                        if ui
+                            .button("  Boss")
+                            .on_hover_text("Spawn boss entity (HP: 500, Team: 1)")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Boss".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  NPC").on_hover_text("Spawn NPC entity (HP: 100, Team: 2)").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "NPC".into() });
+                        if ui
+                            .button("  NPC")
+                            .on_hover_text("Spawn NPC entity (HP: 100, Team: 2)")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "NPC".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Prop").on_hover_text("Spawn a static prop entity").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Prop".into() });
+                        if ui
+                            .button("  Prop")
+                            .on_hover_text("Spawn a static prop entity")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Prop".into(),
+                            });
                             ui.close();
                         }
 
                         ui.separator();
                         ui.label(egui::RichText::new("Environment").strong().small());
-                        if ui.button("  Light").on_hover_text("Add a point light to the scene").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Light".into() });
+                        if ui
+                            .button("  Light")
+                            .on_hover_text("Add a point light to the scene")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Light".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Camera").on_hover_text("Add a camera to the scene").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Camera".into() });
+                        if ui
+                            .button("  Camera")
+                            .on_hover_text("Add a camera to the scene")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Camera".into(),
+                            });
                             ui.close();
                         }
-                        if ui.button("  Trigger").on_hover_text("Add a trigger volume").clicked() {
-                            self.emit_event(PanelEvent::SpawnArchetype { archetype: "Trigger".into() });
+                        if ui
+                            .button("  Trigger")
+                            .on_hover_text("Add a trigger volume")
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "Trigger".into(),
+                            });
                             ui.close();
+                        }
+
+                        if !self.spawnable_models.is_empty() {
+                            ui.separator();
+                            ui.label(egui::RichText::new("3D Models (Kenney)").strong().small());
+                            let models: Vec<_> = self.spawnable_models.clone();
+                            egui::ScrollArea::vertical()
+                                .max_height(300.0)
+                                .show(ui, |ui| {
+                                    for (name, path) in &models {
+                                        if ui.button(format!("  🎲 {}", name)).clicked() {
+                                            self.emit_event(PanelEvent::SpawnModel {
+                                                name: name.clone(),
+                                                path: path.clone(),
+                                            });
+                                            ui.close();
+                                        }
+                                    }
+                                });
                         }
                     });
 
@@ -2650,19 +2775,37 @@ impl TabViewer for EditorTabViewer {
                             ui.add_space(8.0);
 
                             let btn_width = 180.0;
-                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Player")).clicked() {
-                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Player".into() });
+                            if ui
+                                .add_sized([btn_width, 28.0], egui::Button::new("+ Add Player"))
+                                .clicked()
+                            {
+                                self.emit_event(PanelEvent::SpawnArchetype {
+                                    archetype: "Player".into(),
+                                });
                             }
                             ui.add_space(2.0);
-                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Light")).clicked() {
-                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Light".into() });
+                            if ui
+                                .add_sized([btn_width, 28.0], egui::Button::new("+ Add Light"))
+                                .clicked()
+                            {
+                                self.emit_event(PanelEvent::SpawnArchetype {
+                                    archetype: "Light".into(),
+                                });
                             }
                             ui.add_space(2.0);
-                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Add Camera")).clicked() {
-                                self.emit_event(PanelEvent::SpawnArchetype { archetype: "Camera".into() });
+                            if ui
+                                .add_sized([btn_width, 28.0], egui::Button::new("+ Add Camera"))
+                                .clicked()
+                            {
+                                self.emit_event(PanelEvent::SpawnArchetype {
+                                    archetype: "Camera".into(),
+                                });
                             }
                             ui.add_space(2.0);
-                            if ui.add_sized([btn_width, 28.0], egui::Button::new("+ Empty Entity")).clicked() {
+                            if ui
+                                .add_sized([btn_width, 28.0], egui::Button::new("+ Empty Entity"))
+                                .clicked()
+                            {
                                 self.emit_event(PanelEvent::CreateEntity);
                             }
 
@@ -2833,11 +2976,7 @@ impl TabViewer for EditorTabViewer {
                 let mut copy_all = false;
                 let mut copy_filtered = false;
                 ui.horizontal(|ui| {
-                    if ui
-                        .button("Clear")
-                        .on_hover_text("Clear all logs")
-                        .clicked()
-                    {
+                    if ui.button("Clear").on_hover_text("Clear all logs").clicked() {
                         should_clear = true;
                     }
                     if ui
@@ -2869,8 +3008,7 @@ impl TabViewer for EditorTabViewer {
                     ui.separator();
                     ui.add_sized(
                         [ui.available_width(), 20.0],
-                        egui::TextEdit::singleline(&mut self.console_search)
-                            .hint_text("Filter..."),
+                        egui::TextEdit::singleline(&mut self.console_search).hint_text("Filter..."),
                     );
                 });
 
@@ -2969,167 +3107,8 @@ impl TabViewer for EditorTabViewer {
                     });
             }
             PanelType::AssetBrowser => {
-                let asset_count = self.asset_entries.len();
-                // Count folders vs files for header
-                let folder_count = self.asset_entries.iter().filter(|e| e.is_folder).count();
-                let file_count = asset_count - folder_count;
-
-                ui.horizontal(|ui| {
-                    ui.heading(format!(
-                        "Assets ({})",
-                        if asset_count > 0 {
-                            asset_count.to_string()
-                        } else {
-                            "-".to_string()
-                        }
-                    ));
-                    if asset_count > 0 {
-                        ui.weak(format!("{} dirs, {} files", folder_count, file_count));
-                    }
-                });
-                ui.separator();
-
-                // Toolbar with navigation and view controls
-                ui.horizontal(|ui| {
-                    if ui.button("<").on_hover_text("Go up").clicked() {
-                        // Would go up a directory
-                    }
-                    ui.label(format!("{}", self.asset_current_path));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button("⟳").on_hover_text("Refresh").clicked() {
-                            // Would refresh
-                        }
-                        // View mode toggle
-                        let view_icon = if self.asset_view_mode == 0 {
-                            "≡"
-                        } else {
-                            "⊞"
-                        };
-                        if ui
-                            .button(view_icon)
-                            .on_hover_text("Toggle view mode")
-                            .clicked()
-                        {
-                            self.asset_view_mode = 1 - self.asset_view_mode;
-                        }
-                    });
-                });
-
-                // Search and filter row
-                ui.horizontal(|ui| {
-                    ui.add_sized(
-                        [ui.available_width() - 100.0, 20.0],
-                        egui::TextEdit::singleline(&mut self.asset_search)
-                            .hint_text("Search assets..."),
-                    );
-                    // Type filter
-                    let filter_labels = ["All", "Tex", "3D", "Audio", "Doc"];
-                    let filter_tips = ["All types", "Textures", "Models", "Audio", "Scripts"];
-                    egui::ComboBox::from_id_salt("asset_filter")
-                        .width(60.0)
-                        .selected_text(filter_labels[self.asset_type_filter])
-                        .show_ui(ui, |ui| {
-                            for (i, &label) in filter_labels.iter().enumerate() {
-                                ui.selectable_value(&mut self.asset_type_filter, i, label)
-                                    .on_hover_text(filter_tips[i]);
-                            }
-                        });
-                });
-                ui.separator();
-
-                let mut selected_asset: Option<String> = None;
-                let search_lower = self.asset_search.to_lowercase();
-
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    if self.asset_entries.is_empty() {
-                        // Default folders when no entries provided
-                        let default_folders = [
-                            ("materials/", "materials/"),
-                            ("meshes/", "meshes/"),
-                            ("textures/", "textures/"),
-                            ("scenes/", "scenes/"),
-                            ("prefabs/", "prefabs/"),
-                            ("audio/", "audio/"),
-                            ("scripts/", "scripts/"),
-                        ];
-                        for (label, path) in default_folders {
-                            if (search_lower.is_empty() || path.contains(&search_lower))
-                                && ui.selectable_label(false, label).clicked()
-                            {
-                                selected_asset = Some(path.to_string());
-                            }
-                        }
-                    } else {
-                        for entry in &self.asset_entries {
-                            // Apply search filter
-                            if !search_lower.is_empty()
-                                && !entry.name.to_lowercase().contains(&search_lower)
-                            {
-                                continue;
-                            }
-
-                            // Apply type filter
-                            if self.asset_type_filter > 0 && !entry.is_folder {
-                                let type_match =
-                                    match (self.asset_type_filter, entry.file_type.as_str()) {
-                                        (1, "png" | "jpg" | "jpeg" | "tga" | "bmp") => true, // Textures
-                                        (2, "gltf" | "glb" | "obj" | "fbx") => true, // Models
-                                        (3, "wav" | "ogg" | "mp3" | "flac") => true, // Audio
-                                        (4, "rs" | "rhai" | "lua" | "ron" | "toml" | "json") => {
-                                            true
-                                        } // Scripts
-                                        _ => false,
-                                    };
-                                if !type_match {
-                                    continue;
-                                }
-                            }
-
-                            let icon = if entry.is_folder {
-                                "[D]"
-                            } else {
-                                match entry.file_type.as_str() {
-                                    "png" | "jpg" | "jpeg" | "tga" | "bmp" => "[I]",
-                                    "gltf" | "glb" | "obj" | "fbx" => "[M]",
-                                    "ron" | "toml" | "json" => "[D]",
-                                    "wav" | "ogg" | "mp3" | "flac" => "[A]",
-                                    "rs" | "rhai" | "lua" => "[S]",
-                                    _ => "[F]",
-                                }
-                            };
-
-                            // Grid or list view
-                            if self.asset_view_mode == 0 {
-                                // List view
-                                if ui
-                                    .selectable_label(false, format!("{} {}", icon, entry.name))
-                                    .clicked()
-                                {
-                                    selected_asset = Some(entry.name.clone());
-                                }
-                            } else {
-                                // Grid view (simplified - would use horizontal wrap)
-                                ui.horizontal(|ui| {
-                                    if ui
-                                        .button(format!(
-                                            "{}\n{}",
-                                            icon,
-                                            entry.name.chars().take(10).collect::<String>()
-                                        ))
-                                        .clicked()
-                                    {
-                                        selected_asset = Some(entry.name.clone());
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
-
-                // Handle asset selection outside borrow
-                if let Some(asset) = selected_asset {
-                    self.emit_event(PanelEvent::AssetSelected(asset));
-                }
+                self.asset_browser_panel.show(ui);
+                // Actions are collected via take_asset_browser_actions()
             }
             PanelType::Profiler => {
                 let stats = &self.runtime_stats;
@@ -3352,7 +3331,11 @@ impl TabViewer for EditorTabViewer {
                     });
                     ui.horizontal(|ui| {
                         ui.label("Components/Entity:");
-                        let avg = if stats.entity_count > 0 { "varies" } else { "0" };
+                        let avg = if stats.entity_count > 0 {
+                            "varies"
+                        } else {
+                            "0"
+                        };
                         ui.label(avg);
                     });
                 });
@@ -3475,10 +3458,7 @@ impl TabViewer for EditorTabViewer {
 
                 // Header with entity count and modified indicator
                 ui.horizontal(|ui| {
-                    ui.heading(format!(
-                        "Scene Stats ({} entities)",
-                        stats.total_entities
-                    ));
+                    ui.heading(format!("Scene Stats ({} entities)", stats.total_entities));
                     if stats.is_modified {
                         ui.colored_label(egui::Color32::YELLOW, " ● Modified");
                     } else {
@@ -4078,7 +4058,8 @@ impl TabViewer for EditorTabViewer {
                             "Fog",
                             "Sandstorm",
                         ];
-                        let weather_icons = ["Clear", "Cloud", "Rain", "Storm", "Snow", "Fog", "Sand"];
+                        let weather_icons =
+                            ["Clear", "Cloud", "Rain", "Storm", "Snow", "Fog", "Sand"];
 
                         ui.horizontal(|ui| {
                             ui.label("Weather:");
@@ -4458,13 +4439,7 @@ impl TabViewer for EditorTabViewer {
                 ui.horizontal(|ui| {
                     ui.label("Preset:");
                     let presets = [
-                        "Custom",
-                        "Metal",
-                        "Wood",
-                        "Brick",
-                        "Stone",
-                        "Water",
-                        "Glass",
+                        "Custom", "Metal", "Wood", "Brick", "Stone", "Water", "Glass",
                     ];
                     ui.menu_button(presets[0], |ui| {
                         for (i, preset) in presets.iter().enumerate().skip(1) {
@@ -5002,7 +4977,11 @@ impl TabViewer for EditorTabViewer {
                         ui.separator();
 
                         // -- Transform (Pose) editor --
-                        if info.pos_x.is_some() || info.pos_y.is_some() || info.rotation.is_some() || info.scale.is_some() {
+                        if info.pos_x.is_some()
+                            || info.pos_y.is_some()
+                            || info.rotation.is_some()
+                            || info.scale.is_some()
+                        {
                             egui::CollapsingHeader::new("Transform")
                                 .default_open(true)
                                 .show(ui, |ui| {
@@ -5011,14 +4990,28 @@ impl TabViewer for EditorTabViewer {
                                         let mut y = py as f32;
                                         ui.horizontal(|ui| {
                                             ui.label("Position:");
-                                            let cx = ui.add(egui::DragValue::new(&mut x).prefix("X: ").speed(1.0)).changed();
-                                            let cy = ui.add(egui::DragValue::new(&mut y).prefix("Y: ").speed(1.0)).changed();
+                                            let cx = ui
+                                                .add(
+                                                    egui::DragValue::new(&mut x)
+                                                        .prefix("X: ")
+                                                        .speed(1.0),
+                                                )
+                                                .changed();
+                                            let cy = ui
+                                                .add(
+                                                    egui::DragValue::new(&mut y)
+                                                        .prefix("Y: ")
+                                                        .speed(1.0),
+                                                )
+                                                .changed();
                                             if cx || cy {
-                                                self.emit_event(PanelEvent::TransformPositionChanged {
-                                                    entity_id,
-                                                    x,
-                                                    y,
-                                                });
+                                                self.emit_event(
+                                                    PanelEvent::TransformPositionChanged {
+                                                        entity_id,
+                                                        x,
+                                                        y,
+                                                    },
+                                                );
                                             }
                                         });
                                     }
@@ -5026,11 +5019,20 @@ impl TabViewer for EditorTabViewer {
                                         let mut rot_deg = rot.to_degrees();
                                         ui.horizontal(|ui| {
                                             ui.label("Rotation:");
-                                            if ui.add(egui::DragValue::new(&mut rot_deg).suffix("\u{00b0}").speed(1.0)).changed() {
-                                                self.emit_event(PanelEvent::TransformRotationChanged {
-                                                    entity_id,
-                                                    rotation: rot_deg.to_radians(),
-                                                });
+                                            if ui
+                                                .add(
+                                                    egui::DragValue::new(&mut rot_deg)
+                                                        .suffix("\u{00b0}")
+                                                        .speed(1.0),
+                                                )
+                                                .changed()
+                                            {
+                                                self.emit_event(
+                                                    PanelEvent::TransformRotationChanged {
+                                                        entity_id,
+                                                        rotation: rot_deg.to_radians(),
+                                                    },
+                                                );
                                             }
                                         });
                                     }
@@ -5038,12 +5040,21 @@ impl TabViewer for EditorTabViewer {
                                         let mut s = sc;
                                         ui.horizontal(|ui| {
                                             ui.label("Scale:");
-                                            if ui.add(egui::DragValue::new(&mut s).speed(0.01).range(0.01..=100.0)).changed() {
-                                                self.emit_event(PanelEvent::TransformScaleChanged {
-                                                    entity_id,
-                                                    scale_x: s,
-                                                    scale_y: s,
-                                                });
+                                            if ui
+                                                .add(
+                                                    egui::DragValue::new(&mut s)
+                                                        .speed(0.01)
+                                                        .range(0.01..=100.0),
+                                                )
+                                                .changed()
+                                            {
+                                                self.emit_event(
+                                                    PanelEvent::TransformScaleChanged {
+                                                        entity_id,
+                                                        scale_x: s,
+                                                        scale_y: s,
+                                                    },
+                                                );
                                             }
                                         });
                                     }
@@ -5058,8 +5069,18 @@ impl TabViewer for EditorTabViewer {
                                     let mut hp_val = hp;
                                     ui.horizontal(|ui| {
                                         ui.label("HP:");
-                                        if ui.add(egui::DragValue::new(&mut hp_val).speed(1.0).range(0..=10000)).changed() {
-                                            self.emit_event(PanelEvent::HealthChanged { entity_id, new_hp: hp_val });
+                                        if ui
+                                            .add(
+                                                egui::DragValue::new(&mut hp_val)
+                                                    .speed(1.0)
+                                                    .range(0..=10000),
+                                            )
+                                            .changed()
+                                        {
+                                            self.emit_event(PanelEvent::HealthChanged {
+                                                entity_id,
+                                                new_hp: hp_val,
+                                            });
                                         }
                                     });
                                     // Health bar visualization
@@ -5071,9 +5092,16 @@ impl TabViewer for EditorTabViewer {
                                     } else {
                                         egui::Color32::RED
                                     };
-                                    let (rect, _) = ui.allocate_exact_size(egui::vec2(ui.available_width().min(200.0), 8.0), egui::Sense::hover());
-                                    ui.painter().rect_filled(rect, 2.0, egui::Color32::DARK_GRAY);
-                                    let filled = egui::Rect::from_min_size(rect.min, egui::vec2(rect.width() * pct, rect.height()));
+                                    let (rect, _) = ui.allocate_exact_size(
+                                        egui::vec2(ui.available_width().min(200.0), 8.0),
+                                        egui::Sense::hover(),
+                                    );
+                                    ui.painter()
+                                        .rect_filled(rect, 2.0, egui::Color32::DARK_GRAY);
+                                    let filled = egui::Rect::from_min_size(
+                                        rect.min,
+                                        egui::vec2(rect.width() * pct, rect.height()),
+                                    );
                                     ui.painter().rect_filled(filled, 2.0, bar_color);
                                 });
                         }
@@ -5086,8 +5114,18 @@ impl TabViewer for EditorTabViewer {
                                     let mut id_val = tid as i32;
                                     ui.horizontal(|ui| {
                                         ui.label("Team ID:");
-                                        if ui.add(egui::DragValue::new(&mut id_val).speed(1.0).range(0..=255)).changed() {
-                                            self.emit_event(PanelEvent::TeamChanged { entity_id, new_team_id: id_val as u8 });
+                                        if ui
+                                            .add(
+                                                egui::DragValue::new(&mut id_val)
+                                                    .speed(1.0)
+                                                    .range(0..=255),
+                                            )
+                                            .changed()
+                                        {
+                                            self.emit_event(PanelEvent::TeamChanged {
+                                                entity_id,
+                                                new_team_id: id_val as u8,
+                                            });
                                         }
                                         let team_name = match id_val as u8 {
                                             0 => "Player",
@@ -5108,43 +5146,67 @@ impl TabViewer for EditorTabViewer {
                                     let mut rounds = ammo_val;
                                     ui.horizontal(|ui| {
                                         ui.label("Rounds:");
-                                        if ui.add(egui::DragValue::new(&mut rounds).speed(1.0).range(0..=10000)).changed() {
-                                            self.emit_event(PanelEvent::AmmoChanged { entity_id, new_ammo: rounds });
+                                        if ui
+                                            .add(
+                                                egui::DragValue::new(&mut rounds)
+                                                    .speed(1.0)
+                                                    .range(0..=10000),
+                                            )
+                                            .changed()
+                                        {
+                                            self.emit_event(PanelEvent::AmmoChanged {
+                                                entity_id,
+                                                new_ammo: rounds,
+                                            });
                                         }
                                     });
                                 });
                         }
 
                         // -- Other components (display-only with remove buttons) --
-                        let other_comps: Vec<String> = info.components.iter()
-                            .filter(|c| !matches!(c.as_str(), "Transform" | "Health" | "Team" | "Ammo"))
+                        let other_comps: Vec<String> = info
+                            .components
+                            .iter()
+                            .filter(|c| {
+                                !matches!(c.as_str(), "Transform" | "Health" | "Team" | "Ammo")
+                            })
                             .cloned()
                             .collect();
                         if !other_comps.is_empty() {
                             let mut comp_to_remove = None;
-                            egui::CollapsingHeader::new(format!("Other Components ({})", other_comps.len()))
-                                .default_open(true)
-                                .show(ui, |ui| {
-                                    for comp in &other_comps {
-                                        let icon = match comp.as_str() {
-                                            "Sprite" | "Renderer" => "R",
-                                            "Collider" | "RigidBody" => "⬜",
-                                            "Script" => "S",
-                                            "Audio" => "A",
-                                            "Light" => "L",
-                                            "Camera" => "[C]",
-                                            _ => "•",
-                                        };
-                                        ui.horizontal(|ui| {
-                                            ui.label(format!("{} {}", icon, comp));
-                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                                if ui.small_button("X").on_hover_text(format!("Remove {}", comp)).clicked() {
+                            egui::CollapsingHeader::new(format!(
+                                "Other Components ({})",
+                                other_comps.len()
+                            ))
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                for comp in &other_comps {
+                                    let icon = match comp.as_str() {
+                                        "Sprite" | "Renderer" => "R",
+                                        "Collider" | "RigidBody" => "⬜",
+                                        "Script" => "S",
+                                        "Audio" => "A",
+                                        "Light" => "L",
+                                        "Camera" => "[C]",
+                                        _ => "•",
+                                    };
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("{} {}", icon, comp));
+                                        ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Center),
+                                            |ui| {
+                                                if ui
+                                                    .small_button("X")
+                                                    .on_hover_text(format!("Remove {}", comp))
+                                                    .clicked()
+                                                {
                                                     comp_to_remove = Some(comp.clone());
                                                 }
-                                            });
-                                        });
-                                    }
-                                });
+                                            },
+                                        );
+                                    });
+                                }
+                            });
                             if let Some(comp) = comp_to_remove {
                                 self.emit_event(PanelEvent::RemoveComponent {
                                     entity_id,
@@ -5159,17 +5221,30 @@ impl TabViewer for EditorTabViewer {
                         let components_snapshot = info.components.clone();
                         let mut add_comp_event = None;
                         ui.menu_button("+ Add Component", |ui| {
-                            let available = ["Transform", "Health", "Team", "Ammo",
-                                             "Sprite", "Collider", "RigidBody", "Script",
-                                             "Audio", "Light", "Camera"];
+                            let available = [
+                                "Transform",
+                                "Health",
+                                "Team",
+                                "Ammo",
+                                "Sprite",
+                                "Collider",
+                                "RigidBody",
+                                "Script",
+                                "Audio",
+                                "Light",
+                                "Camera",
+                            ];
                             for comp_name in &available {
-                                let already_has = components_snapshot.iter().any(|c| c == comp_name);
-                                let btn = ui.add_enabled(!already_has,
+                                let already_has =
+                                    components_snapshot.iter().any(|c| c == comp_name);
+                                let btn = ui.add_enabled(
+                                    !already_has,
                                     egui::Button::new(if already_has {
                                         format!("  {} (added)", comp_name)
                                     } else {
                                         format!("  {}", comp_name)
-                                    }));
+                                    }),
+                                );
                                 if btn.clicked() {
                                     add_comp_event = Some(comp_name.to_string());
                                     ui.close();
@@ -5191,11 +5266,7 @@ impl TabViewer for EditorTabViewer {
                             if ui.button("Duplicate").clicked() {
                                 self.emit_event(PanelEvent::DuplicateEntity(entity_id));
                             }
-                            if ui
-                                .button("Delete")
-                                .on_hover_text("Delete entity")
-                                .clicked()
-                            {
+                            if ui.button("Delete").on_hover_text("Delete entity").clicked() {
                                 self.emit_event(PanelEvent::DeleteEntity(entity_id));
                             }
                         });
@@ -5223,14 +5294,7 @@ impl TabViewer for EditorTabViewer {
                     3 => ("!!", "Failed", egui::Color32::RED),
                     _ => ("--", "Idle", egui::Color32::GRAY),
                 };
-                let targets = [
-                    "Windows",
-                    "Linux",
-                    "macOS",
-                    "WebGL",
-                    "Android",
-                    "iOS",
-                ];
+                let targets = ["Windows", "Linux", "macOS", "WebGL", "Android", "iOS"];
                 let target_names = ["windows", "linux", "macos", "webgl", "android", "ios"];
                 let profiles = ["Debug", "Release", "Profile"];
 
@@ -5719,7 +5783,11 @@ impl TabViewer for EditorTabViewer {
                 let mut frame_changed = None;
 
                 ui.horizontal(|ui| {
-                    if ui.button("|<").on_hover_text("Go to start (Home)").clicked() {
+                    if ui
+                        .button("|<")
+                        .on_hover_text("Go to start (Home)")
+                        .clicked()
+                    {
                         frame_changed = Some(0);
                     }
                     let play_btn = if self.animation_state.is_playing {
@@ -5960,11 +6028,7 @@ impl TabViewer for EditorTabViewer {
 
                 // Enhanced toolbar with node type quick-add
                 ui.horizontal(|ui| {
-                    if ui
-                        .button("Event")
-                        .on_hover_text("Add Event Node")
-                        .clicked()
-                    {
+                    if ui.button("Event").on_hover_text("Add Event Node").clicked() {
                         // Would add event node
                     }
                     if ui
@@ -5974,11 +6038,7 @@ impl TabViewer for EditorTabViewer {
                     {
                         // Would add function node
                     }
-                    if ui
-                        .button("Math")
-                        .on_hover_text("Add Math Node")
-                        .clicked()
-                    {
+                    if ui.button("Math").on_hover_text("Add Math Node").clicked() {
                         // Would add math node
                     }
                     if ui

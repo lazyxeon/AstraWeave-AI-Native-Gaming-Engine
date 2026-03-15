@@ -421,7 +421,10 @@ impl StatusBar {
             ui.add_space(4.0);
             ui.colored_label(
                 gpu_mem_color,
-                format!("GPU: {}", ResourceUsage::format_bytes(usage.gpu_memory_used)),
+                format!(
+                    "GPU: {}",
+                    ResourceUsage::format_bytes(usage.gpu_memory_used)
+                ),
             )
             .on_hover_text(format!(
                 "GPU Memory: {} / {} ({:.1}%)",
