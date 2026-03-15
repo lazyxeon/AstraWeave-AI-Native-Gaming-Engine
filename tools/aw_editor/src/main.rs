@@ -356,6 +356,8 @@ struct EditorApp {
     // Phase 6: Dirty flag for unsaved changes
     is_dirty: bool,
     show_quit_dialog: bool,
+    /// Set to true when user confirms quit (prevents close handler from re-canceling)
+    pending_quit: bool,
     // Phase 6: Toast notifications (Week 6 Day 3-4: Enhanced toast manager)
     toast_manager: ui::ToastManager,
     // Legacy toasts field (kept for backward compatibility during migration)
@@ -543,6 +545,7 @@ impl Default for EditorApp {
             // Phase 6: Dirty flag for unsaved changes
             is_dirty: false,
             show_quit_dialog: false,
+            pending_quit: false,
             // Phase 6: Toast notifications (Week 6 Day 3-4: Enhanced toast manager)
             toast_manager: ui::ToastManager::new(),
             toasts: Vec::new(), // Legacy, kept for migration
@@ -2362,18 +2365,21 @@ impl EditorApp {
                             .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
                         if scene_serialization::save_scene(world, &path).is_ok() {
                             self.toast_success("Scene saved");
+                            self.pending_quit = true;
                             self.remove_lock_file();
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         } else {
                             self.toast_error("Failed to save scene");
                         }
                     } else {
+                        self.pending_quit = true;
                         self.remove_lock_file();
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 }
 
                 if do_quit {
+                    self.pending_quit = true;
                     self.remove_lock_file();
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
@@ -4540,6 +4546,19 @@ impl EditorApp {
         }
     }
 
+    /// Process pending asset browser actions (button clicks, drag-drop, double-clicks)
+    fn process_asset_browser_actions(&mut self) {
+        // Collect pending actions from asset browser
+        let actions = self.asset_browser.take_pending_actions();
+        for action in actions {
+            self.handle_asset_action(action);
+        }
+        // Handle drag-drop from asset browser (models and prefabs)
+        if let Some(dragged_path) = self.asset_browser.take_dragged_prefab() {
+            self.spawn_prefab_from_drag(dragged_path, (0, 0));
+        }
+    }
+
     /// Handle asset actions from the asset browser
     fn handle_asset_action(&mut self, action: AssetAction) {
         match action {
@@ -5541,6 +5560,15 @@ impl MenuActionHandler for EditorApp {
         self.request_open_scene(path);
     }
 
+    fn on_exit(&mut self) {
+        if self.is_dirty {
+            self.show_quit_dialog = true;
+        } else {
+            self.pending_quit = true;
+            self.remove_lock_file();
+        }
+    }
+
     fn on_undo(&mut self) {
         if let Some(scene_state) = self.scene_state.as_mut() {
             let world = scene_state.world_mut();
@@ -5940,9 +5968,17 @@ impl eframe::App for EditorApp {
         // Apply persisted theme on first frame
         self.theme_manager.apply_theme(ctx);
 
+        // If pending_quit was set (e.g. from File > Exit with clean state), close immediately
+        if self.pending_quit {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+
         // Week 7 Day 5: Handle close requests with proper lock file cleanup
         if ctx.input(|i| i.viewport().close_requested()) {
-            if self.is_dirty {
+            if self.pending_quit {
+                // User confirmed quit from dialog — allow the close to proceed
+                self.remove_lock_file();
+            } else if self.is_dirty {
                 self.show_quit_dialog = true;
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             } else {
@@ -5958,6 +5994,9 @@ impl eframe::App for EditorApp {
         // Week 5 Day 3-4: Process hierarchy panel actions and sync prefab instances
         self.process_hierarchy_actions();
         self.sync_hierarchy_prefab_instances();
+
+        // Process asset browser actions (drag-drop, double-click, context actions)
+        self.process_asset_browser_actions();
 
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
@@ -6109,7 +6148,11 @@ impl eframe::App for EditorApp {
 
         // Check for close request
         ctx.input(|i| {
-            if i.viewport().close_requested() && self.is_dirty && !self.show_quit_dialog {
+            if i.viewport().close_requested()
+                && self.is_dirty
+                && !self.show_quit_dialog
+                && !self.pending_quit
+            {
                 self.show_quit_dialog = true;
             }
         });

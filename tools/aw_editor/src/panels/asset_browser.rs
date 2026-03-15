@@ -523,15 +523,45 @@ impl AssetType {
 pub struct AssetEntry {
     pub path: PathBuf,
     pub name: String,
+    /// Human-readable display name (e.g., "Bridge Center Stone" from "bridge_center_stone.glb")
+    pub display_name: String,
     pub asset_type: AssetType,
     pub texture_type: Option<TextureType>,
     pub size: u64,
+}
+
+/// Convert a file/directory name to a pretty display name.
+/// "bridge_center_stone.glb" → "Bridge Center Stone"
+/// "Nature Kit" → "Nature Kit" (already pretty)
+fn prettify_name(name: &str) -> String {
+    // Strip file extension
+    let stem = Path::new(name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(name);
+    // Replace underscores/hyphens with spaces, then title-case each word
+    stem.replace('_', " ")
+        .replace('-', " ")
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(c) => {
+                    let upper: String = c.to_uppercase().collect();
+                    upper + chars.as_str().to_lowercase().as_str()
+                }
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 impl AssetEntry {
     pub fn from_path(path: PathBuf) -> Option<Self> {
         let name = path.file_name()?.to_string_lossy().to_string();
         let asset_type = AssetType::from_path(&path);
+        let display_name = prettify_name(&name);
 
         // Detect texture type if this is a texture
         let texture_type = if asset_type == AssetType::Texture {
@@ -549,6 +579,7 @@ impl AssetEntry {
         Some(AssetEntry {
             path,
             name,
+            display_name,
             asset_type,
             texture_type,
             size,
@@ -703,13 +734,13 @@ impl AssetBrowser {
                 }
 
                 // Search query filter
-                if !self.search_query.is_empty()
-                    && !entry
-                        .name
-                        .to_lowercase()
-                        .contains(&self.search_query.to_lowercase())
-                {
-                    return false;
+                if !self.search_query.is_empty() {
+                    let query = self.search_query.to_lowercase();
+                    if !entry.name.to_lowercase().contains(&query)
+                        && !entry.display_name.to_lowercase().contains(&query)
+                    {
+                        return false;
+                    }
                 }
 
                 true
@@ -757,32 +788,45 @@ impl AssetBrowser {
             return Some(texture.clone());
         }
 
-        if AssetType::from_path(path) != AssetType::Texture {
-            return None;
-        }
+        let asset_type = AssetType::from_path(path);
 
-        // Only attempt to load formats supported by the image crate
-        // Skip KTX2, DDS, and other GPU-compressed formats
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .map(|s| s.to_lowercase())
-            .unwrap_or_default();
-
-        if !matches!(
-            ext.as_str(),
-            "png" | "jpg" | "jpeg" | "bmp" | "gif" | "tga" | "tiff"
-        ) {
-            // Unsupported format for thumbnails - silently skip
-            return None;
-        }
-
-        let image_data = match image::open(path) {
-            Ok(img) => img,
-            Err(_) => {
-                // Silently skip - don't spam logs for every unsupported file
-                return None;
+        // Determine the image file to load as thumbnail
+        let image_path = match asset_type {
+            AssetType::Texture => {
+                // Only attempt to load standard image formats
+                let ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|s| s.to_lowercase())
+                    .unwrap_or_default();
+                if !matches!(
+                    ext.as_str(),
+                    "png" | "jpg" | "jpeg" | "bmp" | "gif" | "tga" | "tiff"
+                ) {
+                    return None;
+                }
+                path.to_path_buf()
             }
+            AssetType::Directory => {
+                // For directories, look for Preview.png or Sample.png (Kenney packs)
+                let preview = path.join("Preview.png");
+                if preview.exists() {
+                    preview
+                } else {
+                    let sample = path.join("Sample.png");
+                    if sample.exists() {
+                        sample
+                    } else {
+                        return None;
+                    }
+                }
+            }
+            _ => return None,
+        };
+
+        let image_data = match image::open(&image_path) {
+            Ok(img) => img,
+            Err(_) => return None,
         };
         let rgba = image_data.to_rgba8();
         let size = [rgba.width() as usize, rgba.height() as usize];
@@ -959,7 +1003,7 @@ impl AssetBrowser {
                                 format!(
                                     "{} {} {}",
                                     entry.asset_type.icon(),
-                                    entry.name,
+                                    entry.display_name,
                                     entry.format_size()
                                 ),
                             );
@@ -989,7 +1033,11 @@ impl AssetBrowser {
                                     .on_hover_text(entry.path.display().to_string());
                             }
 
-                            if entry.asset_type == AssetType::Prefab && response.drag_started() {
+                            if matches!(
+                                entry.asset_type,
+                                AssetType::Prefab | AssetType::Model
+                            ) && response.drag_started()
+                            {
                                 self.dragged_prefab = Some(entry.path.clone());
                             }
                         }
@@ -1030,13 +1078,17 @@ impl AssetBrowser {
                                     let is_selected =
                                         self.selected_asset.as_ref() == Some(&entry.path);
                                     let entry_path = entry.path.clone();
-                                    let entry_name = entry.name.clone();
+                                    let entry_display_name = entry.display_name.clone();
                                     let entry_asset_type = entry.asset_type;
                                     let entry_texture_type = entry.texture_type;
                                     let show_badges = self.show_texture_badges;
 
+                                    // Load thumbnails for textures AND directories (Kenney pack previews)
                                     let ctx = ui.ctx().clone();
-                                    let thumbnail = if entry_asset_type == AssetType::Texture {
+                                    let thumbnail = if matches!(
+                                        entry_asset_type,
+                                        AssetType::Texture | AssetType::Directory
+                                    ) {
                                         self.load_thumbnail(&ctx, &entry_path)
                                     } else {
                                         None
@@ -1136,14 +1188,17 @@ impl AssetBrowser {
                                                 .on_hover_text(entry_path.display().to_string());
                                         }
 
-                                        if entry_asset_type == AssetType::Prefab
-                                            && response.drag_started()
+                                        // Allow dragging models and prefabs to viewport
+                                        if matches!(
+                                            entry_asset_type,
+                                            AssetType::Prefab | AssetType::Model
+                                        ) && response.drag_started()
                                         {
                                             self.dragged_prefab = Some(entry_path.clone());
                                         }
 
                                         ui.add(
-                                            egui::Label::new(&entry_name)
+                                            egui::Label::new(&entry_display_name)
                                                 .wrap_mode(egui::TextWrapMode::Truncate),
                                         );
                                     });
@@ -1788,6 +1843,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("test.glb"),
             name: "test.glb".to_string(),
+            display_name: "Test".to_string(),
             asset_type: AssetType::Model,
             texture_type: None,
             size: 1024,
@@ -1800,6 +1856,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("large.glb"),
             name: "large.glb".to_string(),
+            display_name: "Large".to_string(),
             asset_type: AssetType::Model,
             texture_type: None,
             size: 1024 * 1024,
@@ -1812,6 +1869,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("folder"),
             name: "folder".to_string(),
+            display_name: "Folder".to_string(),
             asset_type: AssetType::Directory,
             texture_type: None,
             size: 0,
@@ -1824,6 +1882,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("tiny.txt"),
             name: "tiny.txt".to_string(),
+            display_name: "Tiny".to_string(),
             asset_type: AssetType::Unknown,
             texture_type: None,
             size: 512,
@@ -1836,6 +1895,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("huge.glb"),
             name: "huge.glb".to_string(),
+            display_name: "Huge".to_string(),
             asset_type: AssetType::Model,
             texture_type: None,
             size: 10 * 1024 * 1024,
@@ -1848,6 +1908,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("brick_normal.png"),
             name: "brick_normal.png".to_string(),
+            display_name: "Brick Normal".to_string(),
             asset_type: AssetType::Texture,
             texture_type: Some(TextureType::Normal),
             size: 1024,
@@ -1860,6 +1921,7 @@ mod tests {
         let entry = AssetEntry {
             path: PathBuf::from("model.glb"),
             name: "model.glb".to_string(),
+            display_name: "Model".to_string(),
             asset_type: AssetType::Model,
             texture_type: None,
             size: 1024,
@@ -2404,5 +2466,34 @@ mod tests {
         };
         assert_eq!(a1, a2);
         assert_ne!(a1, a3);
+    }
+
+    // ============================================================================
+    // PRETTIFY NAME TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_prettify_name_snake_case() {
+        assert_eq!(prettify_name("bridge_center_stone.glb"), "Bridge Center Stone");
+    }
+
+    #[test]
+    fn test_prettify_name_already_pretty() {
+        assert_eq!(prettify_name("Nature Kit"), "Nature Kit");
+    }
+
+    #[test]
+    fn test_prettify_name_hyphenated() {
+        assert_eq!(prettify_name("car-race-kit.glb"), "Car Race Kit");
+    }
+
+    #[test]
+    fn test_prettify_name_single_word() {
+        assert_eq!(prettify_name("barrel.glb"), "Barrel");
+    }
+
+    #[test]
+    fn test_prettify_name_directory() {
+        assert_eq!(prettify_name("3D assets"), "3d Assets");
     }
 }
