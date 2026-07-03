@@ -1336,29 +1336,30 @@ impl EngineRenderAdapter {
         use super::terrain_biome_placeholder as biome_ph;
 
         // Probe canonical load.
-        let canonical = self.pending_biome_pack.as_ref().and_then(|path| {
-            match ctp::load_canonical_terrain_pack(path) {
-                Ok(pack) => {
-                    tracing::info!(
-                        target: "aw_editor::viewport::terrain_forward",
-                        "Canonical biome pack loaded from {}: biome='{}' layers={}",
-                        path.display(),
-                        pack.biome_name,
-                        pack.active_layer_count,
-                    );
-                    Some(pack)
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        target: "aw_editor::viewport::terrain_forward",
-                        "Canonical biome pack load failed at {}: {e:#} — \
-                         falling back to synthetic placeholders",
-                        path.display(),
-                    );
-                    None
-                }
-            }
-        });
+        let canonical =
+            self.pending_biome_pack.as_ref().and_then(
+                |path| match ctp::load_canonical_terrain_pack(path) {
+                    Ok(pack) => {
+                        tracing::info!(
+                            target: "aw_editor::viewport::terrain_forward",
+                            "Canonical biome pack loaded from {}: biome='{}' layers={}",
+                            path.display(),
+                            pack.biome_name,
+                            pack.active_layer_count,
+                        );
+                        Some(pack)
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            target: "aw_editor::viewport::terrain_forward",
+                            "Canonical biome pack load failed at {}: {e:#} — \
+                             falling back to synthetic placeholders",
+                            path.display(),
+                        );
+                        None
+                    }
+                },
+            );
 
         let upload_result = if let Some(pack) = &canonical {
             let layers = ctp::borrow_layer_textures(pack);
@@ -1656,8 +1657,10 @@ impl EngineRenderAdapter {
             // tweaked here in the future.
             let env = self.renderer.scene_environment_mut();
             env.visuals.fog_color = fog_color_from_sky(&sky);
-            env.visuals.fog_start = 800.0; // crystal clear viewing to 800 units
-            env.visuals.fog_end = 1800.0; // fully fogged at 1800
+            // E3-terrain (temporary): fog pushed far out (800/1800 → 60k/120k)
+            // for an unobstructed long-range view while judging terrain shape.
+            env.visuals.fog_start = 60000.0;
+            env.visuals.fog_end = 120000.0;
             env.visuals.fog_density = 0.0; // pure linear fog (no exponential)
                                            // Ambient fill so shadowed areas aren't pitch black
             env.visuals.ambient_color = glam::Vec3::new(0.45, 0.50, 0.55);

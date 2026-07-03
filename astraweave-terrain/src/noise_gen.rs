@@ -118,6 +118,24 @@ fn default_cave_strength() -> f64 {
     1.0
 }
 fn default_continental_enabled() -> bool {
+    // E3-terrain.3 (2026-07-01): flipped false → true. Continental clustering
+    // was built + tuned by Phase 1.6-F.2/F.2-T to gate the mountain layer into
+    // regional highland/lowland zones (fixing the "bed-of-nails / all-mountains,
+    // no lowlands" surface), but the path that enabled it (F.2.B presets) was
+    // removed in F.4.B.3.D.3c and never re-homed, so it shipped off. Every
+    // F.2-T regression test already forces it true — the tuning assumed ON.
+    // Enabling it drops the default world's median ~190m → ~125m with regional
+    // peaks retained, so climate/archetype biomes surface on the lowlands.
+    // Deterministic + additive; the disabled path remains a verified no-op.
+    //
+    // E3-terrain Phase A (2026-07-01): flipped back to FALSE for the
+    // Minecraft-1.18 spline build. Mountains are now gated by the
+    // EROSION-driven `mountains_amplitude` spline (spline_types.rs
+    // climate_driven_spline_set); keeping this continentalness-multiplier
+    // modulation ON would double-gate mountains (appearing only where erosion
+    // is low AND continentalness high). Disabling it lets erosion alone drive
+    // the flat-vs-mountain REGIONS, with continentalness driving base elevation
+    // via its own spline.
     false
 }
 fn default_continental_scale() -> f32 {
@@ -158,7 +176,25 @@ fn default_continental_min() -> f32 {
     // detail-reduction (F.2-T.B.2) keeping H1 resolved (detail ratio in
     // lowlands stays acceptable because detail_amplitude was halved
     // alongside).
-    0.50
+    //
+    // E3-terrain.3 (2026-07-01): lowered 0.50 → 0.08. The 0.50 floor kept
+    // ~50% of the 480 mountain amplitude in every region, so enabling
+    // continental produced "smaller mountains everywhere" instead of the
+    // lowland↔highland CONTRAST the director wants. At 0.08, lowland regions
+    // (continental_01≈0.14) keep only ~20% mountain (near-flat, climate
+    // biomes surface) while highland regions (continental_01≈0.79) reach
+    // ~0.81× the full 480 → peaks ~500m so cold-climate SnowCap can form.
+    // Paired with base_elevation.amplitude 150→100 and detail 12.5→8 to keep
+    // the flattened lowlands from reading as bed-of-nails (the reason 0.50
+    // was originally chosen).
+    //
+    // E3-terrain.2: lowered 0.08 → 0.0 alongside the continental contrast
+    // curve (sample_height_with_params), so low-continental regions get ZERO
+    // mountain (pure base = flat/rolling grassland/rainforest plains) and only
+    // high-continental regions form mountains — the distinct plains-vs-mountains
+    // structure the director wants. detail.amplitude (8) is low enough that
+    // pure-base lowlands don't read as bed-of-nails.
+    0.0
 }
 fn default_continental_seed_offset() -> u32 {
     7
@@ -180,11 +216,14 @@ impl Default for NoiseConfig {
             base_elevation: NoiseLayer {
                 enabled: true,
                 scale: 0.005,
-                amplitude: 150.0, // was 50 (×3)
+                amplitude: 100.0, // E3-terrain.3: 150→100 for flatter lowlands (was 50 ×3)
                 octaves: 4,
                 persistence: 0.5,
                 lacunarity: 2.0,
-                noise_type: NoiseType::Perlin,
+                // E3-terrain.3: Perlin→Fbm. Single-octave Perlin only made
+                // smooth swells; Fbm applies the 4 octaves for real rolling-hill
+                // texture on the lowlands (base uses the value directly, no abs).
+                noise_type: NoiseType::Fbm,
                 domain_warp: DomainWarpConfig::default(),
             },
             mountains: NoiseLayer {
@@ -194,13 +233,18 @@ impl Default for NoiseConfig {
                 octaves: 6,
                 persistence: 0.4,
                 lacunarity: 2.2,
-                noise_type: NoiseType::RidgedNoise,
+                // E3-terrain.3: RidgedNoise→Billow. RidgedMulti produces
+                // ridge/canyon NETWORKS by design (the "knife-ridge labyrinth"
+                // the director saw at every amplitude); Billow's |noise| octaves
+                // give rounded massifs instead. Regional placement still comes
+                // from continental gating.
+                noise_type: NoiseType::Billow,
                 domain_warp: DomainWarpConfig::default(),
             },
             detail: NoiseLayer {
                 enabled: true,
                 scale: 0.02,
-                amplitude: 12.5, // was 5 (×2.5)
+                amplitude: 3.0, // E3-terrain.2: 8→3 — the fine Billow detail was the "spiky" texture on the lowland plains; trimmed so plains read smooth
                 octaves: 3,
                 persistence: 0.6,
                 lacunarity: 2.0,
@@ -578,7 +622,12 @@ impl TerrainNoise {
         // exactly; only the four `params.*` reads differ from the legacy
         // path). See that method's doc-comment for the original ordering
         // commentary.
-        let mut height = 0.0f32;
+        // E3-terrain Phase A.2: start from the per-archetype ground-level floor
+        // so FLAT terrain sits above sea level (the signed base-elevation Fbm
+        // adds/subtracts around this floor). D5FIX baseline floor is 0.0, so this
+        // is a no-op on the legacy-baseline path. See
+        // `BootstrapParams::base_elevation_floor`.
+        let mut height = params.base_elevation_floor;
         let mut base_gradient = (0.0f32, 0.0f32);
 
         // Base elevation. Replaces `self.config.base_elevation.amplitude`
@@ -637,8 +686,18 @@ impl TerrainNoise {
                     z * params.continental_scale as f64,
                 ]) as f32;
                 let continental_01 = ((continental_raw + 1.0) * 0.5).clamp(0.0, 1.0);
+                // E3-terrain.2: contrast curve for DISTINCT regions. The raw
+                // continental field only spans ~[0.14, 0.79] at editor scale,
+                // so a linear multiplier left mountains present everywhere
+                // ("repetitive mountain scape"). A smoothstep pushes
+                // low-continental areas toward 0 (genuine flat/rolling lowlands
+                // where mountains are OFF and grassland/rainforest biomes live)
+                // and high-continental areas toward 1 (concentrated mountain
+                // ranges) — yielding distinct plains-vs-mountain regions.
+                let t = ((continental_01 - 0.30) / (0.72 - 0.30)).clamp(0.0, 1.0);
+                let continental_contrasted = t * t * (3.0 - 2.0 * t);
                 let multiplier = self.config.continental_min
-                    + (1.0 - self.config.continental_min) * continental_01;
+                    + (1.0 - self.config.continental_min) * continental_contrasted;
                 mountain_height_raw * multiplier
             } else {
                 mountain_height_raw
@@ -1651,6 +1710,7 @@ mod tests {
             mountains_scale: crate::spline_types::D5FIX_BASELINE_MOUNTAINS_SCALE,
             continental_scale: crate::spline_types::D5FIX_BASELINE_CONTINENTAL_SCALE,
             base_elevation_amplitude: crate::spline_types::D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE,
+            base_elevation_floor: crate::spline_types::D5FIX_BASELINE_BASE_ELEVATION_FLOOR,
         }
     }
 

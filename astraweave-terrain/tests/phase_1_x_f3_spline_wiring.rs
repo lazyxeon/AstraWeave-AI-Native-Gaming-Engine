@@ -40,6 +40,7 @@ fn baseline_bootstrap_params() -> BootstrapParams {
         mountains_scale: D5FIX_BASELINE_MOUNTAINS_SCALE,
         continental_scale: D5FIX_BASELINE_CONTINENTAL_SCALE,
         base_elevation_amplitude: D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE,
+        base_elevation_floor: astraweave_terrain::spline_types::D5FIX_BASELINE_BASE_ELEVATION_FLOOR,
     }
 }
 

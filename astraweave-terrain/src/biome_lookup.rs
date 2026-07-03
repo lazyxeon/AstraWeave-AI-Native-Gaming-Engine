@@ -290,6 +290,57 @@ pub fn lookup_biome(temp_c: f32, moisture_mm: f32, elevation_m: f32) -> BiomeId 
     classify_whittaker_polygon(temp_c, moisture_mm)
 }
 
+/// E3-terrain C.1 (2026-07-03): continentalness ceiling for aquatic/beach
+/// classification. At/above this value the vertex is "inland" — local dips
+/// below the beach band classify by Whittaker instead of Ocean/Coast/Beach.
+/// Calibrated to the A.2b floor splines: every archetype's floor crosses the
+/// beach band (+5 m) at continentalness ≈ 0.33-0.42, so 0.40 keeps genuine
+/// shores aquatic while cutting inland dips.
+const COASTAL_ZONE_MAX_CONTINENTALNESS: f32 = 0.40;
+
+/// E3-terrain C.1: continentalness-gated biome lookup — the production
+/// classifier for the climate-field pipeline (`biome_param_blending`).
+///
+/// Identical to [`lookup_biome`] in coastal zones. Inland
+/// (`continentalness >= COASTAL_ZONE_MAX_CONTINENTALNESS`), the aquatic +
+/// beach branches are skipped: with the A.2b continentalness-driven floor,
+/// water is a *place* (low-continentalness basins), and any inland dip under
+/// the beach band is a valley floor, not a shore. Ungated, those dips
+/// speckled temperate plains with sand/gravel patches at every noise low.
+///
+/// Wetland, the elevation overlays, and Whittaker classification are
+/// unchanged — only the water/shore family is gated.
+///
+/// Same determinism contract as `lookup_biome`: pure function of its inputs.
+pub fn lookup_biome_coastal_gated(
+    temp_c: f32,
+    moisture_mm: f32,
+    elevation_m: f32,
+    continentalness: f32,
+) -> BiomeId {
+    if continentalness < COASTAL_ZONE_MAX_CONTINENTALNESS {
+        return lookup_biome(temp_c, moisture_mm, elevation_m);
+    }
+
+    // Inland path: mirrors lookup_biome stages 2-4 (aquatic/beach skipped).
+    if elevation_m < WETLAND_MAX_ELEVATION_M
+        && moisture_mm >= WETLAND_MIN_MOISTURE_MM
+        && temp_c >= WETLAND_MIN_TEMP_C
+    {
+        return BiomeId::Wetland;
+    }
+    if elevation_m >= SNOWCAP_THRESHOLD_M && temp_c < SNOWCAP_MAX_TEMP_C {
+        return BiomeId::SnowCap;
+    }
+    if elevation_m >= ALPINE_THRESHOLD_M {
+        return BiomeId::Alpine;
+    }
+    if elevation_m >= SCREE_THRESHOLD_M && moisture_mm < SCREE_MAX_MOISTURE_MM {
+        return BiomeId::Scree;
+    }
+    classify_whittaker_polygon(temp_c, moisture_mm)
+}
+
 /// Phase 1.6-F.4.B.3.D.2: deterministic Whittaker terrestrial classification.
 ///
 /// Pure (`temp_c`, `moisture_mm`) lookup over the 11 standard terrestrial

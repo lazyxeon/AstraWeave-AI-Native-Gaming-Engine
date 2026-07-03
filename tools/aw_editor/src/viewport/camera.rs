@@ -259,7 +259,9 @@ impl Default for OrbitCamera {
             fovy: 60_f32.to_radians(),
             aspect: 16.0 / 9.0,
             near: 0.5,
-            far: 5000.0,
+            // E3-terrain (temporary): far 5000→40000 so the whole radius-10
+            // world (~10.7 km) is visible at range while judging terrain shape.
+            far: 40000.0,
             min_distance: 0.02, // Allow camera to get very close (2cm from focal point)
             max_distance: 20000.0, // Allow zooming out to see full terrain from high altitude
             min_pitch: -std::f32::consts::PI / 2.0 + 0.01, // Prevent gimbal lock
@@ -861,12 +863,7 @@ impl OrbitCamera {
     /// (consumers reconstruct world-space positions via this field for fog
     /// distance, picking, etc.); only the matrices are camera-relative.
     pub fn to_render_view_camera_relative(&self) -> RenderView {
-        let projection = Projection::perspective(
-            self.fovy,
-            self.aspect,
-            self.near,
-            self.far,
-        );
+        let projection = Projection::perspective(self.fovy, self.aspect, self.near, self.far);
         let view = self.view_matrix_relative();
         let position = self.position();
         let view_dir = (self.focal_point - position).normalize();
@@ -894,12 +891,7 @@ impl CameraProducer for OrbitCamera {
     /// the semantic of `view_matrix()` which uses `look_at_rh(position(),
     /// focal_point, Vec3::Y)`.
     fn to_render_view(&self) -> RenderView {
-        let projection = Projection::perspective(
-            self.fovy,
-            self.aspect,
-            self.near,
-            self.far,
-        );
+        let projection = Projection::perspective(self.fovy, self.aspect, self.near, self.far);
         let view = self.view_matrix();
         let position = self.position();
         let view_dir = (self.focal_point - position).normalize();

@@ -5195,9 +5195,19 @@ impl EditorApp {
                         // materials.toml + arrays.toml content the next time
                         // upload_terrain_chunks runs (or immediately if the terrain
                         // is already initialised).
+                        // E3-terrain.2: load the 8-biome MULTI-biome pack (one
+                        // texture per material slot 0-7 = biome_id_to_slot), NOT
+                        // the single selected biome's pack. The terrain mesh
+                        // emits per-vertex slots for all 8 biomes, so a
+                        // single-biome pack mismatches (forests→stone,
+                        // swamp/beach/river→clamped rock_slate). `biomes` aligns
+                        // grass/sand/forest_floor/mountain_rock/snow/mud/… to the
+                        // slots. (biome_name still drives the BiomePack ground
+                        // surface path above when a `pack:` is selected.)
+                        let _ = &biome_name;
                         let biome_dir = aw_editor_lib::viewport::types::find_assets_dir()
                             .join("materials")
-                            .join(biome_name);
+                            .join("biomes");
                         if let Some(viewport) = &self.viewport {
                             if let Ok(mut renderer) = viewport.renderer().lock() {
                                 if let Some(adapter) = renderer.engine_adapter_mut() {
@@ -5211,7 +5221,11 @@ impl EditorApp {
                     // All placements are uploaded to the GPU; the renderer's
                     // per-model distance + frustum culling handles visibility
                     // each frame (AAA-style: upload everything, cull at draw).
-                    let scatter_placements = self.dock_tab_viewer.take_cached_scatter_placements();
+                    // E3-terrain (temporary): scatter cleared so placed assets
+                    // don't obstruct terrain-shape judging. Cache still drained.
+                    let mut scatter_placements =
+                        self.dock_tab_viewer.take_cached_scatter_placements();
+                    scatter_placements.clear();
                     let scatter_count = scatter_placements.len();
                     self.console_logs.push(format!(
                         "Scatter: {} placements from terrain generation",
@@ -7522,7 +7536,9 @@ impl EditorApp {
                     .cached_biome_pack()
                     .map(|p| p.build_diffuse_texture_map())
                     .unwrap_or_default();
-                viewport.set_scatter_placements(scatter, &diffuse_map);
+                // E3-terrain (temporary): upload no scatter for shape judging.
+                let _ = &scatter;
+                viewport.set_scatter_placements(Vec::new(), &diffuse_map);
             }
         }
 

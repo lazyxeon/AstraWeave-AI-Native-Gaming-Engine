@@ -1,0 +1,12 @@
+# Layer key → texture-array index for the 8-biome terrain pack.
+# MUST match the editor's biome_id_to_slot() mapping in
+# tools/aw_editor/src/terrain_integration.rs (E3-terrain.2).
+[layers]
+grassland = 0
+desert = 1
+forest = 2
+mountain = 3
+tundra = 4
+swamp = 5
+beach = 6
+river = 7

@@ -104,6 +104,19 @@ id = "snow_03"
 resolution = "2k"
 format = "png"
 
+# E3-terrain texturing (2026-07-03, director-requested): forest-floor ground
+# truth for the 8-biome terrain pack's Forest slot (slot 2). Full PBR —
+# albedo/normal/ARM consumed directly from _downloaded by
+# assets/materials/biomes/materials.toml (ARM is ORM-packed; loaded via the
+# pack's `orm` key, NOT the `mra` swizzle path).
+[[assets]]
+handle = "forest_leaves"
+provider = "polyhaven"
+type = "texture"
+id = "forest_leaves_02"
+resolution = "2k"
+format = "png"
+
 # =============================================================================
 # Sub-phase A.1.B (2026-05-15) — verified-slug acquisition. Slugs
 # human-verified against live polyhaven.com browse; replaces eab972aea's

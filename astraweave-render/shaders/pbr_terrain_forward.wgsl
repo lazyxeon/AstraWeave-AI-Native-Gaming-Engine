@@ -250,26 +250,87 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
         let scaled_ddx = ddx_uv * layer.uv_scale;
         let scaled_ddy = ddy_uv * layer.uv_scale;
 
+        // E3-terrain texturing (2026-07-03, rev 2): hex-tile stochastic
+        // sampling with per-cell ROTATION + translation (hex_cells from
+        // stochastic_tiling.wgsl). Rev 1 used translations only, which cannot
+        // break a periodic texture (a shifted tiling is the same tiling) —
+        // the repetition grid survived. Rotation re-orients the tile lattice
+        // per hex cell; cells span ~1 texture repeat (density 1.0) so no full
+        // repeat ever completes within one cell. Weights are sharpened (pow 4)
+        // to keep contrast; textureSampleGrad keeps the loop's non-uniform
+        // control flow well-defined; gradients are rotated with the UVs so
+        // mip/aniso selection stays correct.
+        let hex = hex_cells(scaled_uv);
+        var hw0 = pow(hex.w0, 4.0);
+        var hw1 = pow(hex.w1, 4.0);
+        var hw2 = pow(hex.w2, 4.0);
+        let hw_sum = hw0 + hw1 + hw2;
+        hw0 = hw0 / hw_sum;
+        hw1 = hw1 / hw_sum;
+        hw2 = hw2 / hw_sum;
+        let uv0 = rotate_dir(scaled_uv, hex.rot0) + hex.off0;
+        let uv1 = rotate_dir(scaled_uv, hex.rot1) + hex.off1;
+        let uv2 = rotate_dir(scaled_uv, hex.rot2) + hex.off2;
+        let dx0 = rotate_dir(scaled_ddx, hex.rot0);
+        let dy0 = rotate_dir(scaled_ddy, hex.rot0);
+        let dx1 = rotate_dir(scaled_ddx, hex.rot1);
+        let dy1 = rotate_dir(scaled_ddy, hex.rot1);
+        let dx2 = rotate_dir(scaled_ddx, hex.rot2);
+        let dy2 = rotate_dir(scaled_ddy, hex.rot2);
+
         let albedo_s = textureSampleGrad(
-            layer_albedo, terrain_sampler,
-            scaled_uv, a_idx, scaled_ddx, scaled_ddy,
-        );
-        let normal_s = textureSampleGrad(
-            layer_normal, terrain_sampler,
-            scaled_uv, n_idx, scaled_ddx, scaled_ddy,
-        );
+                layer_albedo, terrain_sampler, uv0, a_idx, dx0, dy0,
+            ) * hw0
+            + textureSampleGrad(
+                layer_albedo, terrain_sampler, uv1, a_idx, dx1, dy1,
+            ) * hw1
+            + textureSampleGrad(
+                layer_albedo, terrain_sampler, uv2, a_idx, dx2, dy2,
+            ) * hw2;
         let orm_s = textureSampleGrad(
-            layer_orm, terrain_sampler,
-            scaled_uv, o_idx, scaled_ddx, scaled_ddy,
+                layer_orm, terrain_sampler, uv0, o_idx, dx0, dy0,
+            ) * hw0
+            + textureSampleGrad(
+                layer_orm, terrain_sampler, uv1, o_idx, dx1, dy1,
+            ) * hw1
+            + textureSampleGrad(
+                layer_orm, terrain_sampler, uv2, o_idx, dx2, dy2,
+            ) * hw2;
+
+        // Normals: decode each tap and COUNTER-rotate its XY by the cell's
+        // angle (conjugate cos/sin) — sampling at a rotated UV pulls the
+        // texture content back by the inverse rotation, so the tangent-space
+        // vectors must follow, or per-cell lighting shears. Blend decoded.
+        let nr0 = textureSampleGrad(
+            layer_normal, terrain_sampler, uv0, n_idx, dx0, dy0,
+        ).rgb * 2.0 - 1.0;
+        let nr1 = textureSampleGrad(
+            layer_normal, terrain_sampler, uv1, n_idx, dx1, dy1,
+        ).rgb * 2.0 - 1.0;
+        let nr2 = textureSampleGrad(
+            layer_normal, terrain_sampler, uv2, n_idx, dx2, dy2,
+        ).rgb * 2.0 - 1.0;
+        let inv0 = vec2<f32>(hex.rot0.x, -hex.rot0.y);
+        let inv1 = vec2<f32>(hex.rot1.x, -hex.rot1.y);
+        let inv2 = vec2<f32>(hex.rot2.x, -hex.rot2.y);
+        let n_ts = vec3<f32>(
+            rotate_dir(nr0.xy, inv0) * hw0
+                + rotate_dir(nr1.xy, inv1) * hw1
+                + rotate_dir(nr2.xy, inv2) * hw2,
+            nr0.z * hw0 + nr1.z * hw1 + nr2.z * hw2,
         );
 
         final_albedo = final_albedo + albedo_s.rgb * w;
 
-        // Tangent-space normal: linear-blend XY, keep Z coherent.
-        // Phase 1 uses this simple UDN-style blend; full RNM is a Phase 3
-        // setting (§2.6 "Normal blend formulas" in the campaign plan).
-        let n_ts = normal_s.rgb * 2.0 - 1.0;
-        final_normal_ts = final_normal_ts + vec3<f32>(n_ts.xy * w, n_ts.z * w);
+        // Tangent-space normal: linear-blend XY, keep Z coherent (UDN-style;
+        // full RNM is a Phase 3 setting, §2.6 "Normal blend formulas").
+        // NORMAL_XY_STRENGTH compensates the relief flattening from the
+        // 512² aux arrays + box-filtered mip chain (authored 2K normals lose
+        // ~2 octaves of gradient detail by the first visible mip; without
+        // the boost the ground reads flat, "like a plain .png").
+        let NORMAL_XY_STRENGTH: f32 = 1.8;
+        final_normal_ts =
+            final_normal_ts + vec3<f32>(n_ts.xy * NORMAL_XY_STRENGTH * w, n_ts.z * w);
 
         // ORM: R=AO, G=Roughness, B=Metallic (standard packing).
         final_ao = final_ao + orm_s.r * w;

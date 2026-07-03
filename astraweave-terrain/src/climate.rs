@@ -272,9 +272,17 @@ fn default_world_latitude_half_extent() -> f32 {
 impl Default for ClimateConfig {
     fn default() -> Self {
         Self {
+            // E3-terrain C.1 (2026-07-03): temperature is a MACRO field — one
+            // low-frequency octave at ~2000 WU wavelength (was 0.001 × 3
+            // octaves, i.e. detail down to ~250 WU). With Continental
+            // Temperate's ±8 °C variance, the octave detail produced random
+            // sub-0 °C pockets a few hundred meters wide → speckled Tundra
+            // (snow texture) circles on temperate ground ("snow creeping onto
+            // ground level"). Real temperature varies smoothly; cold biomes
+            // should form coherent regions (latitude bands, large cold zones).
             temperature: ClimateLayer {
-                scale: 0.001,
-                octaves: 3,
+                scale: 0.0005,
+                octaves: 1,
                 persistence: 0.5,
                 lacunarity: 2.0,
                 amplitude: 1.0,
@@ -352,6 +360,14 @@ impl ClimateMap {
             weirdness_noise: Perlin::new((seed + 4000) as u32),
             config: config.clone(),
         }
+    }
+
+    /// E3-terrain Phase A.2: the configured `WorldArchetype`. Exposes the
+    /// archetype's `bootstrap_splines` (per-archetype landform shape) to the
+    /// generator's None-mask height path so each selected archetype produces
+    /// distinct terrain character, not hardcoded Continental Temperate.
+    pub fn archetype(&self) -> &WorldArchetype {
+        &self.config.archetype
     }
 
     /// Phase 1.6-F.4.B.3.D.1: real-units climate sample at a world position.

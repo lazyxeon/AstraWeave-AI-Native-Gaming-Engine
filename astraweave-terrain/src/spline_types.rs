@@ -365,6 +365,16 @@ pub struct BootstrapParams {
     pub mountains_scale: f64,
     pub continental_scale: f32,
     pub base_elevation_amplitude: f32,
+    /// E3-terrain Phase A.2 (2026-07-01): a positive ground-level offset added
+    /// before the signed base-elevation noise, so FLAT terrain sits above sea
+    /// level instead of straddling it. Base-elevation noise is Fbm centered at
+    /// 0, so with no floor ~half of flat terrain fell below `SEA_LEVEL` (2m) and
+    /// rendered as water (measured: Desert 39% aquatic). A per-archetype floor
+    /// controls the coast/water fraction: high for arid archetypes (Desert → a
+    /// dry plateau where only the deepest troughs become the "hidden oasis"),
+    /// low for coastal/wet ones (Continental/Equatorial keep shorelines & lakes).
+    /// D5FIX baseline is 0.0, preserving byte-identity with the legacy path.
+    pub base_elevation_floor: f32,
 }
 
 /// Phase 1.X-F.2.B: per-archetype set of four [`ParamSpline`]s, one
@@ -393,6 +403,17 @@ pub struct BootstrapSplineSet {
     pub mountains_scale: f64,
     pub continental_scale: ParamSpline,
     pub base_elevation_amplitude: ParamSpline,
+    /// E3-terrain Phase A.2: per-archetype ground-level floor (see
+    /// [`BootstrapParams::base_elevation_floor`]).
+    ///
+    /// A.2b (2026-07-02): promoted from a per-archetype constant to a
+    /// **continentalness-driven spline** — the Minecraft-1.18 "offset" role.
+    /// A constant floor left the signed base Fbm free to dip below the beach
+    /// band ANYWHERE, speckling inland plains with sand/gravel patches at
+    /// every noise low. Driving the floor by continentalness makes water a
+    /// *place* (coherent basins/shores where continentalness is low) and
+    /// keeps inland floors high enough that ordinary dips stay terrestrial.
+    pub base_elevation_floor: ParamSpline,
 }
 
 impl Default for BootstrapSplineSet {
@@ -425,6 +446,7 @@ impl BootstrapSplineSet {
             mountains_scale: self.mountains_scale,
             continental_scale: self.continental_scale.evaluate(sample),
             base_elevation_amplitude: self.base_elevation_amplitude.evaluate(sample),
+            base_elevation_floor: self.base_elevation_floor.evaluate(sample),
         }
     }
 }
@@ -447,7 +469,19 @@ pub const D5FIX_BASELINE_MOUNTAINS_SCALE: f64 = 0.002;
 /// f32 representation, no precision drift.
 pub const D5FIX_BASELINE_CONTINENTAL_SCALE: f32 = 0.0003;
 /// F.4.B.3.D.5-fix `base_elevation.amplitude` baseline.
-pub const D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE: f32 = 150.0;
+/// E3-terrain.2 (2026-07-01): lowered 150 → 55. This is the ACTUAL base
+/// amplitude the editor path uses (sample_height_with_params reads
+/// `params.base_elevation_amplitude` from BootstrapParams, NOT
+/// `config.base_elevation.amplitude`). At 150 the continental-flattened
+/// lowlands were still ±150 bumpy Fbm ("suppressed mountains"); 55 makes them
+/// gently-rolling grassland/rainforest PLAINS, distinct from the (480) mountain
+/// ranges.
+pub const D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE: f32 = 55.0;
+/// F.4.B.3.D.5-fix `base_elevation_floor` baseline. 0.0 preserves byte-identity
+/// with the legacy `sample_height` path (which had no ground-level offset).
+/// See [`BootstrapParams::base_elevation_floor`]; per-archetype factories
+/// (E3-terrain Phase A.2) override this to control the coast/water fraction.
+pub const D5FIX_BASELINE_BASE_ELEVATION_FLOOR: f32 = 0.0;
 
 /// Build a [`BootstrapSplineSet`] where all 4 splines are
 /// single-control-point at the F.4.B.3.D.5-fix baseline values. Used by
@@ -488,53 +522,241 @@ fn d5fix_baseline_spline_set() -> BootstrapSplineSet {
             climate_input: ClimateInputDim::Pv,
             spline: Spline1D::constant(D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE),
         },
+        base_elevation_floor: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::constant(D5FIX_BASELINE_BASE_ELEVATION_FLOOR),
+        },
     }
 }
 
-/// Continental Temperate's bootstrap spline set. F.2 default: F.4.B.3.D.5-fix
-/// baseline byte-identical (480 / 0.002 / 0.0003 / 150). F.7 will
-/// differentiate per-archetype shape character.
+/// E3-terrain Phase A (2026-07-01): the CLIMATE-DRIVEN spline set — the
+/// Minecraft-1.18 "real build". Replaces the inert `d5fix` constants (which
+/// made every region the same noise scaled up/down — the "labyrinth of
+/// mountains with different height maxes" failure mode) with multi-control-point
+/// splines that read the independent low-frequency climate fields:
 ///
-/// **Storage rationale (logged in §10 F.2 entry per F.2 prompt §2.2)**:
-/// these are factory functions rather than `const` declarations because
-/// `Spline1D::from_control_points` returns `Result` (validated input)
-/// and `Vec::new()` / `vec!` are not const. Architectural intent
-/// (compile-time defaults, no per-frame allocation) is preserved by
-/// having `WorldArchetype` cache its `bootstrap_splines` as a struct
-/// field; runtime evaluation reads from cached references.
+/// - `mountains_amplitude` ← **Erosion** (the canonical flat-vs-mountainous
+///   knob): low erosion → tall mountains (~620), high erosion → flat plains
+///   (~12). Because `erosion` is an independent ~1250 WU-wavelength Perlin
+///   field (climate.rs:449-451), this produces DISTINCT mountain-range vs
+///   plains REGIONS, not height-scaled sameness — the root technique per the
+///   terrain-generation research (docs/audits/terrain_generation_techniques_research_2026-07.md).
+/// - `base_elevation_amplitude` ← **Continentalness**: ocean/coast low (~12),
+///   inland higher (~85) — the large-scale landmass shelf.
+/// - `mountains_scale`, `continental_scale`: baseline constants (F.7/Phase-A-2
+///   may vary `mountains_scale` by PV once a multi-point f64 spline exists).
+///
+/// Phase A ships this SHARED across all 6 archetypes (proves distinct terrain
+/// within one world); per-archetype spline differentiation + None-mask
+/// selection wiring is Phase A step 2.
+fn climate_driven_spline_set() -> BootstrapSplineSet {
+    BootstrapSplineSet {
+        mountains_amplitude: ParamSpline {
+            climate_input: ClimateInputDim::Erosion,
+            // FLAT-BIASED for the Perlin erosion distribution: 2D Perlin
+            // concentrates near 0, so the COMMON erosion (~-0.1..0.2) must map
+            // to flat plains (~20-38) and mountains must sit in the low-erosion
+            // TAIL (< -0.28) so they're distinct occasional ranges, not
+            // everywhere. (E3-terrain Phase A.1b — the erosion-0→220 first cut
+            // left mountains dominant because ~0 is the modal erosion value.)
+            spline: Spline1D::from_control_points(vec![
+                (-1.0, 750.0),
+                (-0.65, 480.0),
+                (-0.45, 240.0),
+                (-0.28, 90.0),
+                (-0.12, 38.0),
+                (0.15, 20.0),
+                (1.0, 8.0),
+            ])
+            .expect("erosion→mountains_amplitude control points are sorted + finite"),
+        },
+        mountains_scale: D5FIX_BASELINE_MOUNTAINS_SCALE,
+        continental_scale: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::constant(D5FIX_BASELINE_CONTINENTAL_SCALE),
+        },
+        base_elevation_amplitude: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            // A.2b: trimmed from [12..85] — at ±65-85 the signed Fbm dove far
+            // below any reasonable floor, speckling inland plains with
+            // sub-beach-band (< 5 m) sand/gravel dips. ±25-45 keeps rolling
+            // relief while the mountains layer supplies the drama.
+            spline: Spline1D::from_control_points(vec![
+                (0.0, 10.0),
+                (0.35, 26.0),
+                (0.7, 38.0),
+                (1.0, 48.0),
+            ])
+            .expect("continentalness→base_amplitude control points are sorted + finite"),
+        },
+        // A.2b: continentalness-driven floor — low-cont = coherent shore/basin
+        // (below sea level), inland high enough that ordinary Fbm dips stay
+        // above the 5 m beach band. Continental Temperate's cont range is
+        // ~[0.3, 0.7] (mean 0.5 ± 0.2), so the low-cont basin is rare-but-real.
+        base_elevation_floor: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::from_control_points(vec![
+                (0.0, -25.0),
+                (0.3, -2.0),
+                (0.45, 12.0),
+                (0.7, 22.0),
+                (1.0, 28.0),
+            ])
+            .expect("continentalness→floor control points are sorted + finite"),
+        },
+    }
+}
+
+/// E3-terrain Phase A.2 (2026-07-01): build a `BootstrapSplineSet` from
+/// per-archetype control points. Shared shape of `climate_driven_spline_set`,
+/// parameterized so each archetype authors a DISTINCT landform character:
+///
+/// - `erosion_to_mountains`: `(erosion, mountains_amplitude)` — the
+///   flat-vs-mountainous curve. Erosion is a ~1250 WU-wavelength Perlin field
+///   concentrated near 0, so the COMMON erosion band (~-0.2..0.2) sets the
+///   dominant terrain and mountains live in the low-erosion (< ~-0.3) tail.
+///   A taller/earlier-ramping tail = more & sharper mountains.
+/// - `mountains_scale`: mountain-noise frequency — higher = narrower, more
+///   jagged ridges (alpine); lower = broader, rounder massifs (forested hills).
+/// - `continentalness_to_base`: `(continentalness, base_elevation_amplitude)`
+///   — the large-scale landmass swell (rolling hills / dune fields), low at
+///   the coast, higher inland.
+///
+/// `continental_scale` stays at the D5FIX baseline for all archetypes (a
+/// multi-point f64 spline on PV is deferred to Phase B).
+fn archetype_spline_set(
+    erosion_to_mountains: Vec<(f32, f32)>,
+    mountains_scale: f64,
+    continentalness_to_base: Vec<(f32, f32)>,
+    continentalness_to_floor: Vec<(f32, f32)>,
+) -> BootstrapSplineSet {
+    BootstrapSplineSet {
+        mountains_amplitude: ParamSpline {
+            climate_input: ClimateInputDim::Erosion,
+            spline: Spline1D::from_control_points(erosion_to_mountains)
+                .expect("erosion→mountains_amplitude control points must be sorted + finite"),
+        },
+        mountains_scale,
+        continental_scale: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::constant(D5FIX_BASELINE_CONTINENTAL_SCALE),
+        },
+        base_elevation_amplitude: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::from_control_points(continentalness_to_base)
+                .expect("continentalness→base_elevation control points must be sorted + finite"),
+        },
+        base_elevation_floor: ParamSpline {
+            climate_input: ClimateInputDim::Continentalness,
+            spline: Spline1D::from_control_points(continentalness_to_floor)
+                .expect("continentalness→floor control points must be sorted + finite"),
+        },
+    }
+}
+
+/// Continental Temperate's bootstrap spline set (Veilweaver default —
+/// NC/Appalachia analog). The Phase-A baseline: rolling plains with distinct
+/// occasional mountain ranges. E3-terrain Phase A.2: reference landform other
+/// archetypes vary against.
 pub fn bootstrap_splines_continental_temperate() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    climate_driven_spline_set()
 }
 
-/// Equatorial Tropical's bootstrap spline set. F.2 default: F.4.B.3.D.5-fix
-/// baseline. F.7 differentiates.
+/// Equatorial Tropical's bootstrap spline set. Director's vision: rainforest
+/// lowlands + grassland/rolling-hills + forested mountains. So a higher
+/// rolling-hills base, broader/rounder (lower-frequency) mountains that read as
+/// forested massifs rather than knife ridges, and moderate peak heights.
 pub fn bootstrap_splines_equatorial_tropical() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    archetype_spline_set(
+        vec![
+            (-1.0, 520.0),
+            (-0.6, 360.0),
+            (-0.4, 210.0),
+            (-0.22, 85.0),
+            (-0.05, 42.0),
+            (0.2, 24.0),
+            (1.0, 12.0),
+        ],
+        0.0016, // broader, rounder forested massifs
+        vec![(0.0, 12.0), (0.35, 30.0), (0.7, 44.0), (1.0, 55.0)], // rolling hills (A.2b trim)
+        // Wet tropics: lower floor, generous coast/river lowlands (cont ~0.2-0.6).
+        vec![(0.0, -25.0), (0.25, -4.0), (0.4, 8.0), (0.7, 18.0), (1.0, 24.0)],
+    )
 }
 
-/// Boreal/Subarctic's bootstrap spline set. F.2 default: F.4.B.3.D.5-fix
-/// baseline. F.7 differentiates.
+/// Boreal/Subarctic's bootstrap spline set. Cold, mountainous, sharp alpine.
+/// Mountains ramp up earlier in the erosion range (more prevalent), reach
+/// higher, and use a higher mountain frequency for jagged knife-ridge alpine.
 pub fn bootstrap_splines_boreal_subarctic() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    archetype_spline_set(
+        vec![
+            (-1.0, 880.0),
+            (-0.6, 640.0),
+            (-0.4, 410.0),
+            (-0.2, 190.0),
+            (-0.05, 72.0),
+            (0.25, 28.0),
+            (1.0, 12.0),
+        ],
+        0.0026, // jagged, narrow alpine ridges
+        vec![(0.0, 10.0), (0.35, 24.0), (0.7, 36.0), (1.0, 46.0)], // A.2b trim
+        // Subarctic shield: fjord-like low-cont shores, solid inland (cont ~0.4-0.8).
+        vec![(0.0, -20.0), (0.3, 0.0), (0.5, 14.0), (0.8, 24.0), (1.0, 30.0)],
+    )
 }
 
-/// Mediterranean's bootstrap spline set. F.2 default: F.4.B.3.D.5-fix
-/// baseline. F.7 differentiates.
+/// Mediterranean's bootstrap spline set. Warm, dry, hills + coastal ranges.
+/// Close to Continental Temperate but slightly lower, broader ranges.
 pub fn bootstrap_splines_mediterranean() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    archetype_spline_set(
+        vec![
+            (-1.0, 640.0),
+            (-0.6, 430.0),
+            (-0.4, 235.0),
+            (-0.25, 95.0),
+            (-0.1, 44.0),
+            (0.15, 24.0),
+            (1.0, 10.0),
+        ],
+        0.0020,
+        vec![(0.0, 10.0), (0.35, 26.0), (0.7, 40.0), (1.0, 50.0)], // A.2b trim
+        // Mediterranean: pronounced coastline, dry raised interior.
+        vec![(0.0, -25.0), (0.3, 0.0), (0.5, 14.0), (0.8, 24.0), (1.0, 30.0)],
+    )
 }
 
-/// Desert's bootstrap spline set. F.2 default: F.4.B.3.D.5-fix
-/// baseline. F.7 differentiates.
+/// Desert's bootstrap spline set. Director's vision: dune fields + barren
+/// mountain ridges + a hidden oasis. So a LOW, smooth base (dune swells), a
+/// very flat-biased mountains curve (common erosion → near-flat dunes) with a
+/// SHARP tall tail (dramatic barren rock ridges in the rare low-erosion zones),
+/// and a high mountain frequency for narrow ridges. The oasis is a CLIMATE
+/// feature, not a shape one — Desert's high moisture_variance (world_archetypes)
+/// produces occasional wet depressions (Savanna/Wetland) automatically.
 pub fn bootstrap_splines_desert() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    archetype_spline_set(
+        vec![
+            (-1.0, 700.0),
+            (-0.6, 450.0),
+            (-0.42, 215.0),
+            (-0.3, 68.0),
+            (-0.15, 16.0),
+            (0.1, 7.0),
+            (1.0, 3.0),
+        ],
+        0.0024, // sharp, narrow barren ridges
+        vec![(0.0, 12.0), (0.4, 26.0), (0.7, 36.0), (1.0, 44.0)], // low dune swells (A.2b trim)
+        // Arid plateau: HIGH inland floor (cont ~0.4-1.0 for Desert). The rare
+        // low-cont basin (< 0.35) dips toward the beach band — the "hidden
+        // oasis" candidate spot when a moisture spike coincides.
+        vec![(0.0, -10.0), (0.3, 15.0), (0.5, 30.0), (0.8, 42.0), (1.0, 50.0)],
+    )
 }
 
 /// Custom archetype's bootstrap spline set. Defaults to Continental
 /// Temperate baseline (matches D.5b's "Custom defaults to CT" pattern).
 /// User edits override at runtime via editor UI (F.5 territory).
 pub fn bootstrap_splines_custom() -> BootstrapSplineSet {
-    d5fix_baseline_spline_set()
+    climate_driven_spline_set()
 }
 
 #[cfg(test)]
@@ -1007,6 +1229,7 @@ mod tests {
             mountains_scale: 0.002,
             continental_scale: 0.0003,
             base_elevation_amplitude: 150.0,
+            base_elevation_floor: 0.0,
         };
         let q = p; // Copy
         let r = p.clone();

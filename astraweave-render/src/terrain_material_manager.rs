@@ -160,15 +160,20 @@ const TERRAIN_SPLAT_SHADER: &str = concat!(
 
 /// Concatenated WGSL source for the Phase 1 forward-lit splat pipeline.
 ///
-/// Composed as `constants.wgsl` + `brdf_common.wgsl` + `pbr_terrain_forward.wgsl`,
-/// the same ordering the shader-validation test uses (see
+/// Composed as `constants.wgsl` + `brdf_common.wgsl` + `stochastic_tiling.wgsl`
+/// + `pbr_terrain_forward.wgsl`, the same ordering the shader-validation test
+/// uses (see
 /// `astraweave-render/tests/shader_validation.rs::test_pbr_terrain_forward_validates_with_prefix`).
-/// The forward shader references `PI` from constants.wgsl and calls
-/// `evaluate_brdf_lod` + `compute_material_lod` from brdf_common.wgsl.
+/// The forward shader references `PI` from constants.wgsl, calls
+/// `evaluate_brdf_lod` + `compute_material_lod` from brdf_common.wgsl, and
+/// `hex_offsets` from stochastic_tiling.wgsl (E3-terrain 2026-07-03: hex-tile
+/// stochastic sampling to break texture repetition at real-world tiling).
 const TERRAIN_FORWARD_SHADER: &str = concat!(
     include_str!("../shaders/constants.wgsl"),
     "\n",
     include_str!("../shaders/brdf_common.wgsl"),
+    "\n",
+    include_str!("../shaders/stochastic_tiling.wgsl"),
     "\n",
     include_str!("../shaders/pbr_terrain_forward.wgsl"),
 );
@@ -1318,10 +1323,23 @@ fn splat_texture_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
     }
 }
 
+/// Full mip chain length for a square texture of the given resolution
+/// (`floor(log2(res)) + 1`; e.g. 1024 → 11 levels).
+fn full_mip_count(resolution: u32) -> u32 {
+    32 - resolution.max(1).leading_zeros()
+}
+
 fn create_shared_resources(
     device: &wgpu::Device,
     config: &TerrainMaterialConfig,
 ) -> SharedResources {
+    // E3-terrain texturing fix (2026-07-02): full mip chains on all four layer
+    // arrays. These were mip_level_count: 1, so every fragment sampled the
+    // full-res texture regardless of distance — with real-world tiling
+    // (~4 m/repeat) the terrain aliased into shimmer/grain at any range.
+    // `upload_layer_slice` generates and uploads the CPU-downsampled chain.
+    let albedo_mips = full_mip_count(config.albedo_resolution);
+    let aux_mips = full_mip_count(config.aux_resolution);
     let albedo_tex = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("terrain-layer-albedo-array"),
         size: wgpu::Extent3d {
@@ -1329,7 +1347,7 @@ fn create_shared_resources(
             height: config.albedo_resolution,
             depth_or_array_layers: config.layer_count,
         },
-        mip_level_count: 1,
+        mip_level_count: albedo_mips,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba8UnormSrgb,
@@ -1343,7 +1361,7 @@ fn create_shared_resources(
             height: config.aux_resolution,
             depth_or_array_layers: config.layer_count,
         },
-        mip_level_count: 1,
+        mip_level_count: aux_mips,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba8Unorm,
@@ -1357,7 +1375,7 @@ fn create_shared_resources(
             height: config.aux_resolution,
             depth_or_array_layers: config.layer_count,
         },
-        mip_level_count: 1,
+        mip_level_count: aux_mips,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba8Unorm,
@@ -1371,7 +1389,7 @@ fn create_shared_resources(
             height: config.aux_resolution,
             depth_or_array_layers: config.layer_count,
         },
-        mip_level_count: 1,
+        mip_level_count: aux_mips,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba8Unorm,
@@ -1396,7 +1414,11 @@ fn create_shared_resources(
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
         mipmap_filter: wgpu::FilterMode::Linear,
-        anisotropy_clamp: 1,
+        // E3-terrain texturing fix (2026-07-02): terrain is viewed mostly at
+        // grazing angles, where isotropic mip selection over-blurs one axis.
+        // 8× aniso keeps ground texture crisp into the distance now that the
+        // layer arrays carry full mip chains. Requires all filters Linear (met).
+        anisotropy_clamp: 8,
         ..Default::default()
     });
 
@@ -1454,29 +1476,70 @@ fn upload_layer_slice(
     resolution: u32,
     data: &[u8],
 ) {
-    queue.write_texture(
-        wgpu::TexelCopyTextureInfo {
-            texture,
-            mip_level: 0,
-            origin: wgpu::Origin3d {
-                x: 0,
-                y: 0,
-                z: layer,
+    // E3-terrain texturing fix (2026-07-02): write mip 0, then generate and
+    // upload the remaining chain via iterative 2×2 box downsampling. The
+    // texture was created with `full_mip_count(resolution)` levels; leaving
+    // them unwritten would sample as zeros (black terrain at distance).
+    // Byte-space averaging (not linear-light) is the standard cheap tradeoff
+    // for terrain albedo; error is imperceptible next to the aliasing it cures.
+    let mip_count = texture.mip_level_count();
+    let mut level_data: Vec<u8> = data.to_vec();
+    let mut level_res = resolution;
+    for mip in 0..mip_count {
+        if mip > 0 {
+            let next_res = (level_res / 2).max(1);
+            level_data = downsample_rgba8_box(&level_data, level_res, next_res);
+            level_res = next_res;
+        }
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture,
+                mip_level: mip,
+                origin: wgpu::Origin3d {
+                    x: 0,
+                    y: 0,
+                    z: layer,
+                },
+                aspect: wgpu::TextureAspect::All,
             },
-            aspect: wgpu::TextureAspect::All,
-        },
-        data,
-        wgpu::TexelCopyBufferLayout {
-            offset: 0,
-            bytes_per_row: Some(resolution * BYTES_PER_TEXEL),
-            rows_per_image: Some(resolution),
-        },
-        wgpu::Extent3d {
-            width: resolution,
-            height: resolution,
-            depth_or_array_layers: 1,
-        },
-    );
+            &level_data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(level_res * BYTES_PER_TEXEL),
+                rows_per_image: Some(level_res),
+            },
+            wgpu::Extent3d {
+                width: level_res,
+                height: level_res,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+}
+
+/// 2×2 box-filter one RGBA8 mip level down to `dst_res` (= `src_res / 2`,
+/// clamped to ≥ 1). Source texels beyond the edge clamp to the last texel so
+/// odd resolutions stay well-defined.
+fn downsample_rgba8_box(src: &[u8], src_res: u32, dst_res: u32) -> Vec<u8> {
+    let sr = src_res as usize;
+    let dr = dst_res as usize;
+    let mut dst = Vec::with_capacity(dr * dr * 4);
+    for dy in 0..dr {
+        let sy0 = (dy * 2).min(sr - 1);
+        let sy1 = (dy * 2 + 1).min(sr - 1);
+        for dx in 0..dr {
+            let sx0 = (dx * 2).min(sr - 1);
+            let sx1 = (dx * 2 + 1).min(sr - 1);
+            for c in 0..4 {
+                let sum = src[(sy0 * sr + sx0) * 4 + c] as u32
+                    + src[(sy0 * sr + sx1) * 4 + c] as u32
+                    + src[(sy1 * sr + sx0) * 4 + c] as u32
+                    + src[(sy1 * sr + sx1) * 4 + c] as u32;
+                dst.push(((sum + 2) / 4) as u8);
+            }
+        }
+    }
+    dst
 }
 
 fn upload_full_2d(queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32, data: &[u8]) {

@@ -68,6 +68,7 @@ fn world_archetype_six_catalog_archetypes_have_bootstrap_splines_field() {
         mountains_scale: D5FIX_BASELINE_MOUNTAINS_SCALE,
         continental_scale: D5FIX_BASELINE_CONTINENTAL_SCALE,
         base_elevation_amplitude: D5FIX_BASELINE_BASE_ELEVATION_AMPLITUDE,
+        base_elevation_floor: astraweave_terrain::spline_types::D5FIX_BASELINE_BASE_ELEVATION_FLOOR,
     };
 
     for id in WorldArchetypeId::all() {

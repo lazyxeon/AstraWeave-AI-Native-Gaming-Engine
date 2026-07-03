@@ -78,7 +78,12 @@ struct MaterialLayerToml {
     key: String,
     albedo: Option<String>,
     normal: Option<String>,
+    /// M-R-A packed (metallic-R / roughness-G / AO-B, the legacy on-disk
+    /// `*_mra.png` convention) — swizzled to ORM at load.
     mra: Option<String>,
+    /// Already-ORM packed (AO-R / roughness-G / metallic-B, e.g. PolyHaven
+    /// `*_arm.png`) — loaded verbatim. Takes precedence over `mra`.
+    orm: Option<String>,
     #[serde(default = "default_tiling")]
     tiling: [f32; 2],
 }
@@ -115,10 +120,7 @@ pub fn load_canonical_terrain_pack(biome_dir: &Path) -> Result<CanonicalTerrainP
     let mats_doc: MaterialsDoc = toml::from_str(&mats_src)
         .with_context(|| format!("parse {}", materials_toml_path.display()))?;
     if mats_doc.biome.name.is_empty() {
-        anyhow::bail!(
-            "biome name empty in {}",
-            materials_toml_path.display()
-        );
+        anyhow::bail!("biome name empty in {}", materials_toml_path.display());
     }
 
     let arrays_src = std::fs::read_to_string(&arrays_toml_path)
@@ -156,10 +158,13 @@ pub fn load_canonical_terrain_pack(biome_dir: &Path) -> Result<CanonicalTerrainP
             .normal
             .as_deref()
             .and_then(|p| load_aux_bytes(&biome_dir.join(p)).ok());
-        slot.mra = layer
-            .mra
-            .as_deref()
-            .and_then(|p| load_aux_bytes(&biome_dir.join(p)).ok());
+        // ORM channel source: prefer an already-ORM `orm` file (PolyHaven ARM),
+        // else swizzle the legacy M-R-A `mra` file.
+        slot.mra = match (&layer.orm, &layer.mra) {
+            (Some(p), _) => load_aux_bytes(&biome_dir.join(p)).ok(),
+            (None, Some(p)) => load_mra_as_orm_bytes(&biome_dir.join(p)).ok(),
+            (None, None) => None,
+        };
     }
 
     Ok(CanonicalTerrainPack {
@@ -189,7 +194,22 @@ fn load_albedo_bytes(path: &Path) -> Result<Vec<u8>> {
     Ok(resized.into_raw())
 }
 
-/// Read an aux PNG (normal or MRA) and resize to
+/// E3-terrain texturing fix (2026-07-02): read an `*_mra.png` (packed
+/// **M**etallic-R / **R**oughness-G / **A**O-B, per the on-disk convention —
+/// sampled grass/rock/sand all show R=0, G=rough, B=AO) and swizzle to the
+/// **ORM** packing the terrain shaders consume (`pbr_terrain_forward.wgsl`
+/// step 4: R=AO, G=Roughness, B=Metallic). Without the swizzle the shader
+/// read metallic(0) as AO, zeroing the entire ambient term (fs_main step 7)
+/// — terrain went sun-only lit, harsh and dark-shadowed.
+fn load_mra_as_orm_bytes(path: &Path) -> Result<Vec<u8>> {
+    let mut bytes = load_aux_bytes(path)?;
+    for px in bytes.chunks_exact_mut(4) {
+        px.swap(0, 2); // MRA → ORM: R(metal)↔B(AO); G(roughness) already aligned
+    }
+    Ok(bytes)
+}
+
+/// Read an aux PNG (normal map) and resize to
 /// `CANONICAL_AUX_RES × CANONICAL_AUX_RES` RGBA8.
 fn load_aux_bytes(path: &Path) -> Result<Vec<u8>> {
     let rgba = image::open(path)
@@ -245,6 +265,13 @@ pub fn build_gpu_material(pack: &CanonicalTerrainPack) -> astraweave_render::Ter
     {
         gpu_material.layers[i].texture_indices = [i as u32, i as u32, i as u32, i as u32];
         gpu_material.layers[i].uv_scale = layer.uv_scale;
+        // E3-terrain texturing fix (2026-07-02): pass the pack's authored ORM
+        // channels through at full strength. `TerrainLayerGpu::default()` ships
+        // material_factors [metallic=0.0, roughness=0.5]; the shader multiplies
+        // the sampled roughness by factor.y, so the default HALVED authored
+        // roughness (grass 1.0 → 0.5) — the "terrain is very shiny" defect.
+        // Metallic factor 1.0 is safe: terrain MRA metallic channels are 0.
+        gpu_material.layers[i].material_factors = [1.0, 1.0];
     }
     gpu_material
 }
@@ -267,8 +294,8 @@ mod tests {
     /// Asset-dependent — skipped if the pack is absent on disk.
     #[test]
     fn loads_grassland_pack_when_present() {
-        let materials_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../assets/materials");
+        let materials_root =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/materials");
         let biome_dir = materials_root.join("grassland");
         if !biome_dir.join("materials.toml").exists() {
             eprintln!(
@@ -277,8 +304,8 @@ mod tests {
             );
             return;
         }
-        let pack = load_canonical_terrain_pack(&biome_dir)
-            .expect("canonical grassland pack should load");
+        let pack =
+            load_canonical_terrain_pack(&biome_dir).expect("canonical grassland pack should load");
         assert_eq!(pack.biome_name, "grassland");
         assert_eq!(pack.active_layer_count, 5, "grassland has 5 layers");
         assert_eq!(pack.layers.len(), 5);

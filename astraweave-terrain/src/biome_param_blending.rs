@@ -58,7 +58,7 @@
 //! jitter offsets at shared-edge vertices, preserving the
 //! shared-edge-invariance property.
 
-use crate::biome_lookup::{lookup_biome, BiomeId};
+use crate::biome_lookup::{lookup_biome_coastal_gated, BiomeId};
 use crate::biome_parameters::BiomeParameters;
 use crate::climate::ClimateMap;
 use serde::{Deserialize, Serialize};
@@ -196,10 +196,16 @@ pub fn blend_biome_parameters(
         let sample_z = world_z + jz * config.radius;
 
         let climate = climate_map.sample(sample_x as f64, sample_z as f64, bootstrap_elevation);
-        let biome = lookup_biome(
+        // E3-terrain C.1: coastal-gated lookup — inland (high-continentalness)
+        // dips below the beach band classify by Whittaker instead of
+        // Ocean/Coast/Beach, so temperate plains don't speckle with sand at
+        // every noise low. Water/shore only where the A.2b floor makes it a
+        // coherent low-continentalness place.
+        let biome = lookup_biome_coastal_gated(
             climate.temperature_c,
             climate.moisture_mm,
             bootstrap_elevation,
+            climate.continentalness,
         );
         let params = BiomeParameters::for_biome(biome);
 

@@ -565,6 +565,17 @@ impl WorldGenerator {
             .as_ref()
             .map(crate::regional_archetype_mask::RegionalArchetypeBlend::new);
 
+        // E3-terrain Phase A.2: the None-mask (single-archetype) height path
+        // uses the SELECTED archetype's bootstrap splines, not hardcoded
+        // Continental Temperate. This is why archetypes previously all rendered
+        // the same landform — the None path (the editor default,
+        // regional_archetype_mask = None) ignored the archetype's shape splines.
+        // The editor sets config.climate.archetype via
+        // WorldArchetypeId::default_archetype(), which populates bootstrap_splines
+        // with the per-archetype factory (world_archetypes.rs). Cached once per
+        // chunk pass; cloned because BootstrapSplineSet holds Vec control points.
+        let none_path_splines = self.climate.archetype().bootstrap_splines.clone();
+
         let mut biome_ids = Vec::with_capacity(halo_res * halo_res);
         for z_idx in 0..halo_res {
             for x_idx in 0..halo_res {
@@ -573,32 +584,39 @@ impl WorldGenerator {
                 let wx = wx_f32 as f64;
                 let wz = wz_f32 as f64;
 
-                let raw_height = halo.get_height(x_idx as u32, z_idx as u32);
-
-                // F.4.B.3.D.4: scattered-convolution biome parameter
-                // blending. Produces blended `mountains_amplitude` and
-                // `scatter_density` from N jittered samples + dominant
-                // biome ID. Numeric parameters transition smoothly
-                // across biome boundaries; biome ID stays discrete.
-                let blended = crate::biome_param_blending::blend_biome_parameters(
-                    wx_f32,
-                    wz_f32,
-                    raw_height,
-                    &self.climate,
-                    &blend_config,
-                );
-
-                // Phase 1.X-F.3.B + F.4.E: evaluate archetype BootstrapSplineSet(s)
-                // at this vertex's climate sample.
+                // E3-terrain seam fix: classify climate + biome on a
+                // params-based PROVISIONAL height, not the legacy halo height.
                 //
-                // **None-mask path (F.3 byte-identity contract)**: use
-                // Continental Temperate's BootstrapSplineSet directly.
+                // The halo (`generate_halo_heightmap`) is filled by the legacy
+                // `sample_height` path, which reads `config.mountains.amplitude`
+                // etc. Once the climate-driven `BootstrapSplineSet` diverges
+                // from the D5FIX single-control-point baseline (E3 Phase A), the
+                // legacy height and the params-based render height occupy
+                // DIFFERENT regimes: legacy stays "labyrinth of mountains" high
+                // while the render height is flat plains. Classifying biomes on
+                // the legacy height painted Alpine/SnowCap/Scree onto 20-30m
+                // plains (measured: 93% of mountain-character verts rendered
+                // BELOW their elevation-overlay threshold). Deriving the
+                // classification elevation from the SAME splines that drive the
+                // render height keeps biome ↔ terrain coherent.
+                //
+                // Ordering: the splines read only continentalness/erosion/PV,
+                // which are elevation-independent (climate.rs: only temperature
+                // uses the lapse rate), so evaluating them at a sea-level
+                // climate sample yields the correct `BootstrapParams`. The
+                // provisional height (neutral 1.0 multiplier) then sits in the
+                // same regime as the final render height, which differs only by
+                // the per-biome multiplier.
+
+                // Phase 1.X-F.3.B + F.4.E: evaluate archetype BootstrapSplineSet(s).
+                // **None-mask path**: use Continental Temperate's set directly.
                 // **Some-mask path (F.4 multi-archetype)**: sample mask +
-                // falloff via RegionalArchetypeBlend, evaluate each
-                // contributing archetype's splines, blend per §2.5.
-                let climate_sample = self.climate.sample(wx, wz, raw_height);
+                // falloff via RegionalArchetypeBlend, evaluate each contributing
+                // archetype's splines, blend per §2.5. Elevation-independent, so
+                // sampled at sea level (elevation 0.0).
+                let climate_sample = self.climate.sample(wx, wz, 0.0);
                 let bootstrap_params = match &regional_blend {
-                    None => archetype_splines_continental.evaluate(&climate_sample),
+                    None => none_path_splines.evaluate(&climate_sample),
                     Some(blend) => {
                         let contributors = blend.sample_at(wx_f32, wz_f32);
                         // F.4.E empty-contributor guard: sampler invariants
@@ -625,11 +643,30 @@ impl WorldGenerator {
                     }
                 };
 
-                // Phase 1.X-F.3.B: replace sample_height_with_mountain_amplitude
-                // with sample_height_with_params (composed with the per-biome
-                // multiplier from blended.mountains_amplitude). Per-archetype
-                // bootstrap parameters and per-biome amplitude are
-                // architecturally orthogonal layers that multiply.
+                // Params-based provisional elevation — same spline regime as the
+                // final render height. Replaces the legacy halo height for
+                // climate/biome classification.
+                let provisional_height =
+                    self.noise
+                        .sample_height_with_params(&bootstrap_params, wx, wz, 1.0);
+
+                // F.4.B.3.D.4: scattered-convolution biome parameter blending,
+                // classified at the params-based provisional elevation. Produces
+                // blended `mountains_amplitude` and `scatter_density` from N
+                // jittered samples + a discrete dominant biome ID.
+                let blended = crate::biome_param_blending::blend_biome_parameters(
+                    wx_f32,
+                    wz_f32,
+                    provisional_height,
+                    &self.climate,
+                    &blend_config,
+                );
+
+                // Phase 1.X-F.3.B: final per-vertex height composes the archetype
+                // bootstrap params with the per-biome multiplier
+                // (blended.mountains_amplitude). Per-archetype bootstrap
+                // parameters and per-biome amplitude are architecturally
+                // orthogonal layers that multiply.
                 let modulated_height = self.noise.sample_height_with_params(
                     &bootstrap_params,
                     wx,

@@ -1,0 +1,85 @@
+# 8-biome canonical terrain pack for the editor's MULTI-biome terrain.
+#
+# E3-terrain.2 (2026-07-01): the editor previously loaded a SINGLE biome's pack
+# (e.g. grassland = grass/rock/dirt/sand/moss, 5 layers) while the terrain mesh
+# emits per-vertex material slots 0-7 for EIGHT different biomes. The slot
+# meanings did not match the loaded layers (Forest slot 2 → grassland layer 2 =
+# rock_slate; Swamp/Beach/River slots 5-7 → beyond 5 layers → clamped to
+# rock_slate), so forests rendered as stone and water/swamp read as "river
+# stone". This pack aligns one biome-appropriate texture per slot.
+#
+# Layer index = editor `TerrainVertex.material_ids` slot (biome_id_to_slot):
+#   0 grassland · 1 desert · 2 forest · 3 mountain · 4 tundra ·
+#   5 swamp · 6 beach · 7 river
+#
+# `tiling` semantics (pbr_terrain_forward.wgsl): texture repeats PER CHUNK —
+# the shader samples `chunk_uv([0,1]) * tiling`, and a chunk is 512 WU. So
+# tiling 128 = one repeat per 4 m (ground materials), 64 = one per 8 m
+# (large rock features). MUST be integers or textures seam at chunk borders
+# (each chunk restarts UV at 0). The original 2.0 (copied from the grassland
+# pack, whose look relied on a `triplanar_scale` field this path ignores)
+# stretched one texture over 256 m — colors stopped reading as materials.
+
+[biome]
+name = "biomes"
+
+[[layer]]
+key = "grassland"
+albedo = "../grass.png"
+normal = "../grass_n.png"
+mra    = "../grass_mra.png"
+tiling = [128.0, 128.0]
+
+[[layer]]
+key = "desert"
+albedo = "../sand.png"
+normal = "../sand_n.png"
+mra    = "../sand_mra.png"
+tiling = [128.0, 128.0]
+
+# Forest ground = PolyHaven forest_leaves_02 (director-selected, 2026-07-03),
+# fetched via `cargo run -p astraweave-assets -- fetch --provider polyhaven`.
+# Full PBR: albedo + normal + ARM. The ARM file is ORM-packed (AO-R/rough-G/
+# metal-B), so it uses the `orm` key (verbatim load), NOT `mra` (which is the
+# legacy M-R-A convention and gets channel-swizzled at load).
+[[layer]]
+key = "forest"
+albedo = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_albedo.png"
+normal = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_normal.png"
+orm    = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_arm.png"
+tiling = [128.0, 128.0]
+
+[[layer]]
+key = "mountain"
+albedo = "../mountain_rock.png"
+normal = "../mountain_rock_n.png"
+mra    = "../mountain_rock_mra.png"
+tiling = [64.0, 64.0]
+
+[[layer]]
+key = "tundra"
+albedo = "../snow.png"
+normal = "../snow_n.png"
+mra    = "../snow_mra.png"
+tiling = [128.0, 128.0]
+
+[[layer]]
+key = "swamp"
+albedo = "../mud.png"
+normal = "../mud_n.png"
+mra    = "../mud_mra.png"
+tiling = [128.0, 128.0]
+
+[[layer]]
+key = "beach"
+albedo = "../sand.png"
+normal = "../sand_n.png"
+mra    = "../sand_mra.png"
+tiling = [128.0, 128.0]
+
+[[layer]]
+key = "river"
+albedo = "../gravel.png"
+normal = "../gravel_n.png"
+mra    = "../gravel_mra.png"
+tiling = [128.0, 128.0]

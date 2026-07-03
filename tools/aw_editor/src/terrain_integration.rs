@@ -4,6 +4,8 @@ use astraweave_terrain::{
     SplatMapGenerator, SplatRule, SplatWeights, TerrainChunk, VegetationInstance,
     VegetationScatter, WorldConfig, WorldGenerator, SEA_LEVEL,
 };
+// E3-terrain.1: per-vertex Whittaker biome id for the multi-biome material path.
+use astraweave_terrain::biome_lookup::BiomeId;
 use glam::Vec3;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -163,10 +165,7 @@ impl TerrainState {
     /// Phase 1.6-F.4.B.3.D.5b: set the climate field's `WorldArchetype`
     /// envelope. Drives per-vertex climate sampling → biome lookup →
     /// per-biome parameter selection.
-    pub fn set_world_archetype(
-        &mut self,
-        archetype: astraweave_terrain::climate::WorldArchetype,
-    ) {
+    pub fn set_world_archetype(&mut self, archetype: astraweave_terrain::climate::WorldArchetype) {
         if self.config.climate.archetype != archetype {
             self.config.climate.archetype = archetype;
             self.terrain_dirty = true;
@@ -305,8 +304,7 @@ impl TerrainState {
         // Phase 1.6-F.3-phase-1: derive ClimateBias from the primary_biome
         // string for the new `generate_chunk_with_climate` path, which
         // populates pre-erosion biome_weights on the chunk.
-        let climate_bias =
-            ClimateBias::from_primary_biome_str(primary_biome.as_str());
+        let climate_bias = ClimateBias::from_primary_biome_str(primary_biome.as_str());
 
         let generator = self
             .generator
@@ -339,8 +337,7 @@ impl TerrainState {
         let chunks_vec: anyhow::Result<Vec<(ChunkId, TerrainChunk)>> = chunk_ids
             .into_par_iter()
             .map(|chunk_id| {
-                let mut chunk =
-                    gen_ref.generate_chunk_with_climate(chunk_id, climate_bias)?;
+                let mut chunk = gen_ref.generate_chunk_with_climate(chunk_id, climate_bias)?;
                 for b in chunk.biome_map_mut() {
                     *b = primary_biome;
                 }
@@ -374,8 +371,11 @@ impl TerrainState {
             // captured in the chunk during generation. Shape A invariant
             // survives phase-4.B's height averaging because weights are
             // unchanged.
-            let pre_erosion_biome_weights =
-                chunk.biome_weights().map(|slice| slice.to_vec());
+            let pre_erosion_biome_weights = chunk.biome_weights().map(|slice| slice.to_vec());
+            // E3-terrain.1: thread the per-vertex Whittaker BiomeId into the
+            // material path so the world renders multi-biome instead of the
+            // single-primary_biome collapse.
+            let pre_erosion_biome_ids = chunk.biome_ids().map(|slice| slice.to_vec());
 
             let (vertices, indices) = Self::generate_heightmap_mesh(
                 chunk.heightmap(),
@@ -385,6 +385,7 @@ impl TerrainState {
                 self.config.seed,
                 primary_biome,
                 pre_erosion_biome_weights.as_deref(),
+                pre_erosion_biome_ids.as_deref(),
             );
 
             self.generated_chunks.insert(
@@ -655,8 +656,8 @@ impl TerrainState {
                 // preserved across stamping (painted biomes stay put even
                 // though heightmap changed).
                 let world_offset = Vec3::new(chunk_origin.x, 0.0, chunk_origin.z);
-                let stamped_weights =
-                    gen_chunk.chunk.biome_weights().map(|slice| slice.to_vec());
+                let stamped_weights = gen_chunk.chunk.biome_weights().map(|slice| slice.to_vec());
+                let stamped_ids = gen_chunk.chunk.biome_ids().map(|slice| slice.to_vec());
                 let (vertices, indices) = Self::generate_heightmap_mesh(
                     gen_chunk.chunk.heightmap(),
                     gen_chunk.chunk.biome_map(),
@@ -665,6 +666,7 @@ impl TerrainState {
                     seed,
                     primary_biome,
                     stamped_weights.as_deref(),
+                    stamped_ids.as_deref(),
                 );
                 gen_chunk.vertices = vertices;
                 gen_chunk.indices = indices;
@@ -739,6 +741,9 @@ impl TerrainState {
         }
     }
 
+    // E3-terrain.1: the per-vertex biome-id channel is the 8th arg; a config
+    // struct refactor is out of scope for this beat.
+    #[allow(clippy::too_many_arguments)]
     fn generate_heightmap_mesh(
         heightmap: &Heightmap,
         biome_map: &[BiomeType],
@@ -753,6 +758,12 @@ impl TerrainState {
         // (post-erosion) heightmap — preserves pre-F.3 behavior for any
         // caller that doesn't populate biome_weights upstream.
         pre_erosion_biome_weights: Option<&[[f32; 8]]>,
+        // E3-terrain.1: optional per-vertex Whittaker `BiomeId` (the dominant
+        // biome from the climate field), row-major `(z, x)` matching the
+        // heightmap. When `Some`, the Hybrid biome-color path drives per-vertex
+        // material (19→8 mapping + rock/snow overlay + blur). When `None`, the
+        // legacy single-`primary_biome` splat path runs (backward compat).
+        pre_erosion_biome_ids: Option<&[BiomeId]>,
     ) -> (Vec<TerrainVertex>, Vec<u32>) {
         let resolution = heightmap.resolution() as usize;
         let cell_size = chunk_size / (resolution - 1) as f32;
@@ -775,8 +786,20 @@ impl TerrainState {
                 normals.push(Self::calculate_normal(heightmap, x, z, cell_size));
             }
         }
-        let splat_generator = Self::create_local_splat_generator(seed, primary_biome);
-        let splat_map = splat_generator.generate_splat_map(&heights, &normals, resolution as u32);
+        // E3-terrain.1 (Hybrid): when per-vertex Whittaker BiomeId is available,
+        // drive material from the biome-color field (19→8 mapping + rock/snow
+        // overlay, softened by a 1-ring blur). Otherwise fall back to the legacy
+        // single-primary_biome splat path below.
+        let biome_slot_field: Option<Vec<[f32; 8]>> = pre_erosion_biome_ids
+            .map(|ids| Self::build_biome_slot_field(ids, &normals, resolution));
+
+        // Legacy splat map is only needed when there is no per-vertex biome data.
+        let splat_map = if biome_slot_field.is_some() {
+            Vec::new()
+        } else {
+            let splat_generator = Self::create_local_splat_generator(seed, primary_biome);
+            splat_generator.generate_splat_map(&heights, &normals, resolution as u32)
+        };
 
         let mut vertices = Vec::with_capacity(resolution * resolution);
         let mut indices = Vec::with_capacity((resolution - 1) * (resolution - 1) * 6);
@@ -811,18 +834,22 @@ impl TerrainState {
                 // slot extraction (preserves visual biome blending; pre-fix
                 // fallback defaulted to material[0] which would have lost
                 // blending entirely post-unification).
-                let biome_weights_8: [f32; 8] = pre_erosion_biome_weights
-                    .and_then(|slice| slice.get(biome_idx).copied())
-                    .unwrap_or_else(|| {
-                        elevation_to_biome_weights(height, SEA_LEVEL, climate)
-                    });
-                let (material_ids, material_weights) = splat_map
-                    .get(biome_idx)
-                    .copied()
-                    .map(Self::splat_weights_to_material_slots)
-                    .unwrap_or_else(|| {
-                        Self::biome_weights_8_to_material_slots(biome_weights_8)
-                    });
+                let (material_ids, material_weights) = if let Some(field) = &biome_slot_field {
+                    // E3-terrain.1 Hybrid path: per-vertex biome color slot +
+                    // rock/snow overlay, already blurred; top-4 extracted here.
+                    Self::biome_weights_8_to_material_slots(field[biome_idx])
+                } else {
+                    // Legacy path: elevation-driven 8-slot weights biased by the
+                    // single primary_biome ClimateBias, top-4 from the splat map.
+                    let biome_weights_8: [f32; 8] = pre_erosion_biome_weights
+                        .and_then(|slice| slice.get(biome_idx).copied())
+                        .unwrap_or_else(|| elevation_to_biome_weights(height, SEA_LEVEL, climate));
+                    splat_map
+                        .get(biome_idx)
+                        .copied()
+                        .map(Self::splat_weights_to_material_slots)
+                        .unwrap_or_else(|| Self::biome_weights_8_to_material_slots(biome_weights_8))
+                };
 
                 // One detail texture tile per chunk (256 units). This eliminates
                 // visible tiling/crosshatch from any camera height while the
@@ -1204,6 +1231,142 @@ impl TerrainState {
         }
 
         (ids, ws)
+    }
+
+    /// E3-terrain.1: director-approved 19→8 collapse of the Whittaker `BiomeId`
+    /// taxonomy onto the editor's 8 placeholder material/biome-color slots
+    /// (`terrain_biome_placeholder.rs`: 0 Grassland · 1 Desert · 2 Forest ·
+    /// 3 Mountain · 4 Tundra · 5 Swamp · 6 Beach · 7 River).
+    ///
+    /// Legibility calls (ratified 2026-07-01):
+    /// - All 5 forest biomes collapse to slot 2 (Forest) — the temperate/
+    ///   tropical/boreal distinction is deferred to E3-terrain.3 (real
+    ///   per-biome textures / 32-layer path).
+    /// - Savanna→Grassland, ColdDesert→Desert, Alpine→Tundra, Coast→Beach,
+    ///   Ocean→River (only blue slot).
+    ///
+    /// Exhaustive match (no wildcard): a new `BiomeId` variant is a compile
+    /// error here, forcing a coordinated mapping update.
+    fn biome_id_to_slot(id: BiomeId) -> usize {
+        match id {
+            // Forest (2): all 5 forest biomes.
+            BiomeId::TropicalRainforest
+            | BiomeId::TropicalSeasonalForest
+            | BiomeId::TemperateRainforest
+            | BiomeId::TemperateDeciduousForest
+            | BiomeId::BorealForest => 2,
+            // Grassland (0).
+            BiomeId::Savanna | BiomeId::TemperateGrassland => 0,
+            // Desert (1).
+            BiomeId::SubtropicalDesert | BiomeId::ColdDesert => 1,
+            // Mountain (3): bare-rock overlays + Alpine (rocky/sparse, not snow).
+            BiomeId::MountainRocky | BiomeId::Scree | BiomeId::Alpine => 3,
+            // Tundra (4): cold + snow. SnowCap is temp-gated (temp<18) in
+            // lookup_biome, so hot-climate high peaks stay rock, not false snow.
+            BiomeId::Tundra | BiomeId::SnowCap => 4,
+            // Swamp (5).
+            BiomeId::Wetland => 5,
+            // Beach (6).
+            BiomeId::Beach | BiomeId::Coast => 6,
+            // River (7): water.
+            BiomeId::River | BiomeId::Ocean => 7,
+        }
+    }
+
+    /// E3-terrain.1 (Hybrid, director-approved): build the per-vertex 8-slot
+    /// biome-color weight field consumed by the material path.
+    ///
+    /// Two passes:
+    /// 1. **Base + rock overlay** — each vertex's dominant `BiomeId` selects its
+    ///    base color slot (`biome_id_to_slot`); a *rock overlay* then blends
+    ///    toward Mountain (slot 3) on steep slopes, retaining intra-biome relief
+    ///    on the flat-color placeholder palette and sidestepping the legacy
+    ///    `rock()`→slot-7 (River-blue) collision. Snow is NOT a height overlay
+    ///    here — it comes from the temp-gated SnowCap biome (→ slot 4), so hot
+    ///    high peaks stay rock rather than getting false snow.
+    /// 2. **1-ring blur** — a light box blur (center 0.5, 4-neighbours 0.125,
+    ///    edge-renormalised) softens the hard per-vertex biome boundaries into
+    ///    smooth transitions (the non-blocky requirement).
+    ///
+    /// `biome_ids`, `normals` are row-major `(z, x)` of length `resolution²`.
+    /// Every returned `[f32; 8]` sums to 1.0.
+    fn build_biome_slot_field(
+        biome_ids: &[BiomeId],
+        normals: &[Vec3],
+        resolution: usize,
+    ) -> Vec<[f32; 8]> {
+        // Rock overlay thresholds (slope in degrees from horizontal).
+        // E3-terrain.2: dialed WAY back (start 32→44, max 0.85→0.30) so the
+        // per-archetype climate biome color (Boreal green, Desert tan, Tropical
+        // lush) reads on mountain flanks; rock now only accents genuinely steep
+        // cliffs. The old aggressive overlay grayed every slope, washing out the
+        // archetype palette and making all worlds look identically gray.
+        const ROCK_SLOPE_START_DEG: f32 = 44.0;
+        const ROCK_SLOPE_FULL_DEG: f32 = 62.0;
+        const ROCK_OVERLAY_MAX: f32 = 0.30;
+
+        let n = resolution * resolution;
+
+        // Pass 1: base biome slot + rock overlay on steep slopes, normalized.
+        let mut field = vec![[0.0f32; 8]; n];
+        for (idx, out) in field.iter_mut().enumerate() {
+            let slot = biome_ids
+                .get(idx)
+                .map(|b| Self::biome_id_to_slot(*b))
+                .unwrap_or(0);
+            let mut w = [0.0f32; 8];
+            w[slot] = 1.0;
+
+            // Slope from the vertex normal (normal.y = cos(slope)).
+            let normal = normals.get(idx).copied().unwrap_or(Vec3::Y);
+            let slope_deg = normal.y.clamp(-1.0, 1.0).acos().to_degrees();
+            if slope_deg > ROCK_SLOPE_START_DEG {
+                let t = ((slope_deg - ROCK_SLOPE_START_DEG)
+                    / (ROCK_SLOPE_FULL_DEG - ROCK_SLOPE_START_DEG))
+                    .clamp(0.0, 1.0);
+                w[3] += t * ROCK_OVERLAY_MAX; // Mountain (gray rock)
+            }
+
+            let sum: f32 = w.iter().sum();
+            if sum > 1e-6 {
+                for v in &mut w {
+                    *v /= sum;
+                }
+            }
+            *out = w;
+        }
+
+        // Pass 2: 1-ring box blur for smooth biome transitions.
+        let mut blurred = vec![[0.0f32; 8]; n];
+        for z in 0..resolution {
+            for x in 0..resolution {
+                let idx = z * resolution + x;
+                let mut acc = [0.0f32; 8];
+                for (a, f) in acc.iter_mut().zip(field[idx].iter()) {
+                    *a += 0.5 * f;
+                }
+                let mut total = 0.5f32;
+                let neighbors = [
+                    (x > 0).then(|| idx - 1),
+                    (x + 1 < resolution).then(|| idx + 1),
+                    (z > 0).then(|| idx - resolution),
+                    (z + 1 < resolution).then(|| idx + resolution),
+                ];
+                for n_idx in neighbors.into_iter().flatten() {
+                    for (a, f) in acc.iter_mut().zip(field[n_idx].iter()) {
+                        *a += 0.125 * f;
+                    }
+                    total += 0.125;
+                }
+                if total > 1e-6 {
+                    for v in &mut acc {
+                        *v /= total;
+                    }
+                }
+                blurred[idx] = acc;
+            }
+        }
+        blurred
     }
 
     fn create_local_splat_generator(seed: u64, primary_biome: BiomeType) -> SplatMapGenerator {
@@ -2048,11 +2211,8 @@ impl TerrainState {
                                 // M-SK: propagate height change to corresponding
                                 // skirt vertex/vertices (up to two — corners
                                 // participate in two edges' skirts).
-                                let skirt_idxs = Self::compute_skirt_indices(
-                                    gx as u32,
-                                    gz as u32,
-                                    resolution,
-                                );
+                                let skirt_idxs =
+                                    Self::compute_skirt_indices(gx as u32, gz as u32, resolution);
                                 for maybe in skirt_idxs.iter() {
                                     if let Some(skirt_idx) = *maybe {
                                         if skirt_idx < gen_chunk.vertices.len() {
@@ -2150,6 +2310,7 @@ impl TerrainState {
                     // stability.
                     let painted_weights =
                         gen_chunk.chunk.biome_weights().map(|slice| slice.to_vec());
+                    let painted_ids = gen_chunk.chunk.biome_ids().map(|slice| slice.to_vec());
                     let (vertices, indices) = Self::generate_heightmap_mesh(
                         gen_chunk.chunk.heightmap(),
                         gen_chunk.chunk.biome_map(),
@@ -2158,6 +2319,7 @@ impl TerrainState {
                         self.config.seed,
                         primary_biome,
                         painted_weights.as_deref(),
+                        painted_ids.as_deref(),
                     );
                     gen_chunk.vertices = vertices;
                     gen_chunk.indices = indices;
@@ -2474,8 +2636,7 @@ impl TerrainState {
                     // vertex is on a biome boundary.
                     let neighbor_densities: Vec<&[f32; 32]> =
                         neighbors.iter().map(|(_, dense)| dense).collect();
-                    let variance =
-                        Self::dense_32_max_channel_variance(&neighbor_densities);
+                    let variance = Self::dense_32_max_channel_variance(&neighbor_densities);
                     if variance < variance_threshold {
                         continue;
                     }
@@ -3202,8 +3363,8 @@ impl ScatterPlacement {
         // uncorrelated.
         let ix = (pos.x * 91.37) as i32;
         let iz = (pos.z * 147.53) as i32;
-        let hash =
-            ((ix.wrapping_mul(2654435761u32 as i32)) ^ (iz.wrapping_mul(40503))).wrapping_add(2166136261u32 as i32);
+        let hash = ((ix.wrapping_mul(2654435761u32 as i32)) ^ (iz.wrapping_mul(40503)))
+            .wrapping_add(2166136261u32 as i32);
 
         let yaw_unit = ((hash as u32) & 0xFFFF) as f32 / 65535.0; // 0..1
         let yaw = (yaw_unit - 0.5) * std::f32::consts::TAU; // -π..π
@@ -3516,12 +3677,10 @@ mod tests {
     #[test]
     fn zoneblend_expand_then_top4_round_trip_preserves_dominant_layer() {
         // Sparse representation: layer 5 with weight 1.0.
-        let (ids, ws) = TerrainState::top4_from_dense_32(
-            TerrainState::expand_sparse_to_dense_32(
-                [5.0, 0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0, 0.0],
-            ),
-        );
+        let (ids, ws) = TerrainState::top4_from_dense_32(TerrainState::expand_sparse_to_dense_32(
+            [5.0, 0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0, 0.0],
+        ));
         // After re-sparsify: layer 5 should still be the dominant slot.
         let dominant_slot = ws
             .iter()
@@ -3529,8 +3688,14 @@ mod tests {
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
             .unwrap()
             .0;
-        assert!(ids[dominant_slot].round() as i32 == 5, "dominant layer lost");
-        assert!((ws[dominant_slot] - 1.0).abs() < 1e-4, "weight not preserved");
+        assert!(
+            ids[dominant_slot].round() as i32 == 5,
+            "dominant layer lost"
+        );
+        assert!(
+            (ws[dominant_slot] - 1.0).abs() < 1e-4,
+            "weight not preserved"
+        );
     }
 
     #[test]
@@ -3558,10 +3723,8 @@ mod tests {
     #[test]
     fn zoneblend_expand_drops_out_of_range_ids() {
         // ID 32 is out of range (Real-Fix.D MAX_TERRAIN_LAYERS=32 cap).
-        let dense = TerrainState::expand_sparse_to_dense_32(
-            [0.0, 32.0, 50.0, -1.0],
-            [0.5, 1.0, 1.0, 1.0],
-        );
+        let dense =
+            TerrainState::expand_sparse_to_dense_32([0.0, 32.0, 50.0, -1.0], [0.5, 1.0, 1.0, 1.0]);
         // Only layer 0 should have contribution.
         assert!((dense[0] - 0.5).abs() < 1e-6);
         for v in dense.iter().skip(1) {
@@ -3644,7 +3807,10 @@ mod tests {
         b[3] = 1.0; // mountain_rock
         let samples = vec![&a, &b, &a, &b];
         let var = TerrainState::dense_32_max_channel_variance(&samples);
-        assert!(var > 0.1, "biome boundary should have high variance: got {var}");
+        assert!(
+            var > 0.1,
+            "biome boundary should have high variance: got {var}"
+        );
     }
 
     #[test]
@@ -3652,14 +3818,8 @@ mod tests {
         // Two pure-biome vertices: layer 0 and layer 5. Average their
         // dense representations, re-sparsify. Result should occupy both
         // slot 0 and slot 5 with equal-ish weights.
-        let a = TerrainState::expand_sparse_to_dense_32(
-            [0.0, 0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-        );
-        let b = TerrainState::expand_sparse_to_dense_32(
-            [5.0, 0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-        );
+        let a = TerrainState::expand_sparse_to_dense_32([0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]);
+        let b = TerrainState::expand_sparse_to_dense_32([5.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]);
         let blended = TerrainState::lerp_dense_32(&a, &b, 0.5);
         let (ids, ws) = TerrainState::top4_from_dense_32(blended);
         // After re-sparsify, layers 0 and 5 should both have weight ~0.5.
@@ -3673,21 +3833,28 @@ mod tests {
                 has_layer_5 = true;
             }
         }
-        assert!(has_layer_0, "missing blended layer 0: ids={ids:?}, ws={ws:?}");
-        assert!(has_layer_5, "missing blended layer 5: ids={ids:?}, ws={ws:?}");
+        assert!(
+            has_layer_0,
+            "missing blended layer 0: ids={ids:?}, ws={ws:?}"
+        );
+        assert!(
+            has_layer_5,
+            "missing blended layer 5: ids={ids:?}, ws={ws:?}"
+        );
     }
 
     #[test]
     fn zoneblend_round_trip_preserves_normalization() {
         // Start with normalized sparse representation; round-trip
         // through dense + re-sparsify; verify still normalized.
-        let dense = TerrainState::expand_sparse_to_dense_32(
-            [0.0, 5.0, 10.0, 21.0],
-            [0.4, 0.3, 0.2, 0.1],
-        );
+        let dense =
+            TerrainState::expand_sparse_to_dense_32([0.0, 5.0, 10.0, 21.0], [0.4, 0.3, 0.2, 0.1]);
         let (_, ws) = TerrainState::top4_from_dense_32(dense);
         let sum: f32 = ws.iter().sum();
-        assert!((sum - 1.0).abs() < 1e-4, "round-trip lost normalization: sum={sum}");
+        assert!(
+            (sum - 1.0).abs() < 1e-4,
+            "round-trip lost normalization: sum={sum}"
+        );
     }
 
     // ====================================================================
@@ -3711,7 +3878,11 @@ mod tests {
     fn cleanup_d_skirt_indices_interior_vertex_returns_none() {
         // (5, 5) in a 10×10 mesh is interior: neither edge of x nor z.
         let out = TerrainState::compute_skirt_indices(5, 5, 10);
-        assert_eq!(out, [None, None], "interior vertex must not map to any skirt");
+        assert_eq!(
+            out,
+            [None, None],
+            "interior vertex must not map to any skirt"
+        );
     }
 
     #[test]

@@ -464,6 +464,7 @@ pub fn blend_bootstrap_params(
         mountains_scale: 0.0,
         continental_scale: 0.0,
         base_elevation_amplitude: 0.0,
+        base_elevation_floor: 0.0,
     };
     for (id, weight) in contributors.iter() {
         let archetype_params = archetype_splines(id).evaluate(sample);
@@ -474,6 +475,10 @@ pub fn blend_bootstrap_params(
         blended.continental_scale += weight * archetype_params.continental_scale;
         blended.base_elevation_amplitude +=
             weight * archetype_params.base_elevation_amplitude;
+        // E3-terrain Phase A.2: blend the per-archetype ground-level floor the
+        // same convex way as the other params (single contributor at weight 1.0
+        // stays byte-identical to that archetype's evaluate()).
+        blended.base_elevation_floor += weight * archetype_params.base_elevation_floor;
     }
     blended
 }
@@ -1205,6 +1210,10 @@ mod tests {
             base_elevation_amplitude: ParamSpline {
                 climate_input: ClimateInputDim::Pv,
                 spline: Spline1D::from_control_points(vec![(0.0, 150.0)]).unwrap(),
+            },
+            base_elevation_floor: ParamSpline {
+                climate_input: ClimateInputDim::Continentalness,
+                spline: Spline1D::constant(0.0),
             },
         }
     }
