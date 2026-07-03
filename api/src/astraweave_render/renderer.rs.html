@@ -7868,63 +7868,66 @@
 <a href=#7868 id=7868 data-nosnippet>7868</a>    }
 <a href=#7869 id=7869 data-nosnippet>7869</a>
 <a href=#7870 id=7870 data-nosnippet>7870</a>    <span class="doccomment">/// Ensures the force_shadow_override field doesn't affect the WGSL shader source.
-<a href=#7871 id=7871 data-nosnippet>7871</a>    /// The shader checks `uLight.extras.x &lt; 0.0` — this test validates that the main
-<a href=#7872 id=7872 data-nosnippet>7872</a>    /// PBR shader string contains the conditional (not a hardcoded override).
-<a href=#7873 id=7873 data-nosnippet>7873</a>    </span><span class="attr">#[test]
-<a href=#7874 id=7874 data-nosnippet>7874</a>    </span><span class="kw">fn </span>test_shader_has_conditional_shadow_not_hardcoded() {
-<a href=#7875 id=7875 data-nosnippet>7875</a>        <span class="kw">let </span>shader = SHADER_SRC;
-<a href=#7876 id=7876 data-nosnippet>7876</a>        <span class="comment">// Must NOT contain the old hardcoded override
-<a href=#7877 id=7877 data-nosnippet>7877</a>        </span><span class="macro">assert!</span>(
-<a href=#7878 id=7878 data-nosnippet>7878</a>            !shader.contains(<span class="string">"// DEBUG: Force shadows off"</span>),
-<a href=#7879 id=7879 data-nosnippet>7879</a>            <span class="string">"hardcoded shadow override should have been removed"
-<a href=#7880 id=7880 data-nosnippet>7880</a>        </span>);
-<a href=#7881 id=7881 data-nosnippet>7881</a>        <span class="comment">// Must contain the conditional sentinel check
-<a href=#7882 id=7882 data-nosnippet>7882</a>        </span><span class="macro">assert!</span>(
-<a href=#7883 id=7883 data-nosnippet>7883</a>            shader.contains(<span class="string">"uLight.extras.x &lt; 0.0"</span>),
-<a href=#7884 id=7884 data-nosnippet>7884</a>            <span class="string">"shader should check sentinel for debug shadow override"
-<a href=#7885 id=7885 data-nosnippet>7885</a>        </span>);
-<a href=#7886 id=7886 data-nosnippet>7886</a>    }
-<a href=#7887 id=7887 data-nosnippet>7887</a>
-<a href=#7888 id=7888 data-nosnippet>7888</a>    <span class="attr">#[test]
-<a href=#7889 id=7889 data-nosnippet>7889</a>    </span><span class="kw">fn </span>brdf_common_contains_material_lod_functions() {
-<a href=#7890 id=7890 data-nosnippet>7890</a>        <span class="kw">let </span>brdf_src = <span class="macro">include_str!</span>(<span class="string">"../shaders/brdf_common.wgsl"</span>);
-<a href=#7891 id=7891 data-nosnippet>7891</a>        <span class="macro">assert!</span>(
-<a href=#7892 id=7892 data-nosnippet>7892</a>            brdf_src.contains(<span class="string">"compute_material_lod"</span>),
-<a href=#7893 id=7893 data-nosnippet>7893</a>            <span class="string">"brdf_common.wgsl must contain compute_material_lod"
-<a href=#7894 id=7894 data-nosnippet>7894</a>        </span>);
-<a href=#7895 id=7895 data-nosnippet>7895</a>        <span class="macro">assert!</span>(
-<a href=#7896 id=7896 data-nosnippet>7896</a>            brdf_src.contains(<span class="string">"evaluate_brdf_lod"</span>),
-<a href=#7897 id=7897 data-nosnippet>7897</a>            <span class="string">"brdf_common.wgsl must contain evaluate_brdf_lod"
-<a href=#7898 id=7898 data-nosnippet>7898</a>        </span>);
-<a href=#7899 id=7899 data-nosnippet>7899</a>        <span class="comment">// evaluate_brdf should delegate to evaluate_brdf_lod
-<a href=#7900 id=7900 data-nosnippet>7900</a>        </span><span class="macro">assert!</span>(
-<a href=#7901 id=7901 data-nosnippet>7901</a>            brdf_src
-<a href=#7902 id=7902 data-nosnippet>7902</a>                .contains(<span class="string">"evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, 0u)"</span>),
-<a href=#7903 id=7903 data-nosnippet>7903</a>            <span class="string">"evaluate_brdf should delegate to evaluate_brdf_lod with LOD 0"
-<a href=#7904 id=7904 data-nosnippet>7904</a>        </span>);
-<a href=#7905 id=7905 data-nosnippet>7905</a>    }
-<a href=#7906 id=7906 data-nosnippet>7906</a>
-<a href=#7907 id=7907 data-nosnippet>7907</a>    <span class="attr">#[test]
-<a href=#7908 id=7908 data-nosnippet>7908</a>    </span><span class="kw">fn </span>shader_uses_material_lod() {
-<a href=#7909 id=7909 data-nosnippet>7909</a>        <span class="kw">let </span>shader = SHADER_SRC;
-<a href=#7910 id=7910 data-nosnippet>7910</a>        <span class="macro">assert!</span>(
-<a href=#7911 id=7911 data-nosnippet>7911</a>            shader.contains(<span class="string">"compute_material_lod"</span>),
-<a href=#7912 id=7912 data-nosnippet>7912</a>            <span class="string">"static PBR shader should compute material LOD"
-<a href=#7913 id=7913 data-nosnippet>7913</a>        </span>);
-<a href=#7914 id=7914 data-nosnippet>7914</a>        <span class="macro">assert!</span>(
-<a href=#7915 id=7915 data-nosnippet>7915</a>            shader.contains(<span class="string">"evaluate_brdf_lod"</span>),
-<a href=#7916 id=7916 data-nosnippet>7916</a>            <span class="string">"static PBR shader should call evaluate_brdf_lod"
-<a href=#7917 id=7917 data-nosnippet>7917</a>        </span>);
-<a href=#7918 id=7918 data-nosnippet>7918</a>        <span class="kw">let </span>skinned = SKINNED_SHADER_SRC;
-<a href=#7919 id=7919 data-nosnippet>7919</a>        <span class="macro">assert!</span>(
-<a href=#7920 id=7920 data-nosnippet>7920</a>            skinned.contains(<span class="string">"compute_material_lod"</span>),
-<a href=#7921 id=7921 data-nosnippet>7921</a>            <span class="string">"skinned PBR shader should compute material LOD"
-<a href=#7922 id=7922 data-nosnippet>7922</a>        </span>);
-<a href=#7923 id=7923 data-nosnippet>7923</a>        <span class="macro">assert!</span>(
-<a href=#7924 id=7924 data-nosnippet>7924</a>            skinned.contains(<span class="string">"evaluate_brdf_lod"</span>),
-<a href=#7925 id=7925 data-nosnippet>7925</a>            <span class="string">"skinned PBR shader should call evaluate_brdf_lod"
-<a href=#7926 id=7926 data-nosnippet>7926</a>        </span>);
-<a href=#7927 id=7927 data-nosnippet>7927</a>    }
-<a href=#7928 id=7928 data-nosnippet>7928</a>}
-<a href=#7929 id=7929 data-nosnippet>7929</a>
-<a href=#7930 id=7930 data-nosnippet>7930</a><span class="comment">// End of file</span></code></pre></div></section></main></body></html>
+<a href=#7871 id=7871 data-nosnippet>7871</a>    /// SHADER_SRC gates shadow sampling on `uLight.extras.x &gt;= 0.0` (the negative
+<a href=#7872 id=7872 data-nosnippet>7872</a>    /// sentinel disables shadows) — this test validates the main PBR shader keeps
+<a href=#7873 id=7873 data-nosnippet>7873</a>    /// that conditional (not a hardcoded override).
+<a href=#7874 id=7874 data-nosnippet>7874</a>    </span><span class="attr">#[test]
+<a href=#7875 id=7875 data-nosnippet>7875</a>    </span><span class="kw">fn </span>test_shader_has_conditional_shadow_not_hardcoded() {
+<a href=#7876 id=7876 data-nosnippet>7876</a>        <span class="kw">let </span>shader = SHADER_SRC;
+<a href=#7877 id=7877 data-nosnippet>7877</a>        <span class="comment">// Must NOT contain the old hardcoded override
+<a href=#7878 id=7878 data-nosnippet>7878</a>        </span><span class="macro">assert!</span>(
+<a href=#7879 id=7879 data-nosnippet>7879</a>            !shader.contains(<span class="string">"// DEBUG: Force shadows off"</span>),
+<a href=#7880 id=7880 data-nosnippet>7880</a>            <span class="string">"hardcoded shadow override should have been removed"
+<a href=#7881 id=7881 data-nosnippet>7881</a>        </span>);
+<a href=#7882 id=7882 data-nosnippet>7882</a>        <span class="comment">// Must keep the conditional sentinel gate. SHADER_SRC defaults shadow=1.0
+<a href=#7883 id=7883 data-nosnippet>7883</a>        // and runs PCF only when `uLight.extras.x &gt;= 0.0`; the negative sentinel
+<a href=#7884 id=7884 data-nosnippet>7884</a>        // (set by force_shadow_override) disables shadows — conditional, not hardcoded.
+<a href=#7885 id=7885 data-nosnippet>7885</a>        </span><span class="macro">assert!</span>(
+<a href=#7886 id=7886 data-nosnippet>7886</a>            shader.contains(<span class="string">"uLight.extras.x &gt;= 0.0"</span>),
+<a href=#7887 id=7887 data-nosnippet>7887</a>            <span class="string">"shader should gate shadows on the extras.x sentinel (conditional, not hardcoded)"
+<a href=#7888 id=7888 data-nosnippet>7888</a>        </span>);
+<a href=#7889 id=7889 data-nosnippet>7889</a>    }
+<a href=#7890 id=7890 data-nosnippet>7890</a>
+<a href=#7891 id=7891 data-nosnippet>7891</a>    <span class="attr">#[test]
+<a href=#7892 id=7892 data-nosnippet>7892</a>    </span><span class="kw">fn </span>brdf_common_contains_material_lod_functions() {
+<a href=#7893 id=7893 data-nosnippet>7893</a>        <span class="kw">let </span>brdf_src = <span class="macro">include_str!</span>(<span class="string">"../shaders/brdf_common.wgsl"</span>);
+<a href=#7894 id=7894 data-nosnippet>7894</a>        <span class="macro">assert!</span>(
+<a href=#7895 id=7895 data-nosnippet>7895</a>            brdf_src.contains(<span class="string">"compute_material_lod"</span>),
+<a href=#7896 id=7896 data-nosnippet>7896</a>            <span class="string">"brdf_common.wgsl must contain compute_material_lod"
+<a href=#7897 id=7897 data-nosnippet>7897</a>        </span>);
+<a href=#7898 id=7898 data-nosnippet>7898</a>        <span class="macro">assert!</span>(
+<a href=#7899 id=7899 data-nosnippet>7899</a>            brdf_src.contains(<span class="string">"evaluate_brdf_lod"</span>),
+<a href=#7900 id=7900 data-nosnippet>7900</a>            <span class="string">"brdf_common.wgsl must contain evaluate_brdf_lod"
+<a href=#7901 id=7901 data-nosnippet>7901</a>        </span>);
+<a href=#7902 id=7902 data-nosnippet>7902</a>        <span class="comment">// evaluate_brdf should delegate to evaluate_brdf_lod
+<a href=#7903 id=7903 data-nosnippet>7903</a>        </span><span class="macro">assert!</span>(
+<a href=#7904 id=7904 data-nosnippet>7904</a>            brdf_src
+<a href=#7905 id=7905 data-nosnippet>7905</a>                .contains(<span class="string">"evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, 0u)"</span>),
+<a href=#7906 id=7906 data-nosnippet>7906</a>            <span class="string">"evaluate_brdf should delegate to evaluate_brdf_lod with LOD 0"
+<a href=#7907 id=7907 data-nosnippet>7907</a>        </span>);
+<a href=#7908 id=7908 data-nosnippet>7908</a>    }
+<a href=#7909 id=7909 data-nosnippet>7909</a>
+<a href=#7910 id=7910 data-nosnippet>7910</a>    <span class="attr">#[test]
+<a href=#7911 id=7911 data-nosnippet>7911</a>    </span><span class="kw">fn </span>shader_uses_material_lod() {
+<a href=#7912 id=7912 data-nosnippet>7912</a>        <span class="kw">let </span>shader = SHADER_SRC;
+<a href=#7913 id=7913 data-nosnippet>7913</a>        <span class="macro">assert!</span>(
+<a href=#7914 id=7914 data-nosnippet>7914</a>            shader.contains(<span class="string">"compute_material_lod"</span>),
+<a href=#7915 id=7915 data-nosnippet>7915</a>            <span class="string">"static PBR shader should compute material LOD"
+<a href=#7916 id=7916 data-nosnippet>7916</a>        </span>);
+<a href=#7917 id=7917 data-nosnippet>7917</a>        <span class="macro">assert!</span>(
+<a href=#7918 id=7918 data-nosnippet>7918</a>            shader.contains(<span class="string">"evaluate_brdf_lod"</span>),
+<a href=#7919 id=7919 data-nosnippet>7919</a>            <span class="string">"static PBR shader should call evaluate_brdf_lod"
+<a href=#7920 id=7920 data-nosnippet>7920</a>        </span>);
+<a href=#7921 id=7921 data-nosnippet>7921</a>        <span class="kw">let </span>skinned = SKINNED_SHADER_SRC;
+<a href=#7922 id=7922 data-nosnippet>7922</a>        <span class="macro">assert!</span>(
+<a href=#7923 id=7923 data-nosnippet>7923</a>            skinned.contains(<span class="string">"compute_material_lod"</span>),
+<a href=#7924 id=7924 data-nosnippet>7924</a>            <span class="string">"skinned PBR shader should compute material LOD"
+<a href=#7925 id=7925 data-nosnippet>7925</a>        </span>);
+<a href=#7926 id=7926 data-nosnippet>7926</a>        <span class="macro">assert!</span>(
+<a href=#7927 id=7927 data-nosnippet>7927</a>            skinned.contains(<span class="string">"evaluate_brdf_lod"</span>),
+<a href=#7928 id=7928 data-nosnippet>7928</a>            <span class="string">"skinned PBR shader should call evaluate_brdf_lod"
+<a href=#7929 id=7929 data-nosnippet>7929</a>        </span>);
+<a href=#7930 id=7930 data-nosnippet>7930</a>    }
+<a href=#7931 id=7931 data-nosnippet>7931</a>}
+<a href=#7932 id=7932 data-nosnippet>7932</a>
+<a href=#7933 id=7933 data-nosnippet>7933</a><span class="comment">// End of file</span></code></pre></div></section></main></body></html>
