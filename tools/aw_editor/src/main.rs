@@ -2729,6 +2729,34 @@ impl EditorApp {
         }
     }
 
+    /// Maximize the editor window via a genuine normal→maximized transition.
+    ///
+    /// The window is created non-maximized on purpose (see the note on the
+    /// `ViewportBuilder` in `main` — a window "born maximized" via
+    /// `WS_MAXIMIZE` leaves DWM's non-client area uncomposed).  Issuing
+    /// `ShowWindow(SW_MAXIMIZE)` on the already-visible window produces a real
+    /// state transition, which is the path DWM composes correctly.  This
+    /// bypasses winit/egui timing: `ViewportCommand::Maximized(true)` alone was
+    /// unreliable because the deferred command could land before the window was
+    /// actually shown.  Must be called only after the window is visible.
+    #[cfg(target_os = "windows")]
+    fn maximize_window(hwnd: isize) {
+        if hwnd == 0 {
+            return;
+        }
+        // SAFETY: `ShowWindow` is a standard Win32 API call.  We pass a valid
+        // HWND obtained from eframe's CreationContext (cached in `hwnd_cache`)
+        // and the well-defined `SW_MAXIMIZE` command constant.
+        #[allow(non_snake_case)]
+        unsafe {
+            extern "system" {
+                fn ShowWindow(hwnd: isize, ncmdshow: i32) -> i32;
+            }
+            const SW_MAXIMIZE: i32 = 3;
+            ShowWindow(hwnd, SW_MAXIMIZE);
+        }
+    }
+
     /// Create editor with CreationContext (for wgpu access)
     ///
     /// This method initializes the 3D viewport, which requires access to
@@ -9552,16 +9580,32 @@ impl eframe::App for EditorApp {
             ctx.send_viewport_cmd(egui::ViewportCommand::CursorVisible(true));
             ctx.send_viewport_cmd(egui::ViewportCommand::Decorations(true));
             ctx.request_repaint();
-            // On the first frame where the window is focused, send the
-            // deferred maximize command.  This creates a genuine
-            // normal→maximized DWM transition, causing DWM to fully
-            // compose the title bar, frame shadow, and taskbar exclusion.
-            if self.initial_maximize_pending && window_focused {
+            // On the first *genuinely visible* frame, send the deferred
+            // maximize.  This creates a real normal→maximized DWM transition,
+            // causing DWM to fully compose the title bar, frame shadow, and
+            // taskbar exclusion.
+            //
+            // The trigger must NOT be the `unwrap_or(true)` `window_focused`
+            // signal used above: eframe creates the window hidden and shows it
+            // only after the first paint, so on frame 0 `focused` is `None`
+            // (→ true) and the maximize fires against a not-yet-shown window
+            // and is lost — leaving the editor at its small default size.
+            // Require a genuine `Some(true)` focus, or fall back after a few
+            // frames have painted (the window is definitely shown by then) so
+            // the maximize always fires even if focus is never reported.
+            let window_visible = ctx.input(|i| i.viewport().focused) == Some(true)
+                || self.startup_assert_frames <= 27;
+            if self.initial_maximize_pending && window_visible {
                 self.initial_maximize_pending = false;
                 ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(true));
-                // Force proper DWM composition after maximize.
+                // On Windows, also drive the transition authoritatively via
+                // ShowWindow(SW_MAXIMIZE) — the ViewportCommand path proved
+                // unreliable (timing-dependent). Then force DWM composition.
                 #[cfg(target_os = "windows")]
-                Self::force_window_composition(self.hwnd_cache);
+                {
+                    Self::maximize_window(self.hwnd_cache);
+                    Self::force_window_composition(self.hwnd_cache);
+                }
             }
         }
 
