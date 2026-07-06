@@ -1,0 +1,107 @@
+# Attribution - POLYHAVEN
+================================================================================
+
+This directory contains 13 assets from polyhaven:
+
+## License Summary
+
+- CC0-1.0: 13 assets
+
+================================================================================
+
+## Detailed Attributions
+
+### aerial_rocks
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/aerial_rocks_02
+
+--------------------------------------------------------------------------------
+
+### metal_plate
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/metal_plate
+
+--------------------------------------------------------------------------------
+
+### plastered_wall
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/plastered_wall_02
+
+--------------------------------------------------------------------------------
+
+### wood_floor
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/wood_floor_deck
+
+--------------------------------------------------------------------------------
+
+### gravel
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/gravel_concrete_03
+
+--------------------------------------------------------------------------------
+
+### metal_rusted
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/rust_coarse_01
+
+--------------------------------------------------------------------------------
+
+### moss
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/moss_01
+
+--------------------------------------------------------------------------------
+
+### snow
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/snow_03
+
+--------------------------------------------------------------------------------
+
+### forest_leaves
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/forest_leaves_02
+
+--------------------------------------------------------------------------------
+
+### mud
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/brown_mud_rocks_01
+
+--------------------------------------------------------------------------------
+
+### cobblestone
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/rocky_trail
+
+--------------------------------------------------------------------------------
+
+### sky_day
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/sunflowers_puresky
+
+--------------------------------------------------------------------------------
+
+### sky_indoor
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/studio_small_08
+
+--------------------------------------------------------------------------------
+
+
+For full license texts, see URLs above.
+Generated: 2026-07-03T21:44:23.488481+00:00

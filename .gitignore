@@ -44,8 +44,12 @@ logs/
 tmp/
 .tmp/
 
-# PolyHaven downloaded assets (reproducible via manifest)
-assets/_downloaded/
+# PolyHaven downloaded assets (reproducible via manifest).
+# License evidence (ATTRIBUTION.txt) is re-included — license evidence must be tracked (AD.1).
+assets/_downloaded/*
+!assets/_downloaded/polyhaven/
+assets/_downloaded/polyhaven/*
+!assets/_downloaded/polyhaven/ATTRIBUTION.txt
 .asset_cache/
 # DO commit: assets/polyhaven_manifest.toml
 
