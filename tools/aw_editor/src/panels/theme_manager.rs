@@ -12,7 +12,9 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default, Hash)]
 #[non_exhaustive]
 pub enum EditorTheme {
+    /// AstraWeave branded theme (deep navy + teal) — the editor default.
     #[default]
+    AstraWeave,
     Dark,
     Light,
     HighContrast,
@@ -28,6 +30,7 @@ impl std::fmt::Display for EditorTheme {
 impl EditorTheme {
     pub fn name(&self) -> &str {
         match self {
+            EditorTheme::AstraWeave => "[AW] AstraWeave",
             EditorTheme::Dark => "[Moon] Dark",
             EditorTheme::Light => "[Sun] Light",
             EditorTheme::HighContrast => "High Contrast",
@@ -38,6 +41,7 @@ impl EditorTheme {
     /// Returns the icon for this theme
     pub fn icon(&self) -> &str {
         match self {
+            EditorTheme::AstraWeave => "[AW]",
             EditorTheme::Dark => "[Moon]",
             EditorTheme::Light => "[Sun]",
             EditorTheme::HighContrast => "👁️",
@@ -52,10 +56,14 @@ impl EditorTheme {
 
     /// Returns true if this theme is a dark variant
     pub fn is_dark(&self) -> bool {
-        matches!(self, EditorTheme::Dark | EditorTheme::HighContrast)
+        matches!(
+            self,
+            EditorTheme::AstraWeave | EditorTheme::Dark | EditorTheme::HighContrast
+        )
     }
 
-    pub const ALL: [EditorTheme; 4] = [
+    pub const ALL: [EditorTheme; 5] = [
+        EditorTheme::AstraWeave,
         EditorTheme::Dark,
         EditorTheme::Light,
         EditorTheme::HighContrast,
@@ -65,6 +73,7 @@ impl EditorTheme {
     /// Apply this theme to the egui context
     pub fn apply(&self, ctx: &Context, custom_colors: Option<&CustomColors>) {
         let visuals = match self {
+            EditorTheme::AstraWeave => crate::ui::palette::astraweave_visuals(),
             EditorTheme::Dark => Visuals::dark(),
             EditorTheme::Light => Visuals::light(),
             EditorTheme::HighContrast => Self::high_contrast_visuals(),
@@ -347,7 +356,7 @@ pub struct EditorPreferences {
 impl Default for EditorPreferences {
     fn default() -> Self {
         Self {
-            theme: EditorTheme::Dark,
+            theme: EditorTheme::AstraWeave,
             custom_colors: CustomColors::default(),
             layout_preset: LayoutPreset::Default,
             layout_state: LayoutState::default(),
@@ -631,11 +640,12 @@ mod tests {
     #[test]
     fn test_editor_theme_default() {
         let theme = EditorTheme::default();
-        assert_eq!(theme, EditorTheme::Dark);
+        assert_eq!(theme, EditorTheme::AstraWeave);
     }
 
     #[test]
     fn test_editor_theme_names() {
+        assert_eq!(EditorTheme::AstraWeave.name(), "[AW] AstraWeave");
         assert_eq!(EditorTheme::Dark.name(), "[Moon] Dark");
         assert_eq!(EditorTheme::Light.name(), "[Sun] Light");
         assert_eq!(EditorTheme::HighContrast.name(), "High Contrast");
@@ -644,11 +654,20 @@ mod tests {
 
     #[test]
     fn test_editor_theme_all_variants() {
-        assert_eq!(EditorTheme::ALL.len(), 4);
+        assert_eq!(EditorTheme::ALL.len(), 5);
+        assert_eq!(EditorTheme::ALL[0], EditorTheme::AstraWeave);
+        assert!(EditorTheme::ALL.contains(&EditorTheme::AstraWeave));
         assert!(EditorTheme::ALL.contains(&EditorTheme::Dark));
         assert!(EditorTheme::ALL.contains(&EditorTheme::Light));
         assert!(EditorTheme::ALL.contains(&EditorTheme::HighContrast));
         assert!(EditorTheme::ALL.contains(&EditorTheme::Custom));
+    }
+
+    #[test]
+    fn test_editor_theme_astraweave_is_dark() {
+        assert!(EditorTheme::AstraWeave.is_dark());
+        assert!(EditorTheme::Dark.is_dark());
+        assert!(!EditorTheme::Light.is_dark());
     }
 
     #[test]
@@ -896,7 +915,7 @@ mod tests {
     #[test]
     fn test_editor_preferences_default() {
         let prefs = EditorPreferences::default();
-        assert_eq!(prefs.theme, EditorTheme::Dark);
+        assert_eq!(prefs.theme, EditorTheme::AstraWeave);
         assert_eq!(prefs.layout_preset, LayoutPreset::Default);
         assert_eq!(prefs.font_size, 14.0);
         assert!(prefs.animations_enabled);
@@ -954,7 +973,9 @@ mod tests {
     fn test_theme_manager_preferences() {
         let panel = ThemeManagerPanel::new();
         let prefs = panel.preferences();
-        assert_eq!(prefs.theme, EditorTheme::Dark);
+        // No editor_preferences.toml exists in the test CWD, so load() falls
+        // back to the default theme.
+        assert_eq!(prefs.theme, EditorTheme::AstraWeave);
     }
 
     #[test]
@@ -1005,6 +1026,54 @@ mod tests {
         let serialized = toml::to_string_pretty(&prefs).unwrap();
         let deserialized: EditorPreferences = toml::from_str(&serialized).unwrap();
         assert_eq!(prefs.theme, deserialized.theme);
+    }
+
+    #[test]
+    fn test_astraweave_theme_toml_round_trip() {
+        let prefs = EditorPreferences {
+            theme: EditorTheme::AstraWeave,
+            ..Default::default()
+        };
+        let serialized = toml::to_string_pretty(&prefs).unwrap();
+        let deserialized: EditorPreferences = toml::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.theme, EditorTheme::AstraWeave);
+    }
+
+    #[test]
+    fn test_old_schema_prefs_toml_still_loads() {
+        // Preferences file written BEFORE the AstraWeave variant existed
+        // (theme = "Dark", 8-field custom_colors). Users who explicitly saved
+        // Dark must keep Dark; only fresh defaults get AstraWeave.
+        let old_toml = r#"
+theme = "Dark"
+layout_preset = "Default"
+font_size = 14.0
+animations_enabled = true
+
+[custom_colors]
+background = [30, 30, 30]
+panel_fill = [40, 40, 40]
+text = [220, 220, 220]
+accent = [100, 150, 255]
+selection = [60, 100, 180]
+warning = [255, 180, 50]
+error = [255, 80, 80]
+success = [100, 200, 100]
+
+[layout_state]
+left_panel_width = 300.0
+right_panel_width = 350.0
+bottom_panel_height = 200.0
+left_panel_visible = true
+right_panel_visible = true
+bottom_panel_visible = true
+
+[layout_state.expanded_sections]
+"#;
+        let deserialized: EditorPreferences =
+            toml::from_str(old_toml).expect("old-schema preferences must still parse");
+        assert_eq!(deserialized.theme, EditorTheme::Dark);
+        assert_eq!(deserialized.custom_colors.background, [30, 30, 30]);
     }
 
     #[test]
@@ -1112,13 +1181,14 @@ mod tests {
         for theme in EditorTheme::all() {
             set.insert(*theme);
         }
-        assert_eq!(set.len(), 4);
+        assert_eq!(set.len(), 5);
     }
 
     #[test]
     fn test_editor_theme_all_method() {
         let all = EditorTheme::all();
-        assert_eq!(all.len(), 4);
+        assert_eq!(all.len(), 5);
+        assert!(all.contains(&EditorTheme::AstraWeave));
         assert!(all.contains(&EditorTheme::Dark));
         assert!(all.contains(&EditorTheme::Light));
         assert!(all.contains(&EditorTheme::HighContrast));

@@ -8,7 +8,7 @@ domain: tools
 lifecycle_status: active
 integration_status: wired
 owns: [aw_editor]
-doc_version: "1.2"
+doc_version: "1.3"
 last_verified_commit: a2474c5b7
 ---
 
@@ -20,9 +20,9 @@ last_verified_commit: a2474c5b7
 |---|---|
 | **System name** | aw_editor (AstraWeave visual editor / level + asset + tool authoring app) |
 | **Primary crates** | `tools/aw_editor/` (sole primary crate; two binaries: `aw_editor` GUI + `aw_game_runtime` standalone game runner — both windowed via winit+wgpu, see §6 trap notes) |
-| **Document version** | 1.2 |
+| **Document version** | 1.3 |
 | **Last verified against commit** | `a2474c5b7` |
-| **Last verified date** | 2026-05-12 (v1.2 deep investigation pass) |
+| **Last verified date** | 2026-07-02 (v1.3: AstraWeave branded theme as default — palette single-source `ui/palette.rs`, dock chrome unified via `DockLayout::themed_style`, window icon + top-bar brand mark `ui/branding.rs`, splash video re-enabled with first-frame gate reverting the functional half of `1fc266c93`. Feedback pass 2026-07-02: palette re-tinted to neon sky-blue accent over black metallic-flake surfaces; `world_wizard.rs` theme-routed and made a true modal (Foreground order, input-swallowing dim, one-shot raise above HUD overlays — re-raising per frame would cover its own ComboBox popups); dark branded Win11 title bar via `DWMWA_CAPTION_COLOR`/`DWMWA_TEXT_COLOR` in the DWM composition helper. Prior full pass 2026-05-12 v1.2) |
 | **Status** | Active (mid-campaign — see Owner notes) |
 | **Owner notes** | The editor is by far the largest workspace crate: 216 `.rs` files, ~224,584 LoC (including tests), 49 files in `panels/` (48 panel files + `mod.rs`), 41 `PanelType` enum variants (verified 2026-05-12 by reading `panel_type.rs:107-233`), 123 fields on the `EditorApp` god struct (verified 2026-05-12), 18 direct `astraweave-*` path dependencies (verified 2026-05-12 — earlier "24+" claim was wrong), 12 feature flags (`editor-core`, `editor-graphs`, `editor-materials`, `editor-terrain`, `editor-nav`, `editor-sim`, `editor-full`, `profiling`, `fast-alloc`, `kittest`, `terrain-splat-arrays`, `impostor-bake` — earlier "8 features" claim was wrong, list was always correct). Plus 20 `.md` files inside `tools/aw_editor/` itself and 19 `EDITOR_*.md` / `AW_EDITOR_*.md` files under `docs/current/` (verified counts 2026-05-12; earlier figures were estimates). It is mid-campaign on multiple architectural fronts as of `a2474c5b7`. Three load-bearing reference documents already exist that this trace builds on rather than duplicates: `docs/current/EDITOR_BEHAVIORAL_CORRECTNESS_AUDIT.md` (37-fix audit, 14 critical + 18 high findings, 2026-04-04), `docs/current/FIX27_UNIFIED_PIPELINE_CAMPAIGN.md` (7-phase eliminate-dual-pipeline campaign, 2026-04-05), `docs/current/EDITOR_MULTI_TOOL_ARCHITECTURE_CAMPAIGN.md` (Sub-phase 3 in flight as of 2026-05-08, "Round 8 Closure" — the §7.7 "wrapped-component resource identity trap" anti-pattern was elevated from candidate to structural axiom in this campaign). Read those for depth on specific concerns; this trace covers the structural shape. |
 
@@ -372,7 +372,7 @@ The editor has 216 `.rs` files. This map captures the **load-bearing structural 
 | `src/tab_viewer/mod.rs` | `EditorTabViewer` + `SimpleTabViewer` + `egui_dock::TabViewer` impl; 157 functions | Active | 8,185 lines. The central panel-state-holder + dispatch hub. |
 | `src/tab_viewer/{inspectors,models,panel_event,sky_colors}.rs` | Per-panel inspector UI, data-only structs, PanelEvent enum, sky-color computation | Active | Split from tab_viewer/mod.rs during a refactor. |
 | `src/panel_type.rs` | `PanelType` enum (41 variants) + `PanelCategory` (6 variants) + helper methods | Active | 794 lines. |
-| `src/dock_layout.rs` | `DockLayout` + `LayoutPreset` enum (developer, level designer, etc.) | Active | 966 lines. |
+| `src/dock_layout.rs` | `DockLayout` + `LayoutPreset` enum (developer, level designer, etc.) | Active | 966 lines. Dock chrome derives from the active egui style via the single `themed_style()` fn — called at construction AND re-derived per frame in `show`/`show_inside` (theme-reactive; do not cache a second styled copy). |
 | `src/dock_panels.rs` | Panel registration table for `egui_dock` | Active | 626 lines. |
 | `src/viewport/mod.rs` + `widget.rs` + `renderer.rs` + `engine_adapter.rs` | 3D viewport widget; post-Fix27 unified pipeline coordinator | Active | The architecture docstring at `mod.rs:11-27` is canonical post-Fix27. `engine_adapter.rs` was the site of the Round 5 §7.7 trap (Mediator Brush diagnostic). |
 | `src/viewport/{grid,gizmo,physics,blueprint_overlay}_renderer.rs` | Editor-local overlay renderers | Active | Local renderers preserved post-Fix27 unification. |
@@ -385,7 +385,7 @@ The editor has 216 `.rs` files. This map captures the **load-bearing structural 
 | `src/active_tool/` (3 files) | `ActiveTool` trait + `Dispatcher` + 15 unit tests | Active (new) | Introduced 2026-05-04 (Multi-Tool Architecture Sub-phase 2). |
 | `src/behavior_graph/` (5 files) | Behavior graph document + node graph widget + UI | Active | `document.rs`, `node_graph_widget.rs`, `ui.rs`, `tests_document.rs`. |
 | `src/subsystems/` (5 files) | Per-frame tick helpers extracted from main.rs | Active | `audio_animation.rs`, `docking_sync.rs`, `hotkeys.rs`, `scene_stats.rs`, `mod.rs`. |
-| `src/ui/` (4 files) | `MenuBar`, `StatusBar`, `ProgressManager`, `ToastManager`, `ResourceUsage` | Active | UI utilities. |
+| `src/ui/` (6 files) | `MenuBar`, `StatusBar`, `ProgressManager`, `ToastManager`, `ResourceUsage`, `palette`, `branding` | Active | UI utilities. `ui/palette.rs` (Active (new), 2026-07) is the ONLY place branded theme colors are defined — constants + `astraweave_visuals()` + theme-aware helpers (`accent`, `overlay_fill`, `accent_button`, `empty_selection_state`); consumed by theme_manager, dock_layout, toolbar, status_bar, tab_viewer, entity_catalog, main.rs. `ui/branding.rs` (Active (new), 2026-07) loads `assets/Astraweave_logo.jpg` for the window icon + top-bar brand mark — fallible, warn-and-continue. |
 | `src/audio_bridge.rs` | `EditorAudioBridge` — `AudioEngine` owner + `AudioAction` consumer | Active | Documented in `docs/architecture/audio.md` §4. 10 of 25 `AudioAction` variants are explicit no-ops. |
 | `src/animation_bridge.rs` | `EditorAnimationBridge` — clip library + per-entity animation state | Active | Used by `tick_animation_subsystem` (`subsystems/audio_animation.rs:37-89`). |
 | `src/console_bridge.rs` | Tracing → editor console bridge | Active | Routes `tracing` output into the in-editor `ConsolePanel`. |
@@ -416,7 +416,7 @@ The editor has 216 `.rs` files. This map captures the **load-bearing structural 
 | `src/material_inspector.rs` | Material inspector (Phase PBR-G Task 2) | Active | Owns `MaterialLiveDoc`. |
 | `src/plugin.rs` | `EditorPlugin` trait + `PluginManager` | Active | Phase 5.3 deliverable. |
 | `src/tutorial.rs` | First-run tutorial walkthrough | Active | 344 lines. |
-| `src/splash.rs` | Startup splash screen with logo + cinematic video | Active | Uses `mp4` + `openh264` deps from Cargo.toml:94-95. |
+| `src/splash.rs` | Startup splash screen with logo + cinematic video | Active | Uses `mp4` + `openh264` deps from Cargo.toml:94-95. Video playback re-enabled 2026-07 (reverts the functional half of `1fc266c93`): decoder thread `splash-video-decode` spawns at construction; phase 0 advances to video only once the first frame is buffered (capped at `VIDEO_WAIT_CAP_SECS`); video phase ends on stream-end or the 8.5 s cap; skip-on-click preserved. |
 | `src/headless.rs` | Headless testing infrastructure | Active (tests) | Exposed via `lib.rs:107`. |
 | `src/interaction.rs` | Gizmo interaction helpers (auto-tracking) | Active | Phase 8.1 Week 5 Day 3 deliverable. |
 | `src/telemetry.rs` | Telemetry collection (`EditorTelemetryEvent` enum: `SelectionChanged`, `GridSettingsChanged`, `GizmoStarted`, `GizmoCommitted`, `GizmoCancelled`) | Active | 615 lines. Routes events through the `tracing` crate (`use tracing::info;` at line 4). Verified — exports `EditorTelemetryEvent` enum + `EDITOR_TELEMETRY` `OnceLock` singleton. Consumed by selection/grid/gizmo paths. |
@@ -587,6 +587,12 @@ The editor has accumulated dozens of small architectural decisions over 8 months
 - **Alternatives considered:** [Reasoning not recovered from available sources]
 - **Consequences:** Documentation is plentiful but not always discoverable. Agents must search both `tools/aw_editor/*.md` and `docs/current/*EDITOR*.md` and `docs/current/AW_EDITOR_*.md`.
 
+### Decision: AstraWeave branded preset as default theme (code-defined constants module, not `CustomColors` growth) — 2026-07-01
+
+- **Context:** Concept-image restyle (deep navy + teal, rounded corners, branded chrome). The existing theme system (`panels/theme_manager.rs`: `EditorTheme` presets + `CustomColors` + TOML `EditorPreferences`) was the mandated extension point (never-build-a-second-implementation).
+- **Decision:** Add `EditorTheme::AstraWeave` as a new first/default variant whose `Visuals` are built by `ui/palette.rs::astraweave_visuals()` from `pub const` palette constants. Do NOT grow `CustomColors` — it is the user-editable persistence model for the Custom theme (8 TOML-serialized RGB triples, each with a picker row); growing it forces serde/picker churn for preset-only needs. Precedent: `EditorTheme::high_contrast_visuals()` (code-defined preset without `CustomColors`).
+- **Consequences:** Non-`Visuals` colors (overlay cards, severity chips, catalog category hues, dialog fills) reference the same palette constants, so the branded look has one source of truth. Users who explicitly saved `theme = "Dark"` keep Dark (unit-variant addition is serde-additive; covered by `test_old_schema_prefs_toml_still_loads`); only fresh defaults get AstraWeave. The 3D viewport render output is explicitly excluded (parity-critical, post-Fix27).
+
 ### Decision: 41-variant `PanelType` enum (closed registry, not extensible at runtime)
 - **Date:** First-commit `faf8ef439` (2026-01-13, "Merge/editor stability phase1 to main (#166)") — `tools/aw_editor/src/panel_type.rs` first appears here, in the same merge that introduced `tab_viewer/mod.rs` and the docking architecture.
 - **Status:** Accepted.
@@ -620,6 +626,12 @@ The editor has accumulated dozens of small architectural decisions over 8 months
 | 17 | Auto-save snapshot count is bounded by `auto_save_keep_count` field | Yes (runtime, when `auto_save_to_separate_dir = true`) | `cleanup_old_autosaves` (`main.rs:1114-1170`) sorts `.autosave/` entries matching `{base}_*.autosave.scene.ron` by mtime newest-first and `fs::remove_file`'s every entry past index `auto_save_keep_count`. Only invoked when separate-dir mode is on (`main.rs:1101-1103`); same-path-overwrite mode trivially keeps 1 file. |
 | 18 | The lock file (`lock_file_path` field) prevents concurrent editor instances on the same project | Yes (runtime) | `main.rs` lock-file creation + check (Week 7 Day 5 crash recovery). |
 | 19 | Production-path `.unwrap()` count remains low. Audit baseline was 110+; closed by Wave-3 mutation remediation campaign (`tests/wave3_mutation_remediation.rs`). Verified 2026-05-12: **only ~12 `.unwrap()` calls remain before the first `#[cfg(test)]` boundary across `tools/aw_editor/src/`** — distributed as `mutation_tests.rs` (8, itself a test-harness module), `terrain_integration.rs` (3), `runtime.rs` (1). Zero unwraps in the 9,681-line `main.rs`. | Yes (per-commit measurable) | `grep -c '\.unwrap()' file` + `#[cfg(test)]` boundary heuristic; CI lint `unwrap_used = "allow"` per Cargo.toml:9-10 (test code uses unwrap extensively for clarity). |
+| 20 | The editor accent color rides `Visuals::hyperlink_color` for ALL themes — call sites read it via `ui::palette::accent(visuals)` and never hard-code teal (or any accent) inline. | Yes (greppable) | `ui/palette.rs` routing conventions header; consumers in dock_layout, toolbar, tab_viewer, main.rs. |
+| 21 | `ui::palette::astraweave_visuals()` never sets `Visuals::override_text_color` — doing so flattens the weak/faint text tiers and severity colors. (`CustomColors::to_visuals()` DOES set it; that is Custom-theme behavior, not a bug.) | Yes (unit test) | `ui/palette.rs` test `astraweave_visuals_never_overrides_text_color`. |
+| 22 | Perf/FPS/memory indicator tier thresholds (16.67/33.33 ms frame budget; ≥55/≥30 FPS; <50/<80 % memory) are functional semantics, not styling — restyles may remap the colors (SUCCESS/WARNING/ERROR palette constants) but must not alter the thresholds. | Yes (guard comments at each site) | `viewport/toolbar.rs` histogram, `ui/status_bar.rs` `show_fps`/`show_resource_usage`, `main.rs` top-bar FPS. |
+| 23 | The splash never blocks startup: video decode runs entirely on the `splash-video-decode` background thread; phase 0 waits for the first frame at most `VIDEO_WAIT_CAP_SECS`; phase 1 bails after 0.5 s without frames; channel disconnect degrades to logo-only; click/keypress skips at any point. | Yes (by construction) | `splash.rs` constructor + `show()` phase machine. |
+| 24 | The 3D viewport render output (including its clear/background color) is parity-critical (post-Fix27, bit-identical to runtime) and is excluded from editor theming. Theme work touches egui chrome only. | Yes (by convention) | §7 Fix27 decision; 2026-07 theme decision above. |
+| 25 | Dock `egui_dock::Style` is derived exclusively by `DockLayout::themed_style(&egui::Style)` and re-derived from `ctx.style()` every frame in `show`/`show_inside` — never cache or hand-build a second styled copy. | Yes (single fn, greppable) | `dock_layout.rs::themed_style`. |
 
 ---
 

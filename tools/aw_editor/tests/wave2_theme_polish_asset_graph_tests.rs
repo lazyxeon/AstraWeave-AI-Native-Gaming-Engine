@@ -23,7 +23,7 @@ use aw_editor_lib::panels::transform_panel::TransformPanel;
 
 #[test]
 fn editor_theme_all_count() {
-    assert_eq!(EditorTheme::all().len(), 4);
+    assert_eq!(EditorTheme::all().len(), 5);
 }
 
 #[test]
@@ -42,6 +42,7 @@ fn editor_theme_icons_non_empty() {
 
 #[test]
 fn editor_theme_is_dark() {
+    assert!(EditorTheme::AstraWeave.is_dark());
     assert!(EditorTheme::Dark.is_dark());
     assert!(!EditorTheme::Light.is_dark());
     assert!(EditorTheme::HighContrast.is_dark());
@@ -49,8 +50,8 @@ fn editor_theme_is_dark() {
 }
 
 #[test]
-fn editor_theme_default_is_dark() {
-    assert_eq!(EditorTheme::default(), EditorTheme::Dark);
+fn editor_theme_default_is_astraweave() {
+    assert_eq!(EditorTheme::default(), EditorTheme::AstraWeave);
 }
 
 #[test]
@@ -214,7 +215,7 @@ fn layout_state_for_preset_debugging() {
 #[test]
 fn editor_preferences_defaults() {
     let p = EditorPreferences::default();
-    assert_eq!(p.theme, EditorTheme::Dark);
+    assert_eq!(p.theme, EditorTheme::AstraWeave);
     assert_eq!(p.layout_preset, LayoutPreset::Default);
     assert!((p.font_size - 14.0).abs() < f32::EPSILON);
     assert!(p.animations_enabled);

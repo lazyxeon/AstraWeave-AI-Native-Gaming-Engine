@@ -414,6 +414,10 @@ struct EditorApp {
     last_resource_sample: std::time::Instant,
     /// Startup splash screen (Some while active, None after transition)
     splash: Option<splash::SplashScreen>,
+    /// Top-bar AW brand mark texture (lazily loaded on first frame)
+    brand_mark: Option<egui::TextureHandle>,
+    /// Whether the brand-mark load was attempted (a failed load isn't retried)
+    brand_mark_loaded: bool,
     /// Cached environment params to avoid redundant GPU updates each frame
     cached_fog_params: Option<crate::viewport::types::TerrainFogParams>,
     cached_sky_colors: Option<([f32; 4], [f32; 4], [f32; 4])>,
@@ -681,6 +685,8 @@ impl Default for EditorApp {
             resource_usage: ui::ResourceUsage::new(),
             last_resource_sample: std::time::Instant::now(),
             splash: Some(splash::SplashScreen::new()),
+            brand_mark: None,
+            brand_mark_loaded: false,
             cached_fog_params: None,
             cached_lighting_params: None,
             cached_weather_kind: None,
@@ -2192,14 +2198,21 @@ impl EditorApp {
         let box_size = egui::vec2(400.0, 150.0);
         let box_rect = egui::Rect::from_center_size(screen_rect.center(), box_size);
 
-        painter.rect_filled(box_rect, 12.0, egui::Color32::from_rgb(40, 60, 80));
+        let box_fill = ctx.style().visuals.window_fill;
+        let box_accent = ui::palette::accent(&ctx.style().visuals);
+        painter.rect_filled(box_rect, 12.0, box_fill);
 
         painter.rect_stroke(
             box_rect,
             12.0,
-            egui::Stroke::new(3.0, egui::Color32::from_rgb(100, 180, 255)),
+            egui::Stroke::new(3.0, box_accent),
             egui::StrokeKind::Outside,
         );
+
+        // Text colors derive from the theme so the overlay stays legible on
+        // light themes too (the box fill is the theme's window_fill).
+        let text_strong = ctx.style().visuals.strong_text_color();
+        let text_body = ctx.style().visuals.text_color();
 
         // Icon
         painter.text(
@@ -2207,7 +2220,7 @@ impl EditorApp {
             egui::Align2::CENTER_CENTER,
             "v",
             egui::FontId::proportional(48.0),
-            egui::Color32::WHITE,
+            text_strong,
         );
 
         // "Drop files here" text
@@ -2216,7 +2229,7 @@ impl EditorApp {
             egui::Align2::CENTER_CENTER,
             "Drop to import",
             egui::FontId::proportional(20.0),
-            egui::Color32::from_rgb(200, 200, 200),
+            text_body,
         );
 
         // File type description
@@ -2225,7 +2238,7 @@ impl EditorApp {
             egui::Align2::CENTER_CENTER,
             &description,
             egui::FontId::proportional(14.0),
-            egui::Color32::from_rgb(150, 200, 255),
+            box_accent,
         );
     }
 
@@ -2670,6 +2683,20 @@ impl EditorApp {
                         std::mem::transmute(proc);
                     let policy: u32 = 2; // DWMNCRP_ENABLED
                     dwm_set(hwnd, 2, &policy, 4);
+
+                    // ── Branded dark title bar ─────────────────────────
+                    // DWMWA_CAPTION_COLOR (35) / DWMWA_TEXT_COLOR (36)
+                    // take a COLORREF (0x00BBGGRR). Windows 11 21H2+ only;
+                    // on older builds the calls fail harmlessly and the
+                    // stock (user accent) caption remains.
+                    let cap = crate::ui::palette::BG_DEEP;
+                    let caption_color: u32 =
+                        (cap.r() as u32) | ((cap.g() as u32) << 8) | ((cap.b() as u32) << 16);
+                    dwm_set(hwnd, 35, &caption_color, 4);
+                    let txt = crate::ui::palette::TEXT_PRIMARY;
+                    let caption_text: u32 =
+                        (txt.r() as u32) | ((txt.g() as u32) << 8) | ((txt.b() as u32) << 16);
+                    dwm_set(hwnd, 36, &caption_text, 4);
                 }
             }
 
@@ -2886,15 +2913,15 @@ impl EditorApp {
 
                 ui.horizontal(|ui| {
                     let save_btn = egui::Button::new(egui::RichText::new("Save & Quit").strong())
-                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                        .fill(ui::palette::BTN_SAFE_FILL);
                     if ui.add(save_btn).clicked() {
                         do_save_quit = true;
                     }
 
                     ui.add_space(8.0);
 
-                    let quit_btn = egui::Button::new("Quit Without Saving")
-                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    let quit_btn =
+                        egui::Button::new("Quit Without Saving").fill(ui::palette::BTN_DANGER_FILL);
                     if ui.add(quit_btn).clicked() {
                         do_quit = true;
                     }
@@ -3153,15 +3180,15 @@ impl EditorApp {
 
                 ui.horizontal(|ui| {
                     let save_btn = egui::Button::new(egui::RichText::new("Save First").strong())
-                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                        .fill(ui::palette::BTN_SAFE_FILL);
                     if ui.add(save_btn).clicked() {
                         do_save = true;
                     }
 
                     ui.add_space(8.0);
 
-                    let discard_btn = egui::Button::new("Discard Changes")
-                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    let discard_btn =
+                        egui::Button::new("Discard Changes").fill(ui::palette::BTN_DANGER_FILL);
                     if ui.add(discard_btn).clicked() {
                         do_discard = true;
                     }
@@ -3264,15 +3291,15 @@ impl EditorApp {
 
                 ui.horizontal(|ui| {
                     let save_btn = egui::Button::new(egui::RichText::new("Save First").strong())
-                        .fill(egui::Color32::from_rgb(45, 125, 45));
+                        .fill(ui::palette::BTN_SAFE_FILL);
                     if ui.add(save_btn).clicked() {
                         do_save = true;
                     }
 
                     ui.add_space(8.0);
 
-                    let discard_btn = egui::Button::new("Discard & Open")
-                        .fill(egui::Color32::from_rgb(165, 45, 45));
+                    let discard_btn =
+                        egui::Button::new("Discard & Open").fill(ui::palette::BTN_DANGER_FILL);
                     if ui.add(discard_btn).clicked() {
                         do_discard = true;
                     }
@@ -3368,8 +3395,8 @@ impl EditorApp {
                 ui.add_space(12.0);
 
                 egui::Frame::new()
-                    .fill(egui::Color32::from_rgb(35, 45, 55))
-                    .corner_radius(4.0)
+                    .fill(ui.visuals().faint_bg_color)
+                    .corner_radius(6.0)
                     .inner_margin(8.0)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
@@ -3410,7 +3437,7 @@ impl EditorApp {
                 ui.horizontal(|ui| {
                     let restore_btn =
                         egui::Button::new(egui::RichText::new("Restore Auto-Save").strong())
-                            .fill(egui::Color32::from_rgb(45, 125, 45))
+                            .fill(ui::palette::BTN_SAFE_FILL)
                             .min_size(egui::vec2(150.0, 32.0));
                     if ui.add(restore_btn).clicked() {
                         do_restore = true;
@@ -5748,6 +5775,24 @@ impl EditorApp {
             )
             .show(ctx, |ui| {
                 egui::MenuBar::new().ui(ui, |ui| {
+                    if !self.brand_mark_loaded {
+                        self.brand_mark_loaded = true;
+                        if let Some(img) = ui::branding::load_brand_mark() {
+                            self.brand_mark = Some(ctx.load_texture(
+                                "aw_brand_mark",
+                                img,
+                                egui::TextureOptions::LINEAR,
+                            ));
+                        }
+                    }
+                    if let Some(tex) = &self.brand_mark {
+                        let size = tex.size();
+                        let aspect = size[0] as f32 / size[1].max(1) as f32;
+                        ui.add(egui::Image::new(egui::load::SizedTexture::new(
+                            tex.id(),
+                            [18.0 * aspect, 18.0],
+                        )));
+                    }
                     ui.label(egui::RichText::new("AstraWeave").strong().size(14.0));
                     ui.separator();
                     MenuBar::show(ui, self);
@@ -5756,12 +5801,14 @@ impl EditorApp {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // FPS indicator (right-most)
                         let frame_time = self.runtime.stats().frame_time_ms;
+                        // Palette-mapped colors; the ≥55/≥30 FPS tiers are
+                        // functional semantics — do not restyle away.
                         let fps_color = if self.current_fps >= 55.0 {
-                            egui::Color32::from_rgb(100, 255, 100)
+                            ui::palette::SUCCESS
                         } else if self.current_fps >= 30.0 {
-                            egui::Color32::from_rgb(255, 200, 100)
+                            ui::palette::WARNING
                         } else {
-                            egui::Color32::from_rgb(255, 100, 100)
+                            ui::palette::ERROR
                         };
                         ui.label(
                             egui::RichText::new(format!("{:.0} FPS", self.current_fps))
@@ -5785,9 +5832,9 @@ impl EditorApp {
     /// Compact play controls for the menu bar row
     fn show_play_controls_compact(&mut self, ui: &mut egui::Ui) {
         let (mode_text, color) = match self.editor_mode {
-            EditorMode::Edit => ("Edit", egui::Color32::LIGHT_GRAY),
-            EditorMode::Play => ("\u{25b6} Playing", egui::Color32::from_rgb(80, 200, 120)),
-            EditorMode::Paused => ("\u{23f8} Paused", egui::Color32::from_rgb(255, 180, 50)),
+            EditorMode::Edit => ("Edit", ui::palette::TEXT_WEAK),
+            EditorMode::Play => ("\u{25b6} Playing", ui::palette::SUCCESS),
+            EditorMode::Paused => ("\u{23f8} Paused", ui::palette::WARNING),
         };
         ui.colored_label(color, egui::RichText::new(mode_text).small());
 
@@ -9926,20 +9973,25 @@ fn main() -> Result<()> {
     let _ = fs::create_dir_all(content_dir.join("levels"));
     let _ = fs::create_dir_all(content_dir.join("encounters"));
 
+    let mut viewport = egui::ViewportBuilder::default()
+        // NOTE: Do NOT use .with_maximized(true) here.
+        // eframe creates windows hidden (visible=false) and shows them
+        // after the first paint.  When CreateWindowEx receives both
+        // WS_MAXIMIZE and !WS_VISIBLE, DWM never fully composes the
+        // non-client area (title bar, frame, shadow) because there is
+        // no genuine maximize *transition* — the window is "born
+        // maximized" and ShowWindow(SW_MAXIMIZE) is a no-op.
+        // Instead, we maximize via ViewportCommand::Maximized(true)
+        // on the first visible frame, creating a real normal→maximized
+        // DWM transition.
+        .with_decorations(true)
+        .with_title("AstraWeave Level & Encounter Editor");
+    if let Some(icon) = ui::branding::load_window_icon() {
+        viewport = viewport.with_icon(icon);
+    }
+
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            // NOTE: Do NOT use .with_maximized(true) here.
-            // eframe creates windows hidden (visible=false) and shows them
-            // after the first paint.  When CreateWindowEx receives both
-            // WS_MAXIMIZE and !WS_VISIBLE, DWM never fully composes the
-            // non-client area (title bar, frame, shadow) because there is
-            // no genuine maximize *transition* — the window is "born
-            // maximized" and ShowWindow(SW_MAXIMIZE) is a no-op.
-            // Instead, we maximize via ViewportCommand::Maximized(true)
-            // on the first visible frame, creating a real normal→maximized
-            // DWM transition.
-            .with_decorations(true)
-            .with_title("AstraWeave Level & Encounter Editor"),
+        viewport,
         wgpu_options: egui_wgpu::WgpuConfiguration {
             // Mailbox: the swap chain maintains a single-entry queue.
             // Each present replaces the pending frame — the compositor

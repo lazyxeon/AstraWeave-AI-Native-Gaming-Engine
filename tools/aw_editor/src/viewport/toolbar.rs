@@ -180,8 +180,12 @@ impl ViewportToolbar {
         }
         toolbar_area.show(ui.ctx(), |ui| {
             egui::Frame::new()
-                .fill(egui::Color32::from_rgba_premultiplied(30, 30, 35, 230))
-                .corner_radius(4.0)
+                .fill(crate::ui::palette::overlay_fill(ui.visuals()))
+                .stroke(egui::Stroke::new(
+                    1.0,
+                    ui.visuals().widgets.noninteractive.bg_stroke.color,
+                ))
+                .corner_radius(8.0)
                 .inner_margin(8.0)
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
@@ -313,12 +317,17 @@ impl ViewportToolbar {
             }
             stats_area.show(ui.ctx(), |ui| {
                 egui::Frame::new()
-                    .fill(egui::Color32::from_rgba_premultiplied(20, 20, 25, 200))
-                    .corner_radius(4.0)
+                    .fill(crate::ui::palette::overlay_fill(ui.visuals()))
+                    .stroke(egui::Stroke::new(
+                        1.0,
+                        ui.visuals().widgets.noninteractive.bg_stroke.color,
+                    ))
+                    .corner_radius(8.0)
                     .inner_margin(6.0)
                     .show(ui, |ui| {
                         ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 2.0);
-                        ui.label(egui::RichText::new("Performance").strong());
+                        let accent = crate::ui::palette::accent(ui.visuals());
+                        ui.label(egui::RichText::new("Performance").strong().color(accent));
                         ui.separator();
                         ui.label(format!("FPS: {:.1}", self.stats.fps));
                         ui.label(format!("Frame: {:.2}ms", self.stats.frame_time_ms));
@@ -344,27 +353,31 @@ impl ViewportToolbar {
                                 .iter()
                                 .copied()
                                 .fold(16.67f32, f32::max);
+                            let graph_bg = ui.visuals().extreme_bg_color;
                             let painter = ui.painter();
-                            painter.rect_filled(rect, 2.0, egui::Color32::from_rgb(30, 30, 40));
+                            painter.rect_filled(rect, 2.0, graph_bg);
                             let target_line_y = rect.max.y - (16.67 / max_time) * graph_height;
                             painter.line_segment(
                                 [
                                     egui::pos2(rect.min.x, target_line_y),
                                     egui::pos2(rect.max.x, target_line_y),
                                 ],
-                                egui::Stroke::new(1.0, egui::Color32::from_rgb(80, 80, 80)),
+                                egui::Stroke::new(1.0, crate::ui::palette::STROKE_DIM),
                             );
                             let history = &self.stats.frame_time_history;
                             let step = graph_width / 60.0;
                             for (i, &frame_time) in history.iter().enumerate() {
                                 let x = rect.min.x + (i as f32) * step;
                                 let h = (frame_time / max_time) * graph_height;
+                                // Bar colors are palette-mapped; the ≤16.67 /
+                                // ≤33.33 ms tiers are functional semantics
+                                // (60/30 FPS budgets) — do not restyle away.
                                 let color = if frame_time <= 16.67 {
-                                    egui::Color32::GREEN
+                                    crate::ui::palette::SUCCESS
                                 } else if frame_time <= 33.33 {
-                                    egui::Color32::YELLOW
+                                    crate::ui::palette::WARNING
                                 } else {
-                                    egui::Color32::RED
+                                    crate::ui::palette::ERROR
                                 };
                                 painter.line_segment(
                                     [egui::pos2(x, rect.max.y), egui::pos2(x, rect.max.y - h)],
@@ -392,13 +405,18 @@ impl ViewportToolbar {
             }
             info_area.show(ui.ctx(), |ui| {
                 egui::Frame::new()
-                    .fill(egui::Color32::from_rgba_premultiplied(20, 20, 25, 200))
-                    .corner_radius(4.0)
+                    .fill(crate::ui::palette::overlay_fill(ui.visuals()))
+                    .stroke(egui::Stroke::new(
+                        1.0,
+                        ui.visuals().widgets.noninteractive.bg_stroke.color,
+                    ))
+                    .corner_radius(8.0)
                     .inner_margin(6.0)
                     .show(ui, |ui| {
                         ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 2.0);
                         let [x, y, z] = self.stats.camera_position;
-                        ui.label(egui::RichText::new("Camera").strong());
+                        let accent = crate::ui::palette::accent(ui.visuals());
+                        ui.label(egui::RichText::new("Camera").strong().color(accent));
                         ui.label(format!("X: {:.1}", x));
                         ui.label(format!("Y: {:.1}", y));
                         ui.label(format!("Z: {:.1}", z));
@@ -412,8 +430,7 @@ impl ViewportToolbar {
                             ui.label(format!("{} selected", sel));
                         }
                         ui.separator();
-                        if ui
-                            .button("Reset Camera")
+                        if crate::ui::palette::accent_button_ui(ui, None, "Reset Camera")
                             .on_hover_text("Reset camera to default position")
                             .clicked()
                         {

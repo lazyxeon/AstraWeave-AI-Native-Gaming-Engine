@@ -189,7 +189,7 @@ impl DockLayout {
         Self {
             dock_state,
             focused_panel: None,
-            style: Self::create_editor_style(),
+            style: Self::themed_style(&egui::Style::default()),
         }
     }
 
@@ -207,7 +207,7 @@ impl DockLayout {
         Self {
             dock_state,
             focused_panel: None,
-            style: Self::create_editor_style(),
+            style: Self::themed_style(&egui::Style::default()),
         }
     }
 
@@ -537,8 +537,13 @@ impl DockLayout {
     }
 
     /// Create editor-specific dock style
-    fn create_editor_style() -> Style {
-        let mut style = Style::from_egui(&egui::Style::default());
+    /// Derive the dock style from the active egui style.
+    ///
+    /// Single source for dock chrome: called once at construction and
+    /// re-derived every frame in `show`/`show_inside` so the dock follows
+    /// theme switches. Do not add a second styled copy elsewhere.
+    fn themed_style(egui_style: &egui::Style) -> Style {
+        let mut style = Style::from_egui(egui_style);
 
         // Customize tab bar appearance
         style.tab_bar.height = 24.0;
@@ -546,13 +551,16 @@ impl DockLayout {
 
         // Customize tab appearance
         style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
-        // Tab body uses default theme colors
 
         // Separator styling
         style.separator.width = 4.0;
-        // Separator uses default theme colors for idle/hover states
 
-        // Tab bar uses default theme background
+        // Accent-colored focused-tab indicator (accent rides hyperlink_color
+        // for all themes — see ui/palette.rs routing conventions).
+        let accent = egui_style.visuals.hyperlink_color;
+        style.tab_bar.hline_color = accent;
+        style.tab.hline_below_active_tab_name = true;
+        style.tab.focused.text_color = accent;
 
         style
     }
@@ -562,12 +570,8 @@ impl DockLayout {
     /// This renders the entire docking area with all panels.
     /// The `tab_viewer` parameter controls how each panel is rendered.
     pub fn show<T: TabViewer<Tab = PanelType>>(&mut self, ctx: &egui::Context, tab_viewer: &mut T) {
-        // Update style from current egui style for theme consistency
-        self.style = Style::from_egui(ctx.style().as_ref());
-        self.style.tab_bar.height = 24.0;
-        self.style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
-        self.style.separator.width = 4.0;
-        // Production theme uses default egui_dock colors derived from egui style
+        // Re-derive style from current egui style for theme consistency
+        self.style = Self::themed_style(ctx.style().as_ref());
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())
@@ -583,12 +587,8 @@ impl DockLayout {
         ui: &mut egui::Ui,
         tab_viewer: &mut T,
     ) {
-        // Update style from current egui style for theme consistency
-        self.style = Style::from_egui(ui.style().as_ref());
-        self.style.tab_bar.height = 24.0;
-        self.style.tab.tab_body.inner_margin = egui::Margin::symmetric(8, 4);
-        self.style.separator.width = 4.0;
-        // Production theme uses default egui_dock colors derived from egui style
+        // Re-derive style from current egui style for theme consistency
+        self.style = Self::themed_style(ui.style().as_ref());
 
         DockArea::new(&mut self.dock_state)
             .style(self.style.clone())

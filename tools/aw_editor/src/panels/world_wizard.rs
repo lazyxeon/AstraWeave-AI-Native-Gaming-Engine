@@ -244,6 +244,11 @@ pub struct WorldWizard {
     // Populate page — scatter density multiplier 0.0 .. 2.0
     scatter_density: f32,
     populate_enabled: bool,
+
+    /// Raise the dim overlay + window above the viewport HUD overlays on the
+    /// frame the wizard opens. One-shot: re-raising every frame would put the
+    /// window above its own ComboBox popups.
+    raise_pending: bool,
 }
 
 impl Default for WorldWizard {
@@ -260,6 +265,7 @@ impl Default for WorldWizard {
             environment: WorldTemplate::LushForest.environment(),
             scatter_density: 1.0,
             populate_enabled: true,
+            raise_pending: false,
         }
     }
 }
@@ -273,6 +279,7 @@ impl WorldWizard {
     pub fn open(&mut self) {
         self.open = true;
         self.step = WizardStep::Template;
+        self.raise_pending = true;
     }
 
     /// Render the wizard modal. Returns an action when the user completes or cancels.
@@ -283,18 +290,24 @@ impl WorldWizard {
 
         let mut action: Option<WorldWizardAction> = None;
 
-        // Semi-transparent overlay
+        // Semi-transparent modal dim. Foreground order so it covers the
+        // viewport HUD overlays (toolbar / performance / camera cards), and
+        // it swallows input so nothing beneath the wizard is interactive.
         let screen = ctx.screen_rect();
-        egui::Area::new(egui::Id::new("world_wizard_overlay"))
+        let dim = egui::Area::new(egui::Id::new("world_wizard_overlay"))
+            .order(egui::Order::Foreground)
             .fixed_pos(screen.min)
             .show(ctx, |ui| {
-                let painter = ui.painter();
-                painter.rect_filled(screen, 0.0, Color32::from_black_alpha(160));
+                ui.painter()
+                    .rect_filled(screen, 0.0, Color32::from_black_alpha(160));
+                // Swallow clicks/drags aimed at anything below the wizard.
+                ui.allocate_rect(screen, egui::Sense::click_and_drag());
             });
 
         let mut still_open = true;
 
-        egui::Window::new("New World Wizard")
+        let window = egui::Window::new("New World Wizard")
+            .order(egui::Order::Foreground)
             .collapsible(false)
             .resizable(false)
             .default_width(680.0)
@@ -340,7 +353,7 @@ impl WorldWizard {
                                 .button(
                                     RichText::new("Generate World")
                                         .strong()
-                                        .color(Color32::from_rgb(80, 200, 120)),
+                                        .color(crate::ui::palette::SUCCESS),
                                 )
                                 .clicked()
                             {
@@ -366,6 +379,18 @@ impl WorldWizard {
                 });
             });
 
+        // On the opening frame, raise dim then window above any HUD overlay
+        // layers that were previously moved to the top of the Foreground
+        // order (e.g. by dragging the performance card). One-shot so the
+        // window never covers its own ComboBox popups on later frames.
+        if self.raise_pending {
+            self.raise_pending = false;
+            ctx.move_to_top(dim.response.layer_id);
+            if let Some(window) = &window {
+                ctx.move_to_top(window.response.layer_id);
+            }
+        }
+
         if !still_open {
             self.open = false;
             action = Some(WorldWizardAction::Cancelled);
@@ -380,16 +405,18 @@ impl WorldWizard {
 
     fn render_step_bar(&self, ui: &mut Ui) {
         ui.horizontal(|ui| {
+            let accent = crate::ui::palette::accent(ui.visuals());
+            let weak = ui.visuals().weak_text_color();
             for (i, step) in WizardStep::ALL.iter().enumerate() {
                 let is_current = *step == self.step;
                 let is_past = step.index() < self.step.index();
 
                 let color = if is_current {
-                    Color32::from_rgb(80, 160, 255)
+                    accent
                 } else if is_past {
-                    Color32::from_rgb(80, 200, 120)
+                    crate::ui::palette::SUCCESS
                 } else {
-                    Color32::from_rgb(120, 120, 130)
+                    weak
                 };
 
                 let label = format!("{}. {}", i + 1, step.label());
@@ -401,7 +428,7 @@ impl WorldWizard {
 
                 ui.label(text);
                 if i < WizardStep::ALL.len() - 1 {
-                    ui.label(RichText::new("→").color(Color32::from_rgb(80, 80, 90)));
+                    ui.label(RichText::new("→").color(crate::ui::palette::TEXT_FAINT));
                 }
             }
         });
@@ -467,18 +494,20 @@ impl WorldWizard {
         let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
         let painter = ui.painter_at(rect);
 
-        // Background
+        // Background (theme-routed)
+        let visuals = ui.visuals();
+        let accent = crate::ui::palette::accent(visuals);
         let bg = if selected {
-            Color32::from_rgb(35, 50, 75)
+            visuals.selection.bg_fill
         } else if response.hovered() {
-            Color32::from_rgb(40, 40, 50)
+            visuals.widgets.hovered.bg_fill
         } else {
-            Color32::from_rgb(28, 28, 36)
+            visuals.widgets.inactive.bg_fill
         };
         let stroke = if selected {
-            egui::Stroke::new(2.0, Color32::from_rgb(80, 160, 255))
+            egui::Stroke::new(2.0, accent)
         } else {
-            egui::Stroke::new(1.0, Color32::from_rgb(50, 50, 60))
+            egui::Stroke::new(1.0, visuals.widgets.noninteractive.bg_stroke.color)
         };
         painter.rect(rect, 6.0, bg, stroke, egui::StrokeKind::Outside);
 
@@ -501,7 +530,7 @@ impl WorldWizard {
             egui::Align2::LEFT_TOP,
             template.icon(),
             egui::FontId::proportional(18.0),
-            Color32::WHITE,
+            visuals.strong_text_color(),
         );
 
         let name_pos = egui::pos2(rect.min.x + 8.0, text_y + 22.0);
@@ -511,9 +540,9 @@ impl WorldWizard {
             template.name(),
             egui::FontId::proportional(13.0),
             if selected {
-                Color32::from_rgb(180, 210, 255)
+                accent
             } else {
-                Color32::from_rgb(200, 200, 210)
+                visuals.text_color()
             },
         );
 
@@ -533,7 +562,7 @@ impl WorldWizard {
             egui::Align2::LEFT_TOP,
             short_desc,
             egui::FontId::proportional(10.0),
-            Color32::from_rgb(140, 140, 155),
+            visuals.weak_text_color(),
         );
 
         response
@@ -658,15 +687,15 @@ impl WorldWizard {
         ui.add_space(8.0);
         ui.label("Quick-Select:");
         ui.horizontal_wrapped(|ui| {
+            let accent = crate::ui::palette::accent(ui.visuals());
+            let body = ui.visuals().text_color();
             for preset in EnvironmentPreset::all() {
                 let is_selected = *preset == self.environment;
                 let text = format!("{} {}", preset.icon(), preset.name());
                 let rt = if is_selected {
-                    RichText::new(text)
-                        .strong()
-                        .color(Color32::from_rgb(80, 200, 120))
+                    RichText::new(text).strong().color(accent)
                 } else {
-                    RichText::new(text).color(Color32::from_rgb(180, 180, 190))
+                    RichText::new(text).color(body)
                 };
                 if ui.selectable_label(is_selected, rt).clicked() {
                     self.environment = *preset;
@@ -702,17 +731,16 @@ impl WorldWizard {
                 });
 
             ui.add_space(4.0);
-            ui.label(
-                RichText::new(density_description(self.scatter_density))
-                    .color(Color32::from_rgb(160, 160, 175)),
-            );
+            let weak = ui.visuals().weak_text_color();
+            ui.label(RichText::new(density_description(self.scatter_density)).color(weak));
         } else {
             ui.add_space(4.0);
+            let weak = ui.visuals().weak_text_color();
             ui.label(
                 RichText::new(
                     "Terrain will be generated but left empty — you place objects manually.",
                 )
-                .color(Color32::from_rgb(160, 160, 175)),
+                .color(weak),
             );
         }
     }
@@ -777,11 +805,12 @@ impl WorldWizard {
             });
 
         ui.add_space(10.0);
+        let accent = crate::ui::palette::accent(ui.visuals());
         ui.label(
             RichText::new(
                 "Click \"Generate World\" to create your world. This may take a few seconds.",
             )
-            .color(Color32::from_rgb(140, 190, 255)),
+            .color(accent),
         );
     }
 

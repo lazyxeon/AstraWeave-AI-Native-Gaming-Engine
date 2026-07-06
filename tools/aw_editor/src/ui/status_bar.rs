@@ -199,12 +199,9 @@ impl StatusBar {
     ) {
         ui.horizontal(|ui| {
             if is_dirty {
-                ui.label(
-                    egui::RichText::new("*")
-                        .color(egui::Color32::from_rgb(255, 100, 100))
-                        .strong(),
-                )
-                .on_hover_text("Unsaved changes - Press Ctrl+S to save");
+                let dirty_color = ui.visuals().error_fg_color;
+                ui.label(egui::RichText::new("*").color(dirty_color).strong())
+                    .on_hover_text("Unsaved changes - Press Ctrl+S to save");
             }
 
             Self::show_editor_mode(ui, editor_mode);
@@ -266,12 +263,9 @@ impl StatusBar {
     ) {
         ui.horizontal(|ui| {
             if is_dirty {
-                ui.label(
-                    egui::RichText::new("*")
-                        .color(egui::Color32::from_rgb(255, 100, 100))
-                        .strong(),
-                )
-                .on_hover_text("Unsaved changes - Press Ctrl+S to save");
+                let dirty_color = ui.visuals().error_fg_color;
+                ui.label(egui::RichText::new("*").color(dirty_color).strong())
+                    .on_hover_text("Unsaved changes - Press Ctrl+S to save");
             }
 
             Self::show_editor_mode(ui, editor_mode);
@@ -396,14 +390,15 @@ impl StatusBar {
 
     /// Show resource usage indicators (Week 6 Day 5)
     fn show_resource_usage(ui: &mut Ui, usage: &ResourceUsage) {
-        // Memory usage indicator
+        // Memory usage indicator (colors are palette-mapped; the <50/<80 %
+        // tiers are functional semantics — do not restyle away)
         let mem_percent = usage.memory_percent();
         let mem_color = if mem_percent < 50.0 {
-            egui::Color32::GREEN
+            crate::ui::palette::SUCCESS
         } else if mem_percent < 80.0 {
-            egui::Color32::YELLOW
+            crate::ui::palette::WARNING
         } else {
-            egui::Color32::RED
+            crate::ui::palette::ERROR
         };
 
         if usage.memory_total > 0 {
@@ -422,11 +417,11 @@ impl StatusBar {
         // GPU memory indicator
         let gpu_mem_percent = usage.gpu_memory_percent();
         let gpu_mem_color = if gpu_mem_percent < 50.0 {
-            egui::Color32::GREEN
+            crate::ui::palette::SUCCESS
         } else if gpu_mem_percent < 80.0 {
-            egui::Color32::YELLOW
+            crate::ui::palette::WARNING
         } else {
-            egui::Color32::RED
+            crate::ui::palette::ERROR
         };
 
         if usage.gpu_memory_total > 0 {
@@ -466,12 +461,14 @@ impl StatusBar {
     }
 
     fn show_fps(ui: &mut Ui, fps: f32) {
+        // Colors are palette-mapped; the ≥55/≥30 FPS tiers are functional
+        // semantics — do not restyle away.
         let color = if fps >= 55.0 {
-            egui::Color32::GREEN
+            crate::ui::palette::SUCCESS
         } else if fps >= 30.0 {
-            egui::Color32::YELLOW
+            crate::ui::palette::WARNING
         } else {
-            egui::Color32::RED
+            crate::ui::palette::ERROR
         };
 
         ui.colored_label(color, format!("FPS: {:.0}", fps))

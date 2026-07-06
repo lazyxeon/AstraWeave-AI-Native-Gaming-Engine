@@ -1,12 +1,17 @@
 //! Startup splash screen with JPEG logo + cinematic MP4 video playback.
 //!
 //! Flow:
-//! 1. **Logo phase** (~3s): Static logo image with animated loading bar
+//! 1. **Logo phase** (~0.8s): Static logo image with animated loading bar
 //! 2. **Video phase** (~8s): H.264 video decoded from MP4, displayed frame-by-frame
 //! 3. **Done**: Transition to editor
 //!
 //! Video is decoded on a background thread using `mp4` (container) + `openh264` (H.264 codec).
 //! Falls back to logo-only if video decode fails or files are missing.
+//!
+//! Startup can never block on the decoder: decode runs entirely off the UI
+//! thread, the logo phase waits for the first frame only up to
+//! `VIDEO_WAIT_CAP_SECS`, and phase 1 bails if frames stop arriving. Click or
+//! press any key to skip at any point.
 
 use anyhow::{Context as AnyhowContext, Result};
 use openh264::formats::YUVSource;
@@ -15,8 +20,15 @@ use std::time::Instant;
 
 const LOGO_PATH: &str = "assets/Astraweave_logo.jpg";
 const VIDEO_PATH: &str = "assets/8-second_Cinematic_logo_opening.mp4";
-const LOGO_PHASE_SECS: f32 = 0.5;
-const VIDEO_PHASE_SECS: f32 = 2.0;
+const LOGO_PHASE_SECS: f32 = 0.8;
+/// Hard cap on the video phase. The asset is an ~8s clip; playback normally
+/// ends earlier via the stream-end check in `show()`.
+const VIDEO_PHASE_SECS: f32 = 8.5;
+/// Max time to keep showing the logo while waiting for the first decoded
+/// frame (bounds worst-case startup delay when decode is slow or wedged).
+const VIDEO_WAIT_CAP_SECS: f32 = LOGO_PHASE_SECS + 2.0;
+/// Hold the final frame briefly before transitioning to the editor.
+const LAST_FRAME_HOLD_SECS: f32 = 0.25;
 
 /// A decoded video frame sent from the background thread.
 struct VideoFrame {
@@ -35,12 +47,22 @@ pub struct SplashScreen {
     video_rx: Option<mpsc::Receiver<VideoFrame>>,
     video_texture: Option<egui::TextureHandle>,
     current_frame_image: Option<egui::ColorImage>,
+    /// A decoded frame whose timestamp is still in the future — held back so
+    /// playback is timestamp-paced instead of running at UI repaint rate.
+    pending_frame: Option<(f32, egui::ColorImage)>,
+    /// Set when `current_frame_image` changed; `render_video` only re-uploads
+    /// the texture when this is set (uploading every repaint allocates a new
+    /// GPU texture per frame in egui).
+    frame_dirty: bool,
     video_available: bool,
 
     // State
     phase: u8, // 0=logo, 1=video, 2=done
     start_time: Instant,
     video_start_time: Option<Instant>,
+    /// Timestamp of the most recently received frame — used to end the video
+    /// phase shortly after the stream finishes instead of waiting out the cap.
+    last_frame_ts: Option<f32>,
 
     _decoder_thread: Option<std::thread::JoinHandle<()>>,
 }
@@ -49,19 +71,42 @@ impl SplashScreen {
     pub fn new() -> Self {
         let logo_image = load_logo_image();
 
-        // Skip video decode entirely for fast startup — logo-only splash.
-        // Video decode thread was spawning openh264 which can be slow on first use.
+        // Start background video decode immediately so frames buffer during
+        // the logo phase. OpenH264 init can be slow on first use, which is
+        // why decode runs entirely off the UI thread — the phase-0 gate in
+        // show() waits (bounded by VIDEO_WAIT_CAP_SECS) for the first frame
+        // and falls back to a logo-only splash on failure.
+        let (tx, rx) = mpsc::sync_channel::<VideoFrame>(10);
+        let decoder_thread = match std::thread::Builder::new()
+            .name("splash-video-decode".into())
+            .spawn(move || {
+                if let Err(e) = decode_video_frames(tx) {
+                    tracing::warn!("Splash video decode failed: {e:#}");
+                }
+            }) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                // tx is dropped with the unspawned closure, so the receiver
+                // disconnects and the splash cleanly degrades to logo-only.
+                tracing::warn!("Failed to spawn splash video decode thread: {e}");
+                None
+            }
+        };
+
         SplashScreen {
             logo_image,
             logo_texture: None,
-            video_rx: None,
+            video_rx: Some(rx),
             video_texture: None,
             current_frame_image: None,
-            video_available: false,
+            pending_frame: None,
+            frame_dirty: false,
+            video_available: decoder_thread.is_some(),
             phase: 0,
             start_time: Instant::now(),
             video_start_time: None,
-            _decoder_thread: None,
+            last_frame_ts: None,
+            _decoder_thread: decoder_thread,
         }
     }
 
@@ -81,15 +126,27 @@ impl SplashScreen {
                 let elapsed = self.start_time.elapsed().as_secs_f32();
                 self.render_logo(ctx, elapsed);
                 if elapsed >= LOGO_PHASE_SECS {
-                    // Try to peek at the video channel to see if frames are coming
                     if !self.video_available {
-                        // No video, skip to done
+                        // Decode failed or never started — logo-only splash.
                         self.phase = 2;
                         self.cleanup();
                         return false;
                     }
-                    self.phase = 1;
-                    self.video_start_time = Some(Instant::now());
+                    if self.current_frame_image.is_some() {
+                        // First video frame is buffered — start playback.
+                        self.phase = 1;
+                        self.video_start_time = Some(Instant::now());
+                    } else if elapsed >= VIDEO_WAIT_CAP_SECS {
+                        // Decoder produced nothing within the wait cap —
+                        // don't hold the editor hostage, skip the video.
+                        tracing::debug!(
+                            "Splash video produced no frame within {VIDEO_WAIT_CAP_SECS}s; skipping video phase"
+                        );
+                        self.phase = 2;
+                        self.cleanup();
+                        return false;
+                    }
+                    // else: keep showing the logo while the decoder warms up.
                 }
                 ctx.request_repaint();
                 true
@@ -101,7 +158,9 @@ impl SplashScreen {
 
                 self.advance_video_frame(video_elapsed);
 
-                // If we never got any frames, fall back
+                // Backstop: if frames stopped arriving before anything was
+                // buffered (normally impossible — the phase-0 gate requires a
+                // buffered frame), fall back to the editor.
                 if video_elapsed > 0.5 && self.current_frame_image.is_none() {
                     self.phase = 2;
                     self.cleanup();
@@ -110,7 +169,13 @@ impl SplashScreen {
 
                 self.render_video(ctx, video_elapsed);
 
-                if video_elapsed >= VIDEO_PHASE_SECS {
+                // End when the decoded stream is exhausted (decoder thread
+                // finished, no held-back frame remains, and the last frame
+                // has been shown), or at the cap.
+                let stream_ended = self.video_rx.is_none()
+                    && self.pending_frame.is_none()
+                    && video_elapsed >= self.last_frame_ts.unwrap_or(0.0) + LAST_FRAME_HOLD_SECS;
+                if stream_ended || video_elapsed >= VIDEO_PHASE_SECS {
                     self.phase = 2;
                     self.cleanup();
                     return false;
@@ -216,26 +281,45 @@ impl SplashScreen {
                 });
             });
 
-        // Check if video channel got disconnected (decode failed early)
-        if let Some(rx) = &self.video_rx {
-            match rx.try_recv() {
-                Ok(frame) => {
-                    // Got a frame — buffer it for later
-                    self.current_frame_image = Some(rgb8_to_color_image(
-                        &frame.rgb_data,
-                        frame.width,
-                        frame.height,
-                    ));
+        // Buffer the FIRST decoded frame (also detects early decode failure
+        // via channel disconnect). Only pull one frame — draining here would
+        // consume the opening seconds of the video before playback starts.
+        if self.current_frame_image.is_none() {
+            if let Some(rx) = &self.video_rx {
+                match rx.try_recv() {
+                    Ok(frame) => {
+                        self.last_frame_ts = Some(frame.timestamp_secs);
+                        self.current_frame_image = Some(rgb8_to_color_image(
+                            &frame.rgb_data,
+                            frame.width,
+                            frame.height,
+                        ));
+                        self.frame_dirty = true;
+                    }
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        self.video_available = false;
+                    }
+                    Err(mpsc::TryRecvError::Empty) => {}
                 }
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    self.video_available = false;
-                }
-                Err(mpsc::TryRecvError::Empty) => {}
             }
         }
     }
 
     fn advance_video_frame(&mut self, video_elapsed: f32) {
+        // Promote the held-back frame once its timestamp is due; while it is
+        // still in the future, playback shows the current frame (this is what
+        // paces playback to timestamps instead of the UI repaint rate).
+        if let Some((ts, _)) = self.pending_frame {
+            if ts > video_elapsed {
+                return;
+            }
+            if let Some((ts, img)) = self.pending_frame.take() {
+                self.last_frame_ts = Some(ts);
+                self.current_frame_image = Some(img);
+                self.frame_dirty = true;
+            }
+        }
+
         let rx = match &self.video_rx {
             Some(rx) => rx,
             None => return,
@@ -246,12 +330,14 @@ impl SplashScreen {
             match rx.try_recv() {
                 Ok(frame) => {
                     let img = rgb8_to_color_image(&frame.rgb_data, frame.width, frame.height);
-                    self.current_frame_image = Some(img);
-
-                    // If this frame is ahead of playback time, stop consuming
                     if frame.timestamp_secs > video_elapsed {
+                        // Ahead of schedule — hold it until its timestamp.
+                        self.pending_frame = Some((frame.timestamp_secs, img));
                         break;
                     }
+                    self.last_frame_ts = Some(frame.timestamp_secs);
+                    self.current_frame_image = Some(img);
+                    self.frame_dirty = true;
                 }
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => {
@@ -267,13 +353,17 @@ impl SplashScreen {
             .frame(egui::Frame::new().fill(egui::Color32::BLACK))
             .show(ctx, |ui| {
                 if let Some(image) = &self.current_frame_image {
-                    // Update or create video texture
+                    // Upload only when the frame changed — load_texture
+                    // allocates a NEW texture on every call.
                     let size = image.size;
-                    self.video_texture = Some(ctx.load_texture(
-                        "splash_video_frame",
-                        image.clone(),
-                        egui::TextureOptions::LINEAR,
-                    ));
+                    if self.video_texture.is_none() || self.frame_dirty {
+                        self.video_texture = Some(ctx.load_texture(
+                            "splash_video_frame",
+                            image.clone(),
+                            egui::TextureOptions::LINEAR,
+                        ));
+                        self.frame_dirty = false;
+                    }
 
                     if let Some(tex) = &self.video_texture {
                         let avail = ui.available_size();
@@ -304,6 +394,7 @@ impl SplashScreen {
         self.video_rx = None;
         self.video_texture = None;
         self.current_frame_image = None;
+        self.pending_frame = None;
         self.logo_texture = None;
         self.logo_image = None;
     }

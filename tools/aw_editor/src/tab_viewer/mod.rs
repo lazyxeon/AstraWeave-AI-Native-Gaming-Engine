@@ -2681,9 +2681,10 @@ impl TabViewer for EditorTabViewer {
                         self.emit_event(event);
                     }
                 } else {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("No entity selected");
-                    });
+                    crate::ui::palette::empty_selection_state(
+                        ui,
+                        "Select an entity in the Hierarchy panel",
+                    );
                 }
             }
             PanelType::Hierarchy => {
@@ -2917,40 +2918,49 @@ impl TabViewer for EditorTabViewer {
                                 ui.label("Get started by adding entities to your scene:");
                                 ui.add_space(8.0);
 
-                                let btn_width = 180.0;
-                                if ui
-                                    .add_sized([btn_width, 28.0], egui::Button::new("+ Add Player"))
-                                    .clicked()
+                                let btn_size = egui::vec2(180.0, 30.0);
+                                if crate::ui::palette::accent_button_ui(
+                                    ui,
+                                    Some(btn_size),
+                                    "+ Add Player",
+                                )
+                                .clicked()
                                 {
                                     self.emit_event(PanelEvent::SpawnArchetype {
                                         archetype: "Player".into(),
                                     });
                                 }
-                                ui.add_space(2.0);
-                                if ui
-                                    .add_sized([btn_width, 28.0], egui::Button::new("+ Add Light"))
-                                    .clicked()
+                                ui.add_space(4.0);
+                                if crate::ui::palette::accent_button_ui(
+                                    ui,
+                                    Some(btn_size),
+                                    "+ Add Light",
+                                )
+                                .clicked()
                                 {
                                     self.emit_event(PanelEvent::SpawnArchetype {
                                         archetype: "Light".into(),
                                     });
                                 }
-                                ui.add_space(2.0);
-                                if ui
-                                    .add_sized([btn_width, 28.0], egui::Button::new("+ Add Camera"))
-                                    .clicked()
+                                ui.add_space(4.0);
+                                if crate::ui::palette::accent_button_ui(
+                                    ui,
+                                    Some(btn_size),
+                                    "+ Add Camera",
+                                )
+                                .clicked()
                                 {
                                     self.emit_event(PanelEvent::SpawnArchetype {
                                         archetype: "Camera".into(),
                                     });
                                 }
-                                ui.add_space(2.0);
-                                if ui
-                                    .add_sized(
-                                        [btn_width, 28.0],
-                                        egui::Button::new("+ Empty Entity"),
-                                    )
-                                    .clicked()
+                                ui.add_space(4.0);
+                                if crate::ui::palette::accent_button_ui(
+                                    ui,
+                                    Some(btn_size),
+                                    "+ Empty Entity",
+                                )
+                                .clicked()
                                 {
                                     self.emit_event(PanelEvent::CreateEntity);
                                 }
@@ -3120,6 +3130,43 @@ impl TabViewer for EditorTabViewer {
                 }
             }
             PanelType::Console => {
+                /// Rounded severity filter chip: severity-colored fill, text,
+                /// and stroke when on; stock inactive visuals when off.
+                fn severity_chip(
+                    ui: &mut egui::Ui,
+                    on: &mut bool,
+                    label: &str,
+                    color: egui::Color32,
+                ) {
+                    let (fill, text_color, stroke) = if *on {
+                        (
+                            color.gamma_multiply(0.22),
+                            color,
+                            egui::Stroke::new(1.0, color),
+                        )
+                    } else {
+                        (
+                            ui.visuals().widgets.inactive.bg_fill,
+                            ui.visuals().weak_text_color(),
+                            egui::Stroke::new(
+                                1.0,
+                                ui.visuals().widgets.noninteractive.bg_stroke.color,
+                            ),
+                        )
+                    };
+                    let response = ui.add(
+                        egui::Button::new(egui::RichText::new(label).color(text_color))
+                            .fill(fill)
+                            .stroke(stroke)
+                            .corner_radius(egui::CornerRadius::same(
+                                crate::ui::palette::WIDGET_RADIUS,
+                            )),
+                    );
+                    if response.clicked() {
+                        *on = !*on;
+                    }
+                }
+
                 // Count errors, warnings, info for header badges
                 let error_count = self.console_error_count;
                 let warn_count = self.console_warn_count;
@@ -3132,18 +3179,14 @@ impl TabViewer for EditorTabViewer {
                 ui.horizontal(|ui| {
                     ui.heading(format!("Console ({})", self.console_logs.len()));
                     ui.separator();
-                    // Message count badges
+                    // Message count badges (severity colors are theme-routed)
+                    let error_color = ui.visuals().error_fg_color;
+                    let warn_color = ui.visuals().warn_fg_color;
                     if error_count > 0 {
-                        ui.colored_label(
-                            egui::Color32::from_rgb(255, 100, 100),
-                            format!("{}", error_count),
-                        );
+                        ui.colored_label(error_color, format!("{}", error_count));
                     }
                     if warn_count > 0 {
-                        ui.colored_label(
-                            egui::Color32::from_rgb(255, 200, 100),
-                            format!("W: {}", warn_count),
-                        );
+                        ui.colored_label(warn_color, format!("W: {}", warn_count));
                     }
                     if info_count > 0 {
                         ui.weak(format!("i: {}", info_count));
@@ -3181,10 +3224,14 @@ impl TabViewer for EditorTabViewer {
 
                 // Console controls - second row (filters)
                 ui.horizontal(|ui| {
-                    // Log level filters
-                    ui.toggle_value(&mut self.show_errors, "Errors");
-                    ui.toggle_value(&mut self.show_warnings, "Warnings");
-                    ui.toggle_value(&mut self.show_info, "Info");
+                    // Log level filters (filter behavior unchanged — only the
+                    // widgets are restyled as severity chips)
+                    let error_color = ui.visuals().error_fg_color;
+                    let warn_color = ui.visuals().warn_fg_color;
+                    let info_color = crate::ui::palette::accent(ui.visuals());
+                    severity_chip(ui, &mut self.show_errors, "Errors", error_color);
+                    severity_chip(ui, &mut self.show_warnings, "Warnings", warn_color);
+                    severity_chip(ui, &mut self.show_info, "Info", info_color);
                     ui.separator();
                     ui.add_sized(
                         [ui.available_width(), 20.0],
@@ -3273,13 +3320,13 @@ impl TabViewer for EditorTabViewer {
                                     continue;
                                 }
 
-                                // Color-code based on level
+                                // Color-code based on level (theme-routed)
                                 let color = if is_error {
-                                    egui::Color32::from_rgb(255, 100, 100)
+                                    ui.visuals().error_fg_color
                                 } else if is_warn {
-                                    egui::Color32::from_rgb(255, 200, 100)
+                                    ui.visuals().warn_fg_color
                                 } else {
-                                    egui::Color32::GRAY
+                                    ui.visuals().weak_text_color()
                                 };
                                 ui.colored_label(color, log);
                             }
@@ -4216,9 +4263,10 @@ impl TabViewer for EditorTabViewer {
                         });
                     }
                 } else {
-                    ui.centered_and_justified(|ui| {
-                        ui.weak("No entity selected\n\nSelect an entity in the Hierarchy panel");
-                    });
+                    crate::ui::palette::empty_selection_state(
+                        ui,
+                        "Select an entity in the Hierarchy panel",
+                    );
                 }
 
                 // Emit events outside borrow
@@ -7802,7 +7850,8 @@ impl TabViewer for EditorTabViewer {
                 // up-to-date status. Brush queue is fed by future
                 // viewport-pointer-event wiring (out of F.5-paint.F-fix
                 // scope per Q1 deferral).
-                self.regional_archetype_panel.apply_pending_paint_ops_to_owned();
+                self.regional_archetype_panel
+                    .apply_pending_paint_ops_to_owned();
                 self.regional_archetype_panel.show(ui);
                 // Sub-phase 5: drain RAP's SetActiveTool emissions into the
                 // shared pending channel (reused per the Andrew planning round),
@@ -8235,7 +8284,10 @@ mod tests {
              load_mask_from / set_mask is called"
         );
         assert!(
-            tab_viewer.regional_archetype_panel.pending_paint_ops.is_empty(),
+            tab_viewer
+                .regional_archetype_panel
+                .pending_paint_ops
+                .is_empty(),
             "regional_archetype_panel.pending_paint_ops should start empty"
         );
     }

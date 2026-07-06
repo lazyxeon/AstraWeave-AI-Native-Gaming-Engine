@@ -1,4 +1,6 @@
+pub mod branding;
 pub mod menu_bar;
+pub mod palette;
 pub mod progress;
 pub mod status_bar;
 pub mod toast;

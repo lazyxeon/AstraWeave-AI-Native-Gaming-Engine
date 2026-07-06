@@ -57,16 +57,17 @@ impl EntityCategory {
     }
 
     pub fn color(self) -> Color32 {
+        use crate::ui::palette;
         match self {
-            Self::Character => Color32::from_rgb(80, 180, 255),
-            Self::Building => Color32::from_rgb(255, 160, 80),
-            Self::Vehicle => Color32::from_rgb(100, 220, 150),
-            Self::Nature => Color32::from_rgb(80, 200, 80),
-            Self::Furniture => Color32::from_rgb(200, 160, 100),
-            Self::Food => Color32::from_rgb(255, 200, 80),
-            Self::Weapon => Color32::from_rgb(220, 80, 80),
-            Self::Infrastructure => Color32::from_rgb(160, 160, 200),
-            Self::Prop => Color32::from_rgb(200, 160, 255),
+            Self::Character => palette::CAT_CHARACTER,
+            Self::Building => palette::CAT_BUILDING,
+            Self::Vehicle => palette::CAT_VEHICLE,
+            Self::Nature => palette::CAT_NATURE,
+            Self::Furniture => palette::CAT_FURNITURE,
+            Self::Food => palette::CAT_FOOD,
+            Self::Weapon => palette::CAT_WEAPON,
+            Self::Infrastructure => palette::CAT_INFRASTRUCTURE,
+            Self::Prop => palette::CAT_PROP,
         }
     }
 }
@@ -1316,7 +1317,7 @@ impl EntityCatalogState {
                         .button(
                             egui::RichText::new(format!("  {} {}", pack_arrow, pack_header))
                                 .small()
-                                .color(Color32::from_gray(180)),
+                                .color(ui.visuals().weak_text_color()),
                         )
                         .clicked()
                     {
