@@ -413,7 +413,14 @@ pub fn world_to_mask_pixel(
 /// Uses Euclidean-distance test: pixel `(px, pz)` is painted if
 /// `(px-cx)² + (pz-cz)² ≤ radius²`. Matches
 /// [`RegionalArchetypeMask::with_painted_circle`] semantics from F.4.A.
-pub fn paint_circle(ids: &mut [u8], resolution: u32, cx: i32, cz: i32, radius: u32, archetype_id: u8) {
+pub fn paint_circle(
+    ids: &mut [u8],
+    resolution: u32,
+    cx: i32,
+    cz: i32,
+    radius: u32,
+    archetype_id: u8,
+) {
     let r = radius as i32;
     let r2 = r * r;
     let res = resolution as i32;
@@ -682,16 +689,10 @@ impl RegionalArchetypePanel {
                     let color = archetype_display_color(id);
                     // Color swatch + display name in a horizontal layout.
                     ui.horizontal(|ui| {
-                        let (rect, _) = ui.allocate_exact_size(
-                            egui::vec2(16.0, 16.0),
-                            egui::Sense::hover(),
-                        );
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
                         ui.painter().rect_filled(rect, 2.0, color);
-                        ui.selectable_value(
-                            &mut self.selected_archetype,
-                            id,
-                            id.display_name(),
-                        );
+                        ui.selectable_value(&mut self.selected_archetype, id, id.display_name());
                     });
                 }
             });
@@ -854,8 +855,14 @@ mod tests {
     #[test]
     fn panel_default_state() {
         let p = RegionalArchetypePanel::default();
-        assert_eq!(p.brush_size_pixels, RegionalArchetypePanel::DEFAULT_BRUSH_SIZE_PIXELS);
-        assert_eq!(p.falloff_radius_pixels, RegionalArchetypePanel::DEFAULT_FALLOFF_RADIUS_PIXELS);
+        assert_eq!(
+            p.brush_size_pixels,
+            RegionalArchetypePanel::DEFAULT_BRUSH_SIZE_PIXELS
+        );
+        assert_eq!(
+            p.falloff_radius_pixels,
+            RegionalArchetypePanel::DEFAULT_FALLOFF_RADIUS_PIXELS
+        );
         assert_eq!(p.selected_archetype, WorldArchetypeId::ContinentalTemperate);
         assert_eq!(p.paint_mode, PaintMode::Paint);
         assert!(!p.paint_active);
@@ -948,9 +955,9 @@ mod tests {
         // Pixels within radius 8.
         assert_eq!(ids[32 * 64 + 40], 1); // dist = 8 (boundary)
         assert_eq!(ids[40 * 64 + 32], 1); // dist = 8
-        // Pixels just outside (dist² = 81 > 64).
+                                          // Pixels just outside (dist² = 81 > 64).
         assert_eq!(ids[32 * 64 + 41], 0); // dist = 9
-        // Far pixels.
+                                          // Far pixels.
         assert_eq!(ids[0], 0);
         assert_eq!(ids[63 * 64 + 63], 0);
     }
@@ -1078,12 +1085,20 @@ mod tests {
             (0.0, 0.0), // pointer at screen center
             (0.0, 1000.0, 0.0),
             std::f32::consts::FRAC_PI_2, // 90° down
-            1.0,                          // FOV (irrelevant at center)
-            16.0 / 9.0,                   // aspect
+            1.0,                         // FOV (irrelevant at center)
+            16.0 / 9.0,                  // aspect
         );
         let (x, z) = world_xz.expect("ray hits Y=0 plane");
-        assert!(x.abs() < 0.01, "world_x at screen center should be 0; got {}", x);
-        assert!(z.abs() < 0.01, "world_z at screen center should be 0; got {}", z);
+        assert!(
+            x.abs() < 0.01,
+            "world_x at screen center should be 0; got {}",
+            x
+        );
+        assert!(
+            z.abs() < 0.01,
+            "world_z at screen center should be 0; got {}",
+            z
+        );
     }
 
     /// Camera looking up (pitch = 0) → ray parallel to Y=0 plane → no hit.
@@ -1153,7 +1168,10 @@ mod tests {
         p.ensure_mask();
         let m = p.mask.as_ref().expect("mask allocated");
         assert_eq!(m.resolution, RegionalArchetypeMask::DEFAULT_RESOLUTION);
-        assert_eq!(m.world_extent_wu, RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU);
+        assert_eq!(
+            m.world_extent_wu,
+            RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU
+        );
 
         // Mutate the mask, call ensure_mask again, expect it untouched.
         p.mask.as_mut().unwrap().ids[0] = 42;
@@ -1241,7 +1259,10 @@ mod tests {
         // Load into a fresh panel.
         let mut loaded = RegionalArchetypePanel::default();
         loaded.load_mask_from(&base).expect("load_mask_from");
-        assert_eq!(loaded.current_mask_base_path.as_deref(), Some(base.as_path()));
+        assert_eq!(
+            loaded.current_mask_base_path.as_deref(),
+            Some(base.as_path())
+        );
 
         // Byte-identical mask content.
         let a = original.mask.as_ref().unwrap();
@@ -1314,7 +1335,10 @@ mod tests {
     #[test]
     fn strip_ron_extension_strips_only_ron() {
         let with_ron = PathBuf::from("/projects/world.ron");
-        assert_eq!(strip_ron_extension(&with_ron), PathBuf::from("/projects/world"));
+        assert_eq!(
+            strip_ron_extension(&with_ron),
+            PathBuf::from("/projects/world")
+        );
 
         let no_ext = PathBuf::from("/projects/world");
         assert_eq!(strip_ron_extension(&no_ext), no_ext);

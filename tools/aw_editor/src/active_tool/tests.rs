@@ -49,7 +49,11 @@ struct MockActiveTool {
 }
 
 impl MockActiveTool {
-    fn new(uuid: Uuid, name: &str, disposition: EventDisposition) -> (Self, Rc<RefCell<MockToolState>>) {
+    fn new(
+        uuid: Uuid,
+        name: &str,
+        disposition: EventDisposition,
+    ) -> (Self, Rc<RefCell<MockToolState>>) {
         let state = Rc::new(RefCell::new(MockToolState::default()));
         let tool = Self {
             uuid,
@@ -121,20 +125,12 @@ impl ActiveTool for MockActiveTool {
         self.state.borrow_mut().mouse_leave_count += 1;
     }
 
-    fn on_key_down(
-        &mut self,
-        _key: &KeyEvent,
-        _context: &mut ToolContext,
-    ) -> EventDisposition {
+    fn on_key_down(&mut self, _key: &KeyEvent, _context: &mut ToolContext) -> EventDisposition {
         self.state.borrow_mut().key_down_count += 1;
         self.return_disposition
     }
 
-    fn on_key_up(
-        &mut self,
-        _key: &KeyEvent,
-        _context: &mut ToolContext,
-    ) -> EventDisposition {
+    fn on_key_up(&mut self, _key: &KeyEvent, _context: &mut ToolContext) -> EventDisposition {
         self.state.borrow_mut().key_up_count += 1;
         self.return_disposition
     }
@@ -213,7 +209,8 @@ fn register_tool_with_same_uuid_overwrites() {
     let mut context = ToolContext::for_test();
     dispatcher.set_active_tool(Some(uuid), &mut context);
     let event = build_mouse_event();
-    let disposition = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disposition =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
 
     assert_eq!(disposition, EventDisposition::Consumed); // tool_b's return value
     assert_eq!(state_b.borrow().left_button_down_count, 1);
@@ -254,7 +251,8 @@ fn set_active_tool_none_deactivates_current() {
 
     // Subsequent dispatch returns PassThrough.
     let event = build_mouse_event();
-    let disposition = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disposition =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
     assert_eq!(disposition, EventDisposition::PassThrough);
 }
 
@@ -271,8 +269,10 @@ fn dispatch_mouse_event_routes_to_active_tool() {
     dispatcher.set_active_tool(Some(uuid), &mut context);
     let event = build_mouse_event();
 
-    let disp_down = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
-    let disp_up = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonUp, &mut context);
+    let disp_down =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disp_up =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonUp, &mut context);
     let disp_move = dispatcher.dispatch_mouse_event(&event, MouseEventKind::Move, &mut context);
 
     assert_eq!(disp_down, EventDisposition::Consumed);
@@ -296,7 +296,8 @@ fn dispatch_mouse_event_with_no_active_tool_returns_passthrough() {
     // active_tool == None despite registration.
     let mut context = ToolContext::for_test();
     let event = build_mouse_event();
-    let disposition = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disposition =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
 
     assert_eq!(disposition, EventDisposition::PassThrough);
     assert_eq!(state.borrow().left_button_down_count, 0); // tool not called
@@ -316,7 +317,8 @@ fn dispatch_mouse_event_with_unregistered_active_tool_returns_passthrough() {
     // Set active to an UNREGISTERED UUID (edge case; graceful handling).
     dispatcher.set_active_tool(Some(unregistered_uuid), &mut context);
     let event = build_mouse_event();
-    let disposition = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disposition =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
 
     assert_eq!(disposition, EventDisposition::PassThrough);
 }
@@ -398,8 +400,10 @@ fn default_implementation_returns_passthrough() {
     dispatcher.set_active_tool(Some(uuid), &mut context);
     let event = build_mouse_event();
 
-    let disp_down = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
-    let disp_up = dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonUp, &mut context);
+    let disp_down =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonDown, &mut context);
+    let disp_up =
+        dispatcher.dispatch_mouse_event(&event, MouseEventKind::LeftButtonUp, &mut context);
     let disp_move = dispatcher.dispatch_mouse_event(&event, MouseEventKind::Move, &mut context);
 
     assert_eq!(disp_down, EventDisposition::PassThrough);
@@ -666,7 +670,9 @@ impl ActiveTool for OrderRecordingTool {
     }
 
     fn activate(&mut self, _context: &mut ToolContext) {
-        self.log.borrow_mut().push(format!("{}:activate", self.label));
+        self.log
+            .borrow_mut()
+            .push(format!("{}:activate", self.label));
     }
 
     fn deactivate(&mut self, _context: &mut ToolContext) {
@@ -689,8 +695,16 @@ fn set_active_transition_deactivates_prev_before_activating_next() {
     let uuid_a = Uuid::new_v4();
     let uuid_b = Uuid::new_v4();
     let log = Rc::new(RefCell::new(Vec::new()));
-    dispatcher.register_tool(Box::new(OrderRecordingTool::new(uuid_a, "A", Rc::clone(&log))));
-    dispatcher.register_tool(Box::new(OrderRecordingTool::new(uuid_b, "B", Rc::clone(&log))));
+    dispatcher.register_tool(Box::new(OrderRecordingTool::new(
+        uuid_a,
+        "A",
+        Rc::clone(&log),
+    )));
+    dispatcher.register_tool(Box::new(OrderRecordingTool::new(
+        uuid_b,
+        "B",
+        Rc::clone(&log),
+    )));
 
     let mut context = ToolContext::for_test();
     dispatcher.set_active_tool(Some(uuid_a), &mut context);

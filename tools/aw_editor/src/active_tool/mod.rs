@@ -283,20 +283,12 @@ pub trait ActiveTool {
     fn on_mouse_leave(&mut self, _context: &mut ToolContext) {}
 
     /// Key press. Defaults to `PassThrough`.
-    fn on_key_down(
-        &mut self,
-        _key: &KeyEvent,
-        _context: &mut ToolContext,
-    ) -> EventDisposition {
+    fn on_key_down(&mut self, _key: &KeyEvent, _context: &mut ToolContext) -> EventDisposition {
         EventDisposition::PassThrough
     }
 
     /// Key release. Defaults to `PassThrough`.
-    fn on_key_up(
-        &mut self,
-        _key: &KeyEvent,
-        _context: &mut ToolContext,
-    ) -> EventDisposition {
+    fn on_key_up(&mut self, _key: &KeyEvent, _context: &mut ToolContext) -> EventDisposition {
         EventDisposition::PassThrough
     }
 

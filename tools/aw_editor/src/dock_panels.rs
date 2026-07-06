@@ -241,7 +241,9 @@ impl<'a> DockPanelContext<'a> {
                 // (out of supplement scope per prompt §2.3).
                 ui.heading("Regional Archetypes");
                 ui.separator();
-                ui.label("Paint regional archetype mask to define per-region terrain shape variation.");
+                ui.label(
+                    "Paint regional archetype mask to define per-region terrain shape variation.",
+                );
                 ui.label("Switch to docking mode for the full interactive panel.");
             }
         }

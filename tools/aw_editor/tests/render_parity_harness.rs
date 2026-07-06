@@ -194,9 +194,10 @@ fn apply_canonical_quality_preset_to_renderer(
 
 /// Build the 4-vertex / 2-triangle quad in the engine's TerrainSplatVertex
 /// format. Position is world-space (Y=0), normal is +Y, UV is [0..1].
-fn build_terrain_chunk()
--> (Vec<astraweave_render::terrain_material_manager::TerrainSplatVertex>, Vec<u32>)
-{
+fn build_terrain_chunk() -> (
+    Vec<astraweave_render::terrain_material_manager::TerrainSplatVertex>,
+    Vec<u32>,
+) {
     use astraweave_render::terrain_material_manager::TerrainSplatVertex;
     let v = |x: f32, z: f32, u: f32, v_: f32| TerrainSplatVertex {
         position: [x, 0.0, z],
@@ -250,10 +251,7 @@ fn build_terrain_splats() -> [Vec<u8>; 8] {
 /// and the chunk geometry + splats into the given engine Renderer. Mirrors
 /// what `EngineRenderAdapter::reupload_terrain_layers_from_pending_pack` plus
 /// a direct chunk-upload would produce. Used by the harness's engine path.
-fn upload_engine_terrain_fixture(
-    renderer: &mut Renderer,
-    fixture: &ParityFixture,
-) -> Result<()> {
+fn upload_engine_terrain_fixture(renderer: &mut Renderer, fixture: &ParityFixture) -> Result<()> {
     renderer
         .init_terrain_forward()
         .context("engine init_terrain_forward failed")?;
@@ -597,7 +595,15 @@ async fn render_engine_path(
     let formats = RendererFormats::capture(&renderer);
 
     // P.3: 4 B/px Rgba8UnormSrgb (was 8 B/px Rgba16Float pre-P.3).
-    let bytes = readback_texture(&device, &queue, &target, fixture.width, fixture.height, 4, enc2)?;
+    let bytes = readback_texture(
+        &device,
+        &queue,
+        &target,
+        fixture.width,
+        fixture.height,
+        4,
+        enc2,
+    )?;
     Ok(EngineFrame {
         bytes,
         width: fixture.width,
@@ -679,10 +685,14 @@ async fn render_editor_path(
     // + composite pipeline) plus the engine adapter's first-frame state
     // (clustered-lights cache, IBL bake, etc.). Measurement is frame 2.
     viewport
-        .render(&target, &camera, &world, None, None, None, show_grid, false, 0)
+        .render(
+            &target, &camera, &world, None, None, None, show_grid, false, 0,
+        )
         .context("editor warm-up render failed")?;
     viewport
-        .render(&target, &camera, &world, None, None, None, show_grid, false, 0)
+        .render(
+            &target, &camera, &world, None, None, None, show_grid, false, 0,
+        )
         .context("editor measurement render failed")?;
 
     // P.5 format capture: read the editor-adapter's inner Renderer formats
@@ -1008,8 +1018,7 @@ fn compute_attribution(engine: &EngineFrame, editor: &EditorFrame) -> AxisAttrib
             (x.min(w - 1), y.min(h - 1))
         })
         .collect();
-    let loader_set: std::collections::HashSet<(usize, usize)> =
-        loader_xy.iter().copied().collect();
+    let loader_set: std::collections::HashSet<(usize, usize)> = loader_xy.iter().copied().collect();
     let quality_set: std::collections::HashSet<(usize, usize)> =
         quality_xy.iter().copied().collect();
 
@@ -1110,12 +1119,8 @@ fn editor_engine_render_parity() {
     // C.3.C: `Renderer::update_view(&RenderView)` is the canonical (and only)
     // camera-upload path. The deprecated `update_camera_matrices` wrapper and
     // the sibling wrapper-preservation test were deleted in C.3.C.
-    let engine = pollster::block_on(render_engine_path(
-        device.clone(),
-        queue.clone(),
-        &fixture,
-    ))
-    .expect("engine path render failed");
+    let engine = pollster::block_on(render_engine_path(device.clone(), queue.clone(), &fixture))
+        .expect("engine path render failed");
 
     // P.6 editor path runs twice: once with overlays disabled (show_grid=false)
     // and once with overlays enabled (show_grid=true). The closure proof
@@ -1154,9 +1159,7 @@ fn editor_engine_render_parity() {
     let pack_hash = match ctp::load_canonical_terrain_pack(&fixture.biome_path) {
         Ok(pack) => Some(hash_canonical_pack(&pack)),
         Err(e) => {
-            eprintln!(
-                "[harness] Canonical pack hash skipped — load failed: {e:#}"
-            );
+            eprintln!("[harness] Canonical pack hash skipped — load failed: {e:#}");
             None
         }
     };
@@ -1229,9 +1232,7 @@ fn editor_engine_render_parity() {
     if let Some(hash) = &pack_hash {
         eprintln!("Loader-axis closure proof (P.2):");
         eprintln!("  Canonical pack content hash: {}", hash);
-        eprintln!(
-            "  Both editor and engine paths invoke load_canonical_terrain_pack on the"
-        );
+        eprintln!("  Both editor and engine paths invoke load_canonical_terrain_pack on the");
         eprintln!(
             "  same biome dir; this hash is the byte-identical input to set_terrain_materials"
         );
@@ -1240,12 +1241,8 @@ fn editor_engine_render_parity() {
     }
     eprintln!("Tonemap-axis closure proof (P.3):");
     eprintln!("  {}", tonemap_closure_proof);
-    eprintln!(
-        "  Structural proof: both paths instantiate Renderer with identical config.format"
-    );
-    eprintln!(
-        "  and now invoke the same `post_pipeline` (ACES Narkowicz + exposure 1.35 +"
-    );
+    eprintln!("  Structural proof: both paths instantiate Renderer with identical config.format");
+    eprintln!("  and now invoke the same `post_pipeline` (ACES Narkowicz + exposure 1.35 +");
     eprintln!(
         "  scene-env tint) unconditionally inside `draw_into`. The pre-P.3 surface.is_none()"
     );
@@ -1255,15 +1252,11 @@ fn editor_engine_render_parity() {
     eprintln!("Target-format-axis closure proof (P.5):");
     eprintln!(
         "  Engine formats: surface={:?}, hdr={:?}, depth={:?}",
-        engine.formats.surface_format,
-        engine.formats.hdr_format,
-        engine.formats.depth_format
+        engine.formats.surface_format, engine.formats.hdr_format, engine.formats.depth_format
     );
     eprintln!(
         "  Editor formats: surface={:?}, hdr={:?}, depth={:?}",
-        editor.formats.surface_format,
-        editor.formats.hdr_format,
-        editor.formats.depth_format
+        editor.formats.surface_format, editor.formats.hdr_format, editor.formats.depth_format
     );
     let format_table = [
         (
@@ -1309,12 +1302,8 @@ fn editor_engine_render_parity() {
             "STRUCTURAL FAIL — escalate"
         }
     );
-    eprintln!(
-        "  surface.is_none() branch deletion incidentally produced (config.format"
-    );
-    eprintln!(
-        "  migrated to Rgba8UnormSrgb on both sides as a downstream consequence)."
-    );
+    eprintln!("  surface.is_none() branch deletion incidentally produced (config.format");
+    eprintln!("  migrated to Rgba8UnormSrgb on both sides as a downstream consequence).");
     eprintln!();
 
     eprintln!("Overlay-isolation closure proof (P.6):");
@@ -1358,45 +1347,25 @@ fn editor_engine_render_parity() {
         "  Canonical preset (GameQuality):  {:?}",
         CanonicalQualityPresetParams::GAME_QUALITY
     );
-    eprintln!(
-        "  Engine path: apply_canonical_quality_preset_to_renderer(GAME_QUALITY)"
-    );
-    eprintln!(
-        "  Editor path: apply_quality_preset(EditorQualityPreset::GameQuality)"
-    );
+    eprintln!("  Engine path: apply_canonical_quality_preset_to_renderer(GAME_QUALITY)");
+    eprintln!("  Editor path: apply_quality_preset(EditorQualityPreset::GameQuality)");
     eprintln!(
         "                (via EngineRenderAdapter::new — Move A swapped EditorDefault → GameQuality)"
     );
-    eprintln!(
-        "              + apply_canonical_quality_preset_to_renderer(GAME_QUALITY)"
-    );
-    eprintln!(
-        "                (defensive re-application — guarantees parameter equality"
-    );
-    eprintln!(
-        "                 regardless of any future adapter-construction drift)"
-    );
-    eprintln!(
-        "  Call-site closure proof: both paths invoke the same setters with the same"
-    );
+    eprintln!("              + apply_canonical_quality_preset_to_renderer(GAME_QUALITY)");
+    eprintln!("                (defensive re-application — guarantees parameter equality");
+    eprintln!("                 regardless of any future adapter-construction drift)");
+    eprintln!("  Call-site closure proof: both paths invoke the same setters with the same");
     eprintln!(
         "  argument values (CanonicalQualityPresetParams::GAME_QUALITY single source of truth)."
     );
-    eprintln!(
-        "  Parameters covered: shadows_enabled, cloud_shadows_enabled, shadow_filter,"
-    );
-    eprintln!(
-        "  cascade_extents, cascade_lambda, max_draw_distance. Post-process chain handled"
-    );
+    eprintln!("  Parameters covered: shadows_enabled, cloud_shadows_enabled, shadow_filter,");
+    eprintln!("  cascade_extents, cascade_lambda, max_draw_distance. Post-process chain handled");
     eprintln!(
         "  separately by EditorQualityPreset::GameQuality match arm (bloom/taa/color_grading);"
     );
-    eprintln!(
-        "  in headless draw_into only bloom_enabled is consumed and the bloom output is"
-    );
-    eprintln!(
-        "  currently orphaned post-P.3 (flagged in P.3 follow-up candidates)."
-    );
+    eprintln!("  in headless draw_into only bloom_enabled is consumed and the bloom output is");
+    eprintln!("  currently orphaned post-P.3 (flagged in P.3 follow-up candidates).");
     eprintln!();
     eprintln!("Heuristic notes:");
     eprintln!("  - P.3: both paths now produce 4 B/px Rgba8UnormSrgb (was 8 B/px engine HDR");
@@ -1603,10 +1572,9 @@ fn extreme_pitch_freefly_exactly_plus_minus_half_pi_stays_finite() {
     let yaw = 0.3_f32;
     let eye = Vec3::new(3.0, 5.0, -2.0);
 
-    for (pitch, expected_dir_y, label) in [
-        (half_pi, 1.0_f32, "+pi/2"),
-        (-half_pi, -1.0_f32, "-pi/2"),
-    ] {
+    for (pitch, expected_dir_y, label) in
+        [(half_pi, 1.0_f32, "+pi/2"), (-half_pi, -1.0_f32, "-pi/2")]
+    {
         let cam = FreeFly {
             position: eye,
             yaw,
@@ -1909,7 +1877,7 @@ fn non_square_aspect_degenerate_narrow_freefly_floor_discipline() {
     // (1c) Closed-form discriminator, no perspective_rh call: floored m00 = f/0.01.
     let f = 1.0_f32 / (cam.fovy * 0.5).tan(); // 1.7320508 for 60deg
     let expected_m00_floored = f / ASPECT_FLOOR; // 173.20508
-    // m00 is ~173; use a relative tolerance for the large magnitude.
+                                                 // m00 is ~173; use a relative tolerance for the large magnitude.
     let m00_tol = (expected_m00_floored.abs() * 1e-4).max(1e-3);
     assert!(
         (rv.projection.col(0).x - expected_m00_floored).abs() < m00_tol,
@@ -2249,8 +2217,11 @@ fn large_world_positions_freefly_1e6_world_path_precision_loss() {
         cam.znear as f64,
         cam.zfar as f64,
     );
-    let view_world_d =
-        DMat4::look_to_rh(cam.position.as_dvec3(), freefly_dir_f64(yaw_d, pitch_d), DVec3::Y);
+    let view_world_d = DMat4::look_to_rh(
+        cam.position.as_dvec3(),
+        freefly_dir_f64(yaw_d, pitch_d),
+        DVec3::Y,
+    );
     let vp_world_d = proj_d * view_world_d;
     let p_d = cam.position.as_dvec3()
         + (freefly_dir_f64(yaw_d, pitch_d) * 40.0 + DVec3::new(13.0, -7.0, 5.0));
@@ -2443,8 +2414,8 @@ fn large_world_positions_orbit_5e6_camera_relative_rotation_matches_f64() {
 /// Build a headless Renderer for cinematics fixtures, reusing the harness's
 /// `acquire_device()` plumbing and the engine-path SurfaceConfiguration.
 fn cinematics_renderer() -> Result<Renderer> {
-    let (device, queue, _info) =
-        pollster::block_on(acquire_device()).context("acquire wgpu device for cinematics fixture")?;
+    let (device, queue, _info) = pollster::block_on(acquire_device())
+        .context("acquire wgpu device for cinematics fixture")?;
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: wgpu::TextureFormat::Rgba8UnormSrgb,
@@ -2626,8 +2597,8 @@ fn cinematics_normal_keyframe_matches_look_at_rh_baseline() {
     let fov_deg = 60.0_f32; // in range -> sanitize is a no-op here
     let key = awc::CameraKey::new(awc::Time::from_secs(0.5), pos, look_at, fov_deg);
 
-    let actual =
-        drive_one_camera_key(&mut renderer, &mut freefly, key).expect("cinematics path drive failed");
+    let actual = drive_one_camera_key(&mut renderer, &mut freefly, key)
+        .expect("cinematics path drive failed");
 
     // Independent baseline: target-based look_at_rh (NOT via yaw/pitch).
     let expected = cinematics_baseline_render_view(
@@ -2670,8 +2641,8 @@ fn cinematics_fov_out_of_range_clamped_to_170() {
     let fov_deg_in = 200.0_f32; // above 170 max -> sanitize clamps to 170
     let key = awc::CameraKey::new(awc::Time::from_secs(0.5), pos, look_at, fov_deg_in);
 
-    let actual =
-        drive_one_camera_key(&mut renderer, &mut freefly, key).expect("cinematics path drive failed");
+    let actual = drive_one_camera_key(&mut renderer, &mut freefly, key)
+        .expect("cinematics path drive failed");
 
     let fov_deg_sanitized = 170.0_f32; // CameraKey::sanitize: clamp(10,170)
     let expected = cinematics_baseline_render_view(
@@ -2711,14 +2682,18 @@ fn cinematics_degenerate_look_at_resolves_to_plus_x() {
     let fov_deg = 60.0_f32;
     let key = awc::CameraKey::new(awc::Time::from_secs(0.5), pos, look_at, fov_deg);
 
-    let actual =
-        drive_one_camera_key(&mut renderer, &mut freefly, key).expect("cinematics path drive failed");
+    let actual = drive_one_camera_key(&mut renderer, &mut freefly, key)
+        .expect("cinematics path drive failed");
 
     // sanitize resolves look_at -> pos + (1,0,0) (canonical +X forward).
     let look_at_sanitized = (pos.0 + 1.0, pos.1, pos.2);
     let expected = cinematics_baseline_render_view(
         Vec3::new(pos.0, pos.1, pos.2),
-        Vec3::new(look_at_sanitized.0, look_at_sanitized.1, look_at_sanitized.2),
+        Vec3::new(
+            look_at_sanitized.0,
+            look_at_sanitized.1,
+            look_at_sanitized.2,
+        ),
         fov_deg,
         aspect,
         znear,
@@ -2746,14 +2721,26 @@ fn cinematics_lerped_keyframe_drives_interpolated_pose() {
     let (aspect, znear, zfar) = (16.0_f32 / 9.0, 0.5_f32, 5000.0_f32);
     let mut freefly = cinematics_freefly(aspect, znear, zfar);
 
-    let a = awc::CameraKey::new(awc::Time::from_secs(0.0), (0.0, 0.0, 10.0), (0.0, 0.0, 0.0), 50.0);
-    let b = awc::CameraKey::new(awc::Time::from_secs(1.0), (10.0, 0.0, 0.0), (0.0, 5.0, 0.0), 90.0);
+    let a = awc::CameraKey::new(
+        awc::Time::from_secs(0.0),
+        (0.0, 0.0, 10.0),
+        (0.0, 0.0, 0.0),
+        50.0,
+    );
+    let b = awc::CameraKey::new(
+        awc::Time::from_secs(1.0),
+        (10.0, 0.0, 0.0),
+        (0.0, 5.0, 0.0),
+        90.0,
+    );
     let mid = a.lerp(&b, 0.5);
 
     // Independently verify the lerp produced the hand-computed triple before
     // we trust it as the baseline source (linear s + (o-s)*t per lib.rs).
     assert!(
-        (mid.pos.0 - 5.0).abs() < 1e-5 && (mid.pos.1 - 0.0).abs() < 1e-5 && (mid.pos.2 - 5.0).abs() < 1e-5,
+        (mid.pos.0 - 5.0).abs() < 1e-5
+            && (mid.pos.1 - 0.0).abs() < 1e-5
+            && (mid.pos.2 - 5.0).abs() < 1e-5,
         "lerp pos must be (5,0,5); got {:?}",
         mid.pos
     );
@@ -2764,8 +2751,16 @@ fn cinematics_lerped_keyframe_drives_interpolated_pose() {
         "lerp look_at must be (0,2.5,0); got {:?}",
         mid.look_at
     );
-    assert!((mid.fov_deg - 70.0).abs() < 1e-4, "lerp fov_deg must be 70; got {}", mid.fov_deg);
-    assert!((mid.t.0 - 0.5).abs() < 1e-5, "lerp t must be 0.5s; got {}", mid.t.0);
+    assert!(
+        (mid.fov_deg - 70.0).abs() < 1e-4,
+        "lerp fov_deg must be 70; got {}",
+        mid.fov_deg
+    );
+    assert!(
+        (mid.t.0 - 0.5).abs() < 1e-5,
+        "lerp t must be 0.5s; got {}",
+        mid.t.0
+    );
 
     // Drive the lerped key through the production path.
     let actual = drive_one_camera_key(&mut renderer, &mut freefly, mid.clone())

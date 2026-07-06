@@ -88,6 +88,7 @@ mod viewport; // Phase 1.1 - 3D Viewport
 #[allow(dead_code)]
 mod voxel_tools; // Phase 10: Voxel editing tools // Phase 2: Asset packaging and compression // Phase 2: Extracted subsystem methods (hotkeys, audio, scene stats)
 
+use active_tool::{Dispatcher, ToolContext};
 use anyhow::{Context as _, Result};
 use astraweave_asset::AssetDatabase;
 use astraweave_core::{Entity, IVec2, Team, World};
@@ -97,7 +98,6 @@ use astraweave_quests::Quest;
 use behavior_graph::{BehaviorGraphDocument, BehaviorGraphEditorUi};
 use editor_mode::EditorMode;
 use eframe::egui;
-use active_tool::{Dispatcher, ToolContext};
 use entity_manager::MaterialSlot;
 use entity_manager::{EntityManager, SelectionSet};
 use gizmo::snapping::SnappingConfig;
@@ -673,7 +673,9 @@ impl Default for EditorApp {
             // Mediator Removal session per Q6 resolves ownership semantics.
             dispatcher: {
                 let mut d = Dispatcher::new();
-                d.register_tool(Box::new(crate::panels::terrain_panel::TerrainPanel::default()));
+                d.register_tool(Box::new(
+                    crate::panels::terrain_panel::TerrainPanel::default(),
+                ));
                 d
             },
             use_docking: true, // Re-enabled after fixing layout gap
@@ -4054,7 +4056,8 @@ impl EditorApp {
                     None,
                     None,
                 );
-                self.dispatcher.set_active_tool(uuid, &mut lifecycle_context);
+                self.dispatcher
+                    .set_active_tool(uuid, &mut lifecycle_context);
             }
         }
 
@@ -4110,17 +4113,15 @@ impl EditorApp {
             for action in paint_actions {
                 match action {
                     command::RegionalArchetypePaintAction::StrokeBegin => {
-                        self.regional_archetype_stroke_pre_ids = Some(
-                            self.dock_tab_viewer.regional_archetype_snapshot_mask_ids(),
-                        );
+                        self.regional_archetype_stroke_pre_ids =
+                            Some(self.dock_tab_viewer.regional_archetype_snapshot_mask_ids());
                     }
                     command::RegionalArchetypePaintAction::Paint { world_x, world_z } => {
                         self.dock_tab_viewer
                             .regional_archetype_queue_paint_op(world_x, world_z);
                     }
                     command::RegionalArchetypePaintAction::StrokeEnd => {
-                        let post_ids =
-                            self.dock_tab_viewer.regional_archetype_flush_and_snapshot();
+                        let post_ids = self.dock_tab_viewer.regional_archetype_flush_and_snapshot();
                         if let Some(pre_ids) = self.regional_archetype_stroke_pre_ids.take() {
                             if pre_ids != post_ids {
                                 let cmd = command::RegionalArchetypePaintCommand::new(
@@ -4152,8 +4153,7 @@ impl EditorApp {
             for action in undo_actions {
                 match action {
                     command::RegionalArchetypeUndoAction::ApplyMaskIds(ids) => {
-                        self.dock_tab_viewer
-                            .apply_regional_archetype_mask_ids(&ids);
+                        self.dock_tab_viewer.apply_regional_archetype_mask_ids(&ids);
                     }
                 }
             }

@@ -1,4 +1,4 @@
-﻿// tools/aw_editor/src/panels/transform_panel.rs - Transform gizmo panel
+// tools/aw_editor/src/panels/transform_panel.rs - Transform gizmo panel
 
 use super::Panel;
 use crate::gizmo::{
@@ -51,7 +51,6 @@ pub struct TransformPanel {
     // field was removed alongside the gizmo `CameraController` type
     // deletion. The field was declared and initialized but never read
     // anywhere in the panel (C.5 audit L.5.1).
-
     /// Local space mode
     local_space: bool,
 

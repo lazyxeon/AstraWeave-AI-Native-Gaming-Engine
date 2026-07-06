@@ -102,9 +102,7 @@ fn upload_bake_diffuse(
     label: &str,
 ) -> wgpu::BindGroup {
     let (width, height, pixels) = match albedo {
-        Some(img) if img.width > 0 && img.height > 0 => {
-            (img.width, img.height, img.pixels.clone())
-        }
+        Some(img) if img.width > 0 && img.height > 0 => (img.width, img.height, img.pixels.clone()),
         _ => (1u32, 1u32, vec![255u8, 255, 255, 255]),
     };
 
@@ -214,7 +212,14 @@ pub fn bake_primitive_pixels(
             )
         })?;
         baker.draw_into_region(
-            device, queue, proj * view, region, &vbuf, &ibuf, icount, &diffuse_bg,
+            device,
+            queue,
+            proj * view,
+            region,
+            &vbuf,
+            &ibuf,
+            icount,
+            &diffuse_bg,
         );
     }
 
@@ -275,12 +280,16 @@ mod tests {
         a.albedo_image = Some(CpuImage {
             width: 2,
             height: 2,
-            pixels: vec![255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255],
+            pixels: vec![
+                255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+            ],
         });
         b.albedo_image = Some(CpuImage {
             width: 2,
             height: 2,
-            pixels: vec![0, 255, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255],
+            pixels: vec![
+                0, 255, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+            ],
         });
         assert_ne!(primitive_mesh_hash(&a), primitive_mesh_hash(&b));
     }

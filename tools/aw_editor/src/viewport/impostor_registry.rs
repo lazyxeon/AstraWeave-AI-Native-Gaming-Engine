@@ -168,9 +168,7 @@ impl ImpostorRegistry {
         if !self.entries.contains_key(hash) {
             let (png, sidecar) = atlas_paths(&self.cache_root, hash);
             let loaded = load_or_bake_atlas(&png, &sidecar, spec, bake_fn)
-                .with_context(|| {
-                    format!("lazy-bake atlas for mesh {}", hash.as_str())
-                })?;
+                .with_context(|| format!("lazy-bake atlas for mesh {}", hash.as_str()))?;
             self.entries.insert(hash.clone(), loaded);
         }
         Ok(self

@@ -11,9 +11,7 @@
 //! - Voxel brush tools for sculpting
 
 use super::Panel;
-use crate::active_tool::{
-    ActiveTool, EventDisposition, KeyEvent, MouseEvent, ToolContext,
-};
+use crate::active_tool::{ActiveTool, EventDisposition, KeyEvent, MouseEvent, ToolContext};
 use crate::terrain_integration::{cached_biome_options, TerrainState};
 use egui::{Color32, RichText, Ui};
 use uuid::{uuid, Uuid};
@@ -443,7 +441,6 @@ pub struct TerrainPanel {
     // `mountains_amplitude` parameters cover the design space without an
     // extra global knob; if global tuning becomes desirable, it can come
     // back as a Custom-archetype field.
-
     /// Erosion parameters
     erosion_preset: ErosionPresetType,
     hydraulic_erosion: HydraulicErosionParams,
@@ -683,8 +680,7 @@ impl Default for TerrainPanel {
             primary_biome: "grassland".to_string(),
             // Phase 1.6-F.4.B.3.D.5b: world archetype defaults to
             // Continental Temperate (Veilweaver default).
-            world_archetype_id:
-                astraweave_terrain::world_archetypes::WorldArchetypeId::default(),
+            world_archetype_id: astraweave_terrain::world_archetypes::WorldArchetypeId::default(),
             // Custom archetype starts from Continental Temperate per §1.1.
             custom_archetype: astraweave_terrain::world_archetypes::continental_temperate(),
             // Phase 1.6-F.4.B.2.C: Target B world extent. Radius 10 × 512 WU
@@ -953,22 +949,19 @@ impl TerrainPanel {
             egui::ComboBox::from_id_salt("world_archetype")
                 .selected_text(current_id.display_name())
                 .show_ui(ui, |ui| {
-                    for &id in
-                        astraweave_terrain::world_archetypes::WorldArchetypeId::all()
-                    {
+                    for &id in astraweave_terrain::world_archetypes::WorldArchetypeId::all() {
                         ui.selectable_value(&mut new_id, id, id.display_name())
                             .on_hover_text(id.description());
                     }
                 });
             if new_id != current_id {
                 self.world_archetype_id = new_id;
-                let archetype = if new_id
-                    == astraweave_terrain::world_archetypes::WorldArchetypeId::Custom
-                {
-                    self.custom_archetype.clone()
-                } else {
-                    new_id.default_archetype()
-                };
+                let archetype =
+                    if new_id == astraweave_terrain::world_archetypes::WorldArchetypeId::Custom {
+                        self.custom_archetype.clone()
+                    } else {
+                        new_id.default_archetype()
+                    };
                 self.terrain_state.set_world_archetype(archetype);
                 self.terrain_state.configure(self.seed, &self.primary_biome);
                 self.regenerate_terrain();
@@ -978,8 +971,7 @@ impl TerrainPanel {
         // Custom archetype parameter sliders (visible only when Custom is
         // selected). Per §1.3 plan: the user can directly tune the climate
         // envelope.
-        if self.world_archetype_id
-            == astraweave_terrain::world_archetypes::WorldArchetypeId::Custom
+        if self.world_archetype_id == astraweave_terrain::world_archetypes::WorldArchetypeId::Custom
         {
             let mut changed = false;
             ui.indent("custom_archetype_params", |ui| {
@@ -1050,9 +1042,7 @@ impl TerrainPanel {
                         .changed();
                 });
 
-                if changed
-                    && self.custom_archetype.validate().is_err()
-                {
+                if changed && self.custom_archetype.validate().is_err() {
                     // Validation failed (slider produced out-of-range
                     // value somehow). Revert; sliders are bounded so this
                     // branch should be unreachable, but defend against
@@ -1061,7 +1051,8 @@ impl TerrainPanel {
                 }
             });
             if changed {
-                self.terrain_state.set_world_archetype(self.custom_archetype.clone());
+                self.terrain_state
+                    .set_world_archetype(self.custom_archetype.clone());
                 self.regenerate_terrain();
             }
         }
@@ -1623,18 +1614,12 @@ impl TerrainPanel {
             ui.horizontal(|ui| {
                 ui.label("ZoneBlend Pass Strength:");
                 ui.add(
-                    egui::Slider::new(
-                        &mut self.biome_blend.zoneblend_pass_strength,
-                        0.0..=1.0,
-                    )
-                    .fixed_decimals(2),
+                    egui::Slider::new(&mut self.biome_blend.zoneblend_pass_strength, 0.0..=1.0)
+                        .fixed_decimals(2),
                 );
             });
             if ui
-                .add_enabled(
-                    has_terrain,
-                    egui::Button::new("Apply ZoneBlend Pass"),
-                )
+                .add_enabled(has_terrain, egui::Button::new("Apply ZoneBlend Pass"))
                 .clicked()
             {
                 let modified = self
@@ -2308,11 +2293,7 @@ impl ActiveTool for TerrainPanel {
     /// currently UI-driven (selectable_value buttons at line ~1192-1200).
     /// Future enhancement: keyboard shortcuts for brush mode cycling would land
     /// here. Default PassThrough preserves existing keyboard behavior.
-    fn on_key_down(
-        &mut self,
-        _key: &KeyEvent,
-        _context: &mut ToolContext,
-    ) -> EventDisposition {
+    fn on_key_down(&mut self, _key: &KeyEvent, _context: &mut ToolContext) -> EventDisposition {
         EventDisposition::PassThrough
     }
 

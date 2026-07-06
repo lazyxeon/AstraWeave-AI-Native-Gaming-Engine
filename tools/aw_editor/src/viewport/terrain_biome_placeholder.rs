@@ -25,14 +25,14 @@
 /// Placeholder albedo color per biome, sRGB8 (RGBA). Slot order matches
 /// the editor's `material_ids` layer-index packing (layers 0-7).
 pub const BIOME_PLACEHOLDER_COLORS_SRGB: [[u8; 4]; 8] = [
-    [85, 140, 60, 255],    // 0 Grassland: muted green
-    [200, 170, 110, 255],  // 1 Desert: sandy tan
-    [50, 95, 45, 255],     // 2 Forest: dark green
-    [110, 105, 100, 255],  // 3 Mountain: cool gray
-    [220, 225, 230, 255],  // 4 Tundra: near-white pale blue
-    [75, 95, 70, 255],     // 5 Swamp: murky green-brown
-    [230, 210, 170, 255],  // 6 Beach: pale sand
-    [80, 120, 165, 255],   // 7 River: muted blue
+    [85, 140, 60, 255],   // 0 Grassland: muted green
+    [200, 170, 110, 255], // 1 Desert: sandy tan
+    [50, 95, 45, 255],    // 2 Forest: dark green
+    [110, 105, 100, 255], // 3 Mountain: cool gray
+    [220, 225, 230, 255], // 4 Tundra: near-white pale blue
+    [75, 95, 70, 255],    // 5 Swamp: murky green-brown
+    [230, 210, 170, 255], // 6 Beach: pale sand
+    [80, 120, 165, 255],  // 7 River: muted blue
 ];
 
 /// Albedo texture resolution used by all placeholder biome swatches.

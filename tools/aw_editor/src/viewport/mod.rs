@@ -40,6 +40,10 @@
 
 pub mod blueprint_overlay;
 pub mod camera;
+/// P.2 (Editor-Engine Render Parity): canonical biome pack loader. Reads the
+/// same on-disk TOML+PNG schema MaterialManager parses; outputs CPU bytes for
+/// `Renderer::set_terrain_materials` (the editor's 32-layer terrain consumer).
+pub mod canonical_terrain_pack;
 mod engine_adapter;
 mod gizmo_renderer;
 mod grid_renderer;
@@ -55,19 +59,15 @@ pub mod impostor_registry;
 pub mod impostor_wiring;
 mod physics_renderer;
 mod renderer;
+/// Phase 1 (Option D): flat-color placeholder biome textures for forward-lit splat rendering.
+pub mod terrain_biome_placeholder;
+/// Phase 2.2 / T7: editor-side wrapper around TerrainMaterialManager.
+pub mod terrain_splat;
+/// Phase 2.2 / T6: rasterise per-vertex biome weights into RGBA8 splat maps.
+pub mod terrain_splat_builder;
 pub mod toolbar;
 /// Shared viewport types (fog params, lighting params, terrain vertex, etc.)
 pub mod types;
-/// Phase 2.2 / T6: rasterise per-vertex biome weights into RGBA8 splat maps.
-pub mod terrain_splat_builder;
-/// Phase 2.2 / T7: editor-side wrapper around TerrainMaterialManager.
-pub mod terrain_splat;
-/// Phase 1 (Option D): flat-color placeholder biome textures for forward-lit splat rendering.
-pub mod terrain_biome_placeholder;
-/// P.2 (Editor-Engine Render Parity): canonical biome pack loader. Reads the
-/// same on-disk TOML+PNG schema MaterialManager parses; outputs CPU bytes for
-/// `Renderer::set_terrain_materials` (the editor's 32-layer terrain consumer).
-pub mod canonical_terrain_pack;
 mod widget;
 
 // Physics debug types are exported for external configuration
