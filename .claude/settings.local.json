@@ -80,7 +80,8 @@
       "PowerShell(cargo test *)",
       "PowerShell(cargo tree *)",
       "WebFetch(domain:www.rfc-editor.org)",
-      "PowerShell(cargo clippy *)"
+      "PowerShell(cargo clippy *)",
+      "PowerShell(cargo check -p aw_editor 2>&1)"
     ]
   }
 }
