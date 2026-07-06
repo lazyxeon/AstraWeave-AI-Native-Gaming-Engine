@@ -65,12 +65,25 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
     return out;
 }
 
+// Fragment output: color + real per-fragment depth.
+//
+// The fullscreen quad rasterizes at z=0 (near plane), so WITHOUT an explicit
+// frag_depth the pipeline's LessEqual test compared 0.0 against scene depth
+// and passed EVERYWHERE — the 85%-opaque ground fill painted over every
+// entity/terrain pixel below the eye-level horizon ("entities only visible
+// at certain angles/heights" bug). Writing the ray-hit's actual clip depth
+// makes the hardware depth test occlude the grid behind scene geometry.
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @builtin(frag_depth) depth: f32,
+};
+
 // Fragment shader (compute grid)
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> FragmentOutput {
     // Ray from camera through fragment (camera-relative, small values)
     let ray_dir = normalize(in.far_point - in.near_point);
-    
+
     // Intersect ray with Y=0 plane (relative to camera)
     // Camera-relative near_point.y = near_point_world.y - camera_pos.y
     // We need t such that near_point.y + camera_pos.y + ray_dir.y * t = 0
@@ -84,7 +97,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     if t < 0.0 {
         discard;
     }
-    
+
     // Camera-relative intersection point (high precision)
     let rel_pos = in.near_point + ray_dir * t;
     
@@ -158,11 +171,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     // Apply distance fade
     color.a *= fade;
-    
+
     // Discard fully transparent pixels (optimization)
     if color.a < 0.01 {
         discard;
     }
-    
-    return color;
+
+    // Project the plane hit point back through the (camera-relative) VP to get
+    // its true clip depth. Standard [0,1] depth: the pipeline's LessEqual test
+    // then correctly hides grid pixels behind nearer scene geometry.
+    let clip = uniforms.view_proj * vec4<f32>(rel_pos, 1.0);
+
+    var out: FragmentOutput;
+    out.color = color;
+    out.depth = saturate(clip.z / clip.w);
+    return out;
 }

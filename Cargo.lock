@@ -2160,6 +2160,7 @@ dependencies = [
  "log",
  "lz4_flex",
  "mp4",
+ "naga",
  "notify",
  "openh264",
  "petgraph",

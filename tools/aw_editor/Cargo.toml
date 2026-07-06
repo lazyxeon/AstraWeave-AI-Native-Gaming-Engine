@@ -116,6 +116,10 @@ half = "2"
 # itself also depends on astraweave-camera (above) post-C.3.B.1 migration of
 # EngineRenderAdapter; this dev-dep entry is now redundant with the lib dep
 # but kept for explicit dependency declaration discipline.
+# Headless WGSL validation (tests/wgsl_validation.rs) — editor shaders are
+# include_str!'d and only validated at pipeline creation at runtime; this
+# catches parse/validation errors at test time. Version matches wgpu 25's naga.
+naga = { version = "25", features = ["wgsl-in"] }
 
 [[bench]]
 name = "editor_performance"
