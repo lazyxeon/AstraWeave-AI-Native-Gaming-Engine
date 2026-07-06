@@ -540,6 +540,11 @@ pub struct EngineRenderAdapter {
     cached_entity_feed_selected: Vec<astraweave_core::Entity>,
     /// Cached mesh map length for feed_entities dirty check
     cached_entity_feed_mesh_count: usize,
+    /// User-visible diagnostics from entity feed rebuilds (mesh load results,
+    /// group composition). Drained each frame into the editor console —
+    /// tracing events do NOT reach the docked console, so silent mesh→cube
+    /// fallbacks were invisible to users without this channel.
+    entity_feed_log: Vec<String>,
     /// Persistent cache: glTF mesh path → loaded CpuMesh data.
     /// Survives across biome regenerations so the same .glb files are not
     /// re-parsed from disk every time scatter placements are recomputed.
@@ -714,6 +719,7 @@ impl EngineRenderAdapter {
             cached_entity_feed_count: usize::MAX, // force first rebuild
             cached_entity_feed_selected: Vec::new(),
             cached_entity_feed_mesh_count: usize::MAX,
+            entity_feed_log: Vec::new(),
             scatter_cpu_mesh_cache: std::collections::HashMap::new(),
             scatter_texture_cache: std::collections::HashMap::new(),
             scatter_lod_asset_cache: std::collections::HashMap::new(),
@@ -1170,8 +1176,15 @@ impl EngineRenderAdapter {
                     glam::Mat4::from_scale_rotation_translation(scale, rotation, position);
 
                 let is_selected = selected_entities.contains(&entity);
+                let mesh_key = entity_meshes.get(&entity).cloned();
+                // The instance color MULTIPLIES the sampled material (shader
+                // location 9), so team debug tints must never apply to real
+                // meshes — they turned every textured character green. Team
+                // colors are placeholder-cube identification only.
                 let color = if is_selected {
                     [1.0, 0.6, 0.2, 1.0] // Orange highlight
+                } else if mesh_key.is_some() {
+                    [1.0, 1.0, 1.0, 1.0] // Real mesh: untinted material
                 } else if let Some(team) = world.team(entity) {
                     match team.id {
                         0 => [0.2, 0.8, 0.3, 1.0],
@@ -1189,9 +1202,25 @@ impl EngineRenderAdapter {
                     material_id: 0,
                 };
 
-                let mesh_key = entity_meshes.get(&entity).cloned();
                 mesh_groups.entry(mesh_key).or_default().push(instance);
             }
+        }
+
+        // User-visible rebuild summary: which entities are meshed vs cube
+        // fallback. Drained into the editor console (tracing doesn't reach it).
+        {
+            let total: usize = mesh_groups.values().map(|v| v.len()).sum();
+            let cubes = mesh_groups
+                .get(&None)
+                .map(|v| v.len())
+                .unwrap_or(0);
+            self.entity_feed_log.push(format!(
+                "[entity-feed] rebuild: {} entities, {} meshed, {} placeholder cube(s), mesh_map={}",
+                total,
+                total - cubes,
+                cubes,
+                entity_meshes.len(),
+            ));
         }
 
         // Determine which entity model names are still active this frame
@@ -1218,11 +1247,34 @@ impl EngineRenderAdapter {
                     let opts = astraweave_render::mesh_gltf::GltfOptions::default();
                     match astraweave_render::mesh_gltf::load_gltf(Path::new(path), &opts) {
                         Ok(cpu_meshes) if !cpu_meshes.is_empty() => {
+                            self.entity_feed_log.push(format!(
+                                "[entity-feed] loaded mesh '{path}' ({} primitives, {} instances)",
+                                cpu_meshes.len(),
+                                instances.len(),
+                            ));
                             self.renderer
                                 .add_composite_model(&model_name, cpu_meshes, instances);
                             true
                         }
-                        _ => false,
+                        Ok(_) => {
+                            let msg = format!(
+                                "[entity-feed] WARNING: mesh '{path}' loaded but contains \
+                                 no meshes — falling back to placeholder cube"
+                            );
+                            tracing::warn!(target: "aw_editor::viewport", "{msg}");
+                            self.entity_feed_log.push(msg);
+                            false
+                        }
+                        Err(e) => {
+                            let msg = format!(
+                                "[entity-feed] WARNING: mesh '{path}' failed to load: {e:#} — \
+                                 falling back to placeholder cube (asset paths are \
+                                 workspace-relative; check the working directory)"
+                            );
+                            tracing::warn!(target: "aw_editor::viewport", "{msg}");
+                            self.entity_feed_log.push(msg);
+                            false
+                        }
                     }
                 }
                 None => false,
@@ -1253,6 +1305,12 @@ impl EngineRenderAdapter {
     /// Call when entity transforms change (gizmo drag, undo, paste, etc.)
     pub fn invalidate_entity_cache(&mut self) {
         self.cached_entity_feed_count = usize::MAX;
+    }
+
+    /// Drain pending user-visible entity-feed diagnostics (mesh load results,
+    /// rebuild summaries). The editor pushes these into the docked console.
+    pub fn take_entity_feed_log(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.entity_feed_log)
     }
 
     pub fn has_model(&self, name: &str) -> bool {

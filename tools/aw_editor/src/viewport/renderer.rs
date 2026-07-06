@@ -38,8 +38,8 @@ use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
 use super::physics_renderer::PhysicsDebugRenderer;
 use super::types::{
-    GltfAnimationClip, GltfSkeleton, ScatterPlacement, SceneLight,
-    TerrainFogParams, TerrainLightingParams, TerrainVertex, WaterStyle,
+    GltfAnimationClip, GltfSkeleton, ScatterPlacement, SceneLight, TerrainFogParams,
+    TerrainLightingParams, TerrainVertex, WaterStyle,
 };
 use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
@@ -90,7 +90,6 @@ pub struct ViewportRenderer {
     // blit merges them into the caller-supplied display target. The
     // engine LDR target is the bit-identical-to-runtime hashable target
     // (parity contract); overlays never mutate it.
-
     /// P.6 internal engine LDR target. Receives `Renderer::draw_into`'s
     /// canonical post_pipeline output. Bit-identical to what the runtime
     /// produces from the same scene — this is the hashable target for
@@ -471,8 +470,7 @@ impl ViewportRenderer {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: LDR_COLOR_FORMAT,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
         });
         let editor_overlay_view =
@@ -1067,6 +1065,15 @@ impl ViewportRenderer {
         if let Some(adapter) = self.engine_adapter.as_mut() {
             adapter.invalidate_entity_cache();
         }
+    }
+
+    /// Drain pending user-visible entity-feed diagnostics (mesh load results,
+    /// rebuild summaries) from the engine adapter.
+    pub fn take_entity_feed_log(&mut self) -> Vec<String> {
+        self.engine_adapter
+            .as_mut()
+            .map(|a| a.take_entity_feed_log())
+            .unwrap_or_default()
     }
 
     /// Get the current editor quality preset.

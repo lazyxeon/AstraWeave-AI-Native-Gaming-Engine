@@ -149,6 +149,66 @@ fn entity_id_to_world(id: u64) -> Option<Entity> {
     }
 }
 
+/// Map an archetype name (spawn menus + World Wizard starters) to a default mesh
+/// asset, or `None` for archetypes that render as placeholder markers (Empty, Prop,
+/// Trigger, Light, Camera). Single source of truth reused by the spawn handlers and
+/// the World Wizard starter spawn — do not duplicate this match (§7.7 anti-duplication).
+fn archetype_mesh(archetype: &str) -> Option<&'static str> {
+    match archetype {
+        // Characters — KayKit Adventurers / Skeletons collections
+        "Player" | "PlayerCharacter" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Rogue.glb",
+        ),
+        "Companion" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Barbarian.glb",
+        ),
+        "NPC" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Mage.glb",
+        ),
+        "Enemy" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Skeletons 1.1/characters/gltf/Skeleton_Warrior.glb",
+        ),
+        "Boss" | "Commander" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Knight.glb",
+        ),
+        "Unit" | "ArmyUnit" => Some(
+            "assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Barbarian.glb",
+        ),
+        // Buildings & structures — 3D asset packs
+        "Building" => Some("assets/3D assets/Castle Kit/Models/GLB format/tower-square.glb"),
+        // Props / interactables — 3D asset packs
+        "Interactable" => Some("assets/3D assets/Survival Kit/Models/GLB format/box-large.glb"),
+        "Placeable" => Some("assets/3D assets/Survival Kit/Models/GLB format/campfire-pit.glb"),
+        "Resource" | "Harvestable" => {
+            Some("assets/3D assets/Survival Kit/Models/GLB format/rock-a.glb")
+        }
+        "Support" => Some("assets/3D assets/Fantasy Town Kit/Models/GLB format/cart.glb"),
+        _ => None,
+    }
+}
+
+/// Deterministic per-spawn scatter offset (golden-angle spiral) so entities spawned
+/// near the camera focal point never stack on top of each other. Returns an (x, z)
+/// world-space offset in metres, growing gently outward with `index`.
+fn spawn_scatter_offset(index: usize) -> (f32, f32) {
+    let angle = index as f32 * 2.399_963_2; // golden angle (radians)
+    let radius = 2.0 + 0.25 * index as f32;
+    (angle.cos() * radius, angle.sin() * radius)
+}
+
+/// The most recently spawned entity = highest id (`World::spawn` ids are
+/// monotonic and never reused).
+///
+/// NEVER use `world.entities().last()` for this: `entities()` collects
+/// HashMap keys in arbitrary order, so `.last()` returns an effectively
+/// random entity. That bug made every post-spawn mesh assignment and
+/// selection land on the same wrong entity once a deletion had rehashed
+/// the map ("new characters replace each other at one spot while the real
+/// spawns appear as cubes").
+fn newest_entity(world: &astraweave_core::World) -> Option<Entity> {
+    world.iter_entities().max()
+}
+
 // Level document types — canonical definitions in level_doc.rs
 use level_doc::{BiomePaint, Circle, LevelDoc, Sky};
 
@@ -3479,24 +3539,8 @@ impl EditorApp {
                                         serde_json::Value::Object(fields),
                                     );
                                 }
-                                // Map archetype to a real asset mesh
-                                let mesh_path = match starter.archetype {
-                                    // Characters — KayKit collection
-                                    "PlayerCharacter" | "Player" => Some("assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Rogue.glb"),
-                                    "NPC" => Some("assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Mage.glb"),
-                                    "Enemy" => Some("assets/The Complete KayKit Collection v4/KayKit Skeletons 1.1/characters/gltf/Skeleton_Warrior.glb"),
-                                    "Commander" => Some("assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Knight.glb"),
-                                    // Buildings & structures — 3D asset packs
-                                    "Building" => Some("assets/3D assets/Castle Kit/Models/GLB format/tower-square.glb"),
-                                    // Props / interactables — 3D asset packs
-                                    "Interactable" => Some("assets/3D assets/Survival Kit/Models/GLB format/box-large.glb"),
-                                    "Placeable" => Some("assets/3D assets/Survival Kit/Models/GLB format/campfire-pit.glb"),
-                                    "Resource" | "Harvestable" => Some("assets/3D assets/Survival Kit/Models/GLB format/rock-a.glb"),
-                                    // Military / units
-                                    "Unit" | "ArmyUnit" => Some("assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Characters/gltf/Barbarian.glb"),
-                                    "Support" => Some("assets/3D assets/Fantasy Town Kit/Models/GLB format/cart.glb"),
-                                    _ => None,
-                                };
+                                // Map archetype to a real asset mesh (shared helper — §7.7)
+                                let mesh_path = archetype_mesh(starter.archetype);
                                 if let Some(path) = mesh_path {
                                     em_entity.set_mesh(path.to_string());
                                 }
@@ -4271,16 +4315,48 @@ impl EditorApp {
                     }
                 }
                 tab_viewer::PanelEvent::CreateEntity => {
-                    // Create an empty entity via undo stack (undoable)
+                    // Create an empty entity via undo stack (undoable), placed near the
+                    // camera focal point so it is immediately visible.
+                    let focal = self
+                        .viewport
+                        .as_ref()
+                        .map(|v| v.camera().focal_point())
+                        .unwrap_or(glam::Vec3::ZERO);
+                    let outcome: Result<String, String>;
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let entity_count = scene_state.world().entities().len();
                         let name = format!("Empty_{}", entity_count);
+                        let (off_x, off_z) = spawn_scatter_offset(entity_count);
+                        let spawn_x = (focal.x + off_x).round() as i32;
+                        let spawn_z = (focal.z + off_z).round() as i32;
+                        // Ground the spawn on the terrain surface (World Wizard
+                        // precedent). A fixed height buries the entity inside
+                        // terrain — backface-culled terrain then makes it visible
+                        // only from below the surface (angle-dependent popping).
+                        let ground_sample = self
+                            .dock_tab_viewer
+                            .sample_terrain_height_at(spawn_x as f32, spawn_z as f32);
+                        let ground = ground_sample.unwrap_or(0.0);
+                        // Spawn placement diagnostic — surfaces the sampled ground
+                        // vs terrain state so burial/mismatch bugs are visible in
+                        // the console instead of silently producing hidden entities.
+                        {
+                            let (tmin, tmax, tavg) = self.dock_tab_viewer.terrain_height_stats();
+                            self.console_logs.push(format!(
+                                "[spawn-diag] {} pos=({}, {:.2}, {}) ground={:?} terrain(min/max/avg)=({:.1}/{:.1}/{:.1}) focal=({:.1},{:.1},{:.1})",
+                                name, spawn_x, ground + 0.5, spawn_z, ground_sample,
+                                tmin, tmax, tavg, focal.x, focal.y, focal.z
+                            ));
+                        }
                         let clipboard = crate::clipboard::ClipboardData {
                             version: 2,
                             entities: vec![crate::clipboard::ClipboardEntityData {
                                 name: name.clone(),
-                                pos: astraweave_core::IVec2 { x: 0, y: 0 },
-                                height: 0.0,
+                                pos: astraweave_core::IVec2 {
+                                    x: spawn_x,
+                                    y: spawn_z,
+                                },
+                                height: ground + 0.5, // cube center: rest on the surface
                                 rotation: 0.0,
                                 rotation_x: 0.0,
                                 rotation_z: 0.0,
@@ -4302,30 +4378,63 @@ impl EditorApp {
                             scene_state.world_mut(),
                             Some(&mut self.entity_manager),
                         ) {
-                            self.console_logs
-                                .push(format!("Create entity failed: {}", e));
+                            outcome = Err(format!("Create entity failed: {}", e));
                         } else {
-                            // Select the newly created entity
-                            if let Some(&last) = scene_state.world().entities().last() {
+                            // Select + focus the newly created entity so the click has a
+                            // clear, immediate visual result in the viewport.
+                            if let Some(last) = newest_entity(scene_state.world()) {
                                 let em_id: u64 = last.into();
                                 self.selected_entity = Some(em_id);
                                 self.selection_set.primary = Some(em_id);
-                                if let Some(viewport) = &mut self.viewport {
-                                    viewport.set_selected_entity(Some(em_id));
+                                if let Some(pose) = scene_state.world().pose(last) {
+                                    let p = glam::Vec3::new(
+                                        pose.pos.x as f32,
+                                        pose.height,
+                                        pose.pos.y as f32,
+                                    );
+                                    if let Some(viewport) = &mut self.viewport {
+                                        viewport.set_selected_entity(Some(em_id));
+                                        viewport.camera_mut().frame_entity(p, 2.0);
+                                    }
                                 }
                             }
                             scene_state.sync_all();
                             self.hierarchy_panel
                                 .sync_with_world(scene_state.world_mut());
+                            if let Some(viewport) = &self.viewport {
+                                viewport.invalidate_entity_cache();
+                            }
                             self.is_dirty = true;
+                            outcome = Ok(name);
+                        }
+                    } else {
+                        outcome = Err("Cannot create entity: no scene loaded".to_string());
+                    }
+                    match outcome {
+                        Ok(name) => {
                             self.console_logs
                                 .push(format!("Created empty entity: {}", name));
                             self.status = format!("Created entity: {}", name);
+                            self.toast_success(format!("Created entity: {}", name));
+                        }
+                        Err(msg) => {
+                            self.console_logs.push(msg.clone());
+                            self.status = msg.clone();
+                            self.toast_error(msg);
                         }
                     }
                 }
                 tab_viewer::PanelEvent::SpawnArchetype { ref archetype } => {
-                    // Spawn an entity from a named archetype via undo stack (undoable)
+                    // Spawn an entity from a named archetype via undo stack (undoable),
+                    // placed near the camera focal point with a real mesh / working light
+                    // where the archetype defines one.
+                    let archetype = archetype.clone();
+                    let focal = self
+                        .viewport
+                        .as_ref()
+                        .map(|v| v.camera().focal_point())
+                        .unwrap_or(glam::Vec3::ZERO);
+                    let outcome: Result<String, String>;
                     if let Some(scene_state) = self.scene_state.as_mut() {
                         let entity_count = scene_state.world().entities().len();
                         let name = format!("{}_{}", archetype, entity_count);
@@ -4341,12 +4450,49 @@ impl EditorApp {
                             "Camera" => (2, 1, 0),
                             _ => (0, 1, 0),
                         };
+                        let mesh = archetype_mesh(&archetype);
+                        let (off_x, off_z) = spawn_scatter_offset(entity_count);
+                        let spawn_x = (focal.x + off_x).round() as i32;
+                        let spawn_z = (focal.z + off_z).round() as i32;
+                        // Ground the spawn on the terrain surface (World Wizard
+                        // precedent). A fixed height buries the entity inside
+                        // terrain — backface-culled terrain then makes it visible
+                        // only from below the surface (angle-dependent popping).
+                        let ground_sample = self
+                            .dock_tab_viewer
+                            .sample_terrain_height_at(spawn_x as f32, spawn_z as f32);
+                        let ground = ground_sample.unwrap_or(0.0);
+                        // Per-representation offset above the surface: meshed
+                        // archetypes sit at their model origin (feet), placeholder
+                        // cubes rest their base on the surface, lights float.
+                        let height = ground
+                            + if mesh.is_some() {
+                                0.0
+                            } else if archetype == "Light" {
+                                2.0
+                            } else {
+                                0.5
+                            };
+                        // Spawn placement diagnostic — surfaces the sampled ground
+                        // vs terrain state so burial/mismatch bugs are visible in
+                        // the console instead of silently producing hidden entities.
+                        {
+                            let (tmin, tmax, tavg) = self.dock_tab_viewer.terrain_height_stats();
+                            self.console_logs.push(format!(
+                                "[spawn-diag] {} pos=({}, {:.2}, {}) ground={:?} mesh={:?} terrain(min/max/avg)=({:.1}/{:.1}/{:.1}) focal=({:.1},{:.1},{:.1})",
+                                name, spawn_x, height, spawn_z, ground_sample, mesh,
+                                tmin, tmax, tavg, focal.x, focal.y, focal.z
+                            ));
+                        }
                         let clipboard = crate::clipboard::ClipboardData {
                             version: 2,
                             entities: vec![crate::clipboard::ClipboardEntityData {
                                 name: name.clone(),
-                                pos: astraweave_core::IVec2 { x: 0, y: 0 },
-                                height: 0.0,
+                                pos: astraweave_core::IVec2 {
+                                    x: spawn_x,
+                                    y: spawn_z,
+                                },
+                                height,
                                 rotation: 0.0,
                                 rotation_x: 0.0,
                                 rotation_z: 0.0,
@@ -4368,25 +4514,77 @@ impl EditorApp {
                             scene_state.world_mut(),
                             Some(&mut self.entity_manager),
                         ) {
-                            self.console_logs
-                                .push(format!("Spawn archetype failed: {}", e));
+                            outcome = Err(format!("Spawn archetype failed: {}", e));
                         } else {
-                            // Select the newly created entity
-                            if let Some(&last) = scene_state.world().entities().last() {
+                            if let Some(last) = newest_entity(scene_state.world()) {
                                 let em_id: u64 = last.into();
                                 self.selected_entity = Some(em_id);
                                 self.selection_set.primary = Some(em_id);
-                                if let Some(viewport) = &mut self.viewport {
-                                    viewport.set_selected_entity(Some(em_id));
+                                // Assign the real mesh + archetype-specific components on
+                                // the editor overlay entity; the viewport reads mesh and
+                                // point-light data from here (viewport/widget.rs).
+                                if let Some(entity) = self.entity_manager.get_mut(em_id) {
+                                    if let Some(path) = mesh {
+                                        entity.set_mesh(path.to_string());
+                                    }
+                                    match archetype.as_str() {
+                                        "Light" => {
+                                            entity.components.insert(
+                                                "Light".to_string(),
+                                                serde_json::json!({
+                                                    "type": "point",
+                                                    "range": 15.0,
+                                                    "intensity": 8.0,
+                                                    "color_r": 1.0,
+                                                    "color_g": 0.95,
+                                                    "color_b": 0.85,
+                                                }),
+                                            );
+                                        }
+                                        "Camera" => {
+                                            entity.components.insert(
+                                                "Camera".to_string(),
+                                                serde_json::json!({ "fov": 60.0 }),
+                                            );
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                if let Some(pose) = scene_state.world().pose(last) {
+                                    let p = glam::Vec3::new(
+                                        pose.pos.x as f32,
+                                        pose.height,
+                                        pose.pos.y as f32,
+                                    );
+                                    if let Some(viewport) = &mut self.viewport {
+                                        viewport.set_selected_entity(Some(em_id));
+                                        viewport.camera_mut().frame_entity(p, 2.0);
+                                    }
                                 }
                             }
                             scene_state.sync_all();
                             self.hierarchy_panel
                                 .sync_with_world(scene_state.world_mut());
+                            if let Some(viewport) = &self.viewport {
+                                viewport.invalidate_entity_cache();
+                            }
                             self.is_dirty = true;
+                            outcome = Ok(name);
+                        }
+                    } else {
+                        outcome = Err(format!("Cannot spawn {}: no scene loaded", archetype));
+                    }
+                    match outcome {
+                        Ok(name) => {
                             self.console_logs
                                 .push(format!("Spawned {} entity: {}", archetype, name));
                             self.status = format!("Spawned {}: {}", archetype, name);
+                            self.toast_success(format!("Spawned {}: {}", archetype, name));
+                        }
+                        Err(msg) => {
+                            self.console_logs.push(msg.clone());
+                            self.status = msg.clone();
+                            self.toast_error(msg);
                         }
                     }
                 }
@@ -4426,7 +4624,7 @@ impl EditorApp {
                             self.console_logs.push(format!("Spawn model failed: {}", e));
                         } else {
                             // Assign mesh to the newly created entity in EntityManager
-                            if let Some(&last) = scene_state.world().entities().last() {
+                            if let Some(last) = newest_entity(scene_state.world()) {
                                 let em_id: u64 = last.into();
                                 if let Some(em_entity) = self.entity_manager.get_mut(em_id) {
                                     em_entity.mesh = Some(path.clone());
@@ -4493,7 +4691,7 @@ impl EditorApp {
                             self.console_logs.push(format!("Duplicate failed: {}", e));
                         } else {
                             // Select the duplicated entity
-                            if let Some(&last) = scene_state.world().entities().last() {
+                            if let Some(last) = newest_entity(scene_state.world()) {
                                 let em_id: u64 = last.into();
                                 self.selected_entity = Some(em_id);
                                 self.selection_set.primary = Some(em_id);
@@ -9253,6 +9451,15 @@ impl eframe::App for EditorApp {
 
         // Drain tracing events into the in-editor console panel each frame
         console_bridge::drain_log_sink(&mut self.console_panel);
+
+        // Drain viewport entity-feed diagnostics (mesh load results, rebuild
+        // summaries) into the docked console — tracing events don't reach it,
+        // which made silent mesh→cube fallbacks invisible to users.
+        if let Some(viewport) = &self.viewport {
+            for line in viewport.take_entity_feed_log() {
+                self.console_logs.push(line);
+            }
+        }
 
         // Detect OS window focus transitions (Alt+Tab recovery).
         // When the window regains focus, force several repaints and reset

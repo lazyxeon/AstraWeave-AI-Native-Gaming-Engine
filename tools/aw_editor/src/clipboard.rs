@@ -465,6 +465,7 @@ impl ClipboardData {
             );
 
             if let Some(pose) = world.pose_mut(id) {
+                pose.height = entity_data.height;
                 pose.rotation = entity_data.rotation;
                 pose.rotation_x = entity_data.rotation_x;
                 pose.rotation_z = entity_data.rotation_z;
@@ -614,6 +615,37 @@ mod tests {
         assert_eq!(entity_data.ammo, 25);
         assert!((entity_data.rotation - 1.57).abs() < 0.01);
         assert!((entity_data.scale - 2.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_spawn_preserves_height() {
+        // Regression: spawn_entities applied rotation/scale but dropped pose.height,
+        // so copy→paste and editor spawns lost vertical placement (entities buried in
+        // the ground). Height must round-trip capture → spawn.
+        let mut world = World::new();
+        let entity = world.spawn(
+            "TallEntity",
+            IVec2 { x: 1, y: 2 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        if let Some(pose) = world.pose_mut(entity) {
+            pose.height = 3.5;
+        }
+
+        let clipboard = ClipboardData::from_entities(&world, &[entity]);
+        assert!((clipboard.entities[0].height - 3.5).abs() < 0.001);
+
+        let spawned = clipboard
+            .spawn_entities(&mut world, IVec2 { x: 10, y: 0 })
+            .unwrap();
+        let spawned_pose = world.pose(spawned[0]).expect("spawned entity has a pose");
+        assert!(
+            (spawned_pose.height - 3.5).abs() < 0.001,
+            "spawn_entities must preserve pose.height (got {})",
+            spawned_pose.height
+        );
     }
 
     #[test]

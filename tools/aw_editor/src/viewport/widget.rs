@@ -202,7 +202,10 @@ pub struct ViewportWidget {
     /// preserves additive coexistence with existing main.rs:3833-3877
     /// mediator path; isolates dispatcher integration to a single new
     /// accessor.
-    cached_mouse_events: Vec<(crate::active_tool::MouseEvent, crate::active_tool::MouseEventKind)>,
+    cached_mouse_events: Vec<(
+        crate::active_tool::MouseEvent,
+        crate::active_tool::MouseEventKind,
+    )>,
     /// Cached mouse-enter notification (true if pointer entered viewport this frame).
     cached_mouse_enter: bool,
     /// Cached mouse-leave notification (true if pointer left viewport this frame).
@@ -496,14 +499,24 @@ impl ViewportWidget {
         // Discrete event detection from egui Response API.
         if response.clicked_by(egui::PointerButton::Primary) {
             // Treat single-click as LeftButtonDown + LeftButtonUp pair within the same frame.
-            self.cached_mouse_events.push((mouse_event, crate::active_tool::MouseEventKind::LeftButtonDown));
-            self.cached_mouse_events.push((mouse_event, crate::active_tool::MouseEventKind::LeftButtonUp));
+            self.cached_mouse_events.push((
+                mouse_event,
+                crate::active_tool::MouseEventKind::LeftButtonDown,
+            ));
+            self.cached_mouse_events.push((
+                mouse_event,
+                crate::active_tool::MouseEventKind::LeftButtonUp,
+            ));
         } else if response.dragged_by(egui::PointerButton::Primary) {
             // Continuous drag → emit Move events each frame the drag is active.
-            self.cached_mouse_events.push((mouse_event, crate::active_tool::MouseEventKind::Move));
+            self.cached_mouse_events
+                .push((mouse_event, crate::active_tool::MouseEventKind::Move));
         } else if response.drag_stopped_by(egui::PointerButton::Primary) {
             // Drag-end → emit LeftButtonUp.
-            self.cached_mouse_events.push((mouse_event, crate::active_tool::MouseEventKind::LeftButtonUp));
+            self.cached_mouse_events.push((
+                mouse_event,
+                crate::active_tool::MouseEventKind::LeftButtonUp,
+            ));
         }
 
         // Note: cached_mouse_enter / cached_mouse_leave detection is deferred —
@@ -2712,6 +2725,13 @@ impl ViewportWidget {
     /// the gizmo drag path (undo, redo, paste, duplicate, property edits).
     pub fn invalidate_entity_cache(&self) {
         self.with_renderer("invalidate_entity_cache", |r| r.invalidate_entity_cache());
+    }
+
+    /// Drain pending user-visible entity-feed diagnostics (mesh load results,
+    /// rebuild summaries). Main drains this each frame into the docked console.
+    pub fn take_entity_feed_log(&self) -> Vec<String> {
+        self.with_renderer("take_entity_feed_log", |r| r.take_entity_feed_log())
+            .unwrap_or_default()
     }
 
     pub fn upload_terrain_chunks(&self, chunks: &[(Vec<super::types::TerrainVertex>, Vec<u32>)]) {

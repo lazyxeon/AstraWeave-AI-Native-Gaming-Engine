@@ -1145,7 +1145,7 @@ impl EditorCommand for SpawnEntitiesCommand {
                 let mut editor_entity = crate::entity_manager::EditorEntity::new(em_id, name);
                 if let Some(pose) = world.pose(entity) {
                     editor_entity.position =
-                        glam::Vec3::new(pose.pos.x as f32, 0.0, pose.pos.y as f32);
+                        glam::Vec3::new(pose.pos.x as f32, pose.height, pose.pos.y as f32);
                     editor_entity.scale = glam::Vec3::new(pose.scale, pose.scale_y, pose.scale_z);
                     editor_entity.rotation = glam::Quat::from_euler(
                         glam::EulerRot::XYZ,
@@ -1210,7 +1210,7 @@ impl EditorCommand for DuplicateEntitiesCommand {
                 let mut editor_entity = crate::entity_manager::EditorEntity::new(em_id, name);
                 if let Some(pose) = world.pose(entity) {
                     editor_entity.position =
-                        glam::Vec3::new(pose.pos.x as f32, 0.0, pose.pos.y as f32);
+                        glam::Vec3::new(pose.pos.x as f32, pose.height, pose.pos.y as f32);
                     editor_entity.scale = glam::Vec3::new(pose.scale, pose.scale_y, pose.scale_z);
                     editor_entity.rotation = glam::Quat::from_euler(
                         glam::EulerRot::XYZ,
