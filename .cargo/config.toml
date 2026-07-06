@@ -12,3 +12,6 @@ rustflags = ["-C", "link-args=-Wl,--stack,16777216"]
 editor = "run --bin aw_editor --profile release-fast"
 editor-release = "run --bin aw_editor --release"
 editor-dev = "run --bin aw_editor"
+
+# Repo automation (tools/xtask): `cargo xtask fetch-assets [--pack <name>] [--force]`
+xtask = "run -p xtask --"

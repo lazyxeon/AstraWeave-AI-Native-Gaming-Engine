@@ -1,0 +1,41 @@
+# AstraWeave release-pack manifest — consumed by `cargo xtask fetch-assets` (AD.2, D2).
+#
+# Each [[pack]] entry is one independently fetchable, independently verifiable zip:
+#   name       unique pack id (also the stamp key under assets/packs/.stamps/)
+#   source     https:// URL (GitHub release asset), file:// URL, or plain local path.
+#              Local sources exist so packs can be verified end-to-end BEFORE upload
+#              (AD.3) and so the director can sideload packs if quota problems recur.
+#   sha256     lowercase hex sha256 of the zip; verified before any unpack
+#   unpack_to  directory under assets/packs/ (relative; '..'/absolute rejected)
+#   size_bytes expected zip size — progress/sanity only, sha256 is the gate
+#
+# SPLIT-PACK RULE: GitHub caps release files at 2 GB. A pack exceeding that is split
+# at directory boundaries into independent zips, each with its own [[pack]] entry —
+# there is deliberately no multi-part reassembly logic (each entry stands alone and
+# is retryable on its own).
+#
+# Stamps: after a successful verify+unpack the tool writes
+# assets/packs/.stamps/<name>.toml; a later run whose stamp sha256 matches the
+# manifest is an announced no-op. `--force` overrides. assets/packs/ is gitignored.
+#
+# Real pack entries land in AD.3. The commented example below documents the shape:
+#
+# [[pack]]
+# name = "kenney-audio"
+# source = "https://github.com/<owner>/AstraWeave-AI-Native-Gaming-Engine/releases/download/assets-v1/kenney-audio.zip"
+# sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+# unpack_to = "kenney-audio"
+# size_bytes = 0
+
+schema_version = 1
+
+# AD.2 Phase 4 live-verification fixture (real public GitHub release asset; verified
+# 2026-07-06 — fetch/verify/unpack/stamp, idempotent no-op, corrupted-stamp re-fetch;
+# terminal evidence in the AD.2 outcome note). Re-enable to re-run the live check:
+#
+# [[pack]]
+# name = "phase4-live-verification"
+# source = "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-pc-windows-msvc.zip"
+# sha256 = "d0f534024c42afd6cb4d38907c25cd2b249b79bbe6cc1dbee8e3e37c2b6e25a1"
+# unpack_to = "phase4-live-verification"
+# size_bytes = 2058893

@@ -53,6 +53,10 @@ assets/_downloaded/polyhaven/*
 .asset_cache/
 # DO commit: assets/polyhaven_manifest.toml
 
+# Release-hosted asset packs restored by `cargo xtask fetch-assets` (AD.2).
+# Reproducible from assets/packs.manifest.toml (which IS committed); stamps live inside.
+assets/packs/
+
 # Security and secrets (prevent accidental commit)
 .env
 .env.local

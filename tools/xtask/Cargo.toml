@@ -1,0 +1,34 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+publish = false
+description = "Repo automation tasks, invoked as `cargo xtask <task>`. AD.2: fetch-assets (release-pack restore)."
+
+# Peer-implementation note (Scope Discipline check, AD.2 Phase 0):
+# tools/astraweave-assets is the UPSTREAM acquisition tool (PolyHaven/Kenney provider
+# APIs, async tokio+reqwest, organizes into assets/_downloaded/). This crate is the
+# RELEASE-PACK restore tool (assets/packs.manifest.toml -> GitHub release zips ->
+# sha256 verify -> unpack under assets/packs/ with stamp idempotence). The shared
+# primitive (HTTP download + sha256) is ~40 lines; the concerns are otherwise disjoint.
+
+[lib]
+name = "xtask"
+path = "src/lib.rs"
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+zip = { workspace = true }
+reqwest = { workspace = true, features = ["blocking"] }
+
+[dev-dependencies]
+tempfile = "3"
