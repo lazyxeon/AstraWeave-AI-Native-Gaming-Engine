@@ -197,3 +197,42 @@ Crate SPDX: `(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0` (`Cargo.toml.o
 - **`assets/Forest Scene`** — the sweep adds 6 WAV (262,118 B) plus census classes (.tif 53/362.2 MB, .mdb 64, .dll 114, .cube 6, .psd 48, .unitypackage 3, .pdf 1) to the existing AD.1 QUARANTINE-RECOMMENDED cluster; **`assets/Road to Vostok Assets Vol.1`** adds 39 PSD (1,229,911,141 B) to its existing TRACED-CC0 cluster; **KayKit** adds 1 PDF + 8 .url to its TRACED cluster. Cluster verdicts unchanged.
 - **`docs/book/`** — gitignored mdBook build output (`.gitignore:13`), excluded from the provenance denominator (13 files: 11 woff2 + og-image.svg + favicon copies).
 - **SVG class liveness**: no SVG decoder exists workspace-wide (no resvg/usvg/egui_extras anywhere in `Cargo.lock`); the class is asset-library payload only.
+
+---
+
+## 11. AD.1.B — pack-bucket remainder trace (2026-07-06)
+
+Closes the AD.3.R G-4 provenance gap: four scopes that were pack-bucket by destiny but upload-blocked because their provenance was UNTRACED/MIXED. Standard = AD.1 §3 name-linked tier (API-verified slug + site CC0) and §2 SHA-256 Kenney-twin. Evidence: `docs/audits/evidence/ad1b_provenance_2026-07-06/` (per-slug PolyHaven/ambientCG API captures). Binary per family: TRACED or QUARANTINE — no "probably fine." Silent commit `54d10f736` (which introduced pine_forest, the loose textures, and the tests copies) carries **no** source-URL breadcrumb — its `scripts/generate_extended_materials.py` has none — so every trace here rests on slug-API identity or byte-twin, never on the commit.
+
+### 11.1 TRACED — new Poly Haven slugs (name-linked, CC0, API-verified 2026-07-06)
+
+All 200 at `https://api.polyhaven.com/info/<slug>`; CC0 per polyhaven.com/license.
+
+- **pine_forest scope** (`assets/textures/pine_forest/`): `aerial_rocks_04` (Rob Tuytel), `evening_road_01_puresky` (HDRI; Jarod Guest/Sergej Majboroda), `fern_02`, `pine_bark` (Dimitrios Savva; collection `pine_forest`), `rock_moss_set_02` (Kless Gyzen; collection `pine_forest`), `moss`→`moss_01` (Rob Tuytel; trailing-`_01` obvious-variant — the one lower-confidence call, see §11.5). Plus the already-AD.1-verified §3 slugs present here (`rocky_trail`, `forest_ground_04`, `grass_medium_01`, `rock_moss_set_01`, `rock_face_03`, `ganges_river_pebbles`, `forrest_ground_01`, `forest_leaves_04`, `dry_branches_medium_01`, `namaqualand_cliff_02`).
+- **textures-loose scope** (`assets/textures/*`): `boulder_01`, `brick_wall_04`, `damp_sand`, `dead_quiver_branch_01`, `dead_quiver_branch_02`, `flower_stinkkruid`, `metal_plate`, `namaqualand_boulder_04`, `namaqualand_boulders_01`, `namaqualand_cliff_01`, `rock_face_01`, `rock_face_2`→`rock_face_02`, `rock_face`, `rocks_ground_01`, `root_cluster_01`, `root_cluster_2`→`root_cluster_02`, `rubber_duck_toy`, `sand_rocks_small_01`, `single_root`, `tree_bark_03`, `wooden_stool_02` (21 new slugs / 75 files) — plus 47 already-AD.1-verified slug families (233 files) inherited name-linked by the loose copies.
+- **models-loose scope** (`assets/models/`): `coast_sand_01_1k.glb` — `coast_sand_01` API-verified (Rob Tuytel, texture-type); the `.glb` is a Blender-baked wrapper of the CC0 texture set (glTF `generator: "Khronos glTF Blender I/O"`, embedded image names `coast_sand_01_diff_8k` etc.), same pattern as the traced `pine_tree_01_1k.glb`.
+
+### 11.2 TRACED — ambientCG (CC0)
+
+`assets/models/3DTreeStump001*` (6 files): `https://ambientcg.com/api/v2/full_json?id=3DTreeStump001` → `assetId 3DTreeStump001`, `dataType 3DModel`; local `*_SQ-1K-JPG*` names match the API's download-variant naming exactly. ambientCG site-wide CC0.
+
+### 11.3 TRACED — Kenney byte-twins (SHA-256, CC0; §2 method)
+
+- **models-loose**: 442 loose `.glb`/`.fbx` are byte-identical (SHA-256) to files inside CC0 Kenney packs — Nature Kit 320, Retro Medieval Kit 104, Blocky Characters 18 (evidence `models_twin_check.tsv`, 620-row hash table).
+- **textures-loose non-slug tail**: `barrel.png`, `cobblestonePainted.png`, `details.png`, `fence.png`, `water.png` (5 files) — byte-identical to Kenney Retro Medieval Kit `Models/*/Textures/`.
+- **assets/tests**: `assets/tests/textures/texture-{a..r}.png` (18 files) — Kenney **Blocky Characters** character textures; 16/18 byte-identical, 2/18 pixel-identical (lossless palette→RGBA re-encode, verified zero pixel diff) to `assets/3D assets/Blocky Characters/Models/*/Textures/`. (These 18 were AD.0-rejected as zero-reference; reference-check reconfirmed zero live consumers at HEAD — the only hits are dangling refs in dead orphan source `unified_showcase/src/main_bevy_v2.rs`. TRACED, so not purge-by-untraceability; they are redundant duplicates of a retained pack asset — pack under Blocky Characters CC0 or safe to drop as duplicates. Correct the `ASSET_REGISTRY.csv` "deliberately-corrupt fixture" label — none are corrupt.)
+
+### 11.4 QUARANTINE-RECOMMENDED (untraceable; join the ratified quarantine destiny — never uploaded)
+
+| scope | families | files | bytes | why |
+|---|---|--:|--:|---|
+| pine_forest | `dead_tree`, `dead_tree_tiled`, `fir_bark`, `fir_trunk_01`, `fir_trunk_03`, `fir_twig`, `pine_trunk_01/02/03`, `pine_twig`, `pine_cover_01`, `tree_trunk`, `tree_roots_01/02`, `montaigle_ruins_01/02/03` | 60 | 1,003,320,838 | slugs 404; names are word-substitutions of pine_forest models (not spelling/number/plural variants) → no name-link. `montaigle_ruins` is not a Poly Haven asset at all (zero index hits). Likely CC0 bakes of pine_forest models but uncertifiable under the standard. |
+| textures-loose | `ivy` (404), `tiny_purple_succulant` (404), + non-slug tail `cobblestoneAlternative`, `roof`, `planks`, `tree`, `bee`, `square_alpha`, `transmission`, `ground_mask_01`, `LoL_diff`, `LoL_nor_gl` | 19 | 79,306,263 | 404 with non-Poly-Haven map-suffix conventions; the tail has no byte-twin to any licensed in-repo copy (same-name Kenney/import files differ by SHA). |
+| models-loose | `house1..5.glb`; the primitive/greybox family (`cube4-9`, `cylinder1-5`, `cone1-4`, `sphere1-2`, `pillar1-4`, `wall corner*`, `door1-3`, `stairs*`, `fence edge/wood`, `ramp1`, `toggle switch`, `torus`, `arrow`, `box`, `coin`, `key`, …) | 81 | 1,742,733 | no same-basename Kenney twin (64 NO-CANDIDATE); the 12 base names that exist in Kenney kits DIFFER by SHA against every candidate (checked ≤11 kits each) — affirmatively rules out Kenney lineage. Zero production callers, zero license evidence, single bulk commit. |
+| **total new quarantine** | | **160** | **1,084,369,834** | |
+
+### 11.5 Confidence + open ratification calls
+
+- The 68 already-AD.1-verified slugs and 449 byte-twins are **high confidence** (direct API identity / SHA-256). The 27 new API-200 slugs are name-linked (same tier AD.1 §3 ratified).
+- **`moss`→`moss_01`** (pine_forest, 3 files / 10,718,929 B) is the single lower-confidence TRACED — name-linked only via the trailing-`_01` variant rule + `collection: pine_forest`. If the ratifier prefers strict exact-slug matching it reclassifies to QUARANTINE (moves 3 files, making pine_forest TRACED 70 / 1,664,068,578 and its quarantine 63 / 1,014,039,767).
+- Repo-side note (non-provenance): pine_forest `pine_trunk_02`≡`fir_trunk_01` and `pine_trunk_03`≡`fir_trunk_03` are byte-identical under divergent names (duplicated content); does not change the verdict.
