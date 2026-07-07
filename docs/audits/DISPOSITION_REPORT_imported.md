@@ -104,3 +104,13 @@ Finalizes the disposition record. Full trace tables + evidence: `THIRD_PARTY_LIC
 | **total (invariant)** | **91,293** | **28,243,219,612** |
 
 Gate (137 / 791,711,859 B) = `archive/` 4 + `assets/cache/impostors/` 67 + `assets_src/` 66, disposed exactly to zero. Cross-foot verified against the full-history LFS enumeration this session.
+
+## 10. AD.4 close-out (2026-07-07)
+
+Executed the AD.4.R plan; full record in `THIRD_PARTY_LICENSES.md` §13 + `docs/audits/AD4_RECOOK_OUTCOME.md`. Disposition-relevant outcomes:
+
+- **39 quarantine-destined slots refilled**: 18 C6 cooked from traced `assets_src` + 18 C7 re-acquired from traced CC0 Poly Haven slugs (§13.1) → `assets/materials/derived_1k/` (new paths); `assets/textures/cobblestone.png` retired by re-pointing `unified_showcase` to the C6 cobblestone derivative.
+- **Two debris rows RETIRED** (quarantine-and-accept, director-ratified): `verdant_trail/meshes/{sticks,grass}_debris_a.glb` originals are unpublished Poly Haven sub-assets (un-re-acquirable); the sample set drops **153 → 151 rows**; scatter thins gracefully (`biome.rs:1052,1065` → `engine_adapter.rs:2578` skip-missing). The files stay in quarantine and leave in AD.6's purge.
+- **The 37 old occupants are untouched** — they leave in AD.6's path purge (overwriting them would trap unlicensed history in surviving paths).
+- **Bucket successor**: the 91,293 LFS invariant retires → **91,329** (+36 `derived_1k`); the 18 C7 `assets_src` copies move pack→quarantine. Partition table: §13.5.
+- **The AD.4→AD.6 hard-predecessor edge clears**: no ratified sample row now points at a quarantine-destined file.

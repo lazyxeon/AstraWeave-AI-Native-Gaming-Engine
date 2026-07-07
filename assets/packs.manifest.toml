@@ -187,3 +187,20 @@ source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/tex
 sha256 = "be97a962febaa6e08a1eaa341a9d7736dee7fba0d5edc6d3402eb3661692ecfa"
 unpack_to = "textures-pine-forest"
 size_bytes = 1655407274
+
+# =============================================================================
+# AD.4 MATERIALS-SRC PACK — the 48-file assets_src/ source-material archive
+# (assets_src 66 LFS files − 18 untraceable C7, which move pack→quarantine and
+# are never shipped). Cut as AD.4's closing step; per-file trace in
+# THIRD_PARTY_LICENSES.md §8.4/§13 + docs/audits/AD4_RECOOK_OUTCOME.md. Same
+# assets-v1 release, tag anchor 5b2c6c8bd (#197). `source` is the locally-built
+# zip during pre-upload loop verification; flipped to the release URL after upload
+# (the sha256 pin is unchanged by the flip — that identity is the live-loop proof).
+# =============================================================================
+
+[[pack]]
+name = "materials-src"
+source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/materials-src.zip"
+sha256 = "652458f3044ca16f71291e9639713ac4a8295d13e724fb3f3112434c5be3108d"
+unpack_to = "materials-src"
+size_bytes = 570810569
