@@ -49,6 +49,18 @@ def cook_one(src_path: str, out_path: str) -> tuple:
         return (o.size[0], o.size[1], o.mode, os.path.getsize(out_path))
 
 
+def to_l8(img):
+    """Bit-depth-safe grayscale conversion (AD.4.A fix, D2). PIL's
+    `convert("L")` on 16-bit modes (I;16 / I;16B / I;16L / I) CLAMPS values
+    >255 to 255, silently flattening real data to solid white — this destroyed
+    derived_1k/plaster_mra.png's AO and tree_bark_mra.png's roughness (both
+    PolyHaven 2k sources are mode I;16). Scale 16-bit to 8-bit first."""
+    if img.mode in ("I;16", "I;16B", "I;16L", "I"):
+        img = img.point(lambda v: v / 257.0).convert("L")
+        return img
+    return img.convert("L")
+
+
 def pack_mra(roughness_path: str, ao_path: str, out_path: str) -> tuple:
     """Build an MRA map (R=metallic=0, G=roughness, B=ao) from separate PolyHaven
     roughness + ao maps, at 1024x1024 RGBA PNG. Used for re-acquired families
@@ -56,8 +68,8 @@ def pack_mra(roughness_path: str, ao_path: str, out_path: str) -> tuple:
     order matches the engine `_mra.png` convention (canonical_terrain_pack
     swizzles mra→ORM at load)."""
     from PIL import Image as _I
-    r = _I.open(roughness_path).convert("L")
-    a = _I.open(ao_path).convert("L")
+    r = to_l8(_I.open(roughness_path))
+    a = to_l8(_I.open(ao_path))
     if r.size != (SIZE, SIZE):
         r = r.resize((SIZE, SIZE), _I.LANCZOS)
     if a.size != (SIZE, SIZE):
@@ -68,6 +80,41 @@ def pack_mra(roughness_path: str, ao_path: str, out_path: str) -> tuple:
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     mra.save(out_path, "PNG")
     with _I.open(out_path) as o:
+        return (o.size[0], o.size[1], o.mode, os.path.getsize(out_path))
+
+
+def cook_mra_arm_to_mra(src_path: str, out_path: str) -> tuple:
+    """AD.4.A fix (D1): cook an ARM-mislabeled `_mra.png` into a true MRA map.
+
+    The 2026-05 A.1 acquisition fetched PolyHaven ARM maps (R=AO, G=roughness,
+    B=metallic) and renamed them `<family>_mra.png` in assets_src/materials/
+    WITHOUT reordering channels. The engine loader's mra->ORM swizzle
+    (canonical_terrain_pack.rs:204-210) assumes true MRA and swaps R<->B, so
+    ARM-ordered input reaches the shader inverted: AO=metallic(~0) kills the
+    ambient term, metallic=AO(~high) turns terrain into a mirror. Fix at cook
+    time: swap R<->B (ARM -> MRA), then downscale to the 1K contract.
+
+    Guarded: refuses to swap unless the source actually shows the ARM profile
+    (R varying/high AND B flat ~0) so a true-MRA input can never be corrupted."""
+    im = Image.open(src_path)
+    d = im.convert("RGBA")
+    im.close()
+    # profile guard (sampled stats, cheap): ARM = R mean high, B mean ~ 0
+    small = d.resize((64, 64))
+    px = list(small.getdata())
+    r_mean = sum(p[0] for p in px) / len(px)
+    b_mean = sum(p[2] for p in px) / len(px)
+    if not (r_mean > 100.0 and b_mean < 10.0):
+        raise SystemExit(
+            f"REFUSED: {src_path} does not match the ARM profile "
+            f"(R mean {r_mean:.1f}, B mean {b_mean:.1f}) — not swapping")
+    r, g, b, a = d.split()
+    d = Image.merge("RGBA", (b, g, r, a))  # ARM -> MRA: R(AO) <-> B(metal)
+    if d.size != (SIZE, SIZE):
+        d = d.resize((SIZE, SIZE), Image.LANCZOS)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    d.save(out_path, "PNG")
+    with Image.open(out_path) as o:
         return (o.size[0], o.size[1], o.mode, os.path.getsize(out_path))
 
 
