@@ -14,6 +14,22 @@
 # there is deliberately no multi-part reassembly logic (each entry stands alone and
 # is retryable on its own).
 #
+# G-3 AMENDMENT (ratified 2026-07-06, AD.1.C): several pack sources are LOOSE-FILE
+# directories with no subdirectory structure to split on (e.g. textures-environment,
+# textures-pine-forest, the Namaqualand/verdant meshes). For those, split at
+# name-prefix (slug-family) boundaries instead of directory boundaries: all files of
+# one slug/family stay in the same zip (they are never straddled across zips), each
+# zip remains independently verifiable, and there is still no reassembly step. A zip
+# is thus a whole number of slug-families, never a fraction of one.
+#
+# TRACE/MATCHING STANDARD (ratified 2026-07-06, AD.1.C; binds future trace beats):
+# a family is TRACED only under the AD.1 standard — an API-verified upstream slug
+# (Poly Haven / ambientCG) + that site's CC0, an in-pack LICENSE, SHA-256 byte-twin
+# to a licensed copy, or an in-repo deterministic generator (first-party). Name-link
+# admissibility: a TRAILING-NUMERAL variant is admissible (forrest_ground_01 /
+# moss_01); a WORD-SUBSTITUTION is NOT (pine_trunk). Anything untraceable is
+# quarantine — never packed, never uploaded.
+#
 # Stamps: after a successful verify+unpack the tool writes
 # assets/packs/.stamps/<name>.toml; a later run whose stamp sha256 matches the
 # manifest is an announced no-op. `--force` overrides. assets/packs/ is gitignored.

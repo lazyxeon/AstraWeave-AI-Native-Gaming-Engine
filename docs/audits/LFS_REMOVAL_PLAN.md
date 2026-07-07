@@ -53,3 +53,7 @@ The 153 in-repo sample rows use exactly 5 extensions, all covered by active root
 ## 5. Reference facts for AD.6 sizing
 
 `git count-objects -vH`: size-pack 4.73 GiB (pointer blobs + code history; the ~22 GB of payloads live in `.git/lfs/` and GitHub LFS storage, not the object DB); 91,293 pointers / 27,786 plain blobs / 119,079 tracked. Rewrite tooling operates on the pointer blobs; `git lfs migrate export` needs the local `.git/lfs` store complete (verified 2026-07-05 via `git lfs push --dry-run`: zero missing objects — re-verify at execution).
+
+## 6. Hard sequencing precondition — AD.4 precedes AD.6 (ratified 2026-07-06, AD.1.C)
+
+**AD.4 (asset derivative re-cook) is a hard predecessor of AD.6 (this history rewrite).** 39 of the ratified sample rows currently point at files that are quarantine-destined (18 `assets/materials` C7 + `assets/textures/cobblestone.png` + the C6 runtime materials pending re-cook + the 2 debris glbs — see `THIRD_PARTY_LICENSES.md` §5/§6 and `SAMPLE_SET_PROPOSAL.md`). AD.4 is the beat that refills those slots with traced derivatives. If the AD.6 purge runs **before** the re-cook, those sample slots lose their backing files and the ratified **fresh-clone-builds-and-renders** success criterion (§3 step 5) breaks. Therefore the AD.6 rewrite must not execute until AD.4 has landed the replacement derivatives and the sample set has been re-pointed. (This is independent of the bandwidth-embargo gate in §3 step 1 — both must clear before the rewrite.)

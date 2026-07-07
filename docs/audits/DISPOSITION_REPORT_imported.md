@@ -1,6 +1,8 @@
 # Disposition Report — `assets/imported/` (9.0 GB) + Road to Vostok Vol.1 (+ adjacent unknowns)
 
-**Date**: 2026-07-05 (AD.1) | **Method**: clusters traced against upstream license documents fetched this session (Poly Haven API `api.polyhaven.com/info/<slug>` + <https://polyhaven.com/license>; itch.io + Wayback Machine for RtV). No git-lfs traffic; all file inspection used the local checkout. Tracing standard per AD.1: a cluster is TRACED only when a source document states license terms; no inference. **Quarantine applies to the release page as well as the repo** — QUARANTINE-RECOMMENDED clusters are never uploaded anywhere.
+**Date**: 2026-07-05 (AD.1); §8 added AD.1.B 2026-07-06; §9 + ratification AD.1.C 2026-07-06 | **Method**: clusters traced against upstream license documents fetched this session (Poly Haven API `api.polyhaven.com/info/<slug>` + <https://polyhaven.com/license>; itch.io + Wayback Machine for RtV). No git-lfs traffic; all file inspection used the local checkout. Tracing standard per AD.1: a cluster is TRACED only when a source document states license terms; no inference. **Quarantine applies to the release page as well as the repo** — quarantined clusters are never uploaded anywhere.
+
+> **RATIFIED (2026-07-06, AD.1.C — see §9):** every "QUARANTINE-RECOMMENDED" verdict in §1–§6 below is now **QUARANTINE (RATIFIED)** — the director ratified the full quarantine list (destiny: purged in the AD.6 rewrite, never uploaded). Road to Vostok Vol.1 is ratified **pack-and-upload** (not the reversible-quarantine alternative §4 offered). No disposition in this report is provisional after §9.
 
 ## 1. `assets/imported/Namaqualand/` — TRACED (CC0, Poly Haven) with 1 exception
 
@@ -61,4 +63,44 @@ Closes AD.3.R's G-4 gap by tracing the four upload-blocked pack-bucket scopes to
 - **`assets/models/` loose** (560; 30 pre-dispositioned) — 449 TRACED (442 Kenney SHA-256 twins across Nature Kit/Retro Medieval/Blocky Characters + 6 ambientCG `3DTreeStump001` + 1 Poly Haven `coast_sand_01`), **81 QUARANTINE** (`house1..5.glb` + the primitive/greybox family — no Kenney twin, DIFFER hashes rule out Kenney lineage).
 - **`assets/tests/textures/texture-{a..r}.png`** (18) — **TRACED CC0** (Kenney Blocky Characters; 16 byte-identical + 2 pixel-identical). Zero references reconfirmed at HEAD. Redundant duplicate of a retained pack asset → pack under Blocky Characters or safe-drop as duplicate; NOT purge (traceable). Registry "corrupt fixture" label is an overclaim to correct.
 
-**Bucket-move ledger**: new pack→quarantine = **160 files / 1,084,369,834 B**; scope 4 = 18 files gate-unclassified→pack. Updated partition (AD.3.R buckets): pack **89,998 / 19,853,620,060 B**, quarantine **990 / 7,383,230,576 B**, gate-unclassified **137 / 791,711,859 B** (sample 114 + retained 54 unchanged); grand total invariant **91,293 / 28,243,219,612 B**. **Residual (out of AD.1.B scope, flagged)**: `assets/textures/{pbr,Fabrics,grass_hd,models}` (100 files, ~253 MB) are subdirectories, not the depth-2 loose set — still untraced inside `textures-environment`; a follow-up beat must trace them before that pack is fully upload-clear.
+**Bucket-move ledger**: new pack→quarantine = **160 files / 1,084,369,834 B**; scope 4 = 18 files gate-unclassified→pack. Updated partition (AD.3.R buckets): pack **89,998 / 19,853,620,060 B**, quarantine **990 / 7,383,230,576 B**, gate-unclassified **137 / 791,711,859 B** (sample 114 + retained 54 unchanged); grand total invariant **91,293 / 28,243,219,612 B**. **Residual (out of AD.1.B scope, flagged)**: `assets/textures/{pbr,Fabrics,grass_hd,models}` (100 files, ~253 MB) are subdirectories, not the depth-2 loose set — still untraced inside `textures-environment`; a follow-up beat must trace them before that pack is fully upload-clear. **[CLOSED by AD.1.C §9.1.]**
+
+## 9. AD.1.C — residual trace + ratification (2026-07-06)
+
+Finalizes the disposition record. Full trace tables + evidence: `THIRD_PARTY_LICENSES.md` §12 (residual) + §8 (ratified dispositions); API captures `docs/audits/evidence/ad1c_residual_2026-07-06/`.
+
+### 9.1 Residual trace — the 100 flagged files (closes §8's residual flag)
+
+`assets/textures/{pbr,Fabrics,grass_hd,models}`, 100 tracked (99 LFS + 1 stray). Paths in index casing; `Fabrics/` is the case-mismatch dir (registry/worktree: `fabrics/`).
+
+| scope | files | verdict | basis |
+|---|--:|---|---|
+| `pbr/` (`PBR_{2K,4K}/{Dirt_Mud,Moss_Ground,Sand_Desert,Stone_Terrain_Rock}`) | 56 | **TRACED — first-party procedural CC0** | `tools/pbr_gen/generate_pbr_textures.py` (CC0 header, fixed seeds, exact 4×7×2 structural match, dims 2048²/4096²). AD.1.B's "ambientCG-style" guess overturned by in-repo generator. |
+| `Fabrics/` | 24 | **TRACED — Poly Haven CC0** | `fabric_leather_01`, `hessian_230`, `rough_linen` API-200 (2026-07-06); `*_1k.glb` preview bundles inherit slug CC0. |
+| `grass_hd/` | 4 LFS | **TRACED — Poly Haven CC0** | `grass_medium_01` API-200 (AD.1-verified). 5th file `grass_hd/grass` = 1-byte plain-blob stray (non-asset, outside LFS partition). |
+| `models/houses/` | 15 | **QUARANTINE (ratified)** | `house1..5_tex{1,2,3}` textures for the AD.1.B-quarantined `house1..5.glb`; equally untraceable. |
+
+**84 TRACED / 226,760,432 B · 15 QUARANTINE / 25,879,389 B.** Net move: 15 files pack→quarantine. `textures-environment` (446 LFS / 4,998,449,523 B) now has **zero untraced files** — the blocker is cleared; upload-clear for its TRACED portion (~4.56 GiB, ~3 zips at the G-3 name-prefix split), excluding 34 ratified-quarantine files (19 loose-tail §11.4 + 15 houses).
+
+### 9.2 Ratified director decisions (record; do not reopen)
+
+1. **Quarantine list RATIFIED** — untraceable 1,005 (830 AD.1 + 160 AD.1.B + 15 AD.1.C) + hygiene 71 (`archive/` 4 + `assets/cache/impostors/` 67, G-2) + redundant-duplicate 18 (`assets/tests/`, G-2) = **1,094 files / 7,481,318,328 B**. AlkaKrab → **option (a) quarantine**. Destiny: purged in AD.6, never uploaded. (§8 items 1–2.)
+2. **`assets_src/` → pack `materials-src`, deferred until after AD.4** (§8 item 4). **Pin evidence:** `assets/asset_manifest.toml` pins by upstream Poly Haven/ambientCG slug/URL only — **no `sha256`/content-hash field on any entry** (grep-confirmed), and `cloth`/`plaster`/`rock_lichen` are entirely unpinned (§6). Not (URL ∧ hash) → the pack branch, not purge-and-refetch. The deferred pack inherits the per-family §5/§6 dispositions (untraceable families excluded when cut).
+3. **Road to Vostok Vol.1 → pack + upload** with the traced set (§4 caution reversed; release page becomes the durable off-site copy of an unpublished irreplaceable CC0 asset). §8 item 3 closes.
+4. **G-3 split-rule amendment RATIFIED** — within a >2 GB loose-file directory, split at name-prefix (slug-family) boundaries; one slug never straddles zips; each zip independently verifiable. Recorded in `assets/packs.manifest.toml`.
+5. **Matching standard RATIFIED** — trailing-numeral variant admissible, word-substitution not. Recorded in `assets/packs.manifest.toml`; closes the `moss`→`moss_01` flag as TRACED.
+6. **Sequencing constraint** — **AD.4 is a hard predecessor of AD.6** (39 ratified sample rows point at quarantine-destined files whose slots AD.4 refills; purge-before-re-cook would break the fresh-clone render criterion). Recorded in `LFS_REMOVAL_PLAN.md`.
+7. **Retained-non-sample verification** — the 10 `examples/fluids_demo/captures/*.png` in the retained bucket: the `fluids_demo` example is **live** (workspace member, root `Cargo.toml:142`; `cargo metadata` lists package `fluids_demo`). Verified alive; the 10 files remain retained.
+
+### 9.3 Final five-bucket partition (gate-unclassified → 0)
+
+| bucket | files | bytes |
+|---|--:|--:|
+| pack | 90,031 | 20,547,244,167 |
+| quarantine | 1,094 | 7,481,318,328 |
+| gate-unclassified | **0** | **0** |
+| sample | 114 | 182,607,234 |
+| retained | 54 | 32,049,883 |
+| **total (invariant)** | **91,293** | **28,243,219,612** |
+
+Gate (137 / 791,711,859 B) = `archive/` 4 + `assets/cache/impostors/` 67 + `assets_src/` 66, disposed exactly to zero. Cross-foot verified against the full-history LFS enumeration this session.
