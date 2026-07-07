@@ -288,3 +288,52 @@ After the AD.1.C bucket moves — Half-1 houses (pack→quarantine, 15), G-2 `ar
 | **total (invariant)** | **91,293** | **28,243,219,612** |
 
 The gate bucket (137 / 791,711,859 B) was composed exactly of `archive/` (4 / 67,109,616) + `assets/cache/impostors/` (67 / 4,751,884) + `assets_src/` (66 / 719,850,359); decisions §8 items 1+4 dispose all three to the last byte. Cross-foot verified against the full-history LFS enumeration this session. (The 3 `assets_src/environments/*.toml` and the `grass_hd/grass` stray are plain blobs outside the 91,293-path LFS denominator and unaffected.)
+
+---
+
+## 13. AD.4 — sample-slot re-cook + C7 re-acquisition (2026-07-07)
+
+Refills the 39 quarantine-destined sample slots (AD.4.R) so AD.6's path purge does not strand a ratified sample row. Cook tool: `tools/material_cook/cook_1k.py` (1024² RGBA PNG × {albedo,normal,mra}; contract-tested). Quarantine-destined texture slots get **new paths** (`assets/materials/derived_1k/`); the 37 old occupants are untouched and leave in AD.6's path purge (overwriting them would trap unlicensed blobs in surviving-path history). Evidence: `docs/audits/evidence/ad4_c7_reacquire_2026-07-07/`.
+
+### 13.1 TRACED — C7 re-acquisition (six §6-untraceable families re-sourced, CC0 Poly Haven, API-verified 2026-07-07)
+
+Site license: <https://polyhaven.com/license> (CC0). Each slug director-ratified 2026-07-07; API captures in the evidence dir. Cooked to `assets/materials/derived_1k/<family>{,_n,_mra}.png` (albedo + normal downscaled; mra packed R=metallic(0)/G=roughness/B=AO from the acquired rough+ao maps).
+
+| slot family | Poly Haven slug | name / author (API) | type | acquired dims |
+|---|---|---|---|---|
+| `cloth` | `fabric_leather_01` | Fabric Leather 01 / Rob Tuytel | 1 (texture) | 2048² |
+| `plaster` | `plastered_wall_02` | Plastered Wall 02 / Charlotte Baglioni | 1 | 2048² |
+| `rock_lichen` | `lichen_rock` | Lichen Rock / Rico Cilliers | 1 | 2048² |
+| `roof_tile` | `roof_tiles_14` | Roof Tiles 14 / Rob Tuytel | 1 | 2048² |
+| `tree_bark` | `tree_bark_03` | Tree Bark 03 / Rob Tuytel | 1 | 2048² |
+| `tree_leaves` | `forest_leaves_02` | Forest Leaves 02 / Rob Tuytel | 1 | 2048² |
+
+Acquired via `tools/astraweave-assets` (plain-HTTP Poly Haven Files API; no LFS traffic) to `assets/_downloaded/polyhaven/<family>/` (gitignored). Manifest entries: `assets/asset_manifest.toml` (AD.4 C7 block). **Ratification note:** the swap was director-ratified; these rows are the *provenance* trace (ratification authorizes the substitution, it is not itself provenance). `rock_moss_set_02` was **REJECTED** (type-2 model pack, not a tileable texture); `lichen_rock` was selected search-first (type-1 texture, exact semantic match).
+
+### 13.2 C6 + traced-9 derivatives (cooked from already-traced sources)
+
+- **C6** (`cobblestone, gravel, ice, metal_rusted, moss, wood_planks`): cooked from the **traced `assets_src/materials/` sources** (§5, AD.1-verified upstreams) → `derived_1k/`. Provenance = §5 (unchanged); the derivative inherits it.
+- **traced-9** (`grass, forest_floor, mountain_rock, mud, stone, rock_slate, dirt` §3.3 + `sand, snow` §4): re-cooked **in place** (licensed history) to 1024². Provenance = §3.3/§4 (unchanged).
+
+### 13.3 `assets/textures/cobblestone.png` — substitute (re-pointed)
+
+The §6 unlicensed `assets/textures/cobblestone.png` is retired by **re-pointing its sole consumer** (`examples/unified_showcase/src/main.rs:1130`, TowerStone ground) to the re-cooked C6 `assets/materials/derived_1k/cobblestone.png` (traced). The old file is untouched (leaves in AD.6).
+
+### 13.4 Debris rows retired
+
+`assets/imported/verdant_trail/meshes/{sticks,grass}_debris_a.glb` (§5): originals are unpublished Poly Haven sub-assets (un-re-acquirable). Director-ratified **quarantine-and-accept** — the two rows retire from the sample set (**153 → 151**; this is the AD.0 sample-**row** manifest count, distinct from the LFS sample-**file** bucket in §13.5 which moves 114 → 150); scatter thins gracefully (`astraweave-terrain/src/biome.rs:1052,1065` skip missing via `engine_adapter.rs:2578`). Files untouched (already quarantine; leave in AD.6).
+
+### 13.5 Bucket bookkeeping — the 91,293 invariant retires
+
+AD.4 adds **36 new LFS paths** (`derived_1k/` 18 C6 + 18 C7); nothing is deleted (old occupants leave in AD.6). The 18 C7 `assets_src` copies (untraceable) move **pack → quarantine** (excluded from `materials-src`). Successor partition:
+
+| bucket | AD.1.C | AD.4 | delta |
+|---|--:|--:|---|
+| pack | 90,031 | 90,013 | −18 (C7 assets_src → quar) |
+| quarantine | 1,094 | 1,112 | +18 |
+| gate-unclassified | 0 | 0 | — |
+| sample | 114 | 150 | +36 (derived_1k) |
+| retained | 54 | 54 | — |
+| **total** | **91,293** | **91,329** | **+36** |
+
+Successor denominator **91,329 = 91,293 + 36** (foots). The `materials-src` pack (48 files / 615,202,592 B = `assets_src` 66 − 18 C7) is cut as AD.4's closing step — **now cut and live** on the `assets-v1` release: zip **570,810,569 B**, sha256 `652458f3044ca16f71291e9639713ac4a8295d13e724fb3f3112434c5be3108d`, `https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/materials-src.zip`; deterministic build (byte-identical rebuild) + local 3-run loop + live-URL loop all verified 2026-07-07 (full evidence, per-slot table, and open items: `docs/audits/AD4_RECOOK_OUTCOME.md`).

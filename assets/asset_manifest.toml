@@ -302,3 +302,60 @@ format = "exr"
 #    - Add entry with: handle, provider="opengameart", type, url, license, author, source_url
 #
 # =============================================================================
+
+# =============================================================================
+# AD.4 C7 RE-ACQUISITION (2026-07-07) — six untraceable §6 material families
+# re-sourced from traced CC0 Poly Haven slugs (director-ratified 2026-07-07;
+# rock_lichen via search-first = `lichen_rock`, rock_moss_set_02 REJECTED as a
+# model pack). Family-named handles → assets/_downloaded/polyhaven/<family>/;
+# cooked to assets/materials/derived_1k/<family>{,_n,_mra}.png by
+# tools/material_cook/cook_1k.py. Fresh AD.1 trace rows: THIRD_PARTY_LICENSES.md §13.
+# =============================================================================
+
+[[assets]]
+handle = "plaster"
+provider = "polyhaven"
+type = "texture"
+id = "plastered_wall_02"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "tree_leaves"
+provider = "polyhaven"
+type = "texture"
+id = "forest_leaves_02"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "tree_bark"
+provider = "polyhaven"
+type = "texture"
+id = "tree_bark_03"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "cloth"
+provider = "polyhaven"
+type = "texture"
+id = "fabric_leather_01"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "roof_tile"
+provider = "polyhaven"
+type = "texture"
+id = "roof_tiles_14"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "rock_lichen"
+provider = "polyhaven"
+type = "texture"
+id = "lichen_rock"
+resolution = "2k"
+format = "png"

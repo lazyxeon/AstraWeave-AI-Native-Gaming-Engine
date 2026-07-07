@@ -1,11 +1,11 @@
 # Attribution - POLYHAVEN
 ================================================================================
 
-This directory contains 13 assets from polyhaven:
+This directory contains 19 assets from polyhaven:
 
 ## License Summary
 
-- CC0-1.0: 13 assets
+- CC0-1.0: 19 assets
 
 ================================================================================
 
@@ -102,6 +102,48 @@ Source: https://polyhaven.com/a/studio_small_08
 
 --------------------------------------------------------------------------------
 
+### plaster
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/plastered_wall_02
+
+--------------------------------------------------------------------------------
+
+### tree_leaves
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/forest_leaves_02
+
+--------------------------------------------------------------------------------
+
+### tree_bark
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/tree_bark_03
+
+--------------------------------------------------------------------------------
+
+### cloth
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/fabric_leather_01
+
+--------------------------------------------------------------------------------
+
+### roof_tile
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/roof_tiles_14
+
+--------------------------------------------------------------------------------
+
+### rock_lichen
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/lichen_rock
+
+--------------------------------------------------------------------------------
+
 
 For full license texts, see URLs above.
-Generated: 2026-07-03T21:44:23.488481+00:00
+Generated: 2026-07-03T21:44:23.488481+00:00 (13 original) — AD.4 union restore 2026-07-07: +6 C7 (fetch-overwrite regression repaired)
