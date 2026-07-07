@@ -272,3 +272,4 @@ weave_mutation_results.txt
 # Unity crash/asset server
 sysinfo.txt
 crashlytics-build.properties
+__pycache__/
