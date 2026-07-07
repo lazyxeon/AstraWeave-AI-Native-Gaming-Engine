@@ -11,25 +11,25 @@ triplanar_scale = 20.0
 
 [[layer]]
 key = "tree_bark"
-albedo = "../tree_bark.png"
-normal = "../tree_bark_n.png"
-mra    = "../tree_bark_mra.png"
+albedo = "../derived_1k/tree_bark.png"
+normal = "../derived_1k/tree_bark_n.png"
+mra    = "../derived_1k/tree_bark_mra.png"
 tiling = [1.0, 1.0]
 triplanar_scale = 10.0
 
 [[layer]]
 key = "tree_leaves"
-albedo = "../tree_leaves.png"
-normal = "../tree_leaves_n.png"
-mra    = "../tree_leaves_mra.png"
+albedo = "../derived_1k/tree_leaves.png"
+normal = "../derived_1k/tree_leaves_n.png"
+mra    = "../derived_1k/tree_leaves_mra.png"
 tiling = [1.0, 1.0]
 triplanar_scale = 8.0
 
 [[layer]]
 key = "rock_lichen"
-albedo = "../rock_lichen.png"
-normal = "../rock_lichen_n.png"
-mra    = "../rock_lichen_mra.png"
+albedo = "../derived_1k/rock_lichen.png"
+normal = "../derived_1k/rock_lichen_n.png"
+mra    = "../derived_1k/rock_lichen_mra.png"
 tiling = [2.0, 2.0]
 triplanar_scale = 18.0
 

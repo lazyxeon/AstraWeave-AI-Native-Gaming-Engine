@@ -1127,7 +1127,7 @@ impl ShowcaseApp {
         println!("Loading TowerStone Mat...");
         std::io::stdout().flush().unwrap();
         self.tower_stone_mat =
-            self.create_material_from_texture("TowerStone", "assets/textures/cobblestone.png");
+            self.create_material_from_texture("TowerStone", "assets/materials/derived_1k/cobblestone.png");
         println!("  -> TowerStone material index: {}", self.tower_stone_mat);
 
         println!("Materials vector size AFTER: {}", self.materials.len());

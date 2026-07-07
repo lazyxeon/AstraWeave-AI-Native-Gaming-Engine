@@ -79,7 +79,7 @@ tiling = [128.0, 128.0]
 
 [[layer]]
 key = "river"
-albedo = "../gravel.png"
-normal = "../gravel_n.png"
-mra    = "../gravel_mra.png"
+albedo = "../derived_1k/gravel.png"
+normal = "../derived_1k/gravel_n.png"
+mra    = "../derived_1k/gravel_mra.png"
 tiling = [128.0, 128.0]

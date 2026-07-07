@@ -35,8 +35,8 @@ triplanar_scale = 20.0
 
 [[layer]]
 key = "moss"
-albedo = "../rock_lichen.png"
-normal = "../rock_lichen_n.png"
-mra    = "../rock_lichen_mra.png"
+albedo = "../derived_1k/rock_lichen.png"
+normal = "../derived_1k/rock_lichen_n.png"
+mra    = "../derived_1k/rock_lichen_mra.png"
 tiling = [2.0, 2.0]
 triplanar_scale = 22.0

@@ -27,16 +27,16 @@ triplanar_scale = 20.0
 
 [[layer]]
 key = "plaster"
-albedo = "../plaster.png"
-normal = "../plaster_n.png"
-mra    = "../plaster_mra.png"
+albedo = "../derived_1k/plaster.png"
+normal = "../derived_1k/plaster_n.png"
+mra    = "../derived_1k/plaster_mra.png"
 tiling = [1.0, 1.0]
 triplanar_scale = 12.0
 
 [[layer]]
 key = "cloth"
-albedo = "../cloth.png"
-normal = "../cloth_n.png"
-mra    = "../cloth_mra.png"
+albedo = "../derived_1k/cloth.png"
+normal = "../derived_1k/cloth_n.png"
+mra    = "../derived_1k/cloth_mra.png"
 tiling = [1.0, 1.0]
 triplanar_scale = 12.0
