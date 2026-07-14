@@ -399,9 +399,13 @@ pub fn run_fetch(
     // Step 2: single-instance lock for the whole run.
     let _lock = InstallLock::acquire(&state)?;
 
+    // Prune protection (H1): a file may never be deleted by its former owner's
+    // ledger diff when ANY current packlist still claims it.
+    let protected = all_current_members(repo_root, &manifest)?;
+
     let mut results = Vec::new();
     for entry in &selected {
-        let status = match install_one(entry, repo_root, &state, opts) {
+        let status = match install_one(entry, repo_root, &state, opts, &protected) {
             Ok(status) => status,
             Err(e) => {
                 eprintln!("✗ {}: {:#}", entry.name, e);
@@ -503,6 +507,19 @@ fn preflight_repo(repo_root: &Path, state: &StateDirs, selected: &[&PackEntry]) 
 
     fs::create_dir_all(state.tmp())?;
     Ok(())
+}
+
+/// The union of every manifest pack's CURRENT packlist (not just the selection).
+/// Prune consults this so a file that migrated to another pack between versions is
+/// never deleted by its former owner's ledger diff (adversarial finding H1: without
+/// this, an unfavorable install order lets pack P's prune delete pack Q's
+/// freshly-installed file).
+fn all_current_members(repo_root: &Path, manifest: &Manifest) -> Result<BTreeSet<String>> {
+    let mut all = BTreeSet::new();
+    for e in &manifest.packs {
+        all.extend(load_packlist(repo_root, &e.name)?);
+    }
+    Ok(all)
 }
 
 /// Per-pack member-exact preflight (step 1, COMPLETE and pre-download, driven by the
@@ -696,10 +713,11 @@ fn install_one(
     repo_root: &Path,
     state: &StateDirs,
     opts: &FetchOptions,
+    protected: &BTreeSet<String>,
 ) -> Result<PackStatus> {
     // Crash recovery precedes everything: a journal means an incomplete transaction.
     if state.journal(&entry.name).exists() {
-        recover_from_journal(entry, repo_root, state, opts)?;
+        recover_from_journal(entry, repo_root, state, opts, protected)?;
     }
 
     // Step 0: stamp check (no-op / version-change decision).
@@ -728,7 +746,7 @@ fn install_one(
 
     // Step 3: download + sha256 verify.
     let tmp_zip = state.tmp().join(format!("{}.zip.partial", entry.name));
-    let result = download_verify_install(entry, repo_root, state, &members, &tmp_zip);
+    let result = download_verify_install(entry, repo_root, state, &members, &tmp_zip, protected);
     let _ = fs::remove_file(&tmp_zip);
     result
 }
@@ -739,6 +757,7 @@ fn download_verify_install(
     state: &StateDirs,
     members: &[String],
     tmp_zip: &Path,
+    protected: &BTreeSet<String>,
 ) -> Result<PackStatus> {
     println!("> {}: acquiring {}", entry.name, entry.source);
     acquire(&entry.source, tmp_zip)?;
@@ -824,7 +843,9 @@ fn download_verify_install(
     if let Some(old) = read_toml::<Ledger>(&state.ledger(&entry.name)) {
         let mut pruned = 0usize;
         for f in &old.files {
-            if !member_set.contains(f.as_str()) {
+            // H1 guard: never prune a file that ANY current packlist still claims
+            // (ownership migrated to another pack between versions).
+            if !member_set.contains(f.as_str()) && !protected.contains(f.as_str()) {
                 let p = repo_root.join(f);
                 if p.exists() {
                     fs::remove_file(&p)
@@ -943,6 +964,7 @@ fn recover_from_journal(
     repo_root: &Path,
     state: &StateDirs,
     _opts: &FetchOptions,
+    protected: &BTreeSet<String>,
 ) -> Result<()> {
     let jpath = state.journal(&entry.name);
     let journal: Journal = read_toml(&jpath).ok_or_else(|| {
@@ -995,7 +1017,8 @@ fn recover_from_journal(
         let member_set: BTreeSet<&str> = journal.files.iter().map(String::as_str).collect();
         if let Some(old) = read_toml::<Ledger>(&state.ledger(&entry.name)) {
             for f in &old.files {
-                if !member_set.contains(f.as_str()) {
+                // Same H1 guard as the normal prune path.
+                if !member_set.contains(f.as_str()) && !protected.contains(f.as_str()) {
                     let p = repo_root.join(f);
                     if p.exists() {
                         fs::remove_file(&p)?;

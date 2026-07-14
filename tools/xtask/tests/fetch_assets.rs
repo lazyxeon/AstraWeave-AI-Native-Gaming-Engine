@@ -739,3 +739,122 @@ fn three_run_loop_fresh_noop_repair() {
     let r3 = run_fetch(&f.manifest_path, &f.root, &f.opts()).unwrap();
     assert_eq!(r3, vec![("fixture".into(), PackStatus::Installed)]);
 }
+
+#[test]
+fn prune_never_deletes_a_file_migrated_to_another_pack() {
+    // Adversarial finding H1: member 'assets/x/sub/data.bin' historically belonged
+    // to `fixture` (in its OLD ledger) but ownership migrated to pack `taker`.
+    // fixture's v2 drops it; fixture's prune must NOT delete it because taker's
+    // CURRENT packlist claims it.
+    let f = fixture(MEMBERS, None);
+    run_fetch(&f.manifest_path, &f.root, &f.opts()).unwrap();
+
+    // Migrate: v2 of fixture only ships hello.txt; taker now claims sub/data.bin.
+    let v2: &[(&str, &[u8])] = &[("assets/x/hello.txt", b"hello v2")];
+    build_pack_zip(&f.zip_path, v2);
+    let mut m = load_manifest(&f.manifest_path).unwrap();
+    m.packs[0].sha256 = sha256_hex(&f.zip_path);
+    m.packs[0].size_bytes = fs::metadata(&f.zip_path).unwrap().len();
+    // taker: a manifest entry claiming the migrated file (source never used —
+    // the file is already on disk and stamped semantics don't matter here).
+    let taker_zip = f.root.join("taker.zip");
+    build_pack_zip(
+        &taker_zip,
+        &[("assets/x/sub/data.bin", &[0u8, 1, 2, 3, 255])],
+    );
+    m.packs.push(PackEntry {
+        name: "taker".into(),
+        source: taker_zip.to_string_lossy().into_owned(),
+        sha256: sha256_hex(&taker_zip),
+        size_bytes: fs::metadata(&taker_zip).unwrap().len(),
+        roots: vec!["assets/x/sub/".into()],
+    });
+    f.rewrite_manifest(&m);
+    f.write_packlist("fixture", &["assets/x/hello.txt"]);
+    f.write_packlist("taker", &["assets/x/sub/data.bin"]);
+
+    // Install ONLY fixture v2 (version change -> replace + prune).
+    let opts = FetchOptions {
+        selection: Selection::Pack("fixture".into()),
+        ..Default::default()
+    };
+    let results = run_fetch(&f.manifest_path, &f.root, &opts).unwrap();
+    assert_eq!(results, vec![("fixture".into(), PackStatus::Installed)]);
+    assert_eq!(
+        fs::read(f.root.join("assets/x/hello.txt")).unwrap(),
+        b"hello v2"
+    );
+    assert!(
+        f.root.join("assets/x/sub/data.bin").exists(),
+        "H1: prune must not delete a file another pack's current packlist claims"
+    );
+}
+
+#[test]
+fn outside_assets_root_gets_root_gitignore_block() {
+    // Adversarial finding M2: the AW-PACK-IGNORE marked-block surface (needed by
+    // materials-src at assets_src/) — generation, check, install, round trip.
+    let members: &[(&str, &[u8])] = &[("assets_src/y/src.png", b"source material")];
+    let tmp = TempDir::new().unwrap();
+    let root = tmp.path().to_path_buf();
+    let zip_path = root.join("src_pack.zip");
+    build_pack_zip(&zip_path, members);
+    let manifest = Manifest {
+        schema_version: SCHEMA_VERSION,
+        packs: vec![PackEntry {
+            name: "src-pack".into(),
+            source: zip_path.to_string_lossy().into_owned(),
+            sha256: sha256_hex(&zip_path),
+            size_bytes: fs::metadata(&zip_path).unwrap().len(),
+            roots: vec!["assets_src/y/".into()],
+        }],
+        profiles: BTreeMap::from([("starter".into(), vec!["src-pack".into()])]),
+    };
+    fs::create_dir_all(root.join("assets")).unwrap();
+    let manifest_path = root.join("assets/packs.manifest.toml");
+    fs::write(&manifest_path, toml::to_string_pretty(&manifest).unwrap()).unwrap();
+    // Pre-existing hand content in the root .gitignore must survive the splice.
+    fs::write(root.join(".gitignore"), "/target/\n*.log\n").unwrap();
+    write_packlist_at(&root, "src-pack", &["assets_src/y/src.png"]);
+    git(&root, &["init", "-q"]);
+    git(&root, &["config", "user.name", "fixture"]);
+    git(&root, &["config", "user.email", "fixture@test"]);
+
+    // Generate both surfaces; the root block must appear with the assets_src root.
+    gen_ignore(&manifest_path, &root, false).unwrap();
+    let root_ignore = fs::read_to_string(root.join(".gitignore")).unwrap();
+    assert!(
+        root_ignore.contains("/target/"),
+        "hand content must survive"
+    );
+    assert!(
+        root_ignore.contains("AW-PACK-IGNORE"),
+        "block markers present"
+    );
+    assert!(
+        root_ignore.contains("/assets_src/y/"),
+        "outside-assets root listed"
+    );
+    // assets/.gitignore must NOT list the outside root.
+    let assets_ignore = fs::read_to_string(root.join(GENERATED_IGNORE)).unwrap();
+    assert!(!assets_ignore.contains("assets_src"));
+
+    git(&root, &["add", "-A"]);
+    git(&root, &["commit", "-q", "-m", "init"]);
+    gen_ignore(&manifest_path, &root, true).unwrap(); // --check round trip
+
+    // Install through the assets_src destination end-to-end.
+    let results = run_fetch(&manifest_path, &root, &FetchOptions::default()).unwrap();
+    assert_eq!(results, vec![("src-pack".into(), PackStatus::Installed)]);
+    assert_eq!(
+        fs::read(root.join("assets_src/y/src.png")).unwrap(),
+        b"source material"
+    );
+
+    // Hand-tampering inside the markers is drift.
+    let tampered = fs::read_to_string(root.join(".gitignore"))
+        .unwrap()
+        .replace("/assets_src/y/", "/assets_src/z/");
+    fs::write(root.join(".gitignore"), tampered).unwrap();
+    assert!(gen_ignore(&manifest_path, &root, true).is_err());
+}
