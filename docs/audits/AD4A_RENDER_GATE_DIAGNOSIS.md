@@ -7,6 +7,7 @@
 
 ## 1. Causal chains (each symptom → evidenced root cause)
 
+
 ### S1 — "Painting rock_lichen, cobblestone, OR roof_tile renders the SAME broken green-black geometric texture; thumbnails fine"
 
 **PRE-EXISTING wiring defect. Not caused by AD.4 — exposed by the AD.4 review.** Chain (every link first-hand verified):
