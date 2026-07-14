@@ -1,0 +1,47 @@
+name: Pack Guard
+
+# AD.5 anti-re-bloat rail (permanent enforcement). Fails when:
+#   1. any pack MEMBER (assets/packlists/<pack>.txt) is git-tracked — pack content
+#      must never be committed (post-AD.6, an accidental `git add -f` would commit
+#      plain multi-GB blobs; this is the backstop);
+#   2. a stray tracked file appears under a managed root that is neither a pack
+#      member nor a keeplist cohabitant (assets/packlists/_tracked_keep.txt,
+#      subset semantics — entries may vanish without regeneration);
+#   3. an ignore surface (assets/.gitignore, or the AW-PACK-IGNORE block in the
+#      root .gitignore) drifts from its generated form.
+# Fix locally with: cargo xtask gen-ignore / gen-keeplist, or untrack the blob.
+#
+# NOTE (AD.5): this workflow lands locally under the campaign push freeze and
+# activates when pushes resume — which happens after the AD.6 history rewrite,
+# the point at which the tracked-member check goes green by construction.
+# Deliberately NO `lfs: true` anywhere: the guard reads the index (git ls-files),
+# never file contents (see docs/audits/LFS_REMOVAL_PLAN.md CI hygiene items).
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: pack-managed paths untracked + ignore surfaces current
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (no LFS smudge)
+        uses: actions/checkout@v5
+
+      - name: Install Rust (pinned 1.89.0)
+        uses: dtolnay/rust-toolchain@1.89.0
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          cache-on-failure: true
+
+      - name: Run the pack guard
+        run: cargo run -p xtask -- ci-guard

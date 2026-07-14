@@ -1,13 +1,28 @@
-# AstraWeave release-pack manifest — consumed by `cargo xtask fetch-assets` (AD.2, D2).
+# AstraWeave release-pack manifest — consumed by `cargo xtask fetch-assets` (AD.5
+# transactional original-path restore; supersedes the AD.2/AD.3 assets/packs/ model).
 #
-# Each [[pack]] entry is one independently fetchable, independently verifiable zip:
-#   name       unique pack id (also the stamp key under assets/packs/.stamps/)
+# Each [[pack]] entry is one independently fetchable, independently verifiable zip
+# whose members are FULL REPO-RELATIVE PATHS restored to their original locations:
+#   name       unique pack id (also the state key under assets/.pack-state/)
 #   source     https:// URL (GitHub release asset), file:// URL, or plain local path.
-#              Local sources exist so packs can be verified end-to-end BEFORE upload
-#              (AD.3) and so the director can sideload packs if quota problems recur.
-#   sha256     lowercase hex sha256 of the zip; verified before any unpack
-#   unpack_to  directory under assets/packs/ (relative; '..'/absolute rejected)
+#              Local sources let packs be verified end-to-end BEFORE upload and let
+#              the director sideload if quota problems recur.
+#   sha256     lowercase hex sha256 of the zip — THE PACK VERSION ANCHOR. A changed
+#              pin IS a new pack version (installer replaces pack-managed files and
+#              prunes ones absent from the new version); an equal pin with a valid
+#              stamp is a no-op. There is no separate version field by design.
 #   size_bytes expected zip size — progress/sanity only, sha256 is the gate
+#   roots      COARSE managed-path coverage (trailing / = directory, else exact file).
+#              Feeds the generated ignore surfaces (`cargo xtask gen-ignore`) and the
+#              git rails. Containers may be shared between packs and with tracked
+#              sample/retained cohabitants — FILE-exact ownership lives in the
+#              committed packlists (assets/packlists/<name>.txt == the zip's
+#              _PACK_MANIFEST.txt; enforced at install step 5 and by ci-guard).
+#
+# Ignore surfaces: assets/.gitignore is fully generated; roots outside assets/
+# (materials-src at assets_src/) live in the AW-PACK-IGNORE block of the root
+# .gitignore. Cohabitant keeplist: assets/packlists/_tracked_keep.txt (subset
+# semantics; `cargo xtask gen-keeplist`).
 #
 # SPLIT-PACK RULE: GitHub caps release files at 2 GB. A pack exceeding that is split
 # at directory boundaries into independent zips, each with its own [[pack]] entry —
@@ -30,177 +45,181 @@
 # moss_01); a WORD-SUBSTITUTION is NOT (pine_trunk). Anything untraceable is
 # quarantine — never packed, never uploaded.
 #
-# Stamps: after a successful verify+unpack the tool writes
-# assets/packs/.stamps/<name>.toml; a later run whose stamp sha256 matches the
-# manifest is an announced no-op. `--force` overrides. assets/packs/ is gitignored.
-#
-# Real pack entries land in AD.3. The commented example below documents the shape:
-#
-# [[pack]]
-# name = "kenney-audio"
-# source = "https://github.com/<owner>/AstraWeave-AI-Native-Gaming-Engine/releases/download/assets-v1/kenney-audio.zip"
-# sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
-# unpack_to = "kenney-audio"
-# size_bytes = 0
+# State: assets/.pack-state/ (stamps, ledgers, journals, staging; gitignored).
+# A run whose stamp sha256 matches the manifest is an announced no-op; --force or
+# --repair restores the current version to pristine. Unknown preexisting files at
+# exact destinations fail the install unless --adopt.
 
-schema_version = 1
+schema_version = 2
 
-# AD.2 Phase 4 live-verification fixture (real public GitHub release asset; verified
-# 2026-07-06 — fetch/verify/unpack/stamp, idempotent no-op, corrupted-stamp re-fetch;
-# terminal evidence in the AD.2 outcome note). Re-enable to re-run the live check:
+# [profiles] — named pack selections. The DEFAULT invocation fetches `starter`;
+# `--all` (or the wildcard `all` profile) fetches everything. AD.6 Tier 2 uses --all.
 #
-# [[pack]]
-# name = "phase4-live-verification"
-# source = "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-pc-windows-msvc.zip"
-# sha256 = "d0f534024c42afd6cb4d38907c25cd2b249b79bbe6cc1dbee8e3e37c2b6e25a1"
-# unpack_to = "phase4-live-verification"
-# size_bytes = 2058893
+# STARTER MEMBERSHIP (proposal, director ratifies at the AD.5 gate; veto = edit this
+# list): the new-contributor first-ten-minutes set, biased small (~542 MiB of the
+# 15.4 GiB total). Consumer evidence per pack:
+#   hdri-catalog    (45.0 MiB) — hdri_catalog.rs/biome_material.rs parse
+#                    assets/hdri/hdri_catalog.toml and resolve its biome/time-of-day
+#                    HDRI matrix from this pack's files.
+#   kenney-audio    (23.8 MiB) — audio_bridge.rs scans assets/audio at editor
+#                    startup; without it the Audio panel is silent.
+#   kaykit-complete (473.0 MiB) — entity_panel.rs default_mesh() hardcodes KayKit
+#                    paths for every archetype; entity_catalog.rs's first scan
+#                    target. Without it "Add Entity" shows placeholders.
+# Notable exclusions: road-to-vostok (1.0 GiB, on-demand catalog only),
+# models-props (599 MiB, no net-new consumer), scene-* (7.7 GiB, biome-gated),
+# textures-environment-a/b/c (3.4 GiB, no live consumer found),
+# textures-pine-forest (1.5 GiB, consumer is a pre-existing broken path — see
+# AD5_RECONNECTION_OUTCOME.md), kenney-3d/2d-ui (browser fodder), materials-src
+# (archival sources).
+[profiles]
+starter = ["hdri-catalog", "kenney-audio", "kaykit-complete"]
+all = ["*"]
 
 # =============================================================================
-# AD.3 LIVE PACK ENTRIES (18 zips) — assets-v1 release on lazyxeon/AstraWeave.
-# Restored by `cargo xtask fetch-assets` (sha256-gated). Tag anchors commit
-# 5b2c6c8bd (#197), predating the planned AD.6 history rewrite.
+# AD.3 LIVE PACK ENTRIES — assets-v1 release on lazyxeon/AstraWeave. Tag anchors
+# commit 5b2c6c8bd (#197), predating the planned AD.6 history rewrite.
 # =============================================================================
 
 [[pack]]
 name = "hdri-catalog"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/hdri-catalog.zip"
 sha256 = "3fe3df8e3e8dde40647b1c738a16269e9df9cfef3505875f39acd6d1048ca154"
-unpack_to = "hdri-catalog"
 size_bytes = 47141993
+roots = ["assets/hdri/polyhaven/", "assets/hdri/sky_equirect.png"]
 
 [[pack]]
 name = "kaykit-complete"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/kaykit-complete.zip"
 sha256 = "f63c732b14787377335a3092de6fde43bf96c2241f66907ccdbe5f027c862834"
-unpack_to = "kaykit-complete"
 size_bytes = 495990095
+roots = ["assets/The Complete KayKit Collection v4/"]
 
 [[pack]]
 name = "kenney-2d-ui"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/kenney-2d-ui.zip"
 sha256 = "8ab6a2696b30be1dadaa36c46398fbf0c582841d51c3c5b4143a7d287f5a23e7"
-unpack_to = "kenney-2d-ui"
 size_bytes = 163196103
+roots = ["assets/2D assets/", "assets/Archive/", "assets/Icons/", "assets/Other/", "assets/UI assets/"]
 
 [[pack]]
 name = "kenney-3d"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/kenney-3d.zip"
 sha256 = "afebe5a16635d3fcf2fbbd03a75fb7780663767f4e3fa38f25b5768b035355c1"
-unpack_to = "kenney-3d"
 size_bytes = 159378023
+roots = ["assets/3D assets/"]
 
 [[pack]]
 name = "kenney-audio"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/kenney-audio.zip"
 sha256 = "a6ec7a588d3c06301dd9b96054177565be9f81cbb3c13d4b9dcff851854b0919"
-unpack_to = "kenney-audio"
 size_bytes = 24942874
+roots = ["assets/audio/"]
 
 [[pack]]
 name = "models-props"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/models-props.zip"
 sha256 = "5c90bd1370baa2627f860c6329ba8cbd42e532192195dcb19a165645ef808001"
-unpack_to = "models-props"
 size_bytes = 628284687
+roots = ["assets/models/"]
 
 [[pack]]
 name = "road-to-vostok"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/road-to-vostok.zip"
 sha256 = "e1e8031420b0039976fae09bdb7306a9b087759b008ecaba8c798c0881ef301f"
-unpack_to = "road-to-vostok"
 size_bytes = 1091569518
+roots = ["assets/Road to Vostok Assets Vol.1/"]
 
 [[pack]]
 name = "scene-namaqualand-meshes-a"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-namaqualand-meshes-a.zip"
 sha256 = "73d5e8c5a8a5b61ca36ae7cba84a0eeb902c6fef08129a0dee00de61e3155a84"
-unpack_to = "scene-namaqualand-meshes-a"
 size_bytes = 1884197790
+roots = ["assets/imported/Namaqualand/meshes/"]
 
 [[pack]]
 name = "scene-namaqualand-meshes-b"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-namaqualand-meshes-b.zip"
 sha256 = "d35e443d4ca304cb8c0218eb6a7df3ae89717a7ee432795d4e11f2a7319c99ee"
-unpack_to = "scene-namaqualand-meshes-b"
 size_bytes = 1444511605
+roots = ["assets/imported/Namaqualand/meshes/"]
 
 [[pack]]
 name = "scene-namaqualand-textures-a"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-namaqualand-textures-a.zip"
 sha256 = "b4dd4215113911e8fdd99c9f8ed751508128256430bf49c8105fbd1ef2c66bab"
-unpack_to = "scene-namaqualand-textures-a"
 size_bytes = 1898206572
+roots = ["assets/imported/Namaqualand/textures/"]
 
 [[pack]]
 name = "scene-namaqualand-textures-b"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-namaqualand-textures-b.zip"
 sha256 = "64a73a205fa8a2b51b16f3a14b30373c76d6c10e4bf2cbed2d472ead7faf068c"
-unpack_to = "scene-namaqualand-textures-b"
 size_bytes = 434317261
+roots = ["assets/imported/Namaqualand/textures/"]
 
 [[pack]]
 name = "scene-verdant-trail-meshes"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-verdant-trail-meshes.zip"
 sha256 = "889165f3793ba5e6ce03bb4f4f31b65dfbf81aa6597bd36d88b6c6795cc67b43"
-unpack_to = "scene-verdant-trail-meshes"
 size_bytes = 359288885
+roots = ["assets/imported/verdant_trail/meshes/"]
 
 [[pack]]
 name = "scene-verdant-trail-textures-a"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-verdant-trail-textures-a.zip"
 sha256 = "c7b879f307130273d1423852d616b8d4a1934e645a5a285362d895c0888535d8"
-unpack_to = "scene-verdant-trail-textures-a"
 size_bytes = 1897159875
+roots = ["assets/imported/verdant_trail/textures/"]
 
 [[pack]]
 name = "scene-verdant-trail-textures-b"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/scene-verdant-trail-textures-b.zip"
 sha256 = "0acf874c2d180ef93cab2047c6e4233485c10061a71fe96161fa06239505fd36"
-unpack_to = "scene-verdant-trail-textures-b"
 size_bytes = 246560786
+roots = ["assets/imported/verdant_trail/textures/"]
 
 [[pack]]
 name = "textures-environment-a"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/textures-environment-a.zip"
 sha256 = "06662f13ab33dc5f2564775eec68bdf9fb3d3503d4b31ef7a21e33b016fc42e7"
-unpack_to = "textures-environment-a"
 size_bytes = 1129109662
+roots = ["assets/textures/"]
 
 [[pack]]
 name = "textures-environment-b"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/textures-environment-b.zip"
 sha256 = "7d1edbb56d3f066778f7bcc5ab2d66e4586e15ad74385e7d434b0ace4a053052"
-unpack_to = "textures-environment-b"
 size_bytes = 1505386660
+roots = ["assets/textures/", "assets/materials/placeholder_backup/", "assets/coast_land_rocks_01_4k.gltf", "assets/forest_leaves_02_4k.gltf", "assets/sandy_gravel_02_4k.gltf"]
 
 [[pack]]
 name = "textures-environment-c"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/textures-environment-c.zip"
 sha256 = "5ad2e11855d67acdfe66e210b933890701c30aa5904b68cf8903beb93f94a0d9"
-unpack_to = "textures-environment-c"
 size_bytes = 895276470
+roots = ["assets/textures/", "assets/aerial_beach_01_4k.gltf", "assets/aerial_rocks_01_4k.gltf", "assets/ganges_river_pebbles_4k.gltf", "assets/leafy_grass_4k.gltf", "assets/snow_02_4k.gltf"]
 
 [[pack]]
 name = "textures-pine-forest"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/textures-pine-forest.zip"
 sha256 = "be97a962febaa6e08a1eaa341a9d7736dee7fba0d5edc6d3402eb3661692ecfa"
-unpack_to = "textures-pine-forest"
 size_bytes = 1655407274
+roots = ["assets/textures/pine_forest/"]
 
 # =============================================================================
 # AD.4 MATERIALS-SRC PACK — the 48-file assets_src/ source-material archive
-# (assets_src 66 LFS files − 18 untraceable C7, which move pack→quarantine and
-# are never shipped). Cut as AD.4's closing step; per-file trace in
-# THIRD_PARTY_LICENSES.md §8.4/§13 + docs/audits/AD4_RECOOK_OUTCOME.md. Same
-# assets-v1 release, tag anchor 5b2c6c8bd (#197). `source` is the locally-built
-# zip during pre-upload loop verification; flipped to the release URL after upload
-# (the sha256 pin is unchanged by the flip — that identity is the live-loop proof).
+# (assets_src 66 LFS files − 18 untraceable C7, which moved pack→quarantine and
+# are never shipped). Per-file trace: THIRD_PARTY_LICENSES.md §8.4/§13 +
+# docs/audits/AD4_RECOOK_OUTCOME.md. NOTE: its roots live OUTSIDE assets/ —
+# covered by the AW-PACK-IGNORE block in the root .gitignore. Known content
+# caveat: 9 of its _mra.png sources are ARM-mislabeled (AD.4.A §5b; consumers
+# were fixed in derived_1k; the archive preserves the sources as-is).
 # =============================================================================
 
 [[pack]]
 name = "materials-src"
 source = "https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/materials-src.zip"
 sha256 = "652458f3044ca16f71291e9639713ac4a8295d13e724fb3f3112434c5be3108d"
-unpack_to = "materials-src"
 size_bytes = 570810569
+roots = ["assets_src/materials/", "assets_src/textures/"]
