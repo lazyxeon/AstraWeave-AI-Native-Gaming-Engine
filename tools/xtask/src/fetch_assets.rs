@@ -1,127 +1,407 @@
-//! `cargo xtask fetch-assets` — restore release-hosted asset packs (AD.2, ratified D2).
+//! `cargo xtask fetch-assets` — transactional original-path restore of release-hosted
+//! asset packs (AD.5, ratified reconnection design 2026-07-08; supersedes the AD.2
+//! `assets/packs/<unpack_to>` interim model).
 //!
-//! Contract (AD.2 Phase 2):
-//! 1. Parse `assets/packs.manifest.toml`; per entry, skip when a stamp exists whose
-//!    recorded sha256 matches the manifest (idempotent no-op, announced in output).
-//! 2. Download to a temp path; verify sha256 of the complete file BEFORE unpacking.
-//!    Mismatch → temp deleted, loud failure naming expected/actual, nonzero exit.
-//! 3. Unpack under `assets/packs/<unpack_to>`. Entry paths and zip member paths that
-//!    escape the packs root (absolute, `..`, drive prefixes) fail the pack.
-//! 4. Stamp written only after successful unpack (unpack itself is staged through a
-//!    temp dir + rename, so a torn unpack never occupies the final path).
-//! 5. No resume logic (v1 simplification): a failed large download re-downloads.
-//! 6. Unreachable source → the error names the URL and the local-source sideload option.
-//! 7. `--force` re-fetches regardless of stamps.
+//! ## Ratified semantics (verbatim contract)
+//! - Valid current stamp → no-op. Incomplete transaction → repair / roll forward.
+//! - New pack version (sha256 change) → replace pack-managed files + prune obsolete ones.
+//! - `--repair`/`--force` → restore current pack to pristine.
+//! - Unknown preexisting file at a destination → FAIL unless explicitly overridden (`--adopt`).
+//! - No surprising destructive work when nothing changed.
+//! - Default invocation fetches the manifest-defined `starter` profile; `--all` fetches
+//!   everything; `--pack <name>` unchanged.
+//!
+//! ## Destination + ownership model
+//! Zip members are full repo-relative paths (e.g. `assets/hdri/polyhaven/goegap/goegap_2k.hdr`)
+//! and restore to those ORIGINAL paths. Ownership is FILE-exact, anchored by the
+//! committed packlists (`assets/packlists/<pack>.txt` == the zip's `_PACK_MANIFEST.txt`);
+//! manifest `roots` are deliberately COARSE (ignore/rail coverage — containers may be
+//! shared between packs and with tracked sample/retained cohabitants, which is why no
+//! root-granular check can be exclusive). Roots normally live under `assets/`; roots
+//! outside it (materials-src at `assets_src/`) are covered by the generated
+//! AW-PACK-IGNORE block in the ROOT .gitignore. The two synthetic members
+//! (`_PACK_MANIFEST.txt`, `_ATTRIBUTION.txt`) restore to the pack's state meta dir,
+//! never to the tree.
+//!
+//! ## State home — `assets/.pack-state/` (gitignored via generated `assets/.gitignore`)
+//! ```text
+//! assets/.pack-state/
+//!   lock                 single-instance installation lock
+//!   stamps/<pack>.toml   completion stamp (sha256 = installed version anchor)
+//!   ledgers/<pack>.toml  installed-files ledger (ownership; prune diffs against this)
+//!   journal/<pack>.toml  incomplete-transaction journal (present = crashed install)
+//!   staging/<pack>/      same-volume extraction staging (atomic per-file rename source)
+//!   meta/<pack>/         installed _PACK_MANIFEST.txt + _ATTRIBUTION.txt
+//!   tmp/                 download partials
+//! ```
+//!
+//! ## The 12-step lifecycle (per pack)
+//! 1. preflight — run-level (effective-ignore probes, cross-pack packlist
+//!    disjointness, free disk) + per-pack member-exact battery driven by the
+//!    committed packlist (path safety, root coverage, Windows compat, git-index
+//!    collision, unknown-file ownership) — COMPLETE and pre-download
+//! 2. installation lock  3. download + sha256  4. same-volume staging extract
+//! 5. three-way agreement: staged set == zip `_PACK_MANIFEST.txt` == committed packlist
+//! 6. journal  7. per-file atomic rename (retry-on-os-error-5 backoff)
+//! 8. prune (previous-ledger − new-members)  9. ledger + stamp  10. journal/staging cleanup
+//! 11. destination-scoped `git status --porcelain` rail  12. asset-resolution verification
+//!
+//! Crash recovery: a present journal means an incomplete transaction. Staging intact →
+//! roll forward (finish renames, prune, stamp). Staging lost → sweep the journaled
+//! files from destinations, then re-fetch. Deterministic; see `recover_from_journal`.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
+use std::process::Command;
+
+pub const SCHEMA_VERSION: u32 = 2;
+pub const STATE_DIR: &str = "assets/.pack-state";
+pub const GENERATED_IGNORE: &str = "assets/.gitignore";
+/// Committed file-exact ownership ledgers: `assets/packlists/<pack>.txt` (one
+/// repo-relative member path per line) + `_tracked_keep.txt` (cohabitant keeplist).
+pub const PACKLIST_DIR: &str = "assets/packlists";
+pub const KEEPLIST_FILE: &str = "assets/packlists/_tracked_keep.txt";
+/// Markers for the generated block in the ROOT .gitignore (only needed for managed
+/// roots outside assets/ — currently materials-src at assets_src/).
+pub const ROOT_IGNORE_BEGIN: &str = "# >>> AW-PACK-IGNORE (generated by `cargo xtask gen-ignore` — do not hand-edit between markers)";
+pub const ROOT_IGNORE_END: &str = "# <<< AW-PACK-IGNORE";
+const SYNTHETIC_MEMBERS: [&str; 2] = ["_PACK_MANIFEST.txt", "_ATTRIBUTION.txt"];
+/// Windows MAX_PATH budget for restored absolute paths (fail with a core.longpaths hint).
+const MAX_ABS_PATH: usize = 259;
+
+// ───────────────────────────── manifest ─────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Manifest {
     pub schema_version: u32,
     #[serde(default, rename = "pack")]
     pub packs: Vec<PackEntry>,
+    /// `[profiles]` — name → pack list. `"*"` expands to every pack (keeps `all`
+    /// manifest-defined yet drift-proof as packs are added).
+    #[serde(default)]
+    pub profiles: BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PackEntry {
-    /// Unique pack name; also the stamp-file key.
+    /// Unique pack name; also the state-file key.
     pub name: String,
     /// `https://…` URL (GitHub release asset), `file://…` URL, or plain local path.
-    /// Local sources let AD.3 verify the whole loop against locally-built zips
-    /// before anything is uploaded, and allow director sideloads.
     pub source: String,
-    /// Lowercase hex sha256 of the zip. Verified before any unpack.
+    /// Lowercase hex sha256 of the zip. THE PACK VERSION ANCHOR: a changed pin IS a
+    /// new pack version (replace + prune); an equal pin with a valid stamp is a no-op.
     pub sha256: String,
-    /// Unpack directory, relative, confined under `assets/packs/`.
-    pub unpack_to: String,
-    /// Expected zip size in bytes — sanity/progress only, sha256 is the gate.
+    /// Expected zip size in bytes — progress/sanity only, sha256 is the gate.
     pub size_bytes: u64,
+    /// Manifest-declared managed roots: trailing `/` = directory prefix, otherwise an
+    /// exact file path (e.g. `assets/hdri/sky_equirect.png`). COARSE coverage for the
+    /// generated ignore surfaces + git rails — containers may be shared between packs
+    /// and with tracked cohabitants; FILE-exact ownership lives in the committed
+    /// packlist. Every packlist member must fall under one of these roots. Roots
+    /// outside `assets/` (materials-src at `assets_src/`) go to the root-.gitignore
+    /// AW-PACK-IGNORE block.
+    pub roots: Vec<String>,
 }
+
+// ───────────────────────────── state files ─────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Stamp {
     name: String,
     sha256: String,
-    unpacked_at_epoch_secs: u64,
+    installed_at_epoch_secs: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Ledger {
+    name: String,
+    /// Version anchor of the installed content these files belong to.
+    sha256: String,
+    files: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Journal {
+    name: String,
+    /// Version being installed when the transaction was interrupted.
+    sha256: String,
+    /// `staged` (extraction verified, renames not started) or `renaming`.
+    phase: String,
+    files: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PackStatus {
-    /// Stamp present and sha256 matches the manifest — nothing done.
+    /// Stamp present, sha256 matches manifest, no journal — nothing done.
     UpToDate,
-    /// Downloaded, verified, unpacked, stamped.
-    Fetched,
+    /// Downloaded, verified, restored to original paths, stamped.
+    Installed,
     /// This entry failed; message carries the cause. Other entries still run.
     Failed(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Selection {
+    /// `--profile <name>` (default: `starter`).
+    Profile(String),
+    /// `--all`.
+    All,
+    /// `--pack <name>`.
+    Pack(String),
+}
+
+impl Default for Selection {
+    fn default() -> Self {
+        Selection::Profile("starter".into())
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct FetchOptions {
-    /// `--pack <name>`: restrict to one entry.
-    pub only_pack: Option<String>,
-    /// `--force`: ignore stamps.
+    pub selection: Selection,
+    /// `--force` / `--repair`: reinstall the current version to pristine.
     pub force: bool,
+    /// `--adopt`: allow overwriting unknown preexisting files at exact destinations.
+    pub adopt: bool,
+    /// Skip step 12 (used by fixtures that install packs with no real consumers).
+    pub skip_verify: bool,
 }
+
+// ───────────────────────────── paths ─────────────────────────────
+
+struct StateDirs {
+    root: PathBuf,
+}
+
+impl StateDirs {
+    fn new(repo_root: &Path) -> Self {
+        Self {
+            root: repo_root.join(STATE_DIR),
+        }
+    }
+    fn lock(&self) -> PathBuf {
+        self.root.join("lock")
+    }
+    fn stamp(&self, pack: &str) -> PathBuf {
+        self.root.join("stamps").join(format!("{pack}.toml"))
+    }
+    fn ledger(&self, pack: &str) -> PathBuf {
+        self.root.join("ledgers").join(format!("{pack}.toml"))
+    }
+    fn journal(&self, pack: &str) -> PathBuf {
+        self.root.join("journal").join(format!("{pack}.toml"))
+    }
+    fn staging(&self, pack: &str) -> PathBuf {
+        self.root.join("staging").join(pack)
+    }
+    fn meta(&self, pack: &str) -> PathBuf {
+        self.root.join("meta").join(pack)
+    }
+    fn tmp(&self) -> PathBuf {
+        self.root.join("tmp")
+    }
+}
+
+/// RAII single-instance lock (step 2). Created with `create_new`; removed on drop.
+struct InstallLock {
+    path: PathBuf,
+}
+
+impl InstallLock {
+    fn acquire(state: &StateDirs) -> Result<Self> {
+        fs::create_dir_all(&state.root)?;
+        let path = state.lock();
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(mut f) => {
+                let _ = writeln!(f, "pid {}", std::process::id());
+                Ok(Self { path })
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => bail!(
+                "another fetch-assets instance holds the installation lock ({}). \
+                 If no other instance is running, delete the lock file and retry.",
+                path.display()
+            ),
+            Err(e) => Err(e).with_context(|| format!("failed to create lock {}", path.display())),
+        }
+    }
+}
+
+impl Drop for InstallLock {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.path);
+    }
+}
+
+// ───────────────────────────── manifest load + validation ─────────────────────────────
 
 pub fn load_manifest(path: &Path) -> Result<Manifest> {
     let text = fs::read_to_string(path)
         .with_context(|| format!("failed to read manifest {}", path.display()))?;
     let manifest: Manifest =
         toml::from_str(&text).with_context(|| format!("failed to parse {}", path.display()))?;
-    if manifest.schema_version != 1 {
+    if manifest.schema_version != SCHEMA_VERSION {
         bail!(
-            "unsupported packs.manifest.toml schema_version {} (this tool understands 1)",
-            manifest.schema_version
+            "unsupported packs.manifest.toml schema_version {} (this tool understands {}; \
+             schema 1's `unpack_to` model was superseded by AD.5 original-path restore)",
+            manifest.schema_version,
+            SCHEMA_VERSION
         );
     }
+    validate_manifest(&manifest)?;
     Ok(manifest)
 }
 
-/// Run the fetch over `manifest_path`, unpacking under `packs_root`.
-/// Returns one `(pack name, status)` per processed entry; the caller decides the
-/// process exit code (any `Failed` → nonzero).
-pub fn run_fetch(
-    manifest_path: &Path,
-    packs_root: &Path,
-    opts: &FetchOptions,
-) -> Result<Vec<(String, PackStatus)>> {
-    let manifest = load_manifest(manifest_path)?;
+/// Manifest-level validation. Roots are COARSE ignore/rail coverage, not exclusive
+/// ownership — shared containers between packs are legal (the textures-environment
+/// splits share `assets/textures/`; sample/retained cohabitants live inside several
+/// roots). Exclusive ownership is FILE-exact, anchored by the committed packlists
+/// (`assets/packlists/<pack>.txt`) — see `load_packlist` + `preflight_packlists`.
+fn validate_manifest(m: &Manifest) -> Result<()> {
+    let mut names = BTreeSet::new();
+    for e in &m.packs {
+        if e.name.is_empty() || !is_safe_relative(&e.name) || e.name.contains(['/', '\\']) {
+            bail!("invalid pack name '{}'", e.name);
+        }
+        if !names.insert(e.name.clone()) {
+            bail!("duplicate pack name '{}'", e.name);
+        }
+        if e.sha256.len() != 64 || !e.sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
+            bail!("pack '{}': sha256 must be 64 hex chars", e.name);
+        }
+        if e.roots.is_empty() {
+            bail!("pack '{}': at least one managed root is required", e.name);
+        }
+        for r in &e.roots {
+            // Trailing '/' = directory root; otherwise an exact-file root
+            // (e.g. assets/hdri/sky_equirect.png, the loose assets/*_4k.gltf).
+            if !is_safe_relative(r) {
+                bail!("pack '{}': root '{r}' must be a safe relative path", e.name);
+            }
+            // Roots outside assets/ are legal (materials-src lives at assets_src/)
+            // and are covered by the generated marked block in the ROOT .gitignore
+            // instead of assets/.gitignore.
+        }
+    }
+    for (profile, packs) in &m.profiles {
+        for p in packs {
+            if p != "*" && !names.contains(p) {
+                bail!("profile '{profile}' references unknown pack '{p}'");
+            }
+        }
+    }
+    Ok(())
+}
 
-    let selected: Vec<&PackEntry> = match &opts.only_pack {
-        Some(name) => {
-            let found: Vec<&PackEntry> =
-                manifest.packs.iter().filter(|p| &p.name == name).collect();
+/// Does `member` fall under `root` (dir root = prefix; file root = exact match)?
+fn under_root(member: &str, root: &str) -> bool {
+    if root.ends_with('/') {
+        member.starts_with(root)
+    } else {
+        member == root
+    }
+}
+
+/// Load a pack's committed packlist — the file-exact ownership ledger of record
+/// (`assets/packlists/<pack>.txt`, one repo-relative path per line, sorted). The
+/// zip's `_PACK_MANIFEST.txt` must equal it at install time (step 5).
+pub fn load_packlist(repo_root: &Path, pack: &str) -> Result<Vec<String>> {
+    let path = repo_root.join(PACKLIST_DIR).join(format!("{pack}.txt"));
+    let text = fs::read_to_string(&path).with_context(|| {
+        format!(
+            "missing committed packlist {} — every pack needs its member list committed \
+             (the ownership ledger of record for preflight + ci-guard)",
+            path.display()
+        )
+    })?;
+    Ok(text
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(str::to_string)
+        .collect())
+}
+
+/// Resolve a selection to concrete pack entries.
+fn select_packs<'m>(
+    m: &'m Manifest,
+    sel: &Selection,
+    manifest_path: &Path,
+) -> Result<Vec<&'m PackEntry>> {
+    match sel {
+        Selection::All => Ok(m.packs.iter().collect()),
+        Selection::Pack(name) => {
+            let found: Vec<&PackEntry> = m.packs.iter().filter(|p| &p.name == name).collect();
             if found.is_empty() {
                 bail!(
                     "no pack named '{}' in {} (available: {})",
                     name,
                     manifest_path.display(),
-                    manifest
-                        .packs
+                    m.packs
                         .iter()
                         .map(|p| p.name.as_str())
                         .collect::<Vec<_>>()
                         .join(", ")
                 );
             }
-            found
+            Ok(found)
         }
-        None => manifest.packs.iter().collect(),
-    };
+        Selection::Profile(profile) => {
+            let list = m.profiles.get(profile).ok_or_else(|| {
+                anyhow!(
+                    "no profile '{profile}' in {} ([profiles] defines: {})",
+                    manifest_path.display(),
+                    m.profiles.keys().cloned().collect::<Vec<_>>().join(", ")
+                )
+            })?;
+            if list.iter().any(|p| p == "*") {
+                return Ok(m.packs.iter().collect());
+            }
+            let mut out = Vec::new();
+            for name in list {
+                out.push(m.packs.iter().find(|p| &p.name == name).ok_or_else(|| {
+                    anyhow!("profile '{profile}' references unknown pack '{name}'")
+                })?);
+            }
+            Ok(out)
+        }
+    }
+}
 
+// ───────────────────────────── entry point ─────────────────────────────
+
+/// Run the transactional fetch over `manifest_path`, restoring under `repo_root`.
+pub fn run_fetch(
+    manifest_path: &Path,
+    repo_root: &Path,
+    opts: &FetchOptions,
+) -> Result<Vec<(String, PackStatus)>> {
+    let manifest = load_manifest(manifest_path)?;
+    let selected = select_packs(&manifest, &opts.selection, manifest_path)?;
     if selected.is_empty() {
-        println!("packs.manifest.toml has no pack entries — nothing to fetch.");
+        println!("nothing selected — no pack entries match.");
         return Ok(vec![]);
     }
 
+    let state = StateDirs::new(repo_root);
+
+    // Step 1 (pre-download tier): repo-level preflight over the selection.
+    preflight_repo(repo_root, &state, &selected)?;
+
+    // Step 2: single-instance lock for the whole run.
+    let _lock = InstallLock::acquire(&state)?;
+
     let mut results = Vec::new();
-    for entry in selected {
-        let status = match fetch_one(entry, packs_root, opts.force) {
+    for entry in &selected {
+        let status = match install_one(entry, repo_root, &state, opts) {
             Ok(status) => status,
             Err(e) => {
                 eprintln!("✗ {}: {:#}", entry.name, e);
@@ -131,19 +411,35 @@ pub fn run_fetch(
         results.push((entry.name.clone(), status));
     }
 
+    let installed_any = results.iter().any(|(_, s)| *s == PackStatus::Installed);
+
+    // Step 11: destination-scoped git rail (managed roots must be invisible to git).
+    if installed_any {
+        let roots: Vec<&str> = selected
+            .iter()
+            .flat_map(|e| e.roots.iter().map(String::as_str))
+            .collect();
+        git_status_rail(repo_root, &roots)?;
+    }
+
+    // Step 12: asset-resolution verification (existence pass over consumer manifests).
+    if installed_any && !opts.skip_verify {
+        verify_assets(repo_root, &state, &manifest)?;
+    }
+
     let failed = results
         .iter()
         .filter(|(_, s)| matches!(s, PackStatus::Failed(_)))
         .count();
     println!(
-        "fetch-assets summary: {} up-to-date, {} fetched, {} failed (of {})",
+        "fetch-assets summary: {} up-to-date, {} installed, {} failed (of {})",
         results
             .iter()
             .filter(|(_, s)| *s == PackStatus::UpToDate)
             .count(),
         results
             .iter()
-            .filter(|(_, s)| *s == PackStatus::Fetched)
+            .filter(|(_, s)| *s == PackStatus::Installed)
             .count(),
         failed,
         results.len()
@@ -151,14 +447,264 @@ pub fn run_fetch(
     Ok(results)
 }
 
-fn fetch_one(entry: &PackEntry, packs_root: &Path, force: bool) -> Result<PackStatus> {
-    validate_entry(entry)?;
+// ───────────────────────────── preflight (step 1, pre-download tier) ─────────────────────────────
 
-    let stamp_path = packs_root
-        .join(".stamps")
-        .join(format!("{}.toml", entry.name));
-    if !force {
-        if let Some(stamp) = read_stamp(&stamp_path) {
+/// Run-level preflight across the selection: effective-ignore verification, free disk,
+/// cross-pack packlist disjointness. Member-exact per-pack checks run in
+/// `preflight_pack` (inside install_one, per-pack failure isolation).
+fn preflight_repo(repo_root: &Path, state: &StateDirs, selected: &[&PackEntry]) -> Result<()> {
+    // Effective-ignore verification: probe one synthesized path per root. Ignore
+    // rules apply to untracked paths regardless of tracked cohabitants, so this is
+    // valid both pre- and post-rewrite.
+    for e in selected {
+        for r in &e.roots {
+            let probe = if r.ends_with('/') {
+                format!("{r}__aw_ignore_probe__")
+            } else {
+                r.clone() // file root: the path itself must be ignored
+            };
+            let ignored = git_check_ignore(repo_root, &probe)?;
+            if !ignored {
+                bail!(
+                    "managed root '{r}' (pack '{}') is not covered by an effective gitignore \
+                     rule (git check-ignore '{probe}' → not ignored). Regenerate the ignore \
+                     surfaces (`cargo xtask gen-ignore`) and commit before installing packs.",
+                    e.name
+                );
+            }
+        }
+    }
+
+    // Cross-pack ownership disjointness: no member path may appear in two packlists.
+    // (Roots may legally share containers; FILES may not be co-owned.)
+    let mut owner: BTreeMap<String, &str> = BTreeMap::new();
+    for e in selected {
+        for m in load_packlist(repo_root, &e.name)? {
+            if let Some(prev) = owner.insert(m.clone(), e.name.as_str()) {
+                bail!(
+                    "inter-pack member collision: '{m}' is claimed by both '{prev}' and '{}'",
+                    e.name
+                );
+            }
+        }
+    }
+
+    // Free-disk check: zips + staging + final copies ≈ 2.5× the selected zip bytes.
+    let need: u64 = selected.iter().map(|e| e.size_bytes).sum::<u64>() * 5 / 2;
+    let free = fs2::available_space(repo_root)
+        .with_context(|| format!("failed to query free space at {}", repo_root.display()))?;
+    if free < need {
+        bail!(
+            "insufficient free disk: {} B available, ~{} B required (selected zips ×2.5)",
+            free,
+            need
+        );
+    }
+
+    fs::create_dir_all(state.tmp())?;
+    Ok(())
+}
+
+/// Per-pack member-exact preflight (step 1, COMPLETE and pre-download, driven by the
+/// committed packlist): path safety, root coverage, Windows compatibility, git-index
+/// collision, unknown-file ownership. Returns the packlist. No destructive work — and
+/// no download — happens unless every check passes.
+fn preflight_pack(
+    entry: &PackEntry,
+    repo_root: &Path,
+    state: &StateDirs,
+    opts: &FetchOptions,
+) -> Result<Vec<String>> {
+    let members = load_packlist(repo_root, &entry.name)?;
+    if members.is_empty() {
+        bail!("pack '{}': committed packlist is empty", entry.name);
+    }
+
+    let ledger = read_toml::<Ledger>(&state.ledger(&entry.name));
+    let owned: BTreeSet<&str> = ledger
+        .as_ref()
+        .map(|l| l.files.iter().map(String::as_str).collect())
+        .unwrap_or_default();
+    let tracked: BTreeSet<String> = git_tracked_under(
+        repo_root,
+        &entry.roots.iter().map(String::as_str).collect::<Vec<_>>(),
+    )?
+    .into_iter()
+    .collect();
+
+    let mut case_fold: BTreeMap<String, String> = BTreeMap::new();
+    let mut unknown = Vec::new();
+    for m in &members {
+        if !is_safe_relative(m) {
+            bail!("path traversal rejected: pack member '{m}'");
+        }
+        if !entry.roots.iter().any(|r| under_root(m, r)) {
+            bail!(
+                "pack '{}': member '{m}' falls outside the declared roots {:?}",
+                entry.name,
+                entry.roots
+            );
+        }
+        windows_compat_check(m, repo_root)?;
+        if let Some(prev) = case_fold.insert(m.to_lowercase(), m.clone()) {
+            bail!(
+                "pack '{}': case-insensitive member collision: '{prev}' vs '{m}' \
+                 (would clobber on Windows/macOS)",
+                entry.name
+            );
+        }
+        if tracked.contains(m) {
+            bail!(
+                "pack '{}': destination '{m}' is git-tracked — refusing to overwrite \
+                 tracked content (pre-rewrite tree, or an accidental re-add; see ci-guard)",
+                entry.name
+            );
+        }
+        // Ownership: an existing file at the destination must be ours (ledger) —
+        // otherwise it is an unknown preexisting file → FAIL unless --adopt.
+        if repo_root.join(m).exists() && !owned.contains(m.as_str()) {
+            unknown.push(m.clone());
+        }
+    }
+    if !unknown.is_empty() && !opts.adopt {
+        bail!(
+            "pack '{}': {} unknown preexisting file(s) at destinations (first: {}). \
+             These are not owned by any installed pack version. Re-run with --adopt to \
+             let the installer take ownership (they will be overwritten and pack-managed).",
+            entry.name,
+            unknown.len(),
+            unknown
+                .iter()
+                .take(3)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+    if !unknown.is_empty() {
+        println!(
+            "  --adopt: taking ownership of {} preexisting file(s)",
+            unknown.len()
+        );
+    }
+    Ok(members)
+}
+
+/// Reserved device names and path-length budget for one repo-relative path.
+fn windows_compat_check(rel: &str, repo_root: &Path) -> Result<()> {
+    const RESERVED: [&str; 22] = [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ];
+    for seg in rel.split('/') {
+        if seg.is_empty() {
+            continue;
+        }
+        let stem = seg.split('.').next().unwrap_or(seg).to_ascii_uppercase();
+        if RESERVED.contains(&stem.as_str()) {
+            bail!("path '{rel}' contains Windows-reserved name segment '{seg}'");
+        }
+    }
+    let abs_len = repo_root.join(rel).to_string_lossy().len();
+    if abs_len > MAX_ABS_PATH {
+        bail!(
+            "restored path would exceed the Windows MAX_PATH budget ({abs_len} > {MAX_ABS_PATH} \
+             chars): '{rel}'. Enable long paths (git config core.longpaths true + Windows \
+             LongPathsEnabled) or shorten the repo root, then re-run."
+        );
+    }
+    Ok(())
+}
+
+// ───────────────────────────── git helpers ─────────────────────────────
+
+fn git(repo_root: &Path, args: &[&str]) -> Result<std::process::Output> {
+    Command::new("git")
+        .current_dir(repo_root)
+        .args(args)
+        .output()
+        .context("failed to invoke git (is git on PATH?)")
+}
+
+fn git_tracked_under(repo_root: &Path, roots: &[&str]) -> Result<Vec<String>> {
+    let mut args = vec!["ls-files", "-z", "--"];
+    args.extend_from_slice(roots);
+    let out = git(repo_root, &args)?;
+    if !out.status.success() {
+        bail!(
+            "git ls-files failed under {}: {}",
+            repo_root.display(),
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+    Ok(String::from_utf8_lossy(&out.stdout)
+        .split('\0')
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .collect())
+}
+
+fn git_check_ignore(repo_root: &Path, rel: &str) -> Result<bool> {
+    let out = git(repo_root, &["check-ignore", "-q", rel])?;
+    match out.status.code() {
+        Some(0) => Ok(true),
+        Some(1) => Ok(false),
+        _ => bail!(
+            "git check-ignore errored for '{rel}': {}",
+            String::from_utf8_lossy(&out.stderr)
+        ),
+    }
+}
+
+/// Step 11: `git status --porcelain` scoped to the managed roots must be empty —
+/// restored content must be invisible to git.
+fn git_status_rail(repo_root: &Path, roots: &[&str]) -> Result<()> {
+    let mut args = vec!["status", "--porcelain", "--"];
+    args.extend_from_slice(roots);
+    let out = git(repo_root, &args)?;
+    if !out.status.success() {
+        bail!(
+            "git status rail failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+    let dirty: Vec<String> = String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(str::to_string)
+        .collect();
+    if !dirty.is_empty() {
+        bail!(
+            "git rail FAILED: {} path(s) under managed roots are visible to git \
+             (first: {}). The generated ignore rules must cover every restored path.",
+            dirty.len(),
+            dirty
+                .iter()
+                .take(3)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(" | ")
+        );
+    }
+    println!("  rail: git status over managed roots — clean");
+    Ok(())
+}
+
+// ───────────────────────────── install lifecycle ─────────────────────────────
+
+fn install_one(
+    entry: &PackEntry,
+    repo_root: &Path,
+    state: &StateDirs,
+    opts: &FetchOptions,
+) -> Result<PackStatus> {
+    // Crash recovery precedes everything: a journal means an incomplete transaction.
+    if state.journal(&entry.name).exists() {
+        recover_from_journal(entry, repo_root, state, opts)?;
+    }
+
+    // Step 0: stamp check (no-op / version-change decision).
+    if !opts.force {
+        if let Some(stamp) = read_toml::<Stamp>(&state.stamp(&entry.name)) {
             if stamp.sha256.eq_ignore_ascii_case(&entry.sha256) {
                 println!(
                     "= {}: up to date (stamp sha256 matches manifest) — skipping",
@@ -167,28 +713,32 @@ fn fetch_one(entry: &PackEntry, packs_root: &Path, force: bool) -> Result<PackSt
                 return Ok(PackStatus::UpToDate);
             }
             println!(
-                "~ {}: stamp sha256 differs from manifest — re-fetching",
-                entry.name
+                "~ {}: version change (stamp {} → manifest {}) — replace + prune",
+                entry.name,
+                &stamp.sha256[..12],
+                &entry.sha256[..12]
             );
         }
+    } else {
+        println!("~ {}: --force/--repair — restoring pristine", entry.name);
     }
 
-    let tmp_dir = packs_root.join(".tmp");
-    fs::create_dir_all(&tmp_dir)
-        .with_context(|| format!("failed to create temp dir {}", tmp_dir.display()))?;
-    let tmp_zip = tmp_dir.join(format!("{}.zip.partial", entry.name));
+    // Step 1 (per-pack, member-exact, COMPLETE, pre-download).
+    let members = preflight_pack(entry, repo_root, state, opts)?;
 
-    // Any early exit below must not leave the partial download behind.
-    let result = fetch_verify_unpack(entry, packs_root, &tmp_zip, &stamp_path);
+    // Step 3: download + sha256 verify.
+    let tmp_zip = state.tmp().join(format!("{}.zip.partial", entry.name));
+    let result = download_verify_install(entry, repo_root, state, &members, &tmp_zip);
     let _ = fs::remove_file(&tmp_zip);
     result
 }
 
-fn fetch_verify_unpack(
+fn download_verify_install(
     entry: &PackEntry,
-    packs_root: &Path,
+    repo_root: &Path,
+    state: &StateDirs,
+    members: &[String],
     tmp_zip: &Path,
-    stamp_path: &Path,
 ) -> Result<PackStatus> {
     println!("> {}: acquiring {}", entry.name, entry.source);
     acquire(&entry.source, tmp_zip)?;
@@ -200,11 +750,10 @@ fn fetch_verify_unpack(
             entry.name, actual_size, entry.size_bytes
         );
     }
-
     let actual = sha256_of_file(tmp_zip)?;
     if !actual.eq_ignore_ascii_case(&entry.sha256) {
         bail!(
-            "sha256 mismatch for pack '{}': expected {}, actual {} — refusing to unpack; partial download deleted",
+            "sha256 mismatch for pack '{}': expected {}, actual {} — refusing to install; partial download deleted",
             entry.name,
             entry.sha256,
             actual
@@ -212,62 +761,631 @@ fn fetch_verify_unpack(
     }
     println!("  sha256 verified ({actual})");
 
-    // Stage the unpack in a temp dir, then swap it into place.
-    let dest = packs_root.join(&entry.unpack_to);
-    let staged = packs_root
-        .join(".tmp")
-        .join(format!("unpack-{}", entry.name));
-    if staged.exists() {
-        fs::remove_dir_all(&staged)?;
+    // Step 4: extract to same-volume staging.
+    let staging = state.staging(&entry.name);
+    if staging.exists() {
+        fs::remove_dir_all(&staging)?;
     }
-    unpack_zip(tmp_zip, &staged)
-        .with_context(|| format!("unpack failed for pack '{}'", entry.name))
+    unpack_zip(tmp_zip, &staging)
+        .with_context(|| format!("staging extraction failed for pack '{}'", entry.name))
         .inspect_err(|_| {
-            let _ = fs::remove_dir_all(&staged);
+            let _ = fs::remove_dir_all(&staging);
         })?;
-    if dest.exists() {
-        fs::remove_dir_all(&dest)
-            .with_context(|| format!("failed to clear previous unpack at {}", dest.display()))?;
-    }
-    if let Some(parent) = dest.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::rename(&staged, &dest).with_context(|| {
-        format!(
-            "failed to move staged unpack into place ({} -> {})",
-            staged.display(),
-            dest.display()
-        )
-    })?;
 
-    write_stamp(stamp_path, entry)?;
-    println!("+ {}: unpacked to {}", entry.name, dest.display());
-    Ok(PackStatus::Fetched)
+    // Step 5: staged contents must equal the zip's _PACK_MANIFEST AND the committed
+    // packlist (the preflighted ownership claim) — three-way agreement before any
+    // destructive step.
+    verify_staged(entry, &staging, members)?;
+
+    // Step 6: journal — the transaction is now committed to completing.
+    let journal = Journal {
+        name: entry.name.clone(),
+        sha256: entry.sha256.to_ascii_lowercase(),
+        phase: "staged".into(),
+        files: members.to_vec(),
+    };
+    write_toml(&state.journal(&entry.name), &journal)?;
+
+    // Step 7: per-file atomic rename into original paths.
+    let mut journal = journal;
+    journal.phase = "renaming".into();
+    write_toml(&state.journal(&entry.name), &journal)?;
+    for m in members {
+        let from = staging.join(m);
+        let to = repo_root.join(m);
+        if let Some(parent) = to.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if to.exists() {
+            // Validated at preflight: this destination is pack-owned (ledger) or adopted.
+            fs::remove_file(&to)
+                .with_context(|| format!("failed to clear owned destination {}", to.display()))?;
+        }
+        rename_with_retry(&from, &to)
+            .with_context(|| format!("failed to place {} → {}", from.display(), to.display()))?;
+    }
+
+    // Synthetic members → state meta dir.
+    let meta = state.meta(&entry.name);
+    fs::create_dir_all(&meta)?;
+    for s in SYNTHETIC_MEMBERS {
+        let from = staging.join(s);
+        if from.exists() {
+            let to = meta.join(s);
+            if to.exists() {
+                fs::remove_file(&to)?;
+            }
+            rename_with_retry(&from, &to)?;
+        }
+    }
+
+    // Step 8: prune files owned by the previous version but absent from this one.
+    let member_set: BTreeSet<&str> = members.iter().map(String::as_str).collect();
+    if let Some(old) = read_toml::<Ledger>(&state.ledger(&entry.name)) {
+        let mut pruned = 0usize;
+        for f in &old.files {
+            if !member_set.contains(f.as_str()) {
+                let p = repo_root.join(f);
+                if p.exists() {
+                    fs::remove_file(&p)
+                        .with_context(|| format!("failed to prune obsolete {}", p.display()))?;
+                    pruned += 1;
+                }
+                remove_empty_parents(&p, repo_root);
+            }
+        }
+        if pruned > 0 {
+            println!("  pruned {pruned} file(s) obsolete in this pack version");
+        }
+    }
+
+    // Step 9: ledger, then stamp (stamp last — it is the completion marker).
+    write_toml(
+        &state.ledger(&entry.name),
+        &Ledger {
+            name: entry.name.clone(),
+            sha256: entry.sha256.to_ascii_lowercase(),
+            files: members.to_vec(),
+        },
+    )?;
+    write_toml(
+        &state.stamp(&entry.name),
+        &Stamp {
+            name: entry.name.clone(),
+            sha256: entry.sha256.to_ascii_lowercase(),
+            installed_at_epoch_secs: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+        },
+    )?;
+
+    // Step 10: transaction complete — remove journal + staging.
+    fs::remove_file(state.journal(&entry.name)).ok();
+    fs::remove_dir_all(&staging).ok();
+
+    println!(
+        "+ {}: {} file(s) restored to original paths",
+        entry.name,
+        members.len()
+    );
+    Ok(PackStatus::Installed)
 }
 
-fn validate_entry(entry: &PackEntry) -> Result<()> {
-    if entry.name.is_empty() || !is_safe_relative(&entry.name) || entry.name.contains(['/', '\\']) {
-        bail!("invalid pack name '{}'", entry.name);
-    }
-    if !is_safe_relative(&entry.unpack_to) {
+/// Step 5: three-way agreement — the staged file set must equal the zip's
+/// `_PACK_MANIFEST.txt`, which must equal the committed packlist (the ownership
+/// claim every preflight check ran against). The member battery itself already ran
+/// pre-download in `preflight_pack`.
+fn verify_staged(entry: &PackEntry, staging: &Path, members: &[String]) -> Result<()> {
+    let pm_path = staging.join(SYNTHETIC_MEMBERS[0]);
+    let listed: BTreeSet<String> = fs::read_to_string(&pm_path)
+        .with_context(|| {
+            format!(
+                "pack '{}' has no {} — not an AD.3-family pack zip",
+                entry.name, SYNTHETIC_MEMBERS[0]
+            )
+        })?
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(str::to_string)
+        .collect();
+
+    let claimed: BTreeSet<String> = members.iter().cloned().collect();
+    if listed != claimed {
+        let missing: Vec<_> = claimed.difference(&listed).take(3).cloned().collect();
+        let extra: Vec<_> = listed.difference(&claimed).take(3).cloned().collect();
         bail!(
-            "pack '{}': unpack_to '{}' escapes assets/packs/ (must be relative, no '..', no absolute/drive paths)",
+            "pack '{}': the zip's {} disagrees with the committed packlist ({} in zip vs \
+             {} committed; zip lacks e.g. {missing:?}; zip adds e.g. {extra:?}). The \
+             committed packlist must be regenerated when a pack is re-cut.",
             entry.name,
-            entry.unpack_to
+            SYNTHETIC_MEMBERS[0],
+            listed.len(),
+            claimed.len()
         );
     }
-    if entry.sha256.len() != 64 || !entry.sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
+
+    let mut staged_set = BTreeSet::new();
+    walk_files(staging, &mut |p| {
+        let rel = p
+            .strip_prefix(staging)
+            .expect("walked path under staging")
+            .to_string_lossy()
+            .replace('\\', "/");
+        staged_set.insert(rel);
+    })?;
+    for s in SYNTHETIC_MEMBERS {
+        staged_set.remove(s);
+    }
+    if staged_set != claimed {
+        let missing: Vec<_> = claimed.difference(&staged_set).take(3).cloned().collect();
+        let extra: Vec<_> = staged_set.difference(&claimed).take(3).cloned().collect();
         bail!(
-            "pack '{}': sha256 must be 64 hex chars, got '{}'",
+            "pack '{}': staged contents disagree with the member list ({} claimed vs {} \
+             staged; missing e.g. {missing:?}; unexpected e.g. {extra:?})",
             entry.name,
-            entry.sha256
+            claimed.len(),
+            staged_set.len()
         );
     }
     Ok(())
 }
 
+/// Crash recovery. Journal phase + staging integrity decide the path:
+/// - staging intact (every journaled file present in staging OR already at dest) →
+///   roll FORWARD: finish renames, then prune/ledger/stamp/cleanup.
+/// - staging lost/incomplete → sweep journaled files from destinations (they belong to
+///   the incomplete transaction), remove journal + staging, and fall through to a
+///   fresh install by the normal flow.
+fn recover_from_journal(
+    entry: &PackEntry,
+    repo_root: &Path,
+    state: &StateDirs,
+    _opts: &FetchOptions,
+) -> Result<()> {
+    let jpath = state.journal(&entry.name);
+    let journal: Journal = read_toml(&jpath).ok_or_else(|| {
+        anyhow!(
+            "unreadable journal {} — delete it to reset",
+            jpath.display()
+        )
+    })?;
+    println!(
+        "! {}: incomplete transaction found (phase '{}', {} files) — recovering",
+        entry.name,
+        journal.phase,
+        journal.files.len()
+    );
+
+    let staging = state.staging(&entry.name);
+    let intact = journal
+        .files
+        .iter()
+        .all(|f| staging.join(f).exists() || repo_root.join(f).exists());
+
+    if intact && staging.exists() {
+        // Roll forward: complete the renames…
+        for f in &journal.files {
+            let from = staging.join(f);
+            let to = repo_root.join(f);
+            if from.exists() {
+                if let Some(parent) = to.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                if to.exists() {
+                    fs::remove_file(&to)?;
+                }
+                rename_with_retry(&from, &to)?;
+            }
+        }
+        for s in SYNTHETIC_MEMBERS {
+            let from = staging.join(s);
+            if from.exists() {
+                let meta = state.meta(&entry.name);
+                fs::create_dir_all(&meta)?;
+                let to = meta.join(s);
+                if to.exists() {
+                    fs::remove_file(&to)?;
+                }
+                rename_with_retry(&from, &to)?;
+            }
+        }
+        // …prune vs the previous ledger, then stamp the journaled version.
+        let member_set: BTreeSet<&str> = journal.files.iter().map(String::as_str).collect();
+        if let Some(old) = read_toml::<Ledger>(&state.ledger(&entry.name)) {
+            for f in &old.files {
+                if !member_set.contains(f.as_str()) {
+                    let p = repo_root.join(f);
+                    if p.exists() {
+                        fs::remove_file(&p)?;
+                    }
+                    remove_empty_parents(&p, repo_root);
+                }
+            }
+        }
+        write_toml(
+            &state.ledger(&entry.name),
+            &Ledger {
+                name: entry.name.clone(),
+                sha256: journal.sha256.clone(),
+                files: journal.files.clone(),
+            },
+        )?;
+        write_toml(
+            &state.stamp(&entry.name),
+            &Stamp {
+                name: entry.name.clone(),
+                sha256: journal.sha256.clone(),
+                installed_at_epoch_secs: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0),
+            },
+        )?;
+        fs::remove_file(&jpath).ok();
+        fs::remove_dir_all(&staging).ok();
+        println!(
+            "  rolled forward: {} files placed, transaction completed",
+            journal.files.len()
+        );
+    } else {
+        // Staging lost: the journaled destination files belong to the torn transaction.
+        let mut swept = 0usize;
+        for f in &journal.files {
+            let p = repo_root.join(f);
+            if p.exists() {
+                fs::remove_file(&p)?;
+                swept += 1;
+            }
+            remove_empty_parents(&p, repo_root);
+        }
+        fs::remove_dir_all(&staging).ok();
+        fs::remove_file(&jpath).ok();
+        // The stamp (if any) still describes the PREVIOUS completed version, but the
+        // previous files may have been partially replaced — invalidate it so the
+        // normal flow re-fetches.
+        fs::remove_file(state.stamp(&entry.name)).ok();
+        println!("  staging lost: swept {swept} partial file(s); will re-fetch");
+    }
+    Ok(())
+}
+
+// ───────────────────────────── verify-assets (step 12) ─────────────────────────────
+
+/// Standalone `cargo xtask verify-assets` entry point.
+pub fn verify_assets_cmd(manifest_path: &Path, repo_root: &Path) -> Result<()> {
+    let manifest = load_manifest(manifest_path)?;
+    verify_assets(repo_root, &StateDirs::new(repo_root), &manifest)
+}
+
+/// Step 12: existence pass over known consumer manifests + installed-pack ledgers.
+/// NOT a render claim — asserts referenced/owned files exist on disk.
+fn verify_assets(repo_root: &Path, state: &StateDirs, manifest: &Manifest) -> Result<()> {
+    let mut missing: Vec<String> = Vec::new();
+    let mut checked = 0usize;
+
+    // 1. Every installed pack's ledger files exist (full pack existence integrity).
+    for e in &manifest.packs {
+        if let Some(ledger) = read_toml::<Ledger>(&state.ledger(&e.name)) {
+            for f in &ledger.files {
+                checked += 1;
+                if !repo_root.join(f).exists() {
+                    missing.push(format!("[ledger:{}] {f}", e.name));
+                }
+            }
+        }
+    }
+
+    // 2. Biome material tomls: every referenced texture resolves.
+    let materials = repo_root.join("assets/materials");
+    if materials.exists() {
+        for dir in fs::read_dir(&materials)? {
+            let dir = dir?.path();
+            let mt = dir.join("materials.toml");
+            if !mt.is_file() {
+                continue;
+            }
+            let text = fs::read_to_string(&mt)?;
+            let value: toml::Value = match toml::from_str(&text) {
+                Ok(v) => v,
+                Err(e) => {
+                    missing.push(format!("[biome-toml] {} unparseable: {e}", mt.display()));
+                    continue;
+                }
+            };
+            collect_texture_refs(&value, &mut |rel| {
+                checked += 1;
+                let p = dir.join(rel);
+                if !p.exists() {
+                    missing.push(format!(
+                        "[biome:{}] {rel}",
+                        dir.file_name().unwrap_or_default().to_string_lossy()
+                    ));
+                }
+            });
+        }
+    }
+
+    if missing.is_empty() {
+        println!("  verify-assets: {checked} references checked — all resolve");
+        Ok(())
+    } else {
+        for m in missing.iter().take(20) {
+            eprintln!("  MISSING: {m}");
+        }
+        bail!(
+            "verify-assets FAILED: {} of {} checked references do not resolve",
+            missing.len(),
+            checked
+        );
+    }
+}
+
+/// Walk a parsed biome toml for texture-path values under the known keys.
+fn collect_texture_refs(value: &toml::Value, f: &mut impl FnMut(&str)) {
+    const KEYS: [&str; 4] = ["albedo", "normal", "mra", "orm"];
+    match value {
+        toml::Value::Table(t) => {
+            for (k, v) in t {
+                if let (true, Some(s)) = (KEYS.contains(&k.as_str()), v.as_str()) {
+                    f(s);
+                } else {
+                    collect_texture_refs(v, f);
+                }
+            }
+        }
+        toml::Value::Array(a) => {
+            for v in a {
+                collect_texture_refs(v, f);
+            }
+        }
+        _ => {}
+    }
+}
+
+// ───────────────────────────── gitignore generation ─────────────────────────────
+
+/// Generate the `assets/.gitignore` content from the manifest roots UNDER assets/.
+/// Coarse coverage is deliberate: ignore rules never untrack committed cohabitants
+/// (sample/retained files sharing a container), and file-exact enforcement lives in
+/// the packlists (`ci_guard`).
+pub fn generated_ignore_content(manifest: &Manifest) -> String {
+    let mut lines = vec![
+        "# GENERATED by `cargo xtask gen-ignore` from assets/packs.manifest.toml — do not hand-edit.".to_string(),
+        "# Pack-managed paths restore here via `cargo xtask fetch-assets`; they must stay".to_string(),
+        "# invisible to git. CI (`cargo xtask ci-guard`) fails on drift from this generated form.".to_string(),
+        String::new(),
+        "/.pack-state/".to_string(),
+        "/packs/".to_string(),
+    ];
+    let mut roots: Vec<String> = manifest
+        .packs
+        .iter()
+        .flat_map(|e| e.roots.iter())
+        .filter_map(|r| r.strip_prefix("assets/").map(|rest| format!("/{rest}")))
+        .collect();
+    roots.sort();
+    roots.dedup();
+    lines.extend(roots);
+    lines.push(String::new());
+    lines.join("\n")
+}
+
+/// Roots OUTSIDE assets/ (e.g. materials-src at assets_src/) get a generated marked
+/// block in the ROOT .gitignore. Returns the block lines (empty if none needed).
+pub fn root_ignore_block(manifest: &Manifest) -> Vec<String> {
+    let mut outside: Vec<String> = manifest
+        .packs
+        .iter()
+        .flat_map(|e| e.roots.iter())
+        .filter(|r| !r.starts_with("assets/"))
+        .map(|r| format!("/{r}"))
+        .collect();
+    outside.sort();
+    outside.dedup();
+    if outside.is_empty() {
+        return vec![];
+    }
+    let mut block = vec![ROOT_IGNORE_BEGIN.to_string()];
+    block.extend(outside);
+    block.push(ROOT_IGNORE_END.to_string());
+    block
+}
+
+/// Compute the root .gitignore content with the generated block inserted/replaced
+/// between the markers (appended at the end when absent).
+fn splice_root_ignore(existing: &str, block: &[String]) -> String {
+    let lines: Vec<&str> = existing.lines().collect();
+    let begin = lines.iter().position(|l| l.trim() == ROOT_IGNORE_BEGIN);
+    let end = lines.iter().position(|l| l.trim() == ROOT_IGNORE_END);
+    if block.is_empty() && begin.is_none() && end.is_none() {
+        return existing.to_string(); // nothing to add, nothing to remove — identity
+    }
+    let mut out: Vec<String> = Vec::new();
+    match (begin, end) {
+        (Some(b), Some(e)) if b < e => {
+            out.extend(lines[..b].iter().map(|s| s.to_string()));
+            out.extend(block.iter().cloned());
+            out.extend(lines[e + 1..].iter().map(|s| s.to_string()));
+        }
+        _ => {
+            out.extend(lines.iter().map(|s| s.to_string()));
+            if !block.is_empty() {
+                if !out.last().map(|l| l.is_empty()).unwrap_or(true) {
+                    out.push(String::new());
+                }
+                out.extend(block.iter().cloned());
+            }
+        }
+    }
+    let mut s = out.join("\n");
+    s.push('\n');
+    s
+}
+
+pub fn gen_ignore(manifest_path: &Path, repo_root: &Path, check: bool) -> Result<()> {
+    let manifest = load_manifest(manifest_path)?;
+
+    // Surface 1: assets/.gitignore (fully generated).
+    let content = generated_ignore_content(&manifest);
+    let target = repo_root.join(GENERATED_IGNORE);
+    // Surface 2: marked block in the root .gitignore (only for outside-assets roots).
+    let block = root_ignore_block(&manifest);
+    let root_target = repo_root.join(".gitignore");
+    let existing_root = normalize_newlines(&fs::read_to_string(&root_target).unwrap_or_default());
+    let spliced = splice_root_ignore(&existing_root, &block);
+
+    if check {
+        let on_disk = fs::read_to_string(&target).unwrap_or_default();
+        if normalize_newlines(&on_disk) != normalize_newlines(&content) {
+            bail!(
+                "{} has drifted from its generated form — run `cargo xtask gen-ignore` and commit",
+                target.display()
+            );
+        }
+        if existing_root != spliced {
+            bail!(
+                "the AW-PACK-IGNORE block in {} has drifted from its generated form — \
+                 run `cargo xtask gen-ignore` and commit",
+                root_target.display()
+            );
+        }
+        println!("gen-ignore --check: both ignore surfaces match the generated form");
+    } else {
+        fs::write(&target, &content)
+            .with_context(|| format!("failed to write {}", target.display()))?;
+        println!("wrote {}", target.display());
+        if existing_root != spliced {
+            fs::write(&root_target, &spliced)
+                .with_context(|| format!("failed to write {}", root_target.display()))?;
+            println!(
+                "updated the AW-PACK-IGNORE block in {}",
+                root_target.display()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn normalize_newlines(s: &str) -> String {
+    s.replace("\r\n", "\n")
+}
+
+/// Regenerate the cohabitant keeplist: tracked files under managed roots that are NOT
+/// pack members (sample/retained/quarantine cohabitants sharing a container). The
+/// guard uses SUBSET semantics — entries may disappear (e.g. AD.6 quarantine removal)
+/// without regeneration; only NEW tracked files under roots turn the guard red.
+pub fn gen_keeplist(manifest_path: &Path, repo_root: &Path) -> Result<()> {
+    let manifest = load_manifest(manifest_path)?;
+    let mut members: BTreeSet<String> = BTreeSet::new();
+    for e in &manifest.packs {
+        members.extend(load_packlist(repo_root, &e.name)?);
+    }
+    let roots: Vec<&str> = manifest
+        .packs
+        .iter()
+        .flat_map(|e| e.roots.iter().map(String::as_str))
+        .collect();
+    let keep: Vec<String> = git_tracked_under(repo_root, &roots)?
+        .into_iter()
+        .filter(|t| !members.contains(t))
+        .collect();
+    let target = repo_root.join(KEEPLIST_FILE);
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let mut content = String::from(
+        "# GENERATED by `cargo xtask gen-keeplist` — tracked cohabitants under pack-managed\n\
+         # roots that are NOT pack members (sample/retained/license evidence). ci-guard uses\n\
+         # subset semantics: entries may vanish without regeneration; new tracked files under\n\
+         # managed roots that are neither members nor listed here fail the guard.\n",
+    );
+    for k in &keep {
+        content.push_str(k);
+        content.push('\n');
+    }
+    fs::write(&target, content)?;
+    println!(
+        "wrote {} ({} cohabitant entries)",
+        target.display(),
+        keep.len()
+    );
+    Ok(())
+}
+
+/// CI guard — the permanent anti-re-bloat rail, file-exact:
+/// 1. both generated ignore surfaces match disk;
+/// 2. no pack MEMBER (committed packlists) is git-tracked;
+/// 3. every tracked file under a managed root is either a member (violates 2) or on
+///    the cohabitant keeplist (subset check) — a new stray blob fails.
+pub fn ci_guard(manifest_path: &Path, repo_root: &Path) -> Result<()> {
+    let manifest = load_manifest(manifest_path)?;
+    gen_ignore(manifest_path, repo_root, true)?;
+
+    let mut members: BTreeSet<String> = BTreeSet::new();
+    for e in &manifest.packs {
+        members.extend(load_packlist(repo_root, &e.name)?);
+    }
+    let roots: Vec<&str> = manifest
+        .packs
+        .iter()
+        .flat_map(|e| e.roots.iter().map(String::as_str))
+        .collect();
+    let tracked = git_tracked_under(repo_root, &roots)?;
+
+    let tracked_members: Vec<&String> = tracked.iter().filter(|t| members.contains(*t)).collect();
+    if !tracked_members.is_empty() {
+        bail!(
+            "ci-guard FAILED: {} pack member file(s) are git-tracked (first: {}). \
+             Pack content must never be committed — restore via `cargo xtask fetch-assets`.",
+            tracked_members.len(),
+            tracked_members
+                .iter()
+                .take(5)
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+
+    let keeplist: BTreeSet<String> = fs::read_to_string(repo_root.join(KEEPLIST_FILE))
+        .unwrap_or_default()
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+        .map(str::to_string)
+        .collect();
+    let strays: Vec<&String> = tracked
+        .iter()
+        .filter(|t| !members.contains(*t) && !keeplist.contains(*t))
+        .collect();
+    if !strays.is_empty() {
+        bail!(
+            "ci-guard FAILED: {} tracked file(s) under managed roots are neither pack \
+             members nor keeplist cohabitants (first: {}). New blobs must not land under \
+             pack-managed roots — if intentional, add to {} and commit.",
+            strays.len(),
+            strays
+                .iter()
+                .take(5)
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", "),
+            KEEPLIST_FILE
+        );
+    }
+    println!(
+        "ci-guard: 0 tracked pack members, 0 stray blobs under managed roots ({} keeplist cohabitants); ignore surfaces match",
+        keeplist.len()
+    );
+    Ok(())
+}
+
+// ───────────────────────────── primitives ─────────────────────────────
+
 /// A path is safe when it is relative and contains only normal (or `.`) components —
-/// no `..`, no root, no Windows drive/UNC prefixes. Applied to `unpack_to` AND to
+/// no `..`, no root, no Windows drive/UNC prefixes. Applied to manifest roots AND to
 /// every zip member path.
 pub fn is_safe_relative(p: &str) -> bool {
     if p.is_empty() {
@@ -284,11 +1402,82 @@ pub fn is_safe_relative(p: &str) -> bool {
     })
 }
 
+/// Retry an operation on Windows sharing violations / access-denied races
+/// (os error 5 — e.g. Defender briefly holding a freshly-extracted file).
+/// Backoff: 100/200/400/800 ms between the 5 attempts. Closes the AD.3 open item.
+pub fn retry_on_access_denied<T>(mut op: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    let mut delay = std::time::Duration::from_millis(100);
+    let mut attempt = 0;
+    loop {
+        match op() {
+            Ok(v) => return Ok(v),
+            Err(e) if e.raw_os_error() == Some(5) && attempt < 4 => {
+                attempt += 1;
+                std::thread::sleep(delay);
+                delay *= 2;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
+    retry_on_access_denied(|| fs::rename(from, to))
+        .with_context(|| format!("rename {} → {}", from.display(), to.display()))
+}
+
+/// Remove now-empty parent directories of `p`, walking up but never past `stop`.
+fn remove_empty_parents(p: &Path, stop: &Path) {
+    let mut cur = p.parent();
+    while let Some(dir) = cur {
+        if dir == stop || !dir.starts_with(stop) {
+            break;
+        }
+        if fs::remove_dir(dir).is_err() {
+            break; // not empty (or gone) — stop walking
+        }
+        cur = dir.parent();
+    }
+}
+
+fn walk_files(dir: &Path, f: &mut impl FnMut(&Path)) -> Result<()> {
+    if !dir.exists() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(dir)? {
+        let path = entry?.path();
+        if path.is_dir() {
+            walk_files(&path, f)?;
+        } else {
+            f(&path);
+        }
+    }
+    Ok(())
+}
+
+fn read_toml<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
+    let text = fs::read_to_string(path).ok()?;
+    toml::from_str(&text).ok()
+}
+
+fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let tmp = path.with_extension("toml.tmp");
+    fs::write(&tmp, toml::to_string_pretty(value)?)?;
+    if path.exists() {
+        fs::remove_file(path)?;
+    }
+    fs::rename(&tmp, path).with_context(|| format!("failed to write {}", path.display()))?;
+    Ok(())
+}
+
 fn acquire(source: &str, dest: &Path) -> Result<()> {
     if source.starts_with("http://") || source.starts_with("https://") {
         let client = reqwest::blocking::Client::builder()
-            .user_agent("astraweave-xtask-fetch-assets/0.1")
-            .timeout(std::time::Duration::from_secs(600))
+            .user_agent("astraweave-xtask-fetch-assets/0.2")
+            .timeout(std::time::Duration::from_secs(3600))
             .build()?;
         let mut resp = client
             .get(source)
@@ -371,27 +1560,5 @@ fn unpack_zip(zip_path: &Path, dest: &Path) -> Result<()> {
             std::io::copy(&mut member, &mut out)?;
         }
     }
-    Ok(())
-}
-
-fn read_stamp(path: &Path) -> Option<Stamp> {
-    let text = fs::read_to_string(path).ok()?;
-    toml::from_str(&text).ok()
-}
-
-fn write_stamp(path: &Path, entry: &PackEntry) -> Result<()> {
-    let stamp = Stamp {
-        name: entry.name.clone(),
-        sha256: entry.sha256.to_ascii_lowercase(),
-        unpacked_at_epoch_secs: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0),
-    };
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(path, toml::to_string_pretty(&stamp)?)
-        .with_context(|| format!("failed to write stamp {}", path.display()))?;
     Ok(())
 }
