@@ -1084,9 +1084,23 @@ pub fn verify_assets_cmd(manifest_path: &Path, repo_root: &Path) -> Result<()> {
 
 /// Step 12: existence pass over known consumer manifests + installed-pack ledgers.
 /// NOT a render claim — asserts referenced/owned files exist on disk.
+///
+/// Gate scope: a missing reference FAILS only when the installer is responsible for
+/// it — a ledger file, or a consumer ref that resolves under a pack-managed root.
+/// Missing refs outside every root (e.g. gitignored `assets/_downloaded/…` that no
+/// pack ships and no clone carries) are reported loudly as WARNINGS but do not fail:
+/// they are consumer-side gaps the installer cannot close (AD.5 rehearsal finding —
+/// the live biomes-pack forest slot depends on `_downloaded` fetcher output).
 fn verify_assets(repo_root: &Path, state: &StateDirs, manifest: &Manifest) -> Result<()> {
-    let mut missing: Vec<String> = Vec::new();
+    let mut missing: Vec<String> = Vec::new(); // installer-owned → gate
+    let mut warned: Vec<String> = Vec::new(); // outside every root → warn
     let mut checked = 0usize;
+
+    let all_roots: Vec<&str> = manifest
+        .packs
+        .iter()
+        .flat_map(|e| e.roots.iter().map(String::as_str))
+        .collect();
 
     // 1. Every installed pack's ledger files exist (full pack existence integrity).
     for e in &manifest.packs {
@@ -1117,32 +1131,78 @@ fn verify_assets(repo_root: &Path, state: &StateDirs, manifest: &Manifest) -> Re
                     continue;
                 }
             };
+            let biome = dir
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             collect_texture_refs(&value, &mut |rel| {
                 checked += 1;
                 let p = dir.join(rel);
                 if !p.exists() {
-                    missing.push(format!(
-                        "[biome:{}] {rel}",
-                        dir.file_name().unwrap_or_default().to_string_lossy()
-                    ));
+                    // Normalize the ref to a repo-relative path to decide scope.
+                    let repo_rel = p
+                        .strip_prefix(repo_root)
+                        .map(|r| r.to_string_lossy().replace('\\', "/"))
+                        .unwrap_or_default();
+                    let normalized = normalize_dotted(&repo_rel);
+                    if all_roots.iter().any(|r| under_root(&normalized, r)) {
+                        missing.push(format!("[biome:{biome}] {rel}"));
+                    } else {
+                        warned.push(format!("[biome:{biome}] {rel}"));
+                    }
                 }
             });
         }
     }
 
+    if !warned.is_empty() {
+        eprintln!(
+            "  verify-assets WARNING: {} consumer reference(s) missing OUTSIDE pack-managed \
+             roots (nothing ships them — consumer-side gap, not an install failure):",
+            warned.len()
+        );
+        for w in warned.iter().take(15) {
+            eprintln!("    MISSING (unmanaged): {w}");
+        }
+    }
     if missing.is_empty() {
-        println!("  verify-assets: {checked} references checked — all resolve");
+        println!(
+            "  verify-assets: {checked} references checked — all pack-managed references resolve\
+             {}",
+            if warned.is_empty() {
+                String::new()
+            } else {
+                format!(" ({} unmanaged warnings)", warned.len())
+            }
+        );
         Ok(())
     } else {
         for m in missing.iter().take(20) {
             eprintln!("  MISSING: {m}");
         }
         bail!(
-            "verify-assets FAILED: {} of {} checked references do not resolve",
+            "verify-assets FAILED: {} of {} pack-managed references do not resolve",
             missing.len(),
             checked
         );
     }
+}
+
+/// Resolve `.`/`..` segments textually (the biome tomls use `../` refs; the joined
+/// path must be normalized before root matching).
+fn normalize_dotted(p: &str) -> String {
+    let mut out: Vec<&str> = Vec::new();
+    for seg in p.split('/') {
+        match seg {
+            "" | "." => {}
+            ".." => {
+                out.pop();
+            }
+            s => out.push(s),
+        }
+    }
+    out.join("/")
 }
 
 /// Walk a parsed biome toml for texture-path values under the known keys.
