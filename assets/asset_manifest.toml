@@ -105,10 +105,11 @@ resolution = "2k"
 format = "png"
 
 # E3-terrain texturing (2026-07-03, director-requested): forest-floor ground
-# truth for the 8-biome terrain pack's Forest slot (slot 2). Full PBR —
-# albedo/normal/ARM consumed directly from _downloaded by
-# assets/materials/biomes/materials.toml (ARM is ORM-packed; loaded via the
-# pack's `orm` key, NOT the `mra` swizzle path).
+# truth for the 8-biome terrain pack's Forest slot (slot 2). Originally
+# consumed directly from _downloaded by assets/materials/biomes/materials.toml;
+# since AD.5.A Fix 1 (2026-07-15) the forest slot consumes the cooked
+# derived_1k/tree_leaves* family instead (same upstream, see the AD.4 C7
+# block below) — this fetch entry remains as the cook's source acquisition.
 [[assets]]
 handle = "forest_leaves"
 provider = "polyhaven"
@@ -152,6 +153,37 @@ format = "png"
 # acquisition complete at 9 of 9. Scaffolding tier per Terrain Asset Quality
 # framing — slated for replacement when final art direction (KayKit
 # stylized pivot target) locks.
+#
+# CORRECTION (AD.5.A Fix 4, 2026-07-15 — source: AD.4.A §5b): the composed
+# assets_src/materials/ice_mra.png is NOT M-R-A ordered despite its name.
+# Measured channel means: R=255.0 (flat AO), G=35.7 (roughness), B=0.0
+# (metallic) — the a1c_relocate composition wrote ARM/ORM order (AO-R /
+# rough-G / metal-B), inverting the channel order this note documented.
+# "Metallic synthesized as solid 0" is true of channel B, not R. See the
+# ARM-ORDER ANNOTATION block below for the full 9-file inventory.
+# =============================================================================
+
+# =============================================================================
+# ARM-ORDER ANNOTATION (AD.5.A Fix 4, 2026-07-15 — source: AD.4.A §5b).
+# The following NINE assets_src/materials/*_mra.png sources carry ARM/ORM
+# channel order (AO-R / roughness-G / metallic-B) UNDER AN `_mra` FILENAME
+# (which conventionally means metallic-R / roughness-G / AO-B). Measured
+# 2026-07-15 (channel means; B≈0 = metallic-in-blue signature):
+#   cobblestone_mra.png    R=159.9  G=165.7  B=0.0
+#   gravel_mra.png         R=247.1  G=220.1  B=0.0
+#   ice_mra.png            R=255.0  G= 35.7  B=0.0
+#   metal_rusted_mra.png   R=239.2  G=198.4  B=0.0
+#   moss_mra.png           R=230.2  G=120.8  B=0.0
+#   wood_planks_mra.png    R=221.9  G=112.2  B=0.0
+#   mountain_rock_mra.png  R=200.8  G=198.2  B=2.2   (inert — no consumer)
+#   mud_mra.png            R=226.8  G=139.2  B=0.0   (inert — no consumer)
+#   snow_mra.png           R=106.4  G=239.0  B=0.0   (inert — no consumer)
+# Any future cook from these sources MUST route them through the guarded
+# ARM→MRA swap (`cook_mra_arm_to_mra()` in tools/material_cook/cook_1k.py),
+# which refuses non-ARM-profile input. The shipped derived_1k/*_mra.png
+# consumers were re-cooked to true MRA in AD.4.A (D1); the sources are left
+# as-is per the §5b option (i) decision — the live materials-src.zip pack
+# archives them faithfully, so fixing the sources would force a pack re-cut.
 # =============================================================================
 
 [[assets]]
