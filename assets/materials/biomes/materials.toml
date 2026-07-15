@@ -38,15 +38,18 @@ mra    = "../sand_mra.png"
 tiling = [128.0, 128.0]
 
 # Forest ground = PolyHaven forest_leaves_02 (director-selected, 2026-07-03),
-# fetched via `cargo run -p astraweave-assets -- fetch --provider polyhaven`.
-# Full PBR: albedo + normal + ARM. The ARM file is ORM-packed (AO-R/rough-G/
-# metal-B), so it uses the `orm` key (verbatim load), NOT `mra` (which is the
-# legacy M-R-A convention and gets channel-swizzled at load).
+# consumed via the AD.4 C7 cook: derived_1k/tree_leaves* (cook_1k.py, same
+# upstream forest_leaves_02 — AD4_RECOOK_OUTCOME.md ledger). AD.5.A Fix 1
+# (2026-07-15) re-pointed here from gitignored assets/_downloaded/ fetcher
+# output, which no pack ships and no fresh clone carries. The derived file is
+# true-MRA (metal-R=0.0/rough-G/AO-B, measured), so it uses the `mra` key
+# (channel-swizzled to ORM at load), NOT `orm` (verbatim load) — the old
+# _downloaded ARM file was ORM-packed and needed `orm`.
 [[layer]]
 key = "forest"
-albedo = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_albedo.png"
-normal = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_normal.png"
-orm    = "../../_downloaded/polyhaven/forest_leaves/forest_leaves_arm.png"
+albedo = "../derived_1k/tree_leaves.png"
+normal = "../derived_1k/tree_leaves_n.png"
+mra    = "../derived_1k/tree_leaves_mra.png"
 tiling = [128.0, 128.0]
 
 [[layer]]
