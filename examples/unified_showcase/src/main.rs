@@ -45,6 +45,30 @@ use winit::{
 
 mod gltf_loader;
 
+/// AD.5.A Fix 2: startup texture loads must degrade, not crash — on a Tier-1
+/// clone the pack-shipped textures are absent until `fetch-assets` runs.
+fn open_texture_or_fallback(path: &str, label: &str) -> image::RgbaImage {
+    match image::open(path) {
+        Ok(img) => img.to_rgba8(),
+        Err(e) => {
+            eprintln!(
+                "WARNING: texture '{path}' unavailable ({e}); using flat fallback for '{label}'. \
+                 Run `cargo run -p xtask -- fetch-assets --all` to restore full visuals."
+            );
+            let px: [u8; 4] = if label.contains("Norm") {
+                [128, 128, 255, 255] // flat +Z tangent-space normal
+            } else if label.contains("Rough") {
+                [180, 180, 180, 255] // mostly rough, non-metallic
+            } else if label.contains("Sky") {
+                [135, 178, 235, 255] // flat sky blue
+            } else {
+                [110, 110, 110, 255] // neutral grey albedo
+            };
+            image::RgbaImage::from_pixel(4, 4, image::Rgba(px))
+        }
+    }
+}
+
 // Shadow Shader - Vertex only for depth rendering
 const SHADOW_SHADER: &str = r#"
 struct LightUniforms {
@@ -762,13 +786,13 @@ impl ShowcaseApp {
 
         // Skybox Texture - Try HDR first, fallback to PNG
         let sky_path_hdr = "assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr";
-        let sky_path_png = "assets/sky_equirect.png";
+        // AD.5.A Fix 2: was "assets/sky_equirect.png" — a path nothing ships;
+        // the tracked file lives under assets/hdri/.
+        let sky_path_png = "assets/hdri/sky_equirect.png";
 
         let (sky_texture, _sky_size) = if std::path::Path::new(sky_path_hdr).exists() {
             println!("Loading HDR skybox: {}", sky_path_hdr);
-            let sky_img = image::open(sky_path_hdr)
-                .expect("Failed to load HDR")
-                .to_rgba8();
+            let sky_img = open_texture_or_fallback(sky_path_hdr, "Sky HDR");
             let size = wgpu::Extent3d {
                 width: sky_img.width(),
                 height: sky_img.height(),
@@ -802,9 +826,7 @@ impl ShowcaseApp {
             (texture, size)
         } else {
             println!("HDR not found, using PNG skybox: {}", sky_path_png);
-            let sky_img = image::open(sky_path_png)
-                .expect("Missing sky_equirect.png")
-                .to_rgba8();
+            let sky_img = open_texture_or_fallback(sky_path_png, "Sky PNG");
             let size = wgpu::Extent3d {
                 width: sky_img.width(),
                 height: sky_img.height(),
@@ -898,9 +920,7 @@ impl ShowcaseApp {
         // Load placeholder terrain textures for terrain bind group initialization
         // Helper macro to load and create texture
         let load_texture = |path: &str, label: &str| {
-            let img = image::open(path)
-                .unwrap_or_else(|_| panic!("Missing {}", path))
-                .to_rgba8();
+            let img = open_texture_or_fallback(path, label);
             let size = wgpu::Extent3d {
                 width: img.width(),
                 height: img.height(),
@@ -942,27 +962,27 @@ impl ShowcaseApp {
         };
 
         let placeholder_grass_diff_view = load_texture(
-            "assets/textures/pine forest textures/grass_medium_01_diff.png",
+            "assets/textures/pine_forest/grass_medium_01_diff.png",
             "Placeholder Grass Diff",
         );
         let placeholder_grass_norm_view = load_texture(
-            "assets/textures/pine forest textures/grass_medium_01_nor_gl.png",
+            "assets/textures/pine_forest/grass_medium_01_nor_gl.png",
             "Placeholder Grass Norm",
         );
         let placeholder_grass_rough_view = load_texture(
-            "assets/textures/pine forest textures/grass_medium_01_rough.png",
+            "assets/textures/pine_forest/grass_medium_01_rough.png",
             "Placeholder Grass Rough",
         );
         let placeholder_rock_diff_view = load_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_diff.png",
+            "assets/textures/pine_forest/rock_moss_set_01_diff.png",
             "Placeholder Rock Diff",
         );
         let placeholder_rock_norm_view = load_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_nor_gl.png",
+            "assets/textures/pine_forest/rock_moss_set_01_nor_gl.png",
             "Placeholder Rock Norm",
         );
         let placeholder_rock_rough_view = load_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_rough.png",
+            "assets/textures/pine_forest/rock_moss_set_01_rough.png",
             "Placeholder Rock Rough",
         );
 
@@ -1089,14 +1109,14 @@ impl ShowcaseApp {
         std::io::stdout().flush().unwrap();
         let _grass_mat = self.create_material_from_texture(
             "Grass",
-            "assets/textures/pine forest textures/grass_medium_01_diff.png",
+            "assets/textures/pine_forest/grass_medium_01_diff.png",
         );
         println!("  -> Grass material index: {}", _grass_mat);
         println!("Loading Rock Mat...");
         std::io::stdout().flush().unwrap();
         let _rock_mat = self.create_material_from_texture(
             "Rock",
-            "assets/textures/pine forest textures/rock_moss_set_01_diff.png",
+            "assets/textures/pine_forest/rock_moss_set_01_diff.png",
         );
         println!("  -> Rock material index: {}", _rock_mat);
         let water_mat = self.create_material_from_color("Water", [0.0, 0.3, 0.7, 0.6]); // Deep blue, more transparent
@@ -1107,27 +1127,32 @@ impl ShowcaseApp {
         std::io::stdout().flush().unwrap();
         self.pine_bark_mat = self.create_material_from_texture(
             "PineBark",
-            "assets/textures/pine forest textures/pine_bark_diff.png",
+            "assets/textures/pine_forest/pine_bark_diff.png",
         );
         println!("  -> PineBark material index: {}", self.pine_bark_mat);
         println!("Loading PineLeaves Mat...");
         std::io::stdout().flush().unwrap();
+        // AD.5.A Fix 2: `pine_twig` is AD.1.B quarantine-listed (slug 404, no
+        // name-link — THIRD_PARTY_LICENSES.md §11); fern_02 is the traced
+        // foliage sibling (Poly Haven API-200, evidence pineforest_fern_02.json).
         self.pine_leaves_mat = self.create_material_from_texture(
             "PineLeaves",
-            "assets/textures/pine forest textures/pine_twig_diff.png",
+            "assets/textures/pine_forest/fern_02_diff.png",
         );
         println!("  -> PineLeaves material index: {}", self.pine_leaves_mat);
         println!("Loading TowerWood Mat...");
         std::io::stdout().flush().unwrap();
         self.tower_wood_mat = self.create_material_from_texture(
             "TowerWood",
-            "assets/textures/pine forest textures/pine_bark_diff.png",
+            "assets/textures/pine_forest/pine_bark_diff.png",
         );
         println!("  -> TowerWood material index: {}", self.tower_wood_mat);
         println!("Loading TowerStone Mat...");
         std::io::stdout().flush().unwrap();
-        self.tower_stone_mat =
-            self.create_material_from_texture("TowerStone", "assets/materials/derived_1k/cobblestone.png");
+        self.tower_stone_mat = self.create_material_from_texture(
+            "TowerStone",
+            "assets/materials/derived_1k/cobblestone.png",
+        );
         println!("  -> TowerStone material index: {}", self.tower_stone_mat);
 
         println!("Materials vector size AFTER: {}", self.materials.len());
@@ -1142,9 +1167,7 @@ impl ShowcaseApp {
         // Create terrain bind group with all textures (diffuse, normal, roughness for grass and rock)
         println!("Starting Texture Load");
         let load_terrain_texture = |path: &str, label: &str| {
-            let img = image::open(path)
-                .unwrap_or_else(|_| panic!("Missing {}", path))
-                .to_rgba8();
+            let img = open_texture_or_fallback(path, label);
             let size = wgpu::Extent3d {
                 width: img.width(),
                 height: img.height(),
@@ -1187,27 +1210,27 @@ impl ShowcaseApp {
         };
 
         let grass_diff_view = load_terrain_texture(
-            "assets/textures/pine forest textures/grass_medium_01_diff.png",
+            "assets/textures/pine_forest/grass_medium_01_diff.png",
             "Terrain Grass Diff",
         );
         let grass_norm_view = load_terrain_texture(
-            "assets/textures/pine forest textures/grass_medium_01_nor_gl.png",
+            "assets/textures/pine_forest/grass_medium_01_nor_gl.png",
             "Terrain Grass Norm",
         );
         let grass_rough_view = load_terrain_texture(
-            "assets/textures/pine forest textures/grass_medium_01_rough.png",
+            "assets/textures/pine_forest/grass_medium_01_rough.png",
             "Terrain Grass Rough",
         );
         let rock_diff_view = load_terrain_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_diff.png",
+            "assets/textures/pine_forest/rock_moss_set_01_diff.png",
             "Terrain Rock Diff",
         );
         let rock_norm_view = load_terrain_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_nor_gl.png",
+            "assets/textures/pine_forest/rock_moss_set_01_nor_gl.png",
             "Terrain Rock Norm",
         );
         let rock_rough_view = load_terrain_texture(
-            "assets/textures/pine forest textures/rock_moss_set_01_rough.png",
+            "assets/textures/pine_forest/rock_moss_set_01_rough.png",
             "Terrain Rock Rough",
         );
 
@@ -1741,9 +1764,7 @@ impl ShowcaseApp {
     }
 
     fn create_material_from_texture(&mut self, name: &str, path: &str) -> usize {
-        let img = image::open(path)
-            .unwrap_or_else(|_| panic!("Missing texture: {}", path))
-            .to_rgba8();
+        let img = open_texture_or_fallback(path, name);
         let size = wgpu::Extent3d {
             width: img.width(),
             height: img.height(),
