@@ -45,6 +45,12 @@ pub struct CanonicalLayerBytes {
     pub mra: Option<Vec<u8>>,
     /// TOML-declared tiling (UV scale per layer). Default `[1.0, 1.0]`.
     pub uv_scale: [f32; 2],
+    /// AD.5.A Fix 3: lowercase file stem of the layer's albedo source (e.g.
+    /// `"tree_leaves"` from `../derived_1k/tree_leaves.png`). `Some` only when
+    /// the albedo actually loaded — this is the join key for the paint-palette
+    /// remap (`palette_remap::PaletteRemap::resolve`), so a layer whose albedo
+    /// failed to decode must not advertise a material identity.
+    pub albedo_stem: Option<String>,
 }
 
 /// Result of loading a canonical biome pack from disk.
@@ -136,6 +142,7 @@ pub fn load_canonical_terrain_pack(biome_dir: &Path) -> Result<CanonicalTerrainP
             normal: None,
             mra: None,
             uv_scale: [1.0, 1.0],
+            albedo_stem: None,
         })
         .collect();
 
@@ -154,6 +161,16 @@ pub fn load_canonical_terrain_pack(biome_dir: &Path) -> Result<CanonicalTerrainP
             .albedo
             .as_deref()
             .and_then(|p| load_albedo_bytes(&biome_dir.join(p)).ok());
+        slot.albedo_stem = if slot.albedo.is_some() {
+            layer
+                .albedo
+                .as_deref()
+                .and_then(|p| Path::new(p).file_stem())
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_ascii_lowercase())
+        } else {
+            None
+        };
         slot.normal = layer
             .normal
             .as_deref()
@@ -322,5 +339,57 @@ mod tests {
                 (CANONICAL_ALBEDO_RES * CANONICAL_ALBEDO_RES * 4) as usize
             );
         }
+        // AD.5.A Fix 3: the palette-remap join key is retained at load.
+        assert_eq!(pack.layers[0].albedo_stem.as_deref(), Some("grass"));
+    }
+
+    /// AD.5.A Fix 1 + Fix 3: the editor's live 8-slot biomes pack loads with
+    /// the forest slot (2) served from shipped `derived_1k/tree_leaves*`
+    /// content (re-pointed off gitignored `_downloaded/` fetcher output), and
+    /// every layer's albedo stem — the palette-remap join key — matches the
+    /// committed pack definition. Asset-dependent — skipped if absent.
+    #[test]
+    fn loads_biomes_pack_forest_slot_from_derived_1k() {
+        let materials_root =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../assets/materials");
+        let biome_dir = materials_root.join("biomes");
+        if !biome_dir.join("materials.toml").exists() {
+            eprintln!(
+                "Skipping biomes canonical pack test — {} not present",
+                biome_dir.join("materials.toml").display()
+            );
+            return;
+        }
+        let pack =
+            load_canonical_terrain_pack(&biome_dir).expect("canonical biomes pack should load");
+        assert_eq!(pack.biome_name, "biomes");
+        assert_eq!(pack.active_layer_count, 8, "biomes pack has 8 slots");
+
+        // Forest slot 2: full PBR from the shipped derived_1k cook.
+        let forest = &pack.layers[2];
+        assert!(forest.albedo.is_some(), "forest albedo must load");
+        assert!(forest.normal.is_some(), "forest normal must load");
+        assert!(forest.mra.is_some(), "forest mra must load");
+        assert_eq!(forest.albedo_stem.as_deref(), Some("tree_leaves"));
+
+        // Full stem set in arrays.toml slot order — the remap join keys.
+        let stems: Vec<Option<&str>> = pack
+            .layers
+            .iter()
+            .map(|l| l.albedo_stem.as_deref())
+            .collect();
+        assert_eq!(
+            stems,
+            vec![
+                Some("grass"),
+                Some("sand"),
+                Some("tree_leaves"),
+                Some("mountain_rock"),
+                Some("snow"),
+                Some("mud"),
+                Some("sand"),
+                Some("gravel"),
+            ]
+        );
     }
 }

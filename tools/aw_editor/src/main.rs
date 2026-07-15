@@ -9536,6 +9536,20 @@ impl eframe::App for EditorApp {
             }
         }
 
+        // AD.5.A Fix 3: sync the paint-palette remap from the engine adapter
+        // (owner of the uploaded terrain layer set) into the terrain panel,
+        // so the palette only offers entries the loaded biome pack resolves.
+        // try_lock: never stall the UI thread — on contention the panel keeps
+        // last frame's mapping.
+        if let Some(viewport) = &self.viewport {
+            if let Ok(renderer) = viewport.renderer().try_lock() {
+                if let Some(adapter) = renderer.engine_adapter() {
+                    self.dock_tab_viewer
+                        .set_palette_remap(adapter.palette_remap().cloned());
+                }
+            }
+        }
+
         // Detect OS window focus transitions (Alt+Tab recovery).
         // When the window regains focus, force several repaints and reset
         // cursor + decorations so neither the pointer nor the title bar

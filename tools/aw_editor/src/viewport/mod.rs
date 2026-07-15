@@ -57,6 +57,10 @@ pub mod impostor_registry;
 /// alongside [`impostor_registry`] on the `impostor-bake` feature.
 #[cfg(feature = "impostor-bake")]
 pub mod impostor_wiring;
+/// AD.5.A Fix 3 (AD.4.A §5a Option C): name-based paint-palette→pack-layer
+/// remap. Resolved by the engine adapter whenever terrain layers are
+/// (re)uploaded; consumed by the terrain panel's paint palette.
+pub mod palette_remap;
 mod physics_renderer;
 mod renderer;
 /// Phase 1 (Option D): flat-color placeholder biome textures for forward-lit splat rendering.

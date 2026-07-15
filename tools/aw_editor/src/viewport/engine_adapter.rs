@@ -630,6 +630,14 @@ pub struct EngineRenderAdapter {
     /// biome name; the parity harness sets it directly.
     #[cfg(feature = "terrain-splat-arrays")]
     pending_biome_pack: Option<std::path::PathBuf>,
+
+    /// AD.5.A Fix 3 (AD.4.A §5a Option C): palette→layer remap resolved from
+    /// whatever layer set was last uploaded (canonical pack stems, or the
+    /// placeholder identity). `None` until the first terrain-layer upload.
+    /// The terrain panel pulls this each frame via `palette_remap()` so paint
+    /// only offers entries the loaded pack can honestly render.
+    #[cfg(feature = "terrain-splat-arrays")]
+    palette_remap: Option<super::palette_remap::PaletteRemap>,
 }
 
 impl EngineRenderAdapter {
@@ -747,6 +755,8 @@ impl EngineRenderAdapter {
             installed_impostor_keys: std::collections::HashSet::new(),
             #[cfg(feature = "terrain-splat-arrays")]
             pending_biome_pack: None,
+            #[cfg(feature = "terrain-splat-arrays")]
+            palette_remap: None,
         };
         // Editor-Engine Render Parity P.4 (quality preset seam closure):
         // canonical viewport now uses GameQuality unconditionally — the
@@ -1210,10 +1220,7 @@ impl EngineRenderAdapter {
         // fallback. Drained into the editor console (tracing doesn't reach it).
         {
             let total: usize = mesh_groups.values().map(|v| v.len()).sum();
-            let cubes = mesh_groups
-                .get(&None)
-                .map(|v| v.len())
-                .unwrap_or(0);
+            let cubes = mesh_groups.get(&None).map(|v| v.len()).unwrap_or(0);
             self.entity_feed_log.push(format!(
                 "[entity-feed] rebuild: {} entities, {} meshed, {} placeholder cube(s), mesh_map={}",
                 total,
@@ -1382,6 +1389,20 @@ impl EngineRenderAdapter {
     #[cfg(not(feature = "terrain-splat-arrays"))]
     pub fn set_biome_pack(&mut self, _path: Option<std::path::PathBuf>) {}
 
+    /// AD.5.A Fix 3: the palette→layer remap for the currently-uploaded
+    /// terrain layer set. `None` until terrain layers have been uploaded.
+    #[cfg(feature = "terrain-splat-arrays")]
+    pub fn palette_remap(&self) -> Option<&super::palette_remap::PaletteRemap> {
+        self.palette_remap.as_ref()
+    }
+
+    /// Stub for builds without `terrain-splat-arrays`: no terrain layers,
+    /// so no palette is ever paintable.
+    #[cfg(not(feature = "terrain-splat-arrays"))]
+    pub fn palette_remap(&self) -> Option<&super::palette_remap::PaletteRemap> {
+        None
+    }
+
     /// Read the active biome pack from disk (if any) and push the resulting
     /// layer textures into `Renderer::set_terrain_materials`. On failure or
     /// absent pack, falls back to the 8-biome synthetic placeholder set so
@@ -1418,6 +1439,18 @@ impl EngineRenderAdapter {
                     }
                 },
             );
+
+        // AD.5.A Fix 3: re-resolve the paint palette against whichever layer
+        // set is about to be uploaded, so palette identity always tracks the
+        // rendered content (pack swap included).
+        self.palette_remap = Some(match &canonical {
+            Some(pack) => {
+                let stems: Vec<Option<String>> =
+                    pack.layers.iter().map(|l| l.albedo_stem.clone()).collect();
+                super::palette_remap::PaletteRemap::resolve(&stems)
+            }
+            None => super::palette_remap::PaletteRemap::placeholder_identity(8),
+        });
 
         let upload_result = if let Some(pack) = &canonical {
             let layers = ctp::borrow_layer_textures(pack);

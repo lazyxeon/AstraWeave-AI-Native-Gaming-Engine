@@ -486,6 +486,12 @@ pub struct TerrainPanel {
     /// Noise brush scale (world-space frequency)
     noise_scale: f32,
     selected_material: usize,
+    /// AD.5.A Fix 3 (AD.4.A §5a Option C): palette→layer remap for the
+    /// terrain layer set the viewport actually uploaded. Pulled from the
+    /// engine adapter each frame (main.rs sync). `None` until the viewport
+    /// has uploaded terrain layers — paint is blocked in that window, and
+    /// palette entries with no resolved layer render disabled.
+    palette_remap: Option<crate::viewport::palette_remap::PaletteRemap>,
     /// Lazy-loaded material thumbnail textures (64x64 each)
     material_thumbnails: Vec<Option<egui::TextureHandle>>,
     /// Whether thumbnails have been loaded yet
@@ -717,6 +723,7 @@ impl Default for TerrainPanel {
             flatten_target_height: None,
             noise_scale: 0.05,
             selected_material: 0,
+            palette_remap: None,
             material_thumbnails: Vec::new(),
             thumbnails_loaded: false,
             brush_pos_x: 0.0,
@@ -765,6 +772,35 @@ impl TerrainPanel {
     /// Return the currently loaded BiomePack (if any) for texture injection.
     pub fn cached_biome_pack(&self) -> Option<&astraweave_terrain::BiomePack> {
         self.terrain_state.cached_biome_pack()
+    }
+
+    /// AD.5.A Fix 3: sync the palette remap from the viewport's engine
+    /// adapter (the owner of the uploaded terrain layer set). If the current
+    /// selection becomes unpaintable under the new mapping, move it to the
+    /// first paintable entry so the highlighted tile is never a dead one.
+    pub fn set_palette_remap(
+        &mut self,
+        remap: Option<crate::viewport::palette_remap::PaletteRemap>,
+    ) {
+        if self.palette_remap == remap {
+            return;
+        }
+        self.palette_remap = remap;
+        if let Some(r) = &self.palette_remap {
+            if r.layer_for(self.selected_material).is_none() {
+                if let Some(first) = r.paintable_ids().next() {
+                    self.selected_material = first;
+                }
+            }
+        }
+    }
+
+    /// The pack layer index the current palette selection paints, or `None`
+    /// when the selection is unpaintable / no layer set is uploaded yet.
+    fn paint_layer_for_selection(&self) -> Option<u32> {
+        self.palette_remap
+            .as_ref()?
+            .layer_for(self.selected_material)
     }
 
     /// Returns the current primary biome name (e.g. "mountain", "swamp", "grassland").
@@ -843,14 +879,29 @@ impl TerrainPanel {
         }
 
         let modified = match self.brush_mode {
-            BrushMode::Paint => self.terrain_state.apply_brush_paint_material(
-                world_x,
-                world_z,
-                self.brush_radius,
-                self.brush_strength,
-                self.selected_material as u32,
-                self.brush_falloff,
-            ),
+            // AD.5.A Fix 3: paint writes the REMAPPED pack layer index, not
+            // the raw palette id. An unresolved selection paints nothing —
+            // the old raw-id write is what collapsed ids ≥ active_layer_count
+            // to layer 0 and cross-painted mismatched names.
+            BrushMode::Paint => match self.paint_layer_for_selection() {
+                Some(layer) => self.terrain_state.apply_brush_paint_material(
+                    world_x,
+                    world_z,
+                    self.brush_radius,
+                    self.brush_strength,
+                    layer,
+                    self.brush_falloff,
+                ),
+                None => {
+                    tracing::warn!(
+                        target: "aw_editor::terrain_panel",
+                        "paint skipped: palette entry {} has no layer in the \
+                         loaded biome pack",
+                        self.selected_material
+                    );
+                    false
+                }
+            },
             BrushMode::ZoneBlend => self.terrain_state.apply_brush_zoneblend(
                 world_x,
                 world_z,
@@ -1271,42 +1322,58 @@ impl TerrainPanel {
                             .show(ui, |ui| {
                                 for (i, name) in display_names.iter().enumerate() {
                                     let is_selected = self.selected_material == i;
+                                    // AD.5.A Fix 3: an entry is offered only
+                                    // when the loaded pack resolves it.
+                                    let paintable = self
+                                        .palette_remap
+                                        .as_ref()
+                                        .is_some_and(|r| r.layer_for(i).is_some());
 
-                                    let response = ui.vertical(|ui| {
-                                        // Thumbnail or colored fallback
-                                        let thumb = self
-                                            .material_thumbnails
-                                            .get(i)
-                                            .and_then(|t| t.as_ref());
-                                        if let Some(tex) = thumb {
-                                            let img = egui::Image::new(tex).fit_to_exact_size(
-                                                egui::vec2(thumb_size, thumb_size),
-                                            );
-                                            ui.add(img);
-                                        } else {
-                                            // Fallback: colored rectangle
-                                            let (rect, _) = ui.allocate_exact_size(
-                                                egui::vec2(thumb_size, thumb_size),
-                                                egui::Sense::hover(),
-                                            );
-                                            let hue = (i as f32 / 22.0) * 360.0;
-                                            ui.painter().rect_filled(
-                                                rect,
-                                                2.0,
-                                                egui::Color32::from_rgb(
-                                                    (100.0 + hue * 0.4) as u8,
-                                                    (80.0 + hue * 0.3) as u8,
-                                                    (60.0 + hue * 0.2) as u8,
-                                                ),
-                                            );
-                                        }
-                                        ui.label(RichText::new(*name).small().strong());
-                                    });
+                                    let response = ui
+                                        .add_enabled_ui(paintable, |ui| {
+                                            ui.vertical(|ui| {
+                                                // Thumbnail or colored fallback
+                                                let thumb = self
+                                                    .material_thumbnails
+                                                    .get(i)
+                                                    .and_then(|t| t.as_ref());
+                                                if let Some(tex) = thumb {
+                                                    let mut img = egui::Image::new(tex)
+                                                        .fit_to_exact_size(egui::vec2(
+                                                            thumb_size, thumb_size,
+                                                        ));
+                                                    if !paintable {
+                                                        img =
+                                                            img.tint(egui::Color32::from_gray(70));
+                                                    }
+                                                    ui.add(img);
+                                                } else {
+                                                    // Fallback: colored rectangle
+                                                    let (rect, _) = ui.allocate_exact_size(
+                                                        egui::vec2(thumb_size, thumb_size),
+                                                        egui::Sense::hover(),
+                                                    );
+                                                    let hue = (i as f32 / 22.0) * 360.0;
+                                                    let dim = if paintable { 1.0f32 } else { 0.35 };
+                                                    ui.painter().rect_filled(
+                                                        rect,
+                                                        2.0,
+                                                        egui::Color32::from_rgb(
+                                                            ((100.0 + hue * 0.4) * dim) as u8,
+                                                            ((80.0 + hue * 0.3) * dim) as u8,
+                                                            ((60.0 + hue * 0.2) * dim) as u8,
+                                                        ),
+                                                    );
+                                                }
+                                                ui.label(RichText::new(*name).small().strong());
+                                            });
+                                        })
+                                        .response;
 
                                     // Highlight selected
                                     if is_selected {
                                         ui.painter().rect_stroke(
-                                            response.response.rect,
+                                            response.rect,
                                             4.0,
                                             egui::Stroke::new(
                                                 2.0,
@@ -1316,8 +1383,14 @@ impl TerrainPanel {
                                         );
                                     }
 
-                                    if response.response.interact(egui::Sense::click()).clicked() {
-                                        self.selected_material = i;
+                                    if paintable {
+                                        if response.interact(egui::Sense::click()).clicked() {
+                                            self.selected_material = i;
+                                        }
+                                    } else {
+                                        response.on_hover_text(format!(
+                                            "{name}: not in the loaded biome pack"
+                                        ));
                                     }
 
                                     if (i + 1) % cols == 0 {
@@ -1358,25 +1431,36 @@ impl TerrainPanel {
             ui.add_space(5.0);
 
             let has_terrain = self.terrain_state.has_terrain();
-            let apply_text = if has_terrain {
-                "Apply Brush"
-            } else {
+            // AD.5.A Fix 3: in Paint mode the button also requires the
+            // selection to resolve against the loaded pack.
+            let paint_layer = self.paint_layer_for_selection();
+            let paint_blocked = self.brush_mode == BrushMode::Paint && paint_layer.is_none();
+            let apply_text = if !has_terrain {
                 "Generate terrain first"
+            } else if paint_blocked {
+                "Material not in loaded pack"
+            } else {
+                "Apply Brush"
             };
 
             if ui
-                .add_enabled(has_terrain, egui::Button::new(apply_text))
+                .add_enabled(has_terrain && !paint_blocked, egui::Button::new(apply_text))
                 .clicked()
             {
                 let modified = match self.brush_mode {
-                    BrushMode::Paint => self.terrain_state.apply_brush_paint_material(
-                        self.brush_pos_x,
-                        self.brush_pos_z,
-                        self.brush_radius,
-                        self.brush_strength,
-                        self.selected_material as u32,
-                        self.brush_falloff,
-                    ),
+                    BrushMode::Paint => match paint_layer {
+                        Some(layer) => self.terrain_state.apply_brush_paint_material(
+                            self.brush_pos_x,
+                            self.brush_pos_z,
+                            self.brush_radius,
+                            self.brush_strength,
+                            layer,
+                            self.brush_falloff,
+                        ),
+                        // Unreachable while the button is disabled, but keep
+                        // the write path honest rather than panicking.
+                        None => false,
+                    },
                     BrushMode::ZoneBlend => self.terrain_state.apply_brush_zoneblend(
                         self.brush_pos_x,
                         self.brush_pos_z,

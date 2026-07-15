@@ -1318,6 +1318,15 @@ impl EditorTabViewer {
         self.terrain_panel.cached_biome_pack()
     }
 
+    /// AD.5.A Fix 3: forward the viewport's palette→layer remap to the
+    /// terrain panel (the UI-rendered instance — see main.rs dispatcher note).
+    pub fn set_palette_remap(
+        &mut self,
+        remap: Option<crate::viewport::palette_remap::PaletteRemap>,
+    ) {
+        self.terrain_panel.set_palette_remap(remap);
+    }
+
     /// Current water surface level from terrain panel.
     pub fn water_level(&self) -> f32 {
         self.terrain_panel.water_level
