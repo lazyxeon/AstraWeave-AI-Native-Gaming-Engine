@@ -26,7 +26,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
-      with:
     
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
