@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["BiomeId"],"fn":["lookup_biome"]};
+window.SIDEBAR_ITEMS = {"enum":["BiomeId"],"fn":["lookup_biome","lookup_biome_coastal_gated"]};
