@@ -73,3 +73,25 @@ history on GitHub. Either way, **D8 is not submission-ready until dispositioned.
 - CI baseline: unchanged — the two named handoffs (Clippy Lint (Unwrap Prevention),
   Rust Cache Optimized Build) stay red pending their own beats; all other observed
   workflows green.
+
+## 5. Post-push board read (appended after CI completed on `6fa70c740`)
+
+All push-triggered workflows on `6fa70c740` (2026-07-20 UTC): **14 success** — incl.
+Pack Guard, PBR Pipeline CI (with the showcase path-triggers removed), Editor CI,
+Material Validation, Integration/Net Tests, Sanitizers, CodeQL, Trace Sync, Doc-Truth
+Lint · **the two named handoffs red as expected** (Clippy Lint (Unwrap Prevention),
+Rust Cache Optimized Build) · plus two findings:
+
+1. **`Rust Toolchain Management` red — a baseline gap, not a new regression.** Failing
+   identically on pre-rewrite `a17895904` (2026-07-03) and `5b2c6c8bd` (2026-06-29);
+   it did not run on `360a4f125`, so the close-out §3 13-run read never saw it. Root
+   signature: every Toolchain Validation job dies on `error: no such command:
+   'check-all'` — the workflow invokes a cargo alias that `.cargo/config.toml` does
+   not define. Owner: the workflow-hygiene/CI stream (same family as handoff §4
+   item 2); NOT fixed in this session (outside the ratified scope).
+2. **Close-out §4 item 12's escalation condition looks met.** Comprehensive CI
+   Pipeline, Performance Benchmarks, and Benchmark Regression Alerts were cancelled
+   again on `6fa70c740`, each running to the full second of its budget (~32/45/60
+   min) — the second consecutive timeout-cancel data point since the freeze lifted.
+   The "self-heal as caches repopulate" hypothesis is not confirming; candidate for
+   the workflow-budget beat.
