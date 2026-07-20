@@ -307,7 +307,7 @@ let status = graph.tick(&context);
 
 ### Examples Status
 
-- ✅ Working: `hello_companion`, `unified_showcase`, `core_loop_bt_demo`, `core_loop_goap_demo`, `weaving_pcg_demo`, `profiling_demo`
+- ✅ Working: `hello_companion`, `core_loop_bt_demo`, `core_loop_goap_demo`, `weaving_pcg_demo`, `profiling_demo` (`unified_showcase` removed from the workspace 2026-07-19, director-ratified)
 - ⚠️ API Drift: `ui_controls_demo`, `debug_overlay` (egui/winit version mismatches)
 - ❌ Broken: `astraweave-author`, `rhai_authoring` (rhai sync trait issues)
 

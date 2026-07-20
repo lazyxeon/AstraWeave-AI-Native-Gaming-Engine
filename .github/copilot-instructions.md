@@ -58,7 +58,7 @@ AstraWeave is a **scientific proof of concept**: a production-grade game engine 
 4. `cargo test -p <crate>` (if tests exist)
 5. `cargo fmt --all`
 6. `cargo clippy -p <crate> --all-features -- -D warnings`
-7. Run `hello_companion` or `unified_showcase` for integration validation
+7. Run `hello_companion` or the editor (`cargo editor`) for integration validation
 
 ### Quick Commands (PowerShell)
 

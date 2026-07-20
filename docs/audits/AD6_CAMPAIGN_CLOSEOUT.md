@@ -77,3 +77,14 @@ Post-D8: re-verify all 19 release URLs return 200 (pre-D8 baseline: 19/19), then
 ## 7. Campaign arc (one paragraph for the history)
 
 AD.0 proposed a ratified sample set from a 91K-file audit; AD.1 traced provenance (Poly Haven/Kenney/ambientCG CC0 chains, quarantine for the untraceable); AD.2 built the fetcher and proved the release mechanism; AD.2.A verified the backup store; AD.3 cut and uploaded the 18-pack partition (AD.3.R ratifying file-exact ownership); AD.4 re-cooked the quarantine-destined sample slots from traced sources (derived_1k) and cut materials-src; AD.4.A diagnosed the render gate to root cause (D1/D2 channel fixes landed, S1 palette decision ratified); AD.5 built the transactional original-path installer with journal crash-recovery and rehearsed Tier-2 live; AD.5.A closed the consumer-hygiene gaps (forest re-point, showcase degradation, the 7-of-21 palette remap, ARM annotations); AD.6.R rehearsed the irreversible operation end-to-end on a scratch mirror and measured everything; AD.6 executed it — 104,406 paths purged, every surviving pointer materialized, force-pushed behind a twice-re-verified freeze gate, verified by machine battery and human rung-3 on a 1.4 GB fresh clone that builds, fetches, and renders. The repository is LFS-free, the assets are release-distributed and rail-guarded, and the history carries the whole forensic trail.
+
+---
+
+## Addendum 2026-07-19 — Tier-2 consumer criterion moves to the editor; showcase removed (director-ratified)
+
+Two director decisions of 2026-07-19, recorded here so the close-out stays the authoritative reference:
+
+1. **`examples/unified_showcase` is removed from the workspace** (ordinary `git rm` commit; no history operation). It was an aged demo; a proper showcase gets built later on finished foundations. Handoff §4 item 5 ("unified_showcase rehab") is **superseded** by a future item: *build a proper showcase when foundations are ready*.
+2. **The distribution-proof ("Tier-2") consumer criterion moves from the showcase to the editor (`aw_editor`).** The machine core of Tier-2 is unchanged: `cargo xtask fetch-assets` → sha256 pins → `verify-assets` → `ci-guard`. The consumer-launch element is now: **`aw_editor` launches and renders the sample set (human-gated)**, with the `canonical_terrain_pack` loader tests in `tools/aw_editor` (`src/viewport/canonical_terrain_pack.rs` `mod tests`, e.g. `loads_grassland_pack_when_present`, plus the `tests/render_parity_harness.rs` suite that drives `load_canonical_terrain_pack` on both editor and engine paths) as the machine-checkable floor.
+
+Append-only per the project's standing correction convention; §4 item 5's original text above is preserved as the record of what was.

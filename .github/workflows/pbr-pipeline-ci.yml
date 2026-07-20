@@ -7,7 +7,6 @@ on:
       - 'astraweave-render/**'
       - 'tools/aw_asset_cli/**'
       - 'tools/aw_editor/**'
-      - 'examples/unified_showcase/**'
       - 'shaders/**'
       - '.github/workflows/pbr-pipeline-ci.yml'
   pull_request:
@@ -16,7 +15,6 @@ on:
       - 'astraweave-render/**'
       - 'tools/aw_asset_cli/**'
       - 'tools/aw_editor/**'
-      - 'examples/unified_showcase/**'
       - 'shaders/**'
       - '.github/workflows/pbr-pipeline-ci.yml'
 

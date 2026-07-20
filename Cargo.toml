@@ -69,7 +69,6 @@ members = [
   "examples/debug_toolkit_demo",
   "examples/veilweaver_quest_demo",
   "examples/save_integration",
-  "examples/unified_showcase",
   "examples/cinematics_timeline_demo",
   "examples/terrain_demo",
   "examples/biome_showcase",

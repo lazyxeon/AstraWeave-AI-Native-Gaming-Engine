@@ -155,5 +155,4 @@ jobs:
         run: |
           # Assets are now available in assets/_downloaded/
           # Examples can load them without fetching
-          cargo build --release -p unified_showcase
           cargo build --release -p hello_companion

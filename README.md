@@ -100,8 +100,8 @@ cargo build --release -p astraweave-core
 # Run the flagship AI companion demo (7 planning modes, feature-gated)
 cargo run -p hello_companion --release
 
-# Run the rendering showcase (Island scene)
-cargo run -p unified_showcase --release
+# Run the visual editor (fetch the asset packs first: cargo xtask fetch-assets)
+cargo editor
 ```
 
 <!-- Source: live count 2026-06-10 (4,103 inline + 5,322 in tests/), supersedes
@@ -351,12 +351,14 @@ AstraWeave is a modular workspace of **~51 production crates** organized into 7 
 -   **`astraweave-stress-test`**: Comprehensive stress testing and benchmarking framework
 
 ### 🔧 Additional Components
-<!-- Source: live counts 2026-06-10 (editor 9,425 annotations; 59 example members
-     per cargo metadata). "Working" dropped from the examples claim — the Terrain
-     Asset Quality outcome doc records biome_showcase's GPU render path as a stub
-     and unified_showcase as unstable. -->
+<!-- Source: live counts 2026-06-10 (editor 9,425 annotations); example-member
+     count updated 2026-07-19 after the director-ratified removal of
+     unified_showcase (an aged demo; a proper showcase gets built later on
+     finished foundations). "Working" dropped from the examples claim — the
+     Terrain Asset Quality outcome doc records biome_showcase's GPU render
+     path as a stub. -->
 -   **Tools**: `aw_editor` (active mid-campaign, 9,425 test annotations), `aw_asset_cli`, `aw_texture_gen`, `aw_save_cli`, and ~8 other build/debugging utilities (12 tool crates total)
--   **Examples**: 59 example crates including `hello_companion` (7 AI modes, feature-gated), `unified_showcase` (rendering), `biome_showcase`, `adaptive_boss`, and physics/fluids demos
+-   **Examples**: 57 example crates including `hello_companion` (7 AI modes, feature-gated), `biome_showcase`, `adaptive_boss`, and physics/fluids demos
 
 ---
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AstraWeave is a **scientific proof of concept**: a production-grade AI-native game engine built **iteratively by AI with zero human-written code**. It uses a deterministic ECS architecture where AI agents are first-class citizens. The workspace contains 130 crates (~51 production + examples + tools; `cargo metadata --no-deps`, verified 2026-06-10). Rust toolchain is pinned at 1.89.0.
+AstraWeave is a **scientific proof of concept**: a production-grade AI-native game engine built **iteratively by AI with zero human-written code**. It uses a deterministic ECS architecture where AI agents are first-class citizens. The workspace contains 133 crates (~51 production + examples + tools; `cargo metadata --no-deps` package count, verified 2026-07-19 after the director-ratified removal of `unified_showcase`). Rust toolchain is pinned at 1.89.0.
 
 ### Mandate
 
@@ -51,7 +51,7 @@ Make ONLY the changes requested. Do not refactor, rename, reorganize, or "improv
 4. `cargo test -p <crate>` (if tests exist)
 5. `cargo fmt --all`
 6. `cargo clippy -p <crate> --all-features -- -D warnings`
-7. Run `hello_companion` or `unified_showcase` for integration validation
+7. Run `hello_companion` or the editor (`cargo editor`) for integration validation
 
 ### Integration Completeness (before declaring work complete)
 
@@ -144,7 +144,7 @@ cargo fmt --all                     # Format all code
 cargo clippy -p <crate> --all-features -- -D warnings  # Lint a crate
 
 # Workspace-wide commands (no aliases defined — use the explicit forms)
-cargo check --workspace             # Workspace check (130/130 members, 0 errors as of 2026-06-10)
+cargo check --workspace             # Workspace check (133 packages, 0 errors as of 2026-07-19)
 cargo build -p astraweave-core -p astraweave-ecs -p astraweave-math -p astraweave-ai  # Core components
 cargo test --workspace              # Workspace tests (long-running)
 cargo clippy --workspace --all-features -- -D warnings  # Full linting
@@ -156,7 +156,8 @@ cargo editor-dev                    # Run editor (debug)
 
 # Examples
 cargo run -p hello_companion --release   # Flagship AI demo (6 modes)
-cargo run -p unified_showcase --release  # Rendering showcase
+# (unified_showcase removed 2026-07-19, director-ratified; a proper showcase
+#  gets built later on finished foundations — use `cargo editor` for rendering)
 
 # Benchmarks & coverage
 cargo bench -p <crate>              # Run benchmarks (criterion)
@@ -371,7 +372,7 @@ Any new or modified `unsafe` code **MUST** pass both verification pipelines:
 
 ### Known Build Issues
 
-**All previously-listed build breakages are resolved** (live `cargo check` audit, 2026-06-10): `ui_controls_demo`, `debug_overlay` (former egui/winit drift), `astraweave-author`, `rhai_authoring` (former Rhai `Sync` trait errors), and `astraweave-llm` all compile clean, and `cargo check --workspace` passes 130/130 members with 0 errors. The root `Cargo.toml` `[workspace.metadata.ci-excludes]` problematic list is empty.
+**All previously-listed build breakages are resolved** (live `cargo check` audit, 2026-06-10): `ui_controls_demo`, `debug_overlay` (former egui/winit drift), `astraweave-author`, `rhai_authoring` (former Rhai `Sync` trait errors), and `astraweave-llm` all compile clean, and `cargo check --workspace` passes all members with 0 errors (130/130 at the 2026-06-10 audit; 133 packages per `cargo metadata --no-deps` at the 2026-07-19 re-check following the `unified_showcase` removal — the count grew with members added since June). The root `Cargo.toml` `[workspace.metadata.ci-excludes]` problematic list is empty.
 
 - **Residual warnings (deferred)**: 1 `dead_code` warning in `astraweave-ai`; 1 unused import in `tools/aw_editor/src/gizmo/mod.rs:32`; `nalgebra v0.26.2` future-incompat note from the dependency graph
 - **`.unwrap()` in test code only**: All `.unwrap()` calls are inside `#[cfg(test)]` modules — justified for test assertions. Zero production-path unwraps in engine runtime crates.
