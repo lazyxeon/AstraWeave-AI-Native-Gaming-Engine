@@ -613,6 +613,7 @@ jobs:
 
       - name: Veilweaver slice smoke test
         run: |
+          cargo build --locked -p veilweaver_slice_loader
           timeout 120s make smoke-veilweaver
 
       - name: Build demo applications
