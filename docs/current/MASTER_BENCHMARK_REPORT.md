@@ -8,7 +8,8 @@ This stub exists to keep master-report navigation consistent under `docs/current
 
 > **⚠ W.1 note (W-series, 2026-06-21):** the v5.59 voxel-sparsity result summarized
 > below benchmarks the `WaterVolumeGrid` voxel sim **removed in W.1** (commit
-> `1a57fdd41`; recovery tag `w0-pre-deprecation`) — it is the historical evidence
+> `1a57fdd41`; recovery anchor `w0-pre-deprecation`, local-only since 2026-07-20 —
+> `docs/architecture/fluids.md` §0.5 recovery note) — it is the historical evidence
 > behind the decline-A→C verdict, not current code. The canonical report at
 > `docs/masters/MASTER_BENCHMARK_REPORT.md` carries the same annotation in full.
 

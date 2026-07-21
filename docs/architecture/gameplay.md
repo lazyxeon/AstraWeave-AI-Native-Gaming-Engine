@@ -272,7 +272,7 @@ WeaveTutorialState mutated (anchors stabilized, triggers active)
 - **Consequences:** The enum is `#[non_exhaustive]`, so the variant addition is non-breaking. `astraweave-render` gains no dependency on gameplay (the producer translation lives in `examples/weaving_playground/src/weave_producer.rs`).
 
 ### Decision: Player water-movement direction abandoned
-- **Date:** W-series W.1 (2026-06-21 era), commit `1a57fdd41` (recovery tag `w0-pre-deprecation`)
+- **Date:** W-series W.1 (2026-06-21 era), commit `1a57fdd41` (recovery anchor `w0-pre-deprecation` — local-only since 2026-07-20, see `fluids.md` §0.5 recovery note)
 - **Status:** Accepted (plan abandoned); `water_movement.rs` retained as dormant code
 - **Context:** Per the staleness banner in `docs/current/WATER_SYSTEM_ENHANCEMENT_PLAN.md`, F.3.S measured that CPU voxel water could not carry general gameplay water at interactive cost on min-spec; the W-series deleted the voxel sim + SPH solver and re-scoped water to a layered rendering system.
 - **Decision:** Swimming/diving/oxygen/wet gameplay (the `water_movement.rs` content) is **not pursued**. The authority is now `docs/campaigns/water-successor/` per the banner.
@@ -396,6 +396,6 @@ No benchmarks live in this crate's runtime path beyond `benches/combat_pipeline`
 `astraweave-gameplay` accreted as the gameplay-logic layer for the AstraWeave demos and the Veilweaver vertical slice. Two campaign threads are visible in its recent history:
 
 1. **The Unified Camera campaign (C.7.A)** rewired `cutscenes.rs` to emit `astraweave_cinematics::CameraKey` and added the `astraweave-cinematics` dependency (commit `91eda3139`, Cargo.toml comment).
-2. **The W-series "Water Successor" campaign** added the `FreezeWater` weave op as a presentation-only variant (commit `3edf15e25`) while the broader water gameplay direction (swimming/oxygen, embodied in `water_movement.rs`) was abandoned in W.1 in favor of a render-only layered water system (`WATER_SYSTEM_ENHANCEMENT_PLAN.md` staleness banner; recovery tag `w0-pre-deprecation`).
+2. **The W-series "Water Successor" campaign** added the `FreezeWater` weave op as a presentation-only variant (commit `3edf15e25`) while the broader water gameplay direction (swimming/oxygen, embodied in `water_movement.rs`) was abandoned in W.1 in favor of a render-only layered water system (`WATER_SYSTEM_ENHANCEMENT_PLAN.md` staleness banner; recovery anchor `w0-pre-deprecation`, local-only since 2026-07-20 — `fluids.md` §0.5 recovery note).
 
 The Veilweaver slice itself spans three places: the gameplay-crate's `veilweaver_slice.rs`/`veilweaver_tutorial.rs` (cell metadata + tutorial state), the separate `astraweave-weaving` crate (emergent-behavior gameplay logic), and the `veilweaver_slice_runtime` crate (the headless 30-minute-demo harness). This trace covers only the gameplay-crate portion; the other two are separate subsystems.

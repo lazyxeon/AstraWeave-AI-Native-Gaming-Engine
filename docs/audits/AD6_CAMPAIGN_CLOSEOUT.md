@@ -88,3 +88,14 @@ Two director decisions of 2026-07-19, recorded here so the close-out stays the a
 2. **The distribution-proof ("Tier-2") consumer criterion moves from the showcase to the editor (`aw_editor`).** The machine core of Tier-2 is unchanged: `cargo xtask fetch-assets` → sha256 pins → `verify-assets` → `ci-guard`. The consumer-launch element is now: **`aw_editor` launches and renders the sample set (human-gated)**, with the `canonical_terrain_pack` loader tests in `tools/aw_editor` (`src/viewport/canonical_terrain_pack.rs` `mod tests`, e.g. `loads_grassland_pack_when_present`, plus the `tests/render_parity_harness.rs` suite that drives `load_canonical_terrain_pack` on both editor and engine paths) as the machine-checkable floor.
 
 Append-only per the project's standing correction convention; §4 item 5's original text above is preserved as the record of what was.
+
+---
+
+## Addendum 2026-07-21 — §4 item 1 correction (T.0 record reconciliation; facts re-verified at `8232b150b`)
+
+§4 item 1's text ("`astraweave-terrain` production `expect()`s (spline_types.rs E3-era + regional_archetype_mask.rs + noise_gen.rs) — Clippy Unwrap-Prevention red") is wrong in two ways; original text preserved above per convention:
+
+1. **Locations.** The production-path `expect()`s are **six, all in `astraweave-terrain/src/spline_types.rs`** (`:571`, `:590`, `:605` in `climate_driven_spline_set` + `:637`, `:647`, `:652` in `archetype_spline_set` — each unwraps `Spline1D::from_control_points` on hardcoded control points; the file's only other `expect()` at `:1003` sits after the `#[cfg(test)]` boundary at `:762`). `regional_archetype_mask.rs` and `noise_gen.rs` were misattributed — every `expect()` in those files is `#[cfg(test)]`-only (boundaries at `:742` and `:1138` respectively).
+2. **Attribution.** The Clippy Unwrap-Prevention workflow (`.github/workflows/clippy-unwrap-prevention.yml`) **does not scan `astraweave-terrain`** — the crate appears in neither the P0 matrix (`:22-33`) nor the warn-only P1 matrix (`:109-113`). Its standing red therefore has a different cause and is owned by the **CI-workshop beat** (T-series ratification 2026-07-20, Q8), not by the terrain crate. Fixing the six spline `expect()`s will not flip this workflow green.
+
+The hygiene fix itself stays queued in terrain beat **T.2** (`T_SERIES_RATIFICATION_2026-07-20.md` §4). Full derivation: `E3_PREFLIGHT_2026-07.md` §4.4.

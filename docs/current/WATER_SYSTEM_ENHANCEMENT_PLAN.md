@@ -6,7 +6,8 @@
 > F.3.S measured that CPU voxel water cannot carry general gameplay water at
 > interactive cost on min-spec (decline A→C), and the W-series (Water Successor)
 > **deleted** the voxel sim + SPH solver inventory in W.1 (commit `1a57fdd41`;
-> recovery tag `w0-pre-deprecation`), re-scoping water to a layered **rendering**
+> recovery anchor `w0-pre-deprecation`, local-only since 2026-07-20 —
+> `docs/architecture/fluids.md` §0.5 recovery note), re-scoping water to a layered **rendering**
 > system. The plan below is **not pursued** — the current authority is
 > `docs/campaigns/water-successor/W2_0_RECON.md` and `W2_DECISIONS.md`. **Read
 > this as historical; do not cite its plan as current.**

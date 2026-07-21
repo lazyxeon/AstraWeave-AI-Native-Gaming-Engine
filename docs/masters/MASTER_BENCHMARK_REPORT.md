@@ -68,7 +68,7 @@ Paired baseline-vs-mimalloc measurement (3 independent runs per cell, 2026-04-17
 
 ### Voxel-Water Sparsity vs Dense (v5.59, Fluids-Integration F.3.S)
 
-> **⚠ Removed in W.1 (W-series, 2026-06-21).** This entire section benchmarks the `WaterVolumeGrid` voxel sim, **deleted** in W.1 (commit `1a57fdd41`; recovery tag `w0-pre-deprecation`). It is preserved as the historical evidence behind the F.3.S **decline-A→C** verdict that motivated the W-series — NOT a measurement of current code. See `docs/architecture/fluids.md` rev 1.6 and `docs/campaigns/water-successor/`.
+> **⚠ Removed in W.1 (W-series, 2026-06-21).** This entire section benchmarks the `WaterVolumeGrid` voxel sim, **deleted** in W.1 (commit `1a57fdd41`; recovery anchor `w0-pre-deprecation`, local-only since 2026-07-20 — `docs/architecture/fluids.md` §0.5 recovery note). It is preserved as the historical evidence behind the F.3.S **decline-A→C** verdict that motivated the W-series — NOT a measurement of current code. See `docs/architecture/fluids.md` rev 1.6 and `docs/campaigns/water-successor/`.
 
 **Machine context** (same min-spec box as the F.1 baselines above; verified `Get-CimInstance`): Intel Core i5-10300H @ 2.50 GHz (4C/8T), 31.8 GB RAM, Windows 11, Rust 1.89.0. Bench: `astraweave-fluids/benches/voxel_sparsity.rs` (new in F.3.S). `WaterVolumeGrid::simulate` is **CPU-only**, so the CPU is what the ~1 ms gameplay-water budget measures (GPU irrelevant here). Captured 2026-06-19 on branch `campaign/fluids-f3s`. Sparse = `simulate` (dirty-AABB); dense = `simulate_reference` (the F.1 algorithm, **bit-identical** to sparse — proven by the lockstep suite). Median ms/tick, settled scenarios.
 

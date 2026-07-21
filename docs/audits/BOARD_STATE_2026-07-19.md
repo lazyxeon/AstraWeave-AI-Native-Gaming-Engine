@@ -95,3 +95,18 @@ Rust Cache Optimized Build) · plus two findings:
    min) — the second consecutive timeout-cancel data point since the freeze lifted.
    The "self-heal as caches repopulate" hypothesis is not confirming; candidate for
    the workflow-budget beat.
+
+## 6. Appends (post-2026-07-19, append-only)
+
+- **2026-07-21 (T.0): §3 RESOLVED — option (a) executed by the director 2026-07-20.**
+  The remote `w0-pre-deprecation` tag was deleted from GitHub (`git ls-remote --tags
+  origin` shows only `assets-v1`; safety bundle `d:\w0-pre-deprecation.bundle`,
+  956 MiB, 2026-07-20 17:50; the corpus stays recoverable via the local tag +
+  `C:\AD6_BACKUP`). **D8 is unblocked.** The doc sweep §3(a) required (docs citing
+  the tag as a *remote* recovery path) was executed in T.0 — canonical recovery
+  note: `docs/architecture/fluids.md` §0.5. First recorded: `E3_PREFLIGHT_2026-07.md` §1.
+- **2026-07-21 (T.0): §5.2's candidate is ratified** — the CI-workshop beat
+  (T-series ratification Q8, `T_SERIES_RATIFICATION_2026-07-20.md` §5) consolidates
+  the benchmark-budget escalation + the §5.1 undefined-cargo-alias gap in the
+  Rust Toolchain Management workflow + the Rust Cache toolchain-pin handoff, as a
+  separate parallel beat.

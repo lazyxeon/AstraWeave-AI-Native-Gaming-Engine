@@ -101,7 +101,7 @@ Status vocabulary: **VERIFIED-AT-HEAD** (re-checked this campaign at HEAD via th
 - hardware: n/a
 - canonical_source: `docs/architecture/water.md` (trace v1.1)
 - referenced_by: docs/architecture/water.md; docs/architecture/fluids.md §0.5
-- note: Supersedes the pre-W.1 "fluids = SPH/voxel simulation" framing across the corpus. The deleted SPH/voxel solver is preserved only at tag `w0-pre-deprecation @ 3a8296038`. NEW in D.2.A.1.
+- note: Supersedes the pre-W.1 "fluids = SPH/voxel simulation" framing across the corpus. The deleted SPH/voxel solver is preserved only at the `w0-pre-deprecation` anchor `@ 3a8296038` — LOCAL-ONLY since 2026-07-20 (remote tag deleted; recovery = local tag in the canonical checkout / `C:\AD6_BACKUP` / `d:\w0-pre-deprecation.bundle`; see `docs/architecture/fluids.md` §0.5 recovery note). NEW in D.2.A.1; recovery-path wording updated T.0 2026-07-21.
 
 ### rust-loc-total
 - metric: Total Rust lines across the workspace
