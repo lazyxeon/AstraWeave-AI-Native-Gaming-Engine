@@ -166,7 +166,7 @@ jobs:
       - name: Build core components (debug)
         if: matrix.profile == 'debug'
         run: >
-          cargo build --frozen --verbose
+          cargo build --locked --verbose
           -p astraweave-core
           -p astraweave-ai
           -p astraweave-physics
@@ -188,7 +188,7 @@ jobs:
       - name: Build core components (release)
         if: matrix.profile == 'release'
         run: >
-          cargo build --frozen --release --verbose
+          cargo build --locked --release --verbose
           -p astraweave-core
           -p astraweave-ai
           -p astraweave-physics
@@ -201,7 +201,7 @@ jobs:
         if: matrix.profile == 'debug'
         continue-on-error: true
         run: >
-          cargo build --frozen --verbose
+          cargo build --locked --verbose
           -p hello_companion
           -p adaptive_boss
           -p companion_profile
