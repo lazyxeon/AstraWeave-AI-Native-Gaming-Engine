@@ -368,6 +368,22 @@ id = "tree_bark_03"
 resolution = "2k"
 format = "png"
 
+# =============================================================================
+# T.1 (2026-07-21) — distinct beach material (T-series ratification §2 row 6,
+# director-amended 2026-07-20). Slug API-verified live (type:1 texture, Rob
+# Tuytel, CC0, 8K max): damp coastal sand w/ pebbles/gravel — replaces slot 6's
+# byte-identical share of the desert sand trio. Evidence:
+# docs/audits/evidence/t1_beach_2026-07-21/. Cook: cook_1k.py -> derived_1k/beach*.
+# =============================================================================
+
+[[assets]]
+handle = "beach"
+provider = "polyhaven"
+type = "texture"
+id = "coast_sand_01"
+resolution = "2k"
+format = "png"
+
 [[assets]]
 handle = "cloth"
 provider = "polyhaven"

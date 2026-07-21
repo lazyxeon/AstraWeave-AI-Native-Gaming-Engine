@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: wired
 summary: "Terrain material slice: 8-slot canonical biome pack + loader, splat bake, 32-layer GPU blend (complements terrain.md). terrain_materials.md"
 owns: []
-doc_version: "1.2"
-last_verified_commit: 8232b150b
+doc_version: "1.3"
+last_verified_commit: 7e52c290c
 ---
 
 # Architecture Trace: Terrain Material System
@@ -21,9 +21,9 @@ last_verified_commit: 8232b150b
 |---|---|
 | **System name** | Terrain Material System |
 | **Primary crates** | `astraweave-render`, `astraweave-terrain`, `tools/aw_editor` |
-| **Document version** | 1.2 |
-| **Last verified against commit** | `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); prior `67c9de7e1` |
-| **Last verified date** | 2026-07-21 (v1.2); 2026-05-10 (full trace) |
+| **Document version** | 1.3 |
+| **Last verified against commit** | `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
+| **Last verified date** | 2026-07-21 (v1.3 slot-6 update; v1.2 full pass); 2026-05-10 (full trace) |
 | **Status** | Active (canonical 32-layer pipeline) with transitional legacy residue |
 | **Owner notes** | Canonical reference example for the architecture trace campaign. Derived from forensic data-flow analysis on 2026-05-11. |
 
@@ -63,7 +63,7 @@ Two upstream stages landed after v1.1 and now feed Stage 1; both verified first-
 | 3 | mountain | `assets/materials/mountain_rock.png` | **64** | one repeat / 8 m vs 4 m for ground slots |
 | 4 | tundra | `assets/materials/snow.png` | 128 | |
 | 5 | swamp | `assets/materials/mud.png` | 128 | |
-| 6 | beach | `assets/materials/sand.png` | 128 | **byte-identical to slot 1** — amendment ratified 2026-07-20: a distinct beach material lands in terrain beats T.1/T.2 |
+| 6 | beach | `assets/materials/derived_1k/beach.png` | 128 | **T.1 (2026-07-21): distinct material EXECUTED** (was byte-identical to slot 1) — PolyHaven `coast_sand_01` cooked via `cook_family_from_maps` (true-MRA, measured R=0.0); provenance `THIRD_PARTY_LICENSES.md` §14, evidence `docs/audits/evidence/t1_beach_2026-07-21/`, outcome `docs/audits/T1_BEACH_OUTCOME.md`. Slot 6 has no MaterialLibrary palette name → biome-paint-only by design (paintable set stays 7; `aw_editor.md` Invariants 26/27 unaffected) |
 | 7 | river | `assets/materials/derived_1k/gravel.png` | 128 | ratified 2026-07-20 as honest **riverbed**; water surfacing is the T.W beat pair |
 
 Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canonical_terrain_pack`): paths join onto the biome dir; slot order is `arrays.toml`-driven; **channel-key semantics** (`canonical_terrain_pack.rs:178-184`): an `orm` key loads verbatim (already AO-R/rough-G/metal-B, e.g. PolyHaven ARM), an `mra` key (legacy metal-R/rough-G/AO-B) is swizzled to ORM at load via `load_mra_as_orm_bytes` (`:221-227`, per-pixel R↔B swap); `orm` wins when both present. The lowercase albedo file stem is retained per layer (`albedo_stem`) as the palette-remap join key. Upload path: `EngineRenderAdapter::reupload_terrain_layers_from_pending_pack` → `set_terrain_materials`, re-resolving the palette remap on every upload (see `aw_editor.md` v1.4/v1.5 + Invariants 26/27 there).

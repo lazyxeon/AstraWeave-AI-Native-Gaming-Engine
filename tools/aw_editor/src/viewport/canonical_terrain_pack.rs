@@ -378,6 +378,8 @@ mod tests {
             .iter()
             .map(|l| l.albedo_stem.as_deref())
             .collect();
+        // T.1 (2026-07-21): slot 6 is `beach` (coast_sand_01 cook) — beach no
+        // longer shares the desert `sand` stem (ratification §2 row-6 amendment).
         assert_eq!(
             stems,
             vec![
@@ -387,7 +389,7 @@ mod tests {
                 Some("mountain_rock"),
                 Some("snow"),
                 Some("mud"),
-                Some("sand"),
+                Some("beach"),
                 Some("gravel"),
             ]
         );

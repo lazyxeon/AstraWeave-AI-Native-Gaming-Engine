@@ -1,11 +1,11 @@
 # Attribution - POLYHAVEN
 ================================================================================
 
-This directory contains 19 assets from polyhaven:
+This directory contains 20 assets from polyhaven:
 
 ## License Summary
 
-- CC0-1.0: 19 assets
+- CC0-1.0: 20 assets
 
 ================================================================================
 
@@ -144,6 +144,13 @@ Source: https://polyhaven.com/a/lichen_rock
 
 --------------------------------------------------------------------------------
 
+### beach
+
+License: Creative Commons Zero v1.0 Universal (Public Domain)
+Source: https://polyhaven.com/a/coast_sand_01
+
+--------------------------------------------------------------------------------
+
 
 For full license texts, see URLs above.
-Generated: 2026-07-03T21:44:23.488481+00:00 (13 original) — AD.4 union restore 2026-07-07: +6 C7 (fetch-overwrite regression repaired)
+Generated: 2026-07-03T21:44:23.488481+00:00 (13 original) — AD.4 union restore 2026-07-07: +6 C7 (fetch-overwrite regression repaired) — T.1 union restore 2026-07-21: +1 beach (coast_sand_01; same overwrite bug fired again, tool still unfixed)

@@ -4868,26 +4868,6 @@ assets/3D assets/Modular Space Kit/View Documentation.url
 assets/3D assets/Modular Space Kit/Visit Kenney.url
 assets/3D assets/Modular Space Kit/Visit Patreon.url
 assets/3D assets/Nature Kit (Classic)/License.txt
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-_defaultMat.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-leaves.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-leavesFall.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-leavesGreen.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-mushroom.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-mushroomDark.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-stone.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-water.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-wood.mat
-assets/3D assets/Nature Kit (Classic)/Models/FBX format/Materials/natureKit-woodLight.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-_defaultMat.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-leaves.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-leavesFall.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-leavesGreen.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-mushroom.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-mushroomDark.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-stone.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-water.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-wood.mat
-assets/3D assets/Nature Kit (Classic)/Models/OBJ format/Materials/natureKit-woodLight.mat
 assets/3D assets/Nature Kit (Classic)/Models/OBJ format/bamboo.mtl
 assets/3D assets/Nature Kit (Classic)/Models/OBJ format/bridge_arch.mtl
 assets/3D assets/Nature Kit (Classic)/Models/OBJ format/bridge_straight.mtl
@@ -10007,34 +9987,6 @@ assets/Archive/Isometric Renders/Survival Kit (renders)/sprites_side.zip
 assets/Archive/Isometric Road Assets/Isometric Road Assets.zip
 assets/Archive/Medieval Town/Medieval Town.zip
 assets/Archive/Mini Car Kit/License.txt
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/Gray6.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/_defaultMat.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/backLight.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/blueLight.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/carTire.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/frontLight.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/glass.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/paintBlue.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/paintGreen.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/paintRed.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/paintWhite.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/paintYellow.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/plastic.mat
-assets/Archive/Mini Car Kit/Models/FBX format/Materials/wheelCover.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/Gray6.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/_defaultMat.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/backLight.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/blueLight.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/carTire.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/frontLight.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/glass.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/paintBlue.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/paintGreen.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/paintRed.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/paintWhite.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/paintYellow.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/plastic.mat
-assets/Archive/Mini Car Kit/Models/OBJ format/Materials/wheelCover.mat
 assets/Archive/Mini Car Kit/Models/OBJ format/carAmbulance.mtl
 assets/Archive/Mini Car Kit/Models/OBJ format/carDelivery.mtl
 assets/Archive/Mini Car Kit/Models/OBJ format/carFormula.mtl
@@ -10123,18 +10075,6 @@ assets/Archive/Readme.txt
 assets/Archive/Road Pack/Road Pack.zip
 assets/Archive/Roguelike Pack (15×)/Roguelike Pack (15×).zip
 assets/Archive/Space Kit (Legacy)/License.txt
-assets/Archive/Space Kit (Legacy)/Models/Materials/_defaultMat.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/alien.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/alienBone.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/alienPlant.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/astronaut.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/glass.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/light.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/metal.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/net.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/pipe.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/portal.mat
-assets/Archive/Space Kit (Legacy)/Models/Materials/rock.mat
 assets/Archive/Space Kit (Legacy)/Models/alien.mtl
 assets/Archive/Space Kit (Legacy)/Models/alienBones.mtl
 assets/Archive/Space Kit (Legacy)/Models/astronaut.mtl
@@ -12307,33 +12247,8 @@ assets/Other/Fonts/Kenney Rocket Square.ttf
 assets/Other/Fonts/Kenney Rocket.ttf
 assets/Other/Fonts/Kenney Space.ttf
 assets/Other/Fonts/Kenney Thick.ttf
-assets/Other/Fonts/Preview.png
 assets/Other/Fonts/Webfonts A.zip
 assets/Other/Fonts/Webfonts B.zip
-assets/Other/Miniguides/Miniguide 1 - Tiles/miniguide1_tile1.png
-assets/Other/Miniguides/Miniguide 1 - Tiles/miniguide1_tile2.png
-assets/Other/Miniguides/Miniguide 1 - Tiles/miniguide1_tile3.png
-assets/Other/Miniguides/Miniguide 1 - Tiles/miniguide1_tiles.svg
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character.svg
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character_idle.png
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character_idle.xml
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character_stand.png
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character_walk.png
-assets/Other/Miniguides/Miniguide 2 - Character/miniguide2_character_walk.xml
-assets/Other/Miniguides/Miniguide 3 - 3D House/miniguide3_house.mtl
-assets/Other/Miniguides/Miniguide 3 - 3D House/miniguide3_house.obj
-assets/Other/Miniguides/Miniguide 3 - 3D House/miniguide3_house.skp
-assets/Other/Miniguides/Miniguide 4 - Background/miniguide4_background.png
-assets/Other/Miniguides/Miniguide 4 - Background/miniguide4_background.svg
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_button.png
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_close.png
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_panel.png
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_panelInner.png
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_stars.png
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_ui.svg
-assets/Other/Miniguides/Miniguide 5 - Game UI/miniguide5_uiFull.png
-assets/Other/Miniguides/Preview.png
-assets/Other/Miniguides/Readme.txt
 assets/The Complete KayKit Collection v4/Changelog.txt
 assets/The Complete KayKit Collection v4/Discord Server.url
 assets/The Complete KayKit Collection v4/KayKit Adventurers 2.0/Animations/Click here for more Free Animations.url
@@ -22612,38 +22527,6 @@ assets/audio/Digital Audio/License.txt
 assets/audio/Foley Sounds/License.txt
 assets/audio/Impact Sounds/License.txt
 assets/audio/Interface Sounds/License.txt
-assets/audio/Loops/AlkaKrab Music License Info.pdf
-assets/audio/Loops/mp3/1. Moonspire.mp3
-assets/audio/Loops/mp3/10. Elven Dawn.mp3
-assets/audio/Loops/mp3/2. Winds of Valor.mp3
-assets/audio/Loops/mp3/3. Darkwood Path.mp3
-assets/audio/Loops/mp3/4. Frostbound.mp3
-assets/audio/Loops/mp3/5. Emberlight.mp3
-assets/audio/Loops/mp3/6. Silverbrook.mp3
-assets/audio/Loops/mp3/7. Mystic Grove.mp3
-assets/audio/Loops/mp3/8. Throne of Storms.mp3
-assets/audio/Loops/mp3/9. Sorrow’s Edge.mp3
-assets/audio/Loops/ogg/1. Moonspire.ogg
-assets/audio/Loops/ogg/10. Elven Dawn.ogg
-assets/audio/Loops/ogg/2. Winds of Valor.ogg
-assets/audio/Loops/ogg/3. Darkwood Path.ogg
-assets/audio/Loops/ogg/4. Frostbound.ogg
-assets/audio/Loops/ogg/5. Emberlight.ogg
-assets/audio/Loops/ogg/6. Silverbrook.ogg
-assets/audio/Loops/ogg/7. Mystic Grove.ogg
-assets/audio/Loops/ogg/8. Throne of Storms.ogg
-assets/audio/Loops/ogg/9. Sorrow’s Edge.ogg
-assets/audio/Loops/ogg/AlkaKrab Music License Info.pdf
-assets/audio/Loops/wav/1. Moonspire.wav
-assets/audio/Loops/wav/10. Elven Dawn.wav
-assets/audio/Loops/wav/2. Winds of Valor.wav
-assets/audio/Loops/wav/3. Darkwood Path.wav
-assets/audio/Loops/wav/4. Frostbound.wav
-assets/audio/Loops/wav/5. Emberlight.wav
-assets/audio/Loops/wav/6. Silverbrook.wav
-assets/audio/Loops/wav/7. Mystic Grove.wav
-assets/audio/Loops/wav/8. Throne of Storms.wav
-assets/audio/Loops/wav/9. Sorrow’s Edge.wav
 assets/audio/Music Jingles/License.txt
 assets/audio/Music Loops/License.txt
 assets/audio/RPG Audio/License.txt
@@ -22653,125 +22536,10 @@ assets/audio/Sci-Fi Sounds/License.txt
 assets/audio/Synth Voice 1/License.txt
 assets/audio/Synth Voice 2/License.txt
 assets/audio/Synth Voice 2/Transcript.txt
-assets/audio/Tracks/AlkaKrab Music License Info.pdf
-assets/audio/Tracks/mp3/1. Moonspire.mp3
-assets/audio/Tracks/mp3/10. Elven Dawn  .mp3
-assets/audio/Tracks/mp3/2. Winds of Valor.mp3
-assets/audio/Tracks/mp3/3. Darkwood Path.mp3
-assets/audio/Tracks/mp3/4. Frostbound.mp3
-assets/audio/Tracks/mp3/5. Emberlight .mp3
-assets/audio/Tracks/mp3/6. Silverbrook .mp3
-assets/audio/Tracks/mp3/7. Mystic Grove .mp3
-assets/audio/Tracks/mp3/8. Throne of Storms .mp3
-assets/audio/Tracks/mp3/9. Sorrow’s Edge  .mp3
-assets/audio/Tracks/ogg/1. Moonspire.ogg
-assets/audio/Tracks/ogg/10. Elven Dawn  .ogg
-assets/audio/Tracks/ogg/2. Winds of Valor.ogg
-assets/audio/Tracks/ogg/3. Darkwood Path.ogg
-assets/audio/Tracks/ogg/4. Frostbound.ogg
-assets/audio/Tracks/ogg/5. Emberlight .ogg
-assets/audio/Tracks/ogg/6. Silverbrook .ogg
-assets/audio/Tracks/ogg/7. Mystic Grove .ogg
-assets/audio/Tracks/ogg/8. Throne of Storms .ogg
-assets/audio/Tracks/ogg/9. Sorrow’s Edge  .ogg
-assets/audio/Tracks/wav/1. Moonspire.wav
-assets/audio/Tracks/wav/10. Elven Dawn  .wav
-assets/audio/Tracks/wav/2. Winds of Valor.wav
-assets/audio/Tracks/wav/3. Darkwood Path.wav
-assets/audio/Tracks/wav/4. Frostbound.wav
-assets/audio/Tracks/wav/5. Emberlight .wav
-assets/audio/Tracks/wav/6. Silverbrook .wav
-assets/audio/Tracks/wav/7. Mystic Grove .wav
-assets/audio/Tracks/wav/8. Throne of Storms .wav
-assets/audio/Tracks/wav/9. Sorrow’s Edge  .wav
 assets/audio/UI Audio/License.txt
 assets/audio/Voiceover Pack Fighter/License.txt
 assets/audio/Voiceover Pack/License.txt
 assets/audio/ambient/manifest.toml
-assets/audio/water_ambient_mono/Mono DRAIN (light, metal, birds).wav
-assets/audio/water_ambient_mono/Mono FLUSH (toilet).wav
-assets/audio/water_ambient_mono/Mono OCEAN (heavy waves, wind).wav
-assets/audio/water_ambient_mono/Mono OCEAN (heavy waves, wind, outside boat).wav
-assets/audio/water_ambient_mono/Mono OCEAN (light waves, outside boat).wav
-assets/audio/water_ambient_mono/Mono OCEAN (light waves, wind) 2.wav
-assets/audio/water_ambient_mono/Mono OCEAN (light waves, wind) 3.wav
-assets/audio/water_ambient_mono/Mono OCEAN (medium waves, wind) 2.wav
-assets/audio/water_ambient_mono/Mono OCEAN (medium waves, wind).wav
-assets/audio/water_ambient_mono/Mono OCEAN (squall, creaks, boat, wind).wav
-assets/audio/water_ambient_mono/Mono OCEAN (squall, wind).wav
-assets/audio/water_ambient_mono/Mono RAIN (heavy, roof) 2.wav
-assets/audio/water_ambient_mono/Mono RAIN (heavy, roof).wav
-assets/audio/water_ambient_mono/Mono RAIN (light, blackbird).wav
-assets/audio/water_ambient_mono/Mono RAIN (light, drip).wav
-assets/audio/water_ambient_mono/Mono RAIN (light, slushy, hail, sparrow).wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, constant).wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, drip, roof) 2.wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, drip, roof).wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, sleet, wind).wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, thunder).wav
-assets/audio/water_ambient_mono/Mono RAIN (medium, wind, constant).wav
-assets/audio/water_ambient_mono/Mono RIVER (deep, stream).wav
-assets/audio/water_ambient_mono/Mono RIVER (large, river).wav
-assets/audio/water_ambient_mono/Mono RIVER (large, river, waterfall).wav
-assets/audio/water_ambient_mono/Mono RIVER (large, stream, insects).wav
-assets/audio/water_ambient_mono/Mono RIVER (large, waterfall).wav
-assets/audio/water_ambient_mono/Mono RIVER (light, stream, forest, birds).wav
-assets/audio/water_ambient_mono/Mono RIVER (medium, stream).wav
-assets/audio/water_ambient_mono/Mono RIVER (tunnel).wav
-assets/audio/water_ambient_mono/Mono STORM (hail, thunder).wav
-assets/audio/water_ambient_mono/Mono STORM (heavy, hail).wav
-assets/audio/water_ambient_mono/Mono STORM (heavy, hail, thunder).wav
-assets/audio/water_ambient_mono/Mono TAPS (porcerlain, sink).wav
-assets/audio/water_ambient_mono/Mono TIDE (light, beach, seagulls) 2.wav
-assets/audio/water_ambient_mono/Mono TIDE (light, beach, seagulls) 3.wav
-assets/audio/water_ambient_mono/Mono TIDE (light, stones, seagulls, basshorn).wav
-assets/audio/water_ambient_mono/Mono TIDE (medium, beach, insects).wav
-assets/audio/water_ambient_mono/Mono TIDE (medium, shore, beach).wav
-assets/audio/water_ambient_mono/Mono TIDE (shore, beach, seagulls).wav
-assets/audio/water_ambient_mono/Mono TIDE (shore, stone beach, heavy waves).wav
-assets/audio/water_ambient_mono/Mono WASHED UP (shore, beach, raft).wav
-assets/audio/water_ambient_stereo_1/Stereo DRAIN (light, metal, birds).wav
-assets/audio/water_ambient_stereo_1/Stereo FLUSH (toilet).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (heavy, roof) 2.wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (heavy, roof).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (light, blackbird).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (light, drip).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (light, slushy, hail, sparrow).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, constant).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, drip, roof) 2.wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, drip, roof).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, sleet, wind).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, thunder).wav
-assets/audio/water_ambient_stereo_1/Stereo RAIN (medium, wind, constant).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (deep, stream).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (large, river).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (large, river, waterfall).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (large, stream, insects).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (large, waterfall).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (light, stream, forest, birds).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (medium, stream).wav
-assets/audio/water_ambient_stereo_1/Stereo RIVER (tunnel).wav
-assets/audio/water_ambient_stereo_1/Stereo STORM (hail, thunder).wav
-assets/audio/water_ambient_stereo_1/Stereo STORM (heavy, hail).wav
-assets/audio/water_ambient_stereo_1/Stereo STORM (heavy, hail, thunder).wav
-assets/audio/water_ambient_stereo_1/Stereo TAPS (porcerlain, sink).wav
-assets/audio/water_ambient_stereo_1/Stereo WASHED UP (shore, beach, raft).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (heavy waves, wind).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (heavy waves, wind, outside boat).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (light waves, outside boat).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (light waves, wind) 2.wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (light waves, wind) 3.wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (medium waves, wind) 2.wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (medium waves, wind).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (squall, creaks, boat, wind).wav
-assets/audio/water_ambient_stereo_2/Stereo OCEAN (squall, wind).wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (light, beach, seagulls) 2.wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (light, beach, seagulls) 3.wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (light, stones, seagulls, basshorn).wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (medium, beach, insects).wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (medium, shore, beach).wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (shore, beach, seagulls).wav
-assets/audio/water_ambient_stereo_2/Stereo TIDE (shore, stone beach, heavy waves).wav
 assets/hdri/polyhaven/kloppenheim/README.md
 assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr
 assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr
@@ -22779,22 +22547,9 @@ assets/hdri/polyhaven/spruit_sunrise/README.md
 assets/hdri/polyhaven/spruit_sunrise/spruit_sunrise_2k.hdr
 assets/hdri/polyhaven/venice_sunset/README.md
 assets/hdri/polyhaven/venice_sunset/venice_sunset_2k.hdr
-assets/imported/Namaqualand/meshes/fine_leaf_01_a.glb
-assets/imported/Namaqualand/meshes/fine_leaf_01_b.glb
-assets/imported/Namaqualand/meshes/fine_leaf_01_c.glb
-assets/imported/Namaqualand/textures/fine_leaf_01_ao.png.png
-assets/imported/Namaqualand/textures/fine_leaf_01_diff.png.002.png
-assets/imported/Namaqualand/textures/fine_leaf_01_mask.png.001.png
-assets/imported/Namaqualand/textures/fine_leaf_01_norm_gl.png.002.png
-assets/imported/Namaqualand/textures/fine_leaf_01_rough.png.png
-assets/imported/Namaqualand/textures/fine_leaf_01_translucency.png.png
 assets/imported/verdant_trail/meshes/dead_tree_trunk.001.glb
 assets/imported/verdant_trail/meshes/dead_tree_trunk_02.glb
-assets/imported/verdant_trail/meshes/dirt_bank.glb
-assets/imported/verdant_trail/meshes/dirt_bank_01.glb
 assets/imported/verdant_trail/meshes/dry_branches_medium_01_a.002.glb
-assets/imported/verdant_trail/meshes/grass_debris_a.glb
-assets/imported/verdant_trail/meshes/grass_debris_b.glb
 assets/imported/verdant_trail/meshes/grass_medium_02_a.glb
 assets/imported/verdant_trail/meshes/grass_medium_02_b.glb
 assets/imported/verdant_trail/meshes/grass_medium_02_c.glb
@@ -22812,208 +22567,14 @@ assets/imported/verdant_trail/meshes/shrub_03_a.glb
 assets/imported/verdant_trail/meshes/shrub_03_b.glb
 assets/imported/verdant_trail/meshes/shrub_04_a.glb
 assets/imported/verdant_trail/meshes/shrub_04_b.glb
-assets/imported/verdant_trail/meshes/sticks_debris_a.glb
-assets/imported/verdant_trail/meshes/sticks_debris_b.glb
-assets/imported/verdant_trail/meshes/sticks_debris_c.glb
-assets/imported/verdant_trail/meshes/sticks_debris_d.glb
 assets/imported/verdant_trail/meshes/stone_01_LOD0.001.glb
 assets/imported/verdant_trail/meshes/tree_small_02_a.glb
 assets/models/3DTreeStump001_SQ-1K-JPG.mtl
 assets/models/3DTreeStump001_SQ-1K-JPG.usdc
-assets/models/Amber-Npc/Amber.Fbx
-assets/models/Amber-Npc/Amber.json
-assets/models/Amber-Npc/Amber_Motion.Fbx
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Eyelash/Std_Eyelash_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Eyelash/Std_Eyelash_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Eyelash/Std_Eyelash_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Eyelash/Std_Eyelash_metallic.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Eyelash/Std_Eyelash_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_MicroNMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_RGBAMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_SSSMap.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_TransMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Nails/Std_Nails_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_MicroNMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_RGBAMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_SSSMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_TransMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Arm/Std_Skin_Arm_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_MicroNMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_RGBAMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_SSSMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_TransMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Body/Std_Skin_Body_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_BCBMap.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_Blend Mask.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_CFULCMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_ENMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_MNAOMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_MicroNMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_NBMap.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_NMUILMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_SSSMap.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_SpecMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_TransMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Head/Std_Skin_Head_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_MicroNMask.jpg
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_RGBAMask.tga
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_ResourceMap_Position.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_ResourceMap_WSNormal.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_SSSMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_TransMap.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Body/Std_Skin_Leg/Std_Skin_Leg_roughness.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Tongue/Std_Tongue/Std_Tongue_MicroN.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Tongue/Std_Tongue/Std_Tongue_ao.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Tongue/Std_Tongue/Std_Tongue_metallic.png
-assets/models/Amber-Npc/textures/Amber/Amber/CC_Base_Tongue/Std_Tongue/Std_Tongue_roughness.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_Hair Flow Map.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_Hair ID Map.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_Hair Root Map.jpg
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_WeightMap.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_ao.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Bang/Bang/Hair_Transparency/Hair_Transparency_vertexcolormap.jpg
-assets/models/Amber-Npc/textures/Amber/Boots/Boots/Boots/Boots_Displacement.png
-assets/models/Amber-Npc/textures/Amber/Boots/Boots/Boots/Boots_Glow.png
-assets/models/Amber-Npc/textures/Amber/Boots/Boots/Boots/Boots_ao.png
-assets/models/Amber-Npc/textures/Amber/Boots/Boots/Boots/Boots_metallic.png
-assets/models/Amber-Npc/textures/Amber/Boots/Boots/Boots/Boots_roughness.png
-assets/models/Amber-Npc/textures/Amber/Bra/Bra/Bra/Bra_Displacement.png
-assets/models/Amber-Npc/textures/Amber/Bra/Bra/Bra/Bra_ao.png
-assets/models/Amber-Npc/textures/Amber/Bra/Bra/Bra/Bra_metallic.png
-assets/models/Amber-Npc/textures/Amber/Bra/Bra/Bra/Bra_roughness.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_Hair Flow Map.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_Hair ID Map.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_Hair Root Map.jpg
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_ao.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_blend_multiply.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Bun/Bun/Hair_Transparency/Hair_Transparency_vertexcolormap.jpg
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_L/Std_Cornea_L_Sclera.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_L/Std_Cornea_L_ao.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_L/Std_Cornea_L_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_L/Std_Cornea_L_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_BCBMap.jpg
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_IrisMask.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_IrisN.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_Sclera.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_ao.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Cornea_R/Std_Cornea_R_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Eye_L/Std_Eye_L_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Eye_L/Std_Eye_L_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Eye_R/Std_Eye_R_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Eye/CC_Base_Eye/Std_Eye_R/Std_Eye_R_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_EyeOcclusion/CC_Base_EyeOcclusion/Std_Eye_Occlusion_L/Std_Eye_Occlusion_L_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_EyeOcclusion/CC_Base_EyeOcclusion/Std_Eye_Occlusion_L/Std_Eye_Occlusion_L_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_EyeOcclusion/CC_Base_EyeOcclusion/Std_Eye_Occlusion_R/Std_Eye_Occlusion_R_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_EyeOcclusion/CC_Base_EyeOcclusion/Std_Eye_Occlusion_R/Std_Eye_Occlusion_R_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_TearLine/CC_Base_TearLine/Std_Tearline_L/Std_Tearline_L_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_TearLine/CC_Base_TearLine/Std_Tearline_L/Std_Tearline_L_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_TearLine/CC_Base_TearLine/Std_Tearline_R/Std_Tearline_R_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_TearLine/CC_Base_TearLine/Std_Tearline_R/Std_Tearline_R_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_GradAO.jpg
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_GumsMask.jpg
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_MicroN.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_ao.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Lower_Teeth/Std_Lower_Teeth_roughness.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Upper_Teeth/Std_Upper_Teeth_ao.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Upper_Teeth/Std_Upper_Teeth_metallic.png
-assets/models/Amber-Npc/textures/Amber/CC_Base_Teeth/CC_Base_Teeth/Std_Upper_Teeth/Std_Upper_Teeth_roughness.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Base_Transparency/Female_Brow_Base_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Base_Transparency/Female_Brow_Base_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Transparency/Female_Brow_Transparency_Hair ID Map.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Transparency/Female_Brow_Transparency_Hair Root Map.jpg
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Transparency/Female_Brow_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Transparency/Female_Brow_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Camila_Brow/Camila_Brow/Female_Brow_Transparency/Female_Brow_Transparency_vertexcolormap.jpg
-assets/models/Amber-Npc/textures/Amber/Crop_T_Shirt/Crop_T_Shirt/Female_T_Shirt/Female_T_Shirt_Glow.png
-assets/models/Amber-Npc/textures/Amber/Crop_T_Shirt/Crop_T_Shirt/Female_T_Shirt/Female_T_Shirt_WeightMap.png
-assets/models/Amber-Npc/textures/Amber/Crop_T_Shirt/Crop_T_Shirt/Female_T_Shirt/Female_T_Shirt_ao.png
-assets/models/Amber-Npc/textures/Amber/Crop_T_Shirt/Crop_T_Shirt/Female_T_Shirt/Female_T_Shirt_roughness.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_Hair Flow Map.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_Hair ID Map.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_Hair Root Map.jpg
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_ao.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_blend_multiply.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Hair_Transparency/Hair_Transparency_vertexcolormap.jpg
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Scalp_Transparency/Scalp_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Hair_Base/Hair_Base/Scalp_Transparency/Scalp_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Jeans/Jeans/Jeans/Jeans_WeightMap.png
-assets/models/Amber-Npc/textures/Amber/Jeans/Jeans/Jeans/Jeans_ao.png
-assets/models/Amber-Npc/textures/Amber/Jeans/Jeans/Jeans/Jeans_metallic.png
-assets/models/Amber-Npc/textures/Amber/Jeans/Jeans/Jeans/Jeans_roughness.png
-assets/models/Amber-Npc/textures/Amber/Punk_Leather_Jacket/Punk_Leather_Jacket/Punk_Leather_jacket/Punk_Leather_jacket_WeightMap.png
-assets/models/Amber-Npc/textures/Amber/Punk_Leather_Jacket/Punk_Leather_Jacket/Punk_Leather_jacket/Punk_Leather_jacket_ao.png
-assets/models/Amber-Npc/textures/Amber/Punk_Leather_Jacket/Punk_Leather_Jacket/Punk_Leather_jacket/Punk_Leather_jacket_metallic.png
-assets/models/Amber-Npc/textures/Amber/Punk_Leather_Jacket/Punk_Leather_Jacket/Punk_Leather_jacket/Punk_Leather_jacket_roughness.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_Hair Flow Map.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_Hair ID Map.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_Hair Root Map.jpg
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_WeightMap.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_ao.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_blend_multiply.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_metallic.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_roughness.png
-assets/models/Amber-Npc/textures/Amber/Real_Hair/Real_Hair/Hair_Transparency/Hair_Transparency_vertexcolormap.jpg
-assets/models/Amber-Npc/textures/Amber/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms_Displacement.png
-assets/models/Amber-Npc/textures/Amber/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms_Glow.png
-assets/models/Amber-Npc/textures/Amber/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms_ao.png
-assets/models/Amber-Npc/textures/Amber/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms_metallic.png
-assets/models/Amber-Npc/textures/Amber/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms/Underwear_Bottoms_roughness.png
 assets/models/README.md
-assets/models/arrow.fbx
 assets/models/barrels.glb
 assets/models/bed.glb
-assets/models/box.fbx
 assets/models/campfire_logs.glb
-assets/models/coin.fbx
-assets/models/cone.fbx
-assets/models/cone1.fbx
-assets/models/cone2.fbx
-assets/models/cone3.fbx
-assets/models/cone4.fbx
-assets/models/cube.fbx
-assets/models/cube4.fbx
-assets/models/cube5.fbx
-assets/models/cube6.fbx
-assets/models/cube7.fbx
-assets/models/cube8.fbx
-assets/models/cube9.fbx
-assets/models/cylinder.fbx
-assets/models/cylinder1.fbx
-assets/models/cylinder2.fbx
-assets/models/cylinder3.fbx
-assets/models/cylinder4.fbx
-assets/models/cylinder5.fbx
-assets/models/demo_plane.gltf
-assets/models/door.fbx
-assets/models/door1.fbx
-assets/models/door2.fbx
-assets/models/door3.fbx
-assets/models/fence edge.fbx
-assets/models/fence wood.fbx
-assets/models/fence.fbx
-assets/models/fence2.fbx
-assets/models/fence3.fbx
 assets/models/grass.glb
 assets/models/greybox/boss_courtyard_greybox.gltf
 assets/models/greybox/echo_grove_greybox.gltf
@@ -23021,189 +22582,16 @@ assets/models/greybox/fractured_cliffs_greybox.gltf
 assets/models/greybox/loom_crossroads_greybox.gltf
 assets/models/greybox/loomspire_sanctum_greybox.gltf
 assets/models/greybox/side_alcove_greybox.gltf
-assets/models/ground corner.fbx
-assets/models/ground.fbx
-assets/models/ground1.fbx
-assets/models/house1.glb
-assets/models/house2.glb
-assets/models/house3.glb
-assets/models/house4.glb
-assets/models/house5.glb
-assets/models/key.fbx
-assets/models/ladder.fbx
-assets/models/ladder1.fbx
-assets/models/pillar.fbx
-assets/models/pillar1.fbx
-assets/models/pillar2.fbx
-assets/models/pillar3.fbx
-assets/models/pillar4.fbx
-assets/models/railing edge.fbx
-assets/models/railing.fbx
-assets/models/ramp.fbx
-assets/models/ramp1.fbx
-assets/models/sphere.fbx
-assets/models/sphere1.fbx
-assets/models/sphere2.fbx
-assets/models/spike.fbx
-assets/models/spikes big.fbx
-assets/models/spikes small.fbx
-assets/models/stairs corner.fbx
-assets/models/stairs corner1.fbx
-assets/models/stairs.fbx
-assets/models/stairs1.fbx
-assets/models/stairs2.fbx
 assets/models/tent_detailedClosed.glb
 assets/models/tent_smallOpen.glb
-assets/models/toggle switch.fbx
-assets/models/torus.fbx
 assets/models/tree_default.glb
 assets/models/tree_pineDefaultA.glb
 assets/models/tree_pineRoundA.glb
 assets/models/tree_pineTallA.glb
-assets/models/wall corner bottom.fbx
-assets/models/wall corner bottom1.fbx
-assets/models/wall corner bottom2.fbx
-assets/models/wall corner top.fbx
-assets/models/wall corner top1.fbx
-assets/models/wall corner.fbx
-assets/models/wall corner1.fbx
-assets/models/wall corner4.fbx
-assets/models/wall door.fbx
-assets/models/wall door1.fbx
-assets/models/wall door2.fbx
-assets/models/wall window.fbx
-assets/models/wall window1.fbx
-assets/models/wall.fbx
-assets/models/wall1.fbx
-assets/models/window.fbx
-assets/models/window1.fbx
-assets/textures/LoL_diff.jpg
-assets/textures/LoL_nor_gl.jpg
 assets/textures/README.md
 assets/textures/atlas_config.toml
-assets/textures/bee.png
-assets/textures/billboard_foliage_billboards_albedo.psd
-assets/textures/billboard_foliage_billboards_alphamask.psd
-assets/textures/billboard_foliage_billboards_normal.psd
-assets/textures/cobblestone.png
-assets/textures/cobblestoneAlternative.png
 assets/textures/demo/materials.toml
 assets/textures/desert/materials.toml
-assets/textures/fine_leaf_01_ao.png
-assets/textures/fine_leaf_01_diff.png
-assets/textures/fine_leaf_01_mask.png
-assets/textures/fine_leaf_01_norm_gl.png
-assets/textures/fine_leaf_01_rough.png
-assets/textures/fine_leaf_01_translucency.png
 assets/textures/forest/materials.toml
 assets/textures/grass_bermuda_01_diff_1k.jpg
-assets/textures/grass_hd/grass
 assets/textures/grassland/materials.toml
-assets/textures/ground_mask_01.png
-assets/textures/ivy_alpha.png
-assets/textures/ivy_diff.png
-assets/textures/ivy_disp.png
-assets/textures/ivy_normal.png
-assets/textures/ivy_rough.png
-assets/textures/models/houses/house1_tex1.png
-assets/textures/models/houses/house1_tex2.png
-assets/textures/models/houses/house1_tex3.png
-assets/textures/models/houses/house2_tex1.png
-assets/textures/models/houses/house2_tex2.png
-assets/textures/models/houses/house2_tex3.png
-assets/textures/models/houses/house3_tex1.png
-assets/textures/models/houses/house3_tex2.png
-assets/textures/models/houses/house3_tex3.png
-assets/textures/models/houses/house4_tex1.png
-assets/textures/models/houses/house4_tex2.png
-assets/textures/models/houses/house4_tex3.png
-assets/textures/models/houses/house5_tex1.png
-assets/textures/models/houses/house5_tex2.png
-assets/textures/models/houses/house5_tex3.png
-assets/textures/pine_forest/dead_tree_diff.png
-assets/textures/pine_forest/dead_tree_disp.png
-assets/textures/pine_forest/dead_tree_nor_gl.png
-assets/textures/pine_forest/dead_tree_rough.png
-assets/textures/pine_forest/dead_tree_tiled_diff.png
-assets/textures/pine_forest/dead_tree_tiled_disp.png
-assets/textures/pine_forest/dead_tree_tiled_nor_gl.png
-assets/textures/pine_forest/dead_tree_tiled_rough.png
-assets/textures/pine_forest/fir_bark_diff.png
-assets/textures/pine_forest/fir_bark_disp.png
-assets/textures/pine_forest/fir_bark_nor_gl.png
-assets/textures/pine_forest/fir_bark_rough.png
-assets/textures/pine_forest/fir_trunk_01_diff.png
-assets/textures/pine_forest/fir_trunk_01_nor_gl.png
-assets/textures/pine_forest/fir_trunk_01_rough.png
-assets/textures/pine_forest/fir_trunk_03_diff.png
-assets/textures/pine_forest/fir_trunk_03_nor_gl.png
-assets/textures/pine_forest/fir_trunk_03_rough.png
-assets/textures/pine_forest/fir_twig_alpha.png
-assets/textures/pine_forest/fir_twig_diff.png
-assets/textures/pine_forest/fir_twig_mask01.png
-assets/textures/pine_forest/fir_twig_nor_gl.png
-assets/textures/pine_forest/fir_twig_rough.png
-assets/textures/pine_forest/montaigle_ruins_01_diff.jpg
-assets/textures/pine_forest/montaigle_ruins_01_nor_gl.jpg
-assets/textures/pine_forest/montaigle_ruins_01_rough.jpg
-assets/textures/pine_forest/montaigle_ruins_02_diff.jpg
-assets/textures/pine_forest/montaigle_ruins_02_nor_gl.jpg
-assets/textures/pine_forest/montaigle_ruins_02_rough.jpg
-assets/textures/pine_forest/montaigle_ruins_03_diff.jpg
-assets/textures/pine_forest/montaigle_ruins_03_nor_gl.jpg
-assets/textures/pine_forest/montaigle_ruins_03_rough.jpg
-assets/textures/pine_forest/pine_cover_01_diffuse.png
-assets/textures/pine_forest/pine_cover_01_diffuse_normal.png
-assets/textures/pine_forest/pine_cover_01_mask.png
-assets/textures/pine_forest/pine_cover_01_rough.png
-assets/textures/pine_forest/pine_trunk_01_diff.png
-assets/textures/pine_forest/pine_trunk_01_nor_gl.png
-assets/textures/pine_forest/pine_trunk_01_rough.png
-assets/textures/pine_forest/pine_trunk_02_diff.png
-assets/textures/pine_forest/pine_trunk_02_nor_gl.png
-assets/textures/pine_forest/pine_trunk_02_rough.png
-assets/textures/pine_forest/pine_trunk_03_diff.png
-assets/textures/pine_forest/pine_trunk_03_nor_gl.png
-assets/textures/pine_forest/pine_trunk_03_rough.png
-assets/textures/pine_forest/pine_twig_alpha.png
-assets/textures/pine_forest/pine_twig_diff.png
-assets/textures/pine_forest/pine_twig_mask.png
-assets/textures/pine_forest/pine_twig_nor_gl.png
-assets/textures/pine_forest/pine_twig_rough.png
-assets/textures/pine_forest/tree_roots_01_diff.png
-assets/textures/pine_forest/tree_roots_01_nor_gl.png
-assets/textures/pine_forest/tree_roots_01_rough.png
-assets/textures/pine_forest/tree_roots_02_diff.png
-assets/textures/pine_forest/tree_roots_02_nor_gl.png
-assets/textures/pine_forest/tree_roots_02_rough.png
-assets/textures/pine_forest/tree_trunk_diff.png
-assets/textures/pine_forest/tree_trunk_disp.png
-assets/textures/pine_forest/tree_trunk_nor_gl.png
-assets/textures/pine_forest/tree_trunk_rough.png
-assets/textures/planks.png
-assets/textures/roof.png
-assets/textures/square_alpha.png
-assets/textures/tiny_purple_succulant_diff.png
-assets/textures/tiny_purple_succulant_mask.png
-assets/textures/tiny_purple_succulant_nor_flat.png
-assets/textures/tiny_purple_succulant_rough.png
-assets/textures/transmission.png
-assets/textures/tree.png
-assets_src/materials/cloth.png
-assets_src/materials/cloth_mra.png
-assets_src/materials/cloth_n.png
-assets_src/materials/plaster.png
-assets_src/materials/plaster_mra.png
-assets_src/materials/plaster_n.png
-assets_src/materials/rock_lichen.png
-assets_src/materials/rock_lichen_mra.png
-assets_src/materials/rock_lichen_n.png
-assets_src/materials/roof_tile.png
-assets_src/materials/roof_tile_mra.png
-assets_src/materials/roof_tile_n.png
-assets_src/materials/tree_bark.png
-assets_src/materials/tree_bark_mra.png
-assets_src/materials/tree_bark_n.png
-assets_src/materials/tree_leaves.png
-assets_src/materials/tree_leaves_mra.png
-assets_src/materials/tree_leaves_n.png

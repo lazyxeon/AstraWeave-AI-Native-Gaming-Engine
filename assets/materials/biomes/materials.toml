@@ -73,11 +73,16 @@ normal = "../mud_n.png"
 mra    = "../mud_mra.png"
 tiling = [128.0, 128.0]
 
+# Beach = PolyHaven coast_sand_01 (T.1, 2026-07-21 — T-series ratification §2
+# row-6 amendment: slot 6 previously shared the desert sand trio byte-identically).
+# Cooked via cook_1k.py cook_family_from_maps (mra packed from rough+ao →
+# true-MRA, measured R=0.0). Provenance: THIRD_PARTY_LICENSES.md §14; evidence:
+# docs/audits/evidence/t1_beach_2026-07-21/.
 [[layer]]
 key = "beach"
-albedo = "../sand.png"
-normal = "../sand_n.png"
-mra    = "../sand_mra.png"
+albedo = "../derived_1k/beach.png"
+normal = "../derived_1k/beach_n.png"
+mra    = "../derived_1k/beach_mra.png"
 tiling = [128.0, 128.0]
 
 [[layer]]

@@ -101,8 +101,12 @@ mod tests {
         v.iter().map(|s| s.map(str::to_string)).collect()
     }
 
-    /// The live 8-layer biomes pack post-AD.5.A-Fix-1 (albedo stems from
+    /// The live 8-layer biomes pack post-T.1 (albedo stems from
     /// assets/materials/biomes/materials.toml, in arrays.toml slot order).
+    /// T.1 (2026-07-21): slot 6 is `beach` (coast_sand_01 cook) — no longer
+    /// the desert `sand` duplicate. `beach` has no MaterialLibrary name, so
+    /// slot 6 is biome-paint-only (unmatched by the palette) BY DESIGN; the
+    /// duplicate-stem rule stays covered by the synthetic fixture below.
     fn biomes_pack_stems() -> Vec<Option<String>> {
         stems(&[
             Some("grass"),         // 0 grassland
@@ -111,7 +115,7 @@ mod tests {
             Some("mountain_rock"), // 3 mountain
             Some("snow"),          // 4 tundra
             Some("mud"),           // 5 swamp
-            Some("sand"),          // 6 beach (same file as desert)
+            Some("beach"),         // 6 beach (derived_1k, T.1)
             Some("gravel"),        // 7 river (derived_1k)
         ])
     }
@@ -123,7 +127,7 @@ mod tests {
         // grass=0, sand=1, mountain_rock=3, snow=4, mud=5, gravel=12, tree_leaves=20
         assert_eq!(paintable, vec![0, 1, 3, 4, 5, 12, 20]);
         assert_eq!(remap.layer_for(0), Some(0)); // Grass → grassland
-        assert_eq!(remap.layer_for(1), Some(1)); // Sand → desert (lowest of 1,6)
+        assert_eq!(remap.layer_for(1), Some(1)); // Sand → desert (unique match post-T.1)
         assert_eq!(remap.layer_for(3), Some(3)); // Mountain Rock → mountain
         assert_eq!(remap.layer_for(4), Some(4)); // Snow → tundra
         assert_eq!(remap.layer_for(5), Some(5)); // Mud → swamp

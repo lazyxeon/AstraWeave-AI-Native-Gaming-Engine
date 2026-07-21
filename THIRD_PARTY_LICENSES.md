@@ -337,3 +337,13 @@ AD.4 adds **36 new LFS paths** (`derived_1k/` 18 C6 + 18 C7); nothing is deleted
 | **total** | **91,293** | **91,329** | **+36** |
 
 Successor denominator **91,329 = 91,293 + 36** (foots). The `materials-src` pack (48 files / 615,202,592 B = `assets_src` 66 − 18 C7) is cut as AD.4's closing step — **now cut and live** on the `assets-v1` release: zip **570,810,569 B**, sha256 `652458f3044ca16f71291e9639713ac4a8295d13e724fb3f3112434c5be3108d`, `https://github.com/lazyxeon/AstraWeave/releases/download/assets-v1/materials-src.zip`; deterministic build (byte-identical rebuild) + local 3-run loop + live-URL loop all verified 2026-07-07 (full evidence, per-slot table, and open items: `docs/audits/AD4_RECOOK_OUTCOME.md`).
+
+## 14. T.1 — distinct beach material acquisition (2026-07-21)
+
+Executes the T-series ratification §2 **row-6 amendment** (director, 2026-07-20 — `docs/audits/T_SERIES_RATIFICATION_2026-07-20.md`): slot 6 (beach) of `assets/materials/biomes/` no longer shares the desert `sand.png` trio; it gets its own traced material. Evidence: `docs/audits/evidence/t1_beach_2026-07-21/` (raw `/info` + `/files` API captures). Site license: <https://polyhaven.com/license> (CC0).
+
+| slot family | Poly Haven slug | name / author (API) | type | acquired dims |
+|---|---|---|---|---|
+| `beach` | `coast_sand_01` | Coast Sand 01 / Rob Tuytel | 1 (texture) | 2048² |
+
+API-verified live 2026-07-21 (`api.polyhaven.com/info/coast_sand_01`: `type:1`, `authors {"Rob Tuytel":"All"}`, `max_resolution [8192,8192]`; description "damp coastal sand with brown, rough grain, scattered pebbles and gravel"). Prior related trace: §11.1's `coast_sand_01_1k.glb` (the Blender-baked wrapper in `assets/models/`) — that row traced the *model wrapper*; this row is the fresh provenance for the *texture-set acquisition* (a prior trace authorizes nothing by itself). Acquired via `tools/astraweave-assets fetch` (plain-HTTP Files API, no LFS traffic) → `assets/_downloaded/polyhaven/beach/beach_{albedo,normal,roughness,ao,arm}.png` (gitignored; manifest-pinned in `assets/asset_manifest.toml` T.1 block). Cooked to `assets/materials/derived_1k/beach{,_n,_mra}.png` — outcome doc: `docs/audits/T1_BEACH_OUTCOME.md`.
