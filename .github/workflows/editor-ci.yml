@@ -45,7 +45,7 @@ jobs:
             libwayland-dev
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
         with:
           components: clippy, rustfmt
 

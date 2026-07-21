@@ -4,6 +4,38 @@
 
 set -euo pipefail
 
+# Optional deterministic sharding. Package discovery remains authoritative; the
+# selected shard is the subset whose zero-based package index matches modulo N.
+SHARD_INDEX=0
+SHARD_COUNT=1
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --shard-index)
+            SHARD_INDEX="${2:-}"
+            shift 2
+            ;;
+        --shard-count)
+            SHARD_COUNT="${2:-}"
+            shift 2
+            ;;
+        *)
+            echo "[ERROR] Unknown argument: $1" >&2
+            exit 2
+            ;;
+    esac
+done
+
+if ! [[ "$SHARD_INDEX" =~ ^[0-9]+$ && "$SHARD_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+    echo "[ERROR] Shard index must be non-negative and shard count must be positive" >&2
+    exit 2
+fi
+
+if [ "$SHARD_INDEX" -ge "$SHARD_COUNT" ]; then
+    echo "[ERROR] Shard index $SHARD_INDEX is outside shard count $SHARD_COUNT" >&2
+    exit 2
+fi
+
 # Configuration
 # Week 3 Action 11: Updated to include all Week 2-3 benchmark packages
 # Week 3 Action 12: Added astraweave-physics (raycast, character controller, rigid body benchmarks)
@@ -56,7 +88,7 @@ discover_benchmark_packages() {
     # Auto-discover additional packages with benchmarks
     for pkg_dir in */; do
         pkg_name=$(basename "$pkg_dir")
-        if [ -d "$pkg_dir/benches" ] && [[ ! " ${BENCHMARK_PACKAGES_STATIC[*]} " =~ " ${pkg_name} " ]]; then
+        if [ -d "$pkg_dir/benches" ] && [[ " ${BENCHMARK_PACKAGES_STATIC[*]} " != *" ${pkg_name} "* ]]; then
             # Check if this is a Rust package with benchmarks
             if [ -f "$pkg_dir/Cargo.toml" ] && grep -q "\[\[bench\]\]" "$pkg_dir/Cargo.toml"; then
                 discovered_packages+=("$pkg_name")
@@ -67,13 +99,24 @@ discover_benchmark_packages() {
     
     # Set the global array
     BENCHMARK_PACKAGES=("${discovered_packages[@]}")
+
+    if [ "$SHARD_COUNT" -gt 1 ]; then
+        local selected_packages=()
+        local package_index
+        for package_index in "${!BENCHMARK_PACKAGES[@]}"; do
+            if [ $((package_index % SHARD_COUNT)) -eq "$SHARD_INDEX" ]; then
+                selected_packages+=("${BENCHMARK_PACKAGES[$package_index]}")
+            fi
+        done
+        BENCHMARK_PACKAGES=("${selected_packages[@]}")
+    fi
     
     if [ ${#BENCHMARK_PACKAGES[@]} -eq 0 ]; then
         log_info "No benchmark packages found"
         return 1
     fi
     
-    log_info "Found ${#BENCHMARK_PACKAGES[@]} benchmark packages: ${BENCHMARK_PACKAGES[*]}"
+    log_info "Selected shard $SHARD_INDEX/$SHARD_COUNT with ${#BENCHMARK_PACKAGES[@]} benchmark packages: ${BENCHMARK_PACKAGES[*]}"
     return 0
 }
 
@@ -187,15 +230,19 @@ for pkg in "${BENCHMARK_PACKAGES[@]}"; do
             process_benchmarks "$pkg"
             
             if [ "$VERBOSE" = "true" ]; then
-                echo "--- $pkg stdout ---" >> "$SUMMARY_FILE"
-                tail -n 20 "${RESULTS_DIR}/${pkg}_stdout.log" >> "$SUMMARY_FILE"
-                echo "--- end stdout ---" >> "$SUMMARY_FILE"
+                {
+                    echo "--- $pkg stdout ---"
+                    tail -n 20 "${RESULTS_DIR}/${pkg}_stdout.log"
+                    echo "--- end stdout ---"
+                } >> "$SUMMARY_FILE"
             fi
         else
             log_error "Benchmark execution failed for $pkg"
-            echo "--- $pkg stderr ---" >> "$SUMMARY_FILE"
-            cat "${RESULTS_DIR}/${pkg}_stderr.log" >> "$SUMMARY_FILE"
-            echo "--- end stderr ---" >> "$SUMMARY_FILE"
+            {
+                echo "--- $pkg stderr ---"
+                cat "${RESULTS_DIR}/${pkg}_stderr.log"
+                echo "--- end stderr ---"
+            } >> "$SUMMARY_FILE"
         fi
         echo "" >> "$SUMMARY_FILE"
     else

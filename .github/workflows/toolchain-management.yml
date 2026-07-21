@@ -127,11 +127,11 @@ jobs:
       - name: Check workspace compatibility
         run: |
           # Test basic compilation with this toolchain
-          cargo check-all
+          cargo check --locked --workspace ${{ env.EXCLUDED_PACKAGES }}
 
       - name: Run minimal test suite
         run: |
-          cargo test-all --lib
+          cargo test --locked --workspace --lib ${{ env.EXCLUDED_PACKAGES }}
 
       - name: Check code formatting compatibility
         if: matrix.toolchain != 'nightly'  # Nightly may have different formatting rules
@@ -139,7 +139,7 @@ jobs:
 
       - name: Run clippy with toolchain
         run: |
-          cargo clippy-all
+          cargo clippy --locked --workspace ${{ env.EXCLUDED_PACKAGES }} -- -D warnings
 
       - name: Test nightly features (if nightly)
         if: matrix.toolchain == 'nightly'
@@ -190,7 +190,7 @@ jobs:
 
       - name: Check MSRV compatibility
         run: |
-          cargo check-all
+          cargo check --locked --workspace ${{ env.EXCLUDED_PACKAGES }}
 
   performance-benchmarking:
     name: Toolchain Performance Comparison

@@ -48,7 +48,7 @@ jobs:
             libasound2-dev libpulse-dev libudev-dev
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
         with:
           components: clippy
       
@@ -78,7 +78,7 @@ jobs:
       
       - name: "Clippy: Deny unwrap_used in lib code"
         run: |
-          cargo clippy -p ${{ matrix.crate }} --lib -- \
+          cargo clippy -p ${{ matrix.crate }} --lib --no-deps -- \
             -D clippy::unwrap_used \
             -D clippy::expect_used \
             -D clippy::panic \
@@ -111,6 +111,7 @@ jobs:
           - astraweave-behavior
           - astraweave-rag
           - astraweave-persona
+          - astraweave-terrain
     
     steps:
       - name: Checkout
@@ -128,13 +129,13 @@ jobs:
             libasound2-dev libpulse-dev libudev-dev
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
         with:
           components: clippy
       
       - name: "Clippy: Warn on unwrap_used"
         run: |
-          cargo clippy -p ${{ matrix.crate }} --lib -- \
+          cargo clippy -p ${{ matrix.crate }} --lib --no-deps -- \
             -W clippy::unwrap_used \
             -W clippy::expect_used \
             -W clippy::panic \

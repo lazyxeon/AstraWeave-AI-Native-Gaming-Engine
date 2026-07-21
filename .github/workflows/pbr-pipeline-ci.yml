@@ -43,7 +43,7 @@ jobs:
       uses: actions/checkout@v5
     
     - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@1.89.0
       with:
         target: ${{ matrix.target }}
         components: rustfmt, clippy
@@ -115,7 +115,7 @@ jobs:
       uses: actions/checkout@v5
     
     - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@1.89.0
     
     - name: Cache Cargo dependencies
       uses: actions/cache@v4

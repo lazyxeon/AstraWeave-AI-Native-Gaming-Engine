@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0  # Need full history for gh-pages
       
       - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
         with:
           components: clippy
       

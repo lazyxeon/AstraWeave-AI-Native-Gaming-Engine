@@ -32,7 +32,7 @@ jobs:
       
       - name: Install Rust Toolchain
         if: steps.cache-assets.outputs.cache-hit != 'true'
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
       
       - name: Cache Cargo Dependencies
         if: steps.cache-assets.outputs.cache-hit != 'true'
@@ -149,7 +149,7 @@ jobs:
           path: assets/_downloaded
       
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
       
       - name: Build Examples
         run: |

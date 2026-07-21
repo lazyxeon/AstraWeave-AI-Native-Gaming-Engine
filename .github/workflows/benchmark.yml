@@ -25,9 +25,13 @@ env:
 
 jobs:
   benchmark:
-    name: Performance Benchmarks
+    name: Performance Benchmarks (shard ${{ matrix.shard_index }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     
     steps:
       - name: Checkout repository
@@ -36,7 +40,7 @@ jobs:
           fetch-depth: 0
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.89.0
         with:
           components: rustfmt, clippy
       
@@ -57,11 +61,11 @@ jobs:
       - name: Set up advanced Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: benchmark-v7-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: benchmark-v8-shard-${{ matrix.shard_index }}-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
           cache-all-crates: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-targets: true
-          shared-key: "bench"
+          shared-key: "bench-shard-${{ matrix.shard_index }}"
           cache-directories: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
@@ -72,24 +76,62 @@ jobs:
       - name: Run benchmarks
         run: |
           # Set environment variables for the script
-          export BENCHMARK_RESULTS_DIR="benchmark_results"
+          export BENCHMARK_RESULTS_DIR="benchmark_results/shard-${{ matrix.shard_index }}"
           export VERBOSE="true"
           
-          # Run the benchmark script
-          ./.github/scripts/benchmark-runner.sh
+          # Run this deterministic shard of the full discovered package list
+          ./.github/scripts/benchmark-runner.sh \
+            --shard-index "${{ matrix.shard_index }}" \
+            --shard-count 12
       
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results-${{ github.sha }}
-          path: benchmark_results/
+          name: benchmark-results-${{ github.sha }}-shard-${{ matrix.shard_index }}
+          path: benchmark_results/shard-${{ matrix.shard_index }}/
           retention-days: 30
         if: always()
       
       - name: Display sccache statistics
         run: sccache --show-stats
         if: always()
-      
+
+  aggregate:
+    name: Aggregate Benchmark Results
+    runs-on: ubuntu-latest
+    needs: benchmark
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download benchmark shards
+        uses: actions/download-artifact@v5
+        with:
+          pattern: benchmark-results-${{ github.sha }}-shard-*
+          path: benchmark-shards
+
+      - name: Merge benchmark shard results
+        run: |
+          mkdir -p benchmark_results
+          mapfile -d '' result_files < <(find benchmark-shards -name benchmarks.json -print0)
+          if [ "${#result_files[@]}" -ne 12 ]; then
+            echo "Expected 12 shard result files; found ${#result_files[@]}" >&2
+            exit 1
+          fi
+          jq -s 'add' "${result_files[@]}" > benchmark_results/benchmarks.json
+          jq empty benchmark_results/benchmarks.json
+
+      - name: Upload combined benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmark_results/benchmarks.json
+          retention-days: 30
+
       - name: Store benchmark results for tracking
         uses: benchmark-action/github-action-benchmark@v1.20.7
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
