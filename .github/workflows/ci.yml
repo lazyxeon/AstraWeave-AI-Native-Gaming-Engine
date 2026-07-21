@@ -488,7 +488,7 @@ jobs:
           cache-all-crates: true
 
       - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin --locked
+        run: cargo install cargo-tarpaulin --version 0.35.3 --locked
 
       - name: Generate coverage report
         run: |
