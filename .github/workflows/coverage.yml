@@ -43,7 +43,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
       
       - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin --version 0.35.3 --locked
+        run: cargo install cargo-tarpaulin --version 0.35.2 --locked
       
       - name: Generate coverage
         run: |
