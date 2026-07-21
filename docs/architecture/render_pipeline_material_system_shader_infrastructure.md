@@ -8,8 +8,8 @@ domain: rendering
 lifecycle_status: active
 integration_status: wired
 owns: [astraweave-materials, astraweave-render]
-doc_version: "1.9"
-last_verified_commit: 7c29b8182
+doc_version: "1.10"
+last_verified_commit: 8232b150b
 ---
 
 # Architecture Trace: Render Pipeline + Material System + Shader Infrastructure
@@ -20,12 +20,14 @@ last_verified_commit: 7c29b8182
 |---|---|
 | **System name** | Render Pipeline + Material System + Shader Infrastructure |
 | **Primary crates** | `astraweave-render` (123 Rust files / ~78K LoC + 71 WGSL files), `astraweave-materials` (single-file material-graph crate), `tools/aw_editor/src/viewport/` (editor-side renderer + engine adapter) |
-| **Document version** | 1.9 |
-| **Last verified against commit** | `7c29b8182` (v1.8 verification pass: §2.6 Water surface render path re-verified end-to-end against `water.rs` / `water.wgsl` / `renderer.rs` — every file:line citation confirmed, zero corrections, no markers needed; v1.7 added the subsection + cross-link to `docs/architecture/water.md`); prior: `67c9de7e1` (full trace); water rows W.2a + W.2b.2 + W.2c.2 weave-deformation + W.2c.3 weave producer (2026-06-22) + F.4.2 weave-impact accent machinery + F.4.3 live HDR-overlay composite & combined-frame measurement (2026-06-24) |
-| **Last verified date** | 2026-06-25 (§2.6 water render-path verification pass); 2026-06-24 (water render-path subsection authored); 2026-05-10 (full trace) |
+| **Document version** | 1.10 |
+| **Last verified against commit** | `8232b150b` (v1.10, 2026-07-21: E3 terrain render-path additions verified first-hand — see revision notice); prior `7c29b8182` (v1.8 verification pass: §2.6 Water surface render path re-verified end-to-end against `water.rs` / `water.wgsl` / `renderer.rs` — every file:line citation confirmed, zero corrections, no markers needed; v1.7 added the subsection + cross-link to `docs/architecture/water.md`); prior: `67c9de7e1` (full trace); water rows W.2a + W.2b.2 + W.2c.2 weave-deformation + W.2c.3 weave producer (2026-06-22) + F.4.2 weave-impact accent machinery + F.4.3 live HDR-overlay composite & combined-frame measurement (2026-06-24) |
+| **Last verified date** | 2026-07-21 (E3 terrain render-path, T.0 trace-sync); 2026-06-25 (§2.6 water render-path verification pass); 2026-06-24 (water render-path subsection authored); 2026-05-10 (full trace) |
 | **Status** | **ACTIVE WORKZONE** — Editor Multi-Tool Architecture Campaign Sub-phase 3 (Mediator Brush) is in flight as of campaign-doc commit `e3d07f366` (2026-05-08, Round-8-Closure). Fix 27 Unified Pipeline Campaign is structurally complete (per CLAUDE.md) but deeper editor↔runtime unification continues. Treat this trace as a **navigational map**; per-subsystem detailed traces are follow-up work. |
 | **Owner notes** | This trace covers an unusually large system (~78K LoC source + 71 WGSL files + editor viewport). Per the template's "One last thing" rule on scale, this doc is intentionally structured as a **subsystem map + load-bearing-aggregator detail**, not an exhaustive per-file trace. Sub-systems like Lumen GI, MegaLights, Nanite, Atmosphere, GPU Particles, Volumetric Fog, IBL, and TAA each warrant their own dedicated trace if and when they enter focused work. The doc covers terrain materials by reference to `docs/architecture/terrain_materials.md`. |
 
+> **Revision notice — 2026-07-21 (v1.10, commit `8232b150b`, T.0 trace-sync).** Records the render-side of the E3 terrain build (`d506658d8`, 2026-07-03 — no trace was updated in that commit; reconstruction at `docs/audits/E3_PREFLIGHT_2026-07.md`). Three changes to the 32-layer terrain forward path, all verified first-hand at HEAD: **(a) stochastic hex-tile sampling wired** — the formerly zero-consumer `shaders/stochastic_tiling.wgsl` is now composed into `TERRAIN_FORWARD_SHADER` (`terrain_material_manager.rs:171-176`, used at `:1025`); `pbr_terrain_forward.wgsl` takes 3 taps per layer via `hex_cells()` (`stochastic_tiling.wgsl:183`) with per-cell random **rotation** (the load-bearing decorrelator — translation-only preserves periodicity) + translation, pow-4-sharpened weights (`pbr_terrain_forward.wgsl:264-266`), gradients rotated for correct mip/aniso selection, and tangent-space normals decoded per tap and counter-rotated by the cell conjugate. **(b) Layer arrays gained full mip chains** — albedo + 3 aux arrays build real mip counts with a CPU box-filter chain at upload (`terrain_material_manager.rs:1350,1364,1378,1392`; the pre-fix `mip_level_count: 1` grain/shimmer is recorded at `:1337`); the layer sampler is `anisotropy_clamp: 8` (`:1421`); per-chunk splat textures stay deliberately unmipped/`anisotropy_clamp: 1` (`:824-825`, `:1168-1169`, `:1440` — untiled, ClampToEdge). **(c) `NORMAL_XY_STRENGTH = 1.8`** (`pbr_terrain_forward.wgsl:331`, applied `:332-333`) — an interim constant compensating relief flattening from 512² aux resolution + box mips; its retirement-or-keep decision is beat T.2 of the terrain campaign (data-first, no pre-committed aux-resolution increase — director ratification 2026-07-20). Editor-side consumption (per-vertex biome-driven `material_ids`/`material_weights`) is traced in `aw_editor.md`; the pack/loader slice in `terrain_materials.md`.
+>
 > **Revision notice — 2026-06-24 (v1.7, commit `7c29b8182`).** Added **§2.6 Water surface render path (W-series)** — the W-series water rendering flow (chunked-LOD Gerstner surface → split post-opaque refraction pass → weave-response deformation → live HDR-overlay accent composite) is now traced as a proper subsection rather than only the dense §5 file-map row and §8 invariants 14–18. **The water *system* now has a dedicated end-to-end trace at [`docs/architecture/water.md`](./water.md)** (truth facade + physics buoyancy + gameplay producers + accents); this render trace covers ONLY the render-side path (`astraweave-render/src/{water.rs, shaders/water.wgsl, renderer.rs}`). Cross-link added; no prior content rewritten. The §5 water row, the §4 corrected `astraweave-fluids` row, and §8 invariants 14–18 are unchanged and remain authoritative.
 >
 > **Verification stamp — 2026-06-25 (v1.8, commit `7c29b8182`).** §2.6 was re-verified end-to-end against the code with zero corrections. Confirmed: (a) the post-opaque split pass + scene-color refraction tap + depth-foam (`renderer.rs:4679-4768` `run_water_pass`: opaque-color copy `:4708-4726`, read-only-depth attachment `depth_ops: None` `:4752-4756`; 4-entry `{uniform, scene_color, scene_depth, sampler}` BGL `water.rs:330-373`; shader refraction tap `water.wgsl:319-326`, Beer-Lambert thickness `:328-342`, Profile-C depth-delta foam `:358-363`, opaque output `:378-381`); (b) `WaterUniforms` is `#[repr(C)]` (`water.rs:151-152`) and exactly 512 B, asserted by `test_uniforms_size` (`water.rs:874-886`, with offset asserts `inv_view_proj@160`, `weave_count@240`, `weave_instances@256`, `WeaveInstanceRaw==32 B`); (c) the `hdr_overlay` closure field is the pure-`wgpu` `FnMut(&mut CommandEncoder, &TextureView, &TextureView, &Device, &Queue)` at `renderer.rs:743-745`, fired by `fire_hdr_overlay` (`:4778-4788`) on all three `run_water_pass` exit paths (`:4689` no-water, `:4697` no-visible-chunks, `:4767` post-draw), and `run_water_pass` is itself called by both `render()` (`:5279`) and `draw_into()` (`:5932`); (d) there is NO render↔fluids crate edge — `astraweave-render/Cargo.toml` declares no `astraweave-fluids`/`-water`/`-gameplay`/`-weaving` dependency and `astraweave-fluids/Cargo.toml` declares no `astraweave-render` dependency; the accent closure body is registered by the `weaving_playground` binary (`examples/weaving_playground/src/main.rs:561-565`), which depends on both crates and calls `FluidRenderer::render_accents`. Wired-caller line citations also confirmed (`hello_companion/src/visual_demo.rs:720-725`, `veilweaver_demo/src/visual_renderer.rs:625-636`, `weaving_playground/src/main.rs:148-153`, `aw_editor/src/viewport/engine_adapter.rs:3739-3802`).
@@ -160,10 +162,12 @@ The render system has multiple entry points and parallel sub-pipelines. The thre
            astraweave-render/src/material.rs:949 (MaterialManager)
     output: MaterialGpu storage buffer, texture arrays bound at group 3
 
-[B] Canonical 32-layer terrain material library (Real-Fix.D 2026-05-08)
+[B] Canonical 32-layer terrain material library (Real-Fix.D 2026-05-08; E3 texturing 2026-07-03)
     files: astraweave-render/src/material_library.rs (MAX_TERRAIN_LAYERS = 32, NUM_SPLAT_MAPS = 8),
            astraweave-render/src/terrain_material.rs (TerrainLayerGpu, TerrainMaterialGpu),
-           astraweave-render/src/terrain_material_manager.rs (forward path: draw_chunk_forward)
+           astraweave-render/src/terrain_material_manager.rs (forward path: draw_chunk_forward;
+             TERRAIN_FORWARD_SHADER concat incl. stochastic_tiling.wgsl at :171-176;
+             mipped layer arrays + aniso-8 layer sampler — see v1.10 revision notice)
     output: Per-chunk splat textures + shared layer arrays. See docs/architecture/terrain_materials.md
 
 [C] Bindless material system (alternative modern path)
@@ -468,7 +472,7 @@ This map enumerates the load-bearing files. Per-file traces of every subsystem a
 | `astraweave-render/src/vegetation_interaction.rs` | Entity-proximity grass-bending stamp | Active | |
 | `astraweave-render/src/vegetation_lod.rs` | Tree LOD chain with billboard/impostor support | Active | |
 | `astraweave-render/src/grass_blade.rs` | Per-blade procedural grass geometry | Active | |
-| `astraweave-render/src/stochastic_tiling.rs` | Hex-tile stochastic sampling (anti-tiling for terrain textures) | Active | |
+| `astraweave-render/src/stochastic_tiling.rs` | Hex-tile stochastic sampling (anti-tiling for terrain textures); exports `STOCHASTIC_TILING_WGSL` (`:30`) | Active — **consumed since E3** | `shaders/stochastic_tiling.wgsl` is concat'd into `TERRAIN_FORWARD_SHADER` (`terrain_material_manager.rs:171-176`) and its `hex_cells()`/`rotate_dir()` drive the per-layer 3-tap rotated sampling in `pbr_terrain_forward.wgsl` (pre-E3 this module was zero-consumer scaffolding) |
 
 ### Animation
 

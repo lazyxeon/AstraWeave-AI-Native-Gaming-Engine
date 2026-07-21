@@ -7,10 +7,10 @@ primary_crate: astraweave-terrain
 domain: physics-world
 lifecycle_status: active
 integration_status: wired
-summary: "Voxel meshing/biome/noise/scatter/streaming (complements terrain_materials.md). terrain.md"
+summary: "Terrain material slice: 8-slot canonical biome pack + loader, splat bake, 32-layer GPU blend (complements terrain.md). terrain_materials.md"
 owns: []
-doc_version: "1.1"
-last_verified_commit: 67c9de7e1
+doc_version: "1.2"
+last_verified_commit: 8232b150b
 ---
 
 # Architecture Trace: Terrain Material System
@@ -21,9 +21,9 @@ last_verified_commit: 67c9de7e1
 |---|---|
 | **System name** | Terrain Material System |
 | **Primary crates** | `astraweave-render`, `astraweave-terrain`, `tools/aw_editor` |
-| **Document version** | 1.1 |
-| **Last verified against commit** | `67c9de7e1` |
-| **Last verified date** | 2026-05-10 |
+| **Document version** | 1.2 |
+| **Last verified against commit** | `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); prior `67c9de7e1` |
+| **Last verified date** | 2026-07-21 (v1.2); 2026-05-10 (full trace) |
 | **Status** | Active (canonical 32-layer pipeline) with transitional legacy residue |
 | **Owner notes** | Canonical reference example for the architecture trace campaign. Derived from forensic data-flow analysis on 2026-05-11. |
 
@@ -48,6 +48,27 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 ---
 
 ## 2. Authoritative Pipeline
+
+### 2.0 The canonical-pack era (E3 build `d506658d8`, 2026-07-03 + AD.4/AD.5.A re-points — v1.2 addition)
+
+Two upstream stages landed after v1.1 and now feed Stage 1; both verified first-hand at `8232b150b`:
+
+**(a) Canonical material content — the 8-slot biomes pack.** `assets/materials/biomes/{materials.toml, arrays.toml}` defines the live 8-layer terrain material set; `arrays.toml` fixes layer index = slot and its header names `biome_id_to_slot()` as its contract (`arrays.toml:2-3`). Slots at HEAD (all files verified on disk; every slot uses the `mra` key):
+
+| Slot | Key | Albedo (resolves to) | Tiling | Note |
+|---|---|---|---|---|
+| 0 | grassland | `assets/materials/grass.png` | 128 | |
+| 1 | desert | `assets/materials/sand.png` | 128 | |
+| 2 | forest | `assets/materials/derived_1k/tree_leaves.png` | 128 | AD.5.A Fix-1 re-point (2026-07-15) off gitignored `_downloaded/`; same upstream `forest_leaves_02`, true-MRA (in-file comment, `materials.toml:40-47`) |
+| 3 | mountain | `assets/materials/mountain_rock.png` | **64** | one repeat / 8 m vs 4 m for ground slots |
+| 4 | tundra | `assets/materials/snow.png` | 128 | |
+| 5 | swamp | `assets/materials/mud.png` | 128 | |
+| 6 | beach | `assets/materials/sand.png` | 128 | **byte-identical to slot 1** — amendment ratified 2026-07-20: a distinct beach material lands in terrain beats T.1/T.2 |
+| 7 | river | `assets/materials/derived_1k/gravel.png` | 128 | ratified 2026-07-20 as honest **riverbed**; water surfacing is the T.W beat pair |
+
+Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canonical_terrain_pack`): paths join onto the biome dir; slot order is `arrays.toml`-driven; **channel-key semantics** (`canonical_terrain_pack.rs:178-184`): an `orm` key loads verbatim (already AO-R/rough-G/metal-B, e.g. PolyHaven ARM), an `mra` key (legacy metal-R/rough-G/AO-B) is swizzled to ORM at load via `load_mra_as_orm_bytes` (`:221-227`, per-pixel R↔B swap); `orm` wins when both present. The lowercase albedo file stem is retained per layer (`albedo_stem`) as the palette-remap join key. Upload path: `EngineRenderAdapter::reupload_terrain_layers_from_pending_pack` → `set_terrain_materials`, re-resolving the palette remap on every upload (see `aw_editor.md` v1.4/v1.5 + Invariants 26/27 there).
+
+**(b) Biome-driven per-vertex material authoring — E3-terrain.1.** Worldgen's per-vertex Whittaker `BiomeId` (see `terrain.md` §2 Stage 2) reaches Stage 1 via `tools/aw_editor/src/terrain_integration.rs`: the exhaustive 19→8 `biome_id_to_slot` (`:1250-1274`) + `build_biome_slot_field` (slope-rock overlay toward slot 3 + 1-ring blur, `:1293-1370`) produce the per-vertex `material_ids[4]`/`material_weights[4]` (`:837-840` → `TerrainVertex::new` `:861-867`). This RESOLVES v1.1's §4 "[NEEDS VERIFICATION — exact interface not traced]" worldgen touchpoint. The pre-E3 single-`primary_biome` splat-rule path (`create_local_splat_generator`, `:1372+`) survives as the fallback when per-vertex biome data is absent (`:797-802`, `:841-852`) and behind the "Regenerate Splatmaps" panel action (`:1748+`).
 
 ```text
 [CPU authoring / editor]
@@ -162,7 +183,7 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 
 | Source system | Interface | Data | Notes |
 |---|---|---|---|
-| Worldgen / biome classification | [NEEDS VERIFICATION — exact interface not traced] | Biome assignments influencing material slot selection | `astraweave-terrain/src/elevation_biome.rs` produces biome data; how it flows into editor material slot assignment was not fully traced |
+| Worldgen / biome classification | `chunk.biome_ids()` → `biome_id_to_slot` + `build_biome_slot_field` (`terrain_integration.rs:1250-1370`) → per-vertex `material_ids/material_weights` | Per-vertex Whittaker `BiomeId` → pack-layer slot weights | **RESOLVED at v1.2** (was NEEDS VERIFICATION): the E3-terrain.1 path, see §2.0(b). Fallback when biome data absent: elevation-driven weights + single-`primary_biome` splat rules |
 | Editor authoring tools | Direct construction of `TerrainVertex` | Material slot assignments | `tools/aw_editor/src/viewport/types.rs` |
 | Material library content | Texture arrays bound at startup | Albedo / normal / ORM / height textures for 32 layers | `astraweave-render/src/material_library.rs` |
 
@@ -196,10 +217,12 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 | `astraweave-terrain/src/biome_pack.rs` | Data-driven asset pack format bridging the `.blend` decomposition pipeline (`manifest.json`) to terrain biome/scatter | Active (biome layer) | Verified — defines `BiomePack`, `BiomePackAsset`, `BiomePackScatter`; consumed by `tools/aw_editor` panels and tests |
 | `astraweave-terrain/src/biome_param_blending.rs` | Phase 1.6-F.4.B.3.D.4 scattered-convolution blending of biome parameters | Active (biome layer) | Verified — module header (lines 1-30) documents jittered-sample blending of `mountains_amplitude` / `scatter_density` while preserving discrete `BiomeId` per vertex |
 | `astraweave-terrain/src/biome_parameters.rs` | Phase 1.6-F.4.B.3.D.3 per-`BiomeId` terrain parameter table (replaces `BiomeNoisePreset`) | Active (biome layer) | Verified — module header (lines 1-30) documents climate→biome→parameter lookup chain; partially wired (`mountains_amplitude` wired, `ridge_strength` defined but not yet wired) |
-| `astraweave-terrain/src/texture_splatting.rs` | Older 8-layer procedural splat system | Deprecated (test-only) | Verified — `pub mod texture_splatting` is exported from `astraweave-terrain/src/lib.rs:42,97`, but workspace-wide grep for `texture_splatting::`, `SplatMapGenerator`, `SplatRule` returns ONLY test-file callers (`mutation_resistant_comprehensive_tests.rs:988`, `wave2_shard20_modifier_persistence_splat.rs:11`). Zero production call sites. See Section 11 |
+| `astraweave-terrain/src/texture_splatting.rs` | Older 8-layer procedural splat system | **Legacy-fallback (editor)** — v1.2 correction | v1.1's "zero production call sites" is superseded: `tools/aw_editor/src/terrain_integration.rs` imports `SplatMapGenerator`/`SplatRule`/`SplatWeights` (`:4`) and `create_local_splat_generator` (`:1372+`) drives (a) the no-biome-data fallback mesh path (`:797-802`) and (b) the "Regenerate Splatmaps" panel action (`:1748+`). On the live E3 path (per-vertex biome data present) it is NOT consulted. See Section 11 |
 | `astraweave-render/src/terrain.rs` | Simpler single-`biome_id` render path (`TerrainRenderer`, `TerrainVertex`, `TerrainMesh`) | Transitional | Verified — `pub use terrain::{TerrainMesh, TerrainRenderer, TerrainVertex, VegetationRenderInstance}` at `astraweave-render/src/lib.rs:145`. Production callers outside tests: only `examples/weaving_playground/src/main.rs:6` (`RenderTerrainRenderer`). Not used by editor or any in-engine subsystem. See Section 11 |
 | `TerrainVertex::to_engine_vertex()` in `tools/aw_editor/src/viewport/types.rs` | Adapter collapsing rich vertex to simple engine vertex | Deprecated (bench-only) | Workspace grep for `.to_engine_vertex(` returns only the definition at `types.rs:41` and a single call from `tools/aw_editor/benches/editor_performance.rs:179`. Zero production call sites — consistent with `docs/audits/terrain_material_flow_investigation_2026-04-19.md:222` which documents the bypass via `convert_terrain_chunk` |
-| `tools/aw_editor/src/viewport/terrain_biome_placeholder.rs` | Placeholder biome-colored terrain materials | Transitional | Verified — imported by `tools/aw_editor/src/viewport/engine_adapter.rs:1434` behind the `terrain-splat-arrays` feature flag; uploads 8 placeholder biome material texture sets to `TerrainMaterialManager`. Phase 3 plans to replace placeholders with real materials loaded from `assets/materials/{biome}/` (see comments at `engine_adapter.rs:1426-1431`) |
+| `tools/aw_editor/src/viewport/terrain_biome_placeholder.rs` | Placeholder biome-colored terrain materials (8 flat-color swatches; slot order matches `biome_id_to_slot`) | Fallback (no-pack) | v1.2: the "Phase 3 real materials" plan is DONE — the canonical biomes pack (§2.0(a)) is the replacement. The placeholder now serves only when no pack loads (`engine_adapter.rs:628` comment; import at `:1415`). Slot 7's muted-blue swatch (`:35`) is the origin of the mapping's "only blue slot" rationale — the texture pack later made slot 7 gravel (riverbed, ratified 2026-07-20) |
+| `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` | Canonical 8-slot biome pack loader (`load_canonical_terrain_pack`; `mra`→ORM swizzle / `orm` verbatim; `albedo_stem` retention) | Active (v1.2 addition) | See §2.0(a). Loader tests incl. `loads_grassland_pack_when_present`, `loads_biomes_pack_forest_slot_from_derived_1k` are the Tier-2 machine floor (close-out addendum 2026-07-19) |
+| `tools/aw_editor/src/viewport/palette_remap.rs` | Paint-palette→pack-layer name remap (manual painting only; biome-driven assignment bypasses it) | Active (v1.2 addition) | Owned in detail by `aw_editor.md` (v1.4 entry + Invariants 26/27); listed here because it consumes this trace's `albedo_stem` surface |
 
 **Status definitions used here:**
 - **Active**: Canonical, load-bearing, edit with care
@@ -282,6 +305,8 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 | 3 | Per-chunk splat textures correspond 1:1 with the chunk's vertex data and dimensions | Yes (the bake produces them together) | Structural (single function) |
 | 4 | The 32 material layers in the canonical library are global/shared; per-chunk variation is encoded only in splat texture weights | Yes (inspect material library + manager) | Doc-only currently |
 | 5 | Material layer indices in `material_ids[i]` must be valid indices into the canonical material library (0-31) | Yes | Enforced by silent-drop bounds check in `terrain_splat_builder.rs:97-100` (`if layer >= 0 && (layer as usize) < max_layers`); out-of-range layers are dropped rather than asserted. Verified by inline tests (`clamps_out_of_range_weights`, `encodes_high_layer_weights_in_higher_splats` at lines 186-201 and 204+) — these confirm layer 32 and layer -1 produce no contribution |
+| 6 | Pack slot order is `arrays.toml`-driven and matches `biome_id_to_slot` 1:1 — the three surfaces (arrays.toml indices · `biome_id_to_slot` match arms · `terrain_biome_placeholder` slot order) move together or biome coloring breaks silently (v1.2) | Yes (greppable + compile-time) | `arrays.toml:2-3` contract comment; exhaustive match (new `BiomeId` variant = compile error); `aw_editor.md` Invariant 27 |
+| 7 | Aux-channel semantics at load: an `orm` key is verbatim (AO-R/rough-G/metal-B); an `mra` key is R↔B-swizzled to ORM; `orm` wins when both present. A mislabeled file (ARM bytes under an `mra` key or vice versa) double-flips channels and zeroes AO / inflates metal — the AD.4.A D1 defect class (v1.2) | Yes | `canonical_terrain_pack.rs:178-184`, `load_mra_as_orm_bytes` `:221-227`; per-file channel measurement per the close-out lesson ("ARM/MRA channel keys must be evidenced per file, never pattern-copied") |
 
 ---
 
@@ -330,7 +355,8 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 - **Should `terrain_biome_placeholder.rs` be relocated or renamed?** Its current location in `tools/aw_editor/src/viewport/` and its biome-named slots may encourage confusion between biome identity and material identity.
 - **Are there machine-checkable enforcements for invariants 2 and 5 in Section 8?** If not, should they be added as debug-assert checks in the splat builder?
 - **Should the historical audit at `docs/audits/terrain_material_flow_investigation_2026-04-19.md` be explicitly marked as historical** to prevent future readers from treating it as current truth?
-- **Cross-system touchpoint with worldgen / biome classification**: the exact interface by which biome data influences editor material slot assignment was not fully traced and should be documented when this trace is next updated.
+- ~~**Cross-system touchpoint with worldgen / biome classification**~~ **RESOLVED at v1.2**: the interface is the E3-terrain.1 path — `chunk.biome_ids()` → `biome_id_to_slot` + `build_biome_slot_field` → per-vertex `material_ids/material_weights` (§2.0(b), §4 upstream row).
+- **v1.2 note on the `texture_splatting.rs` question above:** the "zero production callers" premise changed — the editor's fallback/`Regenerate Splatmaps` paths now call it (§5 row). The deprecation question becomes: retire it when the fallback path is removed, or keep it as the no-biome-data degradation? Rides with terrain beat T.2/T.G scoping.
 
 ---
 
@@ -385,3 +411,5 @@ The active editor → splat-bake → fragment-shader pipeline is structurally cl
 The current architecture is the result of a unification: at an earlier stage, terrain vertices carried both `biome_weights_0/1` and `material_ids/material_weights` as separate fields, with the splat builder reading the biome path and ignoring the material path. The audit doc `docs/audits/terrain_material_flow_investigation_2026-04-19.md` documents this prior state forensically. The fields were subsequently unified so that `material_ids/material_weights` is the canonical material attribute set and the splat builder now reads from it. The biome layer (in `astraweave-terrain`) continues to exist for worldgen and ecological purposes but no longer drives splat generation.
 
 The 32-layer canonical material system in `astraweave-render` represents a separate evolution from the older 8-layer procedural splat system in `astraweave-terrain/src/texture_splatting.rs`. Both still exist in the codebase; their relationship is one of the open questions in Section 11.
+
+**v1.2 addendum (2026-07-21, T.0 trace-sync).** Between v1.1 and v1.2 the material *content* story changed twice without this trace being updated: the E3 build (`d506658d8`, 2026-07-03) introduced the canonical 8-slot biomes pack + `canonical_terrain_pack.rs` loader + the biome-driven per-vertex authoring path (E3-terrain.1) and wired hex-tile stochastic sampling / mip chains / aniso-8 on the render side (that half is traced in `render_pipeline_material_system_shader_infrastructure.md` v1.10); the AD campaign then re-pointed pack slots onto shipped `derived_1k/` cooks (AD.4 `06780433d`, AD.5.A `21bc53333`) and added the paint-palette remap (`ae9b98ef3`). The build session paid no trace debt; the reconstruction lives in `docs/audits/E3_PREFLIGHT_2026-07.md` and the director's dispositions in `docs/audits/T_SERIES_RATIFICATION_2026-07-20.md`. This v1.2 pass verified every claim it restates first-hand at `8232b150b`.
