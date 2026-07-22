@@ -2926,6 +2926,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://lazyxeon.github.io/AstraWeave/api/astraweave_render/water/constant.DEFAULT_WATER_LEVEL.html</loc>
+    <lastmod>2026-07-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://lazyxeon.github.io/AstraWeave/api/astraweave_render/water/enum.WeaveKind.html</loc>
     <lastmod>2026-07-22</lastmod>
     <changefreq>weekly</changefreq>
