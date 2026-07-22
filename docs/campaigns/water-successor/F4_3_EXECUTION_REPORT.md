@@ -71,4 +71,6 @@ Water now **scales, refracts, foams, deforms from real weave triggers, and throw
 
 ---
 
+> **T.W.1 correction (2026-07-21):** the W-FU-2 row above ("Editor's dormant water woken — live in the viewport") describes the state at this report's date and did not stay true. The editor's water enable was gated on the legacy `primary_biome` string, which the E3 archetype dropdown later made unreachable, and the editor's `WaterRenderer` construction used the window-surface format while the split water pass targets the HDR format — a silent break behind the dead gate that panicked wgpu when re-driven (`TWR_WATER_RECON.md` §1.6). The T.W.1 beat replaced the gate (aquatic-biome census default), fixed the format (install-time assert added), and deleted the W.2c.2 editor scaffolding weaves. This footnote corrects the record without altering it.
+
 *Execution record. Recon/design authority: the F.4.3 injection-point workflow (GO verdict). Construction is the engine `hdr_overlay` mechanism + the demo wiring + the combined probe.*

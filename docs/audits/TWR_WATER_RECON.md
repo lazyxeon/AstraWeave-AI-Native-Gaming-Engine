@@ -187,3 +187,9 @@ Perf anchor (unchanged code, this machine, min-spec 1660 Ti): surface ≈0.18-0.
 ---
 
 *Session evidence: `d:/tmp/twr_staging/` (screenshots `00`-`26`, `editor_err.log`, build logs). Orientation record: ratification §3 scope quote; E3-PF §6 row 7 (~21% aquatic, commit-era); `water.md` rev 1.1 (drift-checked §1.1); `fluids.md` §0.5. Parallel-session note: origin/main advanced 4 CI-workshop commits during this session (`2c1ee9f3b`, `cefebfed6`, `e91547a42`, `273ded3a9` — all CI workflow files) — no file overlap with this report; final push used pull-rebase per protocol.*
+
+---
+
+## Appendix (T.W.1 correction, 2026-07-21): the "~21% aquatic" figure is stale — measured
+
+The T.W.1 dip census (`astraweave-terrain/tests/tw1_dip_census.rs`, seed 12345, radius 6, the editor's exact noise config) measured the CURRENT worlds: Ocean/Coast-classified vertices are **0.13%** of Continental Temperate (1,959 of 1,557,504) and **0.09%** of Mediterranean — not ~21%. The §1.8/§0 "~21%" repeated E3-PF §6 row 7's commit-era figure, which was a seam-fix-moment snapshot: the E3 texturing rounds 2-3 that followed (A.2b floor-to-spline, C.1 coastal gate) deliberately drove aquatic classification down ~200×. Consequence for §2.2's integration picture: enabling the plane at Y=2.0 produces small scattered coastal pools (≈464/465 flooded vertices per world on CT/Mediterranean; Desert and Boreal zero), not filled coastlines — how much MORE water the worlds should carry is a T.2 floor/coverage tuning question. The census also quantified §2.3's divergence direction: only 24-35% of classified-aquatic vertices flood at Y=2.0 (their FINAL median height sits above sea level at 3.12/2.39 — classification runs on provisional pre-erosion heights; erosion/deposition raises basin floors). This appendix corrects the record without altering it; details in `TW1_OUTCOME.md`.

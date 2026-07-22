@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: mixed
 summary: "Gameplay water-truth facade (WaterQuery/AnalyticWater) — sole backend after W.1 removed the voxel backend; physics buoyancy (astraweave-physics lib.rs:931) is the production consumer. Deterministic CPU truth (gate Q1). water.md §4,§5"
 owns: [astraweave-water]
-doc_version: "1.1"
-last_verified_commit: 7c29b8182
+doc_version: "1.2"
+last_verified_commit: e28c97de1
 ---
 
 # Architecture Trace: Water (Successor) — Rendering, Query Facade & Weave-Response
@@ -21,11 +21,11 @@ last_verified_commit: 7c29b8182
 |---|---|
 | **System name** | Water (Successor) — layered rendering + gameplay-truth query facade + weave-response deformation |
 | **Primary crates** | `astraweave-water` (truth facade), `astraweave-render` (surface + weave presentation), `astraweave-physics` (buoyancy consumer), `astraweave-gameplay` (`WeaveOp` source + `water_movement`), `astraweave-fluids` (particle accent substrate), `examples/weaving_playground` (weave/accent producers — example layer) |
-| **Document version** | 1.1 |
-| **Last verified against commit** | `7c29b8182` |
-| **Last verified date** | 2026-06-25 |
+| **Document version** | 1.2 |
+| **Last verified against commit** | `e28c97de1` |
+| **Last verified date** | 2026-07-21 |
 | **Status** | Active (post-W.1 layered-rendering re-scope; surface + refraction + weave deformation + accents all wired; some layers example-only — see §5/§6) |
-| **Owner notes** | First trace for the W-series (Water Successor) campaign. Derived from forensic reading of the code at `7c29b8182` plus the campaign docs under `docs/campaigns/water-successor/`. Cross-references the (DEPRECATED-solver) [`fluids.md`](./fluids.md) and the [render trace](./render_pipeline_material_system_shader_infrastructure.md). |
+| **Owner notes** | First trace for the W-series (Water Successor) campaign; derived from forensic reading at `7c29b8182` plus the campaign docs under `docs/campaigns/water-successor/`. **Rev 1.2 (T.W.1, 2026-07-21, `e28c97de1`):** editor water repaired + re-gated (HDR-format fix + install assert, aquatic-census enable, sea-level single-sourcing, W.2c.2 scaffolding-weave deletion); invariants 11-12 added; the W-FU-2 "woke the editor water" claim corrected in §5/Appendix B (per `TWR_WATER_RECON.md` §1.6 + `TW1_OUTCOME.md`). Cross-references the (DEPRECATED-solver) [`fluids.md`](./fluids.md) and the [render trace](./render_pipeline_material_system_shader_infrastructure.md). |
 
 ---
 
@@ -227,9 +227,9 @@ The system has two largely-independent data flows that meet only at the `WeaveOp
 |---|---|---|---|
 | `astraweave-water/src/lib.rs` | `WaterQuery` trait + `WaterSample` + `AnalyticWater` backend | Active | The single owner of gameplay water truth. 9 inline tests incl. the gate-Q1 determinism test (`lib.rs:319-349`) |
 | `astraweave-physics/src/lib.rs:1429-1489` | `apply_buoyancy_forces` + `add_water_aabb` | Active | The one wired `WaterQuery::sample` production consumer |
-| `astraweave-render/src/water.rs` | `WaterRenderer`: chunked-LOD Gerstner surface, `WaterUniforms`, weave instances, set_water_level/colors/rain | Active | ~990 LoC; owns surface + weave *presentation*. 7 inline tests (incl. on-GPU `new_and_update`) (verified — 7 `#[test]` fns in the `mod tests` at `water.rs:839-991`; the prior "8" was a miscount) |
+| `astraweave-render/src/water.rs` | `WaterRenderer`: chunked-LOD Gerstner surface, `WaterUniforms`, weave instances, set_water_level/colors/rain; T.W.1 added `target_format` (stored + getter) and made `DEFAULT_WATER_LEVEL` pub = `astraweave_terrain::SEA_LEVEL` | Active | ~1,020 LoC; owns surface + weave *presentation*. 8 inline tests (7 W-series + T.W.1's sea-level pin) |
 | `astraweave-render/src/shaders/water.wgsl` | Vertex (Gerstner + weave deform + skirt) + fragment (refraction, depth-foam, freeze material) | Active | Mirrors `WaterUniforms` byte layout; `WEAVE_MAX_DEFORM` const must equal `SKIRT_DEPTH` |
-| `astraweave-render/src/renderer.rs` | `run_water_pass`, `update_water`, `set_water_level`, `set_water_weave_instances`, `set_hdr_overlay`, scene-color snapshot | Active | Split water pass called from both `render()` and `draw_into()` |
+| `astraweave-render/src/renderer.rs` | `run_water_pass`, `update_water`, `set_water_level`, `set_water_weave_instances`, `set_hdr_overlay`, scene-color snapshot; T.W.1: `set_water_renderer` asserts the installed pipeline's `target_format == hdr_format()` | Active | Split water pass called from both `render()` and `draw_into()`. Caveat (T.W.1 finding): headless `render()` is a NO-OP (`acquire_surface_texture` → None → early Ok) and the headless uncaptured-error handler only LOGS validation errors — headless draw tests must use `draw_into` + an error scope |
 | `astraweave-gameplay/src/types.rs:42-58` | `WeaveOpKind` enum (incl. `LowerWater`/`RaisePlatform`/`FreezeWater`) + `WeaveOp` | Active | `#[non_exhaustive]` — the deform trigger source |
 | `astraweave-gameplay/src/weaving.rs:70-105` | `WeaveOpKind` application (incl. `FreezeWater` presentation-only arm) | Active | `FreezeWater` consumes weather budget + carries `op.a`; NO truth mutation (W.2c.3) |
 | `astraweave-gameplay/src/water_movement.rs` | Swim/dive/oxygen/wet-status state machine (`WaterPlayerState`, `WaterMovementHelper`) | Dormant (tested only) | Self-contained; consumes a scalar `submersion` float clamped in `update` (`water_movement.rs:206-207`), NOT `WaterQuery`; the crate has no `astraweave-fluids`/`astraweave-water` dep. Zero workspace callers — verified, and concordant with `gameplay.md` §5/§6 which marks it Dormant residue of an abandoned Enshrouded-style water plan. ~50 inline mutation-resistant tests. (Prior "Active" status corrected — it compiles but has no production driver) |
@@ -238,7 +238,7 @@ The system has two largely-independent data flows that meet only at the `WeaveOp
 | `examples/weaving_playground/src/main.rs` | Demo driver: builds `WaterRenderer`, drives producers, registers HDR overlay | **Example** | The wiring that lights the whole presentation flow live |
 | `astraweave-render/examples/water_budget_probe.rs` | W.2a/W.2b GPU-timestamp budget instrument | Active (probe) | Isolated + full-frame water-pass cost on the documented min-spec |
 | `examples/weaving_playground/examples/accent_budget_probe.rs` | F.4.3 combined surface+accent frame measurement | Active (probe) | Lives here so no render↔fluids Cargo edge is added |
-| `tools/aw_editor/src/viewport/{engine_adapter.rs,renderer.rs}` | Editor `WaterRenderer` install + `update_water` wiring (W-FU-2) | Active | `engine_adapter.rs:3739` builds it; `renderer.rs:697` drives `update_water` — woke the formerly-dormant editor water |
+| `tools/aw_editor/src/viewport/{engine_adapter.rs,renderer.rs}` | Editor `WaterRenderer` install + `update_water` wiring (W-FU-2, repaired + re-gated by T.W.1) | Active | `engine_adapter.rs` `set_water_enabled` builds it against `hdr_format()` (T.W.1 fix — the prior `surface_format()` argument panicked wgpu when the pass drew; the W-FU-2 "woke the editor water" state did not survive: the legacy gate went dead post-E3 and the format broke silently, see `TWR_WATER_RECON.md` §1.6); viewport `renderer.rs` drives `update_water` per frame. Enable = Terrain-panel aquatic-biome census default + checkbox; level = `SEA_LEVEL`; W.2c.2 scaffolding weaves deleted |
 | `astraweave-fluids` (`FluidSystem`/`FluidRenderer`/`secondary.wgsl`) | F.4 GPU-particle accent substrate | Active (accent substrate) | DEPRECATED-solver crate; see [`fluids.md`](./fluids.md). Only the accent surface is wired here |
 
 **Status definitions:**
@@ -368,6 +368,8 @@ The honest summary: **water truth and the rendered surface are wired; the weave/
 | 8 | The water pass is skipped when `has_visible_chunks()` is false (no wasted scene-color copy) | Yes | `run_water_pass` early-return (`renderer.rs:4695`); test `new_and_update` asserts dormant fresh renderer (`water.rs:928-945`) |
 | 9 | No gameplay type crosses into `astraweave-render`; the `WeaveOp → WeaveInstance` translation lives only in the binary glue | Yes (grep) | `set_water_weave_instances` takes render types (`renderer.rs:4658`); producers in `examples/` only |
 | 10 | Zero active weaves / accents → byte-identical frame (additive-zero identity) | Partly | `set_weave_instances([])` clears all (`water.rs:790-800`); `render_accents` early-returns at count 0 (`F4_3_EXECUTION_REPORT.md` §3) |
+| 11 | (T.W.1) An installed `WaterRenderer`'s pipeline format equals the water pass target: `set_water_renderer` asserts `target_format() == hdr_format()` at install | Yes | Assert in `renderer.rs set_water_renderer`; `should_panic` test `test_water_renderer_wrong_format_rejected_at_install`; draw-through test under a validation error scope (`renderer_tests.rs`) |
+| 12 | (T.W.1) `DEFAULT_WATER_LEVEL` IS `astraweave_terrain::SEA_LEVEL` (single source; ratified Y=2.0) — the biome classifier's aquatic bands and the rendered plane share one sea level | Yes | `water.rs` const definition + value-pin test `test_default_water_level_is_world_sea_level` |
 
 ---
 
@@ -472,4 +474,4 @@ Measured on the documented min-spec: **NVIDIA GeForce GTX 1660 Ti with Max-Q Des
 
 ## Appendix B: Historical context
 
-Water reached its current shape through the F-series (Fluids Integration) and then the W-series (Water Successor) campaigns. F.2 introduced the `WaterQuery`/`AnalyticWater` facade as a deprecation seam below physics. F.3 added (and F.3.S then measured the limits of) a voxel water simulation. The W.0 ratification (2026-06) declared the general solver unnecessary for Veilweaver and impossible on min-spec, re-scoping water to a layered rendering system. W.1 removed ~58.8K LoC of SPH/voxel solver (preserved only at the `w0-pre-deprecation` anchor @ `3a8296038` — local-only since 2026-07-20, see [`fluids.md`](./fluids.md) §0.5 recovery note) and deleted the voxel `WaterQuery` backend, leaving `AnalyticWater` as the sole truth backend. W.2a built the chunked-LOD Gerstner surface and real `set_water_level`; W.2b.2 added screen-space refraction + depth-delta foam in a post-opaque split pass; W-FU-2 woke the editor's dormant water; W.2c.2/W.2c.3 added the position-agnostic weave-response deformation and the gameplay-`WeaveOp` producer (incl. the `FreezeWater` op); and F.4.0-F.4.3 built and measured the GPU-particle accent layer. The full arc — surface that scales, refracts, foams, deforms from real weave triggers, and throws accents — measures ~0.26 ms worst-case (~8× under budget) on the documented min-spec (`F4_3_EXECUTION_REPORT.md`).
+Water reached its current shape through the F-series (Fluids Integration) and then the W-series (Water Successor) campaigns. F.2 introduced the `WaterQuery`/`AnalyticWater` facade as a deprecation seam below physics. F.3 added (and F.3.S then measured the limits of) a voxel water simulation. The W.0 ratification (2026-06) declared the general solver unnecessary for Veilweaver and impossible on min-spec, re-scoping water to a layered rendering system. W.1 removed ~58.8K LoC of SPH/voxel solver (preserved only at the `w0-pre-deprecation` anchor @ `3a8296038` — local-only since 2026-07-20, see [`fluids.md`](./fluids.md) §0.5 recovery note) and deleted the voxel `WaterQuery` backend, leaving `AnalyticWater` as the sole truth backend. W.2a built the chunked-LOD Gerstner surface and real `set_water_level`; W.2b.2 added screen-space refraction + depth-delta foam in a post-opaque split pass; W-FU-2 wired the editor's dormant water (a state that did NOT last — the enable gate keyed on a legacy field the E3 archetype dropdown later made unreachable, and the editor's surface-format pipeline construction broke silently against the HDR water pass, panicking when re-driven; `TWR_WATER_RECON.md` §1.6); W.2c.2/W.2c.3 added the position-agnostic weave-response deformation and the gameplay-`WeaveOp` producer (incl. the `FreezeWater` op); and F.4.0-F.4.3 built and measured the GPU-particle accent layer. T.W.1 (2026-07-21, `e28c97de1`) then actually surfaced the system in the editor: HDR-format fix + install-time assert, aquatic-biome-census enable + checkbox/level UI, `DEFAULT_WATER_LEVEL` single-sourced from `astraweave_terrain::SEA_LEVEL`, scaffolding weaves deleted. The full arc — surface that scales, refracts, foams, deforms from real weave triggers, and throws accents — measures ~0.26 ms worst-case (~8× under budget) on the documented min-spec (`F4_3_EXECUTION_REPORT.md`).
