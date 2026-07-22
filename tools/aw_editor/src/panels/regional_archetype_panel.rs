@@ -1386,4 +1386,65 @@ mod tests {
 
         let _ = std::fs::remove_dir_all(&tmp);
     }
+
+    /// Multi-Tool Sub-phase 5.C regression guard: exercise the REAL
+    /// `RegionalArchetypePanel` ActiveTool implementation used by the
+    /// dispatcher, not the generic `MockActiveTool` fixture. A paint click +
+    /// drag + release must consume every event so the viewport cannot route
+    /// the same gesture to camera pan (the §7.4 Andrew-gate criterion).
+    #[test]
+    fn real_panel_paint_click_drag_consumes_pointer_events() {
+        let queue = crate::command::new_regional_archetype_paint_queue();
+        let mut panel = RegionalArchetypePanel::new_dispatch_tool(queue.clone());
+        let event = MouseEvent {
+            pointer_pos: egui::pos2(120.0, 80.0),
+            modifiers: egui::Modifiers::NONE,
+            drag_delta: egui::vec2(4.0, 2.0),
+        };
+        let mut context = ToolContext::new(
+            egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)),
+            Some(event.pointer_pos),
+            event.modifiers,
+            None,
+            Some((42.0, -17.0)),
+        );
+
+        assert_eq!(
+            panel.on_left_mouse_button_down(&event, &mut context),
+            EventDisposition::Consumed
+        );
+        assert_eq!(
+            panel.on_mouse_move(&event, &mut context),
+            EventDisposition::Consumed
+        );
+        assert_eq!(
+            panel.on_left_mouse_button_up(&event, &mut context),
+            EventDisposition::Consumed
+        );
+
+        let actions = queue.lock().expect("paint queue lock");
+        assert_eq!(actions.len(), 4);
+        assert!(matches!(
+            actions[0],
+            RegionalArchetypePaintAction::StrokeBegin
+        ));
+        assert!(matches!(
+            actions[1],
+            RegionalArchetypePaintAction::Paint {
+                world_x: 42.0,
+                world_z: -17.0
+            }
+        ));
+        assert!(matches!(
+            actions[2],
+            RegionalArchetypePaintAction::Paint {
+                world_x: 42.0,
+                world_z: -17.0
+            }
+        ));
+        assert!(matches!(
+            actions[3],
+            RegionalArchetypePaintAction::StrokeEnd
+        ));
+    }
 }
