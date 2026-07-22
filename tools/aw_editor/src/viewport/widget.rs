@@ -2836,8 +2836,8 @@ impl ViewportWidget {
     }
 
     /// Enable or disable the volumetric water plane
-    pub fn set_water_enabled(&self, enabled: bool) {
-        self.with_renderer("set_water_enabled", |r| r.set_water_enabled(enabled));
+    pub fn set_water_enabled(&self, enabled: bool, style: crate::viewport::types::WaterStyle) {
+        self.with_renderer("set_water_enabled", |r| r.set_water_enabled(enabled, style));
     }
 
     /// Copy selected entities to clipboard

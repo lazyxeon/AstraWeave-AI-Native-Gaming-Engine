@@ -209,6 +209,21 @@ fn newest_entity(world: &astraweave_core::World) -> Option<Entity> {
     world.iter_entities().max()
 }
 
+/// TW1 (ratification #7, trivial version): per-archetype water color style.
+/// A pure mapping onto the existing `WaterStyle` presets — coast-dominant
+/// archetypes read as blue ocean; Boreal's cold inland water and Desert's
+/// rare deep-trough oasis pockets read as the darker `Lake` preset.
+fn water_style_for_archetype(
+    id: astraweave_terrain::world_archetypes::WorldArchetypeId,
+) -> crate::viewport::types::WaterStyle {
+    use crate::viewport::types::WaterStyle as S;
+    use astraweave_terrain::world_archetypes::WorldArchetypeId as A;
+    match id {
+        A::ContinentalTemperate | A::EquatorialTropical | A::Mediterranean | A::Custom => S::Ocean,
+        A::BorealSubarctic | A::Desert => S::Lake,
+    }
+}
+
 // Level document types — canonical definitions in level_doc.rs
 use level_doc::{BiomePaint, Circle, LevelDoc, Sky};
 
@@ -423,10 +438,12 @@ struct EditorApp {
     cached_sky_colors: Option<([f32; 4], [f32; 4], [f32; 4])>,
     cached_lighting_params: Option<crate::viewport::types::TerrainLightingParams>,
     cached_weather_kind: Option<astraweave_render::WeatherKind>,
-    /// Cached water-biome flag. `set_water_enabled(true)` rebuilds the engine
-    /// `WaterRenderer` (pipeline + LOD meshes), so it must only fire when the
-    /// water-biome state flips — same cached pattern as fog/lighting/weather.
-    cached_water_biome: Option<bool>,
+    /// Cached water state (enable bit + archetype style). `set_water_enabled
+    /// (true, style)` rebuilds the engine `WaterRenderer` (pipeline + LOD
+    /// meshes), so it must only fire when the state flips — same cached
+    /// pattern as fog/lighting/weather. TW1: replaced the legacy water-biome
+    /// flag (its `primary_biome` string gate was unreachable post-E3).
+    cached_water: Option<(bool, crate::viewport::types::WaterStyle)>,
     /// Measured subsystem timings (from previous frame, in ms)
     measured_render_ms: f32,
     measured_tick_ms: f32,
@@ -692,7 +709,7 @@ impl Default for EditorApp {
             cached_fog_params: None,
             cached_lighting_params: None,
             cached_weather_kind: None,
-            cached_water_biome: None,
+            cached_water: None,
             cached_sky_colors: None,
             measured_render_ms: 0.0,
             measured_tick_ms: 0.0,
@@ -4209,18 +4226,24 @@ impl EditorApp {
                 viewport.tick_weather(ctx.input(|i| i.stable_dt));
             }
 
-            // Only enable water plane for water-related biomes. Cached: each
-            // `set_water_enabled(true)` reconstructs the engine WaterRenderer
-            // (pipeline + 4 LOD meshes + buffers), so only call it on a state
-            // flip — the per-frame chunk animation is driven separately by
-            // ViewportRenderer::render via `update_water` (W-FU-2).
-            let biome = self.dock_tab_viewer.terrain_primary_biome();
-            let water_biome = matches!(biome, "swamp" | "beach" | "river");
-            if self.cached_water_biome != Some(water_biome) {
-                viewport.set_water_enabled(water_biome);
-                self.cached_water_biome = Some(water_biome);
+            // TW1: E3-aware water sync. Replaces the legacy primary-biome
+            // string gate ("swamp"|"beach"|"river"), which became unreachable
+            // when the archetype dropdown replaced that field — E3 worlds
+            // could never enable water (TWR_WATER_RECON.md §1.5). The enable
+            // bit lives on the Terrain panel (census-defaulted per generation:
+            // aquatic biomes present → on; checkbox overrides); the color
+            // style derives from the world archetype. Cached: each
+            // `set_water_enabled(true, _)` reconstructs the engine
+            // WaterRenderer (pipeline + 4 LOD meshes + buffers), so only call
+            // it on a state flip — the per-frame chunk animation is driven
+            // separately by ViewportRenderer::render via `update_water`.
+            let water_on = self.dock_tab_viewer.terrain_water_enabled();
+            let style = water_style_for_archetype(self.dock_tab_viewer.terrain_world_archetype());
+            if self.cached_water != Some((water_on, style)) {
+                viewport.set_water_enabled(water_on, style);
+                self.cached_water = Some((water_on, style));
             }
-            if water_biome {
+            if water_on {
                 viewport.set_water_level(self.dock_tab_viewer.water_level());
             }
         }

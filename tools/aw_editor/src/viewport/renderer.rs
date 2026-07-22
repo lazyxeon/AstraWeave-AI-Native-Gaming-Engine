@@ -1489,11 +1489,12 @@ impl ViewportRenderer {
         }
     }
 
-    /// Enable or disable the volumetric water plane
-    pub fn set_water_enabled(&mut self, enabled: bool) {
+    /// Enable or disable the water plane, with a per-archetype color style
+    /// (TW1 — the style was previously hardcoded to `Ocean` here).
+    pub fn set_water_enabled(&mut self, enabled: bool, style: WaterStyle) {
         // Forward water state to engine adapter
         if let Some(adapter) = &mut self.engine_adapter {
-            adapter.set_water_enabled(enabled, WaterStyle::Ocean);
+            adapter.set_water_enabled(enabled, style);
         }
     }
 

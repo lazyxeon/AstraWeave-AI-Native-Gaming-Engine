@@ -196,218 +196,6 @@ impl Default for SplatParams {
     }
 }
 
-/// Water body type for fluid placement
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum WaterBodyPreset {
-    Custom,
-    CalmLake,
-    MountainStream,
-    RagingRiver,
-    Ocean,
-    Waterfall,
-    SwampWetland,
-}
-
-impl std::fmt::Display for WaterBodyPreset {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
-    }
-}
-
-impl WaterBodyPreset {
-    pub fn name(&self) -> &'static str {
-        match self {
-            WaterBodyPreset::Custom => "Custom",
-            WaterBodyPreset::CalmLake => "Calm Lake",
-            WaterBodyPreset::MountainStream => "Mountain Stream",
-            WaterBodyPreset::RagingRiver => "Raging River",
-            WaterBodyPreset::Ocean => "Ocean",
-            WaterBodyPreset::Waterfall => "Waterfall",
-            WaterBodyPreset::SwampWetland => "Swamp/Wetland",
-        }
-    }
-
-    pub fn all() -> &'static [WaterBodyPreset] {
-        &[
-            WaterBodyPreset::Custom,
-            WaterBodyPreset::CalmLake,
-            WaterBodyPreset::MountainStream,
-            WaterBodyPreset::RagingRiver,
-            WaterBodyPreset::Ocean,
-            WaterBodyPreset::Waterfall,
-            WaterBodyPreset::SwampWetland,
-        ]
-    }
-
-    pub fn is_flowing(&self) -> bool {
-        matches!(
-            self,
-            WaterBodyPreset::MountainStream
-                | WaterBodyPreset::RagingRiver
-                | WaterBodyPreset::Waterfall
-        )
-    }
-}
-
-/// Fluid simulation quality preset
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum FluidQualityPreset {
-    Performance,
-    Balanced,
-    Quality,
-    Cinematic,
-}
-
-impl std::fmt::Display for FluidQualityPreset {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
-    }
-}
-
-impl FluidQualityPreset {
-    pub fn name(&self) -> &'static str {
-        match self {
-            FluidQualityPreset::Performance => "Performance",
-            FluidQualityPreset::Balanced => "Balanced",
-            FluidQualityPreset::Quality => "Quality",
-            FluidQualityPreset::Cinematic => "Cinematic",
-        }
-    }
-
-    pub fn all() -> &'static [FluidQualityPreset] {
-        &[
-            FluidQualityPreset::Performance,
-            FluidQualityPreset::Balanced,
-            FluidQualityPreset::Quality,
-            FluidQualityPreset::Cinematic,
-        ]
-    }
-}
-
-/// Fluid simulation parameters for terrain integration
-#[derive(Debug, Clone)]
-pub struct FluidSimParams {
-    pub enabled: bool,
-    pub quality_preset: FluidQualityPreset,
-    pub water_body_preset: WaterBodyPreset,
-
-    // Physics
-    pub particle_count: u32,
-    pub smoothing_radius: f32,
-    pub target_density: f32,
-    pub pressure_multiplier: f32,
-    pub viscosity: f32,
-    pub surface_tension: f32,
-    pub gravity: f32,
-    pub solver_iterations: u32,
-
-    // Flow
-    pub flow_enabled: bool,
-    pub flow_speed: f32,
-    pub flow_direction: [f32; 2],
-    pub turbulence: f32,
-
-    // Rendering
-    pub water_color: [f32; 4],
-    pub transparency: f32,
-    pub refraction_strength: f32,
-    pub caustics_enabled: bool,
-    pub caustics_intensity: f32,
-    pub foam_enabled: bool,
-    pub foam_threshold: f32,
-
-    // Thermal
-    pub thermal_enabled: bool,
-    pub thermal_diffusivity: f32,
-    pub buoyancy: f32,
-
-    // Detection
-    pub auto_detect_water_bodies: bool,
-    pub min_river_flow_threshold: f32,
-    pub lake_depth_threshold: f32,
-    pub waterfall_height_threshold: f32,
-
-    // Emitters
-    pub emitter_count: u32,
-    pub spawn_rate: f32,
-    pub initial_velocity: f32,
-}
-
-impl Default for FluidSimParams {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            quality_preset: FluidQualityPreset::Balanced,
-            water_body_preset: WaterBodyPreset::CalmLake,
-
-            // Physics
-            particle_count: 65536,
-            smoothing_radius: 1.0,
-            target_density: 12.0,
-            pressure_multiplier: 300.0,
-            viscosity: 10.0,
-            surface_tension: 0.02,
-            gravity: -9.8,
-            solver_iterations: 4,
-
-            // Flow
-            flow_enabled: false,
-            flow_speed: 1.0,
-            flow_direction: [1.0, 0.0],
-            turbulence: 0.1,
-
-            // Rendering
-            water_color: [0.2, 0.5, 0.8, 0.9],
-            transparency: 0.7,
-            refraction_strength: 0.5,
-            caustics_enabled: true,
-            caustics_intensity: 1.0,
-            foam_enabled: true,
-            foam_threshold: 0.3,
-
-            // Thermal
-            thermal_enabled: false,
-            thermal_diffusivity: 0.1,
-            buoyancy: 0.0002,
-
-            // Detection
-            auto_detect_water_bodies: true,
-            min_river_flow_threshold: 500.0,
-            lake_depth_threshold: 2.0,
-            waterfall_height_threshold: 5.0,
-
-            // Emitters
-            emitter_count: 1,
-            spawn_rate: 1000.0,
-            initial_velocity: 0.0,
-        }
-    }
-}
-
-/// Detected water body information for display
-#[derive(Debug, Clone)]
-pub struct DetectedWaterBodyInfo {
-    pub name: String,
-    pub body_type: String,
-    pub center: [f32; 3],
-    pub volume: f32,
-    pub particle_count: u32,
-    pub flow_speed: Option<f32>,
-    pub selected: bool,
-}
-
-/// Statistics for fluid simulation
-#[derive(Default, Clone)]
-pub struct FluidStats {
-    pub active_particles: u32,
-    pub emitter_count: u32,
-    pub detected_bodies: u32,
-    pub simulation_time_ms: f32,
-    pub render_time_ms: f32,
-}
-
 /// Terrain generation and editing panel
 pub struct TerrainPanel {
     /// Terrain generation state
@@ -453,15 +241,23 @@ pub struct TerrainPanel {
     /// Texture splatting parameters
     splat_params: SplatParams,
 
-    /// Water surface level (world Y height)
+    /// Water surface level (world Y height). Defaults to the world sea level
+    /// (`astraweave_terrain::SEA_LEVEL`) — the same Y the biome classifier's
+    /// aquatic bands key on, so the plane covers exactly the Ocean/Coast
+    /// basins. User-adjustable via the Water section slider (TW1).
     pub water_level: f32,
+    /// Whether the water plane renders. Defaulted from the generated world's
+    /// aquatic-biome census on every generation (Ocean/Coast/River present →
+    /// on); the checkbox overrides in both directions until the next
+    /// generation (TW1).
+    pub water_enabled: bool,
 
-    /// Fluid simulation parameters
-    fluid_params: FluidSimParams,
-    fluid_stats: FluidStats,
-    detected_water_bodies: Vec<DetectedWaterBodyInfo>,
-    show_fluid_debug: bool,
-
+    // TW1 (ratification #6): the dead SPH-era fluid block (`FluidSimParams`,
+    // `WaterBodyPreset`, `FluidQualityPreset`, `DetectedWaterBodyInfo`,
+    // `FluidStats`, detection fields) is DELETED — zero readers, zero UI
+    // render sites (recon §1.5). `astraweave-fluids` has its own unrelated
+    // `WaterBodyPreset` for the deferred effects layer; this panel never
+    // consumed it.
     /// UI state
     auto_regenerate: bool,
     show_advanced: bool,
@@ -703,11 +499,8 @@ impl Default for TerrainPanel {
             wind_erosion: WindErosionParams::default(),
             biome_blend: BiomeBlendParams::default(),
             splat_params: SplatParams::default(),
-            water_level: 0.0,
-            fluid_params: FluidSimParams::default(),
-            fluid_stats: FluidStats::default(),
-            detected_water_bodies: Vec::new(),
-            show_fluid_debug: false,
+            water_level: astraweave_terrain::SEA_LEVEL,
+            water_enabled: false,
             auto_regenerate: false,
             show_advanced: false,
             last_generation_time_ms: 0.0,
@@ -849,6 +642,12 @@ impl TerrainPanel {
     /// Returns true if a sculpting brush mode is active and terrain exists
     pub fn is_brush_active(&self) -> bool {
         self.brush_enabled && self.terrain_state.has_terrain()
+    }
+
+    /// TW1: the currently selected world archetype (drives the per-archetype
+    /// `WaterStyle` mapping in main.rs's water sync).
+    pub fn world_archetype_id(&self) -> astraweave_terrain::world_archetypes::WorldArchetypeId {
+        self.world_archetype_id
     }
 
     /// Configure seed, biome, and chunk radius then trigger background generation.
@@ -1118,6 +917,35 @@ impl TerrainPanel {
                 self.terrain_state.configure(self.seed, &self.primary_biome);
             }
             ui.label(format!("({} chunks)", (self.chunk_radius * 2 + 1).pow(2)));
+        });
+
+        // TW1: water plane controls. The checkbox is census-defaulted on every
+        // generation (aquatic biomes present → on) and user-overridable in
+        // both directions; the level slider moves the plane around the world
+        // sea level (Y=2.0). Both are read by main.rs's per-frame water sync.
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.water_enabled, "Water").on_hover_text(
+                "Render the water plane. Auto-enabled when the generated world \
+                     contains aquatic biomes (ocean/coast); toggle to override.",
+            );
+            ui.label("Level:");
+            ui.add(
+                egui::Slider::new(&mut self.water_level, -5.0..=15.0)
+                    .suffix(" m")
+                    .clamping(egui::SliderClamping::Always),
+            )
+            .on_hover_text(format!(
+                "Water surface height (world Y). Sea level is {} — the elevation \
+                 the biome classifier's ocean/coast bands key on.",
+                astraweave_terrain::SEA_LEVEL
+            ));
+            if ui
+                .button("Sea level")
+                .on_hover_text("Reset the water level to the world sea level")
+                .clicked()
+            {
+                self.water_level = astraweave_terrain::SEA_LEVEL;
+            }
         });
 
         ui.add_space(10.0);
@@ -2230,6 +2058,11 @@ impl TerrainPanel {
                         scatter_placements: self.cached_scatter_placements.len(),
                     };
 
+                    // TW1: default the water plane from the fresh world's
+                    // aquatic-biome census (Ocean/Coast/River present → on).
+                    // The Water checkbox overrides until the next generation.
+                    self.water_enabled = self.terrain_state.has_aquatic_biomes();
+
                     // Queue action so tab_viewer/main.rs can upload chunks to viewport
                     self.pending_actions.push(TerrainAction::Generate);
 
@@ -2448,47 +2281,6 @@ mod tests {
     }
 
     // ============================================================
-    // WATER BODY PRESET TESTS
-    // ============================================================
-
-    #[test]
-    fn test_water_body_preset_all() {
-        let all = WaterBodyPreset::all();
-        assert_eq!(all.len(), 7);
-    }
-
-    #[test]
-    fn test_water_body_preset_all_coverage() {
-        let all = WaterBodyPreset::all();
-        assert!(all.contains(&WaterBodyPreset::Custom));
-        assert!(all.contains(&WaterBodyPreset::CalmLake));
-        assert!(all.contains(&WaterBodyPreset::MountainStream));
-        assert!(all.contains(&WaterBodyPreset::RagingRiver));
-        assert!(all.contains(&WaterBodyPreset::Ocean));
-        assert!(all.contains(&WaterBodyPreset::Waterfall));
-        assert!(all.contains(&WaterBodyPreset::SwampWetland));
-    }
-
-    #[test]
-    fn test_water_body_preset_names() {
-        assert_eq!(WaterBodyPreset::Custom.name(), "Custom");
-        assert_eq!(WaterBodyPreset::CalmLake.name(), "Calm Lake");
-        assert_eq!(WaterBodyPreset::Ocean.name(), "Ocean");
-    }
-
-    // ============================================================
-    // FLUID QUALITY PRESET TESTS
-    // ============================================================
-
-    #[test]
-    fn test_fluid_quality_preset_names() {
-        assert_eq!(FluidQualityPreset::Performance.name(), "Performance");
-        assert_eq!(FluidQualityPreset::Balanced.name(), "Balanced");
-        assert_eq!(FluidQualityPreset::Quality.name(), "Quality");
-        assert_eq!(FluidQualityPreset::Cinematic.name(), "Cinematic");
-    }
-
-    // ============================================================
     // BRUSH MODE TESTS
     // ============================================================
 
@@ -2664,41 +2456,6 @@ mod tests {
     }
 
     // ============================================================
-    // FLUID SIM PARAMS TESTS
-    // ============================================================
-
-    #[test]
-    fn test_fluid_sim_default() {
-        let fp = FluidSimParams::default();
-        assert!(fp.enabled);
-        assert_eq!(fp.quality_preset, FluidQualityPreset::Balanced);
-        assert_eq!(fp.water_body_preset, WaterBodyPreset::CalmLake);
-    }
-
-    #[test]
-    fn test_fluid_sim_physics() {
-        let fp = FluidSimParams::default();
-        assert_eq!(fp.particle_count, 65536);
-        assert!((fp.smoothing_radius - 1.0).abs() < 0.01);
-        assert!((fp.gravity - (-9.8)).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_fluid_sim_rendering() {
-        let fp = FluidSimParams::default();
-        assert!((fp.transparency - 0.7).abs() < 0.01);
-        assert!(fp.caustics_enabled);
-        assert!(fp.foam_enabled);
-    }
-
-    #[test]
-    fn test_fluid_sim_clone() {
-        let fp = FluidSimParams::default();
-        let cloned = fp.clone();
-        assert!(cloned.enabled);
-    }
-
-    // ============================================================
     // TERRAIN PANEL TESTS
     // ============================================================
 
@@ -2840,13 +2597,6 @@ mod tests {
     }
 
     #[test]
-    fn test_all_water_body_presets_have_names() {
-        for preset in WaterBodyPreset::all() {
-            assert!(!preset.name().is_empty());
-        }
-    }
-
-    #[test]
     fn test_terrain_generation_settings() {
         let panel = TerrainPanel::new();
         assert!((panel.base_amplitude - 50.0).abs() < 0.01);
@@ -2873,63 +2623,6 @@ mod tests {
             set.insert(*preset);
         }
         assert_eq!(set.len(), ErosionPresetType::all().len());
-    }
-
-    #[test]
-    fn test_water_body_preset_display() {
-        for preset in WaterBodyPreset::all() {
-            let display = format!("{}", preset);
-            assert!(display.contains(preset.name()));
-        }
-    }
-
-    #[test]
-    fn test_water_body_preset_all_count() {
-        let all = WaterBodyPreset::all();
-        assert_eq!(all.len(), 7);
-    }
-
-    #[test]
-    fn test_water_body_preset_is_flowing() {
-        assert!(WaterBodyPreset::MountainStream.is_flowing());
-        assert!(WaterBodyPreset::RagingRiver.is_flowing());
-        assert!(WaterBodyPreset::Waterfall.is_flowing());
-        assert!(!WaterBodyPreset::CalmLake.is_flowing());
-        assert!(!WaterBodyPreset::Ocean.is_flowing());
-    }
-
-    #[test]
-    fn test_water_body_preset_hash() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        for preset in WaterBodyPreset::all() {
-            set.insert(*preset);
-        }
-        assert_eq!(set.len(), WaterBodyPreset::all().len());
-    }
-
-    #[test]
-    fn test_fluid_quality_preset_display() {
-        for preset in FluidQualityPreset::all() {
-            let display = format!("{}", preset);
-            assert!(display.contains(preset.name()));
-        }
-    }
-
-    #[test]
-    fn test_fluid_quality_preset_all() {
-        let all = FluidQualityPreset::all();
-        assert_eq!(all.len(), 4);
-    }
-
-    #[test]
-    fn test_fluid_quality_preset_hash() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        for preset in FluidQualityPreset::all() {
-            set.insert(*preset);
-        }
-        assert_eq!(set.len(), FluidQualityPreset::all().len());
     }
 
     #[test]

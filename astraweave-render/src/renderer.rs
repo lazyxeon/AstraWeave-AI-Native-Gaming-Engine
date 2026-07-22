@@ -7,11 +7,11 @@ use glam::{vec3, Mat4};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
-use astraweave_camera::{FreeFly, RenderView};
 use crate::clustered::{bin_lights_cpu, ClusterDims, CpuLight, WGSL_CLUSTER_BIN};
 use crate::depth::Depth;
 use crate::types::SkinnedVertex;
 use crate::types::{Instance, InstanceRaw, Mesh};
+use astraweave_camera::{FreeFly, RenderView};
 use astraweave_cinematics as awc;
 use astraweave_materials::MaterialPackage;
 
@@ -741,7 +741,15 @@ pub struct Renderer {
     /// `None` (the default) records zero GPU work, preserving the prior frame exactly.
     #[allow(clippy::type_complexity)]
     hdr_overlay: Option<
-        Box<dyn FnMut(&mut wgpu::CommandEncoder, &wgpu::TextureView, &wgpu::TextureView, &wgpu::Device, &wgpu::Queue)>,
+        Box<
+            dyn FnMut(
+                &mut wgpu::CommandEncoder,
+                &wgpu::TextureView,
+                &wgpu::TextureView,
+                &wgpu::Device,
+                &wgpu::Queue,
+            ),
+        >,
     >,
     /// W.2b — opaque scene-color snapshot the split water pass samples for
     /// refraction (copied from `hdr_tex` after the opaque main pass closes).
@@ -4601,8 +4609,23 @@ fn vs(input: VSIn) -> VSOut {
         &self.gpu_memory_budget
     }
 
-    /// Set the water renderer for ocean rendering
+    /// Set the water renderer for ocean rendering.
+    ///
+    /// The split water pass draws into the **HDR target** (`hdr_format()`),
+    /// not the window surface, so the installed renderer's pipeline must be
+    /// built against that format. A mismatch is rejected here, at install
+    /// time — the alternative is a wgpu validation panic on the first frame
+    /// with visible water chunks, which is exactly how the editor shipped a
+    /// broken water path undetected (TWR_WATER_RECON.md §1.6).
     pub fn set_water_renderer(&mut self, water: crate::water::WaterRenderer) {
+        assert!(
+            water.target_format() == self.hdr_format(),
+            "WaterRenderer must be built against the HDR water-pass target format \
+             ({:?}), got {:?} — construct it with `WaterRenderer::new(device, \
+             renderer.hdr_format(), ...)`, never the window surface format",
+            self.hdr_format(),
+            water.target_format()
+        );
         self.water_renderer = Some(water);
     }
 
@@ -4622,7 +4645,15 @@ fn vs(input: VSIn) -> VSOut {
     pub fn set_hdr_overlay(
         &mut self,
         overlay: Option<
-            Box<dyn FnMut(&mut wgpu::CommandEncoder, &wgpu::TextureView, &wgpu::TextureView, &wgpu::Device, &wgpu::Queue)>,
+            Box<
+                dyn FnMut(
+                    &mut wgpu::CommandEncoder,
+                    &wgpu::TextureView,
+                    &wgpu::TextureView,
+                    &wgpu::Device,
+                    &wgpu::Queue,
+                ),
+            >,
         >,
     ) {
         self.hdr_overlay = overlay;

@@ -2174,8 +2174,8 @@ mod tests {
     #[test]
     fn test_renderer_lifecycle_headless() {
         pollster::block_on(async {
-            use astraweave_camera::FreeFly as Camera;
             use crate::renderer::Renderer;
+            use astraweave_camera::FreeFly as Camera;
 
             // Initialize headless renderer
             let mut renderer = Renderer::new_headless(800, 600)
@@ -2289,15 +2289,108 @@ mod tests {
                 .await
                 .expect("Failed to create headless renderer");
 
+            // TW1: the water pass draws into the HDR target — the pipeline must
+            // be built against hdr_format(), never config().format (the prior
+            // construction here was the same wrong-format pattern that crashed
+            // the editor; it survived only because this test never drew).
             let water = WaterRenderer::new(
                 renderer.device(),
-                renderer.config().format,
+                renderer.hdr_format(),
                 wgpu::TextureFormat::Depth32Float,
             );
 
             renderer.set_water_renderer(water);
-            // Verify it doesn't crash during render
-            renderer.render().expect("Failed to render with water");
+            // TW1: populate the camera-following chunk set so run_water_pass
+            // actually DRAWS. Without this the dormant-skip (has_visible_chunks
+            // == false) silently bypasses the water pipeline, which is exactly
+            // how the editor's wrong-format construction went undetected until
+            // it panicked live (TWR_WATER_RECON.md §1.6).
+            renderer.update_water(glam::Mat4::IDENTITY, glam::Vec3::new(0.0, 10.0, 0.0), 0.5);
+
+            // TW1: draw through `draw_into` (the editor path). `render()` is a
+            // no-op headless — `acquire_surface_texture` yields None and it
+            // early-returns before any pass, so the prior "verify it doesn't
+            // crash during render" never drew anything. An offscreen color +
+            // depth target pair exercises the real opaque→water→post chain.
+            let size = wgpu::Extent3d {
+                width: 800,
+                height: 600,
+                depth_or_array_layers: 1,
+            };
+            let color_tex = renderer.device().create_texture(&wgpu::TextureDescriptor {
+                label: Some("test water target"),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: renderer.config().format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            });
+            let color_view = color_tex.create_view(&wgpu::TextureViewDescriptor::default());
+            let depth_tex = renderer.device().create_texture(&wgpu::TextureDescriptor {
+                label: Some("test water depth"),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth32Float,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[],
+            });
+            let depth_view = depth_tex.create_view(&wgpu::TextureViewDescriptor::default());
+
+            // Strict validation — the headless uncaptured-error handler only
+            // LOGS validation errors (renderer.rs new_headless), so an invalid
+            // water draw would otherwise pass silently. The error scope turns
+            // any pass/pipeline incompatibility into a test failure.
+            renderer
+                .device()
+                .push_error_scope(wgpu::ErrorFilter::Validation);
+            let mut enc =
+                renderer
+                    .device()
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("test water enc"),
+                    });
+            renderer
+                .draw_into(&color_view, Some(&depth_view), &mut enc)
+                .expect("draw_into failed");
+            renderer.queue().submit(Some(enc.finish()));
+            let validation = pollster::block_on(renderer.device().pop_error_scope());
+            assert!(
+                validation.is_none(),
+                "water draw produced a wgpu validation error: {}",
+                validation.unwrap()
+            );
+        });
+    }
+
+    /// TW1 regression guard for TWR_WATER_RECON.md §1.6: installing a
+    /// `WaterRenderer` built against the window-surface format (the editor's
+    /// old construction) must be rejected loudly at install time instead of
+    /// panicking inside wgpu on the first drawn frame. This test FAILS on the
+    /// pre-TW1 code (no install check → no panic → `should_panic` unmet).
+    #[test]
+    #[should_panic(expected = "must be built against the HDR water-pass target format")]
+    fn test_water_renderer_wrong_format_rejected_at_install() {
+        pollster::block_on(async {
+            use crate::renderer::Renderer;
+            use crate::water::WaterRenderer;
+
+            let mut renderer = Renderer::new_headless(64, 64)
+                .await
+                .expect("Failed to create headless renderer");
+
+            // Rgba8UnormSrgb == the headless surface config format — the exact
+            // wrong argument the editor passed (engine_adapter surface_format()).
+            let water = WaterRenderer::new(
+                renderer.device(),
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                wgpu::TextureFormat::Depth32Float,
+            );
+            renderer.set_water_renderer(water); // must panic here
         });
     }
 

@@ -3829,10 +3829,14 @@ impl EngineRenderAdapter {
     pub fn set_water_enabled(&mut self, enabled: bool, style: WaterStyle) {
         self.water_enabled = enabled;
         if enabled {
-            let format = self.renderer.surface_format();
+            // TW1: the split water pass draws into the HDR target — the
+            // pipeline MUST be built against `hdr_format()`, never the window
+            // surface format. The pre-TW1 `surface_format()` argument here
+            // panicked wgpu on the first drawn water frame (TWR_WATER_RECON.md
+            // §1.6); `set_water_renderer` now rejects a mismatch at install.
             let water = astraweave_render::WaterRenderer::new(
                 self.renderer.device(),
-                format,
+                self.renderer.hdr_format(),
                 wgpu::TextureFormat::Depth32Float,
             );
             // Apply style-specific colors
@@ -3860,39 +3864,12 @@ impl EngineRenderAdapter {
             };
             let mut water = water;
             water.set_water_colors(deep, shallow, foam);
-            // W.2c.2 TEST SCAFFOLDING — hardcoded part/raise/freeze instances near
-            // world origin so the deformation playback layer is visible on the
-            // editor's now-live water (W-FU-2). The pipeline is parameterized; these
-            // set-piece inputs are replaced by fate-weaving gameplay triggers in
-            // W.2c.3. Runtime consumers (veilweaver/hello_companion) set zero
-            // instances, so their surface is unchanged.
-            use astraweave_render::{WeaveInstance, WeaveKind};
-            water.set_weave_instances(&[
-                WeaveInstance {
-                    kind: WeaveKind::Part,
-                    position: glam::Vec2::new(0.0, 0.0),
-                    radius: 30.0,
-                    orientation: 0.0,
-                    intensity: 0.7,
-                    phase: 0.0,
-                },
-                WeaveInstance {
-                    kind: WeaveKind::Raise,
-                    position: glam::Vec2::new(90.0, 0.0),
-                    radius: 30.0,
-                    orientation: 0.0,
-                    intensity: 0.6,
-                    phase: 0.0,
-                },
-                WeaveInstance {
-                    kind: WeaveKind::Freeze,
-                    position: glam::Vec2::new(-90.0, 0.0),
-                    radius: 30.0,
-                    orientation: 0.0,
-                    intensity: 1.0,
-                    phase: 0.0,
-                },
-            ]);
+            // TW1 (ratification #6): the W.2c.2 hardcoded part/raise/freeze
+            // scaffolding weaves that lived here are DELETED — they were
+            // set-piece test inputs meant to be replaced by a real gameplay
+            // feed, which for the editor never arrived (the producers live in
+            // the weaving_playground binary only). The editor surface now
+            // starts weave-free; an editor weave feed is future work.
             self.renderer.set_water_renderer(water);
         } else {
             self.renderer.clear_water_renderer();

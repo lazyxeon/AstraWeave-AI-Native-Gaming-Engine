@@ -42,9 +42,12 @@ const LOD_DISTANCES: [f32; 4] = [110.0, 220.0, 360.0, f32::INFINITY];
 /// Must exceed the maximum LOD-boundary height mismatch (≤ total wave
 /// amplitude ≈ 1.65 units) by a wide margin so no crack outruns the skirt.
 const SKIRT_DEPTH: f32 = 8.0;
-/// Default water level (world Y). Matches the former baked plane Y so existing
-/// consumers that never call [`WaterRenderer::set_water_level`] are unchanged.
-const DEFAULT_WATER_LEVEL: f32 = 2.0;
+/// Default water level (world Y) — **THE world sea level**, sourced from
+/// [`astraweave_terrain::SEA_LEVEL`] (TW1 ratification #1: Y=2.0 is the single
+/// source of truth shared by the biome classifier's aquatic bands and the
+/// rendered water plane). Consumers that never call
+/// [`WaterRenderer::set_water_level`] get a surface at sea level.
+pub const DEFAULT_WATER_LEVEL: f32 = astraweave_terrain::SEA_LEVEL;
 
 // ── Weave-response deformation (W.2c) ────────────────────────────────────────
 
@@ -170,16 +173,16 @@ pub struct WaterUniforms {
     pub _pad4: f32,                    // 156-160
     // W.2b — refraction + depth-foam. inv_view_proj sits at offset 160 (16-aligned)
     // so the mat4 satisfies std140 alignment.
-    pub inv_view_proj: [[f32; 4]; 4],  // 160-224 — reconstruct scene world pos from depth
-    pub screen_size: [f32; 2],         // 224-232 — for frag → screen-UV
-    pub refraction_strength: f32,      // 232-236 — normal-driven scene-color distortion
-    pub foam_depth_band: f32,          // 236-240 — world-space shoreline foam width
+    pub inv_view_proj: [[f32; 4]; 4], // 160-224 — reconstruct scene world pos from depth
+    pub screen_size: [f32; 2],        // 224-232 — for frag → screen-UV
+    pub refraction_strength: f32,     // 232-236 — normal-driven scene-color distortion
+    pub foam_depth_band: f32,         // 236-240 — world-space shoreline foam width
     // W.2c — weave-response deformation. The `weave_instances` array is 16-aligned at
     // offset 256 (std140 array-of-struct stride 32); 8 × 32 B = 256 B → 512 B total.
-    pub weave_count: u32,              // 240-244
-    pub _pad5: u32,                    // 244-248
-    pub _pad6: u32,                    // 248-252
-    pub _pad7: u32,                    // 252-256
+    pub weave_count: u32,                                         // 240-244
+    pub _pad5: u32,                                               // 244-248
+    pub _pad6: u32,                                               // 248-252
+    pub _pad7: u32,                                               // 252-256
     pub weave_instances: [WeaveInstanceRaw; MAX_WEAVE_INSTANCES], // 256-512
 }
 
@@ -279,6 +282,12 @@ struct LodMesh {
 /// Water rendering system
 pub struct WaterRenderer {
     pipeline: wgpu::RenderPipeline,
+    /// Color format the pipeline was built against. Must equal the format of
+    /// the pass the water draws into — the HDR target (`Renderer::hdr_format`),
+    /// NOT the window surface. `Renderer::set_water_renderer` enforces this at
+    /// install time (TW1; the editor shipped a surface-format pipeline that
+    /// panicked on the first drawn frame — TWR_WATER_RECON.md §1.6).
+    target_format: wgpu::TextureFormat,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: wgpu::BindGroup,
     uniform_buffer: wgpu::Buffer,
@@ -303,10 +312,15 @@ pub struct WaterRenderer {
 }
 
 impl WaterRenderer {
-    /// Create a new water renderer
+    /// Create a new water renderer.
+    ///
+    /// `target_format` is the color format of the pass the water will draw
+    /// into — the **HDR target** (`Renderer::hdr_format()`, Rgba16Float), not
+    /// the window surface format. Installing a mismatched renderer is rejected
+    /// by `Renderer::set_water_renderer`.
     pub fn new(
         device: &wgpu::Device,
-        surface_format: wgpu::TextureFormat,
+        target_format: wgpu::TextureFormat,
         depth_format: wgpu::TextureFormat,
     ) -> Self {
         // Load shader
@@ -386,7 +400,11 @@ impl WaterRenderer {
         // renderer wires real scene-color/depth views via `prepare_scene`.
         let dummy_scene_color = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("water_dummy_scene_color"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -398,7 +416,11 @@ impl WaterRenderer {
             dummy_scene_color.create_view(&wgpu::TextureViewDescriptor::default());
         let dummy_depth = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("water_dummy_depth"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -440,7 +462,7 @@ impl WaterRenderer {
                 module: &shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_format,
+                    format: target_format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -503,6 +525,7 @@ impl WaterRenderer {
 
         Self {
             pipeline,
+            target_format,
             bind_group_layout,
             bind_group,
             uniform_buffer,
@@ -515,6 +538,13 @@ impl WaterRenderer {
             instance_counts,
             uniforms,
         }
+    }
+
+    /// Color format this renderer's pipeline was built against (the pass it
+    /// must draw into). `Renderer::set_water_renderer` checks this against
+    /// `hdr_format()` at install time.
+    pub fn target_format(&self) -> wgpu::TextureFormat {
+        self.target_format
     }
 
     /// Build the 4-entry water bind group (uniform + scene-color + scene-depth + sampler).
@@ -603,12 +633,7 @@ impl WaterRenderer {
     /// fixed winding `(a_top, b_top, a_bot)` + `(b_top, b_bot, a_bot)` yields an
     /// outward horizontal normal when callers traverse each edge in the direction
     /// documented in [`Self::generate_tile`].
-    fn push_wall(
-        vertices: &mut Vec<WaterVertex>,
-        indices: &mut Vec<u32>,
-        a_top: u32,
-        b_top: u32,
-    ) {
+    fn push_wall(vertices: &mut Vec<WaterVertex>, indices: &mut Vec<u32>, a_top: u32, b_top: u32) {
         let a = vertices[a_top as usize];
         let b = vertices[b_top as usize];
         let a_bot = vertices.len() as u32;
@@ -647,7 +672,12 @@ impl WaterRenderer {
         }
         // RIGHT edge (x = n col), traverse z: 0 → n
         for z in 0..n {
-            Self::push_wall(&mut vertices, &mut indices, z * stride + n, (z + 1) * stride + n);
+            Self::push_wall(
+                &mut vertices,
+                &mut indices,
+                z * stride + n,
+                (z + 1) * stride + n,
+            );
         }
 
         (vertices, indices)
@@ -704,11 +734,7 @@ impl WaterRenderer {
         for (lod, chunks) in per_lod.iter().enumerate() {
             self.instance_counts[lod] = chunks.len() as u32;
             if !chunks.is_empty() {
-                queue.write_buffer(
-                    &self.instance_buffers[lod],
-                    0,
-                    bytemuck::cast_slice(chunks),
-                );
+                queue.write_buffer(&self.instance_buffers[lod], 0, bytemuck::cast_slice(chunks));
             }
         }
     }
@@ -742,7 +768,11 @@ impl WaterRenderer {
         // this frame, so re-uploading all 240 B here would be redundant.
         self.uniforms.screen_size = screen_size;
         let off = std::mem::offset_of!(WaterUniforms, screen_size) as u64;
-        queue.write_buffer(&self.uniform_buffer, off, bytemuck::bytes_of(&self.uniforms.screen_size));
+        queue.write_buffer(
+            &self.uniform_buffer,
+            off,
+            bytemuck::bytes_of(&self.uniforms.screen_size),
+        );
     }
 
     /// Set water level (world Y). Takes effect on the next [`Self::update`] or
@@ -789,7 +819,12 @@ impl WaterRenderer {
     /// [`Self::update`].
     pub fn set_weave_instances(&mut self, instances: &[WeaveInstance]) {
         let n = instances.len().min(MAX_WEAVE_INSTANCES);
-        for (slot, inst) in self.uniforms.weave_instances.iter_mut().zip(&instances[..n]) {
+        for (slot, inst) in self
+            .uniforms
+            .weave_instances
+            .iter_mut()
+            .zip(&instances[..n])
+        {
             *slot = inst.to_raw();
         }
         // Clear unused slots so a previously-set instance can't linger active.
@@ -839,6 +874,17 @@ impl WaterRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_default_water_level_is_world_sea_level() {
+        // TW1 ratification #1: Y=2.0 is THE world sea level, single-sourced
+        // from astraweave_terrain::SEA_LEVEL (the biome classifier's aquatic
+        // bands and the rendered plane share it). Changing SEA_LEVEL upstream
+        // must be a conscious cross-system decision — this pin makes it loud.
+        assert_eq!(DEFAULT_WATER_LEVEL, astraweave_terrain::SEA_LEVEL);
+        assert_eq!(DEFAULT_WATER_LEVEL, 2.0);
+        assert_eq!(WaterUniforms::default().water_level, DEFAULT_WATER_LEVEL);
+    }
 
     #[test]
     fn test_water_plane_generation() {
@@ -895,7 +941,10 @@ mod tests {
     #[test]
     fn test_chunk_instance_desc() {
         let desc = ChunkInstance::desc();
-        assert_eq!(desc.array_stride, std::mem::size_of::<ChunkInstance>() as u64);
+        assert_eq!(
+            desc.array_stride,
+            std::mem::size_of::<ChunkInstance>() as u64
+        );
         assert_eq!(desc.step_mode, wgpu::VertexStepMode::Instance);
         assert_eq!(desc.attributes[0].shader_location, 2);
     }
@@ -968,13 +1017,22 @@ mod tests {
                 };
                 renderer.set_weave_instances(&[
                     part,
-                    WeaveInstance { kind: WeaveKind::Raise, ..part },
-                    WeaveInstance { kind: WeaveKind::Freeze, ..part },
+                    WeaveInstance {
+                        kind: WeaveKind::Raise,
+                        ..part
+                    },
+                    WeaveInstance {
+                        kind: WeaveKind::Freeze,
+                        ..part
+                    },
                 ]);
                 assert_eq!(renderer.weave_count(), 3);
                 // intensity clamped to [0,1] (skirt-tolerance guard).
                 assert_eq!(renderer.uniforms.weave_instances[0].intensity, 1.0);
-                assert_eq!(renderer.uniforms.weave_instances[0].kind, WeaveKind::Part as u32);
+                assert_eq!(
+                    renderer.uniforms.weave_instances[0].kind,
+                    WeaveKind::Part as u32
+                );
 
                 // Ceiling: more than MAX_WEAVE_INSTANCES are dropped.
                 let many = vec![part; MAX_WEAVE_INSTANCES + 5];
@@ -984,7 +1042,10 @@ mod tests {
                 // Clear → back to identity.
                 renderer.clear_weave_instances();
                 assert_eq!(renderer.weave_count(), 0);
-                assert_eq!(renderer.uniforms.weave_instances[0].kind, WeaveKind::None as u32);
+                assert_eq!(
+                    renderer.uniforms.weave_instances[0].kind,
+                    WeaveKind::None as u32
+                );
             }
         });
     }

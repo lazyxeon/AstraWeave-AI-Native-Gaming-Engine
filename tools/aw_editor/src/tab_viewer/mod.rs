@@ -1332,6 +1332,20 @@ impl EditorTabViewer {
         self.terrain_panel.water_level
     }
 
+    /// TW1: whether the water plane should render (census-defaulted per
+    /// generation on the Terrain panel, checkbox-overridable).
+    pub fn terrain_water_enabled(&self) -> bool {
+        self.terrain_panel.water_enabled
+    }
+
+    /// TW1: the selected world archetype (drives the per-archetype
+    /// `WaterStyle` mapping).
+    pub fn terrain_world_archetype(
+        &self,
+    ) -> astraweave_terrain::world_archetypes::WorldArchetypeId {
+        self.terrain_panel.world_archetype_id()
+    }
+
     /// Sample the terrain height at a world (x, z) position.
     /// Returns the height if terrain exists at that location.
     pub fn sample_terrain_height_at(&self, world_x: f32, world_z: f32) -> Option<f32> {

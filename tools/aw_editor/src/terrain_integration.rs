@@ -61,6 +61,20 @@ pub struct GeneratedChunk {
     pub world_position: Vec3,
 }
 
+/// TW1: does this per-vertex biome-id set contain aquatic classification?
+///
+/// Drives the editor's water-enable default. The water plane at
+/// `astraweave_terrain::SEA_LEVEL` is visible exactly where terrain dipped
+/// below it, which is what `Ocean`/`Coast` mark (the classifier's
+/// elevation-driven aquatic bands). `River` is taxonomy-only pending the
+/// hydrology campaign but included so river-bearing worlds enable water
+/// automatically when it lands. `Beach` and `Wetland` sit ABOVE sea level and
+/// do not imply visible plane water.
+pub fn ids_contain_aquatic(ids: &[BiomeId]) -> bool {
+    ids.iter()
+        .any(|id| matches!(id, BiomeId::Ocean | BiomeId::Coast | BiomeId::River))
+}
+
 /// Terrain vertex (CPU-side, mirroring viewport::types::TerrainVertex layout).
 ///
 /// Real-Fix.C 2026-05-08: unified `biome_weights_0/1` and `material_ids/
@@ -1635,22 +1649,22 @@ impl TerrainState {
             .unwrap_or(BiomeType::Grassland)
     }
 
-    fn id_to_biome(id: u32) -> BiomeType {
-        match id {
-            0 => BiomeType::Grassland,
-            1 => BiomeType::Desert,
-            2 => BiomeType::Forest,
-            3 => BiomeType::Mountain,
-            4 => BiomeType::Tundra,
-            5 => BiomeType::Swamp,
-            6 => BiomeType::Beach,
-            7 => BiomeType::River,
-            _ => BiomeType::Grassland,
-        }
-    }
+    // TW1 (ratification #6): `id_to_biome(u32) -> BiomeType` deleted — its one
+    // caller was the zero-caller `apply_brush_paint` (also deleted). The E3
+    // per-vertex `BiomeId` field is the biome authority; T.W.2's carve brush
+    // will mutate terrain honestly rather than repainting the legacy map.
 
     pub fn is_dirty(&self) -> bool {
         self.terrain_dirty
+    }
+
+    /// TW1: true when any generated chunk's per-vertex `BiomeId` field
+    /// contains an aquatic id. Drives the editor's water-enable default —
+    /// chunks from legacy paths without `biome_ids` contribute `false`.
+    pub fn has_aquatic_biomes(&self) -> bool {
+        self.generated_chunks
+            .values()
+            .any(|gc| gc.chunk.biome_ids().is_some_and(ids_contain_aquatic))
     }
 
     pub fn chunk_count(&self) -> usize {
@@ -2250,92 +2264,12 @@ impl TerrainState {
         modified
     }
 
-    /// Paint a biome material at the given world-space position.
-    ///
-    /// `biome_id`: 0-7 corresponding to the shader biome IDs.
-    /// Returns true if any terrain was modified.
-    pub fn apply_brush_paint(
-        &mut self,
-        world_x: f32,
-        world_z: f32,
-        radius: f32,
-        biome_id: u32,
-    ) -> bool {
-        let chunk_size = self.config.chunk_size;
-        let primary_biome = self.primary_biome_type();
-        let target_biome = Self::id_to_biome(biome_id);
-        let mut modified = false;
-
-        let chunk_ids: Vec<ChunkId> = self.generated_chunks.keys().cloned().collect();
-
-        for chunk_id in chunk_ids {
-            let chunk_origin_x = chunk_id.x as f32 * chunk_size;
-            let chunk_origin_z = chunk_id.z as f32 * chunk_size;
-
-            // Quick AABB check
-            let closest_x = world_x.clamp(chunk_origin_x, chunk_origin_x + chunk_size);
-            let closest_z = world_z.clamp(chunk_origin_z, chunk_origin_z + chunk_size);
-            let dx = world_x - closest_x;
-            let dz = world_z - closest_z;
-            if dx * dx + dz * dz > radius * radius {
-                continue;
-            }
-
-            if let Some(gen_chunk) = self.generated_chunks.get_mut(&chunk_id) {
-                let resolution = gen_chunk.chunk.heightmap().resolution() as usize;
-                let cell_size = chunk_size / (resolution - 1) as f32;
-                let mut chunk_modified = false;
-
-                let biome_map = gen_chunk.chunk.biome_map_mut();
-                for gz in 0..resolution {
-                    for gx in 0..resolution {
-                        let px = chunk_origin_x + gx as f32 * cell_size;
-                        let pz = chunk_origin_z + gz as f32 * cell_size;
-                        let dist = ((px - world_x).powi(2) + (pz - world_z).powi(2)).sqrt();
-                        if dist > radius {
-                            continue;
-                        }
-                        let idx = gz * resolution + gx;
-                        if idx < biome_map.len() {
-                            biome_map[idx] = target_biome;
-                            chunk_modified = true;
-                        }
-                    }
-                }
-
-                if chunk_modified {
-                    let world_offset = Vec3::new(chunk_origin_x, 0.0, chunk_origin_z);
-                    // Phase 1.6-F.3-phase-1: preserve pre-erosion biome_weights
-                    // across biome-paint edits per §2.5 authorial-intent
-                    // stability.
-                    let painted_weights =
-                        gen_chunk.chunk.biome_weights().map(|slice| slice.to_vec());
-                    let painted_ids = gen_chunk.chunk.biome_ids().map(|slice| slice.to_vec());
-                    let (vertices, indices) = Self::generate_heightmap_mesh(
-                        gen_chunk.chunk.heightmap(),
-                        gen_chunk.chunk.biome_map(),
-                        chunk_size,
-                        world_offset,
-                        self.config.seed,
-                        primary_biome,
-                        painted_weights.as_deref(),
-                        painted_ids.as_deref(),
-                    );
-                    gen_chunk.vertices = vertices;
-                    gen_chunk.indices = indices;
-                    // Mark this chunk dirty for incremental GPU upload
-                    if let Some(gpu_idx) = self.chunk_order.iter().position(|id| *id == chunk_id) {
-                        if !self.dirty_chunk_indices.contains(&gpu_idx) {
-                            self.dirty_chunk_indices.push(gpu_idx);
-                        }
-                    }
-                    modified = true;
-                }
-            }
-        }
-
-        modified
-    }
+    // TW1 (ratification #6): `apply_brush_paint` (legacy 8-slot biome-map
+    // paint, ~85 LoC) deleted — zero callers at HEAD (the live Paint brush
+    // routes to `apply_brush_paint_material`; verified by workspace grep in
+    // TWR_WATER_RECON.md §3.1 and re-verified this beat). The remaining
+    // `chunk.biome_map_mut()` caller is generation's primary-biome override
+    // (`generate_terrain`), so the accessor itself stays.
 
     /// Paint a material directly onto vertex material_ids/material_weights slots.
     ///
@@ -3512,6 +3446,40 @@ mod tests {
         let state = TerrainState::new();
         assert_eq!(state.chunk_count(), 0);
         assert!(!state.has_terrain());
+    }
+
+    /// TW1: the water-enable census predicate. Ocean/Coast/River are the
+    /// aquatic ids that imply visible plane water; Beach/Wetland sit above
+    /// sea level and must NOT enable water on their own.
+    #[test]
+    fn tw1_aquatic_census_predicate() {
+        // Empty and terrestrial-only sets: no water.
+        assert!(!ids_contain_aquatic(&[]));
+        assert!(!ids_contain_aquatic(&[
+            BiomeId::TemperateGrassland,
+            BiomeId::TemperateDeciduousForest,
+            BiomeId::MountainRocky,
+            BiomeId::SnowCap,
+        ]));
+        // Above-sea-level shoreline/marsh ids alone: no water.
+        assert!(!ids_contain_aquatic(&[BiomeId::Beach, BiomeId::Wetland]));
+
+        // Each sub-sea aquatic id enables, alone or embedded.
+        assert!(ids_contain_aquatic(&[BiomeId::Ocean]));
+        assert!(ids_contain_aquatic(&[BiomeId::Coast]));
+        assert!(ids_contain_aquatic(&[BiomeId::River]));
+        assert!(ids_contain_aquatic(&[
+            BiomeId::TemperateGrassland,
+            BiomeId::Beach,
+            BiomeId::Coast,
+        ]));
+    }
+
+    /// TW1: a fresh TerrainState (no chunks) reports no aquatic biomes.
+    #[test]
+    fn tw1_has_aquatic_biomes_false_without_terrain() {
+        let state = TerrainState::new();
+        assert!(!state.has_aquatic_biomes());
     }
 
     // Phase 1.6-F.4.B.3.D.3c: `phase_1_6_f2_apply_preset_sets_noise_type_and_continental`
