@@ -10041,12 +10041,26 @@ impl eframe::App for EditorApp {
 }
 
 fn main() -> Result<()> {
+    let startup_t0 = std::time::Instant::now();
     // Initialize editor-specific tracing with console bridge layer.
     // This replaces the generic observability init so that all tracing events
     // are captured and forwarded to the in-editor ConsolePanel each frame.
     if let Err(e) = console_bridge::init_editor_tracing() {
         eprintln!("Warning: Failed to initialize editor tracing: {}", e);
     }
+
+    // ED-1 startup discriminator: the FIRST line this process ever emits.
+    // The 2026-07 "editor hangs with no logs" report could not distinguish
+    // "cargo's silent cold build/freshness phase (exe not spawned yet)" from
+    // "exe blocked in early init" — this banner makes that discrimination
+    // immediate: console shows cargo's `Running ...aw_editor.exe` but no
+    // banner → blocked before tracing (new information); banner but nothing
+    // after → the stage lines below bisect it. See docs/audits/ED1_EDITOR_HANG.md.
+    tracing::info!(
+        "[AW] aw_editor starting (pid={}, cwd={:?})",
+        std::process::id(),
+        std::env::current_dir().unwrap_or_default()
+    );
 
     // Create content directory if it doesn't exist
     let content_dir = PathBuf::from("content");
@@ -10131,6 +10145,15 @@ fn main() -> Result<()> {
         },
         ..Default::default()
     };
+    // ED-1 startup discriminator: last line before the event loop + window +
+    // wgpu instance/adapter/device init. If this prints but the eframe
+    // renderer line / "[AW] wgpu adapter" never follow, the block is in
+    // winit/Vulkan/driver init — the one pre-window region with real external
+    // dependencies (GPU wake, ICD enumeration, implicit layers).
+    tracing::info!(
+        "[AW] startup: pre-window init done in {:?} — entering eframe (event loop + window + wgpu next)",
+        startup_t0.elapsed()
+    );
     eframe::run_native(
         "AstraWeave Level & Encounter Editor",
         options,
