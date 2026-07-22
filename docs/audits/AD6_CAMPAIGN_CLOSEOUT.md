@@ -101,3 +101,4 @@ Append-only per the project's standing correction convention; §4 item 5's origi
 The hygiene fix itself stays queued in terrain beat **T.2** (`T_SERIES_RATIFICATION_2026-07-20.md` §4). Full derivation: `E3_PREFLIGHT_2026-07.md` §4.4.
 
 *CI-W amendment 2026-07-21:* run `29794346156` proves P0 `astraweave-render` transitively linted its `astraweave-terrain` dependency and failed on those six findings; the missing `--no-deps` was the mechanism, so fixing the six findings would have flipped that P0 lane. CI-W now limits every lane with `--no-deps` and keeps terrain explicitly visible in warn-only P1.
+*Director amendment 2026-07-22:* Per `CI_WORKSHOP_2026-07.md` §4, the P0 Clippy red **was caused by the six `astraweave-terrain/src/spline_types.rs` `expect()`s**, reached when `astraweave-render` transitively linted its dependency because the workflow omitted `--no-deps`; the earlier conclusion that the red was “not caused by the terrain crate” is superseded.
