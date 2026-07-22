@@ -16,7 +16,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 // =============================================================================
@@ -381,7 +381,137 @@ impl Default for ProviderRegistry {
 // Attribution File Generator
 // =============================================================================
 
-/// Generate ATTRIBUTION.txt for a provider directory
+#[derive(Debug)]
+struct AttributionEntry {
+    spdx_id: String,
+    body: String,
+}
+
+fn attribution_entry(asset: &ResolvedAsset) -> AttributionEntry {
+    let body = asset
+        .license
+        .attribution_text(&asset.handle)
+        .unwrap_or_else(|| {
+            let mut lines = vec![format!("License: {} (Public Domain)", asset.license.name)];
+            if let Some(source) = &asset.license.source_url {
+                lines.push(format!("Source: {}", source));
+            }
+            lines.join("\n")
+        });
+
+    AttributionEntry {
+        spdx_id: asset.license.spdx_id.clone(),
+        body,
+    }
+}
+
+fn infer_spdx_id(body: &str) -> String {
+    let lower = body.to_ascii_lowercase();
+    if lower.contains("public domain") || lower.contains("publicdomain/zero/1.0") {
+        "CC0-1.0".to_string()
+    } else if lower.contains("by-sa/40")
+        || lower.contains("by-sa/4.0")
+        || lower.contains("attribution-sharealike 4.0")
+    {
+        "CC-BY-SA-4.0".to_string()
+    } else if lower.contains("by-sa/30")
+        || lower.contains("by-sa/3.0")
+        || lower.contains("attribution-sharealike 3.0")
+    {
+        "CC-BY-SA-3.0".to_string()
+    } else if lower.contains("/by/40")
+        || lower.contains("/by/4.0")
+        || lower.contains("attribution 4.0")
+    {
+        "CC-BY-4.0".to_string()
+    } else if lower.contains("/by/30")
+        || lower.contains("/by/3.0")
+        || lower.contains("attribution 3.0")
+    {
+        "CC-BY-3.0".to_string()
+    } else {
+        body.lines()
+            .find_map(|line| line.strip_prefix("License:"))
+            .map(str::trim)
+            .filter(|license| !license.is_empty())
+            .unwrap_or("UNKNOWN")
+            .to_string()
+    }
+}
+
+fn parse_existing_attribution(
+    content: &str,
+) -> Result<(BTreeMap<String, AttributionEntry>, Vec<String>)> {
+    let lines: Vec<&str> = content.lines().collect();
+    let details_index = lines
+        .iter()
+        .position(|line| line.trim() == "## Detailed Attributions")
+        .context("Existing attribution file has no '## Detailed Attributions' section; refusing to overwrite it")?;
+    let separator = "-".repeat(80);
+    let mut entries = BTreeMap::new();
+    let mut index = details_index + 1;
+    let mut footer_start = lines.len();
+
+    while index < lines.len() {
+        if lines[index].trim().is_empty() {
+            index += 1;
+            continue;
+        }
+
+        let Some(handle) = lines[index].strip_prefix("### ").map(str::trim) else {
+            footer_start = index;
+            break;
+        };
+        if handle.is_empty() {
+            anyhow::bail!("Existing attribution file contains an empty asset heading");
+        }
+        index += 1;
+        while index < lines.len() && lines[index].trim().is_empty() {
+            index += 1;
+        }
+
+        let body_start = index;
+        while index < lines.len() && lines[index] != separator {
+            index += 1;
+        }
+        if index == lines.len() {
+            anyhow::bail!(
+                "Existing attribution entry '{}' has no closing separator; refusing to overwrite it",
+                handle
+            );
+        }
+
+        let mut body_end = index;
+        while body_end > body_start && lines[body_end - 1].trim().is_empty() {
+            body_end -= 1;
+        }
+        let body = lines[body_start..body_end].join("\n");
+        entries.insert(
+            handle.to_string(),
+            AttributionEntry {
+                spdx_id: infer_spdx_id(&body),
+                body,
+            },
+        );
+        index += 1;
+    }
+
+    while footer_start < lines.len() && lines[footer_start].trim().is_empty() {
+        footer_start += 1;
+    }
+    let footer = lines[footer_start..]
+        .iter()
+        .map(|line| (*line).to_string())
+        .collect();
+    Ok((entries, footer))
+}
+
+/// Generate or merge `ATTRIBUTION.txt` for a provider directory.
+///
+/// Existing asset blocks are retained, incoming assets replace entries with
+/// the same handle, and the union is emitted in handle order. Any footer/tail
+/// text after the detailed entries is preserved verbatim (modulo newline
+/// normalization), including manually-added provenance notes.
 pub fn generate_attribution_file(
     provider_name: &str,
     assets: &[ResolvedAsset],
@@ -389,32 +519,45 @@ pub fn generate_attribution_file(
 ) -> Result<()> {
     use std::fs;
 
+    let (mut entries, existing_footer) = if output_path.exists() {
+        let existing = fs::read_to_string(output_path).with_context(|| {
+            format!(
+                "Failed to read existing attribution file: {}",
+                output_path.display()
+            )
+        })?;
+        parse_existing_attribution(&existing)?
+    } else {
+        (BTreeMap::new(), Vec::new())
+    };
+
+    for asset in assets {
+        entries.insert(asset.handle.clone(), attribution_entry(asset));
+    }
+
     let mut lines = vec![
         format!("# Attribution - {}", provider_name.to_uppercase()),
         "=".repeat(80),
         String::new(),
         format!(
             "This directory contains {} assets from {}:",
-            assets.len(),
+            entries.len(),
             provider_name
         ),
         String::new(),
     ];
 
     // Group by license type
-    let mut by_license: HashMap<String, Vec<&ResolvedAsset>> = HashMap::new();
-    for asset in assets {
-        by_license
-            .entry(asset.license.spdx_id.clone())
-            .or_default()
-            .push(asset);
+    let mut by_license: BTreeMap<&str, usize> = BTreeMap::new();
+    for entry in entries.values() {
+        *by_license.entry(&entry.spdx_id).or_default() += 1;
     }
 
     // Write summary
     lines.push("## License Summary".to_string());
     lines.push(String::new());
-    for (spdx_id, assets_list) in &by_license {
-        lines.push(format!("- {}: {} assets", spdx_id, assets_list.len()));
+    for (spdx_id, count) in by_license {
+        lines.push(format!("- {}: {} assets", spdx_id, count));
     }
     lines.push(String::new());
     lines.push("=".repeat(80));
@@ -424,28 +567,24 @@ pub fn generate_attribution_file(
     lines.push("## Detailed Attributions".to_string());
     lines.push(String::new());
 
-    for asset in assets {
-        lines.push(format!("### {}", asset.handle));
+    for (handle, entry) in &entries {
+        lines.push(format!("### {}", handle));
         lines.push(String::new());
-
-        if let Some(attribution) = asset.license.attribution_text(&asset.handle) {
-            lines.push(attribution);
-        } else {
-            lines.push(format!("License: {} (Public Domain)", asset.license.name));
-            if let Some(source) = &asset.license.source_url {
-                lines.push(format!("Source: {}", source));
-            }
-        }
-
+        lines.push(entry.body.clone());
         lines.push(String::new());
         lines.push("-".repeat(80));
         lines.push(String::new());
     }
 
-    // Write footer
+    // Preserve existing footer/tail notes. A new file receives the standard
+    // footer once; subsequent merges retain it, making repeated runs idempotent.
     lines.push(String::new());
-    lines.push("For full license texts, see URLs above.".to_string());
-    lines.push(format!("Generated: {}", chrono::Utc::now().to_rfc3339()));
+    if existing_footer.is_empty() {
+        lines.push("For full license texts, see URLs above.".to_string());
+        lines.push(format!("Generated: {}", chrono::Utc::now().to_rfc3339()));
+    } else {
+        lines.extend(existing_footer);
+    }
 
     let content = lines.join("\n");
     fs::write(output_path, content).with_context(|| {
@@ -906,5 +1045,73 @@ mod tests {
         assert!(content.contains("### a"));
         assert!(content.contains("### b"));
         assert!(content.contains("Generated:"));
+    }
+
+    #[test]
+    fn test_generate_attribution_file_merges_union_and_is_idempotent() {
+        let temp = TempDir::new().unwrap();
+        let out_path = temp.path().join("ATTRIBUTION.txt");
+        let existing = concat!(
+            "# Attribution - DUMMY\n",
+            "================================================================================\n\n",
+            "This directory contains 2 assets from dummy:\n\n",
+            "## License Summary\n\n",
+            "- CC0-1.0: 2 assets\n\n",
+            "================================================================================\n\n",
+            "## Detailed Attributions\n\n",
+            "### zeta\n\n",
+            "License: Creative Commons Zero v1.0 Universal (Public Domain)\n",
+            "Source: https://src/zeta\n\n",
+            "--------------------------------------------------------------------------------\n\n",
+            "### alpha\n\n",
+            "License: Creative Commons Zero v1.0 Universal (Public Domain)\n",
+            "Source: https://src/alpha-old\n\n",
+            "--------------------------------------------------------------------------------\n\n\n",
+            "For full license texts, see URLs above.\n",
+            "Generated: original fixture — manually-added tail note"
+        );
+        std::fs::write(&out_path, existing).unwrap();
+
+        let incoming = vec![
+            ResolvedAsset {
+                handle: "beta".to_string(),
+                provider: "dummy".to_string(),
+                asset_type: AssetType::Texture,
+                urls: HashMap::new(),
+                license: LicenseInfo::cc0(None, Some("https://src/beta".to_string())),
+                metadata: HashMap::new(),
+            },
+            ResolvedAsset {
+                handle: "alpha".to_string(),
+                provider: "dummy".to_string(),
+                asset_type: AssetType::Texture,
+                urls: HashMap::new(),
+                license: LicenseInfo::cc0(None, Some("https://src/alpha-updated".to_string())),
+                metadata: HashMap::new(),
+            },
+        ];
+
+        generate_attribution_file("dummy", &incoming, &out_path).unwrap();
+        let first = std::fs::read_to_string(&out_path).unwrap();
+        assert!(first.contains("This directory contains 3 assets from dummy:"));
+        assert!(first.contains("- CC0-1.0: 3 assets"));
+        assert_eq!(first.matches("### alpha").count(), 1);
+        assert!(!first.contains("https://src/alpha-old"));
+        assert!(first.contains("https://src/alpha-updated"));
+        assert!(first.contains("https://src/beta"));
+        assert!(first.contains("https://src/zeta"));
+        assert!(first.contains("Generated: original fixture — manually-added tail note"));
+
+        let alpha = first.find("### alpha").unwrap();
+        let beta = first.find("### beta").unwrap();
+        let zeta = first.find("### zeta").unwrap();
+        assert!(alpha < beta && beta < zeta, "entries must be handle-sorted");
+
+        generate_attribution_file("dummy", &incoming, &out_path).unwrap();
+        let second = std::fs::read_to_string(&out_path).unwrap();
+        assert_eq!(
+            second, first,
+            "running the same merge twice must be idempotent"
+        );
     }
 }
