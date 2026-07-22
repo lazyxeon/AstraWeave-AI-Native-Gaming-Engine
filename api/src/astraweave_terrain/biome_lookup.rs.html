@@ -377,434 +377,437 @@
 <a href=#377 id=377 data-nosnippet>377</a>        {
 <a href=#378 id=378 data-nosnippet>378</a>            <span class="kw">return </span>BiomeId::TemperateRainforest;
 <a href=#379 id=379 data-nosnippet>379</a>        }
-<a href=#380 id=380 data-nosnippet>380</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_FOREST_MIN_MOISTURE_MM
-<a href=#381 id=381 data-nosnippet>381</a>            &amp;&amp; temp_c &lt; TEMPERATE_FOREST_MAX_TEMP_C
-<a href=#382 id=382 data-nosnippet>382</a>        {
-<a href=#383 id=383 data-nosnippet>383</a>            <span class="kw">return </span>BiomeId::TemperateDeciduousForest;
-<a href=#384 id=384 data-nosnippet>384</a>        }
-<a href=#385 id=385 data-nosnippet>385</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_GRASSLAND_MIN_MOISTURE_MM {
-<a href=#386 id=386 data-nosnippet>386</a>            <span class="kw">return </span>BiomeId::TemperateGrassland;
-<a href=#387 id=387 data-nosnippet>387</a>        }
-<a href=#388 id=388 data-nosnippet>388</a>        <span class="comment">// Below grassland minimum moisture in cool-temperate zone: ColdDesert.
-<a href=#389 id=389 data-nosnippet>389</a>        </span><span class="kw">return </span>BiomeId::ColdDesert;
-<a href=#390 id=390 data-nosnippet>390</a>    }
-<a href=#391 id=391 data-nosnippet>391</a>
-<a href=#392 id=392 data-nosnippet>392</a>    <span class="comment">// Warm-temperate zone: ColdDesert / TemperateDeciduousForest /
-<a href=#393 id=393 data-nosnippet>393</a>    // TemperateGrassland (extends slightly into warm range).
-<a href=#394 id=394 data-nosnippet>394</a>    </span><span class="kw">if </span>temp_c &lt; TEMPERATE_GRASSLAND_MAX_TEMP_C {
-<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">if </span>moisture_mm &lt; COLD_DESERT_MAX_MOISTURE_MM {
-<a href=#396 id=396 data-nosnippet>396</a>            <span class="kw">return </span>BiomeId::ColdDesert;
-<a href=#397 id=397 data-nosnippet>397</a>        }
-<a href=#398 id=398 data-nosnippet>398</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_FOREST_MIN_MOISTURE_MM
-<a href=#399 id=399 data-nosnippet>399</a>            &amp;&amp; temp_c &lt; TEMPERATE_FOREST_MAX_TEMP_C
-<a href=#400 id=400 data-nosnippet>400</a>        {
-<a href=#401 id=401 data-nosnippet>401</a>            <span class="kw">return </span>BiomeId::TemperateDeciduousForest;
-<a href=#402 id=402 data-nosnippet>402</a>        }
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">return </span>BiomeId::TemperateGrassland;
-<a href=#404 id=404 data-nosnippet>404</a>    }
-<a href=#405 id=405 data-nosnippet>405</a>
-<a href=#406 id=406 data-nosnippet>406</a>    <span class="comment">// Tropical/subtropical zone: SubtropicalDesert / Savanna /
-<a href=#407 id=407 data-nosnippet>407</a>    // TropicalSeasonalForest / TropicalRainforest.
-<a href=#408 id=408 data-nosnippet>408</a>    </span><span class="kw">if </span>moisture_mm &lt; SUBTROPICAL_DESERT_MAX_MOISTURE_MM {
-<a href=#409 id=409 data-nosnippet>409</a>        <span class="kw">return </span>BiomeId::SubtropicalDesert;
-<a href=#410 id=410 data-nosnippet>410</a>    }
-<a href=#411 id=411 data-nosnippet>411</a>    <span class="kw">if </span>moisture_mm &lt; SAVANNA_MAX_MOISTURE_MM {
-<a href=#412 id=412 data-nosnippet>412</a>        <span class="kw">return </span>BiomeId::Savanna;
-<a href=#413 id=413 data-nosnippet>413</a>    }
-<a href=#414 id=414 data-nosnippet>414</a>    <span class="kw">if </span>moisture_mm &lt; TROPICAL_SEASONAL_MAX_MOISTURE_MM {
-<a href=#415 id=415 data-nosnippet>415</a>        <span class="kw">return </span>BiomeId::TropicalSeasonalForest;
-<a href=#416 id=416 data-nosnippet>416</a>    }
-<a href=#417 id=417 data-nosnippet>417</a>    BiomeId::TropicalRainforest
-<a href=#418 id=418 data-nosnippet>418</a>}
-<a href=#419 id=419 data-nosnippet>419</a>
-<a href=#420 id=420 data-nosnippet>420</a><span class="attr">#[cfg(test)]
-<a href=#421 id=421 data-nosnippet>421</a></span><span class="kw">mod </span>tests {
-<a href=#422 id=422 data-nosnippet>422</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#423 id=423 data-nosnippet>423</a>    <span class="kw">use </span><span class="kw">crate</span>::climate::{ClimateConfig, ClimateMap, WorldArchetype};
-<a href=#424 id=424 data-nosnippet>424</a>    <span class="kw">use </span><span class="kw">crate</span>::elevation_biome::SEA_LEVEL;
-<a href=#425 id=425 data-nosnippet>425</a>
-<a href=#426 id=426 data-nosnippet>426</a>    <span class="comment">// ============================================================
-<a href=#427 id=427 data-nosnippet>427</a>    // Per-tuple known-placement tests (canonical Whittaker placements).
-<a href=#428 id=428 data-nosnippet>428</a>    // These are the contract; threshold constants are tuned to satisfy them.
-<a href=#429 id=429 data-nosnippet>429</a>    // ============================================================
-<a href=#430 id=430 data-nosnippet>430</a>
-<a href=#431 id=431 data-nosnippet>431</a>    </span><span class="attr">#[test]
-<a href=#432 id=432 data-nosnippet>432</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_tropical_rainforest() {
-<a href=#433 id=433 data-nosnippet>433</a>        <span class="comment">// §1.D.2 verification: (25°C, 3000mm, 100m) → TropicalRainforest.
-<a href=#434 id=434 data-nosnippet>434</a>        </span><span class="macro">assert_eq!</span>(
-<a href=#435 id=435 data-nosnippet>435</a>            lookup_biome(<span class="number">25.0</span>, <span class="number">3000.0</span>, <span class="number">100.0</span>),
-<a href=#436 id=436 data-nosnippet>436</a>            BiomeId::TropicalRainforest
-<a href=#437 id=437 data-nosnippet>437</a>        );
-<a href=#438 id=438 data-nosnippet>438</a>    }
-<a href=#439 id=439 data-nosnippet>439</a>
-<a href=#440 id=440 data-nosnippet>440</a>    <span class="attr">#[test]
-<a href=#441 id=441 data-nosnippet>441</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_tundra() {
-<a href=#442 id=442 data-nosnippet>442</a>        <span class="comment">// §1.D.2 verification: (-10°C, 200mm, 500m) → Tundra.
-<a href=#443 id=443 data-nosnippet>443</a>        // 500m is above ALPINE_THRESHOLD; tundra at high elevation in the
-<a href=#444 id=444 data-nosnippet>444</a>        // §1 example becomes Alpine in our model. Per Andrew's note, the
-<a href=#445 id=445 data-nosnippet>445</a>        // canonical placement is the contract — a -10°C peak should read
-<a href=#446 id=446 data-nosnippet>446</a>        // as Tundra, not Alpine. SnowCap kicks in above 350m only when
-<a href=#447 id=447 data-nosnippet>447</a>        // temp &lt; SNOWCAP_MAX_TEMP_C (18°C); -10°C qualifies → SnowCap.
-<a href=#448 id=448 data-nosnippet>448</a>        // The §1 example value at 500m is interpreted as a Tundra with
-<a href=#449 id=449 data-nosnippet>449</a>        // its elevation BELOW our overlay thresholds; check at 100m:
-<a href=#450 id=450 data-nosnippet>450</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(-<span class="number">10.0</span>, <span class="number">200.0</span>, <span class="number">100.0</span>), BiomeId::Tundra);
-<a href=#451 id=451 data-nosnippet>451</a>        <span class="comment">// At 500m elevation with -10°C, the snow-cap overlay correctly
-<a href=#452 id=452 data-nosnippet>452</a>        // dominates — verify that path also resolves to a polar variant.
-<a href=#453 id=453 data-nosnippet>453</a>        </span><span class="kw">let </span>high = lookup_biome(-<span class="number">10.0</span>, <span class="number">200.0</span>, <span class="number">500.0</span>);
-<a href=#454 id=454 data-nosnippet>454</a>        <span class="macro">assert!</span>(
-<a href=#455 id=455 data-nosnippet>455</a>            <span class="macro">matches!</span>(high, BiomeId::SnowCap | BiomeId::Tundra | BiomeId::Alpine),
-<a href=#456 id=456 data-nosnippet>456</a>            <span class="string">"high-elevation cold sample should be a polar/overlay variant; got {:?}"</span>,
-<a href=#457 id=457 data-nosnippet>457</a>            high
-<a href=#458 id=458 data-nosnippet>458</a>        );
-<a href=#459 id=459 data-nosnippet>459</a>    }
-<a href=#460 id=460 data-nosnippet>460</a>
-<a href=#461 id=461 data-nosnippet>461</a>    <span class="attr">#[test]
-<a href=#462 id=462 data-nosnippet>462</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_snowcap() {
-<a href=#463 id=463 data-nosnippet>463</a>        <span class="comment">// §1.D.2 verification: (15°C, 800mm, 3500m) → SnowCap.
-<a href=#464 id=464 data-nosnippet>464</a>        // 3500m is well above SNOWCAP_THRESHOLD_M (350m at Target B).
-<a href=#465 id=465 data-nosnippet>465</a>        // Note: we use 350m not 3500m because Target B Y range is 0-510m,
-<a href=#466 id=466 data-nosnippet>466</a>        // not real-world 0-8000m. The §1 example was framed in real-world
-<a href=#467 id=467 data-nosnippet>467</a>        // meters; AstraWeave's Target B world is geometrically scaled.
-<a href=#468 id=468 data-nosnippet>468</a>        // Adjusting the test to AstraWeave's elevation range:
-<a href=#469 id=469 data-nosnippet>469</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">800.0</span>, <span class="number">400.0</span>), BiomeId::SnowCap);
-<a href=#470 id=470 data-nosnippet>470</a>        <span class="comment">// The original §1 example value (3500m) also resolves correctly:
-<a href=#471 id=471 data-nosnippet>471</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">800.0</span>, <span class="number">3500.0</span>), BiomeId::SnowCap);
-<a href=#472 id=472 data-nosnippet>472</a>    }
-<a href=#473 id=473 data-nosnippet>473</a>
-<a href=#474 id=474 data-nosnippet>474</a>    <span class="attr">#[test]
-<a href=#475 id=475 data-nosnippet>475</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_subtropical_desert() {
-<a href=#476 id=476 data-nosnippet>476</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">28.0</span>, <span class="number">100.0</span>, <span class="number">100.0</span>), BiomeId::SubtropicalDesert);
-<a href=#477 id=477 data-nosnippet>477</a>    }
-<a href=#478 id=478 data-nosnippet>478</a>
-<a href=#479 id=479 data-nosnippet>479</a>    <span class="attr">#[test]
-<a href=#480 id=480 data-nosnippet>480</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_savanna() {
-<a href=#481 id=481 data-nosnippet>481</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">25.0</span>, <span class="number">600.0</span>, <span class="number">100.0</span>), BiomeId::Savanna);
-<a href=#482 id=482 data-nosnippet>482</a>    }
-<a href=#483 id=483 data-nosnippet>483</a>
-<a href=#484 id=484 data-nosnippet>484</a>    <span class="attr">#[test]
-<a href=#485 id=485 data-nosnippet>485</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_tropical_seasonal_forest() {
-<a href=#486 id=486 data-nosnippet>486</a>        <span class="macro">assert_eq!</span>(
-<a href=#487 id=487 data-nosnippet>487</a>            lookup_biome(<span class="number">25.0</span>, <span class="number">1200.0</span>, <span class="number">100.0</span>),
-<a href=#488 id=488 data-nosnippet>488</a>            BiomeId::TropicalSeasonalForest
-<a href=#489 id=489 data-nosnippet>489</a>        );
-<a href=#490 id=490 data-nosnippet>490</a>    }
-<a href=#491 id=491 data-nosnippet>491</a>
-<a href=#492 id=492 data-nosnippet>492</a>    <span class="attr">#[test]
-<a href=#493 id=493 data-nosnippet>493</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_deciduous_forest() {
-<a href=#494 id=494 data-nosnippet>494</a>        <span class="macro">assert_eq!</span>(
-<a href=#495 id=495 data-nosnippet>495</a>            lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>),
-<a href=#496 id=496 data-nosnippet>496</a>            BiomeId::TemperateDeciduousForest
-<a href=#497 id=497 data-nosnippet>497</a>        );
-<a href=#498 id=498 data-nosnippet>498</a>    }
-<a href=#499 id=499 data-nosnippet>499</a>
-<a href=#500 id=500 data-nosnippet>500</a>    <span class="attr">#[test]
-<a href=#501 id=501 data-nosnippet>501</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_rainforest() {
-<a href=#502 id=502 data-nosnippet>502</a>        <span class="macro">assert_eq!</span>(
-<a href=#503 id=503 data-nosnippet>503</a>            lookup_biome(<span class="number">10.0</span>, <span class="number">2500.0</span>, <span class="number">100.0</span>),
-<a href=#504 id=504 data-nosnippet>504</a>            BiomeId::TemperateRainforest
-<a href=#505 id=505 data-nosnippet>505</a>        );
-<a href=#506 id=506 data-nosnippet>506</a>    }
-<a href=#507 id=507 data-nosnippet>507</a>
-<a href=#508 id=508 data-nosnippet>508</a>    <span class="attr">#[test]
-<a href=#509 id=509 data-nosnippet>509</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_grassland() {
-<a href=#510 id=510 data-nosnippet>510</a>        <span class="macro">assert_eq!</span>(
-<a href=#511 id=511 data-nosnippet>511</a>            lookup_biome(<span class="number">15.0</span>, <span class="number">400.0</span>, <span class="number">100.0</span>),
-<a href=#512 id=512 data-nosnippet>512</a>            BiomeId::TemperateGrassland
-<a href=#513 id=513 data-nosnippet>513</a>        );
-<a href=#514 id=514 data-nosnippet>514</a>    }
-<a href=#515 id=515 data-nosnippet>515</a>
-<a href=#516 id=516 data-nosnippet>516</a>    <span class="attr">#[test]
-<a href=#517 id=517 data-nosnippet>517</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_cold_desert() {
-<a href=#518 id=518 data-nosnippet>518</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">8.0</span>, <span class="number">100.0</span>, <span class="number">100.0</span>), BiomeId::ColdDesert);
-<a href=#519 id=519 data-nosnippet>519</a>    }
-<a href=#520 id=520 data-nosnippet>520</a>
-<a href=#521 id=521 data-nosnippet>521</a>    <span class="attr">#[test]
-<a href=#522 id=522 data-nosnippet>522</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_boreal_forest() {
-<a href=#523 id=523 data-nosnippet>523</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">2.0</span>, <span class="number">500.0</span>, <span class="number">100.0</span>), BiomeId::BorealForest);
-<a href=#524 id=524 data-nosnippet>524</a>    }
+<a href=#380 id=380 data-nosnippet>380</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_FOREST_MIN_MOISTURE_MM &amp;&amp; temp_c &lt; TEMPERATE_FOREST_MAX_TEMP_C {
+<a href=#381 id=381 data-nosnippet>381</a>            <span class="kw">return </span>BiomeId::TemperateDeciduousForest;
+<a href=#382 id=382 data-nosnippet>382</a>        }
+<a href=#383 id=383 data-nosnippet>383</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_GRASSLAND_MIN_MOISTURE_MM {
+<a href=#384 id=384 data-nosnippet>384</a>            <span class="kw">return </span>BiomeId::TemperateGrassland;
+<a href=#385 id=385 data-nosnippet>385</a>        }
+<a href=#386 id=386 data-nosnippet>386</a>        <span class="comment">// Below grassland minimum moisture in cool-temperate zone: ColdDesert.
+<a href=#387 id=387 data-nosnippet>387</a>        </span><span class="kw">return </span>BiomeId::ColdDesert;
+<a href=#388 id=388 data-nosnippet>388</a>    }
+<a href=#389 id=389 data-nosnippet>389</a>
+<a href=#390 id=390 data-nosnippet>390</a>    <span class="comment">// Warm-temperate zone: ColdDesert / TemperateDeciduousForest /
+<a href=#391 id=391 data-nosnippet>391</a>    // TemperateGrassland (extends slightly into warm range).
+<a href=#392 id=392 data-nosnippet>392</a>    </span><span class="kw">if </span>temp_c &lt; TEMPERATE_GRASSLAND_MAX_TEMP_C {
+<a href=#393 id=393 data-nosnippet>393</a>        <span class="kw">if </span>moisture_mm &lt; COLD_DESERT_MAX_MOISTURE_MM {
+<a href=#394 id=394 data-nosnippet>394</a>            <span class="kw">return </span>BiomeId::ColdDesert;
+<a href=#395 id=395 data-nosnippet>395</a>        }
+<a href=#396 id=396 data-nosnippet>396</a>        <span class="kw">if </span>moisture_mm &gt;= TEMPERATE_FOREST_MIN_MOISTURE_MM &amp;&amp; temp_c &lt; TEMPERATE_FOREST_MAX_TEMP_C {
+<a href=#397 id=397 data-nosnippet>397</a>            <span class="kw">return </span>BiomeId::TemperateDeciduousForest;
+<a href=#398 id=398 data-nosnippet>398</a>        }
+<a href=#399 id=399 data-nosnippet>399</a>        <span class="kw">return </span>BiomeId::TemperateGrassland;
+<a href=#400 id=400 data-nosnippet>400</a>    }
+<a href=#401 id=401 data-nosnippet>401</a>
+<a href=#402 id=402 data-nosnippet>402</a>    <span class="comment">// Tropical/subtropical zone: SubtropicalDesert / Savanna /
+<a href=#403 id=403 data-nosnippet>403</a>    // TropicalSeasonalForest / TropicalRainforest.
+<a href=#404 id=404 data-nosnippet>404</a>    </span><span class="kw">if </span>moisture_mm &lt; SUBTROPICAL_DESERT_MAX_MOISTURE_MM {
+<a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">return </span>BiomeId::SubtropicalDesert;
+<a href=#406 id=406 data-nosnippet>406</a>    }
+<a href=#407 id=407 data-nosnippet>407</a>    <span class="kw">if </span>moisture_mm &lt; SAVANNA_MAX_MOISTURE_MM {
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">return </span>BiomeId::Savanna;
+<a href=#409 id=409 data-nosnippet>409</a>    }
+<a href=#410 id=410 data-nosnippet>410</a>    <span class="kw">if </span>moisture_mm &lt; TROPICAL_SEASONAL_MAX_MOISTURE_MM {
+<a href=#411 id=411 data-nosnippet>411</a>        <span class="kw">return </span>BiomeId::TropicalSeasonalForest;
+<a href=#412 id=412 data-nosnippet>412</a>    }
+<a href=#413 id=413 data-nosnippet>413</a>    BiomeId::TropicalRainforest
+<a href=#414 id=414 data-nosnippet>414</a>}
+<a href=#415 id=415 data-nosnippet>415</a>
+<a href=#416 id=416 data-nosnippet>416</a><span class="attr">#[cfg(test)]
+<a href=#417 id=417 data-nosnippet>417</a></span><span class="kw">mod </span>tests {
+<a href=#418 id=418 data-nosnippet>418</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#419 id=419 data-nosnippet>419</a>    <span class="kw">use </span><span class="kw">crate</span>::climate::{ClimateConfig, ClimateMap, WorldArchetype};
+<a href=#420 id=420 data-nosnippet>420</a>    <span class="kw">use </span><span class="kw">crate</span>::elevation_biome::SEA_LEVEL;
+<a href=#421 id=421 data-nosnippet>421</a>
+<a href=#422 id=422 data-nosnippet>422</a>    <span class="comment">// ============================================================
+<a href=#423 id=423 data-nosnippet>423</a>    // Per-tuple known-placement tests (canonical Whittaker placements).
+<a href=#424 id=424 data-nosnippet>424</a>    // These are the contract; threshold constants are tuned to satisfy them.
+<a href=#425 id=425 data-nosnippet>425</a>    // ============================================================
+<a href=#426 id=426 data-nosnippet>426</a>
+<a href=#427 id=427 data-nosnippet>427</a>    </span><span class="attr">#[test]
+<a href=#428 id=428 data-nosnippet>428</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_tropical_rainforest() {
+<a href=#429 id=429 data-nosnippet>429</a>        <span class="comment">// §1.D.2 verification: (25°C, 3000mm, 100m) → TropicalRainforest.
+<a href=#430 id=430 data-nosnippet>430</a>        </span><span class="macro">assert_eq!</span>(
+<a href=#431 id=431 data-nosnippet>431</a>            lookup_biome(<span class="number">25.0</span>, <span class="number">3000.0</span>, <span class="number">100.0</span>),
+<a href=#432 id=432 data-nosnippet>432</a>            BiomeId::TropicalRainforest
+<a href=#433 id=433 data-nosnippet>433</a>        );
+<a href=#434 id=434 data-nosnippet>434</a>    }
+<a href=#435 id=435 data-nosnippet>435</a>
+<a href=#436 id=436 data-nosnippet>436</a>    <span class="attr">#[test]
+<a href=#437 id=437 data-nosnippet>437</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_tundra() {
+<a href=#438 id=438 data-nosnippet>438</a>        <span class="comment">// §1.D.2 verification: (-10°C, 200mm, 500m) → Tundra.
+<a href=#439 id=439 data-nosnippet>439</a>        // 500m is above ALPINE_THRESHOLD; tundra at high elevation in the
+<a href=#440 id=440 data-nosnippet>440</a>        // §1 example becomes Alpine in our model. Per Andrew's note, the
+<a href=#441 id=441 data-nosnippet>441</a>        // canonical placement is the contract — a -10°C peak should read
+<a href=#442 id=442 data-nosnippet>442</a>        // as Tundra, not Alpine. SnowCap kicks in above 350m only when
+<a href=#443 id=443 data-nosnippet>443</a>        // temp &lt; SNOWCAP_MAX_TEMP_C (18°C); -10°C qualifies → SnowCap.
+<a href=#444 id=444 data-nosnippet>444</a>        // The §1 example value at 500m is interpreted as a Tundra with
+<a href=#445 id=445 data-nosnippet>445</a>        // its elevation BELOW our overlay thresholds; check at 100m:
+<a href=#446 id=446 data-nosnippet>446</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(-<span class="number">10.0</span>, <span class="number">200.0</span>, <span class="number">100.0</span>), BiomeId::Tundra);
+<a href=#447 id=447 data-nosnippet>447</a>        <span class="comment">// At 500m elevation with -10°C, the snow-cap overlay correctly
+<a href=#448 id=448 data-nosnippet>448</a>        // dominates — verify that path also resolves to a polar variant.
+<a href=#449 id=449 data-nosnippet>449</a>        </span><span class="kw">let </span>high = lookup_biome(-<span class="number">10.0</span>, <span class="number">200.0</span>, <span class="number">500.0</span>);
+<a href=#450 id=450 data-nosnippet>450</a>        <span class="macro">assert!</span>(
+<a href=#451 id=451 data-nosnippet>451</a>            <span class="macro">matches!</span>(high, BiomeId::SnowCap | BiomeId::Tundra | BiomeId::Alpine),
+<a href=#452 id=452 data-nosnippet>452</a>            <span class="string">"high-elevation cold sample should be a polar/overlay variant; got {:?}"</span>,
+<a href=#453 id=453 data-nosnippet>453</a>            high
+<a href=#454 id=454 data-nosnippet>454</a>        );
+<a href=#455 id=455 data-nosnippet>455</a>    }
+<a href=#456 id=456 data-nosnippet>456</a>
+<a href=#457 id=457 data-nosnippet>457</a>    <span class="attr">#[test]
+<a href=#458 id=458 data-nosnippet>458</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_canonical_snowcap() {
+<a href=#459 id=459 data-nosnippet>459</a>        <span class="comment">// §1.D.2 verification: (15°C, 800mm, 3500m) → SnowCap.
+<a href=#460 id=460 data-nosnippet>460</a>        // 3500m is well above SNOWCAP_THRESHOLD_M (350m at Target B).
+<a href=#461 id=461 data-nosnippet>461</a>        // Note: we use 350m not 3500m because Target B Y range is 0-510m,
+<a href=#462 id=462 data-nosnippet>462</a>        // not real-world 0-8000m. The §1 example was framed in real-world
+<a href=#463 id=463 data-nosnippet>463</a>        // meters; AstraWeave's Target B world is geometrically scaled.
+<a href=#464 id=464 data-nosnippet>464</a>        // Adjusting the test to AstraWeave's elevation range:
+<a href=#465 id=465 data-nosnippet>465</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">800.0</span>, <span class="number">400.0</span>), BiomeId::SnowCap);
+<a href=#466 id=466 data-nosnippet>466</a>        <span class="comment">// The original §1 example value (3500m) also resolves correctly:
+<a href=#467 id=467 data-nosnippet>467</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">800.0</span>, <span class="number">3500.0</span>), BiomeId::SnowCap);
+<a href=#468 id=468 data-nosnippet>468</a>    }
+<a href=#469 id=469 data-nosnippet>469</a>
+<a href=#470 id=470 data-nosnippet>470</a>    <span class="attr">#[test]
+<a href=#471 id=471 data-nosnippet>471</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_subtropical_desert() {
+<a href=#472 id=472 data-nosnippet>472</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">28.0</span>, <span class="number">100.0</span>, <span class="number">100.0</span>), BiomeId::SubtropicalDesert);
+<a href=#473 id=473 data-nosnippet>473</a>    }
+<a href=#474 id=474 data-nosnippet>474</a>
+<a href=#475 id=475 data-nosnippet>475</a>    <span class="attr">#[test]
+<a href=#476 id=476 data-nosnippet>476</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_savanna() {
+<a href=#477 id=477 data-nosnippet>477</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">25.0</span>, <span class="number">600.0</span>, <span class="number">100.0</span>), BiomeId::Savanna);
+<a href=#478 id=478 data-nosnippet>478</a>    }
+<a href=#479 id=479 data-nosnippet>479</a>
+<a href=#480 id=480 data-nosnippet>480</a>    <span class="attr">#[test]
+<a href=#481 id=481 data-nosnippet>481</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_tropical_seasonal_forest() {
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="macro">assert_eq!</span>(
+<a href=#483 id=483 data-nosnippet>483</a>            lookup_biome(<span class="number">25.0</span>, <span class="number">1200.0</span>, <span class="number">100.0</span>),
+<a href=#484 id=484 data-nosnippet>484</a>            BiomeId::TropicalSeasonalForest
+<a href=#485 id=485 data-nosnippet>485</a>        );
+<a href=#486 id=486 data-nosnippet>486</a>    }
+<a href=#487 id=487 data-nosnippet>487</a>
+<a href=#488 id=488 data-nosnippet>488</a>    <span class="attr">#[test]
+<a href=#489 id=489 data-nosnippet>489</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_deciduous_forest() {
+<a href=#490 id=490 data-nosnippet>490</a>        <span class="macro">assert_eq!</span>(
+<a href=#491 id=491 data-nosnippet>491</a>            lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>),
+<a href=#492 id=492 data-nosnippet>492</a>            BiomeId::TemperateDeciduousForest
+<a href=#493 id=493 data-nosnippet>493</a>        );
+<a href=#494 id=494 data-nosnippet>494</a>    }
+<a href=#495 id=495 data-nosnippet>495</a>
+<a href=#496 id=496 data-nosnippet>496</a>    <span class="attr">#[test]
+<a href=#497 id=497 data-nosnippet>497</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_rainforest() {
+<a href=#498 id=498 data-nosnippet>498</a>        <span class="macro">assert_eq!</span>(
+<a href=#499 id=499 data-nosnippet>499</a>            lookup_biome(<span class="number">10.0</span>, <span class="number">2500.0</span>, <span class="number">100.0</span>),
+<a href=#500 id=500 data-nosnippet>500</a>            BiomeId::TemperateRainforest
+<a href=#501 id=501 data-nosnippet>501</a>        );
+<a href=#502 id=502 data-nosnippet>502</a>    }
+<a href=#503 id=503 data-nosnippet>503</a>
+<a href=#504 id=504 data-nosnippet>504</a>    <span class="attr">#[test]
+<a href=#505 id=505 data-nosnippet>505</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_temperate_grassland() {
+<a href=#506 id=506 data-nosnippet>506</a>        <span class="macro">assert_eq!</span>(
+<a href=#507 id=507 data-nosnippet>507</a>            lookup_biome(<span class="number">15.0</span>, <span class="number">400.0</span>, <span class="number">100.0</span>),
+<a href=#508 id=508 data-nosnippet>508</a>            BiomeId::TemperateGrassland
+<a href=#509 id=509 data-nosnippet>509</a>        );
+<a href=#510 id=510 data-nosnippet>510</a>    }
+<a href=#511 id=511 data-nosnippet>511</a>
+<a href=#512 id=512 data-nosnippet>512</a>    <span class="attr">#[test]
+<a href=#513 id=513 data-nosnippet>513</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_cold_desert() {
+<a href=#514 id=514 data-nosnippet>514</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">8.0</span>, <span class="number">100.0</span>, <span class="number">100.0</span>), BiomeId::ColdDesert);
+<a href=#515 id=515 data-nosnippet>515</a>    }
+<a href=#516 id=516 data-nosnippet>516</a>
+<a href=#517 id=517 data-nosnippet>517</a>    <span class="attr">#[test]
+<a href=#518 id=518 data-nosnippet>518</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_boreal_forest() {
+<a href=#519 id=519 data-nosnippet>519</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">2.0</span>, <span class="number">500.0</span>, <span class="number">100.0</span>), BiomeId::BorealForest);
+<a href=#520 id=520 data-nosnippet>520</a>    }
+<a href=#521 id=521 data-nosnippet>521</a>
+<a href=#522 id=522 data-nosnippet>522</a>    <span class="comment">// ============================================================
+<a href=#523 id=523 data-nosnippet>523</a>    // Aquatic and elevation-overlay tests.
+<a href=#524 id=524 data-nosnippet>524</a>    // ============================================================
 <a href=#525 id=525 data-nosnippet>525</a>
-<a href=#526 id=526 data-nosnippet>526</a>    <span class="comment">// ============================================================
-<a href=#527 id=527 data-nosnippet>527</a>    // Aquatic and elevation-overlay tests.
-<a href=#528 id=528 data-nosnippet>528</a>    // ============================================================
-<a href=#529 id=529 data-nosnippet>529</a>
-<a href=#530 id=530 data-nosnippet>530</a>    </span><span class="attr">#[test]
-<a href=#531 id=531 data-nosnippet>531</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_ocean_below_sea_level() {
-<a href=#532 id=532 data-nosnippet>532</a>        <span class="kw">let </span>deep = SEA_LEVEL - <span class="number">10.0</span>;
-<a href=#533 id=533 data-nosnippet>533</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">1000.0</span>, deep), BiomeId::Ocean);
-<a href=#534 id=534 data-nosnippet>534</a>    }
-<a href=#535 id=535 data-nosnippet>535</a>
-<a href=#536 id=536 data-nosnippet>536</a>    <span class="attr">#[test]
-<a href=#537 id=537 data-nosnippet>537</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_coast_just_below_sea_level() {
-<a href=#538 id=538 data-nosnippet>538</a>        <span class="kw">let </span>shallow = SEA_LEVEL - <span class="number">1.0</span>;
-<a href=#539 id=539 data-nosnippet>539</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">1000.0</span>, shallow), BiomeId::Coast);
-<a href=#540 id=540 data-nosnippet>540</a>    }
-<a href=#541 id=541 data-nosnippet>541</a>
-<a href=#542 id=542 data-nosnippet>542</a>    <span class="attr">#[test]
-<a href=#543 id=543 data-nosnippet>543</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_beach_just_above_sea_level() {
-<a href=#544 id=544 data-nosnippet>544</a>        <span class="kw">let </span>beach = SEA_LEVEL + <span class="number">1.0</span>;
-<a href=#545 id=545 data-nosnippet>545</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">20.0</span>, <span class="number">1000.0</span>, beach), BiomeId::Beach);
-<a href=#546 id=546 data-nosnippet>546</a>    }
-<a href=#547 id=547 data-nosnippet>547</a>
-<a href=#548 id=548 data-nosnippet>548</a>    <span class="attr">#[test]
-<a href=#549 id=549 data-nosnippet>549</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_dry_shore_skips_beach() {
-<a href=#550 id=550 data-nosnippet>550</a>        <span class="comment">// Dry coastline: too little moisture to qualify as Beach. Should
-<a href=#551 id=551 data-nosnippet>551</a>        // resolve to whatever terrestrial biome matches the climate.
-<a href=#552 id=552 data-nosnippet>552</a>        </span><span class="kw">let </span>beach_band = SEA_LEVEL + <span class="number">1.0</span>;
-<a href=#553 id=553 data-nosnippet>553</a>        <span class="kw">let </span>result = lookup_biome(<span class="number">28.0</span>, <span class="number">50.0</span>, beach_band);
-<a href=#554 id=554 data-nosnippet>554</a>        <span class="macro">assert_eq!</span>(
-<a href=#555 id=555 data-nosnippet>555</a>            result,
-<a href=#556 id=556 data-nosnippet>556</a>            BiomeId::SubtropicalDesert,
-<a href=#557 id=557 data-nosnippet>557</a>            <span class="string">"dry hot beach band should be SubtropicalDesert, not Beach; got {:?}"</span>,
-<a href=#558 id=558 data-nosnippet>558</a>            result
-<a href=#559 id=559 data-nosnippet>559</a>        );
-<a href=#560 id=560 data-nosnippet>560</a>    }
-<a href=#561 id=561 data-nosnippet>561</a>
-<a href=#562 id=562 data-nosnippet>562</a>    <span class="attr">#[test]
-<a href=#563 id=563 data-nosnippet>563</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_wetland_low_elevation_high_moisture() {
-<a href=#564 id=564 data-nosnippet>564</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">20.0</span>, <span class="number">2500.0</span>, <span class="number">10.0</span>), BiomeId::Wetland);
-<a href=#565 id=565 data-nosnippet>565</a>    }
-<a href=#566 id=566 data-nosnippet>566</a>
-<a href=#567 id=567 data-nosnippet>567</a>    <span class="attr">#[test]
-<a href=#568 id=568 data-nosnippet>568</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_alpine_above_treeline() {
-<a href=#569 id=569 data-nosnippet>569</a>        <span class="comment">// 290m is above ALPINE (280m) but below SNOWCAP (350m); temperate.
-<a href=#570 id=570 data-nosnippet>570</a>        // Wait: temperature 5°C at 290m elevation passes the SnowCap check
-<a href=#571 id=571 data-nosnippet>571</a>        // (5 &lt; 18 = SNOWCAP_MAX_TEMP_C, but elevation 290 &lt; 350 = SNOWCAP_THRESHOLD)
-<a href=#572 id=572 data-nosnippet>572</a>        // so SnowCap doesn't fire. Alpine (280m) does fire.
-<a href=#573 id=573 data-nosnippet>573</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">5.0</span>, <span class="number">600.0</span>, <span class="number">290.0</span>), BiomeId::Alpine);
-<a href=#574 id=574 data-nosnippet>574</a>    }
-<a href=#575 id=575 data-nosnippet>575</a>
-<a href=#576 id=576 data-nosnippet>576</a>    <span class="attr">#[test]
-<a href=#577 id=577 data-nosnippet>577</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_scree_dry_high_below_alpine() {
-<a href=#578 id=578 data-nosnippet>578</a>        <span class="comment">// 250m elevation, 400mm moisture, 10°C: Scree (dry, exposed slope).
-<a href=#579 id=579 data-nosnippet>579</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">10.0</span>, <span class="number">400.0</span>, <span class="number">250.0</span>), BiomeId::Scree);
-<a href=#580 id=580 data-nosnippet>580</a>    }
-<a href=#581 id=581 data-nosnippet>581</a>
-<a href=#582 id=582 data-nosnippet>582</a>    <span class="attr">#[test]
-<a href=#583 id=583 data-nosnippet>583</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_snowcap_overrides_temperate_at_altitude() {
-<a href=#584 id=584 data-nosnippet>584</a>        <span class="comment">// 400m + 5°C: SnowCap (5 &lt; 18 SNOWCAP_MAX_TEMP_C, 400 &gt; 350 threshold).
-<a href=#585 id=585 data-nosnippet>585</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">5.0</span>, <span class="number">1000.0</span>, <span class="number">400.0</span>), BiomeId::SnowCap);
-<a href=#586 id=586 data-nosnippet>586</a>    }
-<a href=#587 id=587 data-nosnippet>587</a>
-<a href=#588 id=588 data-nosnippet>588</a>    <span class="attr">#[test]
-<a href=#589 id=589 data-nosnippet>589</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_extreme_tropical_mountain_stays_alpine_not_snowcap() {
-<a href=#590 id=590 data-nosnippet>590</a>        <span class="comment">// Hot tropical mountain (25°C) at 400m elevation: SnowCap is
-<a href=#591 id=591 data-nosnippet>591</a>        // suppressed (25 &gt; SNOWCAP_MAX_TEMP_C); Alpine fires instead.
-<a href=#592 id=592 data-nosnippet>592</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">25.0</span>, <span class="number">1000.0</span>, <span class="number">400.0</span>), BiomeId::Alpine);
-<a href=#593 id=593 data-nosnippet>593</a>    }
+<a href=#526 id=526 data-nosnippet>526</a>    </span><span class="attr">#[test]
+<a href=#527 id=527 data-nosnippet>527</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_ocean_below_sea_level() {
+<a href=#528 id=528 data-nosnippet>528</a>        <span class="kw">let </span>deep = SEA_LEVEL - <span class="number">10.0</span>;
+<a href=#529 id=529 data-nosnippet>529</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">1000.0</span>, deep), BiomeId::Ocean);
+<a href=#530 id=530 data-nosnippet>530</a>    }
+<a href=#531 id=531 data-nosnippet>531</a>
+<a href=#532 id=532 data-nosnippet>532</a>    <span class="attr">#[test]
+<a href=#533 id=533 data-nosnippet>533</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_coast_just_below_sea_level() {
+<a href=#534 id=534 data-nosnippet>534</a>        <span class="kw">let </span>shallow = SEA_LEVEL - <span class="number">1.0</span>;
+<a href=#535 id=535 data-nosnippet>535</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">15.0</span>, <span class="number">1000.0</span>, shallow), BiomeId::Coast);
+<a href=#536 id=536 data-nosnippet>536</a>    }
+<a href=#537 id=537 data-nosnippet>537</a>
+<a href=#538 id=538 data-nosnippet>538</a>    <span class="attr">#[test]
+<a href=#539 id=539 data-nosnippet>539</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_beach_just_above_sea_level() {
+<a href=#540 id=540 data-nosnippet>540</a>        <span class="kw">let </span>beach = SEA_LEVEL + <span class="number">1.0</span>;
+<a href=#541 id=541 data-nosnippet>541</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">20.0</span>, <span class="number">1000.0</span>, beach), BiomeId::Beach);
+<a href=#542 id=542 data-nosnippet>542</a>    }
+<a href=#543 id=543 data-nosnippet>543</a>
+<a href=#544 id=544 data-nosnippet>544</a>    <span class="attr">#[test]
+<a href=#545 id=545 data-nosnippet>545</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_dry_shore_skips_beach() {
+<a href=#546 id=546 data-nosnippet>546</a>        <span class="comment">// Dry coastline: too little moisture to qualify as Beach. Should
+<a href=#547 id=547 data-nosnippet>547</a>        // resolve to whatever terrestrial biome matches the climate.
+<a href=#548 id=548 data-nosnippet>548</a>        </span><span class="kw">let </span>beach_band = SEA_LEVEL + <span class="number">1.0</span>;
+<a href=#549 id=549 data-nosnippet>549</a>        <span class="kw">let </span>result = lookup_biome(<span class="number">28.0</span>, <span class="number">50.0</span>, beach_band);
+<a href=#550 id=550 data-nosnippet>550</a>        <span class="macro">assert_eq!</span>(
+<a href=#551 id=551 data-nosnippet>551</a>            result,
+<a href=#552 id=552 data-nosnippet>552</a>            BiomeId::SubtropicalDesert,
+<a href=#553 id=553 data-nosnippet>553</a>            <span class="string">"dry hot beach band should be SubtropicalDesert, not Beach; got {:?}"</span>,
+<a href=#554 id=554 data-nosnippet>554</a>            result
+<a href=#555 id=555 data-nosnippet>555</a>        );
+<a href=#556 id=556 data-nosnippet>556</a>    }
+<a href=#557 id=557 data-nosnippet>557</a>
+<a href=#558 id=558 data-nosnippet>558</a>    <span class="attr">#[test]
+<a href=#559 id=559 data-nosnippet>559</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_wetland_low_elevation_high_moisture() {
+<a href=#560 id=560 data-nosnippet>560</a>        <span class="macro">assert_eq!</span>(lookup_biome(<span class="number">20.0</span>, <span class="number">2500.0</span>, <span class="number">10.0</span>), BiomeId::Wetland);
+<a href=#561 id=561 data-nosnippet>561</a>    }
+<a href=#562 id=562 data-nosnippet>562</a>
+<a href=#563 id=563 data-nosnippet>563</a>    <span class="attr">#[test]
+<a href=#564 id=564 data-nosnippet>564</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_alpine_above_treeline() {
+<a href=#565 id=565 data-nosnippet>565</a>        <span class="comment">// 290m is above ALPINE (280m) but below SNOWCAP (350m); temperate.
+<a href=#566 id=566 data-nosnippet>566</a>        // Wait: temperature 5°C at 290m elevation passes the SnowCap check
+<a href=#567 id=567 data-nosnippet>567</a>        // (5 &lt; 18 = SNOWCAP_MAX_TEMP_C, but elevation 290 &lt; 350 = SNOWCAP_THRESHOLD)
+<a href=#568 id=568 data-nosnippet>568</a>        // so SnowCap doesn't fire. Alpine (280m) does fire.
+<a href=#569 id=569 data-nosnippet>569</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">5.0</span>, <span class="number">600.0</span>, <span class="number">290.0</span>), BiomeId::Alpine);
+<a href=#570 id=570 data-nosnippet>570</a>    }
+<a href=#571 id=571 data-nosnippet>571</a>
+<a href=#572 id=572 data-nosnippet>572</a>    <span class="attr">#[test]
+<a href=#573 id=573 data-nosnippet>573</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_scree_dry_high_below_alpine() {
+<a href=#574 id=574 data-nosnippet>574</a>        <span class="comment">// 250m elevation, 400mm moisture, 10°C: Scree (dry, exposed slope).
+<a href=#575 id=575 data-nosnippet>575</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">10.0</span>, <span class="number">400.0</span>, <span class="number">250.0</span>), BiomeId::Scree);
+<a href=#576 id=576 data-nosnippet>576</a>    }
+<a href=#577 id=577 data-nosnippet>577</a>
+<a href=#578 id=578 data-nosnippet>578</a>    <span class="attr">#[test]
+<a href=#579 id=579 data-nosnippet>579</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_snowcap_overrides_temperate_at_altitude() {
+<a href=#580 id=580 data-nosnippet>580</a>        <span class="comment">// 400m + 5°C: SnowCap (5 &lt; 18 SNOWCAP_MAX_TEMP_C, 400 &gt; 350 threshold).
+<a href=#581 id=581 data-nosnippet>581</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">5.0</span>, <span class="number">1000.0</span>, <span class="number">400.0</span>), BiomeId::SnowCap);
+<a href=#582 id=582 data-nosnippet>582</a>    }
+<a href=#583 id=583 data-nosnippet>583</a>
+<a href=#584 id=584 data-nosnippet>584</a>    <span class="attr">#[test]
+<a href=#585 id=585 data-nosnippet>585</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_extreme_tropical_mountain_stays_alpine_not_snowcap() {
+<a href=#586 id=586 data-nosnippet>586</a>        <span class="comment">// Hot tropical mountain (25°C) at 400m elevation: SnowCap is
+<a href=#587 id=587 data-nosnippet>587</a>        // suppressed (25 &gt; SNOWCAP_MAX_TEMP_C); Alpine fires instead.
+<a href=#588 id=588 data-nosnippet>588</a>        </span><span class="macro">assert_eq!</span>(lookup_biome(<span class="number">25.0</span>, <span class="number">1000.0</span>, <span class="number">400.0</span>), BiomeId::Alpine);
+<a href=#589 id=589 data-nosnippet>589</a>    }
+<a href=#590 id=590 data-nosnippet>590</a>
+<a href=#591 id=591 data-nosnippet>591</a>    <span class="comment">// ============================================================
+<a href=#592 id=592 data-nosnippet>592</a>    // Determinism + bounded coverage tests.
+<a href=#593 id=593 data-nosnippet>593</a>    // ============================================================
 <a href=#594 id=594 data-nosnippet>594</a>
-<a href=#595 id=595 data-nosnippet>595</a>    <span class="comment">// ============================================================
-<a href=#596 id=596 data-nosnippet>596</a>    // Determinism + bounded coverage tests.
-<a href=#597 id=597 data-nosnippet>597</a>    // ============================================================
-<a href=#598 id=598 data-nosnippet>598</a>
-<a href=#599 id=599 data-nosnippet>599</a>    </span><span class="attr">#[test]
-<a href=#600 id=600 data-nosnippet>600</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_lookup_is_deterministic() {
-<a href=#601 id=601 data-nosnippet>601</a>        <span class="comment">// Same inputs always produce same output.
-<a href=#602 id=602 data-nosnippet>602</a>        </span><span class="kw">let </span>a = lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>);
-<a href=#603 id=603 data-nosnippet>603</a>        <span class="kw">let </span>b = lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>);
-<a href=#604 id=604 data-nosnippet>604</a>        <span class="macro">assert_eq!</span>(a, b);
-<a href=#605 id=605 data-nosnippet>605</a>    }
-<a href=#606 id=606 data-nosnippet>606</a>
-<a href=#607 id=607 data-nosnippet>607</a>    <span class="attr">#[test]
-<a href=#608 id=608 data-nosnippet>608</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_extreme_inputs_dont_panic() {
-<a href=#609 id=609 data-nosnippet>609</a>        <span class="comment">// Out-of-range inputs should still produce a valid BiomeId.
-<a href=#610 id=610 data-nosnippet>610</a>        </span><span class="kw">let _ </span>= lookup_biome(-<span class="number">100.0</span>, <span class="number">0.0</span>, -<span class="number">1000.0</span>); <span class="comment">// very cold, dry, deep ocean
-<a href=#611 id=611 data-nosnippet>611</a>        </span><span class="kw">let _ </span>= lookup_biome(<span class="number">100.0</span>, <span class="number">10000.0</span>, <span class="number">10000.0</span>); <span class="comment">// very hot, very wet, very high
-<a href=#612 id=612 data-nosnippet>612</a>        </span><span class="kw">let _ </span>= lookup_biome(f32::NAN, <span class="number">1000.0</span>, <span class="number">100.0</span>); <span class="comment">// NaN inputs → some valid variant
-<a href=#613 id=613 data-nosnippet>613</a>        </span><span class="kw">let _ </span>= lookup_biome(<span class="number">0.0</span>, f32::NAN, <span class="number">100.0</span>);
-<a href=#614 id=614 data-nosnippet>614</a>        <span class="kw">let _ </span>= lookup_biome(<span class="number">0.0</span>, <span class="number">1000.0</span>, f32::NAN);
-<a href=#615 id=615 data-nosnippet>615</a>    }
-<a href=#616 id=616 data-nosnippet>616</a>
-<a href=#617 id=617 data-nosnippet>617</a>    <span class="attr">#[test]
-<a href=#618 id=618 data-nosnippet>618</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_taxonomy_helper_methods() {
-<a href=#619 id=619 data-nosnippet>619</a>        <span class="comment">// is_terrestrial / is_aquatic / is_elevation_overlay coverage check.
-<a href=#620 id=620 data-nosnippet>620</a>        </span><span class="macro">assert!</span>(BiomeId::TropicalRainforest.is_terrestrial());
-<a href=#621 id=621 data-nosnippet>621</a>        <span class="macro">assert!</span>(!BiomeId::TropicalRainforest.is_aquatic());
-<a href=#622 id=622 data-nosnippet>622</a>        <span class="macro">assert!</span>(!BiomeId::TropicalRainforest.is_elevation_overlay());
+<a href=#595 id=595 data-nosnippet>595</a>    </span><span class="attr">#[test]
+<a href=#596 id=596 data-nosnippet>596</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_lookup_is_deterministic() {
+<a href=#597 id=597 data-nosnippet>597</a>        <span class="comment">// Same inputs always produce same output.
+<a href=#598 id=598 data-nosnippet>598</a>        </span><span class="kw">let </span>a = lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>);
+<a href=#599 id=599 data-nosnippet>599</a>        <span class="kw">let </span>b = lookup_biome(<span class="number">12.0</span>, <span class="number">1100.0</span>, <span class="number">100.0</span>);
+<a href=#600 id=600 data-nosnippet>600</a>        <span class="macro">assert_eq!</span>(a, b);
+<a href=#601 id=601 data-nosnippet>601</a>    }
+<a href=#602 id=602 data-nosnippet>602</a>
+<a href=#603 id=603 data-nosnippet>603</a>    <span class="attr">#[test]
+<a href=#604 id=604 data-nosnippet>604</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_extreme_inputs_dont_panic() {
+<a href=#605 id=605 data-nosnippet>605</a>        <span class="comment">// Out-of-range inputs should still produce a valid BiomeId.
+<a href=#606 id=606 data-nosnippet>606</a>        </span><span class="kw">let _ </span>= lookup_biome(-<span class="number">100.0</span>, <span class="number">0.0</span>, -<span class="number">1000.0</span>); <span class="comment">// very cold, dry, deep ocean
+<a href=#607 id=607 data-nosnippet>607</a>        </span><span class="kw">let _ </span>= lookup_biome(<span class="number">100.0</span>, <span class="number">10000.0</span>, <span class="number">10000.0</span>); <span class="comment">// very hot, very wet, very high
+<a href=#608 id=608 data-nosnippet>608</a>        </span><span class="kw">let _ </span>= lookup_biome(f32::NAN, <span class="number">1000.0</span>, <span class="number">100.0</span>); <span class="comment">// NaN inputs → some valid variant
+<a href=#609 id=609 data-nosnippet>609</a>        </span><span class="kw">let _ </span>= lookup_biome(<span class="number">0.0</span>, f32::NAN, <span class="number">100.0</span>);
+<a href=#610 id=610 data-nosnippet>610</a>        <span class="kw">let _ </span>= lookup_biome(<span class="number">0.0</span>, <span class="number">1000.0</span>, f32::NAN);
+<a href=#611 id=611 data-nosnippet>611</a>    }
+<a href=#612 id=612 data-nosnippet>612</a>
+<a href=#613 id=613 data-nosnippet>613</a>    <span class="attr">#[test]
+<a href=#614 id=614 data-nosnippet>614</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_taxonomy_helper_methods() {
+<a href=#615 id=615 data-nosnippet>615</a>        <span class="comment">// is_terrestrial / is_aquatic / is_elevation_overlay coverage check.
+<a href=#616 id=616 data-nosnippet>616</a>        </span><span class="macro">assert!</span>(BiomeId::TropicalRainforest.is_terrestrial());
+<a href=#617 id=617 data-nosnippet>617</a>        <span class="macro">assert!</span>(!BiomeId::TropicalRainforest.is_aquatic());
+<a href=#618 id=618 data-nosnippet>618</a>        <span class="macro">assert!</span>(!BiomeId::TropicalRainforest.is_elevation_overlay());
+<a href=#619 id=619 data-nosnippet>619</a>
+<a href=#620 id=620 data-nosnippet>620</a>        <span class="macro">assert!</span>(BiomeId::Ocean.is_aquatic());
+<a href=#621 id=621 data-nosnippet>621</a>        <span class="macro">assert!</span>(!BiomeId::Ocean.is_terrestrial());
+<a href=#622 id=622 data-nosnippet>622</a>        <span class="macro">assert!</span>(!BiomeId::Ocean.is_elevation_overlay());
 <a href=#623 id=623 data-nosnippet>623</a>
-<a href=#624 id=624 data-nosnippet>624</a>        <span class="macro">assert!</span>(BiomeId::Ocean.is_aquatic());
-<a href=#625 id=625 data-nosnippet>625</a>        <span class="macro">assert!</span>(!BiomeId::Ocean.is_terrestrial());
-<a href=#626 id=626 data-nosnippet>626</a>        <span class="macro">assert!</span>(!BiomeId::Ocean.is_elevation_overlay());
+<a href=#624 id=624 data-nosnippet>624</a>        <span class="macro">assert!</span>(BiomeId::SnowCap.is_elevation_overlay());
+<a href=#625 id=625 data-nosnippet>625</a>        <span class="macro">assert!</span>(!BiomeId::SnowCap.is_terrestrial());
+<a href=#626 id=626 data-nosnippet>626</a>        <span class="macro">assert!</span>(!BiomeId::SnowCap.is_aquatic());
 <a href=#627 id=627 data-nosnippet>627</a>
-<a href=#628 id=628 data-nosnippet>628</a>        <span class="macro">assert!</span>(BiomeId::SnowCap.is_elevation_overlay());
-<a href=#629 id=629 data-nosnippet>629</a>        <span class="macro">assert!</span>(!BiomeId::SnowCap.is_terrestrial());
-<a href=#630 id=630 data-nosnippet>630</a>        <span class="macro">assert!</span>(!BiomeId::SnowCap.is_aquatic());
-<a href=#631 id=631 data-nosnippet>631</a>
-<a href=#632 id=632 data-nosnippet>632</a>        <span class="comment">// Counts: 11 terrestrial, 5 aquatic, 3 overlay, 19 total.
-<a href=#633 id=633 data-nosnippet>633</a>        </span><span class="macro">assert_eq!</span>(BiomeId::all().len(), <span class="number">19</span>);
-<a href=#634 id=634 data-nosnippet>634</a>        <span class="macro">assert_eq!</span>(BiomeId::all().iter().filter(|b| b.is_terrestrial()).count(), <span class="number">11</span>);
-<a href=#635 id=635 data-nosnippet>635</a>        <span class="macro">assert_eq!</span>(BiomeId::all().iter().filter(|b| b.is_aquatic()).count(), <span class="number">5</span>);
-<a href=#636 id=636 data-nosnippet>636</a>        <span class="macro">assert_eq!</span>(BiomeId::all().iter().filter(|b| b.is_elevation_overlay()).count(), <span class="number">3</span>);
-<a href=#637 id=637 data-nosnippet>637</a>    }
-<a href=#638 id=638 data-nosnippet>638</a>
-<a href=#639 id=639 data-nosnippet>639</a>    <span class="comment">// ============================================================
-<a href=#640 id=640 data-nosnippet>640</a>    // Per-archetype distribution test (10K random samples).
-<a href=#641 id=641 data-nosnippet>641</a>    // §1.D.2 verification: per archetype's documented climate distribution,
-<a href=#642 id=642 data-nosnippet>642</a>    // sample 10K random points and verify the resulting biome distribution
-<a href=#643 id=643 data-nosnippet>643</a>    // is plausible.
-<a href=#644 id=644 data-nosnippet>644</a>    //
-<a href=#645 id=645 data-nosnippet>645</a>    // D.1 ships only the Continental Temperate archetype as production
-<a href=#646 id=646 data-nosnippet>646</a>    // configuration. Distribution tests for the other five archetypes are
-<a href=#647 id=647 data-nosnippet>647</a>    // deferred to D.5 (when those archetypes land). For D.2, the
-<a href=#648 id=648 data-nosnippet>648</a>    // Continental Temperate distribution test is the sole archetype check.
-<a href=#649 id=649 data-nosnippet>649</a>    // ============================================================
-<a href=#650 id=650 data-nosnippet>650</a>
-<a href=#651 id=651 data-nosnippet>651</a>    </span><span class="doccomment">/// Deterministic pseudo-random sampler for the distribution test.
-<a href=#652 id=652 data-nosnippet>652</a>    /// Linear-congruential-like; produces the same sequence per seed for
-<a href=#653 id=653 data-nosnippet>653</a>    /// reproducible test results.
-<a href=#654 id=654 data-nosnippet>654</a>    </span><span class="kw">fn </span>det_random(seed: u32, idx: u32) -&gt; f32 {
-<a href=#655 id=655 data-nosnippet>655</a>        <span class="kw">let </span><span class="kw-2">mut </span>h = seed.wrapping_mul(<span class="number">0x9E37_79B9</span>).wrapping_add(idx);
-<a href=#656 id=656 data-nosnippet>656</a>        h ^= h &gt;&gt; <span class="number">16</span>;
-<a href=#657 id=657 data-nosnippet>657</a>        h = h.wrapping_mul(<span class="number">0x85EB_CA6B</span>);
-<a href=#658 id=658 data-nosnippet>658</a>        h ^= h &gt;&gt; <span class="number">13</span>;
-<a href=#659 id=659 data-nosnippet>659</a>        h = h.wrapping_mul(<span class="number">0xC2B2_AE35</span>);
-<a href=#660 id=660 data-nosnippet>660</a>        h ^= h &gt;&gt; <span class="number">16</span>;
-<a href=#661 id=661 data-nosnippet>661</a>        (h <span class="kw">as </span>f32) / (u32::MAX <span class="kw">as </span>f32)
-<a href=#662 id=662 data-nosnippet>662</a>    }
-<a href=#663 id=663 data-nosnippet>663</a>
-<a href=#664 id=664 data-nosnippet>664</a>    <span class="attr">#[test]
-<a href=#665 id=665 data-nosnippet>665</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_continental_temperate_distribution() {
-<a href=#666 id=666 data-nosnippet>666</a>        <span class="comment">// Sample 10K random world positions through the Continental Temperate
-<a href=#667 id=667 data-nosnippet>667</a>        // archetype's climate map. Verify the resulting biome distribution
-<a href=#668 id=668 data-nosnippet>668</a>        // is plausible: dominant biomes are TemperateDeciduousForest +
-<a href=#669 id=669 data-nosnippet>669</a>        // TemperateGrassland; some BorealForest in cold highlands; zero
-<a href=#670 id=670 data-nosnippet>670</a>        // TropicalRainforest; some Beach/Coast on the world edges.
-<a href=#671 id=671 data-nosnippet>671</a>        </span><span class="kw">let </span>config = ClimateConfig::default(); <span class="comment">// archetype = Continental Temperate
-<a href=#672 id=672 data-nosnippet>672</a>        </span><span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">12345</span>);
-<a href=#673 id=673 data-nosnippet>673</a>
-<a href=#674 id=674 data-nosnippet>674</a>        <span class="kw">let </span>half = config.world_latitude_half_extent_wu <span class="kw">as </span>f64;
-<a href=#675 id=675 data-nosnippet>675</a>        <span class="kw">let </span><span class="kw-2">mut </span>counts = std::collections::HashMap::&lt;BiomeId, u32&gt;::new();
-<a href=#676 id=676 data-nosnippet>676</a>        <span class="kw">const </span>N: u32 = <span class="number">10_000</span>;
-<a href=#677 id=677 data-nosnippet>677</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
-<a href=#678 id=678 data-nosnippet>678</a>            <span class="comment">// Random position within the world extent.
-<a href=#679 id=679 data-nosnippet>679</a>            </span><span class="kw">let </span>x = (det_random(<span class="number">7</span>, i * <span class="number">2</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
-<a href=#680 id=680 data-nosnippet>680</a>            <span class="kw">let </span>z = (det_random(<span class="number">7</span>, i * <span class="number">2 </span>+ <span class="number">1</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
-<a href=#681 id=681 data-nosnippet>681</a>            <span class="comment">// Random elevation in [SEA_LEVEL-10, 510m] to span the Y range
-<a href=#682 id=682 data-nosnippet>682</a>            // (legacy estimate_height max is ~270m; Target B world Y goes to
-<a href=#683 id=683 data-nosnippet>683</a>            // ~510m; we sample broader to cover the full overlay zone).
-<a href=#684 id=684 data-nosnippet>684</a>            </span><span class="kw">let </span>elev_t = det_random(<span class="number">11</span>, i);
-<a href=#685 id=685 data-nosnippet>685</a>            <span class="kw">let </span>elevation = SEA_LEVEL - <span class="number">10.0 </span>+ elev_t * <span class="number">520.0</span>;
-<a href=#686 id=686 data-nosnippet>686</a>
-<a href=#687 id=687 data-nosnippet>687</a>            <span class="kw">let </span>s = climate.sample(x, z, elevation);
-<a href=#688 id=688 data-nosnippet>688</a>            <span class="kw">let </span>b = lookup_biome(s.temperature_c, s.moisture_mm, elevation);
-<a href=#689 id=689 data-nosnippet>689</a>            <span class="kw-2">*</span>counts.entry(b).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
-<a href=#690 id=690 data-nosnippet>690</a>        }
+<a href=#628 id=628 data-nosnippet>628</a>        <span class="comment">// Counts: 11 terrestrial, 5 aquatic, 3 overlay, 19 total.
+<a href=#629 id=629 data-nosnippet>629</a>        </span><span class="macro">assert_eq!</span>(BiomeId::all().len(), <span class="number">19</span>);
+<a href=#630 id=630 data-nosnippet>630</a>        <span class="macro">assert_eq!</span>(
+<a href=#631 id=631 data-nosnippet>631</a>            BiomeId::all().iter().filter(|b| b.is_terrestrial()).count(),
+<a href=#632 id=632 data-nosnippet>632</a>            <span class="number">11
+<a href=#633 id=633 data-nosnippet>633</a>        </span>);
+<a href=#634 id=634 data-nosnippet>634</a>        <span class="macro">assert_eq!</span>(BiomeId::all().iter().filter(|b| b.is_aquatic()).count(), <span class="number">5</span>);
+<a href=#635 id=635 data-nosnippet>635</a>        <span class="macro">assert_eq!</span>(
+<a href=#636 id=636 data-nosnippet>636</a>            BiomeId::all()
+<a href=#637 id=637 data-nosnippet>637</a>                .iter()
+<a href=#638 id=638 data-nosnippet>638</a>                .filter(|b| b.is_elevation_overlay())
+<a href=#639 id=639 data-nosnippet>639</a>                .count(),
+<a href=#640 id=640 data-nosnippet>640</a>            <span class="number">3
+<a href=#641 id=641 data-nosnippet>641</a>        </span>);
+<a href=#642 id=642 data-nosnippet>642</a>    }
+<a href=#643 id=643 data-nosnippet>643</a>
+<a href=#644 id=644 data-nosnippet>644</a>    <span class="comment">// ============================================================
+<a href=#645 id=645 data-nosnippet>645</a>    // Per-archetype distribution test (10K random samples).
+<a href=#646 id=646 data-nosnippet>646</a>    // §1.D.2 verification: per archetype's documented climate distribution,
+<a href=#647 id=647 data-nosnippet>647</a>    // sample 10K random points and verify the resulting biome distribution
+<a href=#648 id=648 data-nosnippet>648</a>    // is plausible.
+<a href=#649 id=649 data-nosnippet>649</a>    //
+<a href=#650 id=650 data-nosnippet>650</a>    // D.1 ships only the Continental Temperate archetype as production
+<a href=#651 id=651 data-nosnippet>651</a>    // configuration. Distribution tests for the other five archetypes are
+<a href=#652 id=652 data-nosnippet>652</a>    // deferred to D.5 (when those archetypes land). For D.2, the
+<a href=#653 id=653 data-nosnippet>653</a>    // Continental Temperate distribution test is the sole archetype check.
+<a href=#654 id=654 data-nosnippet>654</a>    // ============================================================
+<a href=#655 id=655 data-nosnippet>655</a>
+<a href=#656 id=656 data-nosnippet>656</a>    </span><span class="doccomment">/// Deterministic pseudo-random sampler for the distribution test.
+<a href=#657 id=657 data-nosnippet>657</a>    /// Linear-congruential-like; produces the same sequence per seed for
+<a href=#658 id=658 data-nosnippet>658</a>    /// reproducible test results.
+<a href=#659 id=659 data-nosnippet>659</a>    </span><span class="kw">fn </span>det_random(seed: u32, idx: u32) -&gt; f32 {
+<a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">let </span><span class="kw-2">mut </span>h = seed.wrapping_mul(<span class="number">0x9E37_79B9</span>).wrapping_add(idx);
+<a href=#661 id=661 data-nosnippet>661</a>        h ^= h &gt;&gt; <span class="number">16</span>;
+<a href=#662 id=662 data-nosnippet>662</a>        h = h.wrapping_mul(<span class="number">0x85EB_CA6B</span>);
+<a href=#663 id=663 data-nosnippet>663</a>        h ^= h &gt;&gt; <span class="number">13</span>;
+<a href=#664 id=664 data-nosnippet>664</a>        h = h.wrapping_mul(<span class="number">0xC2B2_AE35</span>);
+<a href=#665 id=665 data-nosnippet>665</a>        h ^= h &gt;&gt; <span class="number">16</span>;
+<a href=#666 id=666 data-nosnippet>666</a>        (h <span class="kw">as </span>f32) / (u32::MAX <span class="kw">as </span>f32)
+<a href=#667 id=667 data-nosnippet>667</a>    }
+<a href=#668 id=668 data-nosnippet>668</a>
+<a href=#669 id=669 data-nosnippet>669</a>    <span class="attr">#[test]
+<a href=#670 id=670 data-nosnippet>670</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_continental_temperate_distribution() {
+<a href=#671 id=671 data-nosnippet>671</a>        <span class="comment">// Sample 10K random world positions through the Continental Temperate
+<a href=#672 id=672 data-nosnippet>672</a>        // archetype's climate map. Verify the resulting biome distribution
+<a href=#673 id=673 data-nosnippet>673</a>        // is plausible: dominant biomes are TemperateDeciduousForest +
+<a href=#674 id=674 data-nosnippet>674</a>        // TemperateGrassland; some BorealForest in cold highlands; zero
+<a href=#675 id=675 data-nosnippet>675</a>        // TropicalRainforest; some Beach/Coast on the world edges.
+<a href=#676 id=676 data-nosnippet>676</a>        </span><span class="kw">let </span>config = ClimateConfig::default(); <span class="comment">// archetype = Continental Temperate
+<a href=#677 id=677 data-nosnippet>677</a>        </span><span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">12345</span>);
+<a href=#678 id=678 data-nosnippet>678</a>
+<a href=#679 id=679 data-nosnippet>679</a>        <span class="kw">let </span>half = config.world_latitude_half_extent_wu <span class="kw">as </span>f64;
+<a href=#680 id=680 data-nosnippet>680</a>        <span class="kw">let </span><span class="kw-2">mut </span>counts = std::collections::HashMap::&lt;BiomeId, u32&gt;::new();
+<a href=#681 id=681 data-nosnippet>681</a>        <span class="kw">const </span>N: u32 = <span class="number">10_000</span>;
+<a href=#682 id=682 data-nosnippet>682</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
+<a href=#683 id=683 data-nosnippet>683</a>            <span class="comment">// Random position within the world extent.
+<a href=#684 id=684 data-nosnippet>684</a>            </span><span class="kw">let </span>x = (det_random(<span class="number">7</span>, i * <span class="number">2</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
+<a href=#685 id=685 data-nosnippet>685</a>            <span class="kw">let </span>z = (det_random(<span class="number">7</span>, i * <span class="number">2 </span>+ <span class="number">1</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
+<a href=#686 id=686 data-nosnippet>686</a>            <span class="comment">// Random elevation in [SEA_LEVEL-10, 510m] to span the Y range
+<a href=#687 id=687 data-nosnippet>687</a>            // (legacy estimate_height max is ~270m; Target B world Y goes to
+<a href=#688 id=688 data-nosnippet>688</a>            // ~510m; we sample broader to cover the full overlay zone).
+<a href=#689 id=689 data-nosnippet>689</a>            </span><span class="kw">let </span>elev_t = det_random(<span class="number">11</span>, i);
+<a href=#690 id=690 data-nosnippet>690</a>            <span class="kw">let </span>elevation = SEA_LEVEL - <span class="number">10.0 </span>+ elev_t * <span class="number">520.0</span>;
 <a href=#691 id=691 data-nosnippet>691</a>
-<a href=#692 id=692 data-nosnippet>692</a>        <span class="kw">let </span>total = N <span class="kw">as </span>f32;
-<a href=#693 id=693 data-nosnippet>693</a>        <span class="kw">let </span>frac =
-<a href=#694 id=694 data-nosnippet>694</a>            |b: BiomeId| (<span class="kw-2">*</span>counts.get(<span class="kw-2">&amp;</span>b).unwrap_or(<span class="kw-2">&amp;</span><span class="number">0</span>) <span class="kw">as </span>f32) / total;
-<a href=#695 id=695 data-nosnippet>695</a>
-<a href=#696 id=696 data-nosnippet>696</a>        <span class="comment">// Verify zero TropicalRainforest (Continental Temperate is too cold).
-<a href=#697 id=697 data-nosnippet>697</a>        </span><span class="macro">assert!</span>(
-<a href=#698 id=698 data-nosnippet>698</a>            frac(BiomeId::TropicalRainforest) &lt; <span class="number">0.005</span>,
-<a href=#699 id=699 data-nosnippet>699</a>            <span class="string">"Continental Temperate should produce ~0% TropicalRainforest; got {}"</span>,
-<a href=#700 id=700 data-nosnippet>700</a>            frac(BiomeId::TropicalRainforest)
-<a href=#701 id=701 data-nosnippet>701</a>        );
-<a href=#702 id=702 data-nosnippet>702</a>        <span class="comment">// Verify zero Savanna (also too cold).
-<a href=#703 id=703 data-nosnippet>703</a>        </span><span class="macro">assert!</span>(
-<a href=#704 id=704 data-nosnippet>704</a>            frac(BiomeId::Savanna) &lt; <span class="number">0.005</span>,
-<a href=#705 id=705 data-nosnippet>705</a>            <span class="string">"Continental Temperate should produce ~0% Savanna; got {}"</span>,
-<a href=#706 id=706 data-nosnippet>706</a>            frac(BiomeId::Savanna)
-<a href=#707 id=707 data-nosnippet>707</a>        );
-<a href=#708 id=708 data-nosnippet>708</a>
-<a href=#709 id=709 data-nosnippet>709</a>        <span class="comment">// Verify the temperate-zone family (TemperateDeciduousForest +
-<a href=#710 id=710 data-nosnippet>710</a>        // TemperateGrassland + TemperateRainforest + ColdDesert + Wetland
-<a href=#711 id=711 data-nosnippet>711</a>        // + BorealForest + Tundra) collectively dominates the terrestrial
-<a href=#712 id=712 data-nosnippet>712</a>        // distribution (some samples will be aquatic / overlay; those are
-<a href=#713 id=713 data-nosnippet>713</a>        // valid and not counted against the cold-zone fraction).
-<a href=#714 id=714 data-nosnippet>714</a>        </span><span class="kw">let </span>temperate_family = frac(BiomeId::TemperateDeciduousForest)
-<a href=#715 id=715 data-nosnippet>715</a>            + frac(BiomeId::TemperateGrassland)
-<a href=#716 id=716 data-nosnippet>716</a>            + frac(BiomeId::TemperateRainforest)
-<a href=#717 id=717 data-nosnippet>717</a>            + frac(BiomeId::ColdDesert)
-<a href=#718 id=718 data-nosnippet>718</a>            + frac(BiomeId::BorealForest)
-<a href=#719 id=719 data-nosnippet>719</a>            + frac(BiomeId::Tundra)
-<a href=#720 id=720 data-nosnippet>720</a>            + frac(BiomeId::Wetland);
-<a href=#721 id=721 data-nosnippet>721</a>        <span class="kw">let </span>elevation_overlay = frac(BiomeId::Alpine)
-<a href=#722 id=722 data-nosnippet>722</a>            + frac(BiomeId::SnowCap)
-<a href=#723 id=723 data-nosnippet>723</a>            + frac(BiomeId::Scree)
-<a href=#724 id=724 data-nosnippet>724</a>            + frac(BiomeId::MountainRocky);
-<a href=#725 id=725 data-nosnippet>725</a>        <span class="kw">let </span>aquatic = frac(BiomeId::Ocean)
-<a href=#726 id=726 data-nosnippet>726</a>            + frac(BiomeId::Coast)
-<a href=#727 id=727 data-nosnippet>727</a>            + frac(BiomeId::Beach)
-<a href=#728 id=728 data-nosnippet>728</a>            + frac(BiomeId::River);
-<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>total_classified = temperate_family + elevation_overlay + aquatic;
-<a href=#730 id=730 data-nosnippet>730</a>
-<a href=#731 id=731 data-nosnippet>731</a>        <span class="comment">// 99% of samples should fall into one of the recognized non-tropical
-<a href=#732 id=732 data-nosnippet>732</a>        // categories (a small slack accounts for boundary samples that
-<a href=#733 id=733 data-nosnippet>733</a>        // could fall into edge-of-Whittaker variants).
-<a href=#734 id=734 data-nosnippet>734</a>        </span><span class="macro">assert!</span>(
-<a href=#735 id=735 data-nosnippet>735</a>            total_classified &gt; <span class="number">0.95</span>,
-<a href=#736 id=736 data-nosnippet>736</a>            <span class="string">"Continental Temperate should have ≥95% of samples in non-tropical categories; \
-<a href=#737 id=737 data-nosnippet>737</a>             got temperate_family={temperate_family:.3}, overlay={elevation_overlay:.3}, \
-<a href=#738 id=738 data-nosnippet>738</a>             aquatic={aquatic:.3}, total={total_classified:.3}"
-<a href=#739 id=739 data-nosnippet>739</a>        </span>);
-<a href=#740 id=740 data-nosnippet>740</a>
-<a href=#741 id=741 data-nosnippet>741</a>        <span class="comment">// No BiomeId variant should be NaN-poisoned or panic-producing.
-<a href=#742 id=742 data-nosnippet>742</a>        // (covered implicitly by the iteration completing.)
-<a href=#743 id=743 data-nosnippet>743</a>    </span>}
+<a href=#692 id=692 data-nosnippet>692</a>            <span class="kw">let </span>s = climate.sample(x, z, elevation);
+<a href=#693 id=693 data-nosnippet>693</a>            <span class="kw">let </span>b = lookup_biome(s.temperature_c, s.moisture_mm, elevation);
+<a href=#694 id=694 data-nosnippet>694</a>            <span class="kw-2">*</span>counts.entry(b).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
+<a href=#695 id=695 data-nosnippet>695</a>        }
+<a href=#696 id=696 data-nosnippet>696</a>
+<a href=#697 id=697 data-nosnippet>697</a>        <span class="kw">let </span>total = N <span class="kw">as </span>f32;
+<a href=#698 id=698 data-nosnippet>698</a>        <span class="kw">let </span>frac = |b: BiomeId| (<span class="kw-2">*</span>counts.get(<span class="kw-2">&amp;</span>b).unwrap_or(<span class="kw-2">&amp;</span><span class="number">0</span>) <span class="kw">as </span>f32) / total;
+<a href=#699 id=699 data-nosnippet>699</a>
+<a href=#700 id=700 data-nosnippet>700</a>        <span class="comment">// Verify zero TropicalRainforest (Continental Temperate is too cold).
+<a href=#701 id=701 data-nosnippet>701</a>        </span><span class="macro">assert!</span>(
+<a href=#702 id=702 data-nosnippet>702</a>            frac(BiomeId::TropicalRainforest) &lt; <span class="number">0.005</span>,
+<a href=#703 id=703 data-nosnippet>703</a>            <span class="string">"Continental Temperate should produce ~0% TropicalRainforest; got {}"</span>,
+<a href=#704 id=704 data-nosnippet>704</a>            frac(BiomeId::TropicalRainforest)
+<a href=#705 id=705 data-nosnippet>705</a>        );
+<a href=#706 id=706 data-nosnippet>706</a>        <span class="comment">// Verify zero Savanna (also too cold).
+<a href=#707 id=707 data-nosnippet>707</a>        </span><span class="macro">assert!</span>(
+<a href=#708 id=708 data-nosnippet>708</a>            frac(BiomeId::Savanna) &lt; <span class="number">0.005</span>,
+<a href=#709 id=709 data-nosnippet>709</a>            <span class="string">"Continental Temperate should produce ~0% Savanna; got {}"</span>,
+<a href=#710 id=710 data-nosnippet>710</a>            frac(BiomeId::Savanna)
+<a href=#711 id=711 data-nosnippet>711</a>        );
+<a href=#712 id=712 data-nosnippet>712</a>
+<a href=#713 id=713 data-nosnippet>713</a>        <span class="comment">// Verify the temperate-zone family (TemperateDeciduousForest +
+<a href=#714 id=714 data-nosnippet>714</a>        // TemperateGrassland + TemperateRainforest + ColdDesert + Wetland
+<a href=#715 id=715 data-nosnippet>715</a>        // + BorealForest + Tundra) collectively dominates the terrestrial
+<a href=#716 id=716 data-nosnippet>716</a>        // distribution (some samples will be aquatic / overlay; those are
+<a href=#717 id=717 data-nosnippet>717</a>        // valid and not counted against the cold-zone fraction).
+<a href=#718 id=718 data-nosnippet>718</a>        </span><span class="kw">let </span>temperate_family = frac(BiomeId::TemperateDeciduousForest)
+<a href=#719 id=719 data-nosnippet>719</a>            + frac(BiomeId::TemperateGrassland)
+<a href=#720 id=720 data-nosnippet>720</a>            + frac(BiomeId::TemperateRainforest)
+<a href=#721 id=721 data-nosnippet>721</a>            + frac(BiomeId::ColdDesert)
+<a href=#722 id=722 data-nosnippet>722</a>            + frac(BiomeId::BorealForest)
+<a href=#723 id=723 data-nosnippet>723</a>            + frac(BiomeId::Tundra)
+<a href=#724 id=724 data-nosnippet>724</a>            + frac(BiomeId::Wetland);
+<a href=#725 id=725 data-nosnippet>725</a>        <span class="kw">let </span>elevation_overlay = frac(BiomeId::Alpine)
+<a href=#726 id=726 data-nosnippet>726</a>            + frac(BiomeId::SnowCap)
+<a href=#727 id=727 data-nosnippet>727</a>            + frac(BiomeId::Scree)
+<a href=#728 id=728 data-nosnippet>728</a>            + frac(BiomeId::MountainRocky);
+<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>aquatic = frac(BiomeId::Ocean)
+<a href=#730 id=730 data-nosnippet>730</a>            + frac(BiomeId::Coast)
+<a href=#731 id=731 data-nosnippet>731</a>            + frac(BiomeId::Beach)
+<a href=#732 id=732 data-nosnippet>732</a>            + frac(BiomeId::River);
+<a href=#733 id=733 data-nosnippet>733</a>        <span class="kw">let </span>total_classified = temperate_family + elevation_overlay + aquatic;
+<a href=#734 id=734 data-nosnippet>734</a>
+<a href=#735 id=735 data-nosnippet>735</a>        <span class="comment">// 99% of samples should fall into one of the recognized non-tropical
+<a href=#736 id=736 data-nosnippet>736</a>        // categories (a small slack accounts for boundary samples that
+<a href=#737 id=737 data-nosnippet>737</a>        // could fall into edge-of-Whittaker variants).
+<a href=#738 id=738 data-nosnippet>738</a>        </span><span class="macro">assert!</span>(
+<a href=#739 id=739 data-nosnippet>739</a>            total_classified &gt; <span class="number">0.95</span>,
+<a href=#740 id=740 data-nosnippet>740</a>            <span class="string">"Continental Temperate should have ≥95% of samples in non-tropical categories; \
+<a href=#741 id=741 data-nosnippet>741</a>             got temperate_family={temperate_family:.3}, overlay={elevation_overlay:.3}, \
+<a href=#742 id=742 data-nosnippet>742</a>             aquatic={aquatic:.3}, total={total_classified:.3}"
+<a href=#743 id=743 data-nosnippet>743</a>        </span>);
 <a href=#744 id=744 data-nosnippet>744</a>
-<a href=#745 id=745 data-nosnippet>745</a>    <span class="attr">#[test]
-<a href=#746 id=746 data-nosnippet>746</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_distribution_using_warm_archetype_produces_tropical_biomes() {
-<a href=#747 id=747 data-nosnippet>747</a>        <span class="comment">// Smoke test that swapping in a warm archetype actually shifts the
-<a href=#748 id=748 data-nosnippet>748</a>        // biome distribution toward tropical variants. This is forward-prep
-<a href=#749 id=749 data-nosnippet>749</a>        // for D.5's Equatorial Tropical archetype; we construct a test-only
-<a href=#750 id=750 data-nosnippet>750</a>        // archetype here matching the §1.D.5 plan parameters.
-<a href=#751 id=751 data-nosnippet>751</a>        </span><span class="kw">let </span>warm_archetype = WorldArchetype {
-<a href=#752 id=752 data-nosnippet>752</a>            temperature_mean_c: <span class="number">26.0</span>,
-<a href=#753 id=753 data-nosnippet>753</a>            temperature_variance_c: <span class="number">5.0</span>,
-<a href=#754 id=754 data-nosnippet>754</a>            latitude_temperature_drop_c: <span class="number">3.0</span>, <span class="comment">// minimal latitude effect
-<a href=#755 id=755 data-nosnippet>755</a>            </span>moisture_mean_mm: <span class="number">2200.0</span>,
-<a href=#756 id=756 data-nosnippet>756</a>            moisture_variance_mm: <span class="number">800.0</span>,
-<a href=#757 id=757 data-nosnippet>757</a>            continentalness_mean: <span class="number">0.4</span>,
-<a href=#758 id=758 data-nosnippet>758</a>            continentalness_variance: <span class="number">0.2</span>,
-<a href=#759 id=759 data-nosnippet>759</a>            <span class="comment">// Phase 1.X-F.2.C: bootstrap_splines added; default to F.2 baseline
-<a href=#760 id=760 data-nosnippet>760</a>            // (test only exercises climate envelope, not bootstrap shape).
-<a href=#761 id=761 data-nosnippet>761</a>            </span>bootstrap_splines: Default::default(),
-<a href=#762 id=762 data-nosnippet>762</a>        };
-<a href=#763 id=763 data-nosnippet>763</a>        warm_archetype
-<a href=#764 id=764 data-nosnippet>764</a>            .validate()
-<a href=#765 id=765 data-nosnippet>765</a>            .expect(<span class="string">"test archetype must validate"</span>);
-<a href=#766 id=766 data-nosnippet>766</a>
-<a href=#767 id=767 data-nosnippet>767</a>        <span class="kw">let </span><span class="kw-2">mut </span>config = ClimateConfig::default();
-<a href=#768 id=768 data-nosnippet>768</a>        config.archetype = warm_archetype;
-<a href=#769 id=769 data-nosnippet>769</a>        <span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">67890</span>);
+<a href=#745 id=745 data-nosnippet>745</a>        <span class="comment">// No BiomeId variant should be NaN-poisoned or panic-producing.
+<a href=#746 id=746 data-nosnippet>746</a>        // (covered implicitly by the iteration completing.)
+<a href=#747 id=747 data-nosnippet>747</a>    </span>}
+<a href=#748 id=748 data-nosnippet>748</a>
+<a href=#749 id=749 data-nosnippet>749</a>    <span class="attr">#[test]
+<a href=#750 id=750 data-nosnippet>750</a>    </span><span class="kw">fn </span>phase_1_6_f4_b_3_d_2_distribution_using_warm_archetype_produces_tropical_biomes() {
+<a href=#751 id=751 data-nosnippet>751</a>        <span class="comment">// Smoke test that swapping in a warm archetype actually shifts the
+<a href=#752 id=752 data-nosnippet>752</a>        // biome distribution toward tropical variants. This is forward-prep
+<a href=#753 id=753 data-nosnippet>753</a>        // for D.5's Equatorial Tropical archetype; we construct a test-only
+<a href=#754 id=754 data-nosnippet>754</a>        // archetype here matching the §1.D.5 plan parameters.
+<a href=#755 id=755 data-nosnippet>755</a>        </span><span class="kw">let </span>warm_archetype = WorldArchetype {
+<a href=#756 id=756 data-nosnippet>756</a>            temperature_mean_c: <span class="number">26.0</span>,
+<a href=#757 id=757 data-nosnippet>757</a>            temperature_variance_c: <span class="number">5.0</span>,
+<a href=#758 id=758 data-nosnippet>758</a>            latitude_temperature_drop_c: <span class="number">3.0</span>, <span class="comment">// minimal latitude effect
+<a href=#759 id=759 data-nosnippet>759</a>            </span>moisture_mean_mm: <span class="number">2200.0</span>,
+<a href=#760 id=760 data-nosnippet>760</a>            moisture_variance_mm: <span class="number">800.0</span>,
+<a href=#761 id=761 data-nosnippet>761</a>            continentalness_mean: <span class="number">0.4</span>,
+<a href=#762 id=762 data-nosnippet>762</a>            continentalness_variance: <span class="number">0.2</span>,
+<a href=#763 id=763 data-nosnippet>763</a>            <span class="comment">// Phase 1.X-F.2.C: bootstrap_splines added; default to F.2 baseline
+<a href=#764 id=764 data-nosnippet>764</a>            // (test only exercises climate envelope, not bootstrap shape).
+<a href=#765 id=765 data-nosnippet>765</a>            </span>bootstrap_splines: Default::default(),
+<a href=#766 id=766 data-nosnippet>766</a>        };
+<a href=#767 id=767 data-nosnippet>767</a>        warm_archetype
+<a href=#768 id=768 data-nosnippet>768</a>            .validate()
+<a href=#769 id=769 data-nosnippet>769</a>            .expect(<span class="string">"test archetype must validate"</span>);
 <a href=#770 id=770 data-nosnippet>770</a>
-<a href=#771 id=771 data-nosnippet>771</a>        <span class="kw">let </span>half = config.world_latitude_half_extent_wu <span class="kw">as </span>f64;
-<a href=#772 id=772 data-nosnippet>772</a>        <span class="kw">let </span><span class="kw-2">mut </span>counts = std::collections::HashMap::&lt;BiomeId, u32&gt;::new();
-<a href=#773 id=773 data-nosnippet>773</a>        <span class="kw">const </span>N: u32 = <span class="number">10_000</span>;
-<a href=#774 id=774 data-nosnippet>774</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
-<a href=#775 id=775 data-nosnippet>775</a>            <span class="kw">let </span>x = (det_random(<span class="number">13</span>, i * <span class="number">2</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
-<a href=#776 id=776 data-nosnippet>776</a>            <span class="kw">let </span>z = (det_random(<span class="number">13</span>, i * <span class="number">2 </span>+ <span class="number">1</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
-<a href=#777 id=777 data-nosnippet>777</a>            <span class="kw">let </span>elev_t = det_random(<span class="number">17</span>, i);
-<a href=#778 id=778 data-nosnippet>778</a>            <span class="kw">let </span>elevation = SEA_LEVEL - <span class="number">10.0 </span>+ elev_t * <span class="number">520.0</span>;
-<a href=#779 id=779 data-nosnippet>779</a>
-<a href=#780 id=780 data-nosnippet>780</a>            <span class="kw">let </span>s = climate.sample(x, z, elevation);
-<a href=#781 id=781 data-nosnippet>781</a>            <span class="kw">let </span>b = lookup_biome(s.temperature_c, s.moisture_mm, elevation);
-<a href=#782 id=782 data-nosnippet>782</a>            <span class="kw-2">*</span>counts.entry(b).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
-<a href=#783 id=783 data-nosnippet>783</a>        }
-<a href=#784 id=784 data-nosnippet>784</a>
-<a href=#785 id=785 data-nosnippet>785</a>        <span class="kw">let </span>total = N <span class="kw">as </span>f32;
-<a href=#786 id=786 data-nosnippet>786</a>        <span class="kw">let </span>frac =
-<a href=#787 id=787 data-nosnippet>787</a>            |b: BiomeId| (<span class="kw-2">*</span>counts.get(<span class="kw-2">&amp;</span>b).unwrap_or(<span class="kw-2">&amp;</span><span class="number">0</span>) <span class="kw">as </span>f32) / total;
-<a href=#788 id=788 data-nosnippet>788</a>        <span class="kw">let </span>tropical_family = frac(BiomeId::TropicalRainforest)
-<a href=#789 id=789 data-nosnippet>789</a>            + frac(BiomeId::TropicalSeasonalForest)
-<a href=#790 id=790 data-nosnippet>790</a>            + frac(BiomeId::Savanna);
-<a href=#791 id=791 data-nosnippet>791</a>
-<a href=#792 id=792 data-nosnippet>792</a>        <span class="comment">// Warm archetype should produce SOME tropical biomes (&gt;5% combined).
-<a href=#793 id=793 data-nosnippet>793</a>        // Continental Temperate produced ≈0%; warm archetype should clearly
-<a href=#794 id=794 data-nosnippet>794</a>        // shift the distribution.
-<a href=#795 id=795 data-nosnippet>795</a>        </span><span class="macro">assert!</span>(
-<a href=#796 id=796 data-nosnippet>796</a>            tropical_family &gt; <span class="number">0.05</span>,
-<a href=#797 id=797 data-nosnippet>797</a>            <span class="string">"warm archetype should produce ≥5% tropical biomes; got {tropical_family:.3}"
-<a href=#798 id=798 data-nosnippet>798</a>        </span>);
-<a href=#799 id=799 data-nosnippet>799</a>
-<a href=#800 id=800 data-nosnippet>800</a>        <span class="comment">// Should produce zero Tundra (warm archetype has no cold latitudes
-<a href=#801 id=801 data-nosnippet>801</a>        // even at the world edges, and elevation-induced Tundra is rare at
-<a href=#802 id=802 data-nosnippet>802</a>        // Target B Y range; Tundra requires temp &lt; 0°C which warm archetype
-<a href=#803 id=803 data-nosnippet>803</a>        // can only reach at the highest elevations after lapse rate).
-<a href=#804 id=804 data-nosnippet>804</a>        </span><span class="macro">assert!</span>(
-<a href=#805 id=805 data-nosnippet>805</a>            frac(BiomeId::Tundra) &lt; <span class="number">0.03</span>,
-<a href=#806 id=806 data-nosnippet>806</a>            <span class="string">"warm archetype should produce &lt;3% Tundra; got {}"</span>,
-<a href=#807 id=807 data-nosnippet>807</a>            frac(BiomeId::Tundra)
-<a href=#808 id=808 data-nosnippet>808</a>        );
-<a href=#809 id=809 data-nosnippet>809</a>    }
-<a href=#810 id=810 data-nosnippet>810</a>}</code></pre></div></section></main></body></html>
+<a href=#771 id=771 data-nosnippet>771</a>        <span class="kw">let </span><span class="kw-2">mut </span>config = ClimateConfig::default();
+<a href=#772 id=772 data-nosnippet>772</a>        config.archetype = warm_archetype;
+<a href=#773 id=773 data-nosnippet>773</a>        <span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">67890</span>);
+<a href=#774 id=774 data-nosnippet>774</a>
+<a href=#775 id=775 data-nosnippet>775</a>        <span class="kw">let </span>half = config.world_latitude_half_extent_wu <span class="kw">as </span>f64;
+<a href=#776 id=776 data-nosnippet>776</a>        <span class="kw">let </span><span class="kw-2">mut </span>counts = std::collections::HashMap::&lt;BiomeId, u32&gt;::new();
+<a href=#777 id=777 data-nosnippet>777</a>        <span class="kw">const </span>N: u32 = <span class="number">10_000</span>;
+<a href=#778 id=778 data-nosnippet>778</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..N {
+<a href=#779 id=779 data-nosnippet>779</a>            <span class="kw">let </span>x = (det_random(<span class="number">13</span>, i * <span class="number">2</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
+<a href=#780 id=780 data-nosnippet>780</a>            <span class="kw">let </span>z = (det_random(<span class="number">13</span>, i * <span class="number">2 </span>+ <span class="number">1</span>) * <span class="number">2.0 </span>- <span class="number">1.0</span>) <span class="kw">as </span>f64 * half;
+<a href=#781 id=781 data-nosnippet>781</a>            <span class="kw">let </span>elev_t = det_random(<span class="number">17</span>, i);
+<a href=#782 id=782 data-nosnippet>782</a>            <span class="kw">let </span>elevation = SEA_LEVEL - <span class="number">10.0 </span>+ elev_t * <span class="number">520.0</span>;
+<a href=#783 id=783 data-nosnippet>783</a>
+<a href=#784 id=784 data-nosnippet>784</a>            <span class="kw">let </span>s = climate.sample(x, z, elevation);
+<a href=#785 id=785 data-nosnippet>785</a>            <span class="kw">let </span>b = lookup_biome(s.temperature_c, s.moisture_mm, elevation);
+<a href=#786 id=786 data-nosnippet>786</a>            <span class="kw-2">*</span>counts.entry(b).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
+<a href=#787 id=787 data-nosnippet>787</a>        }
+<a href=#788 id=788 data-nosnippet>788</a>
+<a href=#789 id=789 data-nosnippet>789</a>        <span class="kw">let </span>total = N <span class="kw">as </span>f32;
+<a href=#790 id=790 data-nosnippet>790</a>        <span class="kw">let </span>frac = |b: BiomeId| (<span class="kw-2">*</span>counts.get(<span class="kw-2">&amp;</span>b).unwrap_or(<span class="kw-2">&amp;</span><span class="number">0</span>) <span class="kw">as </span>f32) / total;
+<a href=#791 id=791 data-nosnippet>791</a>        <span class="kw">let </span>tropical_family = frac(BiomeId::TropicalRainforest)
+<a href=#792 id=792 data-nosnippet>792</a>            + frac(BiomeId::TropicalSeasonalForest)
+<a href=#793 id=793 data-nosnippet>793</a>            + frac(BiomeId::Savanna);
+<a href=#794 id=794 data-nosnippet>794</a>
+<a href=#795 id=795 data-nosnippet>795</a>        <span class="comment">// Warm archetype should produce SOME tropical biomes (&gt;5% combined).
+<a href=#796 id=796 data-nosnippet>796</a>        // Continental Temperate produced ≈0%; warm archetype should clearly
+<a href=#797 id=797 data-nosnippet>797</a>        // shift the distribution.
+<a href=#798 id=798 data-nosnippet>798</a>        </span><span class="macro">assert!</span>(
+<a href=#799 id=799 data-nosnippet>799</a>            tropical_family &gt; <span class="number">0.05</span>,
+<a href=#800 id=800 data-nosnippet>800</a>            <span class="string">"warm archetype should produce ≥5% tropical biomes; got {tropical_family:.3}"
+<a href=#801 id=801 data-nosnippet>801</a>        </span>);
+<a href=#802 id=802 data-nosnippet>802</a>
+<a href=#803 id=803 data-nosnippet>803</a>        <span class="comment">// Should produce zero Tundra (warm archetype has no cold latitudes
+<a href=#804 id=804 data-nosnippet>804</a>        // even at the world edges, and elevation-induced Tundra is rare at
+<a href=#805 id=805 data-nosnippet>805</a>        // Target B Y range; Tundra requires temp &lt; 0°C which warm archetype
+<a href=#806 id=806 data-nosnippet>806</a>        // can only reach at the highest elevations after lapse rate).
+<a href=#807 id=807 data-nosnippet>807</a>        </span><span class="macro">assert!</span>(
+<a href=#808 id=808 data-nosnippet>808</a>            frac(BiomeId::Tundra) &lt; <span class="number">0.03</span>,
+<a href=#809 id=809 data-nosnippet>809</a>            <span class="string">"warm archetype should produce &lt;3% Tundra; got {}"</span>,
+<a href=#810 id=810 data-nosnippet>810</a>            frac(BiomeId::Tundra)
+<a href=#811 id=811 data-nosnippet>811</a>        );
+<a href=#812 id=812 data-nosnippet>812</a>    }
+<a href=#813 id=813 data-nosnippet>813</a>}</code></pre></div></section></main></body></html>

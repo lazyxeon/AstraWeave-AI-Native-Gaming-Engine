@@ -8,40 +8,40 @@
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">pub mod </span>background_loader; <span class="comment">// Week 4 Action 14: Async chunk streaming
 <a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">pub mod </span>biome;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">pub mod </span>biome_blending; <span class="comment">// Production-ready biome blending
-<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub mod </span>biome_pack;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">pub mod </span>blueprint_zone;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">pub mod </span>chunk;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">pub mod </span>climate;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">pub mod </span>elevation_biome; <span class="comment">// Phase 1.5: heightmap-driven multi-biome generation
-<a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub mod </span>collision;
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub mod </span>compressed_voxels; <span class="comment">// P4-8: Palette compression + RLE for voxel chunks
-<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub mod </span>erosion;
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub mod </span>gpu_bridge; <span class="comment">// GPU acceleration bridge (TerrainGpuAccelerator trait)
-<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub mod </span>heightmap;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">pub mod </span>lod_blending;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">pub mod </span>lod_manager; <span class="comment">// Week 4 Action 14: LOD with hysteresis
-<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub mod </span>marching_cubes_tables;
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub mod </span>meshing;
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub mod </span>noise_gen;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">pub mod </span>noise_simd; <span class="comment">// SIMD-optimized noise generation (Week 3 Action 8)
-<a href=#27 id=27 data-nosnippet>27</a></span><span class="kw">pub mod </span>perlin_gradient; <span class="comment">// Phase 1.6-F.2-T-4: analytical-derivative Perlin + derivative-weighted fBm
-<a href=#28 id=28 data-nosnippet>28</a></span><span class="kw">pub mod </span>runevision_erosion; <span class="comment">// Phase 1.6-F.4.B.3.C: gradient-aligned gully extrusion filter (Skovbo Johansen)
-<a href=#29 id=29 data-nosnippet>29</a></span><span class="kw">pub mod </span>biome_lookup; <span class="comment">// Phase 1.6-F.4.B.3.D.2: Whittaker biome lookup (climate × elevation → BiomeId)
-<a href=#30 id=30 data-nosnippet>30</a></span><span class="kw">pub mod </span>biome_parameters; <span class="comment">// Phase 1.6-F.4.B.3.D.3: per-BiomeId terrain parameters (replaces BiomeNoisePreset)
-<a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">pub mod </span>biome_param_blending; <span class="comment">// Phase 1.6-F.4.B.3.D.4: scattered-convolution biome parameter blending (noiseposti.ng)
-<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">pub mod </span>world_archetypes; <span class="comment">// Phase 1.6-F.4.B.3.D.5: world archetype catalog (6 climate envelope presets)
-<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">pub mod </span>spline_types; <span class="comment">// Phase 1.X-F.1.A: PvFold + Spline1D + BootstrapParam (regional archetype variation)
-<a href=#34 id=34 data-nosnippet>34</a></span><span class="kw">pub mod </span>regional_archetype_mask; <span class="comment">// Phase 1.X-F.4: paintable archetype mask + falloff distance field + sampler
-<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">pub mod </span>partition_integration;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">pub mod </span>scatter;
-<a href=#37 id=37 data-nosnippet>37</a><span class="kw">pub mod </span>solver; <span class="comment">// Phase 10: AI-Orchestrated Dynamic Terrain
-<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub mod </span>streaming_diagnostics; <span class="comment">// Week 4 Action 14: Diagnostics overlay
-<a href=#39 id=39 data-nosnippet>39</a></span><span class="kw">pub mod </span>structures;
-<a href=#40 id=40 data-nosnippet>40</a><span class="kw">pub mod </span>terrain_modifier; <span class="comment">// Phase 10: Batched voxel updates
-<a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">pub mod </span>terrain_persistence; <span class="comment">// Phase 10: Terrain save/load
-<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub mod </span>texture_splatting; <span class="comment">// Production-ready terrain texture splatting
-<a href=#43 id=43 data-nosnippet>43</a></span><span class="kw">pub mod </span>voxel_data;
-<a href=#44 id=44 data-nosnippet>44</a><span class="kw">pub mod </span>zone_scatter;
+<a href=#11 id=11 data-nosnippet>11</a></span><span class="kw">pub mod </span>biome_lookup; <span class="comment">// Phase 1.6-F.4.B.3.D.2: Whittaker biome lookup (climate × elevation → BiomeId)
+<a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub mod </span>biome_pack;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">pub mod </span>biome_param_blending; <span class="comment">// Phase 1.6-F.4.B.3.D.4: scattered-convolution biome parameter blending (noiseposti.ng)
+<a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">pub mod </span>biome_parameters; <span class="comment">// Phase 1.6-F.4.B.3.D.3: per-BiomeId terrain parameters (replaces BiomeNoisePreset)
+<a href=#15 id=15 data-nosnippet>15</a></span><span class="kw">pub mod </span>blueprint_zone;
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">pub mod </span>chunk;
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub mod </span>climate;
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub mod </span>collision;
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub mod </span>compressed_voxels; <span class="comment">// P4-8: Palette compression + RLE for voxel chunks
+<a href=#20 id=20 data-nosnippet>20</a></span><span class="kw">pub mod </span>elevation_biome; <span class="comment">// Phase 1.5: heightmap-driven multi-biome generation
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub mod </span>erosion;
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">pub mod </span>gpu_bridge; <span class="comment">// GPU acceleration bridge (TerrainGpuAccelerator trait)
+<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub mod </span>heightmap;
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub mod </span>lod_blending;
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">pub mod </span>lod_manager; <span class="comment">// Week 4 Action 14: LOD with hysteresis
+<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">pub mod </span>marching_cubes_tables;
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">pub mod </span>meshing;
+<a href=#28 id=28 data-nosnippet>28</a><span class="kw">pub mod </span>noise_gen;
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">pub mod </span>noise_simd; <span class="comment">// SIMD-optimized noise generation (Week 3 Action 8)
+<a href=#30 id=30 data-nosnippet>30</a></span><span class="kw">pub mod </span>partition_integration;
+<a href=#31 id=31 data-nosnippet>31</a><span class="kw">pub mod </span>perlin_gradient; <span class="comment">// Phase 1.6-F.2-T-4: analytical-derivative Perlin + derivative-weighted fBm
+<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">pub mod </span>regional_archetype_mask; <span class="comment">// Phase 1.X-F.4: paintable archetype mask + falloff distance field + sampler
+<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">pub mod </span>runevision_erosion; <span class="comment">// Phase 1.6-F.4.B.3.C: gradient-aligned gully extrusion filter (Skovbo Johansen)
+<a href=#34 id=34 data-nosnippet>34</a></span><span class="kw">pub mod </span>scatter;
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">pub mod </span>solver; <span class="comment">// Phase 10: AI-Orchestrated Dynamic Terrain
+<a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">pub mod </span>spline_types; <span class="comment">// Phase 1.X-F.1.A: PvFold + Spline1D + BootstrapParam (regional archetype variation)
+<a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">pub mod </span>streaming_diagnostics; <span class="comment">// Week 4 Action 14: Diagnostics overlay
+<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">pub mod </span>structures;
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">pub mod </span>terrain_modifier; <span class="comment">// Phase 10: Batched voxel updates
+<a href=#40 id=40 data-nosnippet>40</a></span><span class="kw">pub mod </span>terrain_persistence; <span class="comment">// Phase 10: Terrain save/load
+<a href=#41 id=41 data-nosnippet>41</a></span><span class="kw">pub mod </span>texture_splatting; <span class="comment">// Production-ready terrain texture splatting
+<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub mod </span>voxel_data;
+<a href=#43 id=43 data-nosnippet>43</a><span class="kw">pub mod </span>world_archetypes; <span class="comment">// Phase 1.6-F.4.B.3.D.5: world archetype catalog (6 climate envelope presets)
+<a href=#44 id=44 data-nosnippet>44</a></span><span class="kw">pub mod </span>zone_scatter;
 <a href=#45 id=45 data-nosnippet>45</a>
 <a href=#46 id=46 data-nosnippet>46</a><span class="kw">pub use </span>advanced_erosion::{
 <a href=#47 id=47 data-nosnippet>47</a>    erosion_preset_for_climate, AdvancedErosionSimulator, ErosionPreset, ErosionStats,
@@ -55,15 +55,15 @@
 <a href=#55 id=55 data-nosnippet>55</a>    AdaptiveScaleParams, BlendMask, BlueprintZone, PlacementMode, ZoneId, ZoneRegistry, ZoneSource,
 <a href=#56 id=56 data-nosnippet>56</a>};
 <a href=#57 id=57 data-nosnippet>57</a><span class="kw">pub use </span>chunk::{smooth_shared_vertices, ChunkId, ChunkManager, TerrainChunk};
-<a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span>collision::{collision_mesh_from_chunk, collision_mesh_from_heightmap, CollisionMesh};
-<a href=#59 id=59 data-nosnippet>59</a><span class="kw">pub use </span>climate::{ClimateConfig, ClimateMap};
-<a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub use </span>elevation_biome::{elevation_to_biome_weights, ClimateBias, SEA_LEVEL}; <span class="comment">// Phase 1.5
-<a href=#61 id=61 data-nosnippet>61</a></span><span class="kw">pub use </span>gpu_bridge::{
-<a href=#62 id=62 data-nosnippet>62</a>    GpuErosionRequest, GpuHeightmapRequest, GpuHeightmapResult, GpuNoiseRequest,
-<a href=#63 id=63 data-nosnippet>63</a>    TerrainGpuAccelerator,
-<a href=#64 id=64 data-nosnippet>64</a>};
-<a href=#65 id=65 data-nosnippet>65</a><span class="kw">pub use </span>compressed_voxels::{
-<a href=#66 id=66 data-nosnippet>66</a>    CompressedVoxelChunk, PaletteEntry, RleRun, VoxelPalette, CHUNK_VOLUME,
+<a href=#58 id=58 data-nosnippet>58</a><span class="kw">pub use </span>climate::{ClimateConfig, ClimateMap};
+<a href=#59 id=59 data-nosnippet>59</a><span class="kw">pub use </span>collision::{collision_mesh_from_chunk, collision_mesh_from_heightmap, CollisionMesh};
+<a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub use </span>compressed_voxels::{
+<a href=#61 id=61 data-nosnippet>61</a>    CompressedVoxelChunk, PaletteEntry, RleRun, VoxelPalette, CHUNK_VOLUME,
+<a href=#62 id=62 data-nosnippet>62</a>};
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub use </span>elevation_biome::{elevation_to_biome_weights, ClimateBias, SEA_LEVEL}; <span class="comment">// Phase 1.5
+<a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">pub use </span>gpu_bridge::{
+<a href=#65 id=65 data-nosnippet>65</a>    GpuErosionRequest, GpuHeightmapRequest, GpuHeightmapResult, GpuNoiseRequest,
+<a href=#66 id=66 data-nosnippet>66</a>    TerrainGpuAccelerator,
 <a href=#67 id=67 data-nosnippet>67</a>};
 <a href=#68 id=68 data-nosnippet>68</a><span class="kw">pub use </span>heightmap::{Heightmap, HeightmapConfig};
 <a href=#69 id=69 data-nosnippet>69</a><span class="kw">pub use </span>lod_blending::{LodBlender, MorphConfig, MorphedMesh, MorphingLodManager};
@@ -81,8 +81,8 @@
 <a href=#81 id=81 data-nosnippet>81</a>    VoxelPartitionStats,
 <a href=#82 id=82 data-nosnippet>82</a>};
 <a href=#83 id=83 data-nosnippet>83</a><span class="kw">pub use </span>scatter::{
-<a href=#84 id=84 data-nosnippet>84</a>    ScatterConfig, ScatterResult, VegetationInstance, VegetationLodConfig, VegetationScatter,
-<a href=#85 id=85 data-nosnippet>85</a>    density_at_distance,
+<a href=#84 id=84 data-nosnippet>84</a>    density_at_distance, ScatterConfig, ScatterResult, VegetationInstance, VegetationLodConfig,
+<a href=#85 id=85 data-nosnippet>85</a>    VegetationScatter,
 <a href=#86 id=86 data-nosnippet>86</a>};
 <a href=#87 id=87 data-nosnippet>87</a><span class="kw">pub use </span>solver::{ResolvedLocation, SolverError, TerrainSolver, ValidationStatus};
 <a href=#88 id=88 data-nosnippet>88</a><span class="kw">pub use </span>streaming_diagnostics::{
@@ -358,8 +358,8 @@
 <a href=#358 id=358 data-nosnippet>358</a>        // different per-biome amplitudes — biome assignment shapes the world,
 <a href=#359 id=359 data-nosnippet>359</a>        // not the other way around. Per §2.5, biome assignment uses
 <a href=#360 id=360 data-nosnippet>360</a>        // pre-erosion heights for authorial-intent stability.
-<a href=#361 id=361 data-nosnippet>361</a>        </span><span class="kw">let </span>halo_biome_ids = <span class="self">self
-<a href=#362 id=362 data-nosnippet>362</a>            </span>.apply_per_biome_modulation_to_halo(<span class="kw-2">&amp;mut </span>halo, chunk_id, HALO_CHUNKS);
+<a href=#361 id=361 data-nosnippet>361</a>        </span><span class="kw">let </span>halo_biome_ids =
+<a href=#362 id=362 data-nosnippet>362</a>            <span class="self">self</span>.apply_per_biome_modulation_to_halo(<span class="kw-2">&amp;mut </span>halo, chunk_id, HALO_CHUNKS);
 <a href=#363 id=363 data-nosnippet>363</a>
 <a href=#364 id=364 data-nosnippet>364</a>        <span class="comment">// Pre-erosion cropped heightmap — input to biome_weights computation.
 <a href=#365 id=365 data-nosnippet>365</a>        // After per-biome modulation, this reflects per-vertex amplitude.
@@ -410,421 +410,421 @@
 <a href=#410 id=410 data-nosnippet>410</a>        <span class="kw">if </span><span class="self">self</span>.config.noise.erosion_enabled {
 <a href=#411 id=411 data-nosnippet>411</a>            <span class="comment">// Halo's world origin (target chunk origin minus halo_chunks * chunk_size).
 <a href=#412 id=412 data-nosnippet>412</a>            </span><span class="kw">let </span>target_origin = chunk_id.to_world_pos(<span class="self">self</span>.config.chunk_size);
-<a href=#413 id=413 data-nosnippet>413</a>            <span class="kw">let </span>halo_origin_x = (target_origin.x - HALO_CHUNKS <span class="kw">as </span>f32 * <span class="self">self</span>.config.chunk_size) <span class="kw">as </span>f64;
-<a href=#414 id=414 data-nosnippet>414</a>            <span class="kw">let </span>halo_origin_z = (target_origin.z - HALO_CHUNKS <span class="kw">as </span>f32 * <span class="self">self</span>.config.chunk_size) <span class="kw">as </span>f64;
-<a href=#415 id=415 data-nosnippet>415</a>            <span class="comment">// Vertex spacing: chunk_size per (resolution - 1) vertices.
-<a href=#416 id=416 data-nosnippet>416</a>            </span><span class="kw">let </span>vertex_spacing =
-<a href=#417 id=417 data-nosnippet>417</a>                <span class="self">self</span>.config.chunk_size <span class="kw">as </span>f64 / (<span class="self">self</span>.config.heightmap_resolution - <span class="number">1</span>) <span class="kw">as </span>f64;
-<a href=#418 id=418 data-nosnippet>418</a>
-<a href=#419 id=419 data-nosnippet>419</a>            <span class="kw">let </span>_stats = simulator.apply_preset_at_world_offset(
-<a href=#420 id=420 data-nosnippet>420</a>                <span class="kw-2">&amp;mut </span>halo,
-<a href=#421 id=421 data-nosnippet>421</a>                <span class="kw-2">&amp;</span>preset,
-<a href=#422 id=422 data-nosnippet>422</a>                halo_origin_x,
-<a href=#423 id=423 data-nosnippet>423</a>                halo_origin_z,
-<a href=#424 id=424 data-nosnippet>424</a>                vertex_spacing,
-<a href=#425 id=425 data-nosnippet>425</a>                <span class="self">self</span>.config.seed,
-<a href=#426 id=426 data-nosnippet>426</a>            );
-<a href=#427 id=427 data-nosnippet>427</a>            halo.recalculate_bounds();
-<a href=#428 id=428 data-nosnippet>428</a>        }
-<a href=#429 id=429 data-nosnippet>429</a>
-<a href=#430 id=430 data-nosnippet>430</a>        <span class="comment">// Post-erosion cropped heightmap — final chunk output.
-<a href=#431 id=431 data-nosnippet>431</a>        </span><span class="kw">let </span>heightmap = <span class="self">self</span>.crop_halo_to_chunk(<span class="kw-2">&amp;</span>halo, chunk_id)<span class="question-mark">?</span>;
-<a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a>        <span class="comment">// biome_map still computed from PRE-erosion heights + climate data
-<a href=#434 id=434 data-nosnippet>434</a>        // (unchanged path). Phase 4 will route climate through biome_weights;
-<a href=#435 id=435 data-nosnippet>435</a>        // biome_map currently feeds splat-rule selection elsewhere.
-<a href=#436 id=436 data-nosnippet>436</a>        </span><span class="kw">let </span>climate_data = <span class="self">self</span>.climate.sample_chunk(
-<a href=#437 id=437 data-nosnippet>437</a>            chunk_id,
-<a href=#438 id=438 data-nosnippet>438</a>            <span class="self">self</span>.config.chunk_size,
-<a href=#439 id=439 data-nosnippet>439</a>            <span class="self">self</span>.config.heightmap_resolution,
-<a href=#440 id=440 data-nosnippet>440</a>        )<span class="question-mark">?</span>;
-<a href=#441 id=441 data-nosnippet>441</a>        <span class="kw">let </span>biome_map = <span class="self">self</span>.assign_biomes(<span class="kw-2">&amp;</span>pre_erosion_heightmap, <span class="kw-2">&amp;</span>climate_data)<span class="question-mark">?</span>;
-<a href=#442 id=442 data-nosnippet>442</a>
-<a href=#443 id=443 data-nosnippet>443</a>        <span class="comment">// Construct chunk: post-erosion heights + pre-erosion biome_weights
-<a href=#444 id=444 data-nosnippet>444</a>        // + per-vertex BiomeId array (Phase 1.6-F.4.B.3.D.3b).
-<a href=#445 id=445 data-nosnippet>445</a>        // No further `apply_erosion` — phase 2 replaces simple CA with
-<a href=#446 id=446 data-nosnippet>446</a>        // AdvancedErosionSimulator.
-<a href=#447 id=447 data-nosnippet>447</a>        </span><span class="kw">let </span>chunk = TerrainChunk::new_with_climate_field(
-<a href=#448 id=448 data-nosnippet>448</a>            chunk_id,
-<a href=#449 id=449 data-nosnippet>449</a>            heightmap,
-<a href=#450 id=450 data-nosnippet>450</a>            biome_map,
-<a href=#451 id=451 data-nosnippet>451</a>            biome_weights,
-<a href=#452 id=452 data-nosnippet>452</a>            chunk_biome_ids,
-<a href=#453 id=453 data-nosnippet>453</a>        );
-<a href=#454 id=454 data-nosnippet>454</a>
-<a href=#455 id=455 data-nosnippet>455</a>        <span class="prelude-val">Ok</span>(chunk)
-<a href=#456 id=456 data-nosnippet>456</a>    }
-<a href=#457 id=457 data-nosnippet>457</a>
-<a href=#458 id=458 data-nosnippet>458</a>    <span class="doccomment">/// Phase 1.6-F.4.B.3.D.3b → D.4: apply per-vertex biome modulation
-<a href=#459 id=459 data-nosnippet>459</a>    /// to a halo heightmap with scattered-convolution biome blending.
-<a href=#460 id=460 data-nosnippet>460</a>    ///
-<a href=#461 id=461 data-nosnippet>461</a>    /// For each vertex in the halo, the function:
-<a href=#462 id=462 data-nosnippet>462</a>    /// 1. Samples the bootstrap (raw) elevation from the halo.
-<a href=#463 id=463 data-nosnippet>463</a>    /// 2. Calls
-<a href=#464 id=464 data-nosnippet>464</a>    ///    `biome_param_blending::blend_biome_parameters(world_x, world_z,
-<a href=#465 id=465 data-nosnippet>465</a>    ///    bootstrap_elevation, climate_map, &amp;blend_config)` which:
-<a href=#466 id=466 data-nosnippet>466</a>    ///    - Generates `N` jittered sample positions within `radius` (D.4).
-<a href=#467 id=467 data-nosnippet>467</a>    ///    - Looks up biome at each sample via climate field + Whittaker.
-<a href=#468 id=468 data-nosnippet>468</a>    ///    - Distance-weighted blends `mountains_amplitude` and
-<a href=#469 id=469 data-nosnippet>469</a>    ///      `scatter_density`.
-<a href=#470 id=470 data-nosnippet>470</a>    ///    - Returns dominant biome (highest summed weight) +
-<a href=#471 id=471 data-nosnippet>471</a>    ///      blended numeric params.
-<a href=#472 id=472 data-nosnippet>472</a>    /// 3. Re-samples the noise pipeline with
-<a href=#473 id=473 data-nosnippet>473</a>    ///    `sample_height_with_mountain_amplitude` using the blended
-<a href=#474 id=474 data-nosnippet>474</a>    ///    `mountains_amplitude` (continuous across biome boundaries —
-<a href=#475 id=475 data-nosnippet>475</a>    ///    no flip discontinuity).
-<a href=#476 id=476 data-nosnippet>476</a>    /// 4. Records the dominant biome ID at this vertex.
-<a href=#477 id=477 data-nosnippet>477</a>    ///
-<a href=#478 id=478 data-nosnippet>478</a>    /// Returns a flat `Vec&lt;BiomeId&gt;` in row-major `(z, x)` order matching
-<a href=#479 id=479 data-nosnippet>479</a>    /// the halo's vertex layout. Length: `halo_res × halo_res`.
-<a href=#480 id=480 data-nosnippet>480</a>    ///
-<a href=#481 id=481 data-nosnippet>481</a>    /// Cost analysis vs D.3b: D.3b did 1 noise sample (raw, bootstrap) +
-<a href=#482 id=482 data-nosnippet>482</a>    /// 1 climate sample + 1 biome lookup + 1 noise sample (modulated) per
-<a href=#483 id=483 data-nosnippet>483</a>    /// vertex. D.4 adds the blending pass: `N` climate samples + `N`
-<a href=#484 id=484 data-nosnippet>484</a>    /// biome lookups + `N` parameter lookups per vertex. With `N=6`
-<a href=#485 id=485 data-nosnippet>485</a>    /// default, total per-vertex cost is roughly D.3b + 5 climate samples
-<a href=#486 id=486 data-nosnippet>486</a>    /// + 5 biome lookups. Climate sampling and biome lookup are both
-<a href=#487 id=487 data-nosnippet>487</a>    /// pure functions of position — cache-friendly and SIMD-amenable.
-<a href=#488 id=488 data-nosnippet>488</a>    </span><span class="kw">fn </span>apply_per_biome_modulation_to_halo(
-<a href=#489 id=489 data-nosnippet>489</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#490 id=490 data-nosnippet>490</a>        halo: <span class="kw-2">&amp;mut </span>heightmap::Heightmap,
-<a href=#491 id=491 data-nosnippet>491</a>        target_chunk_id: ChunkId,
-<a href=#492 id=492 data-nosnippet>492</a>        halo_chunks: u32,
-<a href=#493 id=493 data-nosnippet>493</a>    ) -&gt; Vec&lt;<span class="kw">crate</span>::biome_lookup::BiomeId&gt; {
-<a href=#494 id=494 data-nosnippet>494</a>        <span class="kw">let </span>halo_res = halo.resolution() <span class="kw">as </span>usize;
-<a href=#495 id=495 data-nosnippet>495</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution <span class="kw">as </span>usize;
-<a href=#496 id=496 data-nosnippet>496</a>        <span class="comment">// CRITICAL: must mirror `generate_halo_heightmap`'s f32 arithmetic
-<a href=#497 id=497 data-nosnippet>497</a>        // so that vertex world coordinates at the shared edge between
-<a href=#498 id=498 data-nosnippet>498</a>        // adjacent chunks match exactly. f64 arithmetic produces a
-<a href=#499 id=499 data-nosnippet>499</a>        // slightly different `step` value than f32, breaking the
-<a href=#500 id=500 data-nosnippet>500</a>        // shared-edge invariant under per-biome modulation. Per
-<a href=#501 id=501 data-nosnippet>501</a>        // F.4.B.3.D.3b regression diagnosis: f64 path produced 125 WU
-<a href=#502 id=502 data-nosnippet>502</a>        // divergence at chunk borders for the mountain test.
-<a href=#503 id=503 data-nosnippet>503</a>        </span><span class="kw">let </span>chunk_size = <span class="self">self</span>.config.chunk_size;
-<a href=#504 id=504 data-nosnippet>504</a>        <span class="kw">let </span>step = chunk_size / (chunk_res <span class="kw">as </span>f32 - <span class="number">1.0</span>);
-<a href=#505 id=505 data-nosnippet>505</a>
-<a href=#506 id=506 data-nosnippet>506</a>        <span class="kw">let </span>target_origin = target_chunk_id.to_world_pos(chunk_size);
-<a href=#507 id=507 data-nosnippet>507</a>        <span class="kw">let </span>halo_origin_x = target_origin.x - halo_chunks <span class="kw">as </span>f32 * chunk_size;
-<a href=#508 id=508 data-nosnippet>508</a>        <span class="kw">let </span>halo_origin_z = target_origin.z - halo_chunks <span class="kw">as </span>f32 * chunk_size;
-<a href=#509 id=509 data-nosnippet>509</a>
-<a href=#510 id=510 data-nosnippet>510</a>        <span class="comment">// F.4.B.3.D.4: blend config defaulted to 6 samples / 48 WU radius.
-<a href=#511 id=511 data-nosnippet>511</a>        // D.6 Andrew-gate informs whether to tune.
-<a href=#512 id=512 data-nosnippet>512</a>        </span><span class="kw">let </span>blend_config = <span class="kw">crate</span>::biome_param_blending::BiomeParamBlendConfig::default();
-<a href=#513 id=513 data-nosnippet>513</a>
-<a href=#514 id=514 data-nosnippet>514</a>        <span class="comment">// Phase 1.X-F.3.B + F.4.E: archetype bootstrap splines.
-<a href=#515 id=515 data-nosnippet>515</a>        //
-<a href=#516 id=516 data-nosnippet>516</a>        // **F.3 None-mask path** (regional_archetype_mask = None): every
-<a href=#517 id=517 data-nosnippet>517</a>        // vertex evaluates Continental Temperate's BootstrapSplineSet
-<a href=#518 id=518 data-nosnippet>518</a>        // cached once at the start of this method; F.3 byte-identity
-<a href=#519 id=519 data-nosnippet>519</a>        // contract preserved.
-<a href=#520 id=520 data-nosnippet>520</a>        //
-<a href=#521 id=521 data-nosnippet>521</a>        // **F.4 Some-mask path** (regional_archetype_mask = Some): per-
-<a href=#522 id=522 data-nosnippet>522</a>        // vertex sample the mask + falloff via RegionalArchetypeBlend;
-<a href=#523 id=523 data-nosnippet>523</a>        // for each contributing archetype, look up its BootstrapSplineSet
-<a href=#524 id=524 data-nosnippet>524</a>        // from the F.4.E catalog cache (cached for all 6 archetypes
-<a href=#525 id=525 data-nosnippet>525</a>        // once per chunk pass, indexed by WorldArchetypeId);
-<a href=#526 id=526 data-nosnippet>526</a>        // blend_bootstrap_params produces per-vertex blended
-<a href=#527 id=527 data-nosnippet>527</a>        // BootstrapParams per campaign doc §2.5.
-<a href=#528 id=528 data-nosnippet>528</a>        //
-<a href=#529 id=529 data-nosnippet>529</a>        // F.4.E catalog cache: 6 BootstrapSplineSet instances pre-fetched
-<a href=#530 id=530 data-nosnippet>530</a>        // at the start of this method, indexed by WorldArchetypeId. The
-<a href=#531 id=531 data-nosnippet>531</a>        // archetype_splines closure passed to blend_bootstrap_params is
-<a href=#532 id=532 data-nosnippet>532</a>        // a simple match returning a reference to the cached entry.
-<a href=#533 id=533 data-nosnippet>533</a>        // Avoids per-vertex factory calls.
-<a href=#534 id=534 data-nosnippet>534</a>        </span><span class="kw">let </span>archetype_splines_continental = <span class="kw">crate</span>::spline_types::bootstrap_splines_continental_temperate();
-<a href=#535 id=535 data-nosnippet>535</a>        <span class="kw">let </span>archetype_splines_tropical = <span class="kw">crate</span>::spline_types::bootstrap_splines_equatorial_tropical();
-<a href=#536 id=536 data-nosnippet>536</a>        <span class="kw">let </span>archetype_splines_boreal = <span class="kw">crate</span>::spline_types::bootstrap_splines_boreal_subarctic();
-<a href=#537 id=537 data-nosnippet>537</a>        <span class="kw">let </span>archetype_splines_mediterranean = <span class="kw">crate</span>::spline_types::bootstrap_splines_mediterranean();
-<a href=#538 id=538 data-nosnippet>538</a>        <span class="kw">let </span>archetype_splines_desert = <span class="kw">crate</span>::spline_types::bootstrap_splines_desert();
-<a href=#539 id=539 data-nosnippet>539</a>        <span class="kw">let </span>archetype_splines_custom = <span class="kw">crate</span>::spline_types::bootstrap_splines_custom();
-<a href=#540 id=540 data-nosnippet>540</a>        <span class="kw">let </span>lookup_splines =
-<a href=#541 id=541 data-nosnippet>541</a>            |id: <span class="kw">crate</span>::world_archetypes::WorldArchetypeId| -&gt; <span class="kw">crate</span>::spline_types::BootstrapSplineSet {
-<a href=#542 id=542 data-nosnippet>542</a>                <span class="kw">match </span>id {
-<a href=#543 id=543 data-nosnippet>543</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::ContinentalTemperate =&gt; {
-<a href=#544 id=544 data-nosnippet>544</a>                        archetype_splines_continental.clone()
-<a href=#545 id=545 data-nosnippet>545</a>                    }
-<a href=#546 id=546 data-nosnippet>546</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::EquatorialTropical =&gt; {
-<a href=#547 id=547 data-nosnippet>547</a>                        archetype_splines_tropical.clone()
-<a href=#548 id=548 data-nosnippet>548</a>                    }
-<a href=#549 id=549 data-nosnippet>549</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::BorealSubarctic =&gt; {
-<a href=#550 id=550 data-nosnippet>550</a>                        archetype_splines_boreal.clone()
-<a href=#551 id=551 data-nosnippet>551</a>                    }
-<a href=#552 id=552 data-nosnippet>552</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Mediterranean =&gt; {
-<a href=#553 id=553 data-nosnippet>553</a>                        archetype_splines_mediterranean.clone()
-<a href=#554 id=554 data-nosnippet>554</a>                    }
-<a href=#555 id=555 data-nosnippet>555</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Desert =&gt; {
-<a href=#556 id=556 data-nosnippet>556</a>                        archetype_splines_desert.clone()
-<a href=#557 id=557 data-nosnippet>557</a>                    }
-<a href=#558 id=558 data-nosnippet>558</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Custom =&gt; {
-<a href=#559 id=559 data-nosnippet>559</a>                        archetype_splines_custom.clone()
-<a href=#560 id=560 data-nosnippet>560</a>                    }
-<a href=#561 id=561 data-nosnippet>561</a>                }
-<a href=#562 id=562 data-nosnippet>562</a>            };
-<a href=#563 id=563 data-nosnippet>563</a>        <span class="kw">let </span>regional_blend = <span class="self">self
-<a href=#564 id=564 data-nosnippet>564</a>            </span>.regional_archetype_mask
-<a href=#565 id=565 data-nosnippet>565</a>            .as_ref()
-<a href=#566 id=566 data-nosnippet>566</a>            .map(<span class="kw">crate</span>::regional_archetype_mask::RegionalArchetypeBlend::new);
-<a href=#567 id=567 data-nosnippet>567</a>
-<a href=#568 id=568 data-nosnippet>568</a>        <span class="comment">// E3-terrain Phase A.2: the None-mask (single-archetype) height path
-<a href=#569 id=569 data-nosnippet>569</a>        // uses the SELECTED archetype's bootstrap splines, not hardcoded
-<a href=#570 id=570 data-nosnippet>570</a>        // Continental Temperate. This is why archetypes previously all rendered
-<a href=#571 id=571 data-nosnippet>571</a>        // the same landform — the None path (the editor default,
-<a href=#572 id=572 data-nosnippet>572</a>        // regional_archetype_mask = None) ignored the archetype's shape splines.
-<a href=#573 id=573 data-nosnippet>573</a>        // The editor sets config.climate.archetype via
-<a href=#574 id=574 data-nosnippet>574</a>        // WorldArchetypeId::default_archetype(), which populates bootstrap_splines
-<a href=#575 id=575 data-nosnippet>575</a>        // with the per-archetype factory (world_archetypes.rs). Cached once per
-<a href=#576 id=576 data-nosnippet>576</a>        // chunk pass; cloned because BootstrapSplineSet holds Vec control points.
-<a href=#577 id=577 data-nosnippet>577</a>        </span><span class="kw">let </span>none_path_splines = <span class="self">self</span>.climate.archetype().bootstrap_splines.clone();
-<a href=#578 id=578 data-nosnippet>578</a>
-<a href=#579 id=579 data-nosnippet>579</a>        <span class="kw">let </span><span class="kw-2">mut </span>biome_ids = Vec::with_capacity(halo_res * halo_res);
-<a href=#580 id=580 data-nosnippet>580</a>        <span class="kw">for </span>z_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
-<a href=#581 id=581 data-nosnippet>581</a>            <span class="kw">for </span>x_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
-<a href=#582 id=582 data-nosnippet>582</a>                <span class="kw">let </span>wx_f32 = halo_origin_x + x_idx <span class="kw">as </span>f32 * step;
-<a href=#583 id=583 data-nosnippet>583</a>                <span class="kw">let </span>wz_f32 = halo_origin_z + z_idx <span class="kw">as </span>f32 * step;
-<a href=#584 id=584 data-nosnippet>584</a>                <span class="kw">let </span>wx = wx_f32 <span class="kw">as </span>f64;
-<a href=#585 id=585 data-nosnippet>585</a>                <span class="kw">let </span>wz = wz_f32 <span class="kw">as </span>f64;
-<a href=#586 id=586 data-nosnippet>586</a>
-<a href=#587 id=587 data-nosnippet>587</a>                <span class="comment">// E3-terrain seam fix: classify climate + biome on a
-<a href=#588 id=588 data-nosnippet>588</a>                // params-based PROVISIONAL height, not the legacy halo height.
-<a href=#589 id=589 data-nosnippet>589</a>                //
-<a href=#590 id=590 data-nosnippet>590</a>                // The halo (`generate_halo_heightmap`) is filled by the legacy
-<a href=#591 id=591 data-nosnippet>591</a>                // `sample_height` path, which reads `config.mountains.amplitude`
-<a href=#592 id=592 data-nosnippet>592</a>                // etc. Once the climate-driven `BootstrapSplineSet` diverges
-<a href=#593 id=593 data-nosnippet>593</a>                // from the D5FIX single-control-point baseline (E3 Phase A), the
-<a href=#594 id=594 data-nosnippet>594</a>                // legacy height and the params-based render height occupy
-<a href=#595 id=595 data-nosnippet>595</a>                // DIFFERENT regimes: legacy stays "labyrinth of mountains" high
-<a href=#596 id=596 data-nosnippet>596</a>                // while the render height is flat plains. Classifying biomes on
-<a href=#597 id=597 data-nosnippet>597</a>                // the legacy height painted Alpine/SnowCap/Scree onto 20-30m
-<a href=#598 id=598 data-nosnippet>598</a>                // plains (measured: 93% of mountain-character verts rendered
-<a href=#599 id=599 data-nosnippet>599</a>                // BELOW their elevation-overlay threshold). Deriving the
-<a href=#600 id=600 data-nosnippet>600</a>                // classification elevation from the SAME splines that drive the
-<a href=#601 id=601 data-nosnippet>601</a>                // render height keeps biome ↔ terrain coherent.
-<a href=#602 id=602 data-nosnippet>602</a>                //
-<a href=#603 id=603 data-nosnippet>603</a>                // Ordering: the splines read only continentalness/erosion/PV,
-<a href=#604 id=604 data-nosnippet>604</a>                // which are elevation-independent (climate.rs: only temperature
-<a href=#605 id=605 data-nosnippet>605</a>                // uses the lapse rate), so evaluating them at a sea-level
-<a href=#606 id=606 data-nosnippet>606</a>                // climate sample yields the correct `BootstrapParams`. The
-<a href=#607 id=607 data-nosnippet>607</a>                // provisional height (neutral 1.0 multiplier) then sits in the
-<a href=#608 id=608 data-nosnippet>608</a>                // same regime as the final render height, which differs only by
-<a href=#609 id=609 data-nosnippet>609</a>                // the per-biome multiplier.
-<a href=#610 id=610 data-nosnippet>610</a>
-<a href=#611 id=611 data-nosnippet>611</a>                // Phase 1.X-F.3.B + F.4.E: evaluate archetype BootstrapSplineSet(s).
-<a href=#612 id=612 data-nosnippet>612</a>                // **None-mask path**: use Continental Temperate's set directly.
-<a href=#613 id=613 data-nosnippet>613</a>                // **Some-mask path (F.4 multi-archetype)**: sample mask +
-<a href=#614 id=614 data-nosnippet>614</a>                // falloff via RegionalArchetypeBlend, evaluate each contributing
-<a href=#615 id=615 data-nosnippet>615</a>                // archetype's splines, blend per §2.5. Elevation-independent, so
-<a href=#616 id=616 data-nosnippet>616</a>                // sampled at sea level (elevation 0.0).
-<a href=#617 id=617 data-nosnippet>617</a>                </span><span class="kw">let </span>climate_sample = <span class="self">self</span>.climate.sample(wx, wz, <span class="number">0.0</span>);
-<a href=#618 id=618 data-nosnippet>618</a>                <span class="kw">let </span>bootstrap_params = <span class="kw">match </span><span class="kw-2">&amp;</span>regional_blend {
-<a href=#619 id=619 data-nosnippet>619</a>                    <span class="prelude-val">None </span>=&gt; none_path_splines.evaluate(<span class="kw-2">&amp;</span>climate_sample),
-<a href=#620 id=620 data-nosnippet>620</a>                    <span class="prelude-val">Some</span>(blend) =&gt; {
-<a href=#621 id=621 data-nosnippet>621</a>                        <span class="kw">let </span>contributors = blend.sample_at(wx_f32, wz_f32);
-<a href=#622 id=622 data-nosnippet>622</a>                        <span class="comment">// F.4.E empty-contributor guard: sampler invariants
-<a href=#623 id=623 data-nosnippet>623</a>                        // guarantee non-empty (per F.4.C tests), but defensive
-<a href=#624 id=624 data-nosnippet>624</a>                        // fallback to Continental Temperate solo prevents
-<a href=#625 id=625 data-nosnippet>625</a>                        // all-zero BootstrapParams from reaching the noise
-<a href=#626 id=626 data-nosnippet>626</a>                        // pipeline if a future change breaks the invariant.
-<a href=#627 id=627 data-nosnippet>627</a>                        </span><span class="kw">if </span>contributors.is_empty() {
-<a href=#628 id=628 data-nosnippet>628</a>                            <span class="macro">debug_assert!</span>(
-<a href=#629 id=629 data-nosnippet>629</a>                                <span class="bool-val">false</span>,
-<a href=#630 id=630 data-nosnippet>630</a>                                <span class="string">"RegionalArchetypeBlend::sample_at returned empty \
-<a href=#631 id=631 data-nosnippet>631</a>                                 contributors at world ({}, {}); F.4.C invariant \
-<a href=#632 id=632 data-nosnippet>632</a>                                 should prevent this"</span>,
-<a href=#633 id=633 data-nosnippet>633</a>                                wx_f32, wz_f32
-<a href=#634 id=634 data-nosnippet>634</a>                            );
-<a href=#635 id=635 data-nosnippet>635</a>                            archetype_splines_continental.evaluate(<span class="kw-2">&amp;</span>climate_sample)
-<a href=#636 id=636 data-nosnippet>636</a>                        } <span class="kw">else </span>{
-<a href=#637 id=637 data-nosnippet>637</a>                            <span class="kw">crate</span>::regional_archetype_mask::blend_bootstrap_params(
-<a href=#638 id=638 data-nosnippet>638</a>                                <span class="kw-2">&amp;</span>contributors,
-<a href=#639 id=639 data-nosnippet>639</a>                                <span class="kw-2">&amp;</span>lookup_splines,
-<a href=#640 id=640 data-nosnippet>640</a>                                <span class="kw-2">&amp;</span>climate_sample,
-<a href=#641 id=641 data-nosnippet>641</a>                            )
-<a href=#642 id=642 data-nosnippet>642</a>                        }
-<a href=#643 id=643 data-nosnippet>643</a>                    }
-<a href=#644 id=644 data-nosnippet>644</a>                };
-<a href=#645 id=645 data-nosnippet>645</a>
-<a href=#646 id=646 data-nosnippet>646</a>                <span class="comment">// Params-based provisional elevation — same spline regime as the
-<a href=#647 id=647 data-nosnippet>647</a>                // final render height. Replaces the legacy halo height for
-<a href=#648 id=648 data-nosnippet>648</a>                // climate/biome classification.
-<a href=#649 id=649 data-nosnippet>649</a>                </span><span class="kw">let </span>provisional_height =
-<a href=#650 id=650 data-nosnippet>650</a>                    <span class="self">self</span>.noise
-<a href=#651 id=651 data-nosnippet>651</a>                        .sample_height_with_params(<span class="kw-2">&amp;</span>bootstrap_params, wx, wz, <span class="number">1.0</span>);
-<a href=#652 id=652 data-nosnippet>652</a>
-<a href=#653 id=653 data-nosnippet>653</a>                <span class="comment">// F.4.B.3.D.4: scattered-convolution biome parameter blending,
-<a href=#654 id=654 data-nosnippet>654</a>                // classified at the params-based provisional elevation. Produces
-<a href=#655 id=655 data-nosnippet>655</a>                // blended `mountains_amplitude` and `scatter_density` from N
-<a href=#656 id=656 data-nosnippet>656</a>                // jittered samples + a discrete dominant biome ID.
-<a href=#657 id=657 data-nosnippet>657</a>                </span><span class="kw">let </span>blended = <span class="kw">crate</span>::biome_param_blending::blend_biome_parameters(
-<a href=#658 id=658 data-nosnippet>658</a>                    wx_f32,
-<a href=#659 id=659 data-nosnippet>659</a>                    wz_f32,
-<a href=#660 id=660 data-nosnippet>660</a>                    provisional_height,
-<a href=#661 id=661 data-nosnippet>661</a>                    <span class="kw-2">&amp;</span><span class="self">self</span>.climate,
-<a href=#662 id=662 data-nosnippet>662</a>                    <span class="kw-2">&amp;</span>blend_config,
-<a href=#663 id=663 data-nosnippet>663</a>                );
-<a href=#664 id=664 data-nosnippet>664</a>
-<a href=#665 id=665 data-nosnippet>665</a>                <span class="comment">// Phase 1.X-F.3.B: final per-vertex height composes the archetype
-<a href=#666 id=666 data-nosnippet>666</a>                // bootstrap params with the per-biome multiplier
-<a href=#667 id=667 data-nosnippet>667</a>                // (blended.mountains_amplitude). Per-archetype bootstrap
-<a href=#668 id=668 data-nosnippet>668</a>                // parameters and per-biome amplitude are architecturally
-<a href=#669 id=669 data-nosnippet>669</a>                // orthogonal layers that multiply.
-<a href=#670 id=670 data-nosnippet>670</a>                </span><span class="kw">let </span>modulated_height = <span class="self">self</span>.noise.sample_height_with_params(
-<a href=#671 id=671 data-nosnippet>671</a>                    <span class="kw-2">&amp;</span>bootstrap_params,
-<a href=#672 id=672 data-nosnippet>672</a>                    wx,
-<a href=#673 id=673 data-nosnippet>673</a>                    wz,
-<a href=#674 id=674 data-nosnippet>674</a>                    blended.mountains_amplitude <span class="kw">as </span>f32,
-<a href=#675 id=675 data-nosnippet>675</a>                );
-<a href=#676 id=676 data-nosnippet>676</a>                halo.set_height(x_idx <span class="kw">as </span>u32, z_idx <span class="kw">as </span>u32, modulated_height);
-<a href=#677 id=677 data-nosnippet>677</a>                biome_ids.push(blended.dominant_biome);
-<a href=#678 id=678 data-nosnippet>678</a>            }
-<a href=#679 id=679 data-nosnippet>679</a>        }
-<a href=#680 id=680 data-nosnippet>680</a>        halo.recalculate_bounds();
-<a href=#681 id=681 data-nosnippet>681</a>        biome_ids
-<a href=#682 id=682 data-nosnippet>682</a>    }
-<a href=#683 id=683 data-nosnippet>683</a>
-<a href=#684 id=684 data-nosnippet>684</a>    <span class="doccomment">/// Phase 1.6-F.4.B.3.D.3b: crop the per-vertex `BiomeId` halo array to
-<a href=#685 id=685 data-nosnippet>685</a>    /// the chunk-sized center region. Mirrors `crop_halo_to_chunk` for the
-<a href=#686 id=686 data-nosnippet>686</a>    /// heightmap.
-<a href=#687 id=687 data-nosnippet>687</a>    </span><span class="kw">fn </span>crop_halo_biome_ids_to_chunk(
-<a href=#688 id=688 data-nosnippet>688</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#689 id=689 data-nosnippet>689</a>        halo_biome_ids: <span class="kw-2">&amp;</span>[<span class="kw">crate</span>::biome_lookup::BiomeId],
-<a href=#690 id=690 data-nosnippet>690</a>        halo_res: usize,
-<a href=#691 id=691 data-nosnippet>691</a>        _target_chunk_id: ChunkId,
-<a href=#692 id=692 data-nosnippet>692</a>    ) -&gt; Vec&lt;<span class="kw">crate</span>::biome_lookup::BiomeId&gt; {
-<a href=#693 id=693 data-nosnippet>693</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution <span class="kw">as </span>usize;
-<a href=#694 id=694 data-nosnippet>694</a>        <span class="comment">// halo_res = chunks_per_side * (chunk_res - 1) + 1
-<a href=#695 id=695 data-nosnippet>695</a>        // chunks_per_side = (halo_res - 1) / (chunk_res - 1)
-<a href=#696 id=696 data-nosnippet>696</a>        // halo_chunks = (chunks_per_side - 1) / 2
-<a href=#697 id=697 data-nosnippet>697</a>        // crop_offset = halo_chunks * (chunk_res - 1)
-<a href=#698 id=698 data-nosnippet>698</a>        </span><span class="kw">let </span>chunks_per_side = (halo_res - <span class="number">1</span>) / (chunk_res - <span class="number">1</span>);
-<a href=#699 id=699 data-nosnippet>699</a>        <span class="kw">let </span>halo_chunks = (chunks_per_side - <span class="number">1</span>) / <span class="number">2</span>;
-<a href=#700 id=700 data-nosnippet>700</a>        <span class="kw">let </span>crop_offset = halo_chunks * (chunk_res - <span class="number">1</span>);
-<a href=#701 id=701 data-nosnippet>701</a>
-<a href=#702 id=702 data-nosnippet>702</a>        <span class="kw">let </span><span class="kw-2">mut </span>chunk_ids = Vec::with_capacity(chunk_res * chunk_res);
-<a href=#703 id=703 data-nosnippet>703</a>        <span class="kw">for </span>z <span class="kw">in </span><span class="number">0</span>..chunk_res {
-<a href=#704 id=704 data-nosnippet>704</a>            <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..chunk_res {
-<a href=#705 id=705 data-nosnippet>705</a>                <span class="kw">let </span>halo_idx =
-<a href=#706 id=706 data-nosnippet>706</a>                    (crop_offset + z) * halo_res + (crop_offset + x);
-<a href=#707 id=707 data-nosnippet>707</a>                chunk_ids.push(halo_biome_ids[halo_idx]);
-<a href=#708 id=708 data-nosnippet>708</a>            }
-<a href=#709 id=709 data-nosnippet>709</a>        }
-<a href=#710 id=710 data-nosnippet>710</a>        chunk_ids
-<a href=#711 id=711 data-nosnippet>711</a>    }
-<a href=#712 id=712 data-nosnippet>712</a>
-<a href=#713 id=713 data-nosnippet>713</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B: generate a heightmap covering a 3×3 chunk
-<a href=#714 id=714 data-nosnippet>714</a>    /// region centered on `target_chunk_id` (halo_chunks=1). The returned
-<a href=#715 id=715 data-nosnippet>715</a>    /// heightmap has `(1 + 2*halo_chunks) × (heightmap_resolution - 1) + 1`
-<a href=#716 id=716 data-nosnippet>716</a>    /// vertices per side at the same per-vertex spacing as single-chunk
-<a href=#717 id=717 data-nosnippet>717</a>    /// generation, so the center third (sampled at the target chunk's world
-<a href=#718 id=718 data-nosnippet>718</a>    /// coords) is byte-identical to what `generate_chunk` produces via the
-<a href=#719 id=719 data-nosnippet>719</a>    /// SIMD heightmap generator.
-<a href=#720 id=720 data-nosnippet>720</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_halo_heightmap(
-<a href=#721 id=721 data-nosnippet>721</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#722 id=722 data-nosnippet>722</a>        target_chunk_id: ChunkId,
-<a href=#723 id=723 data-nosnippet>723</a>        halo_chunks: u32,
-<a href=#724 id=724 data-nosnippet>724</a>    ) -&gt; anyhow::Result&lt;heightmap::Heightmap&gt; {
-<a href=#725 id=725 data-nosnippet>725</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution;
-<a href=#726 id=726 data-nosnippet>726</a>        <span class="kw">let </span>chunk_size = <span class="self">self</span>.config.chunk_size;
-<a href=#727 id=727 data-nosnippet>727</a>        <span class="comment">// Per-vertex step in world units. Must match single-chunk generation.
-<a href=#728 id=728 data-nosnippet>728</a>        </span><span class="kw">let </span>step = chunk_size / (chunk_res - <span class="number">1</span>) <span class="kw">as </span>f32;
-<a href=#729 id=729 data-nosnippet>729</a>
-<a href=#730 id=730 data-nosnippet>730</a>        <span class="comment">// Halo region: (1 + 2*halo_chunks) sub-chunks per axis. Adjacent
-<a href=#731 id=731 data-nosnippet>731</a>        // sub-chunks share their edge vertex so total vertex count per side is
-<a href=#732 id=732 data-nosnippet>732</a>        // `chunks_per_side * (chunk_res - 1) + 1`.
-<a href=#733 id=733 data-nosnippet>733</a>        </span><span class="kw">let </span>chunks_per_side = <span class="number">1 </span>+ <span class="number">2 </span>* halo_chunks;
-<a href=#734 id=734 data-nosnippet>734</a>        <span class="kw">let </span>halo_res = chunks_per_side * (chunk_res - <span class="number">1</span>) + <span class="number">1</span>;
-<a href=#735 id=735 data-nosnippet>735</a>        <span class="kw">let </span>halo_size_world = chunks_per_side <span class="kw">as </span>f32 * chunk_size;
-<a href=#736 id=736 data-nosnippet>736</a>
-<a href=#737 id=737 data-nosnippet>737</a>        <span class="comment">// Origin world coordinates = target chunk origin minus (halo_chunks × chunk_size).
-<a href=#738 id=738 data-nosnippet>738</a>        </span><span class="kw">let </span>target_origin = target_chunk_id.to_world_pos(chunk_size);
-<a href=#739 id=739 data-nosnippet>739</a>        <span class="kw">let </span>halo_origin_x = target_origin.x - halo_chunks <span class="kw">as </span>f32 * chunk_size;
-<a href=#740 id=740 data-nosnippet>740</a>        <span class="kw">let </span>halo_origin_z = target_origin.z - halo_chunks <span class="kw">as </span>f32 * chunk_size;
-<a href=#741 id=741 data-nosnippet>741</a>
-<a href=#742 id=742 data-nosnippet>742</a>        <span class="comment">// Sample the noise field directly at per-vertex world coordinates. This
-<a href=#743 id=743 data-nosnippet>743</a>        // path uses `TerrainNoise::sample_height` rather than the SIMD
-<a href=#744 id=744 data-nosnippet>744</a>        // heightmap generator because the SIMD path is tied to a ChunkId. For
-<a href=#745 id=745 data-nosnippet>745</a>        // byte-identity with the SIMD path at the center crop, both routes
-<a href=#746 id=746 data-nosnippet>746</a>        // must produce the same Y at the same world (x, z) — confirmed by the
-<a href=#747 id=747 data-nosnippet>747</a>        // determinism invariant of `TerrainNoise`.
-<a href=#748 id=748 data-nosnippet>748</a>        </span><span class="kw">let </span>heightmap_config = heightmap::HeightmapConfig {
-<a href=#749 id=749 data-nosnippet>749</a>            resolution: halo_res,
-<a href=#750 id=750 data-nosnippet>750</a>            ..Default::default()
-<a href=#751 id=751 data-nosnippet>751</a>        };
-<a href=#752 id=752 data-nosnippet>752</a>        <span class="kw">let </span><span class="kw-2">mut </span>halo_map = heightmap::Heightmap::new(heightmap_config)<span class="question-mark">?</span>;
-<a href=#753 id=753 data-nosnippet>753</a>        <span class="kw">for </span>z_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
-<a href=#754 id=754 data-nosnippet>754</a>            <span class="kw">for </span>x_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
-<a href=#755 id=755 data-nosnippet>755</a>                <span class="kw">let </span>wx = halo_origin_x + x_idx <span class="kw">as </span>f32 * step;
-<a href=#756 id=756 data-nosnippet>756</a>                <span class="kw">let </span>wz = halo_origin_z + z_idx <span class="kw">as </span>f32 * step;
-<a href=#757 id=757 data-nosnippet>757</a>                <span class="kw">let </span>y = <span class="self">self</span>.noise.sample_height(wx <span class="kw">as </span>f64, wz <span class="kw">as </span>f64);
-<a href=#758 id=758 data-nosnippet>758</a>                halo_map.set_height(x_idx, z_idx, y);
-<a href=#759 id=759 data-nosnippet>759</a>            }
-<a href=#760 id=760 data-nosnippet>760</a>        }
-<a href=#761 id=761 data-nosnippet>761</a>
-<a href=#762 id=762 data-nosnippet>762</a>        <span class="comment">// Silence unused warning for halo_size_world — useful for phase 2
-<a href=#763 id=763 data-nosnippet>763</a>        // perf logging and halo-overlap sanity assertions.
-<a href=#764 id=764 data-nosnippet>764</a>        </span><span class="kw">let _ </span>= halo_size_world;
+<a href=#413 id=413 data-nosnippet>413</a>            <span class="kw">let </span>halo_origin_x =
+<a href=#414 id=414 data-nosnippet>414</a>                (target_origin.x - HALO_CHUNKS <span class="kw">as </span>f32 * <span class="self">self</span>.config.chunk_size) <span class="kw">as </span>f64;
+<a href=#415 id=415 data-nosnippet>415</a>            <span class="kw">let </span>halo_origin_z =
+<a href=#416 id=416 data-nosnippet>416</a>                (target_origin.z - HALO_CHUNKS <span class="kw">as </span>f32 * <span class="self">self</span>.config.chunk_size) <span class="kw">as </span>f64;
+<a href=#417 id=417 data-nosnippet>417</a>            <span class="comment">// Vertex spacing: chunk_size per (resolution - 1) vertices.
+<a href=#418 id=418 data-nosnippet>418</a>            </span><span class="kw">let </span>vertex_spacing =
+<a href=#419 id=419 data-nosnippet>419</a>                <span class="self">self</span>.config.chunk_size <span class="kw">as </span>f64 / (<span class="self">self</span>.config.heightmap_resolution - <span class="number">1</span>) <span class="kw">as </span>f64;
+<a href=#420 id=420 data-nosnippet>420</a>
+<a href=#421 id=421 data-nosnippet>421</a>            <span class="kw">let </span>_stats = simulator.apply_preset_at_world_offset(
+<a href=#422 id=422 data-nosnippet>422</a>                <span class="kw-2">&amp;mut </span>halo,
+<a href=#423 id=423 data-nosnippet>423</a>                <span class="kw-2">&amp;</span>preset,
+<a href=#424 id=424 data-nosnippet>424</a>                halo_origin_x,
+<a href=#425 id=425 data-nosnippet>425</a>                halo_origin_z,
+<a href=#426 id=426 data-nosnippet>426</a>                vertex_spacing,
+<a href=#427 id=427 data-nosnippet>427</a>                <span class="self">self</span>.config.seed,
+<a href=#428 id=428 data-nosnippet>428</a>            );
+<a href=#429 id=429 data-nosnippet>429</a>            halo.recalculate_bounds();
+<a href=#430 id=430 data-nosnippet>430</a>        }
+<a href=#431 id=431 data-nosnippet>431</a>
+<a href=#432 id=432 data-nosnippet>432</a>        <span class="comment">// Post-erosion cropped heightmap — final chunk output.
+<a href=#433 id=433 data-nosnippet>433</a>        </span><span class="kw">let </span>heightmap = <span class="self">self</span>.crop_halo_to_chunk(<span class="kw-2">&amp;</span>halo, chunk_id)<span class="question-mark">?</span>;
+<a href=#434 id=434 data-nosnippet>434</a>
+<a href=#435 id=435 data-nosnippet>435</a>        <span class="comment">// biome_map still computed from PRE-erosion heights + climate data
+<a href=#436 id=436 data-nosnippet>436</a>        // (unchanged path). Phase 4 will route climate through biome_weights;
+<a href=#437 id=437 data-nosnippet>437</a>        // biome_map currently feeds splat-rule selection elsewhere.
+<a href=#438 id=438 data-nosnippet>438</a>        </span><span class="kw">let </span>climate_data = <span class="self">self</span>.climate.sample_chunk(
+<a href=#439 id=439 data-nosnippet>439</a>            chunk_id,
+<a href=#440 id=440 data-nosnippet>440</a>            <span class="self">self</span>.config.chunk_size,
+<a href=#441 id=441 data-nosnippet>441</a>            <span class="self">self</span>.config.heightmap_resolution,
+<a href=#442 id=442 data-nosnippet>442</a>        )<span class="question-mark">?</span>;
+<a href=#443 id=443 data-nosnippet>443</a>        <span class="kw">let </span>biome_map = <span class="self">self</span>.assign_biomes(<span class="kw-2">&amp;</span>pre_erosion_heightmap, <span class="kw-2">&amp;</span>climate_data)<span class="question-mark">?</span>;
+<a href=#444 id=444 data-nosnippet>444</a>
+<a href=#445 id=445 data-nosnippet>445</a>        <span class="comment">// Construct chunk: post-erosion heights + pre-erosion biome_weights
+<a href=#446 id=446 data-nosnippet>446</a>        // + per-vertex BiomeId array (Phase 1.6-F.4.B.3.D.3b).
+<a href=#447 id=447 data-nosnippet>447</a>        // No further `apply_erosion` — phase 2 replaces simple CA with
+<a href=#448 id=448 data-nosnippet>448</a>        // AdvancedErosionSimulator.
+<a href=#449 id=449 data-nosnippet>449</a>        </span><span class="kw">let </span>chunk = TerrainChunk::new_with_climate_field(
+<a href=#450 id=450 data-nosnippet>450</a>            chunk_id,
+<a href=#451 id=451 data-nosnippet>451</a>            heightmap,
+<a href=#452 id=452 data-nosnippet>452</a>            biome_map,
+<a href=#453 id=453 data-nosnippet>453</a>            biome_weights,
+<a href=#454 id=454 data-nosnippet>454</a>            chunk_biome_ids,
+<a href=#455 id=455 data-nosnippet>455</a>        );
+<a href=#456 id=456 data-nosnippet>456</a>
+<a href=#457 id=457 data-nosnippet>457</a>        <span class="prelude-val">Ok</span>(chunk)
+<a href=#458 id=458 data-nosnippet>458</a>    }
+<a href=#459 id=459 data-nosnippet>459</a>
+<a href=#460 id=460 data-nosnippet>460</a>    <span class="doccomment">/// Phase 1.6-F.4.B.3.D.3b → D.4: apply per-vertex biome modulation
+<a href=#461 id=461 data-nosnippet>461</a>    /// to a halo heightmap with scattered-convolution biome blending.
+<a href=#462 id=462 data-nosnippet>462</a>    ///
+<a href=#463 id=463 data-nosnippet>463</a>    /// For each vertex in the halo, the function:
+<a href=#464 id=464 data-nosnippet>464</a>    /// 1. Samples the bootstrap (raw) elevation from the halo.
+<a href=#465 id=465 data-nosnippet>465</a>    /// 2. Calls
+<a href=#466 id=466 data-nosnippet>466</a>    ///    `biome_param_blending::blend_biome_parameters(world_x, world_z,
+<a href=#467 id=467 data-nosnippet>467</a>    ///    bootstrap_elevation, climate_map, &amp;blend_config)` which:
+<a href=#468 id=468 data-nosnippet>468</a>    ///    - Generates `N` jittered sample positions within `radius` (D.4).
+<a href=#469 id=469 data-nosnippet>469</a>    ///    - Looks up biome at each sample via climate field + Whittaker.
+<a href=#470 id=470 data-nosnippet>470</a>    ///    - Distance-weighted blends `mountains_amplitude` and
+<a href=#471 id=471 data-nosnippet>471</a>    ///      `scatter_density`.
+<a href=#472 id=472 data-nosnippet>472</a>    ///    - Returns dominant biome (highest summed weight) +
+<a href=#473 id=473 data-nosnippet>473</a>    ///      blended numeric params.
+<a href=#474 id=474 data-nosnippet>474</a>    /// 3. Re-samples the noise pipeline with
+<a href=#475 id=475 data-nosnippet>475</a>    ///    `sample_height_with_mountain_amplitude` using the blended
+<a href=#476 id=476 data-nosnippet>476</a>    ///    `mountains_amplitude` (continuous across biome boundaries —
+<a href=#477 id=477 data-nosnippet>477</a>    ///    no flip discontinuity).
+<a href=#478 id=478 data-nosnippet>478</a>    /// 4. Records the dominant biome ID at this vertex.
+<a href=#479 id=479 data-nosnippet>479</a>    ///
+<a href=#480 id=480 data-nosnippet>480</a>    /// Returns a flat `Vec&lt;BiomeId&gt;` in row-major `(z, x)` order matching
+<a href=#481 id=481 data-nosnippet>481</a>    /// the halo's vertex layout. Length: `halo_res × halo_res`.
+<a href=#482 id=482 data-nosnippet>482</a>    ///
+<a href=#483 id=483 data-nosnippet>483</a>    /// Cost analysis vs D.3b: D.3b did 1 noise sample (raw, bootstrap) +
+<a href=#484 id=484 data-nosnippet>484</a>    /// 1 climate sample + 1 biome lookup + 1 noise sample (modulated) per
+<a href=#485 id=485 data-nosnippet>485</a>    /// vertex. D.4 adds the blending pass: `N` climate samples + `N`
+<a href=#486 id=486 data-nosnippet>486</a>    /// biome lookups + `N` parameter lookups per vertex. With `N=6`
+<a href=#487 id=487 data-nosnippet>487</a>    /// default, total per-vertex cost is roughly D.3b + 5 climate samples
+<a href=#488 id=488 data-nosnippet>488</a>    /// + 5 biome lookups. Climate sampling and biome lookup are both
+<a href=#489 id=489 data-nosnippet>489</a>    /// pure functions of position — cache-friendly and SIMD-amenable.
+<a href=#490 id=490 data-nosnippet>490</a>    </span><span class="kw">fn </span>apply_per_biome_modulation_to_halo(
+<a href=#491 id=491 data-nosnippet>491</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#492 id=492 data-nosnippet>492</a>        halo: <span class="kw-2">&amp;mut </span>heightmap::Heightmap,
+<a href=#493 id=493 data-nosnippet>493</a>        target_chunk_id: ChunkId,
+<a href=#494 id=494 data-nosnippet>494</a>        halo_chunks: u32,
+<a href=#495 id=495 data-nosnippet>495</a>    ) -&gt; Vec&lt;<span class="kw">crate</span>::biome_lookup::BiomeId&gt; {
+<a href=#496 id=496 data-nosnippet>496</a>        <span class="kw">let </span>halo_res = halo.resolution() <span class="kw">as </span>usize;
+<a href=#497 id=497 data-nosnippet>497</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution <span class="kw">as </span>usize;
+<a href=#498 id=498 data-nosnippet>498</a>        <span class="comment">// CRITICAL: must mirror `generate_halo_heightmap`'s f32 arithmetic
+<a href=#499 id=499 data-nosnippet>499</a>        // so that vertex world coordinates at the shared edge between
+<a href=#500 id=500 data-nosnippet>500</a>        // adjacent chunks match exactly. f64 arithmetic produces a
+<a href=#501 id=501 data-nosnippet>501</a>        // slightly different `step` value than f32, breaking the
+<a href=#502 id=502 data-nosnippet>502</a>        // shared-edge invariant under per-biome modulation. Per
+<a href=#503 id=503 data-nosnippet>503</a>        // F.4.B.3.D.3b regression diagnosis: f64 path produced 125 WU
+<a href=#504 id=504 data-nosnippet>504</a>        // divergence at chunk borders for the mountain test.
+<a href=#505 id=505 data-nosnippet>505</a>        </span><span class="kw">let </span>chunk_size = <span class="self">self</span>.config.chunk_size;
+<a href=#506 id=506 data-nosnippet>506</a>        <span class="kw">let </span>step = chunk_size / (chunk_res <span class="kw">as </span>f32 - <span class="number">1.0</span>);
+<a href=#507 id=507 data-nosnippet>507</a>
+<a href=#508 id=508 data-nosnippet>508</a>        <span class="kw">let </span>target_origin = target_chunk_id.to_world_pos(chunk_size);
+<a href=#509 id=509 data-nosnippet>509</a>        <span class="kw">let </span>halo_origin_x = target_origin.x - halo_chunks <span class="kw">as </span>f32 * chunk_size;
+<a href=#510 id=510 data-nosnippet>510</a>        <span class="kw">let </span>halo_origin_z = target_origin.z - halo_chunks <span class="kw">as </span>f32 * chunk_size;
+<a href=#511 id=511 data-nosnippet>511</a>
+<a href=#512 id=512 data-nosnippet>512</a>        <span class="comment">// F.4.B.3.D.4: blend config defaulted to 6 samples / 48 WU radius.
+<a href=#513 id=513 data-nosnippet>513</a>        // D.6 Andrew-gate informs whether to tune.
+<a href=#514 id=514 data-nosnippet>514</a>        </span><span class="kw">let </span>blend_config = <span class="kw">crate</span>::biome_param_blending::BiomeParamBlendConfig::default();
+<a href=#515 id=515 data-nosnippet>515</a>
+<a href=#516 id=516 data-nosnippet>516</a>        <span class="comment">// Phase 1.X-F.3.B + F.4.E: archetype bootstrap splines.
+<a href=#517 id=517 data-nosnippet>517</a>        //
+<a href=#518 id=518 data-nosnippet>518</a>        // **F.3 None-mask path** (regional_archetype_mask = None): every
+<a href=#519 id=519 data-nosnippet>519</a>        // vertex evaluates Continental Temperate's BootstrapSplineSet
+<a href=#520 id=520 data-nosnippet>520</a>        // cached once at the start of this method; F.3 byte-identity
+<a href=#521 id=521 data-nosnippet>521</a>        // contract preserved.
+<a href=#522 id=522 data-nosnippet>522</a>        //
+<a href=#523 id=523 data-nosnippet>523</a>        // **F.4 Some-mask path** (regional_archetype_mask = Some): per-
+<a href=#524 id=524 data-nosnippet>524</a>        // vertex sample the mask + falloff via RegionalArchetypeBlend;
+<a href=#525 id=525 data-nosnippet>525</a>        // for each contributing archetype, look up its BootstrapSplineSet
+<a href=#526 id=526 data-nosnippet>526</a>        // from the F.4.E catalog cache (cached for all 6 archetypes
+<a href=#527 id=527 data-nosnippet>527</a>        // once per chunk pass, indexed by WorldArchetypeId);
+<a href=#528 id=528 data-nosnippet>528</a>        // blend_bootstrap_params produces per-vertex blended
+<a href=#529 id=529 data-nosnippet>529</a>        // BootstrapParams per campaign doc §2.5.
+<a href=#530 id=530 data-nosnippet>530</a>        //
+<a href=#531 id=531 data-nosnippet>531</a>        // F.4.E catalog cache: 6 BootstrapSplineSet instances pre-fetched
+<a href=#532 id=532 data-nosnippet>532</a>        // at the start of this method, indexed by WorldArchetypeId. The
+<a href=#533 id=533 data-nosnippet>533</a>        // archetype_splines closure passed to blend_bootstrap_params is
+<a href=#534 id=534 data-nosnippet>534</a>        // a simple match returning a reference to the cached entry.
+<a href=#535 id=535 data-nosnippet>535</a>        // Avoids per-vertex factory calls.
+<a href=#536 id=536 data-nosnippet>536</a>        </span><span class="kw">let </span>archetype_splines_continental =
+<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw">crate</span>::spline_types::bootstrap_splines_continental_temperate();
+<a href=#538 id=538 data-nosnippet>538</a>        <span class="kw">let </span>archetype_splines_tropical =
+<a href=#539 id=539 data-nosnippet>539</a>            <span class="kw">crate</span>::spline_types::bootstrap_splines_equatorial_tropical();
+<a href=#540 id=540 data-nosnippet>540</a>        <span class="kw">let </span>archetype_splines_boreal = <span class="kw">crate</span>::spline_types::bootstrap_splines_boreal_subarctic();
+<a href=#541 id=541 data-nosnippet>541</a>        <span class="kw">let </span>archetype_splines_mediterranean =
+<a href=#542 id=542 data-nosnippet>542</a>            <span class="kw">crate</span>::spline_types::bootstrap_splines_mediterranean();
+<a href=#543 id=543 data-nosnippet>543</a>        <span class="kw">let </span>archetype_splines_desert = <span class="kw">crate</span>::spline_types::bootstrap_splines_desert();
+<a href=#544 id=544 data-nosnippet>544</a>        <span class="kw">let </span>archetype_splines_custom = <span class="kw">crate</span>::spline_types::bootstrap_splines_custom();
+<a href=#545 id=545 data-nosnippet>545</a>        <span class="kw">let </span>lookup_splines =
+<a href=#546 id=546 data-nosnippet>546</a>            |id: <span class="kw">crate</span>::world_archetypes::WorldArchetypeId| -&gt; <span class="kw">crate</span>::spline_types::BootstrapSplineSet {
+<a href=#547 id=547 data-nosnippet>547</a>                <span class="kw">match </span>id {
+<a href=#548 id=548 data-nosnippet>548</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::ContinentalTemperate =&gt; {
+<a href=#549 id=549 data-nosnippet>549</a>                        archetype_splines_continental.clone()
+<a href=#550 id=550 data-nosnippet>550</a>                    }
+<a href=#551 id=551 data-nosnippet>551</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::EquatorialTropical =&gt; {
+<a href=#552 id=552 data-nosnippet>552</a>                        archetype_splines_tropical.clone()
+<a href=#553 id=553 data-nosnippet>553</a>                    }
+<a href=#554 id=554 data-nosnippet>554</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::BorealSubarctic =&gt; {
+<a href=#555 id=555 data-nosnippet>555</a>                        archetype_splines_boreal.clone()
+<a href=#556 id=556 data-nosnippet>556</a>                    }
+<a href=#557 id=557 data-nosnippet>557</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Mediterranean =&gt; {
+<a href=#558 id=558 data-nosnippet>558</a>                        archetype_splines_mediterranean.clone()
+<a href=#559 id=559 data-nosnippet>559</a>                    }
+<a href=#560 id=560 data-nosnippet>560</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Desert =&gt; {
+<a href=#561 id=561 data-nosnippet>561</a>                        archetype_splines_desert.clone()
+<a href=#562 id=562 data-nosnippet>562</a>                    }
+<a href=#563 id=563 data-nosnippet>563</a>                    <span class="kw">crate</span>::world_archetypes::WorldArchetypeId::Custom =&gt; {
+<a href=#564 id=564 data-nosnippet>564</a>                        archetype_splines_custom.clone()
+<a href=#565 id=565 data-nosnippet>565</a>                    }
+<a href=#566 id=566 data-nosnippet>566</a>                }
+<a href=#567 id=567 data-nosnippet>567</a>            };
+<a href=#568 id=568 data-nosnippet>568</a>        <span class="kw">let </span>regional_blend = <span class="self">self
+<a href=#569 id=569 data-nosnippet>569</a>            </span>.regional_archetype_mask
+<a href=#570 id=570 data-nosnippet>570</a>            .as_ref()
+<a href=#571 id=571 data-nosnippet>571</a>            .map(<span class="kw">crate</span>::regional_archetype_mask::RegionalArchetypeBlend::new);
+<a href=#572 id=572 data-nosnippet>572</a>
+<a href=#573 id=573 data-nosnippet>573</a>        <span class="comment">// E3-terrain Phase A.2: the None-mask (single-archetype) height path
+<a href=#574 id=574 data-nosnippet>574</a>        // uses the SELECTED archetype's bootstrap splines, not hardcoded
+<a href=#575 id=575 data-nosnippet>575</a>        // Continental Temperate. This is why archetypes previously all rendered
+<a href=#576 id=576 data-nosnippet>576</a>        // the same landform — the None path (the editor default,
+<a href=#577 id=577 data-nosnippet>577</a>        // regional_archetype_mask = None) ignored the archetype's shape splines.
+<a href=#578 id=578 data-nosnippet>578</a>        // The editor sets config.climate.archetype via
+<a href=#579 id=579 data-nosnippet>579</a>        // WorldArchetypeId::default_archetype(), which populates bootstrap_splines
+<a href=#580 id=580 data-nosnippet>580</a>        // with the per-archetype factory (world_archetypes.rs). Cached once per
+<a href=#581 id=581 data-nosnippet>581</a>        // chunk pass; cloned because BootstrapSplineSet holds Vec control points.
+<a href=#582 id=582 data-nosnippet>582</a>        </span><span class="kw">let </span>none_path_splines = <span class="self">self</span>.climate.archetype().bootstrap_splines.clone();
+<a href=#583 id=583 data-nosnippet>583</a>
+<a href=#584 id=584 data-nosnippet>584</a>        <span class="kw">let </span><span class="kw-2">mut </span>biome_ids = Vec::with_capacity(halo_res * halo_res);
+<a href=#585 id=585 data-nosnippet>585</a>        <span class="kw">for </span>z_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
+<a href=#586 id=586 data-nosnippet>586</a>            <span class="kw">for </span>x_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
+<a href=#587 id=587 data-nosnippet>587</a>                <span class="kw">let </span>wx_f32 = halo_origin_x + x_idx <span class="kw">as </span>f32 * step;
+<a href=#588 id=588 data-nosnippet>588</a>                <span class="kw">let </span>wz_f32 = halo_origin_z + z_idx <span class="kw">as </span>f32 * step;
+<a href=#589 id=589 data-nosnippet>589</a>                <span class="kw">let </span>wx = wx_f32 <span class="kw">as </span>f64;
+<a href=#590 id=590 data-nosnippet>590</a>                <span class="kw">let </span>wz = wz_f32 <span class="kw">as </span>f64;
+<a href=#591 id=591 data-nosnippet>591</a>
+<a href=#592 id=592 data-nosnippet>592</a>                <span class="comment">// E3-terrain seam fix: classify climate + biome on a
+<a href=#593 id=593 data-nosnippet>593</a>                // params-based PROVISIONAL height, not the legacy halo height.
+<a href=#594 id=594 data-nosnippet>594</a>                //
+<a href=#595 id=595 data-nosnippet>595</a>                // The halo (`generate_halo_heightmap`) is filled by the legacy
+<a href=#596 id=596 data-nosnippet>596</a>                // `sample_height` path, which reads `config.mountains.amplitude`
+<a href=#597 id=597 data-nosnippet>597</a>                // etc. Once the climate-driven `BootstrapSplineSet` diverges
+<a href=#598 id=598 data-nosnippet>598</a>                // from the D5FIX single-control-point baseline (E3 Phase A), the
+<a href=#599 id=599 data-nosnippet>599</a>                // legacy height and the params-based render height occupy
+<a href=#600 id=600 data-nosnippet>600</a>                // DIFFERENT regimes: legacy stays "labyrinth of mountains" high
+<a href=#601 id=601 data-nosnippet>601</a>                // while the render height is flat plains. Classifying biomes on
+<a href=#602 id=602 data-nosnippet>602</a>                // the legacy height painted Alpine/SnowCap/Scree onto 20-30m
+<a href=#603 id=603 data-nosnippet>603</a>                // plains (measured: 93% of mountain-character verts rendered
+<a href=#604 id=604 data-nosnippet>604</a>                // BELOW their elevation-overlay threshold). Deriving the
+<a href=#605 id=605 data-nosnippet>605</a>                // classification elevation from the SAME splines that drive the
+<a href=#606 id=606 data-nosnippet>606</a>                // render height keeps biome ↔ terrain coherent.
+<a href=#607 id=607 data-nosnippet>607</a>                //
+<a href=#608 id=608 data-nosnippet>608</a>                // Ordering: the splines read only continentalness/erosion/PV,
+<a href=#609 id=609 data-nosnippet>609</a>                // which are elevation-independent (climate.rs: only temperature
+<a href=#610 id=610 data-nosnippet>610</a>                // uses the lapse rate), so evaluating them at a sea-level
+<a href=#611 id=611 data-nosnippet>611</a>                // climate sample yields the correct `BootstrapParams`. The
+<a href=#612 id=612 data-nosnippet>612</a>                // provisional height (neutral 1.0 multiplier) then sits in the
+<a href=#613 id=613 data-nosnippet>613</a>                // same regime as the final render height, which differs only by
+<a href=#614 id=614 data-nosnippet>614</a>                // the per-biome multiplier.
+<a href=#615 id=615 data-nosnippet>615</a>
+<a href=#616 id=616 data-nosnippet>616</a>                // Phase 1.X-F.3.B + F.4.E: evaluate archetype BootstrapSplineSet(s).
+<a href=#617 id=617 data-nosnippet>617</a>                // **None-mask path**: use Continental Temperate's set directly.
+<a href=#618 id=618 data-nosnippet>618</a>                // **Some-mask path (F.4 multi-archetype)**: sample mask +
+<a href=#619 id=619 data-nosnippet>619</a>                // falloff via RegionalArchetypeBlend, evaluate each contributing
+<a href=#620 id=620 data-nosnippet>620</a>                // archetype's splines, blend per §2.5. Elevation-independent, so
+<a href=#621 id=621 data-nosnippet>621</a>                // sampled at sea level (elevation 0.0).
+<a href=#622 id=622 data-nosnippet>622</a>                </span><span class="kw">let </span>climate_sample = <span class="self">self</span>.climate.sample(wx, wz, <span class="number">0.0</span>);
+<a href=#623 id=623 data-nosnippet>623</a>                <span class="kw">let </span>bootstrap_params = <span class="kw">match </span><span class="kw-2">&amp;</span>regional_blend {
+<a href=#624 id=624 data-nosnippet>624</a>                    <span class="prelude-val">None </span>=&gt; none_path_splines.evaluate(<span class="kw-2">&amp;</span>climate_sample),
+<a href=#625 id=625 data-nosnippet>625</a>                    <span class="prelude-val">Some</span>(blend) =&gt; {
+<a href=#626 id=626 data-nosnippet>626</a>                        <span class="kw">let </span>contributors = blend.sample_at(wx_f32, wz_f32);
+<a href=#627 id=627 data-nosnippet>627</a>                        <span class="comment">// F.4.E empty-contributor guard: sampler invariants
+<a href=#628 id=628 data-nosnippet>628</a>                        // guarantee non-empty (per F.4.C tests), but defensive
+<a href=#629 id=629 data-nosnippet>629</a>                        // fallback to Continental Temperate solo prevents
+<a href=#630 id=630 data-nosnippet>630</a>                        // all-zero BootstrapParams from reaching the noise
+<a href=#631 id=631 data-nosnippet>631</a>                        // pipeline if a future change breaks the invariant.
+<a href=#632 id=632 data-nosnippet>632</a>                        </span><span class="kw">if </span>contributors.is_empty() {
+<a href=#633 id=633 data-nosnippet>633</a>                            <span class="macro">debug_assert!</span>(
+<a href=#634 id=634 data-nosnippet>634</a>                                <span class="bool-val">false</span>,
+<a href=#635 id=635 data-nosnippet>635</a>                                <span class="string">"RegionalArchetypeBlend::sample_at returned empty \
+<a href=#636 id=636 data-nosnippet>636</a>                                 contributors at world ({}, {}); F.4.C invariant \
+<a href=#637 id=637 data-nosnippet>637</a>                                 should prevent this"</span>,
+<a href=#638 id=638 data-nosnippet>638</a>                                wx_f32, wz_f32
+<a href=#639 id=639 data-nosnippet>639</a>                            );
+<a href=#640 id=640 data-nosnippet>640</a>                            archetype_splines_continental.evaluate(<span class="kw-2">&amp;</span>climate_sample)
+<a href=#641 id=641 data-nosnippet>641</a>                        } <span class="kw">else </span>{
+<a href=#642 id=642 data-nosnippet>642</a>                            <span class="kw">crate</span>::regional_archetype_mask::blend_bootstrap_params(
+<a href=#643 id=643 data-nosnippet>643</a>                                <span class="kw-2">&amp;</span>contributors,
+<a href=#644 id=644 data-nosnippet>644</a>                                <span class="kw-2">&amp;</span>lookup_splines,
+<a href=#645 id=645 data-nosnippet>645</a>                                <span class="kw-2">&amp;</span>climate_sample,
+<a href=#646 id=646 data-nosnippet>646</a>                            )
+<a href=#647 id=647 data-nosnippet>647</a>                        }
+<a href=#648 id=648 data-nosnippet>648</a>                    }
+<a href=#649 id=649 data-nosnippet>649</a>                };
+<a href=#650 id=650 data-nosnippet>650</a>
+<a href=#651 id=651 data-nosnippet>651</a>                <span class="comment">// Params-based provisional elevation — same spline regime as the
+<a href=#652 id=652 data-nosnippet>652</a>                // final render height. Replaces the legacy halo height for
+<a href=#653 id=653 data-nosnippet>653</a>                // climate/biome classification.
+<a href=#654 id=654 data-nosnippet>654</a>                </span><span class="kw">let </span>provisional_height =
+<a href=#655 id=655 data-nosnippet>655</a>                    <span class="self">self</span>.noise
+<a href=#656 id=656 data-nosnippet>656</a>                        .sample_height_with_params(<span class="kw-2">&amp;</span>bootstrap_params, wx, wz, <span class="number">1.0</span>);
+<a href=#657 id=657 data-nosnippet>657</a>
+<a href=#658 id=658 data-nosnippet>658</a>                <span class="comment">// F.4.B.3.D.4: scattered-convolution biome parameter blending,
+<a href=#659 id=659 data-nosnippet>659</a>                // classified at the params-based provisional elevation. Produces
+<a href=#660 id=660 data-nosnippet>660</a>                // blended `mountains_amplitude` and `scatter_density` from N
+<a href=#661 id=661 data-nosnippet>661</a>                // jittered samples + a discrete dominant biome ID.
+<a href=#662 id=662 data-nosnippet>662</a>                </span><span class="kw">let </span>blended = <span class="kw">crate</span>::biome_param_blending::blend_biome_parameters(
+<a href=#663 id=663 data-nosnippet>663</a>                    wx_f32,
+<a href=#664 id=664 data-nosnippet>664</a>                    wz_f32,
+<a href=#665 id=665 data-nosnippet>665</a>                    provisional_height,
+<a href=#666 id=666 data-nosnippet>666</a>                    <span class="kw-2">&amp;</span><span class="self">self</span>.climate,
+<a href=#667 id=667 data-nosnippet>667</a>                    <span class="kw-2">&amp;</span>blend_config,
+<a href=#668 id=668 data-nosnippet>668</a>                );
+<a href=#669 id=669 data-nosnippet>669</a>
+<a href=#670 id=670 data-nosnippet>670</a>                <span class="comment">// Phase 1.X-F.3.B: final per-vertex height composes the archetype
+<a href=#671 id=671 data-nosnippet>671</a>                // bootstrap params with the per-biome multiplier
+<a href=#672 id=672 data-nosnippet>672</a>                // (blended.mountains_amplitude). Per-archetype bootstrap
+<a href=#673 id=673 data-nosnippet>673</a>                // parameters and per-biome amplitude are architecturally
+<a href=#674 id=674 data-nosnippet>674</a>                // orthogonal layers that multiply.
+<a href=#675 id=675 data-nosnippet>675</a>                </span><span class="kw">let </span>modulated_height = <span class="self">self</span>.noise.sample_height_with_params(
+<a href=#676 id=676 data-nosnippet>676</a>                    <span class="kw-2">&amp;</span>bootstrap_params,
+<a href=#677 id=677 data-nosnippet>677</a>                    wx,
+<a href=#678 id=678 data-nosnippet>678</a>                    wz,
+<a href=#679 id=679 data-nosnippet>679</a>                    blended.mountains_amplitude <span class="kw">as </span>f32,
+<a href=#680 id=680 data-nosnippet>680</a>                );
+<a href=#681 id=681 data-nosnippet>681</a>                halo.set_height(x_idx <span class="kw">as </span>u32, z_idx <span class="kw">as </span>u32, modulated_height);
+<a href=#682 id=682 data-nosnippet>682</a>                biome_ids.push(blended.dominant_biome);
+<a href=#683 id=683 data-nosnippet>683</a>            }
+<a href=#684 id=684 data-nosnippet>684</a>        }
+<a href=#685 id=685 data-nosnippet>685</a>        halo.recalculate_bounds();
+<a href=#686 id=686 data-nosnippet>686</a>        biome_ids
+<a href=#687 id=687 data-nosnippet>687</a>    }
+<a href=#688 id=688 data-nosnippet>688</a>
+<a href=#689 id=689 data-nosnippet>689</a>    <span class="doccomment">/// Phase 1.6-F.4.B.3.D.3b: crop the per-vertex `BiomeId` halo array to
+<a href=#690 id=690 data-nosnippet>690</a>    /// the chunk-sized center region. Mirrors `crop_halo_to_chunk` for the
+<a href=#691 id=691 data-nosnippet>691</a>    /// heightmap.
+<a href=#692 id=692 data-nosnippet>692</a>    </span><span class="kw">fn </span>crop_halo_biome_ids_to_chunk(
+<a href=#693 id=693 data-nosnippet>693</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#694 id=694 data-nosnippet>694</a>        halo_biome_ids: <span class="kw-2">&amp;</span>[<span class="kw">crate</span>::biome_lookup::BiomeId],
+<a href=#695 id=695 data-nosnippet>695</a>        halo_res: usize,
+<a href=#696 id=696 data-nosnippet>696</a>        _target_chunk_id: ChunkId,
+<a href=#697 id=697 data-nosnippet>697</a>    ) -&gt; Vec&lt;<span class="kw">crate</span>::biome_lookup::BiomeId&gt; {
+<a href=#698 id=698 data-nosnippet>698</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution <span class="kw">as </span>usize;
+<a href=#699 id=699 data-nosnippet>699</a>        <span class="comment">// halo_res = chunks_per_side * (chunk_res - 1) + 1
+<a href=#700 id=700 data-nosnippet>700</a>        // chunks_per_side = (halo_res - 1) / (chunk_res - 1)
+<a href=#701 id=701 data-nosnippet>701</a>        // halo_chunks = (chunks_per_side - 1) / 2
+<a href=#702 id=702 data-nosnippet>702</a>        // crop_offset = halo_chunks * (chunk_res - 1)
+<a href=#703 id=703 data-nosnippet>703</a>        </span><span class="kw">let </span>chunks_per_side = (halo_res - <span class="number">1</span>) / (chunk_res - <span class="number">1</span>);
+<a href=#704 id=704 data-nosnippet>704</a>        <span class="kw">let </span>halo_chunks = (chunks_per_side - <span class="number">1</span>) / <span class="number">2</span>;
+<a href=#705 id=705 data-nosnippet>705</a>        <span class="kw">let </span>crop_offset = halo_chunks * (chunk_res - <span class="number">1</span>);
+<a href=#706 id=706 data-nosnippet>706</a>
+<a href=#707 id=707 data-nosnippet>707</a>        <span class="kw">let </span><span class="kw-2">mut </span>chunk_ids = Vec::with_capacity(chunk_res * chunk_res);
+<a href=#708 id=708 data-nosnippet>708</a>        <span class="kw">for </span>z <span class="kw">in </span><span class="number">0</span>..chunk_res {
+<a href=#709 id=709 data-nosnippet>709</a>            <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..chunk_res {
+<a href=#710 id=710 data-nosnippet>710</a>                <span class="kw">let </span>halo_idx = (crop_offset + z) * halo_res + (crop_offset + x);
+<a href=#711 id=711 data-nosnippet>711</a>                chunk_ids.push(halo_biome_ids[halo_idx]);
+<a href=#712 id=712 data-nosnippet>712</a>            }
+<a href=#713 id=713 data-nosnippet>713</a>        }
+<a href=#714 id=714 data-nosnippet>714</a>        chunk_ids
+<a href=#715 id=715 data-nosnippet>715</a>    }
+<a href=#716 id=716 data-nosnippet>716</a>
+<a href=#717 id=717 data-nosnippet>717</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B: generate a heightmap covering a 3×3 chunk
+<a href=#718 id=718 data-nosnippet>718</a>    /// region centered on `target_chunk_id` (halo_chunks=1). The returned
+<a href=#719 id=719 data-nosnippet>719</a>    /// heightmap has `(1 + 2*halo_chunks) × (heightmap_resolution - 1) + 1`
+<a href=#720 id=720 data-nosnippet>720</a>    /// vertices per side at the same per-vertex spacing as single-chunk
+<a href=#721 id=721 data-nosnippet>721</a>    /// generation, so the center third (sampled at the target chunk's world
+<a href=#722 id=722 data-nosnippet>722</a>    /// coords) is byte-identical to what `generate_chunk` produces via the
+<a href=#723 id=723 data-nosnippet>723</a>    /// SIMD heightmap generator.
+<a href=#724 id=724 data-nosnippet>724</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_halo_heightmap(
+<a href=#725 id=725 data-nosnippet>725</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#726 id=726 data-nosnippet>726</a>        target_chunk_id: ChunkId,
+<a href=#727 id=727 data-nosnippet>727</a>        halo_chunks: u32,
+<a href=#728 id=728 data-nosnippet>728</a>    ) -&gt; anyhow::Result&lt;heightmap::Heightmap&gt; {
+<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution;
+<a href=#730 id=730 data-nosnippet>730</a>        <span class="kw">let </span>chunk_size = <span class="self">self</span>.config.chunk_size;
+<a href=#731 id=731 data-nosnippet>731</a>        <span class="comment">// Per-vertex step in world units. Must match single-chunk generation.
+<a href=#732 id=732 data-nosnippet>732</a>        </span><span class="kw">let </span>step = chunk_size / (chunk_res - <span class="number">1</span>) <span class="kw">as </span>f32;
+<a href=#733 id=733 data-nosnippet>733</a>
+<a href=#734 id=734 data-nosnippet>734</a>        <span class="comment">// Halo region: (1 + 2*halo_chunks) sub-chunks per axis. Adjacent
+<a href=#735 id=735 data-nosnippet>735</a>        // sub-chunks share their edge vertex so total vertex count per side is
+<a href=#736 id=736 data-nosnippet>736</a>        // `chunks_per_side * (chunk_res - 1) + 1`.
+<a href=#737 id=737 data-nosnippet>737</a>        </span><span class="kw">let </span>chunks_per_side = <span class="number">1 </span>+ <span class="number">2 </span>* halo_chunks;
+<a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">let </span>halo_res = chunks_per_side * (chunk_res - <span class="number">1</span>) + <span class="number">1</span>;
+<a href=#739 id=739 data-nosnippet>739</a>        <span class="kw">let </span>halo_size_world = chunks_per_side <span class="kw">as </span>f32 * chunk_size;
+<a href=#740 id=740 data-nosnippet>740</a>
+<a href=#741 id=741 data-nosnippet>741</a>        <span class="comment">// Origin world coordinates = target chunk origin minus (halo_chunks × chunk_size).
+<a href=#742 id=742 data-nosnippet>742</a>        </span><span class="kw">let </span>target_origin = target_chunk_id.to_world_pos(chunk_size);
+<a href=#743 id=743 data-nosnippet>743</a>        <span class="kw">let </span>halo_origin_x = target_origin.x - halo_chunks <span class="kw">as </span>f32 * chunk_size;
+<a href=#744 id=744 data-nosnippet>744</a>        <span class="kw">let </span>halo_origin_z = target_origin.z - halo_chunks <span class="kw">as </span>f32 * chunk_size;
+<a href=#745 id=745 data-nosnippet>745</a>
+<a href=#746 id=746 data-nosnippet>746</a>        <span class="comment">// Sample the noise field directly at per-vertex world coordinates. This
+<a href=#747 id=747 data-nosnippet>747</a>        // path uses `TerrainNoise::sample_height` rather than the SIMD
+<a href=#748 id=748 data-nosnippet>748</a>        // heightmap generator because the SIMD path is tied to a ChunkId. For
+<a href=#749 id=749 data-nosnippet>749</a>        // byte-identity with the SIMD path at the center crop, both routes
+<a href=#750 id=750 data-nosnippet>750</a>        // must produce the same Y at the same world (x, z) — confirmed by the
+<a href=#751 id=751 data-nosnippet>751</a>        // determinism invariant of `TerrainNoise`.
+<a href=#752 id=752 data-nosnippet>752</a>        </span><span class="kw">let </span>heightmap_config = heightmap::HeightmapConfig {
+<a href=#753 id=753 data-nosnippet>753</a>            resolution: halo_res,
+<a href=#754 id=754 data-nosnippet>754</a>            ..Default::default()
+<a href=#755 id=755 data-nosnippet>755</a>        };
+<a href=#756 id=756 data-nosnippet>756</a>        <span class="kw">let </span><span class="kw-2">mut </span>halo_map = heightmap::Heightmap::new(heightmap_config)<span class="question-mark">?</span>;
+<a href=#757 id=757 data-nosnippet>757</a>        <span class="kw">for </span>z_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
+<a href=#758 id=758 data-nosnippet>758</a>            <span class="kw">for </span>x_idx <span class="kw">in </span><span class="number">0</span>..halo_res {
+<a href=#759 id=759 data-nosnippet>759</a>                <span class="kw">let </span>wx = halo_origin_x + x_idx <span class="kw">as </span>f32 * step;
+<a href=#760 id=760 data-nosnippet>760</a>                <span class="kw">let </span>wz = halo_origin_z + z_idx <span class="kw">as </span>f32 * step;
+<a href=#761 id=761 data-nosnippet>761</a>                <span class="kw">let </span>y = <span class="self">self</span>.noise.sample_height(wx <span class="kw">as </span>f64, wz <span class="kw">as </span>f64);
+<a href=#762 id=762 data-nosnippet>762</a>                halo_map.set_height(x_idx, z_idx, y);
+<a href=#763 id=763 data-nosnippet>763</a>            }
+<a href=#764 id=764 data-nosnippet>764</a>        }
 <a href=#765 id=765 data-nosnippet>765</a>
-<a href=#766 id=766 data-nosnippet>766</a>        <span class="prelude-val">Ok</span>(halo_map)
-<a href=#767 id=767 data-nosnippet>767</a>    }
-<a href=#768 id=768 data-nosnippet>768</a>
-<a href=#769 id=769 data-nosnippet>769</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B: crop the center chunk-sized region out of a
-<a href=#770 id=770 data-nosnippet>770</a>    /// halo-expanded heightmap. Assumes the halo was built by
-<a href=#771 id=771 data-nosnippet>771</a>    /// `generate_halo_heightmap` with the same `target_chunk_id` and halo
-<a href=#772 id=772 data-nosnippet>772</a>    /// size. Returns a single-chunk heightmap (resolution matching
-<a href=#773 id=773 data-nosnippet>773</a>    /// `WorldConfig::heightmap_resolution`).
-<a href=#774 id=774 data-nosnippet>774</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>crop_halo_to_chunk(
-<a href=#775 id=775 data-nosnippet>775</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#776 id=776 data-nosnippet>776</a>        halo: <span class="kw-2">&amp;</span>heightmap::Heightmap,
-<a href=#777 id=777 data-nosnippet>777</a>        target_chunk_id: ChunkId,
-<a href=#778 id=778 data-nosnippet>778</a>    ) -&gt; anyhow::Result&lt;heightmap::Heightmap&gt; {
-<a href=#779 id=779 data-nosnippet>779</a>        <span class="kw">let _ </span>= target_chunk_id; <span class="comment">// centered crop — target id not needed
-<a href=#780 id=780 data-nosnippet>780</a>        </span><span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution;
-<a href=#781 id=781 data-nosnippet>781</a>        <span class="kw">let </span>halo_res = halo.resolution();
-<a href=#782 id=782 data-nosnippet>782</a>        <span class="comment">// Infer halo_chunks from resolutions.
-<a href=#783 id=783 data-nosnippet>783</a>        //   halo_res = chunks_per_side * (chunk_res - 1) + 1
-<a href=#784 id=784 data-nosnippet>784</a>        //   chunks_per_side = (halo_res - 1) / (chunk_res - 1)
-<a href=#785 id=785 data-nosnippet>785</a>        //   halo_chunks = (chunks_per_side - 1) / 2
-<a href=#786 id=786 data-nosnippet>786</a>        </span><span class="kw">if </span>chunk_res == <span class="number">0 </span>|| (halo_res - <span class="number">1</span>) % (chunk_res - <span class="number">1</span>) != <span class="number">0 </span>{
-<a href=#787 id=787 data-nosnippet>787</a>            <span class="macro">anyhow::bail!</span>(
-<a href=#788 id=788 data-nosnippet>788</a>                <span class="string">"halo resolution {} not a multiple of chunk resolution {}"</span>,
-<a href=#789 id=789 data-nosnippet>789</a>                halo_res,
-<a href=#790 id=790 data-nosnippet>790</a>                chunk_res
-<a href=#791 id=791 data-nosnippet>791</a>            );
-<a href=#792 id=792 data-nosnippet>792</a>        }
-<a href=#793 id=793 data-nosnippet>793</a>        <span class="kw">let </span>chunks_per_side = (halo_res - <span class="number">1</span>) / (chunk_res - <span class="number">1</span>);
-<a href=#794 id=794 data-nosnippet>794</a>        <span class="kw">if </span>chunks_per_side &lt; <span class="number">1 </span>|| chunks_per_side % <span class="number">2 </span>!= <span class="number">1 </span>{
-<a href=#795 id=795 data-nosnippet>795</a>            <span class="macro">anyhow::bail!</span>(
-<a href=#796 id=796 data-nosnippet>796</a>                <span class="string">"halo has {} chunks per side; expected odd &gt;= 1"</span>,
-<a href=#797 id=797 data-nosnippet>797</a>                chunks_per_side
-<a href=#798 id=798 data-nosnippet>798</a>            );
-<a href=#799 id=799 data-nosnippet>799</a>        }
-<a href=#800 id=800 data-nosnippet>800</a>        <span class="kw">let </span>halo_chunks = (chunks_per_side - <span class="number">1</span>) / <span class="number">2</span>;
-<a href=#801 id=801 data-nosnippet>801</a>        <span class="kw">let </span>start = halo_chunks * (chunk_res - <span class="number">1</span>);
-<a href=#802 id=802 data-nosnippet>802</a>
-<a href=#803 id=803 data-nosnippet>803</a>        <span class="kw">let </span>chunk_cfg = heightmap::HeightmapConfig {
-<a href=#804 id=804 data-nosnippet>804</a>            resolution: chunk_res,
-<a href=#805 id=805 data-nosnippet>805</a>            ..Default::default()
-<a href=#806 id=806 data-nosnippet>806</a>        };
-<a href=#807 id=807 data-nosnippet>807</a>        <span class="kw">let </span><span class="kw-2">mut </span>cropped = heightmap::Heightmap::new(chunk_cfg)<span class="question-mark">?</span>;
-<a href=#808 id=808 data-nosnippet>808</a>        <span class="kw">for </span>z <span class="kw">in </span><span class="number">0</span>..chunk_res {
-<a href=#809 id=809 data-nosnippet>809</a>            <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..chunk_res {
-<a href=#810 id=810 data-nosnippet>810</a>                <span class="kw">let </span>y = halo.get_height(start + x, start + z);
-<a href=#811 id=811 data-nosnippet>811</a>                cropped.set_height(x, z, y);
-<a href=#812 id=812 data-nosnippet>812</a>            }
-<a href=#813 id=813 data-nosnippet>813</a>        }
-<a href=#814 id=814 data-nosnippet>814</a>        <span class="prelude-val">Ok</span>(cropped)
-<a href=#815 id=815 data-nosnippet>815</a>    }
-<a href=#816 id=816 data-nosnippet>816</a>
-<a href=#817 id=817 data-nosnippet>817</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B / §2.3: derive a deterministic seed for the
-<a href=#818 id=818 data-nosnippet>818</a>    /// halo region centered on `target_chunk_id`. Phase 2 feeds this seed to
-<a href=#819 id=819 data-nosnippet>819</a>    /// `AdvancedErosionSimulator::new` so adjacent chunks' halos that overlap
-<a href=#820 id=820 data-nosnippet>820</a>    /// in world space produce identical droplet trajectories in the overlap
-<a href=#821 id=821 data-nosnippet>821</a>    /// region.
-<a href=#822 id=822 data-nosnippet>822</a>    </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// Wired in phase 2; validated by unit tests here.
-<a href=#823 id=823 data-nosnippet>823</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>halo_seed(
-<a href=#824 id=824 data-nosnippet>824</a>        world_seed: u64,
-<a href=#825 id=825 data-nosnippet>825</a>        target_chunk_id: ChunkId,
-<a href=#826 id=826 data-nosnippet>826</a>        halo_chunks: u32,
-<a href=#827 id=827 data-nosnippet>827</a>    ) -&gt; u64 {
+<a href=#766 id=766 data-nosnippet>766</a>        <span class="comment">// Silence unused warning for halo_size_world — useful for phase 2
+<a href=#767 id=767 data-nosnippet>767</a>        // perf logging and halo-overlap sanity assertions.
+<a href=#768 id=768 data-nosnippet>768</a>        </span><span class="kw">let _ </span>= halo_size_world;
+<a href=#769 id=769 data-nosnippet>769</a>
+<a href=#770 id=770 data-nosnippet>770</a>        <span class="prelude-val">Ok</span>(halo_map)
+<a href=#771 id=771 data-nosnippet>771</a>    }
+<a href=#772 id=772 data-nosnippet>772</a>
+<a href=#773 id=773 data-nosnippet>773</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B: crop the center chunk-sized region out of a
+<a href=#774 id=774 data-nosnippet>774</a>    /// halo-expanded heightmap. Assumes the halo was built by
+<a href=#775 id=775 data-nosnippet>775</a>    /// `generate_halo_heightmap` with the same `target_chunk_id` and halo
+<a href=#776 id=776 data-nosnippet>776</a>    /// size. Returns a single-chunk heightmap (resolution matching
+<a href=#777 id=777 data-nosnippet>777</a>    /// `WorldConfig::heightmap_resolution`).
+<a href=#778 id=778 data-nosnippet>778</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>crop_halo_to_chunk(
+<a href=#779 id=779 data-nosnippet>779</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#780 id=780 data-nosnippet>780</a>        halo: <span class="kw-2">&amp;</span>heightmap::Heightmap,
+<a href=#781 id=781 data-nosnippet>781</a>        target_chunk_id: ChunkId,
+<a href=#782 id=782 data-nosnippet>782</a>    ) -&gt; anyhow::Result&lt;heightmap::Heightmap&gt; {
+<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">let _ </span>= target_chunk_id; <span class="comment">// centered crop — target id not needed
+<a href=#784 id=784 data-nosnippet>784</a>        </span><span class="kw">let </span>chunk_res = <span class="self">self</span>.config.heightmap_resolution;
+<a href=#785 id=785 data-nosnippet>785</a>        <span class="kw">let </span>halo_res = halo.resolution();
+<a href=#786 id=786 data-nosnippet>786</a>        <span class="comment">// Infer halo_chunks from resolutions.
+<a href=#787 id=787 data-nosnippet>787</a>        //   halo_res = chunks_per_side * (chunk_res - 1) + 1
+<a href=#788 id=788 data-nosnippet>788</a>        //   chunks_per_side = (halo_res - 1) / (chunk_res - 1)
+<a href=#789 id=789 data-nosnippet>789</a>        //   halo_chunks = (chunks_per_side - 1) / 2
+<a href=#790 id=790 data-nosnippet>790</a>        </span><span class="kw">if </span>chunk_res == <span class="number">0 </span>|| (halo_res - <span class="number">1</span>) % (chunk_res - <span class="number">1</span>) != <span class="number">0 </span>{
+<a href=#791 id=791 data-nosnippet>791</a>            <span class="macro">anyhow::bail!</span>(
+<a href=#792 id=792 data-nosnippet>792</a>                <span class="string">"halo resolution {} not a multiple of chunk resolution {}"</span>,
+<a href=#793 id=793 data-nosnippet>793</a>                halo_res,
+<a href=#794 id=794 data-nosnippet>794</a>                chunk_res
+<a href=#795 id=795 data-nosnippet>795</a>            );
+<a href=#796 id=796 data-nosnippet>796</a>        }
+<a href=#797 id=797 data-nosnippet>797</a>        <span class="kw">let </span>chunks_per_side = (halo_res - <span class="number">1</span>) / (chunk_res - <span class="number">1</span>);
+<a href=#798 id=798 data-nosnippet>798</a>        <span class="kw">if </span>chunks_per_side &lt; <span class="number">1 </span>|| chunks_per_side % <span class="number">2 </span>!= <span class="number">1 </span>{
+<a href=#799 id=799 data-nosnippet>799</a>            <span class="macro">anyhow::bail!</span>(
+<a href=#800 id=800 data-nosnippet>800</a>                <span class="string">"halo has {} chunks per side; expected odd &gt;= 1"</span>,
+<a href=#801 id=801 data-nosnippet>801</a>                chunks_per_side
+<a href=#802 id=802 data-nosnippet>802</a>            );
+<a href=#803 id=803 data-nosnippet>803</a>        }
+<a href=#804 id=804 data-nosnippet>804</a>        <span class="kw">let </span>halo_chunks = (chunks_per_side - <span class="number">1</span>) / <span class="number">2</span>;
+<a href=#805 id=805 data-nosnippet>805</a>        <span class="kw">let </span>start = halo_chunks * (chunk_res - <span class="number">1</span>);
+<a href=#806 id=806 data-nosnippet>806</a>
+<a href=#807 id=807 data-nosnippet>807</a>        <span class="kw">let </span>chunk_cfg = heightmap::HeightmapConfig {
+<a href=#808 id=808 data-nosnippet>808</a>            resolution: chunk_res,
+<a href=#809 id=809 data-nosnippet>809</a>            ..Default::default()
+<a href=#810 id=810 data-nosnippet>810</a>        };
+<a href=#811 id=811 data-nosnippet>811</a>        <span class="kw">let </span><span class="kw-2">mut </span>cropped = heightmap::Heightmap::new(chunk_cfg)<span class="question-mark">?</span>;
+<a href=#812 id=812 data-nosnippet>812</a>        <span class="kw">for </span>z <span class="kw">in </span><span class="number">0</span>..chunk_res {
+<a href=#813 id=813 data-nosnippet>813</a>            <span class="kw">for </span>x <span class="kw">in </span><span class="number">0</span>..chunk_res {
+<a href=#814 id=814 data-nosnippet>814</a>                <span class="kw">let </span>y = halo.get_height(start + x, start + z);
+<a href=#815 id=815 data-nosnippet>815</a>                cropped.set_height(x, z, y);
+<a href=#816 id=816 data-nosnippet>816</a>            }
+<a href=#817 id=817 data-nosnippet>817</a>        }
+<a href=#818 id=818 data-nosnippet>818</a>        <span class="prelude-val">Ok</span>(cropped)
+<a href=#819 id=819 data-nosnippet>819</a>    }
+<a href=#820 id=820 data-nosnippet>820</a>
+<a href=#821 id=821 data-nosnippet>821</a>    <span class="doccomment">/// Phase 1.6-F.3-phase-1.B / §2.3: derive a deterministic seed for the
+<a href=#822 id=822 data-nosnippet>822</a>    /// halo region centered on `target_chunk_id`. Phase 2 feeds this seed to
+<a href=#823 id=823 data-nosnippet>823</a>    /// `AdvancedErosionSimulator::new` so adjacent chunks' halos that overlap
+<a href=#824 id=824 data-nosnippet>824</a>    /// in world space produce identical droplet trajectories in the overlap
+<a href=#825 id=825 data-nosnippet>825</a>    /// region.
+<a href=#826 id=826 data-nosnippet>826</a>    </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// Wired in phase 2; validated by unit tests here.
+<a href=#827 id=827 data-nosnippet>827</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>halo_seed(world_seed: u64, target_chunk_id: ChunkId, halo_chunks: u32) -&gt; u64 {
 <a href=#828 id=828 data-nosnippet>828</a>        <span class="kw">let </span>halo_origin_x = target_chunk_id.x.wrapping_sub(halo_chunks <span class="kw">as </span>i32);
 <a href=#829 id=829 data-nosnippet>829</a>        <span class="kw">let </span>halo_origin_z = target_chunk_id.z.wrapping_sub(halo_chunks <span class="kw">as </span>i32);
 <a href=#830 id=830 data-nosnippet>830</a>        <span class="comment">// Wang-style integer hash, deterministic across runs / platforms.
@@ -943,40 +943,46 @@
 <a href=#943 id=943 data-nosnippet>943</a>        <span class="kw">let </span>s01 = WorldGenerator::halo_seed(<span class="number">12345</span>, ChunkId::new(<span class="number">0</span>, <span class="number">1</span>), <span class="number">1</span>);
 <a href=#944 id=944 data-nosnippet>944</a>        <span class="macro">assert_ne!</span>(s00, s10, <span class="string">"adjacent chunks should get different halo seeds"</span>);
 <a href=#945 id=945 data-nosnippet>945</a>        <span class="macro">assert_ne!</span>(s00, s01, <span class="string">"adjacent chunks should get different halo seeds"</span>);
-<a href=#946 id=946 data-nosnippet>946</a>        <span class="macro">assert_ne!</span>(s10, s01, <span class="string">"non-identical chunks should get different halo seeds"</span>);
-<a href=#947 id=947 data-nosnippet>947</a>    }
-<a href=#948 id=948 data-nosnippet>948</a>
-<a href=#949 id=949 data-nosnippet>949</a>    <span class="attr">#[test]
-<a href=#950 id=950 data-nosnippet>950</a>    </span><span class="kw">fn </span>phase_1_6_f3_phase_1_halo_seed_differs_per_world_seed() {
-<a href=#951 id=951 data-nosnippet>951</a>        <span class="kw">let </span>s1 = WorldGenerator::halo_seed(<span class="number">12345</span>, ChunkId::new(<span class="number">0</span>, <span class="number">0</span>), <span class="number">1</span>);
-<a href=#952 id=952 data-nosnippet>952</a>        <span class="kw">let </span>s2 = WorldGenerator::halo_seed(<span class="number">67890</span>, ChunkId::new(<span class="number">0</span>, <span class="number">0</span>), <span class="number">1</span>);
-<a href=#953 id=953 data-nosnippet>953</a>        <span class="macro">assert_ne!</span>(s1, s2, <span class="string">"different world seeds should yield different halo seeds"</span>);
-<a href=#954 id=954 data-nosnippet>954</a>    }
-<a href=#955 id=955 data-nosnippet>955</a>
-<a href=#956 id=956 data-nosnippet>956</a>    <span class="attr">#[test]
-<a href=#957 id=957 data-nosnippet>957</a>    </span><span class="kw">fn </span>test_chunk_generation() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#958 id=958 data-nosnippet>958</a>        <span class="kw">let </span>config = WorldConfig::default();
-<a href=#959 id=959 data-nosnippet>959</a>        <span class="kw">let </span>generator = WorldGenerator::new(config);
-<a href=#960 id=960 data-nosnippet>960</a>
-<a href=#961 id=961 data-nosnippet>961</a>        <span class="kw">let </span>chunk_id = ChunkId::new(<span class="number">0</span>, <span class="number">0</span>);
-<a href=#962 id=962 data-nosnippet>962</a>        <span class="kw">let </span>chunk = generator.generate_chunk(chunk_id)<span class="question-mark">?</span>;
-<a href=#963 id=963 data-nosnippet>963</a>
-<a href=#964 id=964 data-nosnippet>964</a>        <span class="macro">assert_eq!</span>(chunk.id(), chunk_id);
-<a href=#965 id=965 data-nosnippet>965</a>        <span class="macro">assert!</span>(chunk.heightmap().max_height() &gt;= chunk.heightmap().min_height());
+<a href=#946 id=946 data-nosnippet>946</a>        <span class="macro">assert_ne!</span>(
+<a href=#947 id=947 data-nosnippet>947</a>            s10, s01,
+<a href=#948 id=948 data-nosnippet>948</a>            <span class="string">"non-identical chunks should get different halo seeds"
+<a href=#949 id=949 data-nosnippet>949</a>        </span>);
+<a href=#950 id=950 data-nosnippet>950</a>    }
+<a href=#951 id=951 data-nosnippet>951</a>
+<a href=#952 id=952 data-nosnippet>952</a>    <span class="attr">#[test]
+<a href=#953 id=953 data-nosnippet>953</a>    </span><span class="kw">fn </span>phase_1_6_f3_phase_1_halo_seed_differs_per_world_seed() {
+<a href=#954 id=954 data-nosnippet>954</a>        <span class="kw">let </span>s1 = WorldGenerator::halo_seed(<span class="number">12345</span>, ChunkId::new(<span class="number">0</span>, <span class="number">0</span>), <span class="number">1</span>);
+<a href=#955 id=955 data-nosnippet>955</a>        <span class="kw">let </span>s2 = WorldGenerator::halo_seed(<span class="number">67890</span>, ChunkId::new(<span class="number">0</span>, <span class="number">0</span>), <span class="number">1</span>);
+<a href=#956 id=956 data-nosnippet>956</a>        <span class="macro">assert_ne!</span>(
+<a href=#957 id=957 data-nosnippet>957</a>            s1, s2,
+<a href=#958 id=958 data-nosnippet>958</a>            <span class="string">"different world seeds should yield different halo seeds"
+<a href=#959 id=959 data-nosnippet>959</a>        </span>);
+<a href=#960 id=960 data-nosnippet>960</a>    }
+<a href=#961 id=961 data-nosnippet>961</a>
+<a href=#962 id=962 data-nosnippet>962</a>    <span class="attr">#[test]
+<a href=#963 id=963 data-nosnippet>963</a>    </span><span class="kw">fn </span>test_chunk_generation() -&gt; anyhow::Result&lt;()&gt; {
+<a href=#964 id=964 data-nosnippet>964</a>        <span class="kw">let </span>config = WorldConfig::default();
+<a href=#965 id=965 data-nosnippet>965</a>        <span class="kw">let </span>generator = WorldGenerator::new(config);
 <a href=#966 id=966 data-nosnippet>966</a>
-<a href=#967 id=967 data-nosnippet>967</a>        <span class="prelude-val">Ok</span>(())
-<a href=#968 id=968 data-nosnippet>968</a>    }
+<a href=#967 id=967 data-nosnippet>967</a>        <span class="kw">let </span>chunk_id = ChunkId::new(<span class="number">0</span>, <span class="number">0</span>);
+<a href=#968 id=968 data-nosnippet>968</a>        <span class="kw">let </span>chunk = generator.generate_chunk(chunk_id)<span class="question-mark">?</span>;
 <a href=#969 id=969 data-nosnippet>969</a>
-<a href=#970 id=970 data-nosnippet>970</a>    <span class="attr">#[test]
-<a href=#971 id=971 data-nosnippet>971</a>    </span><span class="kw">fn </span>test_chunk_streaming() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#972 id=972 data-nosnippet>972</a>        <span class="kw">let </span>config = WorldConfig::default();
-<a href=#973 id=973 data-nosnippet>973</a>        <span class="kw">let </span><span class="kw-2">mut </span>generator = WorldGenerator::new(config);
-<a href=#974 id=974 data-nosnippet>974</a>
-<a href=#975 id=975 data-nosnippet>975</a>        <span class="kw">let </span>center = Vec3::new(<span class="number">128.0</span>, <span class="number">0.0</span>, <span class="number">128.0</span>);
-<a href=#976 id=976 data-nosnippet>976</a>        <span class="kw">let </span>loaded_chunks = generator.stream_chunks(center, <span class="number">2</span>)<span class="question-mark">?</span>;
-<a href=#977 id=977 data-nosnippet>977</a>
-<a href=#978 id=978 data-nosnippet>978</a>        <span class="macro">assert!</span>(!loaded_chunks.is_empty());
-<a href=#979 id=979 data-nosnippet>979</a>
-<a href=#980 id=980 data-nosnippet>980</a>        <span class="prelude-val">Ok</span>(())
-<a href=#981 id=981 data-nosnippet>981</a>    }
-<a href=#982 id=982 data-nosnippet>982</a>}</code></pre></div></section></main></body></html>
+<a href=#970 id=970 data-nosnippet>970</a>        <span class="macro">assert_eq!</span>(chunk.id(), chunk_id);
+<a href=#971 id=971 data-nosnippet>971</a>        <span class="macro">assert!</span>(chunk.heightmap().max_height() &gt;= chunk.heightmap().min_height());
+<a href=#972 id=972 data-nosnippet>972</a>
+<a href=#973 id=973 data-nosnippet>973</a>        <span class="prelude-val">Ok</span>(())
+<a href=#974 id=974 data-nosnippet>974</a>    }
+<a href=#975 id=975 data-nosnippet>975</a>
+<a href=#976 id=976 data-nosnippet>976</a>    <span class="attr">#[test]
+<a href=#977 id=977 data-nosnippet>977</a>    </span><span class="kw">fn </span>test_chunk_streaming() -&gt; anyhow::Result&lt;()&gt; {
+<a href=#978 id=978 data-nosnippet>978</a>        <span class="kw">let </span>config = WorldConfig::default();
+<a href=#979 id=979 data-nosnippet>979</a>        <span class="kw">let </span><span class="kw-2">mut </span>generator = WorldGenerator::new(config);
+<a href=#980 id=980 data-nosnippet>980</a>
+<a href=#981 id=981 data-nosnippet>981</a>        <span class="kw">let </span>center = Vec3::new(<span class="number">128.0</span>, <span class="number">0.0</span>, <span class="number">128.0</span>);
+<a href=#982 id=982 data-nosnippet>982</a>        <span class="kw">let </span>loaded_chunks = generator.stream_chunks(center, <span class="number">2</span>)<span class="question-mark">?</span>;
+<a href=#983 id=983 data-nosnippet>983</a>
+<a href=#984 id=984 data-nosnippet>984</a>        <span class="macro">assert!</span>(!loaded_chunks.is_empty());
+<a href=#985 id=985 data-nosnippet>985</a>
+<a href=#986 id=986 data-nosnippet>986</a>        <span class="prelude-val">Ok</span>(())
+<a href=#987 id=987 data-nosnippet>987</a>    }
+<a href=#988 id=988 data-nosnippet>988</a>}</code></pre></div></section></main></body></html>
