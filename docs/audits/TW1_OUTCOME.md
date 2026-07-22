@@ -1,7 +1,7 @@
 # T.W.1 — Surface the Water System in the Editor (outcome)
 
 > **Beat:** T.W.1 (terrain series, first water beat) · **Date:** 2026-07-21/22 · **Executes:** `TW1_RATIFICATION_2026-07-21.md` (T.W-R gate, seven answers + beat split)
-> **Commits:** ratification record `a79c8cec3` (doc) · code `e28c97de1` (12 files, +667/−959) · docs (this note + trace bumps + corrections) — hash in the session report.
+> **Commits:** ratification record `f398a3778` (doc) · code `88c6ba588` (12 files, +667/−959) · docs (this note + trace bumps + corrections) — hash in the session report.
 > Evidence tiers: **built** / **run** / **verified**. Session screenshots in `d:/tmp/tw1_staging/` (local, not committed). Recon spec: `TWR_WATER_RECON.md` (`09c589a5d`).
 
 ## 0. Summary
@@ -82,4 +82,4 @@ The gate also owes the **final §2.3 ruling** (emergent dips = feature/defect) o
 
 ## 6. Doc riders landed
 
-`TW1_RATIFICATION_2026-07-21.md` (`a79c8cec3`); `water.md` → v1.2 (invariants 11-12, §5 rows, Appendix B correction of "W-FU-2 woke the editor water"); `aw_editor.md` → v1.6 (Invariant 28, metadata narrative); `F4_3_EXECUTION_REPORT.md` append-only T.W.1 correction footnote; `TWR_WATER_RECON.md` append-only census-correction appendix.
+`TW1_RATIFICATION_2026-07-21.md` (`f398a3778`); `water.md` → v1.2 (invariants 11-12, §5 rows, Appendix B correction of "W-FU-2 woke the editor water"); `aw_editor.md` → v1.6 (Invariant 28, metadata narrative); `F4_3_EXECUTION_REPORT.md` append-only T.W.1 correction footnote; `TWR_WATER_RECON.md` append-only census-correction appendix.
