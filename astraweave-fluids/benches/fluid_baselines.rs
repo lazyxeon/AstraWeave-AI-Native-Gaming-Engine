@@ -12,8 +12,8 @@
 //! per-pass GPU timestamp table via `FluidSystem::read_gpu_timings` for the
 //! same particle counts; record its output in MASTER_BENCHMARK_REPORT.md.
 
-use criterion::{criterion_group, BenchmarkId, Criterion};
 use astraweave_fluids::FluidSystem;
+use criterion::{criterion_group, BenchmarkId, Criterion};
 
 const DT: f32 = 1.0 / 60.0;
 

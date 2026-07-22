@@ -47,7 +47,11 @@ fn main() {
             })
             .await
             .expect("adapter");
-        println!("Adapter: {} ({:?})", adapter.get_info().name, adapter.get_info().backend);
+        println!(
+            "Adapter: {} ({:?})",
+            adapter.get_info().name,
+            adapter.get_info().backend
+        );
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor::default())
             .await
@@ -65,7 +69,11 @@ fn main() {
         let (w, h) = (256u32, 256u32);
         let depth = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("depth"),
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -76,7 +84,11 @@ fn main() {
         let depth_view = depth.create_view(&wgpu::TextureViewDescriptor::default());
         let color = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("color"),
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -207,7 +219,11 @@ fn main() {
             println!(
                 "  CASE {name:<26} depth={} sampled-in-pass -> {}",
                 if write { "WRITABLE" } else { "read-only" },
-                if errored { "VALIDATION ERROR" } else { "OK (accepted)" }
+                if errored {
+                    "VALIDATION ERROR"
+                } else {
+                    "OK (accepted)"
+                }
             );
             !errored
         };
@@ -215,7 +231,10 @@ fn main() {
         println!("\n=== depth-copy fork resolution ===");
         let ctrl_ok = run_case(
             "(A) negative control",
-            Some(wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store }),
+            Some(wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            }),
             true,
         );
         let cand_ok = run_case("(B) read-only + sampled", None, false);

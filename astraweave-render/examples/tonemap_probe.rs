@@ -138,10 +138,26 @@ async fn run_all_probes() -> Result<()> {
     // runs. If the engine passes through (editor path), all four should
     // track the sun intensity linearly.
     let configs: &[(&str, TonemapOperator, f32)] = &[
-        ("ACES  operator, sun intensity = 1.0 ", TonemapOperator::Aces, 1.0),
-        ("None  operator, sun intensity = 1.0 ", TonemapOperator::None, 1.0),
-        ("ACES  operator, sun intensity = 20.0", TonemapOperator::Aces, 20.0),
-        ("None  operator, sun intensity = 20.0", TonemapOperator::None, 20.0),
+        (
+            "ACES  operator, sun intensity = 1.0 ",
+            TonemapOperator::Aces,
+            1.0,
+        ),
+        (
+            "None  operator, sun intensity = 1.0 ",
+            TonemapOperator::None,
+            1.0,
+        ),
+        (
+            "ACES  operator, sun intensity = 20.0",
+            TonemapOperator::Aces,
+            20.0,
+        ),
+        (
+            "None  operator, sun intensity = 20.0",
+            TonemapOperator::None,
+            20.0,
+        ),
     ];
 
     let mut results = Vec::new();
@@ -301,7 +317,7 @@ async fn probe(
     // frame.
     let camera = Camera {
         position: glam::Vec3::new(0.0, 2.0, 0.0),
-        yaw: -std::f32::consts::FRAC_PI_2, // facing -Z
+        yaw: -std::f32::consts::FRAC_PI_2,  // facing -Z
         pitch: std::f32::consts::FRAC_PI_4, // 45° up — zenith visible at top
         fovy: 60f32.to_radians(),
         aspect: WIDTH as f32 / HEIGHT as f32,
@@ -460,9 +476,9 @@ async fn probe(
         sample_red(WIDTH as usize - 1, mid_y),
     ];
     let corner_samples = [
-        sample_red(0, 0),                                // top-left
-        sample_red(WIDTH as usize - 1, 0),               // top-right
-        sample_red(0, HEIGHT as usize - 1),              // bottom-left
+        sample_red(0, 0),                                    // top-left
+        sample_red(WIDTH as usize - 1, 0),                   // top-right
+        sample_red(0, HEIGHT as usize - 1),                  // bottom-left
         sample_red(WIDTH as usize - 1, HEIGHT as usize - 1), // bottom-right
         sample_red(WIDTH as usize / 2, HEIGHT as usize / 2), // center
     ];

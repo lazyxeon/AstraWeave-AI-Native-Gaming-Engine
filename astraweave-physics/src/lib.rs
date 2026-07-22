@@ -1461,10 +1461,7 @@ impl PhysicsWorld {
                 Some(rb) => {
                     let t = rb.position().translation;
                     let v = rb.linvel();
-                    (
-                        Vec3::new(t.x, t.y, t.z),
-                        Vec3::new(v.x, v.y, v.z),
-                    )
+                    (Vec3::new(t.x, t.y, t.z), Vec3::new(v.x, v.y, v.z))
                 }
                 None => continue,
             };
@@ -5286,11 +5283,16 @@ mod tests {
     #[test]
     fn f2_buoyancy_impulse_does_not_accumulate() {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, 0.0, 0.0)); // no gravity: isolate buoyancy
-        // Surface absurdly high so the body stays submerged the whole run
-        // (it flies upward; with a finite plane it would leave the water).
+                                                                  // Surface absurdly high so the body stays submerged the whole run
+                                                                  // (it flies upward; with a finite plane it would leave the water).
         pw.water_level = 1.0e9;
         pw.fluid_density = 1000.0;
-        let id = pw.add_dynamic_box(Vec3::new(0.0, 0.0, 0.0), Vec3::splat(0.5), 10.0, Layers::DEFAULT);
+        let id = pw.add_dynamic_box(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::splat(0.5),
+            10.0,
+            Layers::DEFAULT,
+        );
         pw.add_buoyancy(id, 1.0, 0.0); // drag=0: pure constant buoyancy impulse each tick
 
         // A constant force applied as `impulse = force*dt` each tick gives
@@ -5307,7 +5309,10 @@ mod tests {
         }
         let v100 = pw.get_velocity(id).unwrap().y;
 
-        assert!(v50 > 0.0, "buoyancy should accumulate upward velocity (v50={v50})");
+        assert!(
+            v50 > 0.0,
+            "buoyancy should accumulate upward velocity (v50={v50})"
+        );
         let ratio = v100 / v50;
         assert!(
             ratio < 2.5,
@@ -5323,10 +5328,25 @@ mod tests {
     fn f2_add_water_aabb_is_real_and_bounded() {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         // A pool occupying x,z ∈ [-3,3], y ∈ [0,6].
-        pw.add_water_aabb(Vec3::new(-3.0, 0.0, -3.0), Vec3::new(3.0, 6.0, 3.0), 1000.0, 0.0);
+        pw.add_water_aabb(
+            Vec3::new(-3.0, 0.0, -3.0),
+            Vec3::new(3.0, 6.0, 3.0),
+            1000.0,
+            0.0,
+        );
 
-        let inside = pw.add_dynamic_box(Vec3::new(0.0, 2.0, 0.0), Vec3::splat(0.5), 5.0, Layers::DEFAULT);
-        let outside = pw.add_dynamic_box(Vec3::new(20.0, 2.0, 0.0), Vec3::splat(0.5), 5.0, Layers::DEFAULT);
+        let inside = pw.add_dynamic_box(
+            Vec3::new(0.0, 2.0, 0.0),
+            Vec3::splat(0.5),
+            5.0,
+            Layers::DEFAULT,
+        );
+        let outside = pw.add_dynamic_box(
+            Vec3::new(20.0, 2.0, 0.0),
+            Vec3::splat(0.5),
+            5.0,
+            Layers::DEFAULT,
+        );
         pw.add_buoyancy(inside, 3.0, 0.0); // big volume → strong float
         pw.add_buoyancy(outside, 3.0, 0.0);
 
@@ -5336,7 +5356,10 @@ mod tests {
         let yi = pw.body_transform(inside).unwrap().w_axis.y;
         let yo = pw.body_transform(outside).unwrap().w_axis.y;
         assert!(yi > 1.0, "body inside the pool should be buoyed up, y={yi}");
-        assert!(yo < 1.5, "body outside the pool should fall under gravity, y={yo}");
+        assert!(
+            yo < 1.5,
+            "body outside the pool should fall under gravity, y={yo}"
+        );
     }
 
     /// Regression: the flat-plane case routed through the facade reproduces the
@@ -5346,12 +5369,20 @@ mod tests {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
         pw.water_level = 5.0;
         pw.fluid_density = 1000.0;
-        let id = pw.add_dynamic_box(Vec3::new(0.0, 0.0, 0.0), Vec3::splat(0.5), 5.0, Layers::DEFAULT);
+        let id = pw.add_dynamic_box(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::splat(0.5),
+            5.0,
+            Layers::DEFAULT,
+        );
         pw.add_buoyancy(id, 3.0, 0.5);
         for _ in 0..15 {
             pw.step();
         }
-        assert!(pw.get_velocity(id).unwrap().y > 0.0, "submerged body floats up via the facade plane");
+        assert!(
+            pw.get_velocity(id).unwrap().y > 0.0,
+            "submerged body floats up via the facade plane"
+        );
 
         // clear_water drains everything; the body now falls.
         pw.clear_water();

@@ -1,12 +1,12 @@
 use astraweave_camera::{CameraController, CameraProducer, FreeFly as Camera};
 use astraweave_core::{IVec2, Team, World};
+use astraweave_fluids::{FluidRenderer, FluidSystem};
 use astraweave_gameplay::biome::generate_island_room;
 use astraweave_gameplay::*;
 use astraweave_nav::{NavMesh, Triangle};
 use astraweave_physics::PhysicsWorld;
 use astraweave_render::TerrainRenderer as RenderTerrainRenderer; // rename to avoid conflict
 use astraweave_render::{Instance, Renderer, WaterRenderer};
-use astraweave_fluids::{FluidRenderer, FluidSystem};
 use astraweave_terrain::{ChunkId, TerrainChunk, WorldConfig};
 use glam::{vec3, Vec2};
 use std::rc::Rc;

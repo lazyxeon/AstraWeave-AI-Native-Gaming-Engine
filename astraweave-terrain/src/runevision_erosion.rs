@@ -298,7 +298,10 @@ mod tests {
         // Zero gradient → no flow direction → no gullies.
         let config = RunevisionConfig::default();
         let h = apply_runevision_filter(300.0, (0.0, 0.0), 100.0, 100.0, 12345, &config);
-        assert_eq!(h, 300.0, "flat terrain (zero gradient), filter should be no-op");
+        assert_eq!(
+            h, 300.0,
+            "flat terrain (zero gradient), filter should be no-op"
+        );
     }
 
     #[test]

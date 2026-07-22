@@ -12,14 +12,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use astraweave_render::{
-    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-};
 use astraweave_render::material::{
     validate_array_layout, validate_material_pack, ArrayLayout, MaterialGpu, MaterialLayerDesc,
     MaterialLoadStats, MaterialPackDesc,
 };
 use astraweave_render::texture_streaming::TextureStreamingManager;
+use astraweave_render::{ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MaterialGpu

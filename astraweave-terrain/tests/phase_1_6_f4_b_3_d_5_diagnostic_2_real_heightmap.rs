@@ -31,10 +31,7 @@ fn classify(b: BiomeId) -> BiomeClass {
         BiomeClass::Aquatic
     } else if matches!(
         b,
-        BiomeId::Alpine
-            | BiomeId::SnowCap
-            | BiomeId::MountainRocky
-            | BiomeId::Scree
+        BiomeId::Alpine | BiomeId::SnowCap | BiomeId::MountainRocky | BiomeId::Scree
     ) {
         BiomeClass::MountainCharacter
     } else if b.is_terrestrial() {
@@ -96,11 +93,7 @@ const HIST_LABELS: [&str; 8] = [
     "<0     ", "0-50   ", "50-100 ", "100-200", "200-280", "280-350", "350-450", "450+   ",
 ];
 
-fn measure_archetype(
-    archetype_id: WorldArchetypeId,
-    label: &str,
-    spatial_dump_chunk: ChunkId,
-) {
+fn measure_archetype(archetype_id: WorldArchetypeId, label: &str, spatial_dump_chunk: ChunkId) {
     println!();
     println!("== {} ==", label);
 
@@ -301,8 +294,7 @@ fn measure_archetype(
             _ => None,
         };
         if let Some(t) = threshold {
-            let below_threshold =
-                elevs.iter().filter(|&&e| e < t).count();
+            let below_threshold = elevs.iter().filter(|&&e| e < t).count();
             if below_threshold > 0 {
                 println!(
                     "    !! WARNING: {} vertices BELOW threshold {} m ({:.2}% of {} count)",
@@ -395,7 +387,5 @@ fn d5_diagnostic_2_real_heightmap_biome_distribution() {
         "| Equatorial Tropical | 41.7% | (see ET block above) | (see ET) | (see ET) | (see dump) |"
     );
     println!();
-    println!(
-        "Map measurements to §2 decision matrix in F.4.B.3.D.5-diagnostic-2 audit."
-    );
+    println!("Map measurements to §2 decision matrix in F.4.B.3.D.5-diagnostic-2 audit.");
 }

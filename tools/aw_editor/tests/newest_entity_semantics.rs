@@ -35,7 +35,11 @@ fn spawn_ids_are_monotonic_and_never_reused_after_delete() {
 
     // The invariant the editor helper relies on: max id == most recent spawn.
     let newest = w.iter_entities().max();
-    assert_eq!(newest, Some(d), "iter_entities().max() must be the newest spawn");
+    assert_eq!(
+        newest,
+        Some(d),
+        "iter_entities().max() must be the newest spawn"
+    );
 }
 
 #[test]

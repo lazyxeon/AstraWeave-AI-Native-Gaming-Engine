@@ -627,8 +627,8 @@ impl AdvancedErosionSimulator {
                     amount_to_deposit,
                 );
             } else {
-                let amount_to_erode =
-                    ((sediment_capacity - droplet.sediment) * config.erode_speed).min(-delta_height);
+                let amount_to_erode = ((sediment_capacity - droplet.sediment) * config.erode_speed)
+                    .min(-delta_height);
 
                 let center_idx = (node_z as u32 * resolution + node_x as u32) as usize;
                 if center_idx < self.erosion_brush_indices.len() {
@@ -650,9 +650,8 @@ impl AdvancedErosionSimulator {
                 }
             }
 
-            droplet.velocity = (droplet.velocity * droplet.velocity
-                + delta_height.abs() * config.gravity)
-                .sqrt();
+            droplet.velocity =
+                (droplet.velocity * droplet.velocity + delta_height.abs() * config.gravity).sqrt();
 
             droplet.water *= 1.0 - config.evaporation_rate;
             droplet.pos = new_pos;
@@ -1156,7 +1155,11 @@ mod tests {
         let highland = erosion_preset_for_climate(ClimateBias::Highland);
 
         // Cold and Highland both map to mountain-family preset.
-        let cold_drop = cold.hydraulic.as_ref().map(|h| h.droplet_count).unwrap_or(0);
+        let cold_drop = cold
+            .hydraulic
+            .as_ref()
+            .map(|h| h.droplet_count)
+            .unwrap_or(0);
         let highland_drop = highland
             .hydraulic
             .as_ref()

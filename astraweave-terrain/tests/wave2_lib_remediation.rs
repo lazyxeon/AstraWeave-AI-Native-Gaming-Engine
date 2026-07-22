@@ -482,7 +482,11 @@ fn scatter_seed_z_position_matters() {
     ) -> Vec<(i32, i32, i32)> {
         let o = chunk.id().to_world_pos(chunk_size);
         let q = |px: f32, py: f32, pz: f32| {
-            (((px - o.x) * 100.0) as i32, (py * 100.0) as i32, ((pz - o.z) * 100.0) as i32)
+            (
+                ((px - o.x) * 100.0) as i32,
+                (py * 100.0) as i32,
+                ((pz - o.z) * 100.0) as i32,
+            )
         };
         let mut v: Vec<(i32, i32, i32)> = s
             .vegetation

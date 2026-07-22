@@ -1793,8 +1793,8 @@ mod color_space_tests {
 
 #[cfg(test)]
 mod boundary_condition_tests {
-    use astraweave_camera::FreeFly as Camera;
     use crate::environment::{TimeOfDay, WeatherSystem};
+    use astraweave_camera::FreeFly as Camera;
     use glam::Vec3;
 
     // --- TimeOfDay hour boundaries ---
@@ -1984,8 +1984,8 @@ mod boundary_condition_tests {
 
 #[cfg(test)]
 mod comparison_operator_tests {
-    use astraweave_camera::FreeFly as Camera;
     use crate::environment::{TimeOfDay, WeatherType};
+    use astraweave_camera::FreeFly as Camera;
     use glam::Vec3;
 
     // --- TimeOfDay comparisons ---

@@ -1839,7 +1839,9 @@ impl EditorCommand for RegionalArchetypePaintCommand {
     fn undo(&mut self, _world: &mut World, _entities: Option<&mut EntityManager>) -> Result<()> {
         // Undo: restore pre-stroke ids.
         if let Ok(mut queue) = self.undo_queue.lock() {
-            queue.push(RegionalArchetypeUndoAction::ApplyMaskIds(self.pre_ids.clone()));
+            queue.push(RegionalArchetypeUndoAction::ApplyMaskIds(
+                self.pre_ids.clone(),
+            ));
         }
         Ok(())
     }

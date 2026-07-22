@@ -55,21 +55,17 @@ fn bench_query(c: &mut Criterion) {
                 Vec3::new(t * side, 1.0, (1.0 - t) * side)
             })
             .collect();
-        group.bench_with_input(
-            BenchmarkId::from_parameter(volumes),
-            &volumes,
-            |b, _| {
-                b.iter(|| {
-                    let mut acc = 0.0f32;
-                    for p in &bodies {
-                        if let Some(s) = w.sample(std::hint::black_box(*p)) {
-                            acc += s.surface_height;
-                        }
+        group.bench_with_input(BenchmarkId::from_parameter(volumes), &volumes, |b, _| {
+            b.iter(|| {
+                let mut acc = 0.0f32;
+                for p in &bodies {
+                    if let Some(s) = w.sample(std::hint::black_box(*p)) {
+                        acc += s.surface_height;
                     }
-                    std::hint::black_box(acc)
-                })
-            },
-        );
+                }
+                std::hint::black_box(acc)
+            })
+        });
     }
     group.finish();
 }

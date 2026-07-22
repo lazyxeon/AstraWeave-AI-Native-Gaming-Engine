@@ -34,9 +34,7 @@ use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
 
-use crate::impostor_lod3::{
-    build_lod3_pipeline, Lod3InstanceRaw, Lod3Pipeline, Lod3Resources,
-};
+use crate::impostor_lod3::{build_lod3_pipeline, Lod3InstanceRaw, Lod3Pipeline, Lod3Resources};
 use crate::vegetation_lod::ImpostorAtlasSpec;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -76,10 +74,22 @@ struct QuadVertex {
 /// * UVs place (0,0) at top-left so `V=0` lines up with the top of an atlas
 ///   cell (row-major RGBA8 atlases have row 0 at the top).
 const QUAD_VERTICES: [QuadVertex; 4] = [
-    QuadVertex { pos: [-0.5, 0.0, 0.0], uv: [0.0, 1.0] }, // bottom-left
-    QuadVertex { pos: [ 0.5, 0.0, 0.0], uv: [1.0, 1.0] }, // bottom-right
-    QuadVertex { pos: [ 0.5, 1.0, 0.0], uv: [1.0, 0.0] }, // top-right
-    QuadVertex { pos: [-0.5, 1.0, 0.0], uv: [0.0, 0.0] }, // top-left
+    QuadVertex {
+        pos: [-0.5, 0.0, 0.0],
+        uv: [0.0, 1.0],
+    }, // bottom-left
+    QuadVertex {
+        pos: [0.5, 0.0, 0.0],
+        uv: [1.0, 1.0],
+    }, // bottom-right
+    QuadVertex {
+        pos: [0.5, 1.0, 0.0],
+        uv: [1.0, 0.0],
+    }, // top-right
+    QuadVertex {
+        pos: [-0.5, 1.0, 0.0],
+        uv: [0.0, 0.0],
+    }, // top-left
 ];
 
 /// CCW winding (matches `front_face: Ccw` in [`build_lod3_pipeline`]).
@@ -137,7 +147,8 @@ impl ImpostorPass {
         use wgpu::util::DeviceExt;
 
         let pipeline = build_lod3_pipeline(device, color_format, depth_format)?;
-        let resources = Lod3Resources::upload(device, queue, pixels, width, height, spec, &pipeline)?;
+        let resources =
+            Lod3Resources::upload(device, queue, pixels, width, height, spec, &pipeline)?;
 
         // Camera UBO — populated with identity matrices until update_camera is called.
         let camera_buffer = device.create_buffer(&wgpu::BufferDescriptor {

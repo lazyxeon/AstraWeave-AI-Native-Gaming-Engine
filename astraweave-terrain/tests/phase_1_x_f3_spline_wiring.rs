@@ -125,9 +125,10 @@ fn phase_1_x_f3_spline_toggling_changes_terrain() {
             }
         }
     }
-    let (x, z, baseline_height) = chosen
-        .expect("expected at least one Continental Temperate position with \
-             pre-erosion height > 100m at seed 12345");
+    let (x, z, baseline_height) = chosen.expect(
+        "expected at least one Continental Temperate position with \
+             pre-erosion height > 100m at seed 12345",
+    );
     let doubled_height = noise.sample_height_with_params(&doubled, x, z, 1.0);
     let delta = doubled_height - baseline_height;
 

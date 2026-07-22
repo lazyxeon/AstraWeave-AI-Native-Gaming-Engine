@@ -326,7 +326,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "tree_small".to_string(),
                         weight: 0.10,
-                        model_path: "assets/imported/verdant_trail/meshes/tree_small_02_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/tree_small_02_a.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.4),
                         slope_tolerance: 25.0,
                         min_distance: 8.0,
@@ -339,7 +340,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "dead_tree".to_string(),
                         weight: 0.04,
-                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk.001.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk.001.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 25.0,
                         min_distance: 10.0,
@@ -352,7 +354,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "dead_tree_02".to_string(),
                         weight: 0.03,
-                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk_02.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk_02.glb"
+                            .to_string(),
                         scale_range: (0.5, 1.0),
                         slope_tolerance: 25.0,
                         min_distance: 10.0,
@@ -365,7 +368,9 @@ impl BiomeConfig {
                     VegetationType {
                         name: "dry_branches".to_string(),
                         weight: 0.03,
-                        model_path: "assets/imported/verdant_trail/meshes/dry_branches_medium_01_a.002.glb".to_string(),
+                        model_path:
+                            "assets/imported/verdant_trail/meshes/dry_branches_medium_01_a.002.glb"
+                                .to_string(),
                         scale_range: (0.7, 1.3),
                         slope_tolerance: 30.0,
                         min_distance: 6.0,
@@ -380,7 +385,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_01_a".to_string(),
                         weight: 0.08,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_a.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -393,7 +399,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_01_b".to_string(),
                         weight: 0.06,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_b.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -406,7 +413,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_01_d".to_string(),
                         weight: 0.06,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_d.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_d.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -419,7 +427,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_02_a".to_string(),
                         weight: 0.06,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_a.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -432,7 +441,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_02_c".to_string(),
                         weight: 0.05,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_c.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_c.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -445,7 +455,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_03_a".to_string(),
                         weight: 0.06,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_a.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -458,7 +469,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_03_b".to_string(),
                         weight: 0.04,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_b.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -471,7 +483,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_04_a".to_string(),
                         weight: 0.04,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_a.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -484,7 +497,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_04_b".to_string(),
                         weight: 0.03,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_b.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 3.0,
@@ -499,7 +513,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_a".to_string(),
                         weight: 0.10,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_a.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.4),
                         slope_tolerance: 45.0,
                         min_distance: 1.5,
@@ -512,7 +527,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_b".to_string(),
                         weight: 0.07,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_b.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 45.0,
                         min_distance: 1.5,
@@ -525,7 +541,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_c".to_string(),
                         weight: 0.07,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_c.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_c.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 45.0,
                         min_distance: 1.5,
@@ -538,7 +555,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_d".to_string(),
                         weight: 0.06,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_d.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_d.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 45.0,
                         min_distance: 1.5,
@@ -551,7 +569,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_e".to_string(),
                         weight: 0.07,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_e.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_e.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 45.0,
                         min_distance: 1.5,
@@ -566,7 +585,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "stone".to_string(),
                         weight: 0.04,
-                        model_path: "assets/imported/verdant_trail/meshes/stone_01_LOD0.001.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/stone_01_LOD0.001.glb"
+                            .to_string(),
                         scale_range: (0.5, 1.2),
                         slope_tolerance: 45.0,
                         min_distance: 3.0,
@@ -579,7 +599,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "rock_07".to_string(),
                         weight: 0.03,
-                        model_path: "assets/imported/verdant_trail/meshes/rock_07.001.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/rock_07.001.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.5),
                         slope_tolerance: 45.0,
                         min_distance: 3.0,
@@ -592,7 +613,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "rock_08".to_string(),
                         weight: 0.03,
-                        model_path: "assets/imported/verdant_trail/meshes/rock_08.001.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/rock_08.001.glb"
+                            .to_string(),
                         scale_range: (0.5, 1.3),
                         slope_tolerance: 45.0,
                         min_distance: 2.0,
@@ -904,7 +926,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "island_tree_a".to_string(),
                         weight: 2.0,
-                        model_path: "assets/imported/verdant_trail/meshes/island_tree_01_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/island_tree_01_a.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.5),
                         slope_tolerance: 30.0,
                         min_distance: 6.0,
@@ -917,7 +940,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "island_tree_b".to_string(),
                         weight: 1.5,
-                        model_path: "assets/imported/verdant_trail/meshes/island_tree_01_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/island_tree_01_b.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.5),
                         slope_tolerance: 30.0,
                         min_distance: 6.0,
@@ -930,7 +954,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "jacaranda_trunk".to_string(),
                         weight: 0.8,
-                        model_path: "assets/imported/verdant_trail/meshes/jacaranda_tree_trunk.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/jacaranda_tree_trunk.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.3),
                         slope_tolerance: 25.0,
                         min_distance: 8.0,
@@ -943,7 +968,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "tree_small".to_string(),
                         weight: 1.5,
-                        model_path: "assets/imported/verdant_trail/meshes/tree_small_02_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/tree_small_02_a.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.35),
                         slope_tolerance: 25.0,
                         min_distance: 5.0,
@@ -956,7 +982,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "dead_trunk".to_string(),
                         weight: 0.4,
-                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk_02.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/dead_tree_trunk_02.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 25.0,
                         min_distance: 6.0,
@@ -970,7 +997,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_01_b".to_string(),
                         weight: 3.5,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_01_b.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.3),
                         slope_tolerance: 35.0,
                         min_distance: 1.5,
@@ -983,7 +1011,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_02_c".to_string(),
                         weight: 3.0,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_c.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_02_c.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.2),
                         slope_tolerance: 35.0,
                         min_distance: 1.5,
@@ -996,7 +1025,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_03_b".to_string(),
                         weight: 2.0,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_03_b.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 1.5,
@@ -1009,7 +1039,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "shrub_04_b".to_string(),
                         weight: 1.5,
-                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/shrub_04_b.glb"
+                            .to_string(),
                         scale_range: (0.6, 1.1),
                         slope_tolerance: 35.0,
                         min_distance: 1.5,
@@ -1023,7 +1054,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_b".to_string(),
                         weight: 4.0,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_b.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_b.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.4),
                         slope_tolerance: 35.0,
                         min_distance: 0.0,
@@ -1036,7 +1068,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_medium_d".to_string(),
                         weight: 3.5,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_d.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_medium_02_d.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 35.0,
                         min_distance: 0.0,
@@ -1049,7 +1082,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "grass_debris".to_string(),
                         weight: 2.0,
-                        model_path: "assets/imported/verdant_trail/meshes/grass_debris_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/grass_debris_a.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 40.0,
                         min_distance: 0.0,
@@ -1062,7 +1096,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "sticks_debris".to_string(),
                         weight: 1.0,
-                        model_path: "assets/imported/verdant_trail/meshes/sticks_debris_a.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/sticks_debris_a.glb"
+                            .to_string(),
                         scale_range: (0.7, 1.2),
                         slope_tolerance: 40.0,
                         min_distance: 0.0,
@@ -1075,7 +1110,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "rock_forest".to_string(),
                         weight: 0.8,
-                        model_path: "assets/imported/verdant_trail/meshes/rock_07.001.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/rock_07.001.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.5),
                         slope_tolerance: 40.0,
                         min_distance: 2.0,
@@ -1088,7 +1124,8 @@ impl BiomeConfig {
                     VegetationType {
                         name: "root_cluster".to_string(),
                         weight: 0.3,
-                        model_path: "assets/imported/verdant_trail/meshes/root_cluster_01.glb".to_string(),
+                        model_path: "assets/imported/verdant_trail/meshes/root_cluster_01.glb"
+                            .to_string(),
                         scale_range: (0.8, 1.3),
                         slope_tolerance: 30.0,
                         min_distance: 3.0,

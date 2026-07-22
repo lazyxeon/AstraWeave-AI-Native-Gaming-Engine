@@ -282,21 +282,16 @@ impl GameState {
             let pq = Query2::<Position, Velocity>::new(&self.app.world);
             for (entity, pos, vel) in pq {
                 let eid = entity.id() as u64;
-                pos_bits = pos_bits.wrapping_add(
-                    (pos.0.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(1)),
-                );
-                pos_bits = pos_bits.wrapping_add(
-                    (pos.0.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(2)),
-                );
-                pos_bits = pos_bits.wrapping_add(
-                    (pos.0.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(3)),
-                );
-                vel_bits = vel_bits.wrapping_add(
-                    (vel.0.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(4)),
-                );
-                vel_bits = vel_bits.wrapping_add(
-                    (vel.0.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(5)),
-                );
+                pos_bits = pos_bits
+                    .wrapping_add((pos.0.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(1)));
+                pos_bits = pos_bits
+                    .wrapping_add((pos.0.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(2)));
+                pos_bits = pos_bits
+                    .wrapping_add((pos.0.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(3)));
+                vel_bits = vel_bits
+                    .wrapping_add((vel.0.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(4)));
+                vel_bits = vel_bits
+                    .wrapping_add((vel.0.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(5)));
             }
             let mut agent_bits: u64 = 0;
             let aq = Query2::<Position, AIAgent>::new(&self.app.world);
@@ -370,11 +365,7 @@ impl GameState {
         // `frame.bytes` to Tracy. With `alloc-counter` off the delta is zero;
         // with `profiling` off the emit is a no-op.
         let alloc_delta = alloc_stats.end_frame();
-        alloc_plot!(
-            "frame",
-            alloc_delta.allocs,
-            alloc_delta.bytes_allocated
-        );
+        alloc_plot!("frame", alloc_delta.allocs, alloc_delta.bytes_allocated);
 
         // When `alloc-counter` is enabled but Tracy is not running, print the
         // delta every 100 frames so terminal output still yields data.

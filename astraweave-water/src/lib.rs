@@ -283,8 +283,18 @@ mod tests {
     fn overlap_resolution_topmost_surface_wins() {
         let mut w = AnalyticWater::new();
         // Low pool (surface y=2) and a high pool (surface y=5) overlapping at origin.
-        w.add_aabb(Vec3::new(-5.0, 0.0, -5.0), Vec3::new(5.0, 2.0, 5.0), 1000.0, 0.0);
-        w.add_aabb(Vec3::new(-5.0, 0.0, -5.0), Vec3::new(5.0, 5.0, 5.0), 1025.0, 0.0);
+        w.add_aabb(
+            Vec3::new(-5.0, 0.0, -5.0),
+            Vec3::new(5.0, 2.0, 5.0),
+            1000.0,
+            0.0,
+        );
+        w.add_aabb(
+            Vec3::new(-5.0, 0.0, -5.0),
+            Vec3::new(5.0, 5.0, 5.0),
+            1025.0,
+            0.0,
+        );
         let s = w.sample(Vec3::new(0.0, 1.0, 0.0)).unwrap();
         assert_eq!(s.surface_height, 5.0, "topmost surface wins");
         assert_eq!(s.density, 1025.0, "and its density");
@@ -294,8 +304,18 @@ mod tests {
     fn overlap_tie_breaks_by_registration_order() {
         let mut w = AnalyticWater::new();
         // Two volumes with identical surface height; first registered wins.
-        w.add_aabb(Vec3::new(-5.0, 0.0, -5.0), Vec3::new(5.0, 3.0, 5.0), 1000.0, 0.0);
-        w.add_aabb(Vec3::new(-5.0, 0.0, -5.0), Vec3::new(5.0, 3.0, 5.0), 1025.0, 0.0);
+        w.add_aabb(
+            Vec3::new(-5.0, 0.0, -5.0),
+            Vec3::new(5.0, 3.0, 5.0),
+            1000.0,
+            0.0,
+        );
+        w.add_aabb(
+            Vec3::new(-5.0, 0.0, -5.0),
+            Vec3::new(5.0, 3.0, 5.0),
+            1025.0,
+            0.0,
+        );
         let s = w.sample(Vec3::new(0.0, 1.0, 0.0)).unwrap();
         assert_eq!(s.density, 1000.0, "first-registered wins the tie");
     }
@@ -304,8 +324,13 @@ mod tests {
     fn plane_and_aabb_combine_topmost_wins() {
         let mut w = AnalyticWater::new();
         w.set_plane(1.0, 1000.0); // low global sea
-        w.add_aabb(Vec3::new(-2.0, 0.0, -2.0), Vec3::new(2.0, 6.0, 2.0), 1025.0, 0.0); // raised tank
-        // Inside the tank, the tank (y=6) beats the plane (y=1).
+        w.add_aabb(
+            Vec3::new(-2.0, 0.0, -2.0),
+            Vec3::new(2.0, 6.0, 2.0),
+            1025.0,
+            0.0,
+        ); // raised tank
+           // Inside the tank, the tank (y=6) beats the plane (y=1).
         let inside = w.sample(Vec3::new(0.0, 3.0, 0.0)).unwrap();
         assert_eq!(inside.surface_height, 6.0);
         // Outside the tank, only the plane covers.
@@ -321,8 +346,18 @@ mod tests {
         let build = || {
             let mut w = AnalyticWater::new();
             w.set_plane(3.5, 1000.0);
-            w.add_aabb(Vec3::new(-4.0, 0.0, -4.0), Vec3::new(4.0, 7.25, 4.0), 1013.0, 0.3);
-            w.add_aabb(Vec3::new(10.0, 1.0, 10.0), Vec3::new(20.0, 2.5, 20.0), 998.0, 0.1);
+            w.add_aabb(
+                Vec3::new(-4.0, 0.0, -4.0),
+                Vec3::new(4.0, 7.25, 4.0),
+                1013.0,
+                0.3,
+            );
+            w.add_aabb(
+                Vec3::new(10.0, 1.0, 10.0),
+                Vec3::new(20.0, 2.5, 20.0),
+                998.0,
+                0.1,
+            );
             w
         };
         let a = build();

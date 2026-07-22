@@ -12,9 +12,7 @@
 //! the catalog with real per-archetype tuning. F.4's job is to verify
 //! the wiring; F.7's job is to verify the archetypes look right.
 
-use astraweave_terrain::regional_archetype_mask::{
-    RegionalArchetypeBlend, RegionalArchetypeMask,
-};
+use astraweave_terrain::regional_archetype_mask::{RegionalArchetypeBlend, RegionalArchetypeMask};
 use astraweave_terrain::world_archetypes::WorldArchetypeId;
 use astraweave_terrain::{ChunkId, ClimateBias, WorldConfig, WorldGenerator};
 
@@ -135,10 +133,8 @@ fn phase_1_x_f4_unpainted_mask_byte_identical_to_none() {
 #[test]
 fn phase_1_x_f4_painted_circle_produces_terrain() {
     let mut gen = make_generator(12345);
-    let mut mask = RegionalArchetypeMask::new_unpainted(
-        256,
-        RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU,
-    );
+    let mut mask =
+        RegionalArchetypeMask::new_unpainted(256, RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU);
     // Paint a Boreal circle covering chunk (0,0) and surrounding region.
     mask = mask.with_painted_circle(
         128, // center pixel x
@@ -159,7 +155,11 @@ fn phase_1_x_f4_painted_circle_produces_terrain() {
     let max = (0..heightmap.resolution())
         .flat_map(|z| (0..heightmap.resolution()).map(move |x| heightmap.get_height(x, z)))
         .fold(0.0f32, f32::max);
-    assert!(max > 0.0, "chunk should produce non-trivial heights; got max={}", max);
+    assert!(
+        max > 0.0,
+        "chunk should produce non-trivial heights; got max={}",
+        max
+    );
 }
 
 // =============================================================================
@@ -172,13 +172,17 @@ fn phase_1_x_f4_painted_circle_produces_terrain() {
 /// per F.4 prompt §2.8 (deferred to F.4.G's Andrew-gate setup).
 #[test]
 fn phase_1_x_f4_falloff_zone_blends_smoothly() {
-    let mut mask = RegionalArchetypeMask::new_unpainted(
-        256,
-        RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU,
-    );
+    let mut mask =
+        RegionalArchetypeMask::new_unpainted(256, RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU);
     mask.falloff_radius_pixels = 32;
     let mut mask = mask
-        .with_painted_rect(0, 0, 128, 256, WorldArchetypeId::BorealSubarctic.to_mask_id())
+        .with_painted_rect(
+            0,
+            0,
+            128,
+            256,
+            WorldArchetypeId::BorealSubarctic.to_mask_id(),
+        )
         .with_painted_rect(128, 0, 256, 256, WorldArchetypeId::Desert.to_mask_id());
     mask.recompute_falloff();
 
@@ -222,12 +226,15 @@ fn phase_1_x_f4_save_load_preserves_terrain_output() {
     let base = dir.path().join("save_load_terrain_test");
 
     // Paint a mask.
-    let mut original = RegionalArchetypeMask::new_unpainted(
-        256,
-        RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU,
+    let mut original =
+        RegionalArchetypeMask::new_unpainted(256, RegionalArchetypeMask::DEFAULT_WORLD_EXTENT_WU);
+    original = original.with_painted_rect(
+        64,
+        64,
+        192,
+        192,
+        WorldArchetypeId::EquatorialTropical.to_mask_id(),
     );
-    original = original
-        .with_painted_rect(64, 64, 192, 192, WorldArchetypeId::EquatorialTropical.to_mask_id());
     original.recompute_falloff();
 
     // Save → load.
@@ -355,15 +362,27 @@ fn phase_1_x_f4_five_archetype_andrew_gate_world_helper() {
     let mask = five_archetype_andrew_gate_world();
     // Spot-check painted IDs at known centroids.
     // CT center: (512, 512) painted pre-falloff-recompute.
-    assert_eq!(mask.id_at(512, 512), WorldArchetypeId::ContinentalTemperate.to_mask_id());
+    assert_eq!(
+        mask.id_at(512, 512),
+        WorldArchetypeId::ContinentalTemperate.to_mask_id()
+    );
     // Boreal north: (512, 100) inside rect (300..724, 0..256).
-    assert_eq!(mask.id_at(512, 100), WorldArchetypeId::BorealSubarctic.to_mask_id());
+    assert_eq!(
+        mask.id_at(512, 100),
+        WorldArchetypeId::BorealSubarctic.to_mask_id()
+    );
     // Mediterranean south: (512, 900) inside rect (300..724, 768..1024).
-    assert_eq!(mask.id_at(512, 900), WorldArchetypeId::Mediterranean.to_mask_id());
+    assert_eq!(
+        mask.id_at(512, 900),
+        WorldArchetypeId::Mediterranean.to_mask_id()
+    );
     // Desert east: (900, 512) inside rect (768..1024, 300..724).
     assert_eq!(mask.id_at(900, 512), WorldArchetypeId::Desert.to_mask_id());
     // Tropical west: (100, 512) inside rect (0..256, 300..724).
-    assert_eq!(mask.id_at(100, 512), WorldArchetypeId::EquatorialTropical.to_mask_id());
+    assert_eq!(
+        mask.id_at(100, 512),
+        WorldArchetypeId::EquatorialTropical.to_mask_id()
+    );
     // Falloff field populated (center pixels deep interior = 255).
     assert_eq!(mask.falloff_at(512, 100), 255);
 }
@@ -390,9 +409,27 @@ fn five_archetype_andrew_gate_world() -> RegionalArchetypeMask {
         256,
         WorldArchetypeId::ContinentalTemperate.to_mask_id(),
     )
-    .with_painted_rect(300, 0, 724, 256, WorldArchetypeId::BorealSubarctic.to_mask_id())
-    .with_painted_rect(300, 768, 724, 1024, WorldArchetypeId::Mediterranean.to_mask_id())
+    .with_painted_rect(
+        300,
+        0,
+        724,
+        256,
+        WorldArchetypeId::BorealSubarctic.to_mask_id(),
+    )
+    .with_painted_rect(
+        300,
+        768,
+        724,
+        1024,
+        WorldArchetypeId::Mediterranean.to_mask_id(),
+    )
     .with_painted_rect(768, 300, 1024, 724, WorldArchetypeId::Desert.to_mask_id())
-    .with_painted_rect(0, 300, 256, 724, WorldArchetypeId::EquatorialTropical.to_mask_id())
+    .with_painted_rect(
+        0,
+        300,
+        256,
+        724,
+        WorldArchetypeId::EquatorialTropical.to_mask_id(),
+    )
     .with_falloff_recomputed()
 }

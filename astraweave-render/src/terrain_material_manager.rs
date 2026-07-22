@@ -925,11 +925,7 @@ impl TerrainMaterialManager {
                 let pipeline_layout =
                     device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: Some("terrain-splat-pipeline-layout"),
-                        bind_group_layouts: &[
-                            &self.camera_bgl,
-                            &self.terrain_bgl,
-                            &self.splat_bgl,
-                        ],
+                        bind_group_layouts: &[&self.camera_bgl, &self.terrain_bgl, &self.splat_bgl],
                         push_constant_ranges: &[],
                     });
 

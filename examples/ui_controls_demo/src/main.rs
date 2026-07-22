@@ -9,8 +9,8 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use astraweave_physics::PhysicsWorld;
 use astraweave_camera::{CameraController, CameraProducer, FreeFly as Camera};
+use astraweave_physics::PhysicsWorld;
 use astraweave_render::{Instance, Renderer};
 
 use astraweave_input::{BindingSet, InputContext, InputManager};

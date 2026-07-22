@@ -8,13 +8,16 @@ pub mod advanced_erosion; // Production-ready erosion simulation
 pub mod background_loader; // Week 4 Action 14: Async chunk streaming
 pub mod biome;
 pub mod biome_blending; // Production-ready biome blending
+pub mod biome_lookup; // Phase 1.6-F.4.B.3.D.2: Whittaker biome lookup (climate × elevation → BiomeId)
 pub mod biome_pack;
+pub mod biome_param_blending; // Phase 1.6-F.4.B.3.D.4: scattered-convolution biome parameter blending (noiseposti.ng)
+pub mod biome_parameters; // Phase 1.6-F.4.B.3.D.3: per-BiomeId terrain parameters (replaces BiomeNoisePreset)
 pub mod blueprint_zone;
 pub mod chunk;
 pub mod climate;
-pub mod elevation_biome; // Phase 1.5: heightmap-driven multi-biome generation
 pub mod collision;
 pub mod compressed_voxels; // P4-8: Palette compression + RLE for voxel chunks
+pub mod elevation_biome; // Phase 1.5: heightmap-driven multi-biome generation
 pub mod erosion;
 pub mod gpu_bridge; // GPU acceleration bridge (TerrainGpuAccelerator trait)
 pub mod heightmap;
@@ -24,23 +27,20 @@ pub mod marching_cubes_tables;
 pub mod meshing;
 pub mod noise_gen;
 pub mod noise_simd; // SIMD-optimized noise generation (Week 3 Action 8)
-pub mod perlin_gradient; // Phase 1.6-F.2-T-4: analytical-derivative Perlin + derivative-weighted fBm
-pub mod runevision_erosion; // Phase 1.6-F.4.B.3.C: gradient-aligned gully extrusion filter (Skovbo Johansen)
-pub mod biome_lookup; // Phase 1.6-F.4.B.3.D.2: Whittaker biome lookup (climate × elevation → BiomeId)
-pub mod biome_parameters; // Phase 1.6-F.4.B.3.D.3: per-BiomeId terrain parameters (replaces BiomeNoisePreset)
-pub mod biome_param_blending; // Phase 1.6-F.4.B.3.D.4: scattered-convolution biome parameter blending (noiseposti.ng)
-pub mod world_archetypes; // Phase 1.6-F.4.B.3.D.5: world archetype catalog (6 climate envelope presets)
-pub mod spline_types; // Phase 1.X-F.1.A: PvFold + Spline1D + BootstrapParam (regional archetype variation)
-pub mod regional_archetype_mask; // Phase 1.X-F.4: paintable archetype mask + falloff distance field + sampler
 pub mod partition_integration;
+pub mod perlin_gradient; // Phase 1.6-F.2-T-4: analytical-derivative Perlin + derivative-weighted fBm
+pub mod regional_archetype_mask; // Phase 1.X-F.4: paintable archetype mask + falloff distance field + sampler
+pub mod runevision_erosion; // Phase 1.6-F.4.B.3.C: gradient-aligned gully extrusion filter (Skovbo Johansen)
 pub mod scatter;
 pub mod solver; // Phase 10: AI-Orchestrated Dynamic Terrain
+pub mod spline_types; // Phase 1.X-F.1.A: PvFold + Spline1D + BootstrapParam (regional archetype variation)
 pub mod streaming_diagnostics; // Week 4 Action 14: Diagnostics overlay
 pub mod structures;
 pub mod terrain_modifier; // Phase 10: Batched voxel updates
 pub mod terrain_persistence; // Phase 10: Terrain save/load
 pub mod texture_splatting; // Production-ready terrain texture splatting
 pub mod voxel_data;
+pub mod world_archetypes; // Phase 1.6-F.4.B.3.D.5: world archetype catalog (6 climate envelope presets)
 pub mod zone_scatter;
 
 pub use advanced_erosion::{
@@ -55,15 +55,15 @@ pub use blueprint_zone::{
     AdaptiveScaleParams, BlendMask, BlueprintZone, PlacementMode, ZoneId, ZoneRegistry, ZoneSource,
 };
 pub use chunk::{smooth_shared_vertices, ChunkId, ChunkManager, TerrainChunk};
-pub use collision::{collision_mesh_from_chunk, collision_mesh_from_heightmap, CollisionMesh};
 pub use climate::{ClimateConfig, ClimateMap};
+pub use collision::{collision_mesh_from_chunk, collision_mesh_from_heightmap, CollisionMesh};
+pub use compressed_voxels::{
+    CompressedVoxelChunk, PaletteEntry, RleRun, VoxelPalette, CHUNK_VOLUME,
+};
 pub use elevation_biome::{elevation_to_biome_weights, ClimateBias, SEA_LEVEL}; // Phase 1.5
 pub use gpu_bridge::{
     GpuErosionRequest, GpuHeightmapRequest, GpuHeightmapResult, GpuNoiseRequest,
     TerrainGpuAccelerator,
-};
-pub use compressed_voxels::{
-    CompressedVoxelChunk, PaletteEntry, RleRun, VoxelPalette, CHUNK_VOLUME,
 };
 pub use heightmap::{Heightmap, HeightmapConfig};
 pub use lod_blending::{LodBlender, MorphConfig, MorphedMesh, MorphingLodManager};
@@ -81,8 +81,8 @@ pub use partition_integration::{
     VoxelPartitionStats,
 };
 pub use scatter::{
-    ScatterConfig, ScatterResult, VegetationInstance, VegetationLodConfig, VegetationScatter,
-    density_at_distance,
+    density_at_distance, ScatterConfig, ScatterResult, VegetationInstance, VegetationLodConfig,
+    VegetationScatter,
 };
 pub use solver::{ResolvedLocation, SolverError, TerrainSolver, ValidationStatus};
 pub use streaming_diagnostics::{
@@ -358,8 +358,8 @@ impl WorldGenerator {
         // different per-biome amplitudes — biome assignment shapes the world,
         // not the other way around. Per §2.5, biome assignment uses
         // pre-erosion heights for authorial-intent stability.
-        let halo_biome_ids = self
-            .apply_per_biome_modulation_to_halo(&mut halo, chunk_id, HALO_CHUNKS);
+        let halo_biome_ids =
+            self.apply_per_biome_modulation_to_halo(&mut halo, chunk_id, HALO_CHUNKS);
 
         // Pre-erosion cropped heightmap — input to biome_weights computation.
         // After per-biome modulation, this reflects per-vertex amplitude.
@@ -410,8 +410,10 @@ impl WorldGenerator {
         if self.config.noise.erosion_enabled {
             // Halo's world origin (target chunk origin minus halo_chunks * chunk_size).
             let target_origin = chunk_id.to_world_pos(self.config.chunk_size);
-            let halo_origin_x = (target_origin.x - HALO_CHUNKS as f32 * self.config.chunk_size) as f64;
-            let halo_origin_z = (target_origin.z - HALO_CHUNKS as f32 * self.config.chunk_size) as f64;
+            let halo_origin_x =
+                (target_origin.x - HALO_CHUNKS as f32 * self.config.chunk_size) as f64;
+            let halo_origin_z =
+                (target_origin.z - HALO_CHUNKS as f32 * self.config.chunk_size) as f64;
             // Vertex spacing: chunk_size per (resolution - 1) vertices.
             let vertex_spacing =
                 self.config.chunk_size as f64 / (self.config.heightmap_resolution - 1) as f64;
@@ -531,10 +533,13 @@ impl WorldGenerator {
         // archetype_splines closure passed to blend_bootstrap_params is
         // a simple match returning a reference to the cached entry.
         // Avoids per-vertex factory calls.
-        let archetype_splines_continental = crate::spline_types::bootstrap_splines_continental_temperate();
-        let archetype_splines_tropical = crate::spline_types::bootstrap_splines_equatorial_tropical();
+        let archetype_splines_continental =
+            crate::spline_types::bootstrap_splines_continental_temperate();
+        let archetype_splines_tropical =
+            crate::spline_types::bootstrap_splines_equatorial_tropical();
         let archetype_splines_boreal = crate::spline_types::bootstrap_splines_boreal_subarctic();
-        let archetype_splines_mediterranean = crate::spline_types::bootstrap_splines_mediterranean();
+        let archetype_splines_mediterranean =
+            crate::spline_types::bootstrap_splines_mediterranean();
         let archetype_splines_desert = crate::spline_types::bootstrap_splines_desert();
         let archetype_splines_custom = crate::spline_types::bootstrap_splines_custom();
         let lookup_splines =
@@ -702,8 +707,7 @@ impl WorldGenerator {
         let mut chunk_ids = Vec::with_capacity(chunk_res * chunk_res);
         for z in 0..chunk_res {
             for x in 0..chunk_res {
-                let halo_idx =
-                    (crop_offset + z) * halo_res + (crop_offset + x);
+                let halo_idx = (crop_offset + z) * halo_res + (crop_offset + x);
                 chunk_ids.push(halo_biome_ids[halo_idx]);
             }
         }
@@ -820,11 +824,7 @@ impl WorldGenerator {
     /// in world space produce identical droplet trajectories in the overlap
     /// region.
     #[allow(dead_code)] // Wired in phase 2; validated by unit tests here.
-    pub(crate) fn halo_seed(
-        world_seed: u64,
-        target_chunk_id: ChunkId,
-        halo_chunks: u32,
-    ) -> u64 {
+    pub(crate) fn halo_seed(world_seed: u64, target_chunk_id: ChunkId, halo_chunks: u32) -> u64 {
         let halo_origin_x = target_chunk_id.x.wrapping_sub(halo_chunks as i32);
         let halo_origin_z = target_chunk_id.z.wrapping_sub(halo_chunks as i32);
         // Wang-style integer hash, deterministic across runs / platforms.
@@ -943,14 +943,20 @@ mod tests {
         let s01 = WorldGenerator::halo_seed(12345, ChunkId::new(0, 1), 1);
         assert_ne!(s00, s10, "adjacent chunks should get different halo seeds");
         assert_ne!(s00, s01, "adjacent chunks should get different halo seeds");
-        assert_ne!(s10, s01, "non-identical chunks should get different halo seeds");
+        assert_ne!(
+            s10, s01,
+            "non-identical chunks should get different halo seeds"
+        );
     }
 
     #[test]
     fn phase_1_6_f3_phase_1_halo_seed_differs_per_world_seed() {
         let s1 = WorldGenerator::halo_seed(12345, ChunkId::new(0, 0), 1);
         let s2 = WorldGenerator::halo_seed(67890, ChunkId::new(0, 0), 1);
-        assert_ne!(s1, s2, "different world seeds should yield different halo seeds");
+        assert_ne!(
+            s1, s2,
+            "different world seeds should yield different halo seeds"
+        );
     }
 
     #[test]

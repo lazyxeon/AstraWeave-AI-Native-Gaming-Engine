@@ -13,8 +13,8 @@
     clippy::useless_vec
 )]
 
-use astraweave_materials::{Graph, MaterialPackage, Node};
 use astraweave_camera::{CameraController, CameraMode, CameraProducer, FreeFly as Camera};
+use astraweave_materials::{Graph, MaterialPackage, Node};
 use astraweave_render::{
     animation::{
         AnimationChannel, AnimationClip, ChannelData, Interpolation, Joint, Skeleton, Transform,
@@ -945,7 +945,9 @@ async fn test_render_loop_and_materials() {
             label: Some("test-encoder"),
         });
 
-    renderer.draw_into(&target_view, None, &mut encoder).unwrap();
+    renderer
+        .draw_into(&target_view, None, &mut encoder)
+        .unwrap();
     renderer.queue().submit(std::iter::once(encoder.finish()));
     let _ = renderer.device().poll(wgpu::MaintainBase::Wait);
     println!("Renderer::draw_into tested.");
@@ -2598,7 +2600,10 @@ async fn test_deferred_gbuffer_formats() {
     let formats = GBufferFormats::default();
     println!("GBuffer albedo format: {:?}", formats.albedo);
     println!("GBuffer normal format: {:?}", formats.normal);
-    println!("GBuffer position (reconstructed from depth) format: {:?}", formats.depth);
+    println!(
+        "GBuffer position (reconstructed from depth) format: {:?}",
+        formats.depth
+    );
     println!("GBuffer depth format: {:?}", formats.depth);
 
     // Test GBuffer with various sizes
@@ -9688,9 +9693,7 @@ fn test_graph_adapter_wave21() {
 /// Test Advanced Post types
 #[test]
 fn test_advanced_post_types_wave21() {
-    use astraweave_render::{
-        ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-    };
+    use astraweave_render::{ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig};
 
     // Test TaaConfig
     let taa_config = TaaConfig::default();

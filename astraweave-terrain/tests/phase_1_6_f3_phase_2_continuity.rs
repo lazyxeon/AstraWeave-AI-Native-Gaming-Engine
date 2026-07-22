@@ -221,9 +221,7 @@ fn biome_weights_decouple_from_eroded_heights() {
     let dominant_mountain: Vec<usize> = weights
         .iter()
         .enumerate()
-        .filter(|(_, w)| {
-            w[MOUNTAIN_SLOT] > 0.5
-        })
+        .filter(|(_, w)| w[MOUNTAIN_SLOT] > 0.5)
         .map(|(i, _)| i)
         .collect();
 
@@ -311,9 +309,7 @@ fn real_erosion_moves_heights_noticeably() {
         }
     }
     let mean_diff = total_diff / count as f32;
-    println!(
-        "erosion impact: max_diff {max_diff:.3}, mean_diff {mean_diff:.4} world units"
-    );
+    println!("erosion impact: max_diff {max_diff:.3}, mean_diff {mean_diff:.4} world units");
     // Real erosion must move at least some vertices by ≥ 1 world unit
     // (simple CA barely moved; AdvancedErosion moves more).
     assert!(

@@ -37,7 +37,10 @@ fn phase_1_6_f3_phase_2_end_to_end_timing() {
 
     println!("======================================================");
     println!("F.3-phase-2.E: end-to-end chunk generation timing");
-    println!("  5×5 grid ({} chunks), extrapolated to 121 chunks", SIDE * SIDE);
+    println!(
+        "  5×5 grid ({} chunks), extrapolated to 121 chunks",
+        SIDE * SIDE
+    );
     println!();
     println!("| Climate  | Preset              |   5×5 ms | 121 ext s |  § 2.3 |");
     println!("|----------|---------------------|---------:|----------:|:------:|");

@@ -29,7 +29,11 @@ fn slope_heightmap(dim: u32, max_height: f32) -> Heightmap {
     Heightmap::from_data(h, dim).unwrap()
 }
 
-fn time_preset(label: &str, dim: u32, preset_builder: fn() -> ErosionPreset) -> std::time::Duration {
+fn time_preset(
+    label: &str,
+    dim: u32,
+    preset_builder: fn() -> ErosionPreset,
+) -> std::time::Duration {
     let mut h = slope_heightmap(dim, 100.0);
     let preset = preset_builder();
     let mut sim = AdvancedErosionSimulator::new(42);
@@ -71,11 +75,7 @@ fn phase_1_6_f3_phase_0_perf_characterization() {
         let d = time_preset("default_balanced", dim, ErosionPreset::default_balanced);
         results.push(("default_balanced", dim, d.as_millis()));
 
-        let d = time_preset(
-            "mountain_balanced",
-            dim,
-            ErosionPreset::mountain_balanced,
-        );
+        let d = time_preset("mountain_balanced", dim, ErosionPreset::mountain_balanced);
         results.push(("mountain_balanced", dim, d.as_millis()));
 
         println!();

@@ -346,8 +346,8 @@ fn test_pbr_terrain_forward_validates_with_prefix() {
     };
 
     let shaders_dir = workspace_root.join("astraweave-render").join("shaders");
-    let constants = std::fs::read_to_string(shaders_dir.join("constants.wgsl"))
-        .expect("read constants.wgsl");
+    let constants =
+        std::fs::read_to_string(shaders_dir.join("constants.wgsl")).expect("read constants.wgsl");
     let brdf_common = std::fs::read_to_string(shaders_dir.join("brdf_common.wgsl"))
         .expect("read brdf_common.wgsl");
     // E3-terrain 2026-07-03: stochastic_tiling.wgsl added to the concat —
@@ -357,7 +357,10 @@ fn test_pbr_terrain_forward_validates_with_prefix() {
     let terrain_forward = std::fs::read_to_string(shaders_dir.join("pbr_terrain_forward.wgsl"))
         .expect("read pbr_terrain_forward.wgsl");
 
-    let concatenated = format!("{}{}{}{}", constants, brdf_common, stochastic, terrain_forward);
+    let concatenated = format!(
+        "{}{}{}{}",
+        constants, brdf_common, stochastic, terrain_forward
+    );
 
     let module = wgsl::parse_str(&concatenated)
         .unwrap_or_else(|e| panic!("forward-lit terrain shader failed to parse: {e}"));

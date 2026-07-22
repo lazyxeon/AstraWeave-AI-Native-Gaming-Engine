@@ -602,18 +602,26 @@ fn print_state_checksum(world: &World, frame: u64) {
     for e in entities {
         let eid = e.id() as u64;
         if let Some(p) = world.get::<Position>(e) {
-            pos_bits = pos_bits.wrapping_add((p.pos.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(1)));
-            pos_bits = pos_bits.wrapping_add((p.pos.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(2)));
-            pos_bits = pos_bits.wrapping_add((p.pos.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(3)));
+            pos_bits =
+                pos_bits.wrapping_add((p.pos.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(1)));
+            pos_bits =
+                pos_bits.wrapping_add((p.pos.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(2)));
+            pos_bits =
+                pos_bits.wrapping_add((p.pos.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(3)));
         }
         if let Some(v) = world.get::<Velocity>(e) {
-            vel_bits = vel_bits.wrapping_add((v.vel.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(4)));
-            vel_bits = vel_bits.wrapping_add((v.vel.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(5)));
-            vel_bits = vel_bits.wrapping_add((v.vel.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(6)));
+            vel_bits =
+                vel_bits.wrapping_add((v.vel.x.to_bits() as u64).wrapping_mul(eid.wrapping_add(4)));
+            vel_bits =
+                vel_bits.wrapping_add((v.vel.y.to_bits() as u64).wrapping_mul(eid.wrapping_add(5)));
+            vel_bits =
+                vel_bits.wrapping_add((v.vel.z.to_bits() as u64).wrapping_mul(eid.wrapping_add(6)));
         }
         if let Some(h) = world.get::<Health>(e) {
-            health_bits = health_bits.wrapping_add((h.current as u64).wrapping_mul(eid.wrapping_add(7)));
-            health_bits = health_bits.wrapping_add((h.max as u64).wrapping_mul(eid.wrapping_add(8)));
+            health_bits =
+                health_bits.wrapping_add((h.current as u64).wrapping_mul(eid.wrapping_add(7)));
+            health_bits =
+                health_bits.wrapping_add((h.max as u64).wrapping_mul(eid.wrapping_add(8)));
         }
         if let Some(a) = world.get::<AIAgent>(e) {
             let disc: u64 = match a.state {
@@ -624,8 +632,10 @@ fn print_state_checksum(world: &World, frame: u64) {
                 AIState::Fleeing => 4,
             };
             ai_bits = ai_bits.wrapping_add(disc.wrapping_mul(eid.wrapping_add(9)));
-            ai_bits = ai_bits.wrapping_add((a.target.map(|t| t.id() as u64).unwrap_or(u64::MAX))
-                .wrapping_mul(eid.wrapping_add(10)));
+            ai_bits = ai_bits.wrapping_add(
+                (a.target.map(|t| t.id() as u64).unwrap_or(u64::MAX))
+                    .wrapping_mul(eid.wrapping_add(10)),
+            );
         }
     }
     let mut stats_bits: u64 = 0;
@@ -681,7 +691,11 @@ fn main() -> Result<()> {
             events.update();
         }
 
-        let tick = app.world.get_resource::<GameTime>().map(|t| t.tick).unwrap_or(0);
+        let tick = app
+            .world
+            .get_resource::<GameTime>()
+            .map(|t| t.tick)
+            .unwrap_or(0);
         let alloc_delta = alloc_stats.end_frame();
 
         // State checksum every 100 ticks for sequential↔parallel diffing.
@@ -706,7 +720,10 @@ fn main() -> Result<()> {
     let avg_frame_ms = elapsed.as_millis() as f64 / tick_count as f64;
 
     println!("\n✅ Simulation complete!");
-    println!("Configuration: {} enemies, {} ticks", enemy_count, tick_count);
+    println!(
+        "Configuration: {} enemies, {} ticks",
+        enemy_count, tick_count
+    );
     println!("Total time: {:.2}s", elapsed.as_secs_f64());
     println!("Average FPS: {:.2}", avg_fps);
     println!("Average frame time: {:.3}ms", avg_frame_ms);

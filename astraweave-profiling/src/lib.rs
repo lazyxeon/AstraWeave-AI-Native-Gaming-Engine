@@ -623,17 +623,13 @@ macro_rules! alloc_plot {
             $crate::tracy_client::Client::running()
                 .expect("Tracy client should be running")
                 .plot(
-                    $crate::tracy_client::PlotName::new_leak(
-                        ::std::format!("{}.allocs", $name),
-                    ),
+                    $crate::tracy_client::PlotName::new_leak(::std::format!("{}.allocs", $name)),
                     __aw_alloc_plot_count as f64,
                 );
             $crate::tracy_client::Client::running()
                 .expect("Tracy client should be running")
                 .plot(
-                    $crate::tracy_client::PlotName::new_leak(
-                        ::std::format!("{}.bytes", $name),
-                    ),
+                    $crate::tracy_client::PlotName::new_leak(::std::format!("{}.bytes", $name)),
                     __aw_alloc_plot_bytes as f64,
                 );
         }

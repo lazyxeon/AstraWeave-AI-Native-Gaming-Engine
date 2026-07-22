@@ -7,9 +7,9 @@
 //!   - instancing.rs:   480 lines, gaps in draw-call math → reduction %, get_batch_mut
 //!   - biome_material.rs: 336 lines, 1 ext import → material_dir_for all biomes, state machine
 
+use astraweave_camera::{CameraController, CameraMode, FreeFly as Camera};
 use astraweave_render::asset_index::AssetIndex;
 use astraweave_render::biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
-use astraweave_camera::{CameraController, CameraMode, FreeFly as Camera};
 use astraweave_render::hdri_catalog::DayPeriod;
 use astraweave_render::instancing::{
     Instance, InstanceBatch, InstanceManager, InstancePatternBuilder, InstanceRaw,
@@ -508,7 +508,11 @@ fn camera_view_matrix_uses_positive_y_up() {
     let view = cam.view_matrix();
     let world_up = view.transform_vector3(Vec3::Y);
     // With +Y up convention, world Y should map to positive view Y.
-    assert!(world_up.y > 0.0, "Y should map to +view-Y, got {}", world_up.y);
+    assert!(
+        world_up.y > 0.0,
+        "Y should map to +view-Y, got {}",
+        world_up.y
+    );
 }
 
 // ── Camera::proj_matrix() ──────────────────────────────────────────

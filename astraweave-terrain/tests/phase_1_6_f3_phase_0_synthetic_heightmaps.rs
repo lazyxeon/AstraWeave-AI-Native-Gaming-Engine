@@ -144,7 +144,10 @@ fn half_means(h: &Heightmap) -> (f32, f32) {
             }
         }
     }
-    ((left_sum / left_n as f64) as f32, (right_sum / right_n as f64) as f32)
+    (
+        (left_sum / left_n as f64) as f32,
+        (right_sum / right_n as f64) as f32,
+    )
 }
 
 // ---------------------------------------------------------------------------

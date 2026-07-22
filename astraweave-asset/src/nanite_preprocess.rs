@@ -323,12 +323,8 @@ pub fn generate_meshlets(
 
     // Create vertex data adapter for meshopt (positions as raw bytes, zero-copy)
     let position_bytes: &[u8] = bytemuck::cast_slice(positions);
-    let vertex_adapter = VertexDataAdapter::new(
-        position_bytes,
-        std::mem::size_of::<[f32; 3]>(),
-        0,
-    )
-    .context("Failed to create VertexDataAdapter for meshlet generation")?;
+    let vertex_adapter = VertexDataAdapter::new(position_bytes, std::mem::size_of::<[f32; 3]>(), 0)
+        .context("Failed to create VertexDataAdapter for meshlet generation")?;
 
     // Use meshopt's optimized meshlet builder (topology-aware spatial clustering)
     let meshopt_meshlets = meshopt::clusterize::build_meshlets(

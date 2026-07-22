@@ -75,3 +75,5 @@ Expected board after CI-W: **all green except:**
 - **Rust Cache Optimized Build** — toolchain drift is retired; the pinned formatter detects repository-wide formatting debt. Owner: code-hygiene/formatting beat.
 
 Clippy Unwrap-Prevention is green. The named remainder above is the honest gate baseline; no workflow was deleted, disabled, or weakened to make the board green.
+
+- **2026-07-22 — FMT-1:** Pinned-formatting debt is retired under Rust 1.89.0. On Windows, `cargo fmt --all` hits the OS-206 command-length limit, so the repeatable workaround is to derive all 133 workspace members from `cargo metadata --no-deps` and format/check each package; OS-5 sandbox write enforcement additionally required this session-scoped full-access workaround. Rust Cache Optimized Build is expected green, while Comprehensive CI's remaining named exceptions are the macOS fluids golden test and headless Linux/Windows audio tests (owners unchanged).

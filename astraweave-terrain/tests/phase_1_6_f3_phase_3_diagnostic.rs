@@ -35,9 +35,7 @@ fn grid(
 
 /// Compute X-axis and Z-axis edge divergence distributions across an
 /// `n`×`n` chunk grid. Returns flat Vec of abs-diff values (all samples).
-fn edge_divergences(
-    chunks: &[Vec<astraweave_terrain::TerrainChunk>],
-) -> Vec<f32> {
+fn edge_divergences(chunks: &[Vec<astraweave_terrain::TerrainChunk>]) -> Vec<f32> {
     let n = chunks.len();
     let dim = chunks[0][0].heightmap().resolution();
     let mut samples = Vec::new();
@@ -124,8 +122,7 @@ fn phase_1_6_f3_phase_3_stitching_per_climate() {
     let gen_off = make_generator(false);
     for c in climates {
         let chunks = grid(&gen_off, c, SIDE);
-        let (mean, p50, p95, p99, max, _min) =
-            distribution_summary(edge_divergences(&chunks));
+        let (mean, p50, p95, p99, max, _min) = distribution_summary(edge_divergences(&chunks));
         println!(
             "| {:<9} | {mean:6.3} | {p50:6.3} | {p95:6.3} | {p99:6.3} | {max:6.3} |",
             climate_name(c)
@@ -139,8 +136,7 @@ fn phase_1_6_f3_phase_3_stitching_per_climate() {
     let gen_on = make_generator(true);
     for c in climates {
         let chunks = grid(&gen_on, c, SIDE);
-        let (mean, p50, p95, p99, max, _min) =
-            distribution_summary(edge_divergences(&chunks));
+        let (mean, p50, p95, p99, max, _min) = distribution_summary(edge_divergences(&chunks));
         println!(
             "| {:<9} | {mean:6.3} | {p50:6.3} | {p95:6.3} | {p99:6.3} | {max:6.3} |",
             climate_name(c)
@@ -256,9 +252,7 @@ fn phase_1_6_f3_phase_3_overlap_divergence_characterization() {
     }
     let (mean, p50, p95, p99, max, _min) = distribution_summary(diffs.clone());
     println!("Temperate Temperate overlap edge (chunk width):");
-    println!(
-        "  mean={mean:.3}  p50={p50:.3}  p95={p95:.3}  p99={p99:.3}  max={max:.3}"
-    );
+    println!("  mean={mean:.3}  p50={p50:.3}  p95={p95:.3}  p99={p99:.3}  max={max:.3}");
     println!();
 
     // Same experiment, with erosion disabled: expect ~0 everywhere.
@@ -275,13 +269,15 @@ fn phase_1_6_f3_phase_3_overlap_divergence_characterization() {
     for z in 0..dim {
         diffs_off.push((hm_a_off.get_height(dim - 1, z) - hm_b_off.get_height(0, z)).abs());
     }
-    let (mean_off, _p50, _p95, _p99, max_off, _min) =
-        distribution_summary(diffs_off);
+    let (mean_off, _p50, _p95, _p99, max_off, _min) = distribution_summary(diffs_off);
     println!("Same edge with erosion disabled:");
     println!("  mean={mean_off:.6}  max={max_off:.6}");
     println!();
 
-    println!("Root cause confirmed: erosion introduces {:.1}× divergence", max / max_off.max(1e-6));
+    println!(
+        "Root cause confirmed: erosion introduces {:.1}× divergence",
+        max / max_off.max(1e-6)
+    );
     println!("vs noise-only baseline. Phase 3's world-coord seeding should");
     println!("reduce erosion-case max back to ~same order as noise-only.");
     println!("======================================================");

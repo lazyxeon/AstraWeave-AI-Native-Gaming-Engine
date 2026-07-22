@@ -144,7 +144,11 @@ fn main() {
         let mk = |label, fmt, usage| {
             device.create_texture(&wgpu::TextureDescriptor {
                 label: Some(label),
-                size: wgpu::Extent3d { width: W, height: H, depth_or_array_layers: 1 },
+                size: wgpu::Extent3d {
+                    width: W,
+                    height: H,
+                    depth_or_array_layers: 1,
+                },
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -202,7 +206,11 @@ fn main() {
         let accent_count = fluid_system.secondary_particle_count();
         println!("Live accents uploaded: {accent_count}\n");
 
-        let mut profiler = if has_ts { Some(GpuProfiler::new(&device, &queue)) } else { None };
+        let mut profiler = if has_ts {
+            Some(GpuProfiler::new(&device, &queue))
+        } else {
+            None
+        };
         // Manual 2-query set for the accent pass (write_timestamp needs INSIDE_ENCODERS).
         let acc_qset = device.create_query_set(&wgpu::QuerySetDescriptor {
             label: Some("accent_qs"),
@@ -224,8 +232,16 @@ fn main() {
         let ts_period = queue.get_timestamp_period();
 
         let cams = [
-            CamCfg { name: "near", eye: Vec3::new(0.0, 14.0, 70.0), target: Vec3::new(0.0, 2.0, 0.0) },
-            CamCfg { name: "horizon", eye: Vec3::new(0.0, 4.0, 245.0), target: Vec3::new(0.0, 2.0, -120.0) },
+            CamCfg {
+                name: "near",
+                eye: Vec3::new(0.0, 14.0, 70.0),
+                target: Vec3::new(0.0, 2.0, 0.0),
+            },
+            CamCfg {
+                name: "horizon",
+                eye: Vec3::new(0.0, 4.0, 245.0),
+                target: Vec3::new(0.0, 2.0, -120.0),
+            },
         ];
 
         for cam in &cams {
@@ -247,7 +263,14 @@ fn main() {
             for frame in 0..(WARMUP + FRAMES) {
                 let time = frame as f32 * (1.0 / 60.0);
                 water.update(&queue, vp, cam.eye, time);
-                water.prepare_scene(&device, &queue, &scene_color_view, &depth_view, [W as f32, H as f32], 0);
+                water.prepare_scene(
+                    &device,
+                    &queue,
+                    &scene_color_view,
+                    &depth_view,
+                    [W as f32, H as f32],
+                    0,
+                );
                 if let Some(ref mut p) = profiler {
                     p.begin_frame();
                 }
@@ -261,13 +284,21 @@ fn main() {
                             view: &hdr_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.5, g: 0.7, b: 0.95, a: 1.0 }),
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.5,
+                                    g: 0.7,
+                                    b: 0.95,
+                                    a: 1.0,
+                                }),
                                 store: wgpu::StoreOp::Store,
                             },
                         })],
                         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                             view: &depth_view,
-                            depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.0),
+                                store: wgpu::StoreOp::Store,
+                            }),
                             stencil_ops: None,
                         }),
                         timestamp_writes: None,
@@ -276,19 +307,38 @@ fn main() {
                 }
                 // Snapshot hdr → scene_color (the water pass samples it).
                 enc.copy_texture_to_texture(
-                    wgpu::TexelCopyTextureInfo { texture: &hdr, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-                    wgpu::TexelCopyTextureInfo { texture: &scene_color, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-                    wgpu::Extent3d { width: W, height: H, depth_or_array_layers: 1 },
+                    wgpu::TexelCopyTextureInfo {
+                        texture: &hdr,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    wgpu::TexelCopyTextureInfo {
+                        texture: &scene_color,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    wgpu::Extent3d {
+                        width: W,
+                        height: H,
+                        depth_or_array_layers: 1,
+                    },
                 );
                 // Water surface pass (GpuProfiler "water" span).
                 {
-                    let ts = profiler.as_mut().and_then(|p| p.render_pass_timestamps("water"));
+                    let ts = profiler
+                        .as_mut()
+                        .and_then(|p| p.render_pass_timestamps("water"));
                     let mut wp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("water_pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &hdr_view,
                             resolve_target: None,
-                            ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
                         })],
                         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                             view: &depth_view,
@@ -350,8 +400,16 @@ fn main() {
                 }
             }
 
-            let wmed = if water_ms.is_empty() { 0.0 } else { stats(water_ms.clone()).1 };
-            let amed = if accent_ms.is_empty() { 0.0 } else { stats(accent_ms.clone()).1 };
+            let wmed = if water_ms.is_empty() {
+                0.0
+            } else {
+                stats(water_ms.clone()).1
+            };
+            let amed = if accent_ms.is_empty() {
+                0.0
+            } else {
+                stats(accent_ms.clone()).1
+            };
             println!("[{}] @ {ACCENT_COUNT} accents:", cam.name);
             print_stats("water surface pass", water_ms);
             print_stats("accent composite", accent_ms);

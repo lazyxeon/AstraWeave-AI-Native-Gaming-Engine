@@ -91,9 +91,7 @@ fn biome_weights_reflect_elevation_bands() {
     }
 
     if (hi_y - lo_y) < 10.0 {
-        println!(
-            "chunk variance too low ({lo_y} to {hi_y}) for band differentiation — skipping"
-        );
+        println!("chunk variance too low ({lo_y} to {hi_y}) for band differentiation — skipping");
         return;
     }
 

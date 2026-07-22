@@ -164,7 +164,9 @@ impl Spline1D {
                 }
             }
         }
-        Ok(Self { control_points: points })
+        Ok(Self {
+            control_points: points,
+        })
     }
 
     /// Identity spline: single control point at `(0.0, 1.0)`. Evaluates
@@ -175,7 +177,9 @@ impl Spline1D {
     /// not const; constructed at call time. Cheap: single allocation
     /// of one tuple.
     pub fn identity() -> Self {
-        Self { control_points: vec![(0.0, 1.0)] }
+        Self {
+            control_points: vec![(0.0, 1.0)],
+        }
     }
 
     /// Constant spline: single control point at `(0.0, value)`. Evaluates
@@ -191,7 +195,9 @@ impl Spline1D {
     /// unchanged. Callers are responsible for validating non-literal
     /// values upstream if NaN/inf is reachable.
     pub fn constant(value: f32) -> Self {
-        Self { control_points: vec![(0.0, value)] }
+        Self {
+            control_points: vec![(0.0, value)],
+        }
     }
 
     /// Evaluate the spline at `input` via piecewise-linear interpolation.
@@ -223,9 +229,7 @@ impl Spline1D {
         // Binary search for the bracketing pair. partition_point returns
         // the first index where the predicate fails; we want the first
         // index where x > input, then bracket = (index-1, index).
-        let upper = self
-            .control_points
-            .partition_point(|&(x, _)| x <= input);
+        let upper = self.control_points.partition_point(|&(x, _)| x <= input);
         // upper is in [1, n-1] because we handled the endpoint clamps above.
         let (x0, y0) = self.control_points[upper - 1];
         let (x1, y1) = self.control_points[upper];
@@ -680,7 +684,13 @@ pub fn bootstrap_splines_equatorial_tropical() -> BootstrapSplineSet {
         0.0016, // broader, rounder forested massifs
         vec![(0.0, 12.0), (0.35, 30.0), (0.7, 44.0), (1.0, 55.0)], // rolling hills (A.2b trim)
         // Wet tropics: lower floor, generous coast/river lowlands (cont ~0.2-0.6).
-        vec![(0.0, -25.0), (0.25, -4.0), (0.4, 8.0), (0.7, 18.0), (1.0, 24.0)],
+        vec![
+            (0.0, -25.0),
+            (0.25, -4.0),
+            (0.4, 8.0),
+            (0.7, 18.0),
+            (1.0, 24.0),
+        ],
     )
 }
 
@@ -701,7 +711,13 @@ pub fn bootstrap_splines_boreal_subarctic() -> BootstrapSplineSet {
         0.0026, // jagged, narrow alpine ridges
         vec![(0.0, 10.0), (0.35, 24.0), (0.7, 36.0), (1.0, 46.0)], // A.2b trim
         // Subarctic shield: fjord-like low-cont shores, solid inland (cont ~0.4-0.8).
-        vec![(0.0, -20.0), (0.3, 0.0), (0.5, 14.0), (0.8, 24.0), (1.0, 30.0)],
+        vec![
+            (0.0, -20.0),
+            (0.3, 0.0),
+            (0.5, 14.0),
+            (0.8, 24.0),
+            (1.0, 30.0),
+        ],
     )
 }
 
@@ -721,7 +737,13 @@ pub fn bootstrap_splines_mediterranean() -> BootstrapSplineSet {
         0.0020,
         vec![(0.0, 10.0), (0.35, 26.0), (0.7, 40.0), (1.0, 50.0)], // A.2b trim
         // Mediterranean: pronounced coastline, dry raised interior.
-        vec![(0.0, -25.0), (0.3, 0.0), (0.5, 14.0), (0.8, 24.0), (1.0, 30.0)],
+        vec![
+            (0.0, -25.0),
+            (0.3, 0.0),
+            (0.5, 14.0),
+            (0.8, 24.0),
+            (1.0, 30.0),
+        ],
     )
 }
 
@@ -748,7 +770,13 @@ pub fn bootstrap_splines_desert() -> BootstrapSplineSet {
         // Arid plateau: HIGH inland floor (cont ~0.4-1.0 for Desert). The rare
         // low-cont basin (< 0.35) dips toward the beach band — the "hidden
         // oasis" candidate spot when a moisture spike coincides.
-        vec![(0.0, -10.0), (0.3, 15.0), (0.5, 30.0), (0.8, 42.0), (1.0, 50.0)],
+        vec![
+            (0.0, -10.0),
+            (0.3, 15.0),
+            (0.5, 30.0),
+            (0.8, 42.0),
+            (1.0, 50.0),
+        ],
     )
 }
 
@@ -849,8 +877,16 @@ mod tests {
     fn pv_fold_at_extremes_is_zero() {
         let pv_neg = PvFold::from_weirdness(-1.0);
         let pv_pos = PvFold::from_weirdness(1.0);
-        assert!((pv_neg - 0.0).abs() < 1e-7, "pv(-1) = {} (expected 0)", pv_neg);
-        assert!((pv_pos - 0.0).abs() < 1e-7, "pv(+1) = {} (expected 0)", pv_pos);
+        assert!(
+            (pv_neg - 0.0).abs() < 1e-7,
+            "pv(-1) = {} (expected 0)",
+            pv_neg
+        );
+        assert!(
+            (pv_pos - 0.0).abs() < 1e-7,
+            "pv(+1) = {} (expected 0)",
+            pv_pos
+        );
     }
 
     /// Smoke test that `Spline1D::default()` compiles and produces an
@@ -932,12 +968,7 @@ mod tests {
     /// y value (no interpolation drift across the boundary).
     #[test]
     fn spline_evaluate_at_exact_control_point() {
-        let s = Spline1D::from_control_points(vec![
-            (0.0, 0.0),
-            (0.5, 5.0),
-            (1.0, 10.0),
-        ])
-        .unwrap();
+        let s = Spline1D::from_control_points(vec![(0.0, 0.0), (0.5, 5.0), (1.0, 10.0)]).unwrap();
         assert!((s.evaluate(0.0) - 0.0).abs() < 1e-6);
         assert!((s.evaluate(0.5) - 5.0).abs() < 1e-6);
         assert!((s.evaluate(1.0) - 10.0).abs() < 1e-6);
@@ -947,12 +978,7 @@ mod tests {
     /// segments. Up-then-down triangle pattern verifies both segments.
     #[test]
     fn spline_evaluate_three_control_points_piecewise() {
-        let s = Spline1D::from_control_points(vec![
-            (0.0, 0.0),
-            (0.5, 10.0),
-            (1.0, 0.0),
-        ])
-        .unwrap();
+        let s = Spline1D::from_control_points(vec![(0.0, 0.0), (0.5, 10.0), (1.0, 0.0)]).unwrap();
         // Left segment: 0.0 → 10.0 over [0.0, 0.5]; midpoint = 5.0.
         assert!((s.evaluate(0.25) - 5.0).abs() < 1e-6);
         // Right segment: 10.0 → 0.0 over [0.5, 1.0]; midpoint = 5.0.
@@ -978,16 +1004,14 @@ mod tests {
     fn spline_from_control_points_rejects_nan() {
         let result_input = Spline1D::from_control_points(vec![(0.0, 0.0), (f32::NAN, 1.0)]);
         assert_eq!(result_input.err(), Some(SplineError::NaN { at_index: 1 }));
-        let result_output =
-            Spline1D::from_control_points(vec![(0.0, f32::NAN), (1.0, 1.0)]);
+        let result_output = Spline1D::from_control_points(vec![(0.0, f32::NAN), (1.0, 1.0)]);
         assert_eq!(result_output.err(), Some(SplineError::NaN { at_index: 0 }));
     }
 
     /// Infinite values rejected with `SplineError::Infinite`.
     #[test]
     fn spline_from_control_points_rejects_infinite() {
-        let result =
-            Spline1D::from_control_points(vec![(0.0, 0.0), (f32::INFINITY, 1.0)]);
+        let result = Spline1D::from_control_points(vec![(0.0, 0.0), (f32::INFINITY, 1.0)]);
         assert_eq!(result.err(), Some(SplineError::Infinite { at_index: 1 }));
     }
 
@@ -995,12 +1019,8 @@ mod tests {
     /// step's right-side value is returned at the duplicate input.
     #[test]
     fn spline_from_control_points_accepts_duplicate_inputs() {
-        let s = Spline1D::from_control_points(vec![
-            (0.0, 0.0),
-            (0.0, 5.0),
-            (1.0, 10.0),
-        ])
-        .expect("duplicate inputs should be accepted");
+        let s = Spline1D::from_control_points(vec![(0.0, 0.0), (0.0, 5.0), (1.0, 10.0)])
+            .expect("duplicate inputs should be accepted");
         // Verifies the spline constructed; evaluation at the duplicate
         // input returns the right-side value (deterministic).
         assert!(s.control_points.len() == 3);
@@ -1135,7 +1155,10 @@ mod tests {
     #[test]
     fn bootstrap_splines_all_six_archetypes_reproduce_baseline_at_median_climate() {
         let factories: &[(&str, fn() -> BootstrapSplineSet)] = &[
-            ("Continental Temperate", bootstrap_splines_continental_temperate),
+            (
+                "Continental Temperate",
+                bootstrap_splines_continental_temperate,
+            ),
             ("Equatorial Tropical", bootstrap_splines_equatorial_tropical),
             ("Boreal/Subarctic", bootstrap_splines_boreal_subarctic),
             ("Mediterranean", bootstrap_splines_mediterranean),
@@ -1257,8 +1280,7 @@ mod tests {
         // single-segment).
         let p = ParamSpline {
             climate_input: ClimateInputDim::Pv,
-            spline: Spline1D::from_control_points(vec![(-1.0, -1.0), (1.0, 1.0)])
-                .unwrap(),
+            spline: Spline1D::from_control_points(vec![(-1.0, -1.0), (1.0, 1.0)]).unwrap(),
         };
         // Construct a ClimateSample where weirdness is set so PvFold
         // produces a known value. weirdness=0.0 → pv=-1.0 (valley

@@ -151,16 +151,13 @@ fn main() -> Result<()> {
         for angle_idx in 0..cli.angle_count {
             let angle = angle_idx as f32 * std::f32::consts::TAU / cli.angle_count as f32;
             let (proj, view) = fit_ortho_camera(aabb, angle);
-            let region = spec
-                .lookup(species_idx, angle)
-                .copied()
-                .ok_or_else(|| {
-                    anyhow!(
-                        "atlas spec missing cell for species {} angle {}",
-                        species_idx,
-                        angle_idx
-                    )
-                })?;
+            let region = spec.lookup(species_idx, angle).copied().ok_or_else(|| {
+                anyhow!(
+                    "atlas spec missing cell for species {} angle {}",
+                    species_idx,
+                    angle_idx
+                )
+            })?;
             baker.draw_into_region(
                 &device,
                 &queue,
@@ -199,8 +196,13 @@ fn main() -> Result<()> {
         }
     }
 
-    save_atlas_png(&cli.output_atlas, &pixels, cli.atlas_width, cli.atlas_height)
-        .with_context(|| format!("writing atlas PNG to {}", cli.output_atlas.display()))?;
+    save_atlas_png(
+        &cli.output_atlas,
+        &pixels,
+        cli.atlas_width,
+        cli.atlas_height,
+    )
+    .with_context(|| format!("writing atlas PNG to {}", cli.output_atlas.display()))?;
     save_atlas_sidecar(&cli.output_sidecar, &spec)
         .with_context(|| format!("writing sidecar TOML to {}", cli.output_sidecar.display()))?;
 
@@ -269,7 +271,9 @@ fn load_species(path: &std::path::Path, name: &str) -> Result<LoadedSpecies> {
     for prim in primitives {
         let offset = merged.vertices.len() as u32;
         merged.vertices.extend(prim.vertices);
-        merged.indices.extend(prim.indices.iter().map(|i| i + offset));
+        merged
+            .indices
+            .extend(prim.indices.iter().map(|i| i + offset));
         if merged.albedo_image.is_none() {
             merged.albedo_image = prim.albedo_image;
         }
@@ -294,9 +298,11 @@ fn upload_diffuse(
 ) -> wgpu::TextureView {
     use wgpu::util::DeviceExt;
     let (w, h, pixels): (u32, u32, std::borrow::Cow<[u8]>) = match albedo {
-        Some(img) if !img.pixels.is_empty() => {
-            (img.width, img.height, std::borrow::Cow::Borrowed(&img.pixels))
-        }
+        Some(img) if !img.pixels.is_empty() => (
+            img.width,
+            img.height,
+            std::borrow::Cow::Borrowed(&img.pixels),
+        ),
         _ => {
             eprintln!(
                 "  [warn] species '{}' has no albedo image; using 1×1 grey placeholder",

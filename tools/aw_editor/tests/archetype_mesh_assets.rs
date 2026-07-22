@@ -71,9 +71,14 @@ fn archetype_meshes_exist_and_load() {
         match astraweave_render::mesh_gltf::load_gltf(&path, &opts) {
             Ok(meshes) if !meshes.is_empty() => {
                 let verts: usize = meshes.iter().map(|m| m.vertices.len()).sum();
-                println!("{archetype}: OK — {} primitives, {verts} verts ({rel_path})", meshes.len());
+                println!(
+                    "{archetype}: OK — {} primitives, {verts} verts ({rel_path})",
+                    meshes.len()
+                );
             }
-            Ok(_) => failures.push(format!("{archetype}: loaded but contains no meshes — {rel_path}")),
+            Ok(_) => failures.push(format!(
+                "{archetype}: loaded but contains no meshes — {rel_path}"
+            )),
             Err(e) => failures.push(format!("{archetype}: load_gltf failed — {rel_path}: {e:#}")),
         }
     }

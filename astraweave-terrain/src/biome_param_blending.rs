@@ -338,8 +338,14 @@ mod tests {
         let (jx_a, jz_a) = jitter_offset(512.0, 512.0, 0, seed);
         // Add a sub-quantization-grid epsilon (~0.0001 WU < 1/1024 ≈ 0.001 WU).
         let (jx_b, jz_b) = jitter_offset(512.0001, 512.0001, 0, seed);
-        assert_eq!(jx_a, jx_b, "tiny f32 differences must quantize to same jitter");
-        assert_eq!(jz_a, jz_b, "tiny f32 differences must quantize to same jitter");
+        assert_eq!(
+            jx_a, jx_b,
+            "tiny f32 differences must quantize to same jitter"
+        );
+        assert_eq!(
+            jz_a, jz_b,
+            "tiny f32 differences must quantize to same jitter"
+        );
     }
 
     #[test]
@@ -509,8 +515,7 @@ mod tests {
             let z = (i as f32) * 211.0 - 1500.0;
             let r = blend_biome_parameters(x, z, 50.0, &climate, &cfg);
             assert!(
-                r.mountains_amplitude >= min_amp - 0.01
-                    && r.mountains_amplitude <= max_amp + 0.01,
+                r.mountains_amplitude >= min_amp - 0.01 && r.mountains_amplitude <= max_amp + 0.01,
                 "blended mountains_amplitude {} out of bounds [{}, {}]",
                 r.mountains_amplitude,
                 min_amp,

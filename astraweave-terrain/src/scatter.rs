@@ -252,10 +252,7 @@ impl VegetationScatter {
 
         for (_priority, type_indices) in &tiers {
             // Build a sub-BiomeConfig with only this tier's types
-            let tier_weight_sum: f32 = type_indices
-                .iter()
-                .map(|&i| veg_types[i].weight)
-                .sum();
+            let tier_weight_sum: f32 = type_indices.iter().map(|&i| veg_types[i].weight).sum();
 
             if tier_weight_sum <= 0.0 {
                 continue;
@@ -481,8 +478,7 @@ impl VegetationScatter {
         for _ in 0..1000 {
             let local_x = rng.random::<f32>() * chunk_size;
             let local_z = rng.random::<f32>() * chunk_size;
-            let mut world_pos =
-                Vec3::new(chunk_origin.x + local_x, 0.0, chunk_origin.z + local_z);
+            let mut world_pos = Vec3::new(chunk_origin.x + local_x, 0.0, chunk_origin.z + local_z);
 
             let height = match chunk.get_height_at_world_pos(world_pos, chunk_size) {
                 Some(h) => h,
@@ -490,13 +486,8 @@ impl VegetationScatter {
             };
             world_pos.y = height;
 
-            if !self.passes_terrain_filters(
-                world_pos,
-                height,
-                altitude_ceiling,
-                chunk,
-                chunk_size,
-            ) {
+            if !self.passes_terrain_filters(world_pos, height, altitude_ceiling, chunk, chunk_size)
+            {
                 continue;
             }
 
@@ -504,8 +495,10 @@ impl VegetationScatter {
                 world_pos,
                 biome_config,
                 rng,
-                self.estimate_slope_and_normal(chunk, world_pos, chunk_size).0,
-                self.estimate_slope_and_normal(chunk, world_pos, chunk_size).1,
+                self.estimate_slope_and_normal(chunk, world_pos, chunk_size)
+                    .0,
+                self.estimate_slope_and_normal(chunk, world_pos, chunk_size)
+                    .1,
             )? {
                 let gx = ((local_x / cell_size) as usize).min(grid_dim - 1);
                 let gz = ((local_z / cell_size) as usize).min(grid_dim - 1);
@@ -567,8 +560,7 @@ impl VegetationScatter {
                 }
 
                 // Terrain validation
-                let mut world_pos =
-                    Vec3::new(chunk_origin.x + cx, 0.0, chunk_origin.z + cz);
+                let mut world_pos = Vec3::new(chunk_origin.x + cx, 0.0, chunk_origin.z + cz);
                 let height = match chunk.get_height_at_world_pos(world_pos, chunk_size) {
                     Some(h) => h,
                     None => continue,

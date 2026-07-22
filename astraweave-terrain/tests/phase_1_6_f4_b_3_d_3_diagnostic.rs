@@ -157,7 +157,10 @@ fn phase_1_6_f4_b_3_d_3_per_biome_amplitude_changes_heightmap() {
 
     // Sanity: heightmap is non-zero (otherwise the test is moot).
     let max_h = modulated_heights.max_height();
-    assert!(max_h > 0.0, "modulated heightmap should produce positive heights");
+    assert!(
+        max_h > 0.0,
+        "modulated heightmap should produce positive heights"
+    );
 }
 
 #[test]

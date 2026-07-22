@@ -12,11 +12,11 @@ use winit::{
 };
 
 use astraweave_audio::AudioEngine;
+use astraweave_camera::{CameraController, CameraProducer, FreeFly as Camera};
 use astraweave_npc::{
     llm::MockLlm, load_profile_from_toml_str, EngineCommandSink, NpcManager, NpcWorldView,
 };
 use astraweave_physics::PhysicsWorld;
-use astraweave_camera::{CameraController, CameraProducer, FreeFly as Camera};
 use astraweave_render::{Instance, Renderer};
 
 struct App {

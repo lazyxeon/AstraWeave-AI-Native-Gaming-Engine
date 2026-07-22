@@ -377,9 +377,7 @@ fn classify_whittaker_polygon(temp_c: f32, moisture_mm: f32) -> BiomeId {
         {
             return BiomeId::TemperateRainforest;
         }
-        if moisture_mm >= TEMPERATE_FOREST_MIN_MOISTURE_MM
-            && temp_c < TEMPERATE_FOREST_MAX_TEMP_C
-        {
+        if moisture_mm >= TEMPERATE_FOREST_MIN_MOISTURE_MM && temp_c < TEMPERATE_FOREST_MAX_TEMP_C {
             return BiomeId::TemperateDeciduousForest;
         }
         if moisture_mm >= TEMPERATE_GRASSLAND_MIN_MOISTURE_MM {
@@ -395,9 +393,7 @@ fn classify_whittaker_polygon(temp_c: f32, moisture_mm: f32) -> BiomeId {
         if moisture_mm < COLD_DESERT_MAX_MOISTURE_MM {
             return BiomeId::ColdDesert;
         }
-        if moisture_mm >= TEMPERATE_FOREST_MIN_MOISTURE_MM
-            && temp_c < TEMPERATE_FOREST_MAX_TEMP_C
-        {
+        if moisture_mm >= TEMPERATE_FOREST_MIN_MOISTURE_MM && temp_c < TEMPERATE_FOREST_MAX_TEMP_C {
             return BiomeId::TemperateDeciduousForest;
         }
         return BiomeId::TemperateGrassland;
@@ -631,9 +627,18 @@ mod tests {
 
         // Counts: 11 terrestrial, 5 aquatic, 3 overlay, 19 total.
         assert_eq!(BiomeId::all().len(), 19);
-        assert_eq!(BiomeId::all().iter().filter(|b| b.is_terrestrial()).count(), 11);
+        assert_eq!(
+            BiomeId::all().iter().filter(|b| b.is_terrestrial()).count(),
+            11
+        );
         assert_eq!(BiomeId::all().iter().filter(|b| b.is_aquatic()).count(), 5);
-        assert_eq!(BiomeId::all().iter().filter(|b| b.is_elevation_overlay()).count(), 3);
+        assert_eq!(
+            BiomeId::all()
+                .iter()
+                .filter(|b| b.is_elevation_overlay())
+                .count(),
+            3
+        );
     }
 
     // ============================================================
@@ -690,8 +695,7 @@ mod tests {
         }
 
         let total = N as f32;
-        let frac =
-            |b: BiomeId| (*counts.get(&b).unwrap_or(&0) as f32) / total;
+        let frac = |b: BiomeId| (*counts.get(&b).unwrap_or(&0) as f32) / total;
 
         // Verify zero TropicalRainforest (Continental Temperate is too cold).
         assert!(
@@ -783,8 +787,7 @@ mod tests {
         }
 
         let total = N as f32;
-        let frac =
-            |b: BiomeId| (*counts.get(&b).unwrap_or(&0) as f32) / total;
+        let frac = |b: BiomeId| (*counts.get(&b).unwrap_or(&0) as f32) / total;
         let tropical_family = frac(BiomeId::TropicalRainforest)
             + frac(BiomeId::TropicalSeasonalForest)
             + frac(BiomeId::Savanna);

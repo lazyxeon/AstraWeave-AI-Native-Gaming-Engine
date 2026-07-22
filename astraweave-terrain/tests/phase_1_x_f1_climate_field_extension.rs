@@ -170,8 +170,7 @@ fn erosion_varies_with_position() {
     }
 
     let mean = samples.iter().sum::<f32>() / samples.len() as f32;
-    let variance =
-        samples.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / samples.len() as f32;
+    let variance = samples.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / samples.len() as f32;
     let stddev = variance.sqrt();
 
     assert!(
@@ -196,8 +195,7 @@ fn weirdness_varies_with_position() {
     }
 
     let mean = samples.iter().sum::<f32>() / samples.len() as f32;
-    let variance =
-        samples.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / samples.len() as f32;
+    let variance = samples.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / samples.len() as f32;
     let stddev = variance.sqrt();
 
     assert!(
@@ -240,8 +238,7 @@ fn erosion_decorrelated_from_weirdness() {
         .map(|(e, w)| (e - mean_e) * (w - mean_w))
         .sum::<f32>()
         / erosions.len() as f32;
-    let var_e =
-        erosions.iter().map(|e| (e - mean_e).powi(2)).sum::<f32>() / erosions.len() as f32;
+    let var_e = erosions.iter().map(|e| (e - mean_e).powi(2)).sum::<f32>() / erosions.len() as f32;
     let var_w = weirdnesses
         .iter()
         .map(|w| (w - mean_w).powi(2))
@@ -525,8 +522,7 @@ fn world_archetype_catalog_unchanged() {
     for id in WorldArchetypeId::all() {
         let arch = id.default_archetype();
         // validate() should pass for every catalog archetype.
-        arch.validate().unwrap_or_else(|e| {
-            panic!("Catalog archetype {:?} failed validate(): {:?}", id, e)
-        });
+        arch.validate()
+            .unwrap_or_else(|e| panic!("Catalog archetype {:?} failed validate(): {:?}", id, e));
     }
 }

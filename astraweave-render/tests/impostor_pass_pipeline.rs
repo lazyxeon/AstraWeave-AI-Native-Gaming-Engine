@@ -52,7 +52,11 @@ fn impostor_pass_new_builds_with_valid_inputs() {
             Some(wgpu::TextureFormat::Depth32Float),
         )
         .expect("ImpostorPass::new must succeed with valid inputs");
-        assert_eq!(pass.instance_count(), 0, "fresh pass must have zero instances");
+        assert_eq!(
+            pass.instance_count(),
+            0,
+            "fresh pass must have zero instances"
+        );
     });
 }
 
@@ -74,7 +78,10 @@ fn impostor_pass_new_rejects_mismatched_pixel_buffer() {
             Some(wgpu::TextureFormat::Depth32Float),
         )
         .map(|_| ());
-        assert!(err.is_err(), "ImpostorPass::new should reject wrong-sized pixel buffer");
+        assert!(
+            err.is_err(),
+            "ImpostorPass::new should reject wrong-sized pixel buffer"
+        );
     });
 }
 
@@ -227,8 +234,12 @@ fn record_writes_red_pixels_for_red_atlas() {
         slice.map_async(wgpu::MapMode::Read, move |r| {
             tx.send(r).ok();
         });
-        device.poll(wgpu::PollType::Wait).expect("device.poll must succeed");
-        rx.recv().expect("map_async result").expect("map_async must succeed");
+        device
+            .poll(wgpu::PollType::Wait)
+            .expect("device.poll must succeed");
+        rx.recv()
+            .expect("map_async result")
+            .expect("map_async must succeed");
 
         let data = slice.get_mapped_range();
 

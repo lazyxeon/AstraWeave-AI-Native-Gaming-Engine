@@ -2,9 +2,6 @@
 //!
 //! Targets pure CPU functions with golden values for mutation killing.
 
-use astraweave_render::{
-    ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-};
 use astraweave_render::biome_material::{BiomeMaterialConfig, BiomeMaterialSystem};
 use astraweave_render::error::{RenderError, RenderResult};
 use astraweave_render::hdri_catalog::DayPeriod;
@@ -12,6 +9,7 @@ use astraweave_render::material::{
     validate_array_layout, validate_material_pack, ArrayLayout, MaterialGpu, MaterialLayerDesc,
     MaterialLoadStats, MaterialManager, MaterialPackDesc,
 };
+use astraweave_render::{ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig};
 use astraweave_terrain::biome::BiomeType;
 use std::collections::HashMap;
 use std::path::PathBuf;

@@ -215,7 +215,12 @@ fn impostor_baker_draws_quad_produces_non_zero_pixels_in_region() {
     let cx = cell_w / 2;
     let cy = cell_h / 2;
     let idx = (cy * atlas_width as usize + cx) * 4;
-    let (r, g, b, a) = (pixels[idx], pixels[idx + 1], pixels[idx + 2], pixels[idx + 3]);
+    let (r, g, b, a) = (
+        pixels[idx],
+        pixels[idx + 1],
+        pixels[idx + 2],
+        pixels[idx + 3],
+    );
     assert!(a > 250, "expected opaque centre pixel, got alpha={}", a);
     assert!(r > 200, "expected magenta red ~255, got {}", r);
     assert!(g < 40, "expected magenta green ~0, got {}", g);
@@ -286,7 +291,10 @@ fn impostor_baker_second_draw_preserves_first_cell() {
         pixels[idx + 3]
     };
     // Top-left quarter should still have alpha (first bake not clobbered).
-    assert!(sample(32, 32) > 0, "first cell was overwritten by second bake");
+    assert!(
+        sample(32, 32) > 0,
+        "first cell was overwritten by second bake"
+    );
     // Bottom-right quarter should have alpha from the second bake.
     assert!(sample(96, 96) > 0, "second cell is empty");
 }

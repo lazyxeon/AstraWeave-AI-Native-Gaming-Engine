@@ -207,7 +207,10 @@ fn tw1_dip_census_seed12345_radius6() {
         );
         // Sanity: partition exact; the aquatic side must equal the divergence
         // table's flooded-aquatic column (same criterion, two paths).
-        assert_eq!(r.below_sea_emergent + r.below_sea_aquatic, r.below_sea_total);
+        assert_eq!(
+            r.below_sea_emergent + r.below_sea_aquatic,
+            r.below_sea_total
+        );
         assert_eq!(r.below_sea_aquatic, r.classified_aquatic_flooded);
         rows.push(r);
     }

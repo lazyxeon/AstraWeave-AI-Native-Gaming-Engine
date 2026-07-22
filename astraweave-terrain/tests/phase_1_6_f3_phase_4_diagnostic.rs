@@ -210,9 +210,7 @@ fn phase_4_b_3_c_runevision_radius5_per_climate() {
     ];
 
     println!("======================================================");
-    println!(
-        "F.4.B.3.C: runevision-ON full-world scale per climate (radius 5, 121 chunks)"
-    );
+    println!("F.4.B.3.C: runevision-ON full-world scale per climate (radius 5, 121 chunks)");
     println!();
     println!(
         "| Climate   |     pre.max |  pre.p99 |  pre.p50 | post.max | post.p99 | post.p50 | Y span |"
@@ -279,12 +277,7 @@ fn shared_edges_exactly_match_after_averaging() {
         }
     }
 
-    let dim = chunks
-        .values()
-        .next()
-        .unwrap()
-        .heightmap()
-        .resolution();
+    let dim = chunks.values().next().unwrap().heightmap().resolution();
 
     // Measure pre-smoothing divergence on one internal edge:
     // chunk (0,0) right col vs chunk (1,0) left col.

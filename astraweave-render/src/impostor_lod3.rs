@@ -94,7 +94,6 @@
 //!      run AFTER opaque scatter LOD0/1/2 passes but BEFORE transparent
 //!      foliage (if any).
 
-
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 
@@ -691,8 +690,10 @@ mod tests {
         .validate(&module)
         .expect("LOD3 sampling shader must validate");
         // Must reference the atlas texture + sampler bindings we expose.
-        assert!(info.get_entry_point(0).uniformity.requirements.is_empty()
-            || !info.get_entry_point(0).uniformity.requirements.is_empty());
+        assert!(
+            info.get_entry_point(0).uniformity.requirements.is_empty()
+                || !info.get_entry_point(0).uniformity.requirements.is_empty()
+        );
     }
 
     #[test]

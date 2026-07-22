@@ -23,9 +23,7 @@
 //! See `docs/audits/f4b3d5_diagnostic_3_cross_archetype_2026-04-28.md`.
 
 use astraweave_terrain::biome_lookup::BiomeId;
-use astraweave_terrain::biome_param_blending::{
-    blend_biome_parameters, BiomeParamBlendConfig,
-};
+use astraweave_terrain::biome_param_blending::{blend_biome_parameters, BiomeParamBlendConfig};
 use astraweave_terrain::biome_parameters::BiomeParameters;
 use astraweave_terrain::climate::{ClimateConfig, ClimateMap};
 use astraweave_terrain::world_archetypes::WorldArchetypeId;
@@ -115,7 +113,10 @@ fn measure_cross_archetype_pair(
     archetype_b: WorldArchetypeId,
 ) {
     println!();
-    println!("=== §1.1: {} vs {} cross-archetype similarity ===", label_a, label_b);
+    println!(
+        "=== §1.1: {} vs {} cross-archetype similarity ===",
+        label_a, label_b
+    );
     let gen_a = make_generator(archetype_a);
     let gen_b = make_generator(archetype_b);
 
@@ -124,12 +125,8 @@ fn measure_cross_archetype_pair(
     let mut all_deltas: Vec<f32> = Vec::new();
 
     println!();
-    println!(
-        "| Chunk         | Mean |Δ| | p50 |Δ| | p95 |Δ| | Max |Δ| | Pearson |"
-    );
-    println!(
-        "| ------------- | -------- | -------- | -------- | -------- | ------- |"
-    );
+    println!("| Chunk         | Mean |Δ| | p50 |Δ| | p95 |Δ| | Max |Δ| | Pearson |");
+    println!("| ------------- | -------- | -------- | -------- | -------- | ------- |");
     for &(cx, cz) in &SAMPLE_CHUNKS {
         let chunk_id = ChunkId::new(cx, cz);
         let heights_a = capture_chunk_heights(&gen_a, chunk_id);
@@ -142,8 +139,7 @@ fn measure_cross_archetype_pair(
             .collect();
         deltas.sort_by(|x, y| x.partial_cmp(y).unwrap());
 
-        let mean_abs =
-            deltas.iter().map(|&d| d as f64).sum::<f64>() / deltas.len() as f64;
+        let mean_abs = deltas.iter().map(|&d| d as f64).sum::<f64>() / deltas.len() as f64;
         let p50 = percentile(&deltas, 0.50);
         let p95 = percentile(&deltas, 0.95);
         let max = *deltas.last().unwrap_or(&0.0);
@@ -160,8 +156,7 @@ fn measure_cross_archetype_pair(
     }
 
     all_deltas.sort_by(|x, y| x.partial_cmp(y).unwrap());
-    let mean_all = all_deltas.iter().map(|&d| d as f64).sum::<f64>()
-        / all_deltas.len() as f64;
+    let mean_all = all_deltas.iter().map(|&d| d as f64).sum::<f64>() / all_deltas.len() as f64;
     let r_all = pearson(&all_a, &all_b);
     println!(
         "| AGGREGATE     | {:8.2} | {:8.2} | {:8.2} | {:8.2} | {:7.3} |",
@@ -189,7 +184,10 @@ fn measure_cross_archetype_pair(
 
 fn measure_variance_decomposition(archetype: WorldArchetypeId, label: &str) {
     println!();
-    println!("=== §1.2: {} variance decomposition (chunk (0,0)) ===", label);
+    println!(
+        "=== §1.2: {} variance decomposition (chunk (0,0)) ===",
+        label
+    );
     let mut config = WorldConfig::default();
     config.seed = 12345;
     config.climate.archetype = archetype.default_archetype();
@@ -275,10 +273,7 @@ fn measure_variance_decomposition(archetype: WorldArchetypeId, label: &str) {
     );
     println!();
     println!("Delta (modulation - bootstrap):");
-    println!(
-        "  mean={:.2}m  variance={:.2}m²",
-        mean_delta, var_delta
-    );
+    println!("  mean={:.2}m  variance={:.2}m²", mean_delta, var_delta);
     println!();
     println!(
         "Ratio var(delta) / var(bootstrap) = {:.4} ({:.2}% per-biome contribution)",
@@ -330,7 +325,10 @@ fn measure_amplitude_distribution(archetype: WorldArchetypeId, label: &str) {
     }
 
     println!();
-    println!("=== §1.3 {}: blended amplitude distribution (1000 samples) ===", label);
+    println!(
+        "=== §1.3 {}: blended amplitude distribution (1000 samples) ===",
+        label
+    );
     println!(
         "  mean={:.3}  stddev={:.3}  p25={:.3}  p50={:.3}  p75={:.3}  p95={:.3}",
         mean,
@@ -382,14 +380,20 @@ fn d5_diagnostic_3_cross_archetype_terrain_similarity() {
     );
 
     // §1.2 — Per-source variance decomposition.
-    measure_variance_decomposition(WorldArchetypeId::ContinentalTemperate, "Continental Temperate");
+    measure_variance_decomposition(
+        WorldArchetypeId::ContinentalTemperate,
+        "Continental Temperate",
+    );
     measure_variance_decomposition(WorldArchetypeId::Desert, "Desert");
     measure_variance_decomposition(WorldArchetypeId::EquatorialTropical, "Equatorial Tropical");
 
     // §1.3 — Per-archetype amplitude distributions (all 6).
     println!();
     println!("=== §1.3 Per-archetype blended amplitude distributions ===");
-    measure_amplitude_distribution(WorldArchetypeId::ContinentalTemperate, "Continental Temperate");
+    measure_amplitude_distribution(
+        WorldArchetypeId::ContinentalTemperate,
+        "Continental Temperate",
+    );
     measure_amplitude_distribution(WorldArchetypeId::EquatorialTropical, "Equatorial Tropical");
     measure_amplitude_distribution(WorldArchetypeId::BorealSubarctic, "Boreal/Subarctic");
     measure_amplitude_distribution(WorldArchetypeId::Mediterranean, "Mediterranean");

@@ -56,7 +56,10 @@ fn lod3_resources_upload_round_trips_spec_to_gpu() {
 
         // Config mirrors the spec we passed in.
         assert_eq!(res.config.rows.len(), 2);
-        assert_eq!(res.config.rows[0], SpeciesRowGpu::from_spec(&res.config.spec, 0).unwrap());
+        assert_eq!(
+            res.config.rows[0],
+            SpeciesRowGpu::from_spec(&res.config.spec, 0).unwrap()
+        );
         assert_eq!(res.config.spec.species[0].name, "oak");
         assert_eq!(res.config.spec.species[1].name, "pine");
 
@@ -70,17 +73,13 @@ fn lod3_resources_upload_round_trips_spec_to_gpu() {
 fn lod3_resources_upload_rejects_wrong_sized_buffer() {
     pollster::block_on(async {
         let (device, queue) = test_utils::create_headless_device().await;
-        let pipeline = build_lod3_pipeline(
-            &device,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            None,
-        )
-        .unwrap();
+        let pipeline =
+            build_lod3_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, None).unwrap();
 
         let spec = ImpostorAtlasSpec::uniform(16, 16, 4, &["oak"]);
         let too_small = vec![0u8; 16 * 16 * 4 - 8];
-        let result = Lod3Resources::upload(&device, &queue, &too_small, 16, 16, spec, &pipeline)
-            .map(|_| ());
+        let result =
+            Lod3Resources::upload(&device, &queue, &too_small, 16, 16, spec, &pipeline).map(|_| ());
         let err = result.expect_err("upload must reject size mismatches");
         let msg = err.to_string();
         assert!(
@@ -94,17 +93,13 @@ fn lod3_resources_upload_rejects_wrong_sized_buffer() {
 fn lod3_resources_upload_rejects_zero_dimension_atlas() {
     pollster::block_on(async {
         let (device, queue) = test_utils::create_headless_device().await;
-        let pipeline = build_lod3_pipeline(
-            &device,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            None,
-        )
-        .unwrap();
+        let pipeline =
+            build_lod3_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, None).unwrap();
 
         let spec = ImpostorAtlasSpec::uniform(16, 16, 4, &["oak"]);
         let any = vec![0u8; 0];
-        let result = Lod3Resources::upload(&device, &queue, &any, 0, 16, spec, &pipeline)
-            .map(|_| ());
+        let result =
+            Lod3Resources::upload(&device, &queue, &any, 0, 16, spec, &pipeline).map(|_| ());
         let err = result.expect_err("zero-dimension atlas must fail");
         assert!(
             err.to_string().contains("non-zero")
@@ -122,12 +117,8 @@ fn lod3_resources_upload_rejects_zero_dimension_atlas() {
 fn lod3_resources_rows_match_cpu_lookup_after_upload() {
     pollster::block_on(async {
         let (device, queue) = test_utils::create_headless_device().await;
-        let pipeline = build_lod3_pipeline(
-            &device,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            None,
-        )
-        .unwrap();
+        let pipeline =
+            build_lod3_pipeline(&device, wgpu::TextureFormat::Rgba8UnormSrgb, None).unwrap();
 
         let width = 128u32;
         let height = 64u32;
@@ -146,7 +137,10 @@ fn lod3_resources_rows_match_cpu_lookup_after_upload() {
             .zip(cfg_reference.rows.iter())
             .enumerate()
         {
-            assert_eq!(a, b, "row {i} mismatch between uploaded and reference config");
+            assert_eq!(
+                a, b,
+                "row {i} mismatch between uploaded and reference config"
+            );
         }
     });
 }

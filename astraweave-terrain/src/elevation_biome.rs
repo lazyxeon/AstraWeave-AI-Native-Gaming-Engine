@@ -91,7 +91,7 @@ impl ClimateBias {
         match self {
             ClimateBias::Cold => 4,     // Tundra
             ClimateBias::Highland => 3, // Mountain
-            _ => 6,                      // Beach (sea-level default)
+            _ => 6,                     // Beach (sea-level default)
         }
     }
 }
@@ -138,41 +138,161 @@ struct BiomeBand {
 // warrants.
 
 const TEMPERATE_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 6, shape: BandShape::Pulse { peak: 10.0, width: 20.0 } },      // Beach (was 2/4)
-    BiomeBand { slot: 0, shape: BandShape::Pulse { peak: 50.0, width: 40.0 } },      // Grassland (was 10/8)
-    BiomeBand { slot: 2, shape: BandShape::Pulse { peak: 120.0, width: 100.0 } },    // Forest (was 24/20)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 190.0, ramp: 110.0 } }, // Mountain (was 38/22)
+    BiomeBand {
+        slot: 6,
+        shape: BandShape::Pulse {
+            peak: 10.0,
+            width: 20.0,
+        },
+    }, // Beach (was 2/4)
+    BiomeBand {
+        slot: 0,
+        shape: BandShape::Pulse {
+            peak: 50.0,
+            width: 40.0,
+        },
+    }, // Grassland (was 10/8)
+    BiomeBand {
+        slot: 2,
+        shape: BandShape::Pulse {
+            peak: 120.0,
+            width: 100.0,
+        },
+    }, // Forest (was 24/20)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 190.0,
+            ramp: 110.0,
+        },
+    }, // Mountain (was 38/22)
 ];
 
 const COLD_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 6, shape: BandShape::Pulse { peak: 10.0, width: 20.0 } },      // Beach
-    BiomeBand { slot: 4, shape: BandShape::Pulse { peak: 90.0, width: 125.0 } },     // Tundra (was 18/25)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 190.0, ramp: 110.0 } }, // Mountain
+    BiomeBand {
+        slot: 6,
+        shape: BandShape::Pulse {
+            peak: 10.0,
+            width: 20.0,
+        },
+    }, // Beach
+    BiomeBand {
+        slot: 4,
+        shape: BandShape::Pulse {
+            peak: 90.0,
+            width: 125.0,
+        },
+    }, // Tundra (was 18/25)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 190.0,
+            ramp: 110.0,
+        },
+    }, // Mountain
 ];
 
 const ARID_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 6, shape: BandShape::Pulse { peak: 10.0, width: 20.0 } },      // Beach
-    BiomeBand { slot: 1, shape: BandShape::Pulse { peak: 90.0, width: 125.0 } },     // Desert (was 18/25)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 190.0, ramp: 110.0 } }, // Mountain
+    BiomeBand {
+        slot: 6,
+        shape: BandShape::Pulse {
+            peak: 10.0,
+            width: 20.0,
+        },
+    }, // Beach
+    BiomeBand {
+        slot: 1,
+        shape: BandShape::Pulse {
+            peak: 90.0,
+            width: 125.0,
+        },
+    }, // Desert (was 18/25)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 190.0,
+            ramp: 110.0,
+        },
+    }, // Mountain
 ];
 
 const TROPICAL_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 6, shape: BandShape::Pulse { peak: 10.0, width: 20.0 } },      // Beach
-    BiomeBand { slot: 2, shape: BandShape::Pulse { peak: 110.0, width: 150.0 } },    // Forest heavy (was 22/30)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 275.0, ramp: 125.0 } }, // Mountain (was 55/25)
+    BiomeBand {
+        slot: 6,
+        shape: BandShape::Pulse {
+            peak: 10.0,
+            width: 20.0,
+        },
+    }, // Beach
+    BiomeBand {
+        slot: 2,
+        shape: BandShape::Pulse {
+            peak: 110.0,
+            width: 150.0,
+        },
+    }, // Forest heavy (was 22/30)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 275.0,
+            ramp: 125.0,
+        },
+    }, // Mountain (was 55/25)
 ];
 
 const WETLAND_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 6, shape: BandShape::Pulse { peak: 10.0, width: 20.0 } },      // Beach
-    BiomeBand { slot: 5, shape: BandShape::Pulse { peak: 35.0, width: 40.0 } },      // Swamp (was 7/8)
-    BiomeBand { slot: 0, shape: BandShape::Pulse { peak: 90.0, width: 60.0 } },      // Grassland (was 18/12)
-    BiomeBand { slot: 2, shape: BandShape::Pulse { peak: 175.0, width: 100.0 } },    // Forest (was 35/20)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 250.0, ramp: 110.0 } }, // Mountain (was 50/22)
+    BiomeBand {
+        slot: 6,
+        shape: BandShape::Pulse {
+            peak: 10.0,
+            width: 20.0,
+        },
+    }, // Beach
+    BiomeBand {
+        slot: 5,
+        shape: BandShape::Pulse {
+            peak: 35.0,
+            width: 40.0,
+        },
+    }, // Swamp (was 7/8)
+    BiomeBand {
+        slot: 0,
+        shape: BandShape::Pulse {
+            peak: 90.0,
+            width: 60.0,
+        },
+    }, // Grassland (was 18/12)
+    BiomeBand {
+        slot: 2,
+        shape: BandShape::Pulse {
+            peak: 175.0,
+            width: 100.0,
+        },
+    }, // Forest (was 35/20)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 250.0,
+            ramp: 110.0,
+        },
+    }, // Mountain (was 50/22)
 ];
 
 const HIGHLAND_BANDS: &[BiomeBand] = &[
-    BiomeBand { slot: 0, shape: BandShape::Pulse { peak: 20.0, width: 100.0 } },     // Grassland (was 4/20)
-    BiomeBand { slot: 3, shape: BandShape::HighPass { start: 40.0, ramp: 175.0 } },  // Mountain dominant (was 8/35)
+    BiomeBand {
+        slot: 0,
+        shape: BandShape::Pulse {
+            peak: 20.0,
+            width: 100.0,
+        },
+    }, // Grassland (was 4/20)
+    BiomeBand {
+        slot: 3,
+        shape: BandShape::HighPass {
+            start: 40.0,
+            ramp: 175.0,
+        },
+    }, // Mountain dominant (was 8/35)
 ];
 
 /// Smoothstep function `3t² - 2t³` clamped to `[0, 1]`.
@@ -225,11 +345,7 @@ fn evaluate_band(rel_y: f32, shape: &BandShape) -> f32 {
 /// If no configured band fires at the given elevation (e.g. far below sea
 /// level or far above any mountain plateau), the climate's fallback slot
 /// receives weight 1.0 so the output is always normalized.
-pub fn elevation_to_biome_weights(
-    world_y: f32,
-    sea_level: f32,
-    climate: ClimateBias,
-) -> [f32; 8] {
+pub fn elevation_to_biome_weights(world_y: f32, sea_level: f32, climate: ClimateBias) -> [f32; 8] {
     let rel = world_y - sea_level;
     let mut weights = [0.0f32; 8];
 
@@ -378,8 +494,14 @@ mod tests {
             ClimateBias::from_primary_biome_str("GRASSLAND"),
             ClimateBias::Temperate
         );
-        assert_eq!(ClimateBias::from_primary_biome_str("tundra"), ClimateBias::Cold);
-        assert_eq!(ClimateBias::from_primary_biome_str("desert"), ClimateBias::Arid);
+        assert_eq!(
+            ClimateBias::from_primary_biome_str("tundra"),
+            ClimateBias::Cold
+        );
+        assert_eq!(
+            ClimateBias::from_primary_biome_str("desert"),
+            ClimateBias::Arid
+        );
         assert_eq!(
             ClimateBias::from_primary_biome_str("forest"),
             ClimateBias::Tropical
@@ -394,7 +516,10 @@ mod tests {
         );
 
         // Strings that map to Temperate fallback.
-        assert_eq!(ClimateBias::from_primary_biome_str(""), ClimateBias::Temperate);
+        assert_eq!(
+            ClimateBias::from_primary_biome_str(""),
+            ClimateBias::Temperate
+        );
         assert_eq!(
             ClimateBias::from_primary_biome_str("beach"),
             ClimateBias::Temperate

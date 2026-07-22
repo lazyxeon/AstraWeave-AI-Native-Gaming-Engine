@@ -425,18 +425,17 @@ impl ClimateMap {
             world_x,
             world_z,
         );
-        let mut moisture_mm =
-            arch.moisture_mean_mm + moist_noise_raw * arch.moisture_variance_mm;
+        let mut moisture_mm = arch.moisture_mean_mm + moist_noise_raw * arch.moisture_variance_mm;
 
         // Water-distance modulator: distance from world edge proxies for
         // continental interior. World edge → high moisture (coast); world
         // center → low moisture (interior). `coast_distance` is the
         // shortest distance to either x or z world edge.
         let half_ext = self.config.world_latitude_half_extent_wu as f64;
-        let coast_distance =
-            (half_ext - world_x.abs()).min(half_ext - world_z.abs()).max(0.0) as f32;
-        let coast_factor =
-            (-coast_distance * self.config.moisture_distance_falloff).exp();
+        let coast_distance = (half_ext - world_x.abs())
+            .min(half_ext - world_z.abs())
+            .max(0.0) as f32;
+        let coast_factor = (-coast_distance * self.config.moisture_distance_falloff).exp();
         // Mix: 70% noise-driven, 30% coast-driven. Coastal regions get a
         // moisture boost up to 30% of the archetype mean.
         moisture_mm = moisture_mm * 0.7 + (arch.moisture_mean_mm * coast_factor) * 0.3;
@@ -451,9 +450,9 @@ impl ClimateMap {
             world_x,
             world_z,
         );
-        let continentalness =
-            (arch.continentalness_mean + cont_noise_raw * arch.continentalness_variance)
-                .clamp(0.0, 1.0);
+        let continentalness = (arch.continentalness_mean
+            + cont_noise_raw * arch.continentalness_variance)
+            .clamp(0.0, 1.0);
 
         // === Erosion (Phase 1.X-F.1.B) ===
         // Low-frequency Perlin field at scale 0.0008 (~1250 WU wavelength
@@ -462,16 +461,16 @@ impl ClimateMap {
         // against f32 boundary artifacts that occasionally produce
         // ±1.0001 at integer lattice positions; Perlin output is
         // mathematically bounded.
-        let erosion_raw =
-            self.erosion_noise.get([world_x * 0.0008, world_z * 0.0008]) as f32;
+        let erosion_raw = self.erosion_noise.get([world_x * 0.0008, world_z * 0.0008]) as f32;
         let erosion = erosion_raw.clamp(-1.0, 1.0);
 
         // === Weirdness (Phase 1.X-F.1.B) ===
         // Low-frequency Perlin field at scale 0.0006 (~1670 WU wavelength
         // at Target B). Output [-1, 1] feeds the PV (Peaks-and-Valleys)
         // fold via ClimateSample::pv. Same clamp rationale as erosion.
-        let weirdness_raw =
-            self.weirdness_noise.get([world_x * 0.0006, world_z * 0.0006]) as f32;
+        let weirdness_raw = self
+            .weirdness_noise
+            .get([world_x * 0.0006, world_z * 0.0006]) as f32;
         let weirdness = weirdness_raw.clamp(-1.0, 1.0);
 
         ClimateSample {
@@ -501,13 +500,7 @@ impl ClimateMap {
     /// be multiplied by archetype variance without the `+ offset` bias
     /// the legacy `sample_noise_fbm` adds for `[0,1]`-style consumers.
     #[inline]
-    fn sample_noise_signed(
-        &self,
-        noise: &Perlin,
-        layer: &ClimateLayer,
-        x: f64,
-        z: f64,
-    ) -> f32 {
+    fn sample_noise_signed(&self, noise: &Perlin, layer: &ClimateLayer, x: f64, z: f64) -> f32 {
         let mut value = 0.0f32;
         let mut amplitude = layer.amplitude;
         let mut frequency = layer.scale;
@@ -961,7 +954,10 @@ mod tests {
         let s1 = a.sample(123.0, 456.0, 100.0);
         let s2 = b.sample(123.0, 456.0, 100.0);
 
-        assert_eq!(s1, s2, "sample must be deterministic for same seed + inputs");
+        assert_eq!(
+            s1, s2,
+            "sample must be deterministic for same seed + inputs"
+        );
     }
 
     #[test]

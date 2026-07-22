@@ -36,10 +36,30 @@ struct WeaveDefaults {
 
 fn defaults_for(kind: WeaveKind) -> WeaveDefaults {
     match kind {
-        WeaveKind::Part => WeaveDefaults { base_intensity: 0.7, radius: 30.0, lifetime: 4.0, ramp: 0.5 },
-        WeaveKind::Raise => WeaveDefaults { base_intensity: 0.6, radius: 30.0, lifetime: 4.0, ramp: 0.5 },
-        WeaveKind::Freeze => WeaveDefaults { base_intensity: 1.0, radius: 30.0, lifetime: 6.0, ramp: 0.8 },
-        WeaveKind::None => WeaveDefaults { base_intensity: 0.0, radius: 1.0, lifetime: 0.0, ramp: 0.0 },
+        WeaveKind::Part => WeaveDefaults {
+            base_intensity: 0.7,
+            radius: 30.0,
+            lifetime: 4.0,
+            ramp: 0.5,
+        },
+        WeaveKind::Raise => WeaveDefaults {
+            base_intensity: 0.6,
+            radius: 30.0,
+            lifetime: 4.0,
+            ramp: 0.5,
+        },
+        WeaveKind::Freeze => WeaveDefaults {
+            base_intensity: 1.0,
+            radius: 30.0,
+            lifetime: 6.0,
+            ramp: 0.8,
+        },
+        WeaveKind::None => WeaveDefaults {
+            base_intensity: 0.0,
+            radius: 1.0,
+            lifetime: 0.0,
+            ramp: 0.0,
+        },
     }
 }
 
@@ -157,7 +177,12 @@ mod tests {
     use glam::vec3;
 
     fn op(kind: WeaveOpKind, x: f32, z: f32) -> WeaveOp {
-        WeaveOp { kind, a: vec3(x, 1.5, z), b: None, budget_cost: 1 }
+        WeaveOp {
+            kind,
+            a: vec3(x, 1.5, z),
+            b: None,
+            budget_cost: 1,
+        }
     }
 
     #[test]
@@ -202,7 +227,7 @@ mod tests {
     fn envelope_ramps_in_holds_and_fades() {
         let mut p = WaterWeaveProducer::new();
         p.ingest(&op(WeaveOpKind::FreezeWater, 0.0, 0.0)); // lifetime 6, ramp 0.8, base 1.0
-        // age 0: ramp-in just begun → ~0
+                                                           // age 0: ramp-in just begun → ~0
         assert!(p.snapshot()[0].intensity < 0.2);
         p.tick(2.0); // age 2.0: hold → ~base
         assert!((p.snapshot()[0].intensity - 1.0).abs() < 0.01);

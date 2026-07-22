@@ -124,9 +124,7 @@ impl RegionalArchetypeMask {
     /// Read the archetype ID at a mask pixel. Returns 0 for out-of-range.
     #[inline]
     pub fn id_at(&self, x: u32, z: u32) -> u8 {
-        self.pixel_index(x, z)
-            .map(|idx| self.ids[idx])
-            .unwrap_or(0)
+        self.pixel_index(x, z).map(|idx| self.ids[idx]).unwrap_or(0)
     }
 
     /// Read the falloff value at a mask pixel. Returns 255 (deep interior)
@@ -225,11 +223,8 @@ impl RegionalArchetypeMask {
         let id_path = path_with_extension(base_path, "id.bin");
         let falloff_path = path_with_extension(base_path, "falloff.bin");
 
-        let ron_string = ron::ser::to_string_pretty(
-            &metadata,
-            ron::ser::PrettyConfig::default(),
-        )
-        .map_err(|e| MaskIoError::Ron(e.to_string()))?;
+        let ron_string = ron::ser::to_string_pretty(&metadata, ron::ser::PrettyConfig::default())
+            .map_err(|e| MaskIoError::Ron(e.to_string()))?;
         fs::write(&ron_path, ron_string)?;
         fs::write(&id_path, &self.ids)?;
         fs::write(&falloff_path, &self.falloff)?;
@@ -254,8 +249,7 @@ impl RegionalArchetypeMask {
 
         let ids = fs::read(&id_path)?;
         let falloff = fs::read(&falloff_path)?;
-        let expected =
-            (metadata.resolution as usize).saturating_mul(metadata.resolution as usize);
+        let expected = (metadata.resolution as usize).saturating_mul(metadata.resolution as usize);
         if ids.len() != expected {
             return Err(MaskIoError::Mismatch {
                 expected,
@@ -473,8 +467,7 @@ pub fn blend_bootstrap_params(
         // f64 weighted accumulation.
         blended.mountains_scale += (weight as f64) * archetype_params.mountains_scale;
         blended.continental_scale += weight * archetype_params.continental_scale;
-        blended.base_elevation_amplitude +=
-            weight * archetype_params.base_elevation_amplitude;
+        blended.base_elevation_amplitude += weight * archetype_params.base_elevation_amplitude;
         // E3-terrain Phase A.2: blend the per-archetype ground-level floor the
         // same convex way as the other params (single contributor at weight 1.0
         // stays byte-identical to that archetype's evaluate()).
@@ -582,10 +575,10 @@ impl<'a> RegionalArchetypeBlend<'a> {
         // Convert world coords to mask pixel coords.
         let half_extent = self.mask.world_extent_wu * 0.5;
         let res = self.mask.resolution as f32;
-        let px_f = ((world_x + half_extent) / self.mask.world_extent_wu * res)
-            .clamp(0.0, res - 1.0);
-        let pz_f = ((world_z + half_extent) / self.mask.world_extent_wu * res)
-            .clamp(0.0, res - 1.0);
+        let px_f =
+            ((world_x + half_extent) / self.mask.world_extent_wu * res).clamp(0.0, res - 1.0);
+        let pz_f =
+            ((world_z + half_extent) / self.mask.world_extent_wu * res).clamp(0.0, res - 1.0);
         let px = px_f as u32;
         let pz = pz_f as u32;
 
@@ -765,17 +758,17 @@ mod tests {
     /// (32, 32) in a 64×64 mask; leaves pixels outside as 0.
     #[test]
     fn regional_mask_painted_circle_writes_pixels() {
-        let mask = RegionalArchetypeMask::new_unpainted(64, 100.0)
-            .with_painted_circle(32, 32, 8, 1);
+        let mask =
+            RegionalArchetypeMask::new_unpainted(64, 100.0).with_painted_circle(32, 32, 8, 1);
 
         // Center pixel painted.
         assert_eq!(mask.id_at(32, 32), 1);
         // Pixels within radius 8.
         assert_eq!(mask.id_at(40, 32), 1); // dist = 8
         assert_eq!(mask.id_at(32, 40), 1); // dist = 8
-        // Pixels just outside radius 8 (dist² = 81 > 64).
+                                           // Pixels just outside radius 8 (dist² = 81 > 64).
         assert_eq!(mask.id_at(41, 32), 0); // dist = 9
-        // Far pixel.
+                                           // Far pixel.
         assert_eq!(mask.id_at(0, 0), 0);
         assert_eq!(mask.id_at(63, 63), 0);
     }
@@ -783,8 +776,8 @@ mod tests {
     /// `with_painted_rect` writes archetype ID to pixels in `[min, max)`.
     #[test]
     fn regional_mask_painted_rect_writes_pixels() {
-        let mask = RegionalArchetypeMask::new_unpainted(64, 100.0)
-            .with_painted_rect(10, 10, 30, 30, 5);
+        let mask =
+            RegionalArchetypeMask::new_unpainted(64, 100.0).with_painted_rect(10, 10, 30, 30, 5);
 
         // Inside rect.
         assert_eq!(mask.id_at(10, 10), 5);
@@ -901,17 +894,14 @@ mod tests {
             falloff_radius_pixels: 8,
             format_version: 2,
         };
-        let ron_string = ron::ser::to_string_pretty(
-            &bad_metadata,
-            ron::ser::PrettyConfig::default(),
-        )
-        .unwrap();
+        let ron_string =
+            ron::ser::to_string_pretty(&bad_metadata, ron::ser::PrettyConfig::default()).unwrap();
         std::fs::write(&ron_path, ron_string).unwrap();
         std::fs::write(&id_path, vec![0u8; 64 * 64]).unwrap();
         std::fs::write(&falloff_path, vec![255u8; 64 * 64]).unwrap();
 
-        let err = RegionalArchetypeMask::load_from_files(&base)
-            .expect_err("expected UnsupportedVersion");
+        let err =
+            RegionalArchetypeMask::load_from_files(&base).expect_err("expected UnsupportedVersion");
         assert!(matches!(err, MaskIoError::UnsupportedVersion(2)));
     }
 
@@ -931,19 +921,21 @@ mod tests {
             falloff_radius_pixels: 32,
             format_version: 1,
         };
-        let ron_string = ron::ser::to_string_pretty(
-            &metadata,
-            ron::ser::PrettyConfig::default(),
-        )
-        .unwrap();
+        let ron_string =
+            ron::ser::to_string_pretty(&metadata, ron::ser::PrettyConfig::default()).unwrap();
         std::fs::write(&ron_path, ron_string).unwrap();
         // Write only 64×64 bytes instead of 1024² claimed by metadata.
         std::fs::write(&id_path, vec![0u8; 64 * 64]).unwrap();
         std::fs::write(&falloff_path, vec![255u8; 64 * 64]).unwrap();
 
-        let err = RegionalArchetypeMask::load_from_files(&base)
-            .expect_err("expected Mismatch");
-        assert!(matches!(err, MaskIoError::Mismatch { expected: 1048576, actual: 4096 }));
+        let err = RegionalArchetypeMask::load_from_files(&base).expect_err("expected Mismatch");
+        assert!(matches!(
+            err,
+            MaskIoError::Mismatch {
+                expected: 1048576,
+                actual: 4096
+            }
+        ));
     }
 
     /// Unpainted mask (all IDs = 0) → recompute_falloff → all 255 (no
@@ -959,8 +951,8 @@ mod tests {
     /// has falloff = 255 (deep interior).
     #[test]
     fn distance_transform_single_archetype_interior_is_max() {
-        let mut mask = RegionalArchetypeMask::new_unpainted(256, 100.0)
-            .with_painted_circle(128, 128, 80, 1);
+        let mut mask =
+            RegionalArchetypeMask::new_unpainted(256, 100.0).with_painted_circle(128, 128, 80, 1);
         // falloff_radius_pixels default = 32; interior pixels at distance
         // > 32 from any boundary should hit 255.
         mask.recompute_falloff();
@@ -1048,8 +1040,13 @@ mod tests {
     /// contributor matching that region's archetype.
     #[test]
     fn blend_deep_interior_returns_single_contributor() {
-        let mut mask = RegionalArchetypeMask::new_unpainted(256, 100.0)
-            .with_painted_rect(64, 64, 192, 192, WorldArchetypeId::EquatorialTropical.to_mask_id());
+        let mut mask = RegionalArchetypeMask::new_unpainted(256, 100.0).with_painted_rect(
+            64,
+            64,
+            192,
+            192,
+            WorldArchetypeId::EquatorialTropical.to_mask_id(),
+        );
         mask.recompute_falloff();
         let blend = RegionalArchetypeBlend::new(&mask);
         // Center of the rect at world (0, 0) → mask pixel (128, 128) → deep interior.
@@ -1066,14 +1063,24 @@ mod tests {
         let mut mask = RegionalArchetypeMask::new_unpainted(256, 100.0);
         mask.falloff_radius_pixels = 32;
         let mut mask = mask
-            .with_painted_rect(0, 0, 128, 256, WorldArchetypeId::BorealSubarctic.to_mask_id())
+            .with_painted_rect(
+                0,
+                0,
+                128,
+                256,
+                WorldArchetypeId::BorealSubarctic.to_mask_id(),
+            )
             .with_painted_rect(128, 0, 256, 256, WorldArchetypeId::Desert.to_mask_id());
         mask.recompute_falloff();
         let blend = RegionalArchetypeBlend::new(&mask);
         // World x=0 maps to mask px=128 (boundary). Falloff is small there
         // (transition zone). Sample at world x=0 z=0.
         let c = blend.sample_at(0.0, 0.0);
-        assert!(c.len() >= 2, "expected >=2 contributors at transition; got {}", c.len());
+        assert!(
+            c.len() >= 2,
+            "expected >=2 contributors at transition; got {}",
+            c.len()
+        );
         let total: f32 = c.iter().map(|(_, w)| w).sum();
         assert!((total - 1.0).abs() < 1e-5);
     }
@@ -1083,9 +1090,27 @@ mod tests {
     #[test]
     fn blend_weights_sum_to_one() {
         let mut mask = RegionalArchetypeMask::new_unpainted(128, 100.0)
-            .with_painted_rect(0, 0, 64, 128, WorldArchetypeId::ContinentalTemperate.to_mask_id())
-            .with_painted_rect(64, 0, 96, 128, WorldArchetypeId::EquatorialTropical.to_mask_id())
-            .with_painted_rect(96, 0, 128, 128, WorldArchetypeId::BorealSubarctic.to_mask_id());
+            .with_painted_rect(
+                0,
+                0,
+                64,
+                128,
+                WorldArchetypeId::ContinentalTemperate.to_mask_id(),
+            )
+            .with_painted_rect(
+                64,
+                0,
+                96,
+                128,
+                WorldArchetypeId::EquatorialTropical.to_mask_id(),
+            )
+            .with_painted_rect(
+                96,
+                0,
+                128,
+                128,
+                WorldArchetypeId::BorealSubarctic.to_mask_id(),
+            );
         mask.recompute_falloff();
         let blend = RegionalArchetypeBlend::new(&mask);
         for i in 0..10 {
@@ -1157,8 +1182,13 @@ mod tests {
     /// world-coord determinism contract.
     #[test]
     fn blend_chunk_edge_continuity() {
-        let mut mask = RegionalArchetypeMask::new_unpainted(128, 100.0)
-            .with_painted_rect(32, 32, 96, 96, WorldArchetypeId::EquatorialTropical.to_mask_id());
+        let mut mask = RegionalArchetypeMask::new_unpainted(128, 100.0).with_painted_rect(
+            32,
+            32,
+            96,
+            96,
+            WorldArchetypeId::EquatorialTropical.to_mask_id(),
+        );
         mask.recompute_falloff();
         let blend = RegionalArchetypeBlend::new(&mask);
         // Two chunks sharing edge at world x=0; both sample at the same x=0.
@@ -1187,8 +1217,8 @@ mod tests {
     // =========================================================================
 
     use crate::spline_types::{
-        bootstrap_splines_continental_temperate, BootstrapSplineSet,
-        ClimateInputDim, ParamSpline, Spline1D,
+        bootstrap_splines_continental_temperate, BootstrapSplineSet, ClimateInputDim, ParamSpline,
+        Spline1D,
     };
 
     /// Build a synthetic `BootstrapSplineSet` with the given mountain
@@ -1199,8 +1229,7 @@ mod tests {
         BootstrapSplineSet {
             mountains_amplitude: ParamSpline {
                 climate_input: ClimateInputDim::Pv,
-                spline: Spline1D::from_control_points(vec![(0.0, mountains_amplitude)])
-                    .unwrap(),
+                spline: Spline1D::from_control_points(vec![(0.0, mountains_amplitude)]).unwrap(),
             },
             mountains_scale: 0.002, // f64 baseline
             continental_scale: ParamSpline {
@@ -1240,9 +1269,18 @@ mod tests {
         let lookup = |_id: WorldArchetypeId| bootstrap_splines_continental_temperate();
         let blended = blend_bootstrap_params(&contributors, &lookup, &sample);
 
-        assert_eq!(direct.mountains_amplitude.to_bits(), blended.mountains_amplitude.to_bits());
-        assert_eq!(direct.mountains_scale.to_bits(), blended.mountains_scale.to_bits());
-        assert_eq!(direct.continental_scale.to_bits(), blended.continental_scale.to_bits());
+        assert_eq!(
+            direct.mountains_amplitude.to_bits(),
+            blended.mountains_amplitude.to_bits()
+        );
+        assert_eq!(
+            direct.mountains_scale.to_bits(),
+            blended.mountains_scale.to_bits()
+        );
+        assert_eq!(
+            direct.continental_scale.to_bits(),
+            blended.continental_scale.to_bits()
+        );
         assert_eq!(
             direct.base_elevation_amplitude.to_bits(),
             blended.base_elevation_amplitude.to_bits()
@@ -1267,9 +1305,7 @@ mod tests {
         assert!((blended.mountains_amplitude - direct.mountains_amplitude).abs() < 1e-3);
         assert!((blended.mountains_scale - direct.mountains_scale).abs() < 1e-9);
         assert!((blended.continental_scale - direct.continental_scale).abs() < 1e-7);
-        assert!(
-            (blended.base_elevation_amplitude - direct.base_elevation_amplitude).abs() < 1e-3
-        );
+        assert!((blended.base_elevation_amplitude - direct.base_elevation_amplitude).abs() < 1e-3);
     }
 
     /// Two distinct archetypes (synthetic 480 + 800 amplitudes) at 50/50
@@ -1366,8 +1402,7 @@ mod tests {
                 };
                 synthetic_splines(amp)
             };
-            let blended =
-                blend_bootstrap_params(&contributors, &lookup, &median_climate_sample());
+            let blended = blend_bootstrap_params(&contributors, &lookup, &median_climate_sample());
 
             // Compute min/max amplitudes among contributors.
             let mut min_amp = f32::INFINITY;

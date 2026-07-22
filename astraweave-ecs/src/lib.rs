@@ -1357,14 +1357,30 @@ mod tests {
             SEQ.lock().unwrap().push(name);
         }
 
-        fn pre_sim_sys(_: &mut World) { mark("pre_simulation"); }
-        fn perception_sys(_: &mut World) { mark("perception"); }
-        fn simulation_sys(_: &mut World) { mark("simulation"); }
-        fn sync_sys(_: &mut World) { mark("sync"); }
-        fn ai_planning_sys(_: &mut World) { mark("ai_planning"); }
-        fn physics_sys(_: &mut World) { mark("physics"); }
-        fn post_sim_sys(_: &mut World) { mark("post_simulation"); }
-        fn presentation_sys(_: &mut World) { mark("presentation"); }
+        fn pre_sim_sys(_: &mut World) {
+            mark("pre_simulation");
+        }
+        fn perception_sys(_: &mut World) {
+            mark("perception");
+        }
+        fn simulation_sys(_: &mut World) {
+            mark("simulation");
+        }
+        fn sync_sys(_: &mut World) {
+            mark("sync");
+        }
+        fn ai_planning_sys(_: &mut World) {
+            mark("ai_planning");
+        }
+        fn physics_sys(_: &mut World) {
+            mark("physics");
+        }
+        fn post_sim_sys(_: &mut World) {
+            mark("post_simulation");
+        }
+        fn presentation_sys(_: &mut World) {
+            mark("presentation");
+        }
 
         let mut app = App::new();
         // Register in reverse to prove scheduling is stage-ordered, not registration-ordered.
@@ -1446,11 +1462,21 @@ mod tests {
             a.store(0, Ordering::SeqCst);
         }
 
-        fn per(_: &mut World) { PER.fetch_add(1, Ordering::SeqCst); }
-        fn sim(_: &mut World) { SIM.fetch_add(1, Ordering::SeqCst); }
-        fn ai(_: &mut World)  { AI.fetch_add(1, Ordering::SeqCst); }
-        fn phy(_: &mut World) { PHY.fetch_add(1, Ordering::SeqCst); }
-        fn pre(_: &mut World) { PRESENT.fetch_add(1, Ordering::SeqCst); }
+        fn per(_: &mut World) {
+            PER.fetch_add(1, Ordering::SeqCst);
+        }
+        fn sim(_: &mut World) {
+            SIM.fetch_add(1, Ordering::SeqCst);
+        }
+        fn ai(_: &mut World) {
+            AI.fetch_add(1, Ordering::SeqCst);
+        }
+        fn phy(_: &mut World) {
+            PHY.fetch_add(1, Ordering::SeqCst);
+        }
+        fn pre(_: &mut World) {
+            PRESENT.fetch_add(1, Ordering::SeqCst);
+        }
 
         let mut app = App::new();
         app.add_system("perception", per);

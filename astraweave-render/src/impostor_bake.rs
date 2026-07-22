@@ -506,7 +506,10 @@ impl ImpostorBaker {
         };
         queue.write_buffer(&self.vp_buffer, 0, bytemuck::bytes_of(&vp));
 
-        let (aw, ah) = (self.config.atlas_width as f32, self.config.atlas_height as f32);
+        let (aw, ah) = (
+            self.config.atlas_width as f32,
+            self.config.atlas_height as f32,
+        );
         let x = (region.u_min * aw).round();
         let y = (region.v_min * ah).round();
         let w = ((region.u_max - region.u_min) * aw).round().max(1.0);
@@ -806,8 +809,8 @@ impl From<ImpostorAtlasSidecar> for ImpostorAtlasSpec {
 /// Serialise `spec` to a TOML sidecar at `path`. Parent directory must exist.
 pub fn save_atlas_sidecar(path: &Path, spec: &ImpostorAtlasSpec) -> Result<()> {
     let sidecar = ImpostorAtlasSidecar::from(spec);
-    let text = toml::to_string_pretty(&sidecar)
-        .context("serialise ImpostorAtlasSidecar to TOML")?;
+    let text =
+        toml::to_string_pretty(&sidecar).context("serialise ImpostorAtlasSidecar to TOML")?;
     std::fs::write(path, text)
         .with_context(|| format!("write atlas sidecar to {}", path.display()))?;
     Ok(())
@@ -817,8 +820,8 @@ pub fn save_atlas_sidecar(path: &Path, spec: &ImpostorAtlasSpec) -> Result<()> {
 pub fn load_atlas_sidecar(path: &Path) -> Result<ImpostorAtlasSpec> {
     let text = std::fs::read_to_string(path)
         .with_context(|| format!("read atlas sidecar from {}", path.display()))?;
-    let sidecar: ImpostorAtlasSidecar = toml::from_str(&text)
-        .with_context(|| format!("parse atlas sidecar {}", path.display()))?;
+    let sidecar: ImpostorAtlasSidecar =
+        toml::from_str(&text).with_context(|| format!("parse atlas sidecar {}", path.display()))?;
     Ok(sidecar.into())
 }
 
@@ -837,8 +840,8 @@ pub fn save_atlas_png(path: &Path, pixels: &[u8], width: u32, height: u32) -> Re
             pixels.len()
         );
     }
-    let img: image::RgbaImage =
-        image::ImageBuffer::from_raw(width, height, pixels.to_vec()).ok_or_else(|| {
+    let img: image::RgbaImage = image::ImageBuffer::from_raw(width, height, pixels.to_vec())
+        .ok_or_else(|| {
             anyhow::anyhow!(
                 "save_atlas_png: failed to build RgbaImage from {}x{} buffer",
                 width,
@@ -973,8 +976,8 @@ where
     }
 
     // Slow path: bake, persist, return.
-    let (pixels, w, h) = bake_fn(expected)
-        .context("lazy-bake callback failed to produce atlas pixels")?;
+    let (pixels, w, h) =
+        bake_fn(expected).context("lazy-bake callback failed to produce atlas pixels")?;
     let expected_len = (w as usize) * (h as usize) * 4;
     if pixels.len() != expected_len {
         anyhow::bail!(
@@ -1137,8 +1140,8 @@ mod tests {
     fn bake_shader_source_parses_with_naga() {
         // Syntax-level validation. Full uniform-layout validation only happens
         // at GPU pipeline creation time (see the gpu-tests integration test).
-        let module = naga::front::wgsl::parse_str(IMPOSTOR_BAKE_WGSL)
-            .expect("bake shader must parse");
+        let module =
+            naga::front::wgsl::parse_str(IMPOSTOR_BAKE_WGSL).expect("bake shader must parse");
         assert!(module
             .entry_points
             .iter()
@@ -1368,8 +1371,7 @@ mod tests {
         let spec = ImpostorAtlasSpec::uniform(64, 32, 8, &["oak", "pine"]);
 
         // Cold start: populate disk.
-        load_or_bake_atlas(&png, &side, &spec, |s| Ok(fake_bake_pixels(s)))
-            .unwrap();
+        load_or_bake_atlas(&png, &side, &spec, |s| Ok(fake_bake_pixels(s))).unwrap();
 
         // Warm start: callback must NOT be invoked.
         let mut invoked = 0u32;
@@ -1487,7 +1489,10 @@ mod tests {
             "error should flag buffer/dim mismatch: {}",
             err
         );
-        assert!(!png.exists(), "PNG must not be written when validation fails");
+        assert!(
+            !png.exists(),
+            "PNG must not be written when validation fails"
+        );
     }
 
     #[cfg(feature = "textures")]

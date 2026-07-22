@@ -595,29 +595,47 @@ mod tests {
             trf.scatter_species_set,
             ScatterSpeciesSet::Tropical
         ));
-        assert!(matches!(trf.surface_color_palette, SurfaceColorPalette::Forest));
+        assert!(matches!(
+            trf.surface_color_palette,
+            SurfaceColorPalette::Forest
+        ));
 
         let tdf = BiomeParameters::for_biome(BiomeId::TemperateDeciduousForest);
         assert!(matches!(tdf.scatter_species_set, ScatterSpeciesSet::Forest));
 
         let tundra = BiomeParameters::for_biome(BiomeId::Tundra);
-        assert!(matches!(tundra.scatter_species_set, ScatterSpeciesSet::Tundra));
+        assert!(matches!(
+            tundra.scatter_species_set,
+            ScatterSpeciesSet::Tundra
+        ));
         assert!(matches!(
             tundra.surface_color_palette,
             SurfaceColorPalette::Tundra
         ));
 
         let alpine = BiomeParameters::for_biome(BiomeId::Alpine);
-        assert!(matches!(alpine.scatter_species_set, ScatterSpeciesSet::Alpine));
-        assert!(matches!(alpine.surface_color_palette, SurfaceColorPalette::Rock));
+        assert!(matches!(
+            alpine.scatter_species_set,
+            ScatterSpeciesSet::Alpine
+        ));
+        assert!(matches!(
+            alpine.surface_color_palette,
+            SurfaceColorPalette::Rock
+        ));
         assert!(alpine.runevision_config.is_none()); // mountain-character
 
         let rocky = BiomeParameters::for_biome(BiomeId::MountainRocky);
-        assert!(matches!(rocky.scatter_species_set, ScatterSpeciesSet::BareRock));
+        assert!(matches!(
+            rocky.scatter_species_set,
+            ScatterSpeciesSet::BareRock
+        ));
         assert_eq!(rocky.scatter_density, 0.0);
 
         let ocean = BiomeParameters::for_biome(BiomeId::Ocean);
         assert!(matches!(ocean.scatter_species_set, ScatterSpeciesSet::None));
-        assert!(matches!(ocean.surface_color_palette, SurfaceColorPalette::OceanWater));
+        assert!(matches!(
+            ocean.surface_color_palette,
+            SurfaceColorPalette::OceanWater
+        ));
     }
 }

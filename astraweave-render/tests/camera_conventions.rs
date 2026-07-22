@@ -269,12 +269,12 @@ fn bench_mock_camera_uses_canonical_up_vector() {
     //         let dir = Self::dir(self.yaw, self.pitch);
     //         Mat4::look_to_rh(self.position, dir, <UP_VECTOR>)
     //     }
-    let view_matrix_idx = bench_source
-        .find("pub fn view_matrix")
-        .expect("bench mock at astraweave-render/benches/camera_primitives_instancing.rs \
+    let view_matrix_idx = bench_source.find("pub fn view_matrix").expect(
+        "bench mock at astraweave-render/benches/camera_primitives_instancing.rs \
                  must define a view_matrix function for this test to verify. \
                  If the bench file was renamed or the function deleted, update \
-                 this test or CAMERA_CONVENTIONS.md §3 row for #29.");
+                 this test or CAMERA_CONVENTIONS.md §3 row for #29.",
+    );
     let after_view_matrix = &bench_source[view_matrix_idx..];
 
     // Take the function body — up to the next `fn ` declaration.

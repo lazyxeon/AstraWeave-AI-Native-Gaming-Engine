@@ -469,9 +469,7 @@ impl TerrainNoise {
         // Phase 1.6-F.2 §2.6: continental-scale plain Perlin. Seeded
         // deterministically from (world_seed + continental_seed_offset) so
         // the field is a pure function of (world_seed, world_x, world_z).
-        let continental_seed = seed
-            .wrapping_add(config.continental_seed_offset as u64)
-            as u32;
+        let continental_seed = seed.wrapping_add(config.continental_seed_offset as u64) as u32;
         let continental = Perlin::new(continental_seed);
 
         // Phase 1.6-F.2-T-4: if the base layer uses DomainWarped noise AND
@@ -480,15 +478,14 @@ impl TerrainNoise {
         // warp-coords path is decoupled from the primary Fbm sampling — we
         // warp coordinates, then feed the warped coords to
         // fbm_derivative_weighted_2d as the primary evaluation.
-        let base_dw_for_coords = if matches!(
-            config.base_elevation.noise_type,
-            NoiseType::DomainWarped
-        ) && config.base_derivative_weighted
-        {
-            Some(DomainWarpedNoise::new(&config.base_elevation, seed))
-        } else {
-            None
-        };
+        let base_dw_for_coords =
+            if matches!(config.base_elevation.noise_type, NoiseType::DomainWarped)
+                && config.base_derivative_weighted
+            {
+                Some(DomainWarpedNoise::new(&config.base_elevation, seed))
+            } else {
+                None
+            };
         let base_dw_seed = seed as u32;
 
         Self {
@@ -1462,7 +1459,7 @@ mod tests {
         let mut config = NoiseConfig::default();
         config.base_elevation.scale = 0.004;
         config.base_elevation.amplitude = 150.0; // F.4.B.2.B: was 50 (×3).
-        // F.2-T-3.C.1: base_octaves 5 → 4 per PBR Nyquist formula.
+                                                 // F.2-T-3.C.1: base_octaves 5 → 4 per PBR Nyquist formula.
         config.base_elevation.octaves = 4;
         // F.2-T-4: derivative-weighted fBm on base layer.
         config.base_derivative_weighted = true;
@@ -1606,10 +1603,8 @@ mod tests {
                 let origin_z = chunk_z as f64 * chunk_size;
                 for vz in 0..verts_per_side {
                     for vx in 0..verts_per_side {
-                        let x = origin_x
-                            + (vx as f64 / verts_per_side as f64) * chunk_size;
-                        let z = origin_z
-                            + (vz as f64 / verts_per_side as f64) * chunk_size;
+                        let x = origin_x + (vx as f64 / verts_per_side as f64) * chunk_size;
+                        let z = origin_z + (vz as f64 / verts_per_side as f64) * chunk_size;
                         heights.push(noise.sample_height(x, z));
                     }
                 }
@@ -1672,19 +1667,18 @@ mod tests {
             ]) as f32
                 * config.base_elevation.amplitude;
 
-            let mountains_raw = (noise.mountains.get([
-                x * config.mountains.scale,
-                0.0,
-                z * config.mountains.scale,
-            ]) as f32)
-                .abs()
-                * config.mountains.amplitude;
+            let mountains_raw =
+                (noise
+                    .mountains
+                    .get([x * config.mountains.scale, 0.0, z * config.mountains.scale])
+                    as f32)
+                    .abs()
+                    * config.mountains.amplitude;
 
-            let detail = noise.detail.get([
-                x * config.detail.scale,
-                0.0,
-                z * config.detail.scale,
-            ]) as f32
+            let detail = noise
+                .detail
+                .get([x * config.detail.scale, 0.0, z * config.detail.scale])
+                as f32
                 * config.detail.amplitude;
 
             let expected = (base + mountains_raw + detail).max(0.0);
@@ -1808,8 +1802,7 @@ mod tests {
             })
             .collect();
 
-        let unique: std::collections::HashSet<u32> =
-            heights.iter().map(|h| h.to_bits()).collect();
+        let unique: std::collections::HashSet<u32> = heights.iter().map(|h| h.to_bits()).collect();
         assert!(
             unique.len() >= 8,
             "sample_height_with_params produced too few distinct values: \
