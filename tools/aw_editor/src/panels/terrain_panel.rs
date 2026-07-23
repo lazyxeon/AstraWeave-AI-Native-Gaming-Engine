@@ -930,7 +930,7 @@ impl TerrainPanel {
             );
             ui.label("Level:");
             ui.add(
-                egui::Slider::new(&mut self.water_level, -5.0..=15.0)
+                egui::Slider::new(&mut self.water_level, -5.0..=30.0)
                     .suffix(" m")
                     .clamping(egui::SliderClamping::Always),
             )

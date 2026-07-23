@@ -3839,31 +3839,45 @@ impl EngineRenderAdapter {
                 self.renderer.hdr_format(),
                 wgpu::TextureFormat::Depth32Float,
             );
-            // Apply style-specific colors
-            let (deep, shallow, foam) = match style {
+            // Apply style-specific colors + wave character (T.W.1.A). The wave
+            // tuple is (amplitude_scale, foam_threshold): scale calms the
+            // Gerstner surface down from the demo-close-up baseline (1.0 —
+            // which read as "pretty strong whitecaps" at world scale, the
+            // T.W.1 render-gate rejection); a foam_threshold above the
+            // achievable crest height (≈ 1.65 · scale) turns crest foam OFF.
+            let (deep, shallow, foam, (amp_scale, foam_threshold)) = match style {
+                // Open sea: visible swell, whitecaps only on the tallest crests.
                 WaterStyle::Ocean => (
                     glam::Vec3::new(0.02, 0.08, 0.2),
                     glam::Vec3::new(0.1, 0.4, 0.5),
                     glam::Vec3::new(0.95, 0.98, 1.0),
+                    (0.55_f32, 0.75_f32),
                 ),
+                // Gentle motion, no whitecaps (placeholder until hydrology).
                 WaterStyle::River => (
                     glam::Vec3::new(0.01, 0.05, 0.04),
                     glam::Vec3::new(0.04, 0.10, 0.08),
                     glam::Vec3::new(0.9, 0.95, 0.9),
+                    (0.30_f32, 10.0_f32),
                 ),
+                // Near-calm inland water (Boreal/Desert archetypes).
                 WaterStyle::Lake => (
                     glam::Vec3::new(0.005, 0.04, 0.06),
                     glam::Vec3::new(0.02, 0.09, 0.12),
                     glam::Vec3::new(0.9, 0.95, 1.0),
+                    (0.12_f32, 10.0_f32),
                 ),
+                // Stagnant, effectively still.
                 WaterStyle::Swamp => (
                     glam::Vec3::new(0.02, 0.03, 0.01),
                     glam::Vec3::new(0.05, 0.06, 0.03),
                     glam::Vec3::new(0.7, 0.75, 0.6),
+                    (0.08_f32, 10.0_f32),
                 ),
             };
             let mut water = water;
             water.set_water_colors(deep, shallow, foam);
+            water.set_wave_params(amp_scale, foam_threshold);
             // TW1 (ratification #6): the W.2c.2 hardcoded part/raise/freeze
             // scaffolding weaves that lived here are DELETED — they were
             // set-piece test inputs meant to be replaced by a real gameplay

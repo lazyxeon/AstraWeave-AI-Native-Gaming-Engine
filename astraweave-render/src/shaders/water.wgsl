@@ -48,7 +48,7 @@ struct WaterUniforms {
     ripple_strength: f32,  // Normal perturbation strength (default 0.15)
     water_level: f32,      // World-space Y of the rest surface (W.2a)
     skirt_depth: f32,      // Skirt vertices drop this far below the surface (W.2a)
-    _pad3: f32,
+    wave_amp_scale: f32,   // T.W.1.A per-style amplitude/steepness scale (1 = W-series baseline)
     _pad4: f32,
     _pad5: f32,
     // W.2b — refraction + depth-delta foam.
@@ -68,6 +68,14 @@ struct WaterUniforms {
 // `SKIRT_DEPTH` / `WEAVE_MAX_DEFORM` in water.rs so a Part/Raise at full intensity
 // stays within the LOD skirt and never re-exposes a seam (W.2c.2 skirt constraint).
 const WEAVE_MAX_DEFORM: f32 = 8.0;
+
+// T.W.1.A — camera-distance Gerstner fade. By WAVE_FADE_END the surface is
+// exactly flat — before the horizon shell's overlapped inner edge — so the
+// grid→shell transition is flat-against-flat (no seam) and far chunks stop
+// alias-shimmering. MUST mirror WAVE_FADE_START/END in water.rs
+// (test_wgsl_mirrors_wave_fade_constants pins both lines verbatim).
+const WAVE_FADE_START: f32 = 260.0;
+const WAVE_FADE_END: f32 = 420.0;
 
 @group(0) @binding(0) var<uniform> uniforms: WaterUniforms;
 // W.2b — opaque scene snapshot + scene depth for refraction and shoreline foam.
@@ -145,8 +153,10 @@ fn gerstner_wave(
     let phase = frequency * (dot(d, pos) - speed * time);
     // Profile A steepness guardrail: cap Q ≤ 1.0 to prevent normal inversion /
     // mesh self-intersection at crests (the W-series Gemini-triage correctness cap).
-    let Q = min(steepness / (frequency * amplitude * f32(WAVE_COUNT)), 1.0);
-    
+    // Epsilon denominator (T.W.1.A): a style/fade-scaled amplitude of exactly 0
+    // must yield Q = 0, not 0/0 = NaN.
+    let Q = min(steepness / max(frequency * amplitude * f32(WAVE_COUNT), 1e-6), 1.0);
+
     return vec3<f32>(
         Q * amplitude * d.x * cos(phase),
         amplitude * sin(phase),
@@ -167,7 +177,9 @@ fn gerstner_normal(
     let phase = frequency * (dot(d, pos) - speed * time);
     // Profile A steepness guardrail: cap Q ≤ 1.0 to prevent normal inversion /
     // mesh self-intersection at crests (the W-series Gemini-triage correctness cap).
-    let Q = min(steepness / (frequency * amplitude * f32(WAVE_COUNT)), 1.0);
+    // Epsilon denominator (T.W.1.A): a style/fade-scaled amplitude of exactly 0
+    // must yield Q = 0, not 0/0 = NaN.
+    let Q = min(steepness / max(frequency * amplitude * f32(WAVE_COUNT), 1e-6), 1.0);
     let WA = frequency * amplitude;
     
     let s = sin(phase);
@@ -238,25 +250,34 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     // Skirt vertices carry sentinel local Y = -1.0; surface vertices carry 0.
     let is_skirt = select(0.0, 1.0, input.position.y < -0.5);
 
+    // T.W.1.A — per-style scale × camera-distance fade. Both multiply wave
+    // amplitude AND steepness, so Q (the shape ratio) is preserved wherever the
+    // surface is non-flat; the epsilon in the Q denominator covers scale = 0.
+    // By WAVE_FADE_END the surface is exactly flat, meeting the flat horizon
+    // shell with no visible transition.
+    let cam_dist = distance(world_xz, uniforms.camera_pos.xz);
+    let ws = uniforms.wave_amp_scale
+        * (1.0 - smoothstep(WAVE_FADE_START, WAVE_FADE_END, cam_dist));
+
     // Apply 4 Gerstner waves with different parameters
     var displacement = vec3<f32>(0.0);
     var normal_accum = vec3<f32>(0.0, 1.0, 0.0);
 
     // Wave 1: Primary swell (large, slow)
-    displacement += gerstner_wave(world_xz, time, 0.8, 0.15, 2.0, vec2<f32>(1.0, 0.3), 0.5);
-    normal_accum += gerstner_normal(world_xz, time, 0.8, 0.15, 2.0, vec2<f32>(1.0, 0.3), 0.5);
+    displacement += gerstner_wave(world_xz, time, 0.8 * ws, 0.15, 2.0, vec2<f32>(1.0, 0.3), 0.5 * ws);
+    normal_accum += gerstner_normal(world_xz, time, 0.8 * ws, 0.15, 2.0, vec2<f32>(1.0, 0.3), 0.5 * ws);
 
     // Wave 2: Secondary swell (medium)
-    displacement += gerstner_wave(world_xz, time, 0.5, 0.25, 2.5, vec2<f32>(-0.5, 1.0), 0.4);
-    normal_accum += gerstner_normal(world_xz, time, 0.5, 0.25, 2.5, vec2<f32>(-0.5, 1.0), 0.4);
+    displacement += gerstner_wave(world_xz, time, 0.5 * ws, 0.25, 2.5, vec2<f32>(-0.5, 1.0), 0.4 * ws);
+    normal_accum += gerstner_normal(world_xz, time, 0.5 * ws, 0.25, 2.5, vec2<f32>(-0.5, 1.0), 0.4 * ws);
 
     // Wave 3: Chop (small, fast)
-    displacement += gerstner_wave(world_xz, time, 0.25, 0.5, 3.5, vec2<f32>(0.7, -0.7), 0.3);
-    normal_accum += gerstner_normal(world_xz, time, 0.25, 0.5, 3.5, vec2<f32>(0.7, -0.7), 0.3);
+    displacement += gerstner_wave(world_xz, time, 0.25 * ws, 0.5, 3.5, vec2<f32>(0.7, -0.7), 0.3 * ws);
+    normal_accum += gerstner_normal(world_xz, time, 0.25 * ws, 0.5, 3.5, vec2<f32>(0.7, -0.7), 0.3 * ws);
 
     // Wave 4: Ripples (tiny, very fast)
-    displacement += gerstner_wave(world_xz, time, 0.1, 1.0, 4.0, vec2<f32>(-0.3, 0.9), 0.2);
-    normal_accum += gerstner_normal(world_xz, time, 0.1, 1.0, 4.0, vec2<f32>(-0.3, 0.9), 0.2);
+    displacement += gerstner_wave(world_xz, time, 0.1 * ws, 1.0, 4.0, vec2<f32>(-0.3, 0.9), 0.2 * ws);
+    normal_accum += gerstner_normal(world_xz, time, 0.1 * ws, 1.0, 4.0, vec2<f32>(-0.3, 0.9), 0.2 * ws);
 
     // Gerstner crest height for foam / shallow tint — captured BEFORE the weave
     // offset so a raise doesn't read as foam and a part doesn't read as deep shadow.

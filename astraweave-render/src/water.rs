@@ -49,6 +49,43 @@ const SKIRT_DEPTH: f32 = 8.0;
 /// [`WaterRenderer::set_water_level`] get a surface at sea level.
 pub const DEFAULT_WATER_LEVEL: f32 = astraweave_terrain::SEA_LEVEL;
 
+// ── Horizon shell (T.W.1.A) ──────────────────────────────────────────────────
+//
+// The chunked LOD grid spans only ±(GRID_RADIUS + 0.5)·CHUNK_SIZE = ±544 world
+// units around the camera's chunk — at editor world scale its square edge was
+// exposed mid-water and tracked the camera (the T.W.1 render-gate rejection).
+// The horizon shell is a flat 8-quad annulus at water level extending the
+// surface from just inside the grid's outer boundary out past every camera far
+// plane in use, so the visible water boundary is the far-plane horizon arc (or
+// full fog), never a mesh edge. Chosen over (a) scaling GRID_RADIUS to the far
+// plane (radius ≈ 625 → ~1.56M chunks iterated per frame on the CPU) and
+// (b) far-LOD mega-tile rings (per-ring CPU + a NEW LOD-crack surface at every
+// ring boundary); the shell adds one draw of 16 triangles and no crack class —
+// the seam is overlap-covered and flat-by-construction (see WAVE_FADE_*).
+
+/// Inner half-extent of the horizon shell's hole, relative to the snapped
+/// camera-chunk center: one full chunk INSIDE the grid's outer boundary, so
+/// shell and grid overlap in a `CHUNK_SIZE`-wide band. Same-height,
+/// same-shader overlap is visually idempotent (the water fragment writes
+/// alpha = 1) and immune to the T-junction pinholes edge-abutment risks.
+const HORIZON_INNER_HALF_EXTENT: f32 = (GRID_RADIUS as f32 - 0.5) * CHUNK_SIZE; // 480
+/// Outer half-extent of the horizon shell. Must exceed the largest camera far
+/// plane the surface is judged under, so the shell's own edge is never inside
+/// the frustum. Regimes (`test_horizon_covers_both_view_regimes`): editor
+/// judging aids far=40,000 with fog 60k/120k (fog conceals NOTHING — it starts
+/// beyond the far plane); production far=5,000 with fog full at 1,800.
+pub const HORIZON_OUTER_HALF_EXTENT: f32 = 100_000.0;
+/// Camera-distance band over which Gerstner amplitude (and steepness, in the
+/// same ratio) fades to zero in the vertex shader. `WAVE_FADE_END` must leave
+/// the surface exactly FLAT before the shell's inner edge under the worst-case
+/// camera offset inside its chunk (32·√2 ≈ 45.3 → flat needed by ≈ 434.7), so
+/// the grid↔shell seam is flat-against-flat by construction — no new crack
+/// class. `WAVE_FADE_START` sits beyond the LOD0/LOD1 distance bands (≤ 220)
+/// so the near-field W-series look is untouched. MUST mirror the WGSL consts
+/// of the same names (`test_wgsl_mirrors_wave_fade_constants`).
+pub const WAVE_FADE_START: f32 = 260.0;
+pub const WAVE_FADE_END: f32 = 420.0;
+
 // ── Weave-response deformation (W.2c) ────────────────────────────────────────
 
 /// Maximum simultaneously-active weave-deformation instances (W.2c #4 ratification).
@@ -168,9 +205,11 @@ pub struct WaterUniforms {
     pub ripple_strength: f32,          // 136-140
     pub water_level: f32,              // 140-144
     pub skirt_depth: f32,              // 144-148
-    pub _pad2: f32,                    // 148-152
-    pub _pad3: f32,                    // 152-156
-    pub _pad4: f32,                    // 156-160
+    // T.W.1.A — per-style Gerstner amplitude/steepness scale (1.0 = the
+    // W-series baseline look). Repurposed the former `_pad2`; layout unchanged.
+    pub wave_amp_scale: f32, // 148-152
+    pub _pad3: f32,          // 152-156
+    pub _pad4: f32,          // 156-160
     // W.2b — refraction + depth-foam. inv_view_proj sits at offset 160 (16-aligned)
     // so the mat4 satisfies std140 alignment.
     pub inv_view_proj: [[f32; 4]; 4], // 160-224 — reconstruct scene world pos from depth
@@ -203,7 +242,7 @@ impl Default for WaterUniforms {
             ripple_strength: 0.15,
             water_level: DEFAULT_WATER_LEVEL,
             skirt_depth: SKIRT_DEPTH,
-            _pad2: 0.0,
+            wave_amp_scale: 1.0,
             _pad3: 0.0,
             _pad4: 0.0,
             inv_view_proj: Mat4::IDENTITY.to_cols_array_2d(),
@@ -308,6 +347,11 @@ pub struct WaterRenderer {
     instance_buffers: Vec<wgpu::Buffer>,
     /// Per-LOD live instance count for the current frame.
     instance_counts: Vec<u32>,
+    /// Horizon shell: flat far annulus extending the surface past every camera
+    /// far plane (T.W.1.A), plus its single-instance anchor buffer (the snapped
+    /// camera-chunk center — the same anchor the grid uses).
+    horizon_mesh: LodMesh,
+    horizon_instance_buffer: wgpu::Buffer,
     uniforms: WaterUniforms,
 }
 
@@ -523,6 +567,30 @@ impl WaterRenderer {
             instance_counts.push(0u32);
         }
 
+        // Horizon shell (T.W.1.A): baked once; positioned per frame by a single
+        // ChunkInstance write in `update` so its overlapped inner edge always
+        // aligns with the grid's outer boundary.
+        let (shell_vertices, shell_indices) = Self::generate_horizon_shell();
+        let horizon_mesh = LodMesh {
+            vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("water_horizon_vb"),
+                contents: bytemuck::cast_slice(&shell_vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            }),
+            index_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("water_horizon_ib"),
+                contents: bytemuck::cast_slice(&shell_indices),
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+            index_count: shell_indices.len() as u32,
+        };
+        let horizon_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("water_horizon_instance"),
+            size: std::mem::size_of::<ChunkInstance>() as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipeline,
             target_format,
@@ -536,6 +604,8 @@ impl WaterRenderer {
             lod_meshes,
             instance_buffers,
             instance_counts,
+            horizon_mesh,
+            horizon_instance_buffer,
             uniforms,
         }
     }
@@ -683,6 +753,50 @@ impl WaterRenderer {
         (vertices, indices)
     }
 
+    /// Generate the horizon shell: a flat square annulus in the grid's local
+    /// space, built as 8 quads (4 corner blocks + 4 edge strips) that share
+    /// complete edges — no T-junctions inside the shell. Surface-only (local
+    /// Y = 0, no skirt: the inner edge hides under the overlapping LOD grid,
+    /// the outer edge lies beyond every far plane). Triangles use the same
+    /// upward winding as [`Self::generate_water_plane`], asserted per-triangle
+    /// by `test_horizon_shell_geometry`.
+    fn generate_horizon_shell() -> (Vec<WaterVertex>, Vec<u32>) {
+        let b = [
+            -HORIZON_OUTER_HALF_EXTENT,
+            -HORIZON_INNER_HALF_EXTENT,
+            HORIZON_INNER_HALF_EXTENT,
+            HORIZON_OUTER_HALF_EXTENT,
+        ];
+        let mut vertices = Vec::with_capacity(32);
+        let mut indices = Vec::with_capacity(48);
+        for row in 0..3 {
+            for col in 0..3 {
+                if row == 1 && col == 1 {
+                    continue; // the hole the LOD grid fills (minus the overlap band)
+                }
+                let (x0, x1) = (b[col], b[col + 1]);
+                let (z0, z1) = (b[row], b[row + 1]);
+                let base = vertices.len() as u32;
+                for &(x, z) in &[(x0, z0), (x1, z0), (x0, z1), (x1, z1)] {
+                    vertices.push(WaterVertex {
+                        position: [x, 0.0, z],
+                        uv: [0.0, 0.0], // uv is unread by the fragment shader
+                    });
+                }
+                // Same (TL, BL, TR) / (TR, BL, BR) orientation as the grid tiles.
+                indices.extend_from_slice(&[
+                    base,
+                    base + 2,
+                    base + 1,
+                    base + 1,
+                    base + 2,
+                    base + 3,
+                ]);
+            }
+        }
+        (vertices, indices)
+    }
+
     /// Whether any LOD band has chunks to draw this frame. False before the first
     /// [`Self::update`] (e.g. the editor dormant-water case where `update_water`
     /// is never called), letting the renderer skip the scene-color snapshot + pass.
@@ -737,6 +851,20 @@ impl WaterRenderer {
                 queue.write_buffer(&self.instance_buffers[lod], 0, bytemuck::cast_slice(chunks));
             }
         }
+
+        // Anchor the horizon shell at the snapped camera-chunk center (the
+        // grid's own anchor) so the overlap band always aligns exactly.
+        let shell_anchor = ChunkInstance {
+            offset: [
+                (cam_cx as f32 + 0.5) * CHUNK_SIZE,
+                (cam_cz as f32 + 0.5) * CHUNK_SIZE,
+            ],
+        };
+        queue.write_buffer(
+            &self.horizon_instance_buffer,
+            0,
+            bytemuck::bytes_of(&shell_anchor),
+        );
     }
 
     /// Wire the scene-color snapshot + scene-depth views into the water bind group
@@ -801,6 +929,25 @@ impl WaterRenderer {
         self.uniforms.water_color_deep = deep.into();
         self.uniforms.water_color_shallow = shallow.into();
         self.uniforms.foam_color = foam.into();
+    }
+
+    /// Set the per-style wave character (T.W.1.A): one scale on Gerstner
+    /// amplitude AND steepness (their ratio — the shape factor Q — is
+    /// preserved, so the surface calms without changing wave character), plus
+    /// the crest-foam threshold. `amplitude_scale` is clamped to `[0, 1]`:
+    /// styles only calm the surface DOWN from the W-series baseline (1.0),
+    /// which keeps the skirt-crack margin and the LOD curve-vs-chord bound
+    /// intact. A `foam_threshold` above the maximum achievable crest height
+    /// (≈ 1.65 · scale) turns crest foam off entirely (Lake/Swamp styles).
+    /// Applied on the next [`Self::update`] upload.
+    pub fn set_wave_params(&mut self, amplitude_scale: f32, foam_threshold: f32) {
+        self.uniforms.wave_amp_scale = amplitude_scale.clamp(0.0, 1.0);
+        self.uniforms.foam_threshold = foam_threshold;
+    }
+
+    /// Current `(amplitude_scale, foam_threshold)` wave-style parameters.
+    pub fn wave_params(&self) -> (f32, f32) {
+        (self.uniforms.wave_amp_scale, self.uniforms.foam_threshold)
     }
 
     /// Set rain intensity for ripple effects on the water surface.
@@ -868,6 +1015,19 @@ impl WaterRenderer {
             render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..mesh.index_count, 0, 0..count);
         }
+
+        // Horizon shell (T.W.1.A): extends the surface past every far plane.
+        // Guarded by the same dormant condition as the grid, so
+        // `has_visible_chunks() == false` still means "water draws nothing".
+        if self.has_visible_chunks() {
+            render_pass.set_vertex_buffer(0, self.horizon_mesh.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(1, self.horizon_instance_buffer.slice(..));
+            render_pass.set_index_buffer(
+                self.horizon_mesh.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            render_pass.draw_indexed(0..self.horizon_mesh.index_count, 0, 0..1);
+        }
     }
 }
 
@@ -910,6 +1070,94 @@ mod tests {
     }
 
     #[test]
+    fn test_horizon_shell_geometry() {
+        let (vertices, indices) = WaterRenderer::generate_horizon_shell();
+        // 8 quads (4 corner blocks + 4 edge strips), 4 unshared vertices each.
+        assert_eq!(vertices.len(), 32);
+        assert_eq!(indices.len(), 48);
+        // Flat surface only — no skirt sentinel vertices.
+        assert!(vertices.iter().all(|v| v.position[1] == 0.0));
+        // Reaches the outer boundary on every side.
+        for extreme in [HORIZON_OUTER_HALF_EXTENT, -HORIZON_OUTER_HALF_EXTENT] {
+            assert!(vertices.iter().any(|v| v.position[0] == extreme));
+            assert!(vertices.iter().any(|v| v.position[2] == extreme));
+        }
+        // No vertex strictly inside the hole (the LOD grid's territory).
+        assert!(vertices.iter().all(|v| {
+            v.position[0].abs() >= HORIZON_INNER_HALF_EXTENT
+                || v.position[2].abs() >= HORIZON_INNER_HALF_EXTENT
+        }));
+        // Every triangle faces UP (+Y) — the grid tiles' winding family — or
+        // back-face culling would drop the shell.
+        for tri in indices.chunks(3) {
+            let [a, b, c] = [tri[0], tri[1], tri[2]].map(|i| vertices[i as usize].position);
+            let e1 = [b[0] - a[0], b[2] - a[2]];
+            let e2 = [c[0] - a[0], c[2] - a[2]];
+            // (e1 × e2).y in XZ-plane terms: e1.z*e2.x − e1.x*e2.z.
+            let ny = e1[1] * e2[0] - e1[0] * e2[1];
+            assert!(ny > 0.0, "triangle {tri:?} winds downward (ny={ny})");
+        }
+        // The shell OVERLAPS the grid by one chunk (no abutting T-junction
+        // seam): hole inner edge = grid outer boundary − CHUNK_SIZE.
+        let grid_outer = (GRID_RADIUS as f32 + 0.5) * CHUNK_SIZE;
+        assert_eq!(HORIZON_INNER_HALF_EXTENT, grid_outer - CHUNK_SIZE);
+    }
+
+    #[test]
+    fn test_horizon_covers_both_view_regimes() {
+        // Required visual horizon for a (camera_far, full-fog distance) regime:
+        // the water must reach whichever ends visibility FIRST — the far-plane
+        // clip or full fog. Regimes mirror the editor: the T.3-pending judging
+        // aids (camera.rs:262-264 far=40,000; engine_adapter.rs:1751-1755 fog
+        // 60k/120k — fog conceals nothing, it starts beyond the far plane) and
+        // the production values T.3 restores (far=5,000, fog full at 1,800,
+        // per aw_editor.md's REVERT-BEFORE-v1 list).
+        fn required_horizon(camera_far: f32, fog_full_distance: f32) -> f32 {
+            camera_far.min(fog_full_distance)
+        }
+        let judging = required_horizon(40_000.0, 120_000.0);
+        let production = required_horizon(5_000.0, 1_800.0);
+        assert_eq!(judging, 40_000.0);
+        assert_eq!(production, 1_800.0);
+        // Grid + shell must cover the larger regime, with margin (2.5× today).
+        let designed_for = judging.max(production);
+        assert!(
+            HORIZON_OUTER_HALF_EXTENT >= designed_for * 1.25,
+            "horizon shell ({HORIZON_OUTER_HALF_EXTENT}) must exceed the largest \
+             visual horizon ({designed_for}) with margin"
+        );
+    }
+
+    #[test]
+    fn test_wave_fade_flat_before_shell_seam() {
+        // The camera can sit up to 32·√2 from its snapped chunk center; the
+        // shell's inner edge is HORIZON_INNER_HALF_EXTENT from that center.
+        // Waves must be exactly flat by the closest possible shell edge...
+        let max_cam_offset = (CHUNK_SIZE / 2.0) * std::f32::consts::SQRT_2;
+        assert!(
+            WAVE_FADE_END <= HORIZON_INNER_HALF_EXTENT - max_cam_offset,
+            "fade must complete before the shell's overlapped inner edge"
+        );
+        // ...and the fade must not touch the near field (LOD0+LOD1 bands),
+        // preserving the W-series-verified close-up look.
+        assert!(WAVE_FADE_START >= LOD_DISTANCES[1]);
+        assert!(WAVE_FADE_START < WAVE_FADE_END);
+    }
+
+    #[test]
+    fn test_wgsl_mirrors_wave_fade_constants() {
+        // The shader cannot read Rust consts; the WGSL mirrors are pinned
+        // verbatim so drift fails a test instead of re-exposing the seam.
+        let wgsl = include_str!("shaders/water.wgsl");
+        for needle in [
+            format!("const WAVE_FADE_START: f32 = {WAVE_FADE_START:.1};"),
+            format!("const WAVE_FADE_END: f32 = {WAVE_FADE_END:.1};"),
+        ] {
+            assert!(wgsl.contains(&needle), "water.wgsl must contain `{needle}`");
+        }
+    }
+
+    #[test]
     fn test_lod_for_distance() {
         assert_eq!(WaterRenderer::lod_for_distance(0.0), 0);
         assert_eq!(WaterRenderer::lod_for_distance(150.0), 1);
@@ -924,9 +1172,13 @@ mod tests {
         // params); W.2c appended the weave array → 512 B. inv_view_proj stays at
         // offset 160; the weave array is 16-aligned at offset 256 (8 × 32 B).
         assert_eq!(std::mem::size_of::<WaterUniforms>(), 512);
+        // T.W.1.A repurposed the former `_pad2` — same offset, same size.
+        assert_eq!(std::mem::offset_of!(WaterUniforms, wave_amp_scale), 148);
         assert_eq!(std::mem::offset_of!(WaterUniforms, inv_view_proj), 160);
         assert_eq!(std::mem::offset_of!(WaterUniforms, weave_count), 240);
         assert_eq!(std::mem::offset_of!(WaterUniforms, weave_instances), 256);
+        // Default scale is the W-series baseline look.
+        assert_eq!(WaterUniforms::default().wave_amp_scale, 1.0);
         // GPU instance must be 32 B (2×vec4) so the std140 array stride matches WGSL.
         assert_eq!(std::mem::size_of::<WeaveInstanceRaw>(), 32);
     }
@@ -1004,6 +1256,17 @@ mod tests {
                 renderer.set_water_level(5.0);
                 assert_eq!(renderer.water_level(), 5.0);
                 assert_eq!(renderer.uniforms.water_level, 5.0);
+
+                // T.W.1.A wave-style params: default = baseline; setter applies
+                // and clamps scale to [0, 1] (styles only calm DOWN).
+                assert_eq!(renderer.wave_params(), (1.0, 0.6));
+                renderer.set_wave_params(0.15, 10.0);
+                assert_eq!(renderer.wave_params(), (0.15, 10.0));
+                renderer.set_wave_params(5.0, 0.6);
+                assert_eq!(renderer.wave_params(), (1.0, 0.6));
+                renderer.set_wave_params(-1.0, 0.6);
+                assert_eq!(renderer.wave_params().0, 0.0);
+                renderer.set_wave_params(1.0, 0.6);
 
                 // W.2c weave instance list: zero by default (surface = identity).
                 assert_eq!(renderer.weave_count(), 0);

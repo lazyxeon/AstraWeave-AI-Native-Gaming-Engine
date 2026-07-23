@@ -307,7 +307,10 @@ async fn probe_full_frame(_has_timestamps: bool) {
     let no_water = drive_frames(&mut r, "no-water");
 
     // ---- with water ----
-    let water = WaterRenderer::new(r.device(), r.config().format, DEPTH_FMT);
+    // T.W.1.A: MUST be the HDR water-pass target format — `set_water_renderer`
+    // asserts the match at install since T.W.1 (the probe's prior
+    // `r.config().format` argument tripped that assert at first re-run).
+    let water = WaterRenderer::new(r.device(), r.hdr_format(), DEPTH_FMT);
     r.set_water_renderer(water);
     let with_water = drive_frames(&mut r, "with-water");
 
