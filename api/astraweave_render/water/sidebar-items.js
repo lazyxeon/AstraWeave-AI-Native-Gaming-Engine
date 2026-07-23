@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_WATER_LEVEL","MAX_WEAVE_INSTANCES","WEAVE_MAX_DEFORM"],"enum":["WeaveKind"],"struct":["WaterRenderer","WaterUniforms","WaterVertex","WeaveInstance","WeaveInstanceRaw"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_WATER_LEVEL","HORIZON_OUTER_HALF_EXTENT","MAX_WEAVE_INSTANCES","WAVE_FADE_END","WAVE_FADE_START","WEAVE_MAX_DEFORM"],"enum":["WeaveKind"],"struct":["WaterRenderer","WaterUniforms","WaterVertex","WeaveInstance","WeaveInstanceRaw"]};
