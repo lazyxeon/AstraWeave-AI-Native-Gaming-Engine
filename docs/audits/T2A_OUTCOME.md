@@ -642,6 +642,17 @@ which is precisely why they were measured apart.
 | `cargo run -p aw_asset_cli -- validate assets/materials` | biomes `materials.toml` PASS; the 10 `arrays.toml` "Missing 'name'" failures are a pre-existing validator/schema mismatch present in **all ten** packs |
 | `cargo xtask ci-guard` | PASS — 0 tracked pack members, 0 stray blobs, ignore surfaces match. No new tracked files, so no keeplist regeneration needed |
 | `cargo fmt` (touched crates) | clean |
+| `cargo check --workspace` | **exit 0** (only the pre-existing `gizmo/mod.rs` unused-import warning) |
+| `cargo test -p aw_editor --lib terrain_panel` | **58 passed / 0 failed** |
+| `cargo test -p aw_editor --test mutation_resistant_terrain` | **70 passed / 0 failed** |
+| `cargo run -p aw_trace_sync -- --check` | **in sync** — 26 traces, 133 crates; CLAUDE.md trace table + map links match front-matter |
+
+**One ladder item was not completed, stated rather than glossed:** the full
+`cargo test -p astraweave-terrain --no-fail-fast` sweep (the ~2,439/63 figure `terrain.md` §10
+records from 2026-07-20) was launched but deadlocked on the cargo build lock against this session's
+other invocations — 2.5 s of CPU in 37 minutes — and was killed at a partial 967/12/5, which is
+**not** a citable full-suite number. The rigorous comparison is the `--lib` one in the row above,
+which was measured *at both ends* (base and HEAD) in this session and matches name-for-name.
 
 ### 8.1 Golden/baseline rot for T.G — the numbers to inherit
 
