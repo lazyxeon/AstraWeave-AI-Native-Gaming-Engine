@@ -19,8 +19,10 @@ first. In order of contribution:
 1. **The material data was corrupt** (Phase 1, ratified first). Two independent defects in the
    cook script had destroyed real measured channels: a 16-bit read clamp flattened roughness and
    AO to constants, and the AO formula was **inverted**, applying occlusion to peaks instead of
-   crevices. Three flat channels across two slots; a third slot rendering back-to-front
-   occlusion. Both fixed at the root and re-cooked.
+   crevices. Three flat channels across two slots, plus a third slot rendering back-to-front
+   occlusion. Both defects fixed at the root; **every affected slot re-cooked** — see
+   §2.5 for the slot-by-slot accounting, including why the inversion was only *observable*
+   on one of them.
 2. **The normal-strength boost** (Phase 2.1) — `NORMAL_XY_STRENGTH = 1.8`, applied
    unconditionally to every fragment.
 3. **The hex-tile pow-4 sharpening** (Phase 2.2) — a ~4 m-scale lattice superimposed on every
@@ -222,6 +224,60 @@ that pins both derivations' orientation so the sign cannot silently flip back.
 
 **Every slot whose data was not touched renders a numerically identical frame**, and only the two
 repaired slots moved. That is the attribution the beat asks for.
+
+### 2.5 Which slots did the inverted path cook — and were they all repaired?
+
+Asked at the gate, because §2.2 cites `mud_mra` (slot 5) as the proof the inversion shipped while
+§2.3's headline repairs are grassland roughness and mountain AO. The answer is **all affected
+slots were repaired, slot 5 included** — and the reason the list looks asymmetric is itself the
+interesting part.
+
+**The two defects interacted.** The 16-bit clamp ran *first*, inside `load()`, so for every family
+whose displacement source was 16-bit the inversion received an already-flattened constant and
+produced a constant (140) rather than a wrong gradient. The inversion could only express itself
+where the displacement source survived the clamp — i.e. where it was 8-bit. Exactly one family
+qualifies:
+
+| family | live slot | disp source | what the cook produced | repaired? |
+|---|---|---|---|---|
+| `grass` | **0 grassland** | none | flat 217 (the `else` fallback) | **yes** — roughness + AO |
+| `sand` | **1 desert** | n/a | procedural generator; never called `build_mra` | unaffected |
+| `tree_leaves` | **2 forest** | n/a | cooked by `cook_1k.py`, a different tool with neither bug | unaffected |
+| `mountain_rock` | **3 mountain** | `I;16` | clamped → inversion acted on a constant → flat 140 | **yes** — AO |
+| `snow` | **4 tundra** | n/a | procedural generator; never called `build_mra` | unaffected |
+| `mud` | **5 swamp** | **8-bit** | **survived the clamp → the one genuinely inverted output** | **yes** — AO |
+| `beach` | **6 beach** | n/a | `cook_1k.py` | unaffected |
+| `gravel` | **7 river** | n/a | `cook_1k.py` (from `assets_src` ARM) | unaffected |
+
+**All eight live slots are accounted for; the three that were damaged are the three that were
+re-cooked.** Slot 5 does **not** still carry upside-down AO — verified on the shipped file rather
+than asserted: live `mud_mra`'s AO now correlates **+0.9996** with the upright curve and −0.9996
+with the inverted one, having been +0.9908 *inverted* before the repair. Mean moved 211.87 → 182.85
+with sd essentially unchanged (10.69 → 10.68) — same relief structure, correct orientation.
+
+**Residue found by the same question, and closed.** Four further `traced-9` families carried the
+clamp damage but are **not** in the biomes pack, so the beat's Phase-1 wording ("every biomes-pack
+material … 8 slots + relevant `derived_1k`") had scoped them out. Since the root cause is fixed and
+re-cooking is now one command each, leaving known-corrupt data in the tree was the worse option —
+they are repaired too:
+
+| family | was | now | source / method |
+|---|---|---|---|
+| `forest_floor` | AO flat 140 | 184.29 / sd 4.67 | own `I;16` displacement (same scan) |
+| `dirt` | AO flat 140 | 195.50 / sd 14.70 | own `I;16` displacement (same scan) |
+| `stone` | AO flat 140 **and** roughness flat 255 | AO 211.27 / sd 6.49, roughness 165.02 / sd 18.19 | both channels from its own `I;16` sources |
+| `rock_slate` | AO flat 217 | 197.63 / sd 33.81 | no upstream displacement → integrated from its own normal map |
+
+These four feed the `MaterialLibrary` paint palette, which has a separate, pre-existing wiring
+defect (AD.4.A "S1": palette IDs ≥ 8 render stretched grass because layers 8-31 keep
+`TerrainLayerGpu::default()`), so the repair is not observable in the viewport today and is not
+claimed as such. It matters because any of them is one TOML line from becoming a live slot — the
+precise hazard AD.4.A already flagged for `ice` and `tree_bark`.
+
+**The whole `traced-9` set now measures clean: 6 of 9 had degenerate AO and 2 of 9 had destroyed
+roughness; both counts are now 0.** The only remaining "low-variance" verdict is `sand`'s
+roughness, which is procedural output and genuine (§3.2).
+
 
 ---
 
