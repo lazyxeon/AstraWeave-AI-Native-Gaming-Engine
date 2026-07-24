@@ -200,6 +200,54 @@ impl Spline1D {
         }
     }
 
+    /// Multi-point counterpart to [`Spline1D::constant`]: build a spline from
+    /// an authored, compile-time-known control-point table without a fallible
+    /// call site.
+    ///
+    /// T.2a hygiene. The six archetype spline factories previously called
+    /// `from_control_points(...).expect(...)` on hardcoded `vec![...]`
+    /// literals. Those `expect()`s could not fire — every literal table in
+    /// this file is non-empty, finite and ascending — but they were the
+    /// crate's only production `expect()`s, and the alternative of returning
+    /// `Result` is not merely expensive, it is **blocked**: the factories are
+    /// reached through `impl Default for WorldArchetype`
+    /// (`climate.rs`) and, cross-crate, `impl Default for TerrainPanel`
+    /// (`tools/aw_editor/src/panels/terrain_panel.rs`), and `Default::default`
+    /// cannot return `Result` — a fallible signature would only force the
+    /// panic to reappear inside those impls.
+    ///
+    /// So the invariant moves from a runtime panic to a *checked* one:
+    /// `debug_assert` catches an authoring mistake in every debug and test
+    /// build, and `bootstrap_spline_sets_are_well_formed` asserts it in CI
+    /// for all six archetypes. That is strictly stronger than an `expect()`
+    /// that can only report a violation after it has already shipped.
+    ///
+    /// [`Spline1D::from_control_points`] remains the validated path and must
+    /// be used for any control points that are not authored literals — user
+    /// edits from the editor UI, deserialized data, computed tables.
+    pub fn from_literal_control_points(points: Vec<(f32, f32)>) -> Self {
+        debug_assert!(
+            Self::literal_table_is_well_formed(&points),
+            "authored control-point table must be non-empty, finite and \
+             ascending in input: {points:?}"
+        );
+        Self {
+            control_points: points,
+        }
+    }
+
+    /// The invariant [`Spline1D::from_literal_control_points`] assumes, as a
+    /// predicate so tests can assert it directly. Mirrors the acceptance
+    /// conditions of [`Spline1D::from_control_points`] (equal inputs are
+    /// legal — they encode a sharp step; only strict descent is rejected).
+    pub fn literal_table_is_well_formed(points: &[(f32, f32)]) -> bool {
+        if points.is_empty() {
+            return false;
+        }
+        points.windows(2).all(|w| w[0].0 <= w[1].0)
+            && points.iter().all(|(x, y)| x.is_finite() && y.is_finite())
+    }
+
     /// Evaluate the spline at `input` via piecewise-linear interpolation.
     /// Out-of-domain inputs clamp to the corresponding endpoint output.
     ///
@@ -563,7 +611,7 @@ fn climate_driven_spline_set() -> BootstrapSplineSet {
             // TAIL (< -0.28) so they're distinct occasional ranges, not
             // everywhere. (E3-terrain Phase A.1b — the erosion-0→220 first cut
             // left mountains dominant because ~0 is the modal erosion value.)
-            spline: Spline1D::from_control_points(vec![
+            spline: Spline1D::from_literal_control_points(vec![
                 (-1.0, 750.0),
                 (-0.65, 480.0),
                 (-0.45, 240.0),
@@ -571,8 +619,7 @@ fn climate_driven_spline_set() -> BootstrapSplineSet {
                 (-0.12, 38.0),
                 (0.15, 20.0),
                 (1.0, 8.0),
-            ])
-            .expect("erosion→mountains_amplitude control points are sorted + finite"),
+            ]),
         },
         mountains_scale: D5FIX_BASELINE_MOUNTAINS_SCALE,
         continental_scale: ParamSpline {
@@ -585,13 +632,12 @@ fn climate_driven_spline_set() -> BootstrapSplineSet {
             // below any reasonable floor, speckling inland plains with
             // sub-beach-band (< 5 m) sand/gravel dips. ±25-45 keeps rolling
             // relief while the mountains layer supplies the drama.
-            spline: Spline1D::from_control_points(vec![
+            spline: Spline1D::from_literal_control_points(vec![
                 (0.0, 10.0),
                 (0.35, 26.0),
                 (0.7, 38.0),
                 (1.0, 48.0),
-            ])
-            .expect("continentalness→base_amplitude control points are sorted + finite"),
+            ]),
         },
         // A.2b: continentalness-driven floor — low-cont = coherent shore/basin
         // (below sea level), inland high enough that ordinary Fbm dips stay
@@ -599,14 +645,13 @@ fn climate_driven_spline_set() -> BootstrapSplineSet {
         // ~[0.3, 0.7] (mean 0.5 ± 0.2), so the low-cont basin is rare-but-real.
         base_elevation_floor: ParamSpline {
             climate_input: ClimateInputDim::Continentalness,
-            spline: Spline1D::from_control_points(vec![
+            spline: Spline1D::from_literal_control_points(vec![
                 (0.0, -25.0),
                 (0.3, -2.0),
                 (0.45, 12.0),
                 (0.7, 22.0),
                 (1.0, 28.0),
-            ])
-            .expect("continentalness→floor control points are sorted + finite"),
+            ]),
         },
     }
 }
@@ -637,8 +682,7 @@ fn archetype_spline_set(
     BootstrapSplineSet {
         mountains_amplitude: ParamSpline {
             climate_input: ClimateInputDim::Erosion,
-            spline: Spline1D::from_control_points(erosion_to_mountains)
-                .expect("erosion→mountains_amplitude control points must be sorted + finite"),
+            spline: Spline1D::from_literal_control_points(erosion_to_mountains),
         },
         mountains_scale,
         continental_scale: ParamSpline {
@@ -647,13 +691,11 @@ fn archetype_spline_set(
         },
         base_elevation_amplitude: ParamSpline {
             climate_input: ClimateInputDim::Continentalness,
-            spline: Spline1D::from_control_points(continentalness_to_base)
-                .expect("continentalness→base_elevation control points must be sorted + finite"),
+            spline: Spline1D::from_literal_control_points(continentalness_to_base),
         },
         base_elevation_floor: ParamSpline {
             climate_input: ClimateInputDim::Continentalness,
-            spline: Spline1D::from_control_points(continentalness_to_floor)
-                .expect("continentalness→floor control points must be sorted + finite"),
+            spline: Spline1D::from_literal_control_points(continentalness_to_floor),
         },
     }
 }
@@ -1304,5 +1346,78 @@ mod tests {
              sample.pv() (-1.0 at weirdness=0); got {}",
             result
         );
+    }
+
+    /// T.2a: the invariant that used to be six production `expect()`s.
+    ///
+    /// Those `expect()`s asserted, at runtime and in shipped builds, that the
+    /// hardcoded control-point tables in this file are non-empty, finite and
+    /// ascending. `Spline1D::from_literal_control_points` moved that check to
+    /// a `debug_assert`; this test is the other half — it exercises every
+    /// authored table through every public factory, so an authoring mistake
+    /// fails CI instead of panicking in the field.
+    ///
+    /// Extend the list when a new archetype factory is added.
+    #[test]
+    fn bootstrap_spline_sets_are_well_formed() {
+        let factories: [(&str, fn() -> BootstrapSplineSet); 8] = [
+            (
+                "continental_temperate",
+                bootstrap_splines_continental_temperate,
+            ),
+            ("equatorial_tropical", bootstrap_splines_equatorial_tropical),
+            ("boreal_subarctic", bootstrap_splines_boreal_subarctic),
+            ("mediterranean", bootstrap_splines_mediterranean),
+            ("desert", bootstrap_splines_desert),
+            ("custom", bootstrap_splines_custom),
+            ("climate_driven", climate_driven_spline_set),
+            ("d5fix_baseline", d5fix_baseline_spline_set),
+        ];
+        for (name, factory) in factories {
+            let set = factory();
+            for (label, param) in [
+                ("mountains_amplitude", &set.mountains_amplitude),
+                ("continental_scale", &set.continental_scale),
+                ("base_elevation_amplitude", &set.base_elevation_amplitude),
+                ("base_elevation_floor", &set.base_elevation_floor),
+            ] {
+                let pts = &param.spline.control_points;
+                assert!(
+                    Spline1D::literal_table_is_well_formed(pts),
+                    "{name}::{label} control points must be non-empty, finite                      and ascending in input; got {pts:?}"
+                );
+                // The same table must also satisfy the validated constructor —
+                // proof the infallible path accepts exactly what the fallible
+                // one does, so nothing was loosened by retiring the expect()s.
+                assert!(
+                    Spline1D::from_control_points(pts.clone()).is_ok(),
+                    "{name}::{label} must also pass from_control_points"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn literal_table_predicate_rejects_the_same_inputs_as_the_validator() {
+        // Empty, descending, NaN, infinite — the four SplineError conditions.
+        for bad in [
+            vec![],
+            vec![(1.0_f32, 0.0_f32), (0.0, 1.0)],
+            vec![(0.0_f32, f32::NAN)],
+            vec![(0.0_f32, f32::INFINITY)],
+        ] {
+            assert!(
+                !Spline1D::literal_table_is_well_formed(&bad),
+                "predicate should reject {bad:?}"
+            );
+            assert!(
+                Spline1D::from_control_points(bad.clone()).is_err(),
+                "validator should reject {bad:?}"
+            );
+        }
+        // Equal inputs encode a sharp step and are legal for both.
+        let step = vec![(0.0_f32, 0.0_f32), (0.5, 1.0), (0.5, 2.0), (1.0, 3.0)];
+        assert!(Spline1D::literal_table_is_well_formed(&step));
+        assert!(Spline1D::from_control_points(step).is_ok());
     }
 }
