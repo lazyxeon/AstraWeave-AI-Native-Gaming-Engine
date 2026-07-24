@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: wired
 summary: "Terrain material slice: 8-slot canonical biome pack + loader, splat bake, 32-layer GPU blend (complements terrain.md). terrain_materials.md"
 owns: []
-doc_version: "1.3"
-last_verified_commit: 7e52c290c
+doc_version: "1.4"
+last_verified_commit: c0753b551
 ---
 
 # Architecture Trace: Terrain Material System
@@ -21,9 +21,9 @@ last_verified_commit: 7e52c290c
 |---|---|
 | **System name** | Terrain Material System |
 | **Primary crates** | `astraweave-render`, `astraweave-terrain`, `tools/aw_editor` |
-| **Document version** | 1.3 |
-| **Last verified against commit** | `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
-| **Last verified date** | 2026-07-21 (v1.3 slot-6 update; v1.2 full pass); 2026-05-10 (full trace) |
+| **Document version** | 1.4 |
+| **Last verified against commit** | `c0753b551` (v1.4: T.2a Phase-1 aux-channel repair — see §8 Invariant 8 and the Revision note); prior `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
+| **Last verified date** | 2026-07-24 (v1.4 T.2a aux-channel repair); 2026-07-21 (v1.3 slot-6 update; v1.2 full pass); 2026-05-10 (full trace) |
 | **Status** | Active (canonical 32-layer pipeline) with transitional legacy residue |
 | **Owner notes** | Canonical reference example for the architecture trace campaign. Derived from forensic data-flow analysis on 2026-05-11. |
 
@@ -307,6 +307,7 @@ Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canoni
 | 5 | Material layer indices in `material_ids[i]` must be valid indices into the canonical material library (0-31) | Yes | Enforced by silent-drop bounds check in `terrain_splat_builder.rs:97-100` (`if layer >= 0 && (layer as usize) < max_layers`); out-of-range layers are dropped rather than asserted. Verified by inline tests (`clamps_out_of_range_weights`, `encodes_high_layer_weights_in_higher_splats` at lines 186-201 and 204+) — these confirm layer 32 and layer -1 produce no contribution |
 | 6 | Pack slot order is `arrays.toml`-driven and matches `biome_id_to_slot` 1:1 — the three surfaces (arrays.toml indices · `biome_id_to_slot` match arms · `terrain_biome_placeholder` slot order) move together or biome coloring breaks silently (v1.2) | Yes (greppable + compile-time) | `arrays.toml:2-3` contract comment; exhaustive match (new `BiomeId` variant = compile error); `aw_editor.md` Invariant 27 |
 | 7 | Aux-channel semantics at load: an `orm` key is verbatim (AO-R/rough-G/metal-B); an `mra` key is R↔B-swizzled to ORM; `orm` wins when both present. A mislabeled file (ARM bytes under an `mra` key or vice versa) double-flips channels and zeroes AO / inflates metal — the AD.4.A D1 defect class (v1.2) | Yes | `canonical_terrain_pack.rs:178-184`, `load_mra_as_orm_bytes` `:221-227`; per-file channel measurement per the close-out lesson ("ARM/MRA channel keys must be evidenced per file, never pattern-copied") |
+| 8 | **No aux channel of a live pack slot may be a placeholder constant, and AO must rise with height.** A channel whose modal value covers > 90% of pixels (or whose IQR is 0) is a placeholder, not data — standard deviation does **not** detect this (`grass_mra` roughness had sd 13.43 while 99.5% of it was exactly 255). Metallic is the sole exception: a hard constant 0 is the post-D1 dielectric contract. Separately, occlusion rises with displacement — a peak is exposed — so an AO derivation must be positively correlated with its height source (T.2a; the shipped `1.0 - h` inversion had reached `mud_mra` at r = +0.991) | Yes | `tools/material_cook/channel_stats.py` (modal/IQR detector); `tools/material_cook/test_cook_1k.py::test_ao_orientation_and_normal_integration` pins the orientation of both AO derivations |
 
 ---
 
@@ -411,5 +412,24 @@ Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canoni
 The current architecture is the result of a unification: at an earlier stage, terrain vertices carried both `biome_weights_0/1` and `material_ids/material_weights` as separate fields, with the splat builder reading the biome path and ignoring the material path. The audit doc `docs/audits/terrain_material_flow_investigation_2026-04-19.md` documents this prior state forensically. The fields were subsequently unified so that `material_ids/material_weights` is the canonical material attribute set and the splat builder now reads from it. The biome layer (in `astraweave-terrain`) continues to exist for worldgen and ecological purposes but no longer drives splat generation.
 
 The 32-layer canonical material system in `astraweave-render` represents a separate evolution from the older 8-layer procedural splat system in `astraweave-terrain/src/texture_splatting.rs`. Both still exist in the codebase; their relationship is one of the open questions in Section 11.
+
+**v1.4 addendum (2026-07-24, beat T.2a — Phase 1 data repair, commit `c0753b551`).** The pack's
+aux content was measurably corrupt and had been since the traced-9 import. Two independent defects
+in `scripts/import_terrain_textures.py`, both now fixed at the root: (a) `load()` clamped 16-bit
+(`I;16`) sources to 255 instead of rescaling, flattening slot 0's roughness to 99.5%-constant 255
+and slots 3/5's AO to the constant 140 (= `0.55 x 255`, the curve's floor at uniform height) — the
+same class as the AD.4.A "D2" defect that `cook_1k.py::to_l8` had already fixed on the other cook
+path; (b) `build_mra` computed AO as `0.55 + 0.45*blur(1 - h)`, **inverted**, darkening peaks and
+lighting crevices — measured against same-scan ground truth at r = +0.478/+0.230/+0.122 upright vs
+negative inverted, and the inversion had shipped into `mud_mra` at r = +0.991. The `else: 217`
+flat-constant fallback was removed outright: a constant is indistinguishable downstream from
+measured data. Three slots were surgically re-cooked (`_mra` only; albedo and normal untouched) —
+slot 0 roughness + AO, slot 3 AO, slot 5 AO — taking the pack from **3 flat channels to 0**.
+`cook_1k.py` gained `ao_from_displacement` / `ao_from_normal_map` (Frankot-Chellappa, slope-sign
+calibrated against the two families that ship a real displacement) / `ao_from_albedo_cavity` /
+`write_mra` / `roughness_from_mra`, plus `channel_stats.py` as the measurement instrument. Full
+evidence, station A/B and the two surfaced art-direction findings (slot 0's albedo is a synthetic
+flat green paired with an alpha-cutout card's normal map; slots 1 and 4 are 100% procedural) are in
+`docs/audits/T2A_OUTCOME.md`.
 
 **v1.2 addendum (2026-07-21, T.0 trace-sync).** Between v1.1 and v1.2 the material *content* story changed twice without this trace being updated: the E3 build (`d506658d8`, 2026-07-03) introduced the canonical 8-slot biomes pack + `canonical_terrain_pack.rs` loader + the biome-driven per-vertex authoring path (E3-terrain.1) and wired hex-tile stochastic sampling / mip chains / aniso-8 on the render side (that half is traced in `render_pipeline_material_system_shader_infrastructure.md` v1.10); the AD campaign then re-pointed pack slots onto shipped `derived_1k/` cooks (AD.4 `06780433d`, AD.5.A `21bc53333`) and added the paint-palette remap (`ae9b98ef3`). The build session paid no trace debt; the reconstruction lives in `docs/audits/E3_PREFLIGHT_2026-07.md` and the director's dispositions in `docs/audits/T_SERIES_RATIFICATION_2026-07-20.md`. This v1.2 pass verified every claim it restates first-hand at `8232b150b`.

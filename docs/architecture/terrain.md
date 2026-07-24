@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: mixed
 summary: "Voxel meshing/biome/noise/scatter/streaming (complements terrain_materials.md). terrain.md"
 owns: [astraweave-terrain]
-doc_version: "1.2"
-last_verified_commit: 8232b150b
+doc_version: "1.3"
+last_verified_commit: 611c8edc7
 ---
 
 # Architecture Trace: Terrain System (Generation, Voxels, Biomes, Noise, Scatter, Streaming)
@@ -21,9 +21,9 @@ last_verified_commit: 8232b150b
 |---|---|
 | **System name** | Terrain System (procedural generation, voxel meshing, biome/noise pipeline, scatter, chunk streaming) |
 | **Primary crates** | `astraweave-terrain` (with reverse dep into `astraweave-gameplay`); consumers in `tools/aw_editor`, `examples/hybrid_voxel_demo`, `astraweave-render` |
-| **Document version** | 1.2 |
-| **Last verified against commit** | `8232b150b` |
-| **Last verified date** | 2026-07-21 |
+| **Document version** | 1.3 |
+| **Last verified against commit** | `611c8edc7` (v1.3: T.2a boreal band + `expect()` retirement); prior `8232b150b` |
+| **Last verified date** | 2026-07-24 |
 | **Status** | Active (editor heightmap path wired; voxel-meshing, streaming/LOD, and multi-archetype paths are in-design-but-tested / dormant — see §5, §6) |
 | **Owner notes** | Complements [`terrain_materials.md`](terrain_materials.md), which covers ONLY the material/splat-weight slice. This trace covers the REST: noise → heightmap → biome → erosion → chunk generation, voxel meshing, scatter/vegetation, and chunk streaming. Where the two overlap (biome semantics, `astraweave-render` terrain paths) this doc cross-references rather than duplicates. |
 
@@ -239,7 +239,7 @@ Wiredness verified by workspace grep for non-test/non-example production callers
 | `biome_parameters.rs` | Per-`BiomeId` parameter table (mountains_amplitude wired; ridge_strength defined-unwired) | Active (partial) | F.4.B.3.D.3 |
 | `biome_param_blending.rs` | Scattered-convolution blend of biome parameters | Active | F.4.B.3.D.4; called in lib.rs:583 |
 | `world_archetypes.rs` | 6-archetype climate-envelope catalog | Active | F.4.B.3.D.5 |
-| `spline_types.rs` | `BootstrapParams`, `Spline1D`, per-archetype `BootstrapSplineSet` | Active | Evaluated in lib.rs:534-644. E3: six **distinct** per-archetype factories (`bootstrap_splines_*`, :661-758; CT = `climate_driven_spline_set()`, Custom = CT by design; Boreal sharp alpine to amp 880 / Desert flat-biased + sharp tail + high floor / Equatorial broad massifs / Mediterranean intermediate). `d5fix_baseline_spline_set()` retained at :507 for the held baseline tests. Carries the crate's only six production-path `expect()`s (:571,:590,:605,:637,:647,:652 — `Spline1D::from_control_points` on hardcoded control points; hygiene queued in T.2) |
+| `spline_types.rs` | `BootstrapParams`, `Spline1D`, per-archetype `BootstrapSplineSet` | Active | Evaluated in lib.rs:534-644. E3: six **distinct** per-archetype factories (`bootstrap_splines_*`, :661-758; CT = `climate_driven_spline_set()`, Custom = CT by design; Boreal sharp alpine to amp 880 / Desert flat-biased + sharp tail + high floor / Equatorial broad massifs / Mediterranean intermediate). `d5fix_baseline_spline_set()` retained at :507 for the held baseline tests. **T.2a (2026-07-24): the six production `expect()`s are retired.** They were at :575/:594/:609/:641/:651/:656 at that point (docs long cited :571/… — a uniform +4 drift from the repo-wide fmt `1ef81c239`, not from any logic change). `Result` propagation is *blocked*, not merely costly: the factories are reached through `impl Default for WorldArchetype` (`climate.rs`) and cross-crate `impl Default for TerrainPanel`, and `Default::default()` cannot return `Result`. Replaced by `Spline1D::from_literal_control_points` (infallible + `debug_assert`, following the file's own `Spline1D::constant` precedent) with the invariant asserted in CI by `bootstrap_spline_sets_are_well_formed` across all six archetype factories. `from_control_points` remains the validated path for non-literal control points |
 | `biome_blending.rs` | `BiomeBlender`, `PackedBiomeBlend` (MAX_BLEND_BIOMES=4) | Active (biome layer) | Also covered by `terrain_materials.md` §5 |
 | `biome_pack.rs` | `.blend`-decomposition asset-pack format (`BiomePack`, manifest bridge) | Active (biome layer) | Consumed by editor panels; see `terrain_materials.md` §5 |
 | `advanced_erosion.rs` | `AdvancedErosionSimulator`, presets, `erosion_preset_for_climate` | Active | Wired via `generate_chunk_with_climate` (lib.rs:395-428). NOTE: contradicts the CLAUDE.md "AdvancedErosionSimulator dormant/removed" claim — see §6 |
@@ -378,6 +378,8 @@ Wiredness verified by workspace grep for non-test/non-example production callers
 | 5 | Adjacent chunks' overlapping halos produce near-identical erosion in the overlap region (seam-safety) | Partially | `apply_preset_at_world_offset` world-cell determinism; `phase_1_6_f3_phase_2_continuity.rs`, `phase_1_6_f3_phase_3_diagnostic.rs` |
 | 6 | `ChunkId` (2D) and `ChunkCoord` (3D) are never interchanged | No (type system enforces non-coercion, but no cross-check) | Type system |
 | 7 | A `VoxelChunk` mesh's skirt geometry is generated only for vertices on a boundary face within `eps` | Yes | `add_skirts` boundary test (meshing.rs:74-94) + meshing tests |
+| 8 | `TUNDRA_MAX_TEMP_C` must stay **strictly above -10.0 degC**, and `BOREAL_MAX_TEMP_C` must not rise: the canonical-tundra test asserts `lookup_biome(-10.0, 200.0, 100.0) == Tundra` (moisture 200 is exactly `BOREAL_MIN_MOISTURE_MM`, so at -10.0 it flips to BorealForest), while the Equatorial and Desert distribution tests assert `frac(BorealForest) < 0.005`. T.2a lowered the floor 0.0 -> -5.0 within those bounds | Yes | `biome_lookup.rs` in-file `mod tests`; `world_archetypes.rs` 10K-sample distribution suite |
+| 9 | Elevation overlays are evaluated **before** the Whittaker polygon and preempt it: `SnowCap` at `elev >= 350` (`temp < 18`), `Alpine` at 280, `Scree` at 220 (`moisture < 600`). So the temperature band governs only terrain below ~220 m, and a warm archetype's small Tundra census is SnowCap, not Whittaker Tundra — the distinction that made T.2a's global band change safe | Yes | `biome_lookup.rs:186-190`, `:277-287` / `:332-340`; per-archetype census via `tools/aw_editor/tests/terrain_ab_stations.rs` |
 
 ---
 
@@ -475,6 +477,7 @@ Wiredness verified by workspace grep for non-test/non-example production callers
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-07-24 | **T.2a** (`611c8edc7`, `c0753b551`). §5 `spline_types` row: the six production `expect()`s are retired via `Spline1D::from_literal_control_points` + a CI invariant test (the `Result` route is blocked by two infallible `Default` impls); the long-cited :571/… line numbers were +4 stale from `1ef81c239`. §8: added Invariants 8 (the boreal band's binding test bounds) and 9 (elevation overlays preempt the Whittaker polygon). `TUNDRA_MAX_TEMP_C` lowered 0.0 -> **-5.0** so boreal forest threads through snow — measured, not guessed: the Boreal climate field is 100% below 0 degC (mean -7.46, p50 -6.55), which is why the census read 0.017% forest / 93.3% tundra, while Mediterranean / Continental Temperate / Desert each have **0.0%** below 0 degC and so cannot be reached by the change. Evidence, census tables and the per-archetype before/after: `docs/audits/T2A_OUTCOME.md`. |
 | 1.2 | 2026-07-21 | **T.0 trace-sync — pays the E3 build's documentation debt** (build `d506658d8` 2026-07-03 updated no traces; reconstruction: `docs/audits/E3_PREFLIGHT_2026-07.md`). Corrected the §2 Stage-2 None-mask statement (was: "evaluates Continental Temperate splines only" — reversed by E3 Phase A.2: reads the SELECTED archetype's splines, lib.rs:568-577). Added: provisional-height seam fix (Stage 2, Invariant 4b), six distinct per-archetype spline factories + production `expect()` inventory (§5 spline_types row), E3 noise-regime defaults incl. deliberate continental-off (§5 noise_gen row), rewritten Invariant 4 (D5FIX byte-identity retired), E3 decision-log entry, the measured 63-test by-design failing surface (§10), updated mask-branch line cites (:618-643) + SP5 status (§6, §11). Prior §2/§6/§8 line cites in the :595-645 range shifted; verified at `8232b150b`. |
 | ≤1.1 | ≤2026-06-25 | Pre-E3 revisions (creation + verification pass); this table added at 1.2 — earlier entries not reconstructed. |
 

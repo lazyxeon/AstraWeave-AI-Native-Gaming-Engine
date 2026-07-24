@@ -8,8 +8,8 @@ domain: rendering
 lifecycle_status: active
 integration_status: wired
 owns: [astraweave-materials, astraweave-render]
-doc_version: "1.10"
-last_verified_commit: 8232b150b
+doc_version: "1.11"
+last_verified_commit: 611c8edc7
 ---
 
 # Architecture Trace: Render Pipeline + Material System + Shader Infrastructure
@@ -25,6 +25,37 @@ last_verified_commit: 8232b150b
 | **Last verified date** | 2026-07-21 (E3 terrain render-path, T.0 trace-sync); 2026-06-25 (§2.6 water render-path verification pass); 2026-06-24 (water render-path subsection authored); 2026-05-10 (full trace) |
 | **Status** | **ACTIVE WORKZONE** — Editor Multi-Tool Architecture Campaign Sub-phase 3 (Mediator Brush) is in flight as of campaign-doc commit `e3d07f366` (2026-05-08, Round-8-Closure). Fix 27 Unified Pipeline Campaign is structurally complete (per CLAUDE.md) but deeper editor↔runtime unification continues. Treat this trace as a **navigational map**; per-subsystem detailed traces are follow-up work. |
 | **Owner notes** | This trace covers an unusually large system (~78K LoC source + 71 WGSL files + editor viewport). Per the template's "One last thing" rule on scale, this doc is intentionally structured as a **subsystem map + load-bearing-aggregator detail**, not an exhaustive per-file trace. Sub-systems like Lumen GI, MegaLights, Nanite, Atmosphere, GPU Particles, Volumetric Fog, IBL, and TAA each warrant their own dedicated trace if and when they enter focused work. The doc covers terrain materials by reference to `docs/architecture/terrain_materials.md`. |
+
+> **Revision notice — 2026-07-24 (v1.11, beat T.2a).** Both terrain-shader constants v1.10 flagged
+> as open are now **measured and retuned**, each with isolated A/B evidence at pinned camera
+> stations (`tools/aw_editor/tests/terrain_ab_stations.rs`; full ledger in
+> `docs/audits/T2A_OUTCOME.md`). **(a) `NORMAL_XY_STRENGTH` 1.8 -> 1.4** (`pbr_terrain_forward.wgsl:331`,
+> applied `:332-333`). Correcting v1.10's phrasing: it is **not** mip-gated — there is no mip check,
+> LOD branch or distance term anywhere near it; it is a function-local `let` inside the per-layer
+> loop applied unconditionally to every fragment, and the distance falloff is an *emergent* property
+> of the hardware mip chain. Its effect is a slope steepening, `atan(k * tan theta)`, on the
+> hex-blended tangent normal's XY only. Measured mean-|Laplacian| reduction scales with how much
+> relief the normal map carries (grassland -14.6%, mountain -14.5%, forest -9.7% at 1.4; -31%/-28%/-18%
+> at 1.0) and is near-nil on near-flat normals (desert -2.8%) — i.e. it amplifies authored data
+> rather than adding structure. **(b) hex weight sharpening `pow(hex.w, 4.0)` -> `2.0`**
+> (`:264-266`). The exponent *is* the blend width (no separate constant), and with `tiling = 128`
+> over a 512 WU chunk one hex cell is ~4 m of world. Its A/B signature is the opposite of (a): a
+> near-uniform **-9 to -11% at every station**, including two materials with essentially no content
+> of their own — the signature of a structural lattice superimposed on the surface. This is
+> confirmed to be the same artifact the T.W.1.A water session saw refracting through shallow water
+> (`TW1A_OUTCOME.md` §6, "checkered diamonds", handed forward as terrain-owned). The two knobs are
+> near-independent (joint pass predicted from the isolated deltas to within 94-101%), so either can
+> be amended one line at a time. **Two structural findings recorded, not fixed:**
+> `downsample_rgba8_box` (`terrain_material_manager.rs:1519`) box-averages the *normal* array as raw
+> RGBA8 with no renormalization, and `canonical_terrain_pack.rs:231-246` resizes normals to 512 with
+> a triangle filter, also without renormalizing — both shrink normal XY toward flat, which is the
+> root cause `NORMAL_XY_STRENGTH` was invented to compensate; and `in.uv` is per-chunk normalized
+> `[0,1]` (`engine_adapter.rs:2382-2395`), so `hex_cells` hashes chunk-local coordinates and **every
+> 512 m chunk receives a byte-identical hex random field** — the de-tiling mechanism itself tiles.
+> The ratified Q4 aux-resolution question is **retired without a purchase**: the close-up defect
+> decomposed into channel data + these two constants, raising disk resolution buys nothing (the
+> loader clamps unconditionally), and an aux 512 -> 1024 increase would take the 32-slice allocation
+> from 256 MiB to 512 MiB while making the largest residual defect sharper.
 
 > **Revision notice — 2026-07-21 (v1.10, commit `8232b150b`, T.0 trace-sync).** Records the render-side of the E3 terrain build (`d506658d8`, 2026-07-03 — no trace was updated in that commit; reconstruction at `docs/audits/E3_PREFLIGHT_2026-07.md`). Three changes to the 32-layer terrain forward path, all verified first-hand at HEAD: **(a) stochastic hex-tile sampling wired** — the formerly zero-consumer `shaders/stochastic_tiling.wgsl` is now composed into `TERRAIN_FORWARD_SHADER` (`terrain_material_manager.rs:171-176`, used at `:1025`); `pbr_terrain_forward.wgsl` takes 3 taps per layer via `hex_cells()` (`stochastic_tiling.wgsl:183`) with per-cell random **rotation** (the load-bearing decorrelator — translation-only preserves periodicity) + translation, pow-4-sharpened weights (`pbr_terrain_forward.wgsl:264-266`), gradients rotated for correct mip/aniso selection, and tangent-space normals decoded per tap and counter-rotated by the cell conjugate. **(b) Layer arrays gained full mip chains** — albedo + 3 aux arrays build real mip counts with a CPU box-filter chain at upload (`terrain_material_manager.rs:1350,1364,1378,1392`; the pre-fix `mip_level_count: 1` grain/shimmer is recorded at `:1337`); the layer sampler is `anisotropy_clamp: 8` (`:1421`); per-chunk splat textures stay deliberately unmipped/`anisotropy_clamp: 1` (`:824-825`, `:1168-1169`, `:1440` — untiled, ClampToEdge). **(c) `NORMAL_XY_STRENGTH = 1.8`** (`pbr_terrain_forward.wgsl:331`, applied `:332-333`) — an interim constant compensating relief flattening from 512² aux resolution + box mips; its retirement-or-keep decision is beat T.2 of the terrain campaign (data-first, no pre-committed aux-resolution increase — director ratification 2026-07-20). Editor-side consumption (per-vertex biome-driven `material_ids`/`material_weights`) is traced in `aw_editor.md`; the pack/loader slice in `terrain_materials.md`.
 >
