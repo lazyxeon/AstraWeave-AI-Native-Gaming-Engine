@@ -51,10 +51,22 @@ BENCHMARK_PACKAGES_STATIC=(
 RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-benchmark_results}"
 SUMMARY_FILE="$RESULTS_DIR/summary.txt"
 JSON_FILE="$RESULTS_DIR/benchmarks.json"
+PACKAGE_STATUS_FILE="$RESULTS_DIR/package-status.json"
+TIMINGS_FILE="$RESULTS_DIR/timings.tsv"
+BENCHMARK_ENTRIES_FILE="$RESULTS_DIR/.benchmark-entries.jsonl"
+PACKAGE_STATUS_ENTRIES_FILE="$RESULTS_DIR/.package-status-entries.jsonl"
 VERBOSE="${VERBOSE:-false}"
 
 # Create results directory
 mkdir -p "$RESULTS_DIR"
+rm -f "$BENCHMARK_ENTRIES_FILE" "$PACKAGE_STATUS_ENTRIES_FILE"
+
+# Collection exceptions must be explicit, named, and owned. The 2026-07-24
+# diagnosis found no non-Criterion harnesses, so this registry is intentionally
+# empty. A successful package that yields zero Criterion estimates is fatal
+# unless it is added here with both a reason and an owner.
+declare -A COLLECTION_EXCEPTION_REASONS=()
+declare -A COLLECTION_EXCEPTION_OWNERS=()
 
 # Logging functions
 log_info() {
@@ -68,6 +80,18 @@ log_error() {
 log_success() {
     echo "[SUCCESS] $*" | tee -a "$SUMMARY_FILE"
 }
+
+# Initialize durable report files before discovery so the selected shard line
+# is retained in the uploaded summary.
+{
+    echo "=== AstraWeave Performance Benchmarks ==="
+    echo "Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+    echo "Commit: ${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')}"
+    echo "Runner: ${RUNNER_OS:-$(uname -s)} ${RUNNER_ARCH:-$(uname -m)}"
+    echo ""
+} > "$SUMMARY_FILE"
+
+printf 'package\telapsed_seconds\texecution_status\tcollection_status\tbenchmark_count\n' > "$TIMINGS_FILE"
 
 # Auto-discover packages with benchmarks
 BENCHMARK_PACKAGES=()
@@ -126,20 +150,15 @@ if ! discover_benchmark_packages; then
     exit 1
 fi
 
-# Initialize summary file
-{
-    echo "=== AstraWeave Performance Benchmarks ==="
-    echo "Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-    echo "Commit: ${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')}"
-    echo "Runner: ${RUNNER_OS:-$(uname -s)} ${RUNNER_ARCH:-$(uname -m)}"
-    echo ""
-} > "$SUMMARY_FILE"
-
-# Initialize JSON array
-echo '[' > "$JSON_FILE"
-FIRST_ENTRY=true
 BENCHMARK_COUNT=0
 SUCCESS_COUNT=0
+COLLECTED_PACKAGE_COUNT=0
+EXCEPTION_COUNT=0
+EXECUTION_FAILURE_COUNT=0
+COLLECTION_FAILURE_COUNT=0
+OVERALL_FAILURE=0
+PACKAGE_BENCHMARK_COUNT=0
+PACKAGE_COLLECTION_ERROR_COUNT=0
 
 # Function to format time units
 format_time() {
@@ -158,55 +177,62 @@ format_time() {
 # Function to process benchmark results for a specific package
 process_benchmarks() {
     local pkg=$1
-    local pkg_success=false
-    
-    if [ -d "target/criterion" ]; then
-        local found_benchmarks=false
-        
-        for benchmark_dir in target/criterion/*/; do
-            if [ -d "$benchmark_dir" ] && [ -f "$benchmark_dir/new/estimates.json" ]; then
-                found_benchmarks=true
-                bench_name=$(basename "$benchmark_dir")
-                
-                # Safely extract mean value with error handling
-                if mean_ns=$(jq -r '.mean.point_estimate // empty' "$benchmark_dir/new/estimates.json" 2>/dev/null) && [ -n "$mean_ns" ] && [ "$mean_ns" != "null" ]; then
-                    # Validate that the value is a valid number
-                    if [[ "$mean_ns" =~ ^[0-9]+\.?[0-9]*$ ]] && (( $(echo "$mean_ns > 0" | bc -l) )); then
-                        # Add to JSON
-                        if [ "$FIRST_ENTRY" != true ]; then
-                            echo ',' >> "$JSON_FILE"
-                        fi
-                        
-                        jq -n --arg name "${pkg}::${bench_name}" --argjson value "$mean_ns" \
-                            '{name: $name, unit: "ns", value: $value}' >> "$JSON_FILE"
-                        FIRST_ENTRY=false
-                        BENCHMARK_COUNT=$((BENCHMARK_COUNT + 1))
-                        
-                        # Add to summary with proper formatting
-                        formatted_time=$(format_time "$mean_ns")
-                        printf "  %-30s %s\n" "$bench_name" "$formatted_time" | tee -a "$SUMMARY_FILE"
-                        
-                        pkg_success=true
-                    else
-                        log_error "Invalid benchmark value for $bench_name: $mean_ns"
-                    fi
-                else
-                    log_error "Could not extract valid benchmark data for $bench_name"
-                fi
+    local estimates_file
+    local relative_path
+    local bench_name
+    local mean_ns
+    local formatted_time
+    local -a estimates_files=()
+
+    PACKAGE_BENCHMARK_COUNT=0
+    PACKAGE_COLLECTION_ERROR_COUNT=0
+
+    if [ ! -d "target/criterion" ]; then
+        log_error "Criterion target directory not found after running $pkg"
+        PACKAGE_COLLECTION_ERROR_COUNT=$((PACKAGE_COLLECTION_ERROR_COUNT + 1))
+        return 0
+    fi
+
+    # Criterion stores grouped benchmarks recursively:
+    # target/criterion/<group>/<function>/new/estimates.json. Some group names
+    # contain slashes and add further levels, so a one-level glob is incomplete.
+    mapfile -d '' estimates_files < <(
+        find target/criterion -type f -path '*/new/estimates.json' -print0 |
+            sort -z
+    )
+
+    for estimates_file in "${estimates_files[@]}"; do
+        relative_path=${estimates_file#target/criterion/}
+        bench_name=${relative_path%/new/estimates.json}
+
+        # Safely extract mean value with error handling.
+        if mean_ns=$(jq -r '.mean.point_estimate // empty' "$estimates_file" 2>/dev/null) &&
+            [ -n "$mean_ns" ] && [ "$mean_ns" != "null" ]; then
+            if [[ "$mean_ns" =~ ^[0-9]+\.?[0-9]*$ ]] &&
+                (( $(echo "$mean_ns > 0" | bc -l) )); then
+                jq -cn \
+                    --arg name "${pkg}::${bench_name}" \
+                    --argjson value "$mean_ns" \
+                    '{name: $name, unit: "ns", value: $value}' \
+                    >> "$BENCHMARK_ENTRIES_FILE"
+
+                BENCHMARK_COUNT=$((BENCHMARK_COUNT + 1))
+                PACKAGE_BENCHMARK_COUNT=$((PACKAGE_BENCHMARK_COUNT + 1))
+
+                formatted_time=$(format_time "$mean_ns")
+                printf "  %-70s %s\n" "$bench_name" "$formatted_time" |
+                    tee -a "$SUMMARY_FILE"
+            else
+                log_error "Invalid benchmark value for $pkg::$bench_name: $mean_ns"
+                PACKAGE_COLLECTION_ERROR_COUNT=$((PACKAGE_COLLECTION_ERROR_COUNT + 1))
             fi
-        done
-        
-        if [ "$found_benchmarks" = false ]; then
-            log_error "No criterion results found for $pkg"
+        else
+            log_error "Could not extract valid benchmark data for $pkg::$bench_name"
+            PACKAGE_COLLECTION_ERROR_COUNT=$((PACKAGE_COLLECTION_ERROR_COUNT + 1))
         fi
-    else
-        log_error "Criterion target directory not found"
-    fi
-    
-    if [ "$pkg_success" = true ]; then
-        SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-    fi
-    
+    done
+
+    log_info "Collected $PACKAGE_BENCHMARK_COUNT Criterion result(s) for $pkg"
     return 0
 }
 
@@ -216,61 +242,172 @@ log_info "Starting benchmark execution..."
 for pkg in "${BENCHMARK_PACKAGES[@]}"; do
     if [ -d "$pkg/benches" ]; then
         log_info "Running benchmarks for $pkg..."
-        
+
         # Clear previous criterion results to avoid cross-contamination
         if [ -d "target/criterion" ]; then
             rm -rf target/criterion/* 2>/dev/null || true
         fi
-        
-        # Run cargo bench with timeout and capture output
-        if timeout 600 cargo bench -p "$pkg" --benches > "${RESULTS_DIR}/${pkg}_stdout.log" 2> "${RESULTS_DIR}/${pkg}_stderr.log"; then
-            log_success "Benchmark execution completed for $pkg"
-            
-            # Process the results immediately for this package
-            process_benchmarks "$pkg"
-            
-            if [ "$VERBOSE" = "true" ]; then
-                {
-                    echo "--- $pkg stdout ---"
-                    tail -n 20 "${RESULTS_DIR}/${pkg}_stdout.log"
-                    echo "--- end stdout ---"
-                } >> "$SUMMARY_FILE"
-            fi
+
+        package_start=$(date +%s)
+        set +e
+        timeout 600 cargo bench -p "$pkg" --benches \
+            > "${RESULTS_DIR}/${pkg}_stdout.log" \
+            2> "${RESULTS_DIR}/${pkg}_stderr.log"
+        execution_exit=$?
+        set -e
+        package_end=$(date +%s)
+        elapsed_seconds=$((package_end - package_start))
+
+        if [ "$execution_exit" -eq 0 ]; then
+            execution_status="success"
+            log_success "Benchmark execution completed for $pkg in ${elapsed_seconds}s"
+        elif [ "$execution_exit" -eq 124 ]; then
+            execution_status="timeout"
+            EXECUTION_FAILURE_COUNT=$((EXECUTION_FAILURE_COUNT + 1))
+            OVERALL_FAILURE=1
+            log_error "Benchmark execution timed out for $pkg after ${elapsed_seconds}s"
         else
-            log_error "Benchmark execution failed for $pkg"
+            execution_status="failed"
+            EXECUTION_FAILURE_COUNT=$((EXECUTION_FAILURE_COUNT + 1))
+            OVERALL_FAILURE=1
+            log_error "Benchmark execution failed for $pkg with exit $execution_exit after ${elapsed_seconds}s"
+        fi
+
+        # Preserve all Criterion output produced before either success or
+        # failure. Partial results remain useful, but never erase a red status.
+        process_benchmarks "$pkg"
+
+        collection_status="unavailable"
+        exception_reason=""
+        exception_owner=""
+        if [ "$PACKAGE_COLLECTION_ERROR_COUNT" -gt 0 ]; then
+            collection_status="invalid"
+            COLLECTION_FAILURE_COUNT=$((COLLECTION_FAILURE_COUNT + 1))
+            OVERALL_FAILURE=1
+            log_error "Collection encountered $PACKAGE_COLLECTION_ERROR_COUNT invalid Criterion result(s) for $pkg"
+        elif [ "$PACKAGE_BENCHMARK_COUNT" -gt 0 ]; then
+            collection_status="collected"
+            COLLECTED_PACKAGE_COUNT=$((COLLECTED_PACKAGE_COUNT + 1))
+        elif [ "$execution_status" = "success" ]; then
+            if [[ -v "COLLECTION_EXCEPTION_REASONS[$pkg]" ]] &&
+                [[ -v "COLLECTION_EXCEPTION_OWNERS[$pkg]" ]]; then
+                collection_status="exception"
+                exception_reason=${COLLECTION_EXCEPTION_REASONS[$pkg]}
+                exception_owner=${COLLECTION_EXCEPTION_OWNERS[$pkg]}
+                EXCEPTION_COUNT=$((EXCEPTION_COUNT + 1))
+                log_info "Named collection exception for $pkg: $exception_reason (owner: $exception_owner)"
+            else
+                collection_status="missing"
+                COLLECTION_FAILURE_COUNT=$((COLLECTION_FAILURE_COUNT + 1))
+                OVERALL_FAILURE=1
+                log_error "Successful benchmark execution produced zero collectible Criterion results for $pkg"
+            fi
+        fi
+
+        if [ "$execution_status" = "success" ] &&
+            { [ "$collection_status" = "collected" ] || [ "$collection_status" = "exception" ]; }; then
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+        fi
+
+        jq -cn \
+            --arg package "$pkg" \
+            --arg execution_status "$execution_status" \
+            --argjson execution_exit "$execution_exit" \
+            --arg collection_status "$collection_status" \
+            --argjson benchmark_count "$PACKAGE_BENCHMARK_COUNT" \
+            --argjson elapsed_seconds "$elapsed_seconds" \
+            --arg exception_reason "$exception_reason" \
+            --arg exception_owner "$exception_owner" \
+            '{
+                package: $package,
+                execution_status: $execution_status,
+                execution_exit: $execution_exit,
+                collection_status: $collection_status,
+                benchmark_count: $benchmark_count,
+                elapsed_seconds: $elapsed_seconds,
+                exception_reason: (if $exception_reason == "" then null else $exception_reason end),
+                exception_owner: (if $exception_owner == "" then null else $exception_owner end)
+            }' >> "$PACKAGE_STATUS_ENTRIES_FILE"
+
+        printf '%s\t%s\t%s\t%s\t%s\n' \
+            "$pkg" \
+            "$elapsed_seconds" \
+            "$execution_status" \
+            "$collection_status" \
+            "$PACKAGE_BENCHMARK_COUNT" \
+            >> "$TIMINGS_FILE"
+
+        if [ "$execution_status" != "success" ]; then
             {
                 echo "--- $pkg stderr ---"
-                cat "${RESULTS_DIR}/${pkg}_stderr.log"
+                tail -n 200 "${RESULTS_DIR}/${pkg}_stderr.log"
                 echo "--- end stderr ---"
             } >> "$SUMMARY_FILE"
         fi
+
+        if [ "$VERBOSE" = "true" ]; then
+            {
+                echo "--- $pkg stdout ---"
+                tail -n 20 "${RESULTS_DIR}/${pkg}_stdout.log"
+                echo "--- end stdout ---"
+            } >> "$SUMMARY_FILE"
+        fi
+
         echo "" >> "$SUMMARY_FILE"
     else
-        log_info "No benchmarks found for $pkg"
+        # Discovery selected this package only because its benches directory
+        # existed. Losing it mid-run is therefore an internal consistency error.
+        OVERALL_FAILURE=1
+        EXECUTION_FAILURE_COUNT=$((EXECUTION_FAILURE_COUNT + 1))
+        log_error "Selected package has no benchmarks directory at execution time: $pkg"
     fi
 done
 
-# Close JSON array
-echo ']' >> "$JSON_FILE"
+# Materialize deterministic JSON arrays from the per-record JSONL files.
+if [ -s "$BENCHMARK_ENTRIES_FILE" ]; then
+    jq -s '.' "$BENCHMARK_ENTRIES_FILE" > "$JSON_FILE"
+else
+    echo '[]' > "$JSON_FILE"
+fi
+
+if [ -s "$PACKAGE_STATUS_ENTRIES_FILE" ]; then
+    jq -s '.' "$PACKAGE_STATUS_ENTRIES_FILE" > "$PACKAGE_STATUS_FILE"
+else
+    echo '[]' > "$PACKAGE_STATUS_FILE"
+fi
+
+rm -f "$BENCHMARK_ENTRIES_FILE" "$PACKAGE_STATUS_ENTRIES_FILE"
 
 # Generate final summary
 {
     echo "=== Execution Summary ==="
     echo "Total packages processed: ${#BENCHMARK_PACKAGES[@]}"
     echo "Packages with successful benchmarks: $SUCCESS_COUNT"
+    echo "Packages with collected Criterion output: $COLLECTED_PACKAGE_COUNT"
+    echo "Named collection exceptions: $EXCEPTION_COUNT"
+    echo "Execution failures: $EXECUTION_FAILURE_COUNT"
+    echo "Collection failures: $COLLECTION_FAILURE_COUNT"
     echo "Total benchmarks collected: $BENCHMARK_COUNT"
     echo ""
     echo "Results saved to:"
     echo "  - Summary: $SUMMARY_FILE"
     echo "  - JSON data: $JSON_FILE"
+    echo "  - Package status: $PACKAGE_STATUS_FILE"
+    echo "  - Timings: $TIMINGS_FILE"
 } | tee -a "$SUMMARY_FILE"
 
-# Validate JSON output
-if jq empty "$JSON_FILE" 2>/dev/null; then
-    log_success "Generated valid JSON benchmark data"
+# Validate JSON outputs.
+if jq empty "$JSON_FILE" "$PACKAGE_STATUS_FILE" 2>/dev/null; then
+    log_success "Generated valid benchmark and package-status JSON"
 else
-    log_error "Generated JSON is invalid!"
+    log_error "Generated benchmark or package-status JSON is invalid"
     exit 1
+fi
+
+status_count=$(jq 'length' "$PACKAGE_STATUS_FILE")
+if [ "$status_count" -ne "${#BENCHMARK_PACKAGES[@]}" ]; then
+    log_error "Package status count $status_count does not match selected package count ${#BENCHMARK_PACKAGES[@]}"
+    OVERALL_FAILURE=1
 fi
 
 # Display final results
@@ -278,10 +415,17 @@ echo ""
 echo "=== Benchmark Results Summary ==="
 cat "$SUMMARY_FILE"
 
-# Exit with success if we got at least one benchmark
-if [ "$BENCHMARK_COUNT" -gt 0 ]; then
-    exit 0
-else
-    log_error "No benchmarks were successfully collected"
+# Fail honestly after all package results, failure logs, statuses, and timings
+# have been written. A partial collection never converts a red package to green.
+if [ "$OVERALL_FAILURE" -ne 0 ]; then
+    log_error "One or more benchmark packages failed execution or collection"
     exit 1
 fi
+
+if [ $((COLLECTED_PACKAGE_COUNT + EXCEPTION_COUNT)) -ne "${#BENCHMARK_PACKAGES[@]}" ]; then
+    log_error "Successful shard did not account for every selected package"
+    exit 1
+fi
+
+log_success "All selected benchmark packages executed and were accounted for"
+exit 0

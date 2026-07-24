@@ -78,6 +78,7 @@ jobs:
     name: Aggregate and Check Regressions
     runs-on: ubuntu-latest
     needs: check-regressions
+    if: always()
     timeout-minutes: 20
 
     steps:
@@ -88,30 +89,129 @@ jobs:
 
       - name: Download benchmark shards
         uses: actions/download-artifact@v5
+        continue-on-error: true
         with:
           pattern: benchmark-alert-results-${{ github.sha }}-shard-*
           path: benchmark-shards
 
       - name: Merge benchmark shard results
+        id: merge
         run: |
+          set -euo pipefail
           mkdir -p benchmark_results
-          mapfile -d '' result_files < <(find benchmark-shards -name benchmarks.json -print0)
-          if [ "${#result_files[@]}" -ne 12 ]; then
-            echo "Expected 12 shard result files; found ${#result_files[@]}" >&2
-            exit 1
+
+          result_files=()
+          status_files=()
+          timing_files=()
+          if [ -d benchmark-shards ]; then
+            mapfile -d '' result_files < <(find benchmark-shards -name benchmarks.json -print0 | sort -z)
+            mapfile -d '' status_files < <(find benchmark-shards -name package-status.json -print0 | sort -z)
+            mapfile -d '' timing_files < <(find benchmark-shards -name timings.tsv -print0 | sort -z)
           fi
-          jq -s 'add' "${result_files[@]}" > benchmark_results/benchmarks.json
-          jq empty benchmark_results/benchmarks.json
+
+          if [ "${#result_files[@]}" -gt 0 ]; then
+            jq -s 'add' "${result_files[@]}" > benchmark_results/benchmarks.json
+          else
+            echo '[]' > benchmark_results/benchmarks.json
+          fi
+
+          if [ "${#status_files[@]}" -gt 0 ]; then
+            jq -s 'add' "${status_files[@]}" > benchmark_results/package-status.json
+          else
+            echo '[]' > benchmark_results/package-status.json
+          fi
+
+          printf 'package\telapsed_seconds\texecution_status\tcollection_status\tbenchmark_count\n' \
+            > benchmark_results/timings.tsv
+          for timing_file in "${timing_files[@]}"; do
+            tail -n +2 "$timing_file" >> benchmark_results/timings.tsv
+          done
+
+          : > benchmark_results/missing-shards.txt
+          for shard_index in {0..11}; do
+            if ! find benchmark-shards -mindepth 1 -maxdepth 1 -type d \
+              -name "*-shard-${shard_index}" -print -quit 2>/dev/null |
+              grep -q .; then
+              echo "shard-${shard_index}" >> benchmark_results/missing-shards.txt
+            fi
+          done
+
+          package_count=$(jq 'length' benchmark_results/package-status.json)
+          unique_package_count=$(jq '[.[].package] | unique | length' benchmark_results/package-status.json)
+          collected_package_count=$(jq '[.[] | select(.collection_status == "collected")] | length' benchmark_results/package-status.json)
+          exception_count=$(jq '[.[] | select(.collection_status == "exception")] | length' benchmark_results/package-status.json)
+          failed_package_count=$(jq '[.[] | select(
+            .execution_status != "success" or
+            (.collection_status != "collected" and .collection_status != "exception")
+          )] | length' benchmark_results/package-status.json)
+          benchmark_count=$(jq 'length' benchmark_results/benchmarks.json)
+          accounted_count=$((collected_package_count + exception_count))
+
+          jq -r '.[] | select(
+            .execution_status != "success" or
+            (.collection_status != "collected" and .collection_status != "exception")
+          ) | "\(.package): execution=\(.execution_status), collection=\(.collection_status), results=\(.benchmark_count), elapsed=\(.elapsed_seconds)s"' \
+            benchmark_results/package-status.json > benchmark_results/failed-packages.txt
+
+          complete=false
+          if [ "${#result_files[@]}" -eq 12 ] &&
+             [ "${#status_files[@]}" -eq 12 ] &&
+             [ "${#timing_files[@]}" -eq 12 ] &&
+             [ "$package_count" -eq 48 ] &&
+             [ "$unique_package_count" -eq 48 ]; then
+            complete=true
+          fi
+
+          healthy=false
+          if [ "$complete" = true ] &&
+             [ "$failed_package_count" -eq 0 ] &&
+             [ "$accounted_count" -eq 48 ]; then
+            healthy=true
+          fi
+
+          {
+            echo "=== Benchmark Aggregation Summary ==="
+            echo "Shard result files: ${#result_files[@]}/12"
+            echo "Shard status files: ${#status_files[@]}/12"
+            echo "Shard timing files: ${#timing_files[@]}/12"
+            echo "Package records: $package_count (unique: $unique_package_count; expected: 48)"
+            echo "Packages with collected results: $collected_package_count"
+            echo "Named collection exceptions: $exception_count"
+            echo "Packages accounted for: $accounted_count/48"
+            echo "Failed packages: $failed_package_count"
+            echo "Benchmark results collected: $benchmark_count"
+            echo "Complete: $complete"
+            echo "Healthy: $healthy"
+            if [ -s benchmark_results/missing-shards.txt ]; then
+              echo ""
+              echo "Missing shard artifacts:"
+              cat benchmark_results/missing-shards.txt
+            fi
+            if [ -s benchmark_results/failed-packages.txt ]; then
+              echo ""
+              echo "Named failures:"
+              cat benchmark_results/failed-packages.txt
+            fi
+          } | tee benchmark_results/aggregation-summary.txt
+
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+          echo "healthy=$healthy" >> "$GITHUB_OUTPUT"
+          echo "package_count=$package_count" >> "$GITHUB_OUTPUT"
+          echo "accounted_count=$accounted_count" >> "$GITHUB_OUTPUT"
+          echo "failed_package_count=$failed_package_count" >> "$GITHUB_OUTPUT"
+          echo "benchmark_count=$benchmark_count" >> "$GITHUB_OUTPUT"
 
       - name: Upload combined benchmark artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: benchmark-alert-results-${{ github.sha }}
-          path: benchmark_results/benchmarks.json
+          path: benchmark_results/
           retention-days: 30
 
       - name: Check for regressions
         id: regression_check
+        if: steps.merge.outputs.healthy == 'true'
         shell: pwsh
         run: |
           Write-Host "=== Checking for Performance Regressions ===" -ForegroundColor Cyan
@@ -245,7 +345,7 @@ jobs:
           retention-days: 90
       
       - name: Update dashboard data
-        if: always()
+        if: steps.merge.outputs.healthy == 'true'
         run: |
           # Export benchmark history to JSONL
           bash scripts/export_benchmark_history.sh
@@ -263,7 +363,7 @@ jobs:
           fi
       
       - name: Deploy dashboard to GitHub Pages
-        if: success()
+        if: steps.merge.outputs.healthy == 'true' && success()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -275,7 +375,7 @@ jobs:
           user_email: 'github-actions[bot]@users.noreply.github.com'
       
       - name: Comment on commit with results
-        if: always()
+        if: steps.merge.outputs.healthy == 'true'
         uses: actions/github-script@v8
         with:
           script: |
@@ -335,12 +435,22 @@ jobs:
       - name: Display summary
         if: always()
         run: |
-          echo "=== Benchmark Regression Check Complete ===" 
-          echo ""
-          echo "Dashboard: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/dashboard/benchmark_dashboard/"
-          echo ""
-          if [ -f "regression_report.md" ]; then
-            echo "⚠️ Regressions detected - Issue created"
+          if [ -f benchmark_results/aggregation-summary.txt ]; then
+            cat benchmark_results/aggregation-summary.txt
+            {
+              echo "## Benchmark alert aggregation"
+              echo '```text'
+              cat benchmark_results/aggregation-summary.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "✅ No regressions - All benchmarks within thresholds"
+            echo "Aggregation summary was not produced" >&2
+          fi
+
+      - name: Enforce benchmark shard health
+        if: always()
+        run: |
+          if [ "${{ steps.merge.outputs.healthy }}" != "true" ]; then
+            echo "Benchmark alert aggregation is incomplete or contains named package failures" >&2
+            exit 1
           fi
