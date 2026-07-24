@@ -206,6 +206,9 @@ pub struct AIArbiter {
 
     /// Fast LLM executor for low-latency inline queries (non-thinking Qwen3).
     /// Optional — if absent, the arbiter uses GOAP for all fast-path decisions.
+    // Deferred wiring item: retain this constructed executor for the dedicated
+    // fast-path dispatch wiring beat.
+    #[allow(dead_code)]
     fast_executor: Option<LlmExecutor>,
 
     /// GOAP orchestrator for instant tactical decisions
