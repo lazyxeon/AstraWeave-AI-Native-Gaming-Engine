@@ -197,7 +197,25 @@ const WETLAND_MIN_TEMP_C: f32 = -2.0; // Frozen marshes don't qualify as Wetland
 /// Whittaker terrestrial polygon thresholds.
 /// These follow standard Whittaker diagram placements but the boundaries
 /// are tunable. See module docs for polygon-vs-contract distinction.
-const TUNDRA_MAX_TEMP_C: f32 = 0.0;
+/// T.2a (2026-07-24): lowered 0.0 -> -5.0 so boreal forest threads through
+/// the snow instead of being unreachable. Measured over the seed-12345
+/// radius-6 extent, the Boreal/Subarctic climate field is **100% below 0 degC**
+/// (mean -7.46, p50 -6.55), so the old floor made `BorealForest` essentially
+/// unreachable there: the census returned 0.017% forest against 93.3% tundra.
+/// -5.0 leaves ~69% of that world Tundra while the warmer ground turns taiga —
+/// character, not a coverage target (T-series ratification Q5). It is also the
+/// physically honest boundary: real taiga mean annual temperature runs about
+/// -5..+5 degC, whereas 0 degC is the tundra/taiga line itself.
+///
+/// Cross-archetype reach is zero at this configuration, not merely small:
+/// Mediterranean, Continental Temperate and Desert each have **0.0%** of
+/// sampled vertices below 0 degC, so none can cross a floor lowered to -5.0.
+/// Their small tundra census is the `SnowCap` elevation overlay (>= 350 m),
+/// which is evaluated before this polygon and is unaffected.
+///
+/// Floor: the canonical-tundra test asserts `lookup_biome(-10.0, 200.0, 100.0)
+/// == Tundra`, so this constant must stay strictly above -10.0.
+const TUNDRA_MAX_TEMP_C: f32 = -5.0;
 const BOREAL_MAX_TEMP_C: f32 = 5.0;
 const BOREAL_MIN_MOISTURE_MM: f32 = 200.0;
 
@@ -354,8 +372,11 @@ pub fn lookup_biome_coastal_gated(
 fn classify_whittaker_polygon(temp_c: f32, moisture_mm: f32) -> BiomeId {
     // Cold zone: Tundra / Boreal / ColdDesert.
     if temp_c < TUNDRA_MAX_TEMP_C {
-        // Sub-zero: usually Tundra; with enough moisture and not too cold,
-        // can be BorealForest if temperature is at the warm end of cold.
+        // Colder than the taiga floor: Tundra, unconditionally. (This comment
+        // previously claimed a sub-zero vertex "can be BorealForest if
+        // temperature is at the warm end of cold" — the branch has never done
+        // that. The warm end of cold is now expressed by the floor itself,
+        // which T.2a lowered to -5 degC; see TUNDRA_MAX_TEMP_C.)
         return BiomeId::Tundra;
     }
     if temp_c < BOREAL_MAX_TEMP_C {
