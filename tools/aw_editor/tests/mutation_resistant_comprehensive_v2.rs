@@ -1536,6 +1536,7 @@ mod scene_data_validate_tests {
             cooldowns: BTreeMap::new(),
             behavior_graph: None,
             parent: None,
+            components: Default::default(),
         }
     }
 

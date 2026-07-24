@@ -1498,6 +1498,15 @@ impl ViewportRenderer {
         }
     }
 
+    /// TW2: forward the authored water volumes (from `WaterVolume` entities)
+    /// to the engine adapter, which resolves styles and installs/tears down
+    /// the underlying `WaterRenderer` as needed.
+    pub fn set_water_volumes(&mut self, volumes: &[super::types::WaterVolumeSpec]) {
+        if let Some(adapter) = &mut self.engine_adapter {
+            adapter.set_water_volumes(volumes);
+        }
+    }
+
     // ── Scatter management ──────────────────────────────────────────────
 
     /// Set scatter placements for instanced rendering.

@@ -306,8 +306,9 @@ mod brush_mode_tests {
     // --- all() method tests ---
 
     #[test]
-    fn brush_mode_all_returns_eight_variants() {
-        assert_eq!(BrushMode::all().len(), 8);
+    fn brush_mode_all_returns_nine_variants() {
+        // TW2 added CarveWater → 9 modes.
+        assert_eq!(BrushMode::all().len(), 9);
     }
 
     #[test]
@@ -395,7 +396,7 @@ mod brush_mode_tests {
     fn brush_mode_all_variants_have_unique_hashes() {
         use std::collections::HashSet;
         let set: HashSet<BrushMode> = BrushMode::all().iter().copied().collect();
-        assert_eq!(set.len(), 8);
+        assert_eq!(set.len(), 9);
     }
 
     // --- Boundary: all variants have non-empty names and icons ---
@@ -431,7 +432,7 @@ mod cross_type_integration_tests {
     #[test]
     fn terrain_types_all_methods_return_correct_counts() {
         assert_eq!(ErosionPresetType::all().len(), 6);
-        assert_eq!(BrushMode::all().len(), 8);
+        assert_eq!(BrushMode::all().len(), 9);
     }
 
     #[test]

@@ -123,6 +123,42 @@ pub enum WaterStyle {
     Swamp,
 }
 
+impl WaterStyle {
+    /// Parse the style name stored in a `WaterVolume` entity component
+    /// (TW2). Unknown/missing strings fall back to `Lake` — the calm
+    /// authored-volume default.
+    pub fn from_component_str(s: &str) -> Self {
+        match s {
+            "Ocean" => WaterStyle::Ocean,
+            "River" => WaterStyle::River,
+            "Swamp" => WaterStyle::Swamp,
+            _ => WaterStyle::Lake,
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            WaterStyle::Ocean => "Ocean",
+            WaterStyle::River => "River",
+            WaterStyle::Lake => "Lake",
+            WaterStyle::Swamp => "Swamp",
+        }
+    }
+}
+
+/// TW2: an authored water volume collected from a `WaterVolume` entity —
+/// the editor-side spec the engine adapter resolves (style → colors/wave
+/// params) into `astraweave_render::WaterVolumeDesc`. The entity's world
+/// position carries the surface: its Y is the volume's water level.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WaterVolumeSpec {
+    /// Entity world position; `[1]` (Y) is the volume's surface level.
+    pub position: [f32; 3],
+    pub half_extent_x: f32,
+    pub half_extent_z: f32,
+    pub style: WaterStyle,
+}
+
 // ─── Weather Kind ────────────────────────────────────────────────────────────
 
 /// Weather type constants for the viewport.

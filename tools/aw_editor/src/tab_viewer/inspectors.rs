@@ -977,3 +977,103 @@ pub(super) fn show_particle_inspector(
         }
     });
 }
+
+/// TW2: `WaterVolume` inspector — an authored bounded water body (mountain
+/// lake / oasis). The entity's TRANSFORM carries placement: its world Y is the
+/// volume's surface level (edit via the Transform section or gizmo); this
+/// section edits the XZ half-extents and the water style. Rendered as a
+/// bounded patch through the engine water pipeline (T.W.1.A style params
+/// apply per-volume).
+pub(super) fn show_water_volume_inspector(
+    ui: &mut egui::Ui,
+    entity_id: u64,
+    data: &serde_json::Value,
+    events: &mut Vec<PanelEvent>,
+) {
+    ui.label(
+        egui::RichText::new("Entity Y = water surface level. Move the entity to set the level.")
+            .small()
+            .italics(),
+    );
+
+    let mut hx = data
+        .get("half_extent_x")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(24.0) as f32;
+    ui.horizontal(|ui| {
+        ui.label("Half-extent X:");
+        if ui
+            .add(egui::DragValue::new(&mut hx).speed(0.5).range(0.5..=512.0))
+            .changed()
+        {
+            let mut new_data = data.clone();
+            new_data["half_extent_x"] = serde_json::json!(hx);
+            events.push(PanelEvent::ComponentDataChanged {
+                entity_id,
+                component_type: "WaterVolume".to_string(),
+                data: new_data,
+            });
+        }
+    });
+
+    let mut hz = data
+        .get("half_extent_z")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(24.0) as f32;
+    ui.horizontal(|ui| {
+        ui.label("Half-extent Z:");
+        if ui
+            .add(egui::DragValue::new(&mut hz).speed(0.5).range(0.5..=512.0))
+            .changed()
+        {
+            let mut new_data = data.clone();
+            new_data["half_extent_z"] = serde_json::json!(hz);
+            events.push(PanelEvent::ComponentDataChanged {
+                entity_id,
+                component_type: "WaterVolume".to_string(),
+                data: new_data,
+            });
+        }
+    });
+
+    let style = data.get("style").and_then(|v| v.as_str()).unwrap_or("Lake");
+    let mut style_idx = match style {
+        "Ocean" => 0,
+        "River" => 1,
+        "Swamp" => 3,
+        _ => 2, // Lake default
+    };
+    ui.horizontal(|ui| {
+        ui.label("Style:");
+        let changed = egui::ComboBox::from_id_salt(format!("water_volume_style_{}", entity_id))
+            .selected_text(match style_idx {
+                0 => "Ocean",
+                1 => "River",
+                3 => "Swamp",
+                _ => "Lake",
+            })
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut style_idx, 0, "Ocean").changed()
+                    | ui.selectable_value(&mut style_idx, 1, "River").changed()
+                    | ui.selectable_value(&mut style_idx, 2, "Lake").changed()
+                    | ui.selectable_value(&mut style_idx, 3, "Swamp").changed()
+            })
+            .inner
+            .unwrap_or(false);
+        if changed {
+            let style_str = match style_idx {
+                0 => "Ocean",
+                1 => "River",
+                3 => "Swamp",
+                _ => "Lake",
+            };
+            let mut new_data = data.clone();
+            new_data["style"] = serde_json::json!(style_str);
+            events.push(PanelEvent::ComponentDataChanged {
+                entity_id,
+                component_type: "WaterVolume".to_string(),
+                data: new_data,
+            });
+        }
+    });
+}

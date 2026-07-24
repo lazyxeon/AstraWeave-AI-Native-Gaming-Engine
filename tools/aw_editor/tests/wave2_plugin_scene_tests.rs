@@ -827,6 +827,7 @@ fn make_entity(id: u32, name: &str, scale: f32, hp: i32, ammo: i32) -> EntityDat
         cooldowns: BTreeMap::new(),
         behavior_graph: None,
         parent: None,
+        components: Default::default(),
     }
 }
 

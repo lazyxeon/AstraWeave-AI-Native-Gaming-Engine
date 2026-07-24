@@ -318,6 +318,49 @@ struct LodMesh {
     index_count: u32,
 }
 
+// ── Water-volume patches (T.W.2) ─────────────────────────────────────────────
+
+/// Per-axis subdivision of a volume patch grid. Volumes default to near-calm
+/// styles (Lake), so a modest fixed tessellation carries the small residual
+/// Gerstner displacement without visible faceting.
+const VOLUME_SUBDIV: u32 = 24;
+
+/// An authored bounded water body (T.W.2 — the editor's `WaterVolume` entity,
+/// e.g. a mountain lake above the world sea level). Rendered as a flat-bounded
+/// patch through the SAME pipeline/shader as the global plane, with a
+/// per-volume uniform block overriding level/colors/wave params. Style is
+/// passed pre-resolved (colors + wave params), keeping this crate free of
+/// editor style enums.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct WaterVolumeDesc {
+    /// World-XZ center of the volume's surface patch.
+    pub center: Vec2,
+    /// Half-extents of the patch in world units (X, Z).
+    pub half_extents: Vec2,
+    /// World-Y of the volume's top surface (its own water level — independent
+    /// of the global plane's level).
+    pub surface_level: f32,
+    pub color_deep: [f32; 3],
+    pub color_shallow: [f32; 3],
+    pub color_foam: [f32; 3],
+    /// Per-style Gerstner amplitude/steepness scale (see `set_wave_params`).
+    pub amplitude_scale: f32,
+    /// Per-style crest-foam threshold.
+    pub foam_threshold: f32,
+}
+
+/// GPU state for one volume patch: its own 512-B uniform block (the global
+/// block with level/colors/wave overrides) + mesh + single-instance offset.
+struct VolumeGpu {
+    uniform_buffer: wgpu::Buffer,
+    /// Rebuilt alongside the main bind group when `resource_gen` changes.
+    bind_group: wgpu::BindGroup,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    index_count: u32,
+    instance_buffer: wgpu::Buffer,
+}
+
 /// Water rendering system
 pub struct WaterRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -352,6 +395,14 @@ pub struct WaterRenderer {
     /// camera-chunk center — the same anchor the grid uses).
     horizon_mesh: LodMesh,
     horizon_instance_buffer: wgpu::Buffer,
+    /// T.W.2: whether the global plane (chunk grid + horizon shell) draws.
+    /// Volumes draw independently — a Desert world can carry an authored
+    /// oasis volume with the plane off.
+    plane_visible: bool,
+    /// T.W.2: authored bounded water bodies (mountain lakes etc.), rebuilt
+    /// only when the descriptor set changes.
+    volume_descs: Vec<WaterVolumeDesc>,
+    volumes: Vec<VolumeGpu>,
     uniforms: WaterUniforms,
 }
 
@@ -606,6 +657,9 @@ impl WaterRenderer {
             instance_counts,
             horizon_mesh,
             horizon_instance_buffer,
+            plane_visible: true,
+            volume_descs: Vec::new(),
+            volumes: Vec::new(),
             uniforms,
         }
     }
@@ -797,6 +851,127 @@ impl WaterRenderer {
         (vertices, indices)
     }
 
+    /// Generate a volume patch: a flat rectangular grid spanning
+    /// `[-hx, hx] × [-hz, hz]` in local space (surface-only, no skirt — a
+    /// volume's rim is either buried in the terrain bowl it fills or an
+    /// authored hard edge; residual displacement at calm styles is
+    /// sub-toleranace). Same winding family as [`Self::generate_water_plane`].
+    fn generate_volume_patch(half_extents: Vec2) -> (Vec<WaterVertex>, Vec<u32>) {
+        let n = VOLUME_SUBDIV;
+        let mut vertices = Vec::with_capacity(((n + 1) * (n + 1)) as usize);
+        let mut indices = Vec::with_capacity((n * n * 6) as usize);
+        for z in 0..=n {
+            for x in 0..=n {
+                let fx = (x as f32 / n as f32) * 2.0 - 1.0;
+                let fz = (z as f32 / n as f32) * 2.0 - 1.0;
+                vertices.push(WaterVertex {
+                    position: [fx * half_extents.x, 0.0, fz * half_extents.y],
+                    uv: [0.0, 0.0], // unread by the fragment shader
+                });
+            }
+        }
+        let stride = n + 1;
+        for z in 0..n {
+            for x in 0..n {
+                let tl = z * stride + x;
+                let tr = tl + 1;
+                let bl = (z + 1) * stride + x;
+                let br = bl + 1;
+                indices.extend_from_slice(&[tl, bl, tr, tr, bl, br]);
+            }
+        }
+        (vertices, indices)
+    }
+
+    /// Set the authored water volumes (T.W.2). Compares against the current
+    /// descriptor set and rebuilds GPU state only on change (an unchanged set
+    /// is free). An empty slice clears all volumes. Bind groups are created
+    /// against the dummy scene textures and re-pointed at the real
+    /// scene-color/depth views by the next [`Self::prepare_scene`] (the
+    /// `scene_gen` invalidation below forces that rebuild).
+    pub fn set_water_volumes(&mut self, device: &wgpu::Device, descs: &[WaterVolumeDesc]) {
+        if descs == self.volume_descs.as_slice() {
+            return;
+        }
+        self.volume_descs = descs.to_vec();
+
+        let dummy_color_view = self
+            ._dummy_scene_color
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let dummy_depth_view = self
+            ._dummy_depth
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.volumes = descs
+            .iter()
+            .map(|desc| {
+                let (vertices, indices) = Self::generate_volume_patch(desc.half_extents);
+                let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("water_volume_uniforms"),
+                    contents: bytemuck::bytes_of(&self.uniforms),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+                let bind_group = Self::build_bind_group(
+                    device,
+                    &self.bind_group_layout,
+                    &uniform_buffer,
+                    &dummy_color_view,
+                    &dummy_depth_view,
+                    &self.sampler,
+                );
+                VolumeGpu {
+                    uniform_buffer,
+                    bind_group,
+                    vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("water_volume_vb"),
+                        contents: bytemuck::cast_slice(&vertices),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    }),
+                    index_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("water_volume_ib"),
+                        contents: bytemuck::cast_slice(&indices),
+                        usage: wgpu::BufferUsages::INDEX,
+                    }),
+                    index_count: indices.len() as u32,
+                    instance_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("water_volume_instance"),
+                        contents: bytemuck::bytes_of(&ChunkInstance {
+                            offset: [desc.center.x, desc.center.y],
+                        }),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    }),
+                }
+            })
+            .collect();
+
+        // Force prepare_scene to re-point every bind group (main + volumes)
+        // at the real scene views on the next frame.
+        self.scene_gen = u64::MAX;
+    }
+
+    /// Number of active water volumes (diagnostics / tests).
+    pub fn volume_count(&self) -> usize {
+        self.volumes.len()
+    }
+
+    /// T.W.2: whether the global plane (chunk grid + horizon shell) draws.
+    /// Volumes draw independently of this flag.
+    pub fn set_plane_visible(&mut self, visible: bool) {
+        self.plane_visible = visible;
+    }
+
+    /// Whether the global plane (grid + shell) is drawn.
+    pub fn plane_visible(&self) -> bool {
+        self.plane_visible
+    }
+
+    /// Whether this renderer would draw ANYTHING this frame — the water-pass
+    /// skip condition (T.W.2 generalization of the W-series dormant-skip:
+    /// dormant = no visible plane chunks AND no authored volumes).
+    pub fn has_renderable_content(&self) -> bool {
+        (self.plane_visible && self.has_visible_chunks()) || !self.volumes.is_empty()
+    }
+
     /// Whether any LOD band has chunks to draw this frame. False before the first
     /// [`Self::update`] (e.g. the editor dormant-water case where `update_water`
     /// is never called), letting the renderer skip the scene-color snapshot + pass.
@@ -865,6 +1040,26 @@ impl WaterRenderer {
             0,
             bytemuck::bytes_of(&shell_anchor),
         );
+
+        // T.W.2: refresh each volume's uniform block with THIS frame's
+        // view/camera/time — the global block with the volume's level/colors/
+        // wave params, and NO weave instances (weaves are a global-plane
+        // effect; an authored lake must not inherit a Part/Raise/Freeze aimed
+        // at the sea). `screen_size` carries the last-prepared value (stale
+        // for at most one frame across a resize, like the main block between
+        // prepares).
+        for (vol, desc) in self.volumes.iter().zip(&self.volume_descs) {
+            let mut block = self.uniforms;
+            block.water_level = desc.surface_level;
+            block.water_color_deep = desc.color_deep;
+            block.water_color_shallow = desc.color_shallow;
+            block.foam_color = desc.color_foam;
+            block.wave_amp_scale = desc.amplitude_scale.clamp(0.0, 1.0);
+            block.foam_threshold = desc.foam_threshold;
+            block.weave_count = 0;
+            block.weave_instances = [WeaveInstanceRaw::ZERO; MAX_WEAVE_INSTANCES];
+            queue.write_buffer(&vol.uniform_buffer, 0, bytemuck::bytes_of(&block));
+        }
     }
 
     /// Wire the scene-color snapshot + scene-depth views into the water bind group
@@ -890,6 +1085,18 @@ impl WaterRenderer {
                 scene_depth_view,
                 &self.sampler,
             );
+            // T.W.2: volume bind groups share the invalidation (also forced
+            // via `scene_gen = u64::MAX` when the volume set is rebuilt).
+            for vol in &mut self.volumes {
+                vol.bind_group = Self::build_bind_group(
+                    device,
+                    &self.bind_group_layout,
+                    &vol.uniform_buffer,
+                    scene_color_view,
+                    scene_depth_view,
+                    &self.sampler,
+                );
+            }
             self.scene_gen = resource_gen;
         }
         // Patch only screen_size — the rest of the block was uploaded by `update()`
@@ -901,6 +1108,17 @@ impl WaterRenderer {
             off,
             bytemuck::bytes_of(&self.uniforms.screen_size),
         );
+
+        // T.W.2: patch the fresh screen_size into each volume block too (the
+        // rest was written by this frame's `update()`).
+        let screen_off = std::mem::offset_of!(WaterUniforms, screen_size) as u64;
+        for vol in &self.volumes {
+            queue.write_buffer(
+                &vol.uniform_buffer,
+                screen_off,
+                bytemuck::bytes_of(&self.uniforms.screen_size),
+            );
+        }
     }
 
     /// Set water level (world Y). Takes effect on the next [`Self::update`] or
@@ -1001,32 +1219,47 @@ impl WaterRenderer {
         )
     }
 
-    /// Render the water surface (one instanced draw per active LOD band).
+    /// Render the water surface: the global plane (one instanced draw per
+    /// active LOD band + the horizon shell) when `plane_visible`, then any
+    /// authored volume patches (T.W.2 — each with its own uniform block).
     pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
-        for (lod, mesh) in self.lod_meshes.iter().enumerate() {
-            let count = self.instance_counts[lod];
-            if count == 0 {
-                continue;
+
+        if self.plane_visible {
+            render_pass.set_bind_group(0, &self.bind_group, &[]);
+            for (lod, mesh) in self.lod_meshes.iter().enumerate() {
+                let count = self.instance_counts[lod];
+                if count == 0 {
+                    continue;
+                }
+                render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                render_pass.set_vertex_buffer(1, self.instance_buffers[lod].slice(..));
+                render_pass
+                    .set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.index_count, 0, 0..count);
             }
-            render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-            render_pass.set_vertex_buffer(1, self.instance_buffers[lod].slice(..));
-            render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh.index_count, 0, 0..count);
+
+            // Horizon shell (T.W.1.A): extends the surface past every far
+            // plane. Guarded by the same dormant condition as the grid, so
+            // no visible chunks still means "the plane draws nothing".
+            if self.has_visible_chunks() {
+                render_pass.set_vertex_buffer(0, self.horizon_mesh.vertex_buffer.slice(..));
+                render_pass.set_vertex_buffer(1, self.horizon_instance_buffer.slice(..));
+                render_pass.set_index_buffer(
+                    self.horizon_mesh.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint32,
+                );
+                render_pass.draw_indexed(0..self.horizon_mesh.index_count, 0, 0..1);
+            }
         }
 
-        // Horizon shell (T.W.1.A): extends the surface past every far plane.
-        // Guarded by the same dormant condition as the grid, so
-        // `has_visible_chunks() == false` still means "water draws nothing".
-        if self.has_visible_chunks() {
-            render_pass.set_vertex_buffer(0, self.horizon_mesh.vertex_buffer.slice(..));
-            render_pass.set_vertex_buffer(1, self.horizon_instance_buffer.slice(..));
-            render_pass.set_index_buffer(
-                self.horizon_mesh.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint32,
-            );
-            render_pass.draw_indexed(0..self.horizon_mesh.index_count, 0, 0..1);
+        // T.W.2 volume patches — drawn regardless of the plane flag.
+        for vol in &self.volumes {
+            render_pass.set_bind_group(0, &vol.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, vol.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(1, vol.instance_buffer.slice(..));
+            render_pass.set_index_buffer(vol.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..vol.index_count, 0, 0..1);
         }
     }
 }
@@ -1154,6 +1387,36 @@ mod tests {
             format!("const WAVE_FADE_END: f32 = {WAVE_FADE_END:.1};"),
         ] {
             assert!(wgsl.contains(&needle), "water.wgsl must contain `{needle}`");
+        }
+    }
+
+    #[test]
+    fn test_volume_patch_geometry() {
+        // T.W.2: rect grid spanning the half-extents, flat, upward-wound.
+        let he = Vec2::new(32.0, 18.0);
+        let (vertices, indices) = WaterRenderer::generate_volume_patch(he);
+        let n = VOLUME_SUBDIV;
+        assert_eq!(vertices.len(), ((n + 1) * (n + 1)) as usize);
+        assert_eq!(indices.len(), (n * n * 6) as usize);
+        assert!(vertices.iter().all(|v| v.position[1] == 0.0));
+        // Spans exactly the requested extents.
+        let max_x = vertices
+            .iter()
+            .map(|v| v.position[0])
+            .fold(0.0f32, f32::max);
+        let max_z = vertices
+            .iter()
+            .map(|v| v.position[2])
+            .fold(0.0f32, f32::max);
+        assert_eq!(max_x, he.x);
+        assert_eq!(max_z, he.y);
+        // Upward winding (back-face culling keeps the top surface).
+        for tri in indices.chunks(3) {
+            let [a, b, c] = [tri[0], tri[1], tri[2]].map(|i| vertices[i as usize].position);
+            let e1 = [b[0] - a[0], b[2] - a[2]];
+            let e2 = [c[0] - a[0], c[2] - a[2]];
+            let ny = e1[1] * e2[0] - e1[0] * e2[1];
+            assert!(ny > 0.0, "volume triangle {tri:?} winds downward");
         }
     }
 
@@ -1309,6 +1572,74 @@ mod tests {
                     renderer.uniforms.weave_instances[0].kind,
                     WeaveKind::None as u32
                 );
+
+                // ── T.W.2: volumes + plane gating + the renderable contract ──
+                assert_eq!(renderer.volume_count(), 0);
+                assert!(renderer.plane_visible());
+                // Plane visible + chunks → renderable (post-update state).
+                assert!(renderer.has_renderable_content());
+                // Hide the plane with no volumes → dormant.
+                renderer.set_plane_visible(false);
+                assert!(!renderer.has_renderable_content());
+
+                // Add two volumes → renderable again (volumes-only mode: the
+                // Desert-oasis case with the global checkbox off).
+                let lake = WaterVolumeDesc {
+                    center: Vec2::new(100.0, -50.0),
+                    half_extents: Vec2::new(32.0, 18.0),
+                    surface_level: 210.0,
+                    color_deep: [0.005, 0.04, 0.06],
+                    color_shallow: [0.02, 0.09, 0.12],
+                    color_foam: [0.9, 0.95, 1.0],
+                    amplitude_scale: 0.12,
+                    foam_threshold: 10.0,
+                };
+                renderer.set_water_volumes(
+                    &device,
+                    &[
+                        lake,
+                        WaterVolumeDesc {
+                            center: Vec2::new(-200.0, 300.0),
+                            surface_level: 95.0,
+                            ..lake
+                        },
+                    ],
+                );
+                assert_eq!(renderer.volume_count(), 2);
+                assert!(renderer.has_renderable_content());
+                renderer.set_plane_visible(true);
+
+                // Unchanged descriptor set: change-detected no-op (gen marker
+                // untouched). A changed set rebuilds.
+                renderer.scene_gen = 42;
+                renderer.set_water_volumes(
+                    &device,
+                    &[
+                        lake,
+                        WaterVolumeDesc {
+                            center: Vec2::new(-200.0, 300.0),
+                            surface_level: 95.0,
+                            ..lake
+                        },
+                    ],
+                );
+                assert_eq!(
+                    renderer.scene_gen, 42,
+                    "identical volume set must be a no-op (no bind-group invalidation)"
+                );
+                renderer.set_water_volumes(&device, &[lake]);
+                assert_eq!(renderer.volume_count(), 1);
+                assert_eq!(
+                    renderer.scene_gen,
+                    u64::MAX,
+                    "changed volume set must invalidate bind groups for prepare_scene"
+                );
+
+                // Clear → dormant again only if the plane has nothing; here
+                // the plane is visible with chunks, so still renderable.
+                renderer.set_water_volumes(&device, &[]);
+                assert_eq!(renderer.volume_count(), 0);
+                assert!(renderer.has_renderable_content());
             }
         });
     }

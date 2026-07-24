@@ -2307,6 +2307,20 @@ mod tests {
             // it panicked live (TWR_WATER_RECON.md §1.6).
             renderer.update_water(glam::Mat4::IDENTITY, glam::Vec3::new(0.0, 10.0, 0.0), 0.5);
 
+            // TW2: install a bounded volume patch so the volume draw path
+            // (per-volume uniform block + bind group) runs through the same
+            // validation scope — a mountain lake above the plane level.
+            renderer.set_water_volumes(&[crate::water::WaterVolumeDesc {
+                center: glam::Vec2::new(40.0, -25.0),
+                half_extents: glam::Vec2::new(30.0, 20.0),
+                surface_level: 120.0,
+                color_deep: [0.005, 0.04, 0.06],
+                color_shallow: [0.02, 0.09, 0.12],
+                color_foam: [0.9, 0.95, 1.0],
+                amplitude_scale: 0.12,
+                foam_threshold: 10.0,
+            }]);
+
             // TW1: draw through `draw_into` (the editor path). `render()` is a
             // no-op headless — `acquire_surface_texture` yields None and it
             // early-returns before any pass, so the prior "verify it doesn't

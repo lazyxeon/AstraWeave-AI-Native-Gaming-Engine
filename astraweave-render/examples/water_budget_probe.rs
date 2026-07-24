@@ -189,6 +189,105 @@ fn probe_isolated(device: &wgpu::Device, queue: &wgpu::Queue, has_timestamps: bo
         print_stats(cam.name, samples);
     }
 
+    // ── T.W.2: repeat the near camera with 4 authored volume patches in view ──
+    // Measures the marginal cost of bounded water bodies (per-volume uniform
+    // block + bind group + a 24×24 patch draw each).
+    {
+        let lake = astraweave_render::WaterVolumeDesc {
+            center: glam::Vec2::new(0.0, 0.0),
+            half_extents: glam::Vec2::new(30.0, 20.0),
+            surface_level: 6.0,
+            color_deep: [0.005, 0.04, 0.06],
+            color_shallow: [0.02, 0.09, 0.12],
+            color_foam: [0.9, 0.95, 1.0],
+            amplitude_scale: 0.12,
+            foam_threshold: 10.0,
+        };
+        water.set_water_volumes(
+            device,
+            &[
+                lake,
+                astraweave_render::WaterVolumeDesc {
+                    center: glam::Vec2::new(-60.0, 30.0),
+                    surface_level: 9.0,
+                    ..lake
+                },
+                astraweave_render::WaterVolumeDesc {
+                    center: glam::Vec2::new(55.0, -20.0),
+                    surface_level: 4.0,
+                    ..lake
+                },
+                astraweave_render::WaterVolumeDesc {
+                    center: glam::Vec2::new(20.0, 45.0),
+                    half_extents: glam::Vec2::new(50.0, 35.0),
+                    surface_level: 12.0,
+                    ..lake
+                },
+            ],
+        );
+        let (vp, eye) = view_proj(cams[0].eye, cams[0].target);
+        let mut samples: Vec<f32> = Vec::with_capacity(FRAMES);
+        for frame in 0..(WARMUP + FRAMES) {
+            let time = frame as f32 * (1.0 / 60.0);
+            water.update(queue, vp, eye, time);
+            if let Some(ref mut p) = profiler {
+                p.begin_frame();
+            }
+            let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("probe_vol_enc"),
+            });
+            {
+                let ts = profiler
+                    .as_mut()
+                    .and_then(|p| p.render_pass_timestamps("water"));
+                let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("probe_vol_pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &color_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.05,
+                                g: 0.1,
+                                b: 0.2,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    timestamp_writes: ts,
+                    occlusion_query_set: None,
+                });
+                water.render(&mut rp);
+            }
+            if let Some(ref p) = profiler {
+                p.end_frame(&mut enc);
+            }
+            queue.submit(Some(enc.finish()));
+            let _ = device.poll(wgpu::PollType::Wait);
+            if let Some(ref mut p) = profiler {
+                p.request_readback();
+                let _ = device.poll(wgpu::PollType::Wait);
+                p.poll_readback(device);
+                if frame >= WARMUP {
+                    if let Some(ms) = p.results_map().get("water") {
+                        samples.push(*ms);
+                    }
+                }
+            }
+        }
+        print_stats("near + 4 volume patches", samples);
+        water.set_water_volumes(device, &[]);
+    }
+
     // ── Render-correctness check ─────────────────────────────────────────────
     // Timing alone can't tell a drawn surface from one silently back-face-culled
     // (vertex work clocks either way). Render the near view over a BLACK clear,

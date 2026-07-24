@@ -29,6 +29,13 @@ pub struct EntityData {
     /// Parent entity ID for hierarchy preservation.
     #[serde(default)]
     pub parent: Option<Entity>,
+    /// TW2: typed component payloads from the EntityManager overlay (Light,
+    /// Camera, WaterVolume, …), keyed by component type. Before TW2 these
+    /// were silently DROPPED on save/reload (a Light lost its light data);
+    /// captured via [`SceneData::from_world_and_overlay`] and re-applied by
+    /// the loader. Pre-TW2 scene files deserialize with an empty map.
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub components: std::collections::HashMap<String, serde_json::Value>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -41,6 +48,24 @@ pub struct SceneData {
 }
 
 impl SceneData {
+    /// TW2: capture the world PLUS the EntityManager overlay's typed
+    /// component payloads (Light/Camera/WaterVolume/…). This is the
+    /// production save constructor — [`Self::from_world`] alone loses the
+    /// overlay components.
+    pub fn from_world_and_overlay(
+        world: &World,
+        entity_manager: &crate::entity_manager::EntityManager,
+    ) -> Self {
+        let mut data = Self::from_world(world);
+        for entity_data in &mut data.entities {
+            let em_id: u64 = entity_data.id.into();
+            if let Some(overlay) = entity_manager.get(em_id) {
+                entity_data.components = overlay.components.clone();
+            }
+        }
+        data
+    }
+
     pub fn from_world(world: &World) -> Self {
         let mut entities = Vec::new();
 
@@ -87,6 +112,7 @@ impl SceneData {
                 cooldowns,
                 behavior_graph,
                 parent,
+                components: Default::default(),
             });
         }
 
@@ -418,9 +444,39 @@ pub fn save_scene(world: &World, path: &Path) -> Result<()> {
     scene.save_to_file(path)
 }
 
+/// TW2: the production save — captures the world AND the EntityManager
+/// overlay's typed component payloads (Light/Camera/WaterVolume/…), which
+/// plain [`save_scene`] silently drops.
+pub fn save_scene_with_overlay(
+    world: &World,
+    entity_manager: &crate::entity_manager::EntityManager,
+    path: &Path,
+) -> Result<()> {
+    let scene = SceneData::from_world_and_overlay(world, entity_manager);
+    scene.save_to_file(path)
+}
+
 pub fn load_scene(path: &Path) -> Result<World> {
     let scene = SceneData::load_from_file(path)?;
     Ok(scene.to_world())
+}
+
+/// Per-entity typed component payloads recovered from a scene file (TW2).
+pub type ComponentOverlay =
+    std::collections::HashMap<Entity, std::collections::HashMap<String, serde_json::Value>>;
+
+/// TW2: the production load — returns the world plus the component overlay
+/// so the caller can re-apply Light/Camera/WaterVolume payloads onto the
+/// rebuilt EntityManager (plain [`load_scene`] drops them).
+pub fn load_scene_with_overlay(path: &Path) -> Result<(World, ComponentOverlay)> {
+    let scene = SceneData::load_from_file(path)?;
+    let overlay: ComponentOverlay = scene
+        .entities
+        .iter()
+        .filter(|e| !e.components.is_empty())
+        .map(|e| (e.id, e.components.clone()))
+        .collect();
+    Ok((scene.to_world(), overlay))
 }
 
 #[cfg(test)]
@@ -574,6 +630,132 @@ mod tests {
         let restored_pose = restored.pose(entity).unwrap();
         assert!((restored_pose.rotation - PI).abs() < 0.01);
         assert!((restored_pose.scale - 1.5).abs() < 0.01);
+    }
+
+    /// TW2: typed component payloads (WaterVolume/Light) round-trip through
+    /// the overlay-carrying save path — place, serialize, restore, identical.
+    /// This is the persistence contract the `WaterVolume` entity rides (and
+    /// the fix for the pre-existing Light component loss on reload).
+    #[test]
+    fn tw2_component_overlay_round_trip() {
+        let mut world = World::new();
+        let lake = world.spawn(
+            "WaterVolume_0",
+            IVec2 { x: 40, y: 60 },
+            astraweave_core::Team { id: 2 },
+            1,
+            0,
+        );
+        if let Some(pose) = world.pose_mut(lake) {
+            pose.height = 210.0; // mountain-lake surface level
+        }
+
+        // EntityManager overlay carrying the typed payloads.
+        let mut em = crate::entity_manager::EntityManager::new();
+        let em_id: u64 = lake.into();
+        let mut entity = crate::entity_manager::EditorEntity::new(em_id, "WaterVolume_0".into());
+        entity.components.insert(
+            "WaterVolume".to_string(),
+            serde_json::json!({
+                "half_extent_x": 32.0,
+                "half_extent_z": 18.0,
+                "style": "Lake",
+            }),
+        );
+        entity.components.insert(
+            "Light".to_string(),
+            serde_json::json!({"type": "point", "range": 15.0, "intensity": 8.0}),
+        );
+        em.add(entity);
+
+        // Save side: the overlay constructor captures the payloads…
+        let scene = SceneData::from_world_and_overlay(&world, &em);
+        let saved = scene
+            .entities
+            .iter()
+            .find(|e| e.id == lake)
+            .expect("lake entity serialized");
+        assert_eq!(saved.components.len(), 2);
+
+        // …through the on-disk format…
+        let ron_string = ron::ser::to_string_pretty(&scene, Default::default()).unwrap();
+        let reloaded: SceneData = ron::from_str(&ron_string).unwrap();
+
+        // …and back out identical (what load_scene_with_overlay extracts).
+        let restored = reloaded
+            .entities
+            .iter()
+            .find(|e| e.id == lake)
+            .expect("lake entity reloaded");
+        assert_eq!(restored.components, saved.components);
+        let wv = &restored.components["WaterVolume"];
+        assert_eq!(wv.get("half_extent_x").and_then(|v| v.as_f64()), Some(32.0));
+        assert_eq!(wv.get("half_extent_z").and_then(|v| v.as_f64()), Some(18.0));
+        assert_eq!(wv.get("style").and_then(|v| v.as_str()), Some("Lake"));
+        assert_eq!(restored.height, 210.0, "surface level rides the pose");
+
+        // Backward compat: a pre-TW2 EntityData without the field parses.
+        let legacy = r#"(id: 7, name: "Old", pos: (x: 0, y: 0), rotation: 0.0,
+            rotation_x: 0.0, rotation_z: 0.0, scale: 1.0, hp: 10, team_id: 0,
+            ammo: 0, cooldowns: {})"#;
+        let parsed: EntityData = ron::from_str(legacy).expect("pre-TW2 entity parses");
+        assert!(parsed.components.is_empty());
+    }
+
+    /// TW2: the FULL production persistence path through an on-disk file —
+    /// `save_scene_with_overlay` → file → `load_scene_with_overlay`. This is
+    /// the exact pair the editor's save/load handlers call; the live-editor
+    /// bug that this beat found (a Ctrl+S handler using the overlay-DROPPING
+    /// `save_scene`) is caught at the caller level by the Integration-
+    /// Completeness grep, but this test pins the file functions themselves so
+    /// the WaterVolume component survives a real write+read.
+    #[test]
+    fn tw2_water_volume_persists_through_file() {
+        let mut world = World::new();
+        let lake = world.spawn(
+            "MountainLake",
+            IVec2 { x: 40, y: 60 },
+            astraweave_core::Team { id: 2 },
+            1,
+            0,
+        );
+        if let Some(pose) = world.pose_mut(lake) {
+            pose.height = 205.0;
+        }
+        let mut em = crate::entity_manager::EntityManager::new();
+        let em_id: u64 = lake.into();
+        let mut entity = crate::entity_manager::EditorEntity::new(em_id, "MountainLake".into());
+        entity.components.insert(
+            "WaterVolume".to_string(),
+            serde_json::json!({"half_extent_x": 40.0, "half_extent_z": 22.0, "style": "Lake"}),
+        );
+        em.add(entity);
+
+        // Relative path under content/ (security validation), like
+        // test_scene_file_io. Unique name avoids collision with parallel tests.
+        let rel = Path::new("test_scenes/tw2_water_volume_persist.scene.ron");
+        save_scene_with_overlay(&world, &em, rel).expect("overlay save");
+
+        let base = std::env::current_dir().unwrap();
+        let full = base.join("content").join(rel);
+        assert!(full.exists(), "scene file must be written");
+
+        let (loaded_world, overlay) = load_scene_with_overlay(rel).expect("overlay load");
+        assert!(
+            loaded_world.entities().iter().any(|&e| e == lake),
+            "entity must survive the round-trip"
+        );
+        let comps = overlay
+            .get(&lake)
+            .expect("overlay must carry the lake's components");
+        let wv = comps
+            .get("WaterVolume")
+            .expect("WaterVolume component must persist through the file");
+        assert_eq!(wv.get("half_extent_x").and_then(|v| v.as_f64()), Some(40.0));
+        assert_eq!(wv.get("half_extent_z").and_then(|v| v.as_f64()), Some(22.0));
+        assert_eq!(wv.get("style").and_then(|v| v.as_str()), Some("Lake"));
+
+        let _ = fs::remove_file(&full);
     }
 
     #[test]
@@ -882,6 +1064,7 @@ mod tests {
                     cooldowns: std::collections::BTreeMap::new(),
                     behavior_graph: None,
                     parent: None,
+                    components: Default::default(),
                 },
                 EntityData {
                     id: 1, // Duplicate!
@@ -898,6 +1081,7 @@ mod tests {
                     cooldowns: std::collections::BTreeMap::new(),
                     behavior_graph: None,
                     parent: None,
+                    components: Default::default(),
                 },
             ],
             obstacles: vec![],
@@ -932,6 +1116,7 @@ mod tests {
                 cooldowns: std::collections::BTreeMap::new(),
                 behavior_graph: None,
                 parent: None,
+                components: Default::default(),
             }],
             obstacles: vec![],
         };
@@ -964,6 +1149,7 @@ mod tests {
                 cooldowns: std::collections::BTreeMap::new(),
                 behavior_graph: None,
                 parent: None,
+                components: Default::default(),
             }],
             obstacles: vec![],
         };
@@ -996,6 +1182,7 @@ mod tests {
                 cooldowns: std::collections::BTreeMap::new(),
                 behavior_graph: None,
                 parent: None,
+                components: Default::default(),
             }],
             obstacles: vec![],
         };
@@ -1056,6 +1243,7 @@ mod tests {
                     cooldowns: cooldowns.clone(),
                     behavior_graph: Some(BehaviorGraph::new(BehaviorNode::Action("test".into()))),
                     parent: None,
+                    components: Default::default(),
                 },
                 EntityData {
                     id: 2,
@@ -1072,6 +1260,7 @@ mod tests {
                     cooldowns: std::collections::BTreeMap::new(),
                     behavior_graph: None,
                     parent: None,
+                    components: Default::default(),
                 },
             ],
             obstacles: vec![(3, 3)],

@@ -800,8 +800,38 @@ impl ViewportWidget {
                     })
                     .collect();
 
+                // TW2: authored water volumes — same collection pattern as
+                // lights (entity position + typed component payload).
+                let water_volumes: Vec<super::types::WaterVolumeSpec> = entity_manager
+                    .entities()
+                    .iter()
+                    .filter_map(|(_, entity)| {
+                        let data = entity.components.get("WaterVolume")?;
+                        Some(super::types::WaterVolumeSpec {
+                            position: [entity.position.x, entity.position.y, entity.position.z],
+                            half_extent_x: data
+                                .get("half_extent_x")
+                                .and_then(|v| v.as_f64())
+                                .unwrap_or(24.0) as f32,
+                            half_extent_z: data
+                                .get("half_extent_z")
+                                .and_then(|v| v.as_f64())
+                                .unwrap_or(24.0) as f32,
+                            style: super::types::WaterStyle::from_component_str(
+                                data.get("style").and_then(|v| v.as_str()).unwrap_or("Lake"),
+                            ),
+                        })
+                    })
+                    .collect();
+
                 let gizmo_lines = Self::generate_component_gizmo_lines(entity_manager);
-                Some((mesh_map, tex_overrides, scene_lights, gizmo_lines))
+                Some((
+                    mesh_map,
+                    tex_overrides,
+                    scene_lights,
+                    water_volumes,
+                    gizmo_lines,
+                ))
             } else {
                 None
             };
@@ -809,12 +839,15 @@ impl ViewportWidget {
             // Apply pre-computed data under a short lock
             self.with_renderer("update_entity_state", |renderer| {
                 renderer.set_selected_entities(&entities_u32);
-                if let Some((mesh_map, tex_overrides, scene_lights, gizmo_lines)) = rebuild_data {
+                if let Some((mesh_map, tex_overrides, scene_lights, water_volumes, gizmo_lines)) =
+                    rebuild_data
+                {
                     renderer.set_entity_meshes(mesh_map);
                     if !tex_overrides.is_empty() {
                         renderer.set_entity_texture_overrides(tex_overrides);
                     }
                     renderer.set_scene_lights(scene_lights);
+                    renderer.set_water_volumes(&water_volumes);
                     renderer.set_component_gizmo_lines(gizmo_lines);
                 }
             });

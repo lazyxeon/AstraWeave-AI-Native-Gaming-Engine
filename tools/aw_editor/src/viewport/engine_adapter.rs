@@ -532,6 +532,10 @@ pub struct EngineRenderAdapter {
     weather_active: bool,
     /// Whether water rendering is enabled.
     water_enabled: bool,
+    /// TW2: resolved authored water volumes (from `WaterVolume` entities),
+    /// cached so an enable-flip can re-apply them onto a fresh renderer and
+    /// a volume set can install a plane-hidden renderer on its own.
+    water_volumes: Vec<astraweave_render::WaterVolumeDesc>,
     /// Current editor quality preset (shadows + post-processing).
     quality_preset: EditorQualityPreset,
     /// Cached entity count + selection for dirty-skip in feed_entities
@@ -723,6 +727,7 @@ impl EngineRenderAdapter {
             scatter_total_vertices: 0,
             weather_active: false,
             water_enabled: false,
+            water_volumes: Vec::new(),
             quality_preset: EditorQualityPreset::default(),
             cached_entity_feed_count: usize::MAX, // force first rebuild
             cached_entity_feed_selected: Vec::new(),
@@ -3825,6 +3830,44 @@ impl EngineRenderAdapter {
         self.renderer.set_bloom_config(config);
     }
 
+    /// Resolve a [`WaterStyle`] to its render parameters:
+    /// `(deep, shallow, foam, (amplitude_scale, foam_threshold))`. Shared by
+    /// the global plane (T.W.1/T.W.1.A) and per-volume patches (T.W.2).
+    pub(crate) fn water_style_params(
+        style: WaterStyle,
+    ) -> (glam::Vec3, glam::Vec3, glam::Vec3, (f32, f32)) {
+        match style {
+            // Open sea: visible swell, whitecaps only on the tallest crests.
+            WaterStyle::Ocean => (
+                glam::Vec3::new(0.02, 0.08, 0.2),
+                glam::Vec3::new(0.1, 0.4, 0.5),
+                glam::Vec3::new(0.95, 0.98, 1.0),
+                (0.55, 0.75),
+            ),
+            // Gentle motion, no whitecaps (placeholder until hydrology).
+            WaterStyle::River => (
+                glam::Vec3::new(0.01, 0.05, 0.04),
+                glam::Vec3::new(0.04, 0.10, 0.08),
+                glam::Vec3::new(0.9, 0.95, 0.9),
+                (0.30, 10.0),
+            ),
+            // Near-calm inland water (Boreal/Desert archetypes; volume default).
+            WaterStyle::Lake => (
+                glam::Vec3::new(0.005, 0.04, 0.06),
+                glam::Vec3::new(0.02, 0.09, 0.12),
+                glam::Vec3::new(0.9, 0.95, 1.0),
+                (0.12, 10.0),
+            ),
+            // Stagnant, effectively still.
+            WaterStyle::Swamp => (
+                glam::Vec3::new(0.02, 0.03, 0.01),
+                glam::Vec3::new(0.05, 0.06, 0.03),
+                glam::Vec3::new(0.7, 0.75, 0.6),
+                (0.08, 10.0),
+            ),
+        }
+    }
+
     /// Set water configuration on the engine renderer.
     pub fn set_water_enabled(&mut self, enabled: bool, style: WaterStyle) {
         self.water_enabled = enabled;
@@ -3839,45 +3882,17 @@ impl EngineRenderAdapter {
                 self.renderer.hdr_format(),
                 wgpu::TextureFormat::Depth32Float,
             );
-            // Apply style-specific colors + wave character (T.W.1.A). The wave
-            // tuple is (amplitude_scale, foam_threshold): scale calms the
-            // Gerstner surface down from the demo-close-up baseline (1.0 —
-            // which read as "pretty strong whitecaps" at world scale, the
-            // T.W.1 render-gate rejection); a foam_threshold above the
-            // achievable crest height (≈ 1.65 · scale) turns crest foam OFF.
-            let (deep, shallow, foam, (amp_scale, foam_threshold)) = match style {
-                // Open sea: visible swell, whitecaps only on the tallest crests.
-                WaterStyle::Ocean => (
-                    glam::Vec3::new(0.02, 0.08, 0.2),
-                    glam::Vec3::new(0.1, 0.4, 0.5),
-                    glam::Vec3::new(0.95, 0.98, 1.0),
-                    (0.55_f32, 0.75_f32),
-                ),
-                // Gentle motion, no whitecaps (placeholder until hydrology).
-                WaterStyle::River => (
-                    glam::Vec3::new(0.01, 0.05, 0.04),
-                    glam::Vec3::new(0.04, 0.10, 0.08),
-                    glam::Vec3::new(0.9, 0.95, 0.9),
-                    (0.30_f32, 10.0_f32),
-                ),
-                // Near-calm inland water (Boreal/Desert archetypes).
-                WaterStyle::Lake => (
-                    glam::Vec3::new(0.005, 0.04, 0.06),
-                    glam::Vec3::new(0.02, 0.09, 0.12),
-                    glam::Vec3::new(0.9, 0.95, 1.0),
-                    (0.12_f32, 10.0_f32),
-                ),
-                // Stagnant, effectively still.
-                WaterStyle::Swamp => (
-                    glam::Vec3::new(0.02, 0.03, 0.01),
-                    glam::Vec3::new(0.05, 0.06, 0.03),
-                    glam::Vec3::new(0.7, 0.75, 0.6),
-                    (0.08_f32, 10.0_f32),
-                ),
-            };
+            // Apply style-specific colors + wave character (T.W.1.A; params
+            // resolved by `water_style_params`, shared with volumes since
+            // T.W.2). A foam_threshold above the achievable crest height
+            // (≈ 1.65 · scale) turns crest foam OFF.
+            let (deep, shallow, foam, (amp_scale, foam_threshold)) =
+                Self::water_style_params(style);
             let mut water = water;
             water.set_water_colors(deep, shallow, foam);
             water.set_wave_params(amp_scale, foam_threshold);
+            // TW2: carry the authored volumes over onto the fresh renderer.
+            water.set_water_volumes(self.renderer.device(), &self.water_volumes);
             // TW1 (ratification #6): the W.2c.2 hardcoded part/raise/freeze
             // scaffolding weaves that lived here are DELETED — they were
             // set-piece test inputs meant to be replaced by a real gameplay
@@ -3885,8 +3900,69 @@ impl EngineRenderAdapter {
             // the weaving_playground binary only). The editor surface now
             // starts weave-free; an editor weave feed is future work.
             self.renderer.set_water_renderer(water);
-        } else {
+        } else if self.water_volumes.is_empty() {
             self.renderer.clear_water_renderer();
+        } else {
+            // TW2: authored volumes exist — keep (or install) a renderer with
+            // the plane hidden, so a Desert oasis volume renders with the
+            // global water checkbox off.
+            self.ensure_water_renderer_for_volumes();
+            self.renderer.set_water_plane_visible(false);
+        }
+    }
+
+    /// TW2 — set the authored water volumes (from `WaterVolume` entities).
+    /// Resolves each spec's style through `water_style_params` and forwards;
+    /// installs a plane-hidden `WaterRenderer` when volumes exist without the
+    /// global plane, and tears the renderer down when the last volume goes
+    /// away while the plane is disabled.
+    pub fn set_water_volumes(&mut self, specs: &[super::types::WaterVolumeSpec]) {
+        self.water_volumes = specs
+            .iter()
+            .map(|spec| {
+                let (deep, shallow, foam, (amp, thr)) = Self::water_style_params(spec.style);
+                astraweave_render::WaterVolumeDesc {
+                    center: glam::Vec2::new(spec.position[0], spec.position[2]),
+                    half_extents: glam::Vec2::new(
+                        spec.half_extent_x.max(0.5),
+                        spec.half_extent_z.max(0.5),
+                    ),
+                    // The entity's Y IS the volume's water level (move the
+                    // entity up/down to set the lake surface).
+                    surface_level: spec.position[1],
+                    color_deep: deep.into(),
+                    color_shallow: shallow.into(),
+                    color_foam: foam.into(),
+                    amplitude_scale: amp,
+                    foam_threshold: thr,
+                }
+            })
+            .collect();
+
+        if self.water_volumes.is_empty() {
+            if self.water_enabled {
+                self.renderer.set_water_volumes(&[]);
+            } else {
+                self.renderer.clear_water_renderer();
+            }
+            return;
+        }
+        self.ensure_water_renderer_for_volumes();
+        self.renderer.set_water_volumes(&self.water_volumes);
+    }
+
+    /// TW2 — make sure a `WaterRenderer` exists for volume rendering. When the
+    /// global plane is disabled the installed renderer draws volumes only
+    /// (plane hidden).
+    fn ensure_water_renderer_for_volumes(&mut self) {
+        if !self.renderer.has_water_renderer() {
+            let mut water = astraweave_render::WaterRenderer::new(
+                self.renderer.device(),
+                self.renderer.hdr_format(),
+                wgpu::TextureFormat::Depth32Float,
+            );
+            water.set_plane_visible(self.water_enabled);
+            self.renderer.set_water_renderer(water);
         }
     }
 

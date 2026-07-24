@@ -279,6 +279,11 @@ pub struct TerrainPanel {
     brush_falloff: FalloffCurve,
     /// For Flatten brush: captured target height on first click (None = not yet captured)
     flatten_target_height: Option<f32>,
+    /// TW2: Carve Water brush — how far below the current `water_level` the
+    /// carved bed settles (meters). The brush target is
+    /// `water_level − carve_depth`, recomputed per stroke application so it
+    /// tracks the live level slider.
+    carve_depth: f32,
     /// Noise brush scale (world-space frequency)
     noise_scale: f32,
     selected_material: usize,
@@ -328,6 +333,12 @@ pub enum BrushMode {
     Erode,
     Noise,
     ZoneBlend,
+    /// TW2: "paint water" for sea-connected water = honestly lowering the
+    /// land. Blends terrain toward `water_level − carve_depth` (never past
+    /// it — idempotent at target depth); the existing water plane floods the
+    /// carve via depth occlusion, and the bed stays terrestrial-classified
+    /// (the ratified emergent-dip FEATURE ruling — no reclassification).
+    CarveWater,
 }
 
 /// Falloff curve for terrain brush strength attenuation.
@@ -381,6 +392,7 @@ impl BrushMode {
             BrushMode::Erode => "Erode",
             BrushMode::Noise => "Noise",
             BrushMode::ZoneBlend => "Zone Blend",
+            BrushMode::CarveWater => "Carve Water",
         }
     }
 
@@ -394,6 +406,7 @@ impl BrushMode {
             BrushMode::Erode => "💧",
             BrushMode::Noise => "🌊",
             BrushMode::ZoneBlend => "🔀",
+            BrushMode::CarveWater => "🏝",
         }
     }
 
@@ -407,6 +420,7 @@ impl BrushMode {
             BrushMode::Erode,
             BrushMode::Noise,
             BrushMode::ZoneBlend,
+            BrushMode::CarveWater,
         ]
     }
 }
@@ -514,6 +528,7 @@ impl Default for TerrainPanel {
             brush_strength: 0.5,
             brush_falloff: FalloffCurve::Smooth,
             flatten_target_height: None,
+            carve_depth: 3.0,
             noise_scale: 0.05,
             selected_material: 0,
             palette_remap: None,
@@ -724,13 +739,25 @@ impl TerrainPanel {
                     self.brush_strength,
                     self.brush_mode,
                     self.brush_falloff,
-                    self.flatten_target_height,
+                    self.brush_target_height(),
                     self.noise_scale,
                 )
             }
         };
         if modified {
             self.pending_actions.push(TerrainAction::BrushUpdate);
+        }
+    }
+
+    /// The target-height argument for target-blending brush modes: Flatten's
+    /// captured first-click height, or Carve Water's `water_level − carve_depth`
+    /// (TW2 — recomputed per application so it tracks the live level slider).
+    /// `None` for every other mode.
+    fn brush_target_height(&self) -> Option<f32> {
+        match self.brush_mode {
+            BrushMode::Flatten => self.flatten_target_height,
+            BrushMode::CarveWater => Some(self.water_level - self.carve_depth),
+            _ => None,
         }
     }
 
@@ -1109,6 +1136,7 @@ impl TerrainPanel {
                 ui.selectable_value(&mut self.brush_mode, BrushMode::Erode, "Erode");
                 ui.selectable_value(&mut self.brush_mode, BrushMode::Noise, "Noise");
                 ui.selectable_value(&mut self.brush_mode, BrushMode::ZoneBlend, "Zone Blend");
+                ui.selectable_value(&mut self.brush_mode, BrushMode::CarveWater, "Carve Water");
             });
 
             ui.horizontal(|ui| {
@@ -1133,6 +1161,36 @@ impl TerrainPanel {
                     ui.label("Noise Scale:");
                     ui.add(egui::Slider::new(&mut self.noise_scale, 0.005..=0.5).logarithmic(true));
                 });
+            }
+
+            if self.brush_mode == BrushMode::CarveWater {
+                ui.horizontal(|ui| {
+                    ui.label("Carve Depth:");
+                    ui.add(
+                        egui::Slider::new(&mut self.carve_depth, 0.5..=10.0)
+                            .suffix(" m")
+                            .clamping(egui::SliderClamping::Always),
+                    )
+                    .on_hover_text(
+                        "How far below the water level the carved bed settles. \
+                         The brush lowers ground toward (water level − depth) and \
+                         never deepens ground already below it.",
+                    );
+                });
+                // TW2: the brush still carves with water off (it is a terrain
+                // operation), but the result won't flood until water is enabled
+                // — say so instead of silently confusing.
+                if !self.water_enabled {
+                    ui.label(
+                        RichText::new(
+                            "💧 Water is disabled — carves won't flood until the \
+                             Water checkbox is on.",
+                        )
+                        .small()
+                        .italics()
+                        .color(egui::Color32::from_rgb(140, 170, 200)),
+                    );
+                }
             }
 
             if self.brush_mode == BrushMode::Paint {
@@ -1303,7 +1361,7 @@ impl TerrainPanel {
                         self.brush_strength,
                         self.brush_mode,
                         self.brush_falloff,
-                        self.flatten_target_height,
+                        self.brush_target_height(),
                         self.noise_scale,
                     ),
                 };
@@ -2636,7 +2694,9 @@ mod tests {
     #[test]
     fn test_brush_mode_all() {
         let all = BrushMode::all();
-        assert_eq!(all.len(), 8);
+        // TW2 added CarveWater → 9 modes.
+        assert_eq!(all.len(), 9);
+        assert!(all.contains(&BrushMode::CarveWater));
     }
 
     #[test]
@@ -2644,6 +2704,7 @@ mod tests {
         assert_eq!(BrushMode::Sculpt.icon(), "🏔️");
         assert_eq!(BrushMode::Paint.icon(), "🖌️");
         assert_eq!(BrushMode::Erode.icon(), "💧");
+        assert_eq!(BrushMode::CarveWater.icon(), "🏝");
     }
 
     #[test]

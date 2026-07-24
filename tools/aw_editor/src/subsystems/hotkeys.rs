@@ -69,7 +69,15 @@ impl crate::EditorApp {
                         dir.join("untitled.scene.ron")
                     };
 
-                    match scene_serialization::save_scene(world, &path) {
+                    // TW2: overlay-carrying save — captures typed component
+                    // payloads (Light/Camera/WaterVolume/…) the plain
+                    // save_scene drops. Mirrors on_save_scene (this Ctrl+S
+                    // hotkey was a missed registration surface).
+                    match scene_serialization::save_scene_with_overlay(
+                        world,
+                        &self.entity_manager,
+                        &path,
+                    ) {
                         Ok(()) => {
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());
@@ -283,7 +291,12 @@ impl crate::EditorApp {
                         .as_secs();
                     let path = dir.join(format!("scene_{}.scene.ron", timestamp));
 
-                    match scene_serialization::save_scene(world, &path) {
+                    // TW2: overlay-carrying save (Save As — same missed surface).
+                    match scene_serialization::save_scene_with_overlay(
+                        world,
+                        &self.entity_manager,
+                        &path,
+                    ) {
                         Ok(()) => {
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());

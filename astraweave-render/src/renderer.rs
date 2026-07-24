@@ -4634,6 +4634,13 @@ fn vs(input: VSIn) -> VSOut {
         self.water_renderer = None;
     }
 
+    /// Whether a water renderer is currently installed (T.W.2 — lets the
+    /// editor decide between installing a plane-hidden renderer for authored
+    /// volumes and reusing the one the plane enable installed).
+    pub fn has_water_renderer(&self) -> bool {
+        self.water_renderer.is_some()
+    }
+
     /// F.4.3 — register (or clear with `None`) the post-water, pre-tonemap HDR
     /// overlay composite. Invoked once per frame inside `run_water_pass`, against
     /// `hdr_view` (`Rgba16Float`) + the scene depth the water pass used, BEFORE the
@@ -4675,6 +4682,27 @@ fn vs(input: VSIn) -> VSOut {
         if let Some(ref mut water) = self.water_renderer {
             water.set_water_level(level);
             water.write_uniforms(&self.queue);
+        }
+    }
+
+    /// T.W.2 — set the authored bounded water bodies (the editor's
+    /// `WaterVolume` entities). Delegates to
+    /// [`crate::water::WaterRenderer::set_water_volumes`] (change-detected:
+    /// an unchanged set is free). No-op when no water renderer is installed —
+    /// callers that want volumes without the global plane install a renderer
+    /// and call [`Self::set_water_plane_visible`]`(false)`.
+    pub fn set_water_volumes(&mut self, volumes: &[crate::water::WaterVolumeDesc]) {
+        if let Some(ref mut water) = self.water_renderer {
+            water.set_water_volumes(&self.device, volumes);
+        }
+    }
+
+    /// T.W.2 — show/hide the global plane (chunk grid + horizon shell)
+    /// without touching authored volumes. No-op when no water renderer is
+    /// installed.
+    pub fn set_water_plane_visible(&mut self, visible: bool) {
+        if let Some(ref mut water) = self.water_renderer {
+            water.set_plane_visible(visible);
         }
     }
 
@@ -4721,9 +4749,11 @@ fn vs(input: VSIn) -> VSOut {
                 return;
             }
         };
-        // Skip the full-res snapshot + pass when water has nothing to draw (e.g. the
-        // editor dormant case where `update_water` is never called → no chunks).
-        if !water.has_visible_chunks() {
+        // Skip the full-res snapshot + pass when water has nothing to draw (the
+        // editor dormant case where `update_water` is never called → no chunks;
+        // T.W.2: authored volume patches count as renderable content, so a
+        // volumes-only scene — plane hidden or chunk-less — still draws).
+        if !water.has_renderable_content() {
             self.water_renderer = Some(water);
             self.fire_hdr_overlay(enc, depth_view);
             return;

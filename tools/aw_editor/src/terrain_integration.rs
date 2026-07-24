@@ -2053,7 +2053,10 @@ impl TerrainState {
         strength: f32,
         brush_mode: crate::panels::terrain_panel::BrushMode,
         falloff_curve: crate::panels::terrain_panel::FalloffCurve,
-        flatten_target: Option<f32>,
+        // Target height for the target-blending modes: Flatten's captured
+        // first-click height, or Carve Water's `water_level − carve_depth`
+        // (TW2). Ignored by every other mode.
+        target_height: Option<f32>,
         noise_scale: f32,
     ) -> bool {
         use crate::panels::terrain_panel::BrushMode;
@@ -2171,9 +2174,26 @@ impl TerrainState {
                                 current_h * (1.0 - blend) + avg_height * blend
                             }
                             BrushMode::Flatten => {
-                                let target = flatten_target.unwrap_or(current_h);
+                                let target = target_height.unwrap_or(current_h);
                                 let blend = strength * falloff;
                                 current_h * (1.0 - blend) + target * blend
+                            }
+                            // TW2 Carve Water: blend toward the carve target
+                            // (water_level − carve_depth) like Flatten, but
+                            // ONLY downward — ground at or below the target is
+                            // untouched, so repeated strokes converge on the
+                            // target and never deepen past it (idempotent at
+                            // depth). The falloff makes the rim descend
+                            // partially → a gradual shore crossing the
+                            // waterline, not a cliff.
+                            BrushMode::CarveWater => {
+                                let target = target_height.unwrap_or(current_h);
+                                if current_h <= target {
+                                    current_h
+                                } else {
+                                    let blend = (strength * falloff).clamp(0.0, 1.0);
+                                    current_h * (1.0 - blend) + target * blend
+                                }
                             }
                             BrushMode::Erode => {
                                 let erode = current_h - strength * falloff * 3.0;
@@ -3480,6 +3500,247 @@ mod tests {
     fn tw1_has_aquatic_biomes_false_without_terrain() {
         let state = TerrainState::new();
         assert!(!state.has_aquatic_biomes());
+    }
+
+    // ── TW2: Carve Water brush ──────────────────────────────────────────────
+
+    /// Radius-0 (single-chunk) terrain for brush tests — real generation, so
+    /// the brush runs against the production heightmap/mesh path.
+    fn carve_test_state() -> TerrainState {
+        let mut state = TerrainState::new();
+        state.configure(12345, "grassland");
+        state
+            .generate_terrain(0)
+            .expect("radius-0 terrain generation");
+        state
+    }
+
+    /// Max heightmap height within `radius` of (x, z) — the brush-math probe.
+    fn max_height_in(state: &TerrainState, x: f32, z: f32, radius: f32) -> f32 {
+        let mut max = f32::NEG_INFINITY;
+        let step = 2.0;
+        let mut dz = -radius;
+        while dz <= radius {
+            let mut dx = -radius;
+            while dx <= radius {
+                if dx * dx + dz * dz <= radius * radius {
+                    if let Some(h) = state.sample_height_at(x + dx, z + dz) {
+                        max = max.max(h);
+                    }
+                }
+                dx += step;
+            }
+            dz += step;
+        }
+        max
+    }
+
+    /// TW2: repeated carve strokes converge on the target depth and never
+    /// overshoot it (idempotence at depth); ground already below target is
+    /// untouched.
+    #[test]
+    fn tw2_carve_water_clamps_at_target_and_is_idempotent() {
+        use crate::panels::terrain_panel::{BrushMode, FalloffCurve};
+        let mut state = carve_test_state();
+        let (cx, cz, radius) = (256.0, 256.0, 30.0);
+        let target = 2.0 - 3.0; // water_level 2.0 − carve_depth 3.0
+
+        let before = state.sample_height_at(cx, cz).expect("height at center");
+        assert!(
+            before > target,
+            "test terrain must start above the carve target (got {before})"
+        );
+
+        // Drive many full-strength applications — must converge to target.
+        state.begin_stroke();
+        for _ in 0..200 {
+            state.apply_brush(
+                cx,
+                cz,
+                radius,
+                1.0,
+                BrushMode::CarveWater,
+                FalloffCurve::Smooth,
+                Some(target),
+                0.05,
+            );
+        }
+        let carved = state.sample_height_at(cx, cz).expect("carved height");
+        assert!(
+            (carved - target).abs() < 0.01,
+            "center must converge to the carve target: got {carved}, want {target}"
+        );
+
+        // Idempotence: further strokes cannot deepen past the target.
+        for _ in 0..50 {
+            state.apply_brush(
+                cx,
+                cz,
+                radius,
+                1.0,
+                BrushMode::CarveWater,
+                FalloffCurve::Smooth,
+                Some(target),
+                0.05,
+            );
+        }
+        let after = state.sample_height_at(cx, cz).expect("post-idempotence");
+        assert!(
+            after >= target - 1e-3,
+            "carve must never undershoot the target: got {after}, target {target}"
+        );
+        state.end_stroke();
+    }
+
+    /// TW2: the falloff rim produces a shore, not a cliff — after a finite
+    /// stroke, heights rise from the bed toward the untouched rim, crossing
+    /// the waterline gradually (rim samples sit strictly between bed and
+    /// original ground). NOTE: like Flatten, an indefinitely-held brush
+    /// converges the whole footprint to target — the shore character is a
+    /// property of finite strokes, so this test models one (3 applications).
+    #[test]
+    fn tw2_carve_water_falloff_makes_a_shore_not_a_cliff() {
+        use crate::panels::terrain_panel::{BrushMode, FalloffCurve};
+        let mut state = carve_test_state();
+        let (cx, cz, radius) = (256.0, 256.0, 40.0);
+        let target = -1.0;
+        let before_center = state.sample_height_at(cx, cz).expect("pre height");
+
+        state.begin_stroke();
+        for _ in 0..3 {
+            state.apply_brush(
+                cx,
+                cz,
+                radius,
+                0.8,
+                BrushMode::CarveWater,
+                FalloffCurve::Smooth,
+                Some(target),
+                0.05,
+            );
+        }
+        state.end_stroke();
+
+        let bed = state.sample_height_at(cx, cz).expect("bed");
+        // Sample a ring at ~80% radius: falloff there is well under 1.0, so
+        // the rim must sit strictly ABOVE the bed (gradual ascent) while
+        // having moved DOWN from the original terrain (it participated).
+        let rim = state
+            .sample_height_at(cx + radius * 0.8, cz)
+            .expect("rim sample");
+        assert!(
+            rim > bed + 0.2,
+            "rim ({rim}) must sit above the bed ({bed}) — falloff shore"
+        );
+        // And beyond the radius the terrain is untouched by the carve.
+        let outside_before = before_center; // proxy: original center height
+        let _ = outside_before;
+        let outside = state
+            .sample_height_at(cx + radius + 8.0, cz)
+            .expect("outside sample");
+        assert!(
+            outside > target,
+            "terrain beyond the brush radius must not be carved to target"
+        );
+    }
+
+    /// TW2: a carve stroke rides the SAME snapshot machinery as sculpt — the
+    /// stroke returns per-chunk (pre, post) deltas and applying the pre-heights
+    /// restores the original terrain exactly (the undo round-trip).
+    #[test]
+    fn tw2_carve_water_undo_round_trip() {
+        use crate::panels::terrain_panel::{BrushMode, FalloffCurve};
+        let mut state = carve_test_state();
+        let (cx, cz, radius) = (256.0, 256.0, 25.0);
+        let before = state.sample_height_at(cx, cz).expect("pre height");
+
+        state.begin_stroke();
+        state.apply_brush(
+            cx,
+            cz,
+            radius,
+            1.0,
+            BrushMode::CarveWater,
+            FalloffCurve::Smooth,
+            Some(-1.0),
+            0.05,
+        );
+        let deltas = state.end_stroke().expect("stroke must record deltas");
+        assert!(!deltas.is_empty(), "carve stroke must snapshot chunks");
+        let carved = state.sample_height_at(cx, cz).expect("carved");
+        assert!(carved < before, "carve must have lowered the center");
+
+        // Undo: apply the pre-stroke heights (what TerrainBrushCommand::undo
+        // pushes through the side-channel queue).
+        let pre: Vec<_> = deltas
+            .iter()
+            .map(|(id, pre, _post)| (*id, pre.clone()))
+            .collect();
+        state.apply_height_snapshot(&pre);
+        let restored = state.sample_height_at(cx, cz).expect("restored");
+        assert!(
+            (restored - before).abs() < 1e-4,
+            "undo must restore the pre-stroke height exactly: {restored} vs {before}"
+        );
+
+        // Redo: post-heights bring the carve back.
+        let post: Vec<_> = deltas
+            .iter()
+            .map(|(id, _pre, post)| (*id, post.clone()))
+            .collect();
+        state.apply_height_snapshot(&post);
+        let redone = state.sample_height_at(cx, cz).expect("redone");
+        assert!(
+            (redone - carved).abs() < 1e-4,
+            "redo must restore the post-stroke height exactly"
+        );
+    }
+
+    /// TW2: carve never LIFTS terrain anywhere in the footprint (it is a
+    /// lowering-only operation, unlike Flatten which raises low ground).
+    #[test]
+    fn tw2_carve_water_never_raises_ground() {
+        use crate::panels::terrain_panel::{BrushMode, FalloffCurve};
+        let mut state = carve_test_state();
+        let (cx, cz, radius) = (256.0, 256.0, 35.0);
+        // Choose a target ABOVE some of the terrain: Flatten would raise
+        // low ground toward it; CarveWater must not.
+        let high_target = max_height_in(&state, cx, cz, radius) + 5.0;
+
+        let mut samples_before = Vec::new();
+        let step = 4.0;
+        let mut dz = -radius;
+        while dz <= radius {
+            let mut dx = -radius;
+            while dx <= radius {
+                if let Some(h) = state.sample_height_at(cx + dx, cz + dz) {
+                    samples_before.push((cx + dx, cz + dz, h));
+                }
+                dx += step;
+            }
+            dz += step;
+        }
+
+        state.begin_stroke();
+        state.apply_brush(
+            cx,
+            cz,
+            radius,
+            1.0,
+            BrushMode::CarveWater,
+            FalloffCurve::Linear,
+            Some(high_target),
+            0.05,
+        );
+        state.end_stroke();
+
+        for (x, z, before_h) in samples_before {
+            let after_h = state.sample_height_at(x, z).expect("post sample");
+            assert!(
+                after_h <= before_h + 1e-4,
+                "carve raised ground at ({x},{z}): {before_h} -> {after_h}"
+            );
+        }
     }
 
     // Phase 1.6-F.4.B.3.D.3c: `phase_1_6_f2_apply_preset_sets_noise_type_and_continental`

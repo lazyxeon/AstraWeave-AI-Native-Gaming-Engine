@@ -2841,6 +2841,21 @@ impl TabViewer for EditorTabViewer {
                             });
                             ui.close();
                         }
+                        if ui
+                            .button("  Water Volume")
+                            .on_hover_text(
+                                "Add an authored water body (mountain lake / oasis). \
+                                 The entity's Y is the water surface level; extents \
+                                 and style edit in the Inspector. Persists with the \
+                                 scene.",
+                            )
+                            .clicked()
+                        {
+                            self.emit_event(PanelEvent::SpawnArchetype {
+                                archetype: "WaterVolume".into(),
+                            });
+                            ui.close();
+                        }
 
                         if !self.spawnable_models.is_empty() {
                             ui.separator();
@@ -5926,6 +5941,7 @@ impl TabViewer for EditorTabViewer {
                                     .unwrap_or(serde_json::json!({}));
                                 let header_label = match comp.as_str() {
                                     "Light" => "💡 Light",
+                                    "WaterVolume" => "💧 Water Volume",
                                     "Collider" => "⬜ Collider",
                                     "RigidBody" => "🔵 RigidBody",
                                     "Audio" => "🔊 Audio Source",
@@ -5943,6 +5959,14 @@ impl TabViewer for EditorTabViewer {
                                         match comp.as_str() {
                                             "Light" => {
                                                 inspectors::show_light_inspector(
+                                                    ui,
+                                                    entity_id,
+                                                    &data,
+                                                    &mut self.pending_events,
+                                                );
+                                            }
+                                            "WaterVolume" => {
+                                                inspectors::show_water_volume_inspector(
                                                     ui,
                                                     entity_id,
                                                     &data,
@@ -6158,6 +6182,7 @@ impl TabViewer for EditorTabViewer {
                                 "Light",
                                 "Camera",
                                 "Particle",
+                                "WaterVolume",
                             ];
                             for comp_name in &available {
                                 let already_has =

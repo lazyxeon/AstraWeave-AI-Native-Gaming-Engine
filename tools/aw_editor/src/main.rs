@@ -1051,14 +1051,25 @@ impl EditorApp {
         self.status = format!("Loading scene {}...", scene_name);
         self.log(format!("Loading scene: {}...", scene_name));
 
-        match scene_serialization::load_scene(path) {
-            Ok(loaded_world) => {
+        match scene_serialization::load_scene_with_overlay(path) {
+            Ok((loaded_world, component_overlay)) => {
                 // Clear old scene state and prefab instances to prevent memory leaks
                 self.prefab_manager.clear_instances();
                 self.undo_stack.clear();
 
                 // Sync World entities into EntityManager so they appear in hierarchy
                 self.sync_entity_manager_from_world(&loaded_world);
+
+                // TW2: re-apply typed component payloads (Light/Camera/
+                // WaterVolume/…) onto the rebuilt EntityManager. Before TW2
+                // these were silently dropped on reload — a saved Light lost
+                // its light data, and WaterVolume persistence needs them.
+                for (world_id, components) in component_overlay {
+                    let em_id: u64 = world_id.into();
+                    if let Some(entity) = self.entity_manager.get_mut(em_id) {
+                        entity.components = components;
+                    }
+                }
 
                 self.scene_state = Some(EditorSceneState::new(loaded_world));
                 self.current_scene_path = Some(path.to_path_buf());
@@ -1189,7 +1200,11 @@ impl EditorApp {
                     .unwrap_or_else(|| self.content_root.join("scenes/autosave.scene.ron"))
             };
 
-            match scene_serialization::save_scene(world, &auto_save_path) {
+            match scene_serialization::save_scene_with_overlay(
+                world,
+                &self.entity_manager,
+                &auto_save_path,
+            ) {
                 Ok(()) => {
                     self.last_auto_save = std::time::Instant::now();
                     let filename = auto_save_path
@@ -2017,21 +2032,13 @@ impl EditorApp {
                 // Scene files - Load scene
                 "ron" => {
                     if path.to_string_lossy().contains("scene") {
-                        self.log(format!("Loading scene: {}", file_name));
-                        match scene_serialization::load_scene(&path) {
-                            Ok(world) => {
-                                self.scene_state = Some(scene_state::EditorSceneState::new(world));
-                                self.current_scene_path = Some(path.clone());
-                                self.recent_files.add_file(path.clone());
-                                self.is_dirty = false;
-                                self.toast_success(format!("Loaded scene: {}", file_name));
-                                self.log(format!("Scene loaded: {}", file_name));
-                            }
-                            Err(e) => {
-                                self.toast_error(format!("Failed to load scene: {}", e));
-                                self.log(format!("Scene load failed: {}", e));
-                            }
-                        }
+                        // TW2: route through the canonical loader so the
+                        // EntityManager is synced AND typed component payloads
+                        // (Light/Camera/WaterVolume/…) are re-applied. The
+                        // prior inline `load_scene` set scene_state only —
+                        // loaded entities never reached the hierarchy and
+                        // their components were dropped (pre-TW2 gap).
+                        self.load_scene_from_path(&path);
                     } else {
                         self.log(format!("RON file dropped (not a scene): {}", file_name));
                     }
@@ -2997,7 +3004,13 @@ impl EditorApp {
                             .current_scene_path
                             .clone()
                             .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
-                        if scene_serialization::save_scene(world, &path).is_ok() {
+                        if scene_serialization::save_scene_with_overlay(
+                            world,
+                            &self.entity_manager,
+                            &path,
+                        )
+                        .is_ok()
+                        {
                             self.toast_success("Scene saved");
                             self.pending_quit = true;
                             self.remove_lock_file();
@@ -3256,7 +3269,13 @@ impl EditorApp {
                             .current_scene_path
                             .clone()
                             .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
-                        if scene_serialization::save_scene(world, &path).is_ok() {
+                        if scene_serialization::save_scene_with_overlay(
+                            world,
+                            &self.entity_manager,
+                            &path,
+                        )
+                        .is_ok()
+                        {
                             self.toast_success("Scene saved");
                             self.show_new_confirm_dialog = false;
                             self.create_new_scene();
@@ -3367,7 +3386,13 @@ impl EditorApp {
                             .current_scene_path
                             .clone()
                             .unwrap_or_else(|| self.content_root.join("scenes/untitled.scene.ron"));
-                        if scene_serialization::save_scene(world, &save_path).is_ok() {
+                        if scene_serialization::save_scene_with_overlay(
+                            world,
+                            &self.entity_manager,
+                            &save_path,
+                        )
+                        .is_ok()
+                        {
                             self.toast_success("Scene saved");
                             if let Some(open_path) = self.pending_open_path.take() {
                                 self.load_scene_from_path(&open_path);
@@ -4526,6 +4551,7 @@ impl EditorApp {
                             "Trigger" => (2, 1, 0),
                             "Light" => (2, 1, 0),
                             "Camera" => (2, 1, 0),
+                            "WaterVolume" => (2, 1, 0),
                             _ => (0, 1, 0),
                         };
                         let mesh = archetype_mesh(&archetype);
@@ -4548,6 +4574,11 @@ impl EditorApp {
                                 0.0
                             } else if archetype == "Light" {
                                 2.0
+                            } else if archetype == "WaterVolume" {
+                                // TW2: the entity's Y IS the water surface —
+                                // spawn slightly above the ground so a fresh
+                                // volume reads as a shallow pool immediately.
+                                1.5
                             } else {
                                 0.5
                             };
@@ -4623,6 +4654,20 @@ impl EditorApp {
                                             entity.components.insert(
                                                 "Camera".to_string(),
                                                 serde_json::json!({ "fov": 60.0 }),
+                                            );
+                                        }
+                                        "WaterVolume" => {
+                                            // TW2: authored bounded water body.
+                                            // Entity Y = surface level; extents
+                                            // + style live here (see the
+                                            // WaterVolume inspector).
+                                            entity.components.insert(
+                                                "WaterVolume".to_string(),
+                                                serde_json::json!({
+                                                    "half_extent_x": 24.0,
+                                                    "half_extent_z": 24.0,
+                                                    "style": "Lake",
+                                                }),
                                             );
                                         }
                                         _ => {}
@@ -4920,6 +4965,9 @@ impl EditorApp {
                         }
                         "Camera" => {
                             serde_json::json!({"fov": 60.0, "near": 0.1, "far": 1000.0})
+                        }
+                        "WaterVolume" => {
+                            serde_json::json!({"half_extent_x": 24.0, "half_extent_z": 24.0, "style": "Lake"})
                         }
                         "Particle" => {
                             serde_json::json!({"emission_rate": 10.0, "lifetime": 2.0, "start_size": 0.1, "speed": 5.0, "shape": "cone", "looping": true})
@@ -8168,40 +8216,13 @@ impl EditorApp {
             }
 
             AssetAction::LoadScene { path } => {
-                let scene_name = path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("scene")
-                    .to_string();
-
-                self.status = format!("Loading scene {}...", scene_name);
-                self.log(format!("Loading scene: {}...", scene_name));
-
-                match scene_serialization::load_scene(&path) {
-                    Ok(loaded_world) => {
-                        // Clear old scene state and prefab instances to prevent memory leaks
-                        self.prefab_manager.clear_instances();
-                        self.undo_stack.clear();
-
-                        self.scene_state = Some(EditorSceneState::new(loaded_world));
-                        self.current_scene_path = Some(path.clone());
-                        self.is_dirty = false;
-
-                        info!("Loaded scene: {}", scene_name);
-                        self.toast_success(format!("Loaded scene: {}", scene_name));
-                        self.log(format!("Loaded scene: {}", scene_name));
-                        self.status = format!("Loaded: {}", scene_name);
-
-                        // Add to recent files
-                        self.recent_files.add_file(path);
-                    }
-                    Err(err) => {
-                        error!("Failed to load scene '{}': {}", scene_name, err);
-                        self.toast_error(format!("Failed to load scene: {}", err));
-                        self.log(format!("Failed to load scene '{}': {}", scene_name, err));
-                        self.status = "Error loading scene".into();
-                    }
-                }
+                // TW2: route through the canonical loader — syncs the
+                // EntityManager and re-applies typed component payloads
+                // (Light/Camera/WaterVolume/…). The prior inline `load_scene`
+                // set scene_state only (loaded entities missed the hierarchy;
+                // components dropped). `load_scene_from_path` clears prefab
+                // instances + the undo stack itself.
+                self.load_scene_from_path(&path);
             }
 
             AssetAction::SpawnPrefab { path } => {
@@ -9076,7 +9097,7 @@ impl MenuActionHandler for EditorApp {
                 dir.join("untitled.scene.ron")
             };
 
-            match scene_serialization::save_scene(world, &path) {
+            match scene_serialization::save_scene_with_overlay(world, &self.entity_manager, &path) {
                 Ok(()) => {
                     self.current_scene_path = Some(path.clone());
                     self.recent_files.add_file(path.clone());
