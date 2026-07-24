@@ -328,7 +328,7 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
         // 512² aux arrays + box-filtered mip chain (authored 2K normals lose
         // ~2 octaves of gradient detail by the first visible mip; without
         // the boost the ground reads flat, "like a plain .png").
-        let NORMAL_XY_STRENGTH: f32 = 1.8;
+        let NORMAL_XY_STRENGTH: f32 = 1.4;
         final_normal_ts =
             final_normal_ts + vec3<f32>(n_ts.xy * NORMAL_XY_STRENGTH * w, n_ts.z * w);
 
