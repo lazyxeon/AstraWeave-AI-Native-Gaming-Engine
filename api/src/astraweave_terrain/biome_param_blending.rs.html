@@ -561,41 +561,43 @@
 <a href=#561 id=561 data-nosnippet>561</a>            // (test only exercises climate envelope blending behavior).
 <a href=#562 id=562 data-nosnippet>562</a>            </span>bootstrap_splines: Default::default(),
 <a href=#563 id=563 data-nosnippet>563</a>        };
-<a href=#564 id=564 data-nosnippet>564</a>        <span class="kw">let </span><span class="kw-2">mut </span>config = ClimateConfig::default();
-<a href=#565 id=565 data-nosnippet>565</a>        config.archetype = warm;
-<a href=#566 id=566 data-nosnippet>566</a>        <span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">67890</span>);
-<a href=#567 id=567 data-nosnippet>567</a>
-<a href=#568 id=568 data-nosnippet>568</a>        <span class="kw">let </span>cfg = BiomeParamBlendConfig::default();
-<a href=#569 id=569 data-nosnippet>569</a>        <span class="kw">let </span><span class="kw-2">mut </span>tropical_count = <span class="number">0</span>;
-<a href=#570 id=570 data-nosnippet>570</a>        <span class="kw">let </span><span class="kw-2">mut </span>temperate_count = <span class="number">0</span>;
-<a href=#571 id=571 data-nosnippet>571</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">50 </span>{
-<a href=#572 id=572 data-nosnippet>572</a>            <span class="kw">let </span>x = (i <span class="kw">as </span>f32) * <span class="number">137.0</span>;
-<a href=#573 id=573 data-nosnippet>573</a>            <span class="kw">let </span>z = (i <span class="kw">as </span>f32) * <span class="number">211.0</span>;
-<a href=#574 id=574 data-nosnippet>574</a>            <span class="kw">let </span>r = blend_biome_parameters(x, z, <span class="number">30.0</span>, <span class="kw-2">&amp;</span>climate, <span class="kw-2">&amp;</span>cfg);
-<a href=#575 id=575 data-nosnippet>575</a>            <span class="kw">if </span><span class="macro">matches!</span>(
-<a href=#576 id=576 data-nosnippet>576</a>                r.dominant_biome,
-<a href=#577 id=577 data-nosnippet>577</a>                BiomeId::TropicalRainforest
-<a href=#578 id=578 data-nosnippet>578</a>                    | BiomeId::TropicalSeasonalForest
-<a href=#579 id=579 data-nosnippet>579</a>                    | BiomeId::Savanna
-<a href=#580 id=580 data-nosnippet>580</a>                    | BiomeId::SubtropicalDesert
-<a href=#581 id=581 data-nosnippet>581</a>            ) {
-<a href=#582 id=582 data-nosnippet>582</a>                tropical_count += <span class="number">1</span>;
-<a href=#583 id=583 data-nosnippet>583</a>            }
-<a href=#584 id=584 data-nosnippet>584</a>            <span class="kw">if </span><span class="macro">matches!</span>(
-<a href=#585 id=585 data-nosnippet>585</a>                r.dominant_biome,
-<a href=#586 id=586 data-nosnippet>586</a>                BiomeId::TemperateGrassland
-<a href=#587 id=587 data-nosnippet>587</a>                    | BiomeId::TemperateDeciduousForest
-<a href=#588 id=588 data-nosnippet>588</a>                    | BiomeId::TemperateRainforest
-<a href=#589 id=589 data-nosnippet>589</a>                    | BiomeId::ColdDesert
-<a href=#590 id=590 data-nosnippet>590</a>            ) {
-<a href=#591 id=591 data-nosnippet>591</a>                temperate_count += <span class="number">1</span>;
-<a href=#592 id=592 data-nosnippet>592</a>            }
-<a href=#593 id=593 data-nosnippet>593</a>        }
-<a href=#594 id=594 data-nosnippet>594</a>        <span class="macro">assert!</span>(
-<a href=#595 id=595 data-nosnippet>595</a>            tropical_count &gt; temperate_count,
-<a href=#596 id=596 data-nosnippet>596</a>            <span class="string">"warm archetype should produce more tropical dominants ({}) than temperate ({})"</span>,
-<a href=#597 id=597 data-nosnippet>597</a>            tropical_count,
-<a href=#598 id=598 data-nosnippet>598</a>            temperate_count
-<a href=#599 id=599 data-nosnippet>599</a>        );
-<a href=#600 id=600 data-nosnippet>600</a>    }
-<a href=#601 id=601 data-nosnippet>601</a>}</code></pre></div></section></main></body></html>
+<a href=#564 id=564 data-nosnippet>564</a>        <span class="kw">let </span>config = ClimateConfig {
+<a href=#565 id=565 data-nosnippet>565</a>            archetype: warm,
+<a href=#566 id=566 data-nosnippet>566</a>            ..Default::default()
+<a href=#567 id=567 data-nosnippet>567</a>        };
+<a href=#568 id=568 data-nosnippet>568</a>        <span class="kw">let </span>climate = ClimateMap::new(<span class="kw-2">&amp;</span>config, <span class="number">67890</span>);
+<a href=#569 id=569 data-nosnippet>569</a>
+<a href=#570 id=570 data-nosnippet>570</a>        <span class="kw">let </span>cfg = BiomeParamBlendConfig::default();
+<a href=#571 id=571 data-nosnippet>571</a>        <span class="kw">let </span><span class="kw-2">mut </span>tropical_count = <span class="number">0</span>;
+<a href=#572 id=572 data-nosnippet>572</a>        <span class="kw">let </span><span class="kw-2">mut </span>temperate_count = <span class="number">0</span>;
+<a href=#573 id=573 data-nosnippet>573</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">50 </span>{
+<a href=#574 id=574 data-nosnippet>574</a>            <span class="kw">let </span>x = (i <span class="kw">as </span>f32) * <span class="number">137.0</span>;
+<a href=#575 id=575 data-nosnippet>575</a>            <span class="kw">let </span>z = (i <span class="kw">as </span>f32) * <span class="number">211.0</span>;
+<a href=#576 id=576 data-nosnippet>576</a>            <span class="kw">let </span>r = blend_biome_parameters(x, z, <span class="number">30.0</span>, <span class="kw-2">&amp;</span>climate, <span class="kw-2">&amp;</span>cfg);
+<a href=#577 id=577 data-nosnippet>577</a>            <span class="kw">if </span><span class="macro">matches!</span>(
+<a href=#578 id=578 data-nosnippet>578</a>                r.dominant_biome,
+<a href=#579 id=579 data-nosnippet>579</a>                BiomeId::TropicalRainforest
+<a href=#580 id=580 data-nosnippet>580</a>                    | BiomeId::TropicalSeasonalForest
+<a href=#581 id=581 data-nosnippet>581</a>                    | BiomeId::Savanna
+<a href=#582 id=582 data-nosnippet>582</a>                    | BiomeId::SubtropicalDesert
+<a href=#583 id=583 data-nosnippet>583</a>            ) {
+<a href=#584 id=584 data-nosnippet>584</a>                tropical_count += <span class="number">1</span>;
+<a href=#585 id=585 data-nosnippet>585</a>            }
+<a href=#586 id=586 data-nosnippet>586</a>            <span class="kw">if </span><span class="macro">matches!</span>(
+<a href=#587 id=587 data-nosnippet>587</a>                r.dominant_biome,
+<a href=#588 id=588 data-nosnippet>588</a>                BiomeId::TemperateGrassland
+<a href=#589 id=589 data-nosnippet>589</a>                    | BiomeId::TemperateDeciduousForest
+<a href=#590 id=590 data-nosnippet>590</a>                    | BiomeId::TemperateRainforest
+<a href=#591 id=591 data-nosnippet>591</a>                    | BiomeId::ColdDesert
+<a href=#592 id=592 data-nosnippet>592</a>            ) {
+<a href=#593 id=593 data-nosnippet>593</a>                temperate_count += <span class="number">1</span>;
+<a href=#594 id=594 data-nosnippet>594</a>            }
+<a href=#595 id=595 data-nosnippet>595</a>        }
+<a href=#596 id=596 data-nosnippet>596</a>        <span class="macro">assert!</span>(
+<a href=#597 id=597 data-nosnippet>597</a>            tropical_count &gt; temperate_count,
+<a href=#598 id=598 data-nosnippet>598</a>            <span class="string">"warm archetype should produce more tropical dominants ({}) than temperate ({})"</span>,
+<a href=#599 id=599 data-nosnippet>599</a>            tropical_count,
+<a href=#600 id=600 data-nosnippet>600</a>            temperate_count
+<a href=#601 id=601 data-nosnippet>601</a>        );
+<a href=#602 id=602 data-nosnippet>602</a>    }
+<a href=#603 id=603 data-nosnippet>603</a>}</code></pre></div></section></main></body></html>
