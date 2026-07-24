@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: mixed
 summary: "Gameplay water-truth facade (WaterQuery/AnalyticWater) — sole backend after W.1 removed the voxel backend; physics buoyancy (astraweave-physics lib.rs:931) is the production consumer. Deterministic CPU truth (gate Q1). water.md §4,§5"
 owns: [astraweave-water]
-doc_version: "1.3"
-last_verified_commit: 49f1e3396
+doc_version: "1.4"
+last_verified_commit: 1e3d8f692
 ---
 
 # Architecture Trace: Water (Successor) — Rendering, Query Facade & Weave-Response
@@ -21,11 +21,11 @@ last_verified_commit: 49f1e3396
 |---|---|
 | **System name** | Water (Successor) — layered rendering + gameplay-truth query facade + weave-response deformation |
 | **Primary crates** | `astraweave-water` (truth facade), `astraweave-render` (surface + weave presentation), `astraweave-physics` (buoyancy consumer), `astraweave-gameplay` (`WeaveOp` source + `water_movement`), `astraweave-fluids` (particle accent substrate), `examples/weaving_playground` (weave/accent producers — example layer) |
-| **Document version** | 1.3 |
-| **Last verified against commit** | `49f1e3396` |
-| **Last verified date** | 2026-07-23 |
+| **Document version** | 1.4 |
+| **Last verified against commit** | `1e3d8f692` |
+| **Last verified date** | 2026-07-24 |
 | **Status** | Active (post-W.1 layered-rendering re-scope; surface + refraction + weave deformation + accents all wired; some layers example-only — see §5/§6) |
-| **Owner notes** | First trace for the W-series (Water Successor) campaign; derived from forensic reading at `7c29b8182` plus the campaign docs under `docs/campaigns/water-successor/`. **Rev 1.2 (T.W.1, 2026-07-21, `88c6ba588`):** editor water repaired + re-gated (HDR-format fix + install assert, aquatic-census enable, sea-level single-sourcing, W.2c.2 scaffolding-weave deletion); invariants 11-12 added; the W-FU-2 "woke the editor water" claim corrected in §5/Appendix B (per `TWR_WATER_RECON.md` §1.6 + `TW1_OUTCOME.md`). **Rev 1.3 (T.W.1.A, 2026-07-23, `49f1e3396`):** world-scale presentation — horizon shell (flat far annulus past every camera far plane), camera-distance amplitude fade (flat before the shell seam), per-`WaterStyle` `set_wave_params` (amplitude/steepness scale + foam threshold); invariants 13-14 added; see `TW1A_OUTCOME.md`. Cross-references the (DEPRECATED-solver) [`fluids.md`](./fluids.md) and the [render trace](./render_pipeline_material_system_shader_infrastructure.md). |
+| **Owner notes** | First trace for the W-series (Water Successor) campaign; derived from forensic reading at `7c29b8182` plus the campaign docs under `docs/campaigns/water-successor/`. **Rev 1.2 (T.W.1, 2026-07-21, `88c6ba588`):** editor water repaired + re-gated (HDR-format fix + install assert, aquatic-census enable, sea-level single-sourcing, W.2c.2 scaffolding-weave deletion); invariants 11-12 added; the W-FU-2 "woke the editor water" claim corrected in §5/Appendix B (per `TWR_WATER_RECON.md` §1.6 + `TW1_OUTCOME.md`). **Rev 1.3 (T.W.1.A, 2026-07-23, `49f1e3396`):** world-scale presentation — horizon shell (flat far annulus past every camera far plane), camera-distance amplitude fade (flat before the shell seam), per-`WaterStyle` `set_wave_params` (amplitude/steepness scale + foam threshold); invariants 13-14 added; see `TW1A_OUTCOME.md`. **Rev 1.4 (T.W.2, 2026-07-24, `1e3d8f692`):** authored bounded water bodies — `WaterVolumeDesc` + `set_water_volumes` render a per-volume patch (own uniform block: level/colors/wave, no weaves) through the same pipeline as the plane, clipped to XZ bounds, terrain-occluded; `plane_visible`/`has_renderable_content` gate a volumes-only scene; the editor `WaterVolume` entity + Carve Water brush (a terrain op, not water config) are the two authored-water surfaces. Invariant 15 added; see `TW2_OUTCOME.md`. Cross-references the (DEPRECATED-solver) [`fluids.md`](./fluids.md) and the [render trace](./render_pipeline_material_system_shader_infrastructure.md). |
 
 ---
 
@@ -227,7 +227,7 @@ The system has two largely-independent data flows that meet only at the `WeaveOp
 |---|---|---|---|
 | `astraweave-water/src/lib.rs` | `WaterQuery` trait + `WaterSample` + `AnalyticWater` backend | Active | The single owner of gameplay water truth. 9 inline tests incl. the gate-Q1 determinism test (`lib.rs:319-349`) |
 | `astraweave-physics/src/lib.rs:1429-1489` | `apply_buoyancy_forces` + `add_water_aabb` | Active | The one wired `WaterQuery::sample` production consumer |
-| `astraweave-render/src/water.rs` | `WaterRenderer`: chunked-LOD Gerstner surface + T.W.1.A horizon shell, `WaterUniforms`, weave instances, set_water_level/colors/rain/`set_wave_params`; T.W.1 added `target_format`; T.W.1.A added `generate_horizon_shell`, `HORIZON_*`/`WAVE_FADE_*` consts | Active | ~1,270 LoC; owns surface + weave *presentation*. 12 inline tests (T.W.1.A added shell geometry/winding, coverage regimes, fade-before-seam, WGSL const mirror) |
+| `astraweave-render/src/water.rs` | `WaterRenderer`: chunked-LOD Gerstner surface + T.W.1.A horizon shell + T.W.2 bounded volume patches (`WaterVolumeDesc`/`VolumeGpu`/`set_water_volumes`/`generate_volume_patch`/`plane_visible`/`has_renderable_content`), `WaterUniforms`, weave instances, set_water_level/colors/rain/`set_wave_params`; T.W.1 added `target_format`; T.W.1.A added `generate_horizon_shell`, `HORIZON_*`/`WAVE_FADE_*` consts | Active | ~1,500 LoC; owns surface + weave + bounded-volume *presentation*. 13 inline tests (T.W.2 added volume-patch geometry + plane-gating/change-detect assertions) |
 | `astraweave-render/src/shaders/water.wgsl` | Vertex (Gerstner ×`wave_amp_scale`×distance-fade + weave deform + skirt) + fragment (refraction, depth-foam, freeze material) | Active | Mirrors `WaterUniforms` byte layout; `WEAVE_MAX_DEFORM` must equal `SKIRT_DEPTH`; `WAVE_FADE_START/END` must mirror `water.rs` (test-pinned verbatim) |
 | `astraweave-render/src/renderer.rs` | `run_water_pass`, `update_water`, `set_water_level`, `set_water_weave_instances`, `set_hdr_overlay`, scene-color snapshot; T.W.1: `set_water_renderer` asserts the installed pipeline's `target_format == hdr_format()` | Active | Split water pass called from both `render()` and `draw_into()`. Caveat (T.W.1 finding): headless `render()` is a NO-OP (`acquire_surface_texture` → None → early Ok) and the headless uncaptured-error handler only LOGS validation errors — headless draw tests must use `draw_into` + an error scope |
 | `astraweave-gameplay/src/types.rs:42-58` | `WeaveOpKind` enum (incl. `LowerWater`/`RaisePlatform`/`FreezeWater`) + `WeaveOp` | Active | `#[non_exhaustive]` — the deform trigger source |
@@ -372,6 +372,7 @@ The honest summary: **water truth and the rendered surface are wired; the weave/
 | 12 | (T.W.1) `DEFAULT_WATER_LEVEL` IS `astraweave_terrain::SEA_LEVEL` (single source; ratified Y=2.0) — the biome classifier's aquatic bands and the rendered plane share one sea level | Yes | `water.rs` const definition + value-pin test `test_default_water_level_is_world_sea_level` |
 | 13 | (T.W.1.A) The horizon shell's outer extent exceeds every camera far plane the surface is judged under (judging far=40,000; production `min(far, full-fog)`=1,800) with margin — the visible water boundary is the far-plane arc or fog, never a mesh edge | Yes | `test_horizon_covers_both_view_regimes` (≥1.25× the larger regime); shell drawn under the grid's dormant condition (invariant 8 unchanged) |
 | 14 | (T.W.1.A) Gerstner amplitude is exactly zero before the horizon shell's inner edge under worst-case camera offset (fade end 420 ≤ 480 − 32·√2), and the fade does not touch the LOD0/LOD1 near field; the WGSL fade consts mirror `water.rs` verbatim | Yes | `test_wave_fade_flat_before_shell_seam` + `test_wgsl_mirrors_wave_fade_constants` |
+| 15 | (T.W.2) Authored volume patches render through the same pipeline as the plane with their own per-volume uniform block and NO weave instances (a lake never inherits a sea-aimed weave); the water pass is skipped only when `has_renderable_content()` is false (no plane chunks AND no volumes); an unchanged volume set is a no-op, a changed set invalidates bind groups | Yes | `test_water_renderer_new_and_update` (volume count, plane-gating, change-detect vs rebuild); `test_volume_patch_geometry` (flat, upward-wound, spans extents) |
 
 ---
 
