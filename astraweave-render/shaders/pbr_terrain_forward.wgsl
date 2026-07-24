@@ -261,9 +261,9 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
         // control flow well-defined; gradients are rotated with the UVs so
         // mip/aniso selection stays correct.
         let hex = hex_cells(scaled_uv);
-        var hw0 = pow(hex.w0, 4.0);
-        var hw1 = pow(hex.w1, 4.0);
-        var hw2 = pow(hex.w2, 4.0);
+        var hw0 = pow(hex.w0, 2.0);
+        var hw1 = pow(hex.w1, 2.0);
+        var hw2 = pow(hex.w2, 2.0);
         let hw_sum = hw0 + hw1 + hw2;
         hw0 = hw0 / hw_sum;
         hw1 = hw1 / hw_sum;
