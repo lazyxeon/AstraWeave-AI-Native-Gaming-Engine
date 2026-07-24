@@ -97,12 +97,7 @@ fn peaked_erosion_center_cell_golden() {
     // Center (4,4) started at 100.0, should erode to ~56.18
     let mut hm = peaked_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
-    assert_close(
-        hm.data()[4 * 8 + 4],
-        56.1815605164,
-        TOL,
-        "peaked center (4,4)",
-    );
+    assert_close(hm.data()[4 * 8 + 4], 56.181_56, TOL, "peaked center (4,4)");
 }
 
 #[test]
@@ -112,12 +107,12 @@ fn peaked_erosion_adjacent_cells_golden() {
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
     // (3,4) and (4,3) — one row/col before center
-    assert_close(hm.data()[3 * 8 + 4], -17.0985431671, TOL, "peaked (3,4)");
-    assert_close(hm.data()[4 * 8 + 3], -17.0985431671, TOL, "peaked (4,3)");
+    assert_close(hm.data()[3 * 8 + 4], -17.098_543, TOL, "peaked (3,4)");
+    assert_close(hm.data()[4 * 8 + 3], -17.098_543, TOL, "peaked (4,3)");
 
     // (5,4) and (4,5) — one row/col after center (slightly different due to scan order)
-    assert_close(hm.data()[5 * 8 + 4], -17.0985813141, TOL, "peaked (5,4)");
-    assert_close(hm.data()[4 * 8 + 5], -17.0985813141, TOL, "peaked (4,5)");
+    assert_close(hm.data()[5 * 8 + 4], -17.098_581, TOL, "peaked (5,4)");
+    assert_close(hm.data()[4 * 8 + 5], -17.098_581, TOL, "peaked (4,5)");
 }
 
 #[test]
@@ -126,10 +121,10 @@ fn peaked_erosion_diagonal_cells_golden() {
     let mut hm = peaked_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    assert_close(hm.data()[3 * 8 + 3], -1.7235434055, TOL, "peaked (3,3)");
-    assert_close(hm.data()[5 * 8 + 5], -1.7235444784, TOL, "peaked (5,5)");
-    assert_close(hm.data()[3 * 8 + 5], -1.7235438824, TOL, "peaked (3,5)");
-    assert_close(hm.data()[5 * 8 + 3], -1.7235438824, TOL, "peaked (5,3)");
+    assert_close(hm.data()[3 * 8 + 3], -1.723_543_4, TOL, "peaked (3,3)");
+    assert_close(hm.data()[5 * 8 + 5], -1.723_544_5, TOL, "peaked (5,5)");
+    assert_close(hm.data()[3 * 8 + 5], -1.723_543_9, TOL, "peaked (3,5)");
+    assert_close(hm.data()[5 * 8 + 3], -1.723_543_9, TOL, "peaked (5,3)");
 }
 
 #[test]
@@ -139,12 +134,12 @@ fn peaked_erosion_two_away_cells_golden() {
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
     // (2,4) and (4,2)
-    assert_close(hm.data()[2 * 8 + 4], -1.2712671757, TOL, "peaked (2,4)");
-    assert_close(hm.data()[4 * 8 + 2], -1.2712671757, TOL, "peaked (4,2)");
+    assert_close(hm.data()[2 * 8 + 4], -1.271_267_2, TOL, "peaked (2,4)");
+    assert_close(hm.data()[4 * 8 + 2], -1.271_267_2, TOL, "peaked (4,2)");
 
     // (6,4) and (4,6)
-    assert_close(hm.data()[6 * 8 + 4], -1.2695193291, TOL, "peaked (6,4)");
-    assert_close(hm.data()[4 * 8 + 6], -1.2695193291, TOL, "peaked (4,6)");
+    assert_close(hm.data()[6 * 8 + 4], -1.269_519_3, TOL, "peaked (6,4)");
+    assert_close(hm.data()[4 * 8 + 6], -1.269_519_3, TOL, "peaked (4,6)");
 }
 
 #[test]
@@ -153,10 +148,10 @@ fn peaked_erosion_far_cells_golden() {
     let mut hm = peaked_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    assert_close(hm.data()[1 * 8 + 4], -0.0583410040, TOL, "peaked (1,4)");
+    assert_close(hm.data()[8 + 4], -0.058_341_004, TOL, "peaked (1,4)");
     assert_close(hm.data()[2 * 8 + 2], -0.0004636676, TOL, "peaked (2,2)");
-    assert_close(hm.data()[1 * 8 + 1], 0.0000002873, TOL, "peaked (1,1)");
-    assert_close(hm.data()[2 * 8 + 3], -0.0965780765, TOL, "peaked (2,3)");
+    assert_close(hm.data()[8 + 1], 0.0000002873, TOL, "peaked (1,1)");
+    assert_close(hm.data()[2 * 8 + 3], -0.096_578_08, TOL, "peaked (2,3)");
 }
 
 #[test]
@@ -164,8 +159,8 @@ fn peaked_erosion_bounds_golden() {
     let mut hm = peaked_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    assert_close(hm.min_height(), -17.0985813141, TOL, "peaked min_height");
-    assert_close(hm.max_height(), 56.1815605164, TOL, "peaked max_height");
+    assert_close(hm.min_height(), -17.098_581, TOL, "peaked min_height");
+    assert_close(hm.max_height(), 56.181_56, TOL, "peaked max_height");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -181,11 +176,11 @@ fn ridge_erosion_center_row_golden() {
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
     // Ridge row cells — inner cells should be ~33.48, border cells stay 50
-    assert_close(hm.data()[4 * 8 + 0], 50.0, 1e-6, "ridge (4,0) border");
+    assert_close(hm.data()[4 * 8], 50.0, 1e-6, "ridge (4,0) border");
     assert_close(hm.data()[4 * 8 + 7], 50.0, 1e-6, "ridge (4,7) border");
-    assert_close(hm.data()[4 * 8 + 1], 33.3996696472, TOL, "ridge (4,1)");
-    assert_close(hm.data()[4 * 8 + 2], 33.4792633057, TOL, "ridge (4,2)");
-    assert_close(hm.data()[4 * 8 + 3], 33.4792633057, TOL, "ridge (4,3)");
+    assert_close(hm.data()[4 * 8 + 1], 33.399_67, TOL, "ridge (4,1)");
+    assert_close(hm.data()[4 * 8 + 2], 33.479_263, TOL, "ridge (4,2)");
+    assert_close(hm.data()[4 * 8 + 3], 33.479_263, TOL, "ridge (4,3)");
 }
 
 #[test]
@@ -194,12 +189,12 @@ fn ridge_erosion_adjacent_rows_golden() {
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
     // Row 3 — above ridge (erosion from flow)
-    assert_close(hm.data()[3 * 8 + 1], -8.9842901230, TOL, "ridge (3,1)");
-    assert_close(hm.data()[3 * 8 + 2], -8.9439640045, TOL, "ridge (3,2)");
+    assert_close(hm.data()[3 * 8 + 1], -8.984_29, TOL, "ridge (3,1)");
+    assert_close(hm.data()[3 * 8 + 2], -8.943_964, TOL, "ridge (3,2)");
 
     // Row 5 — below ridge (slightly different due to scan order)
-    assert_close(hm.data()[5 * 8 + 1], -8.9843034744, TOL, "ridge (5,1)");
-    assert_close(hm.data()[5 * 8 + 2], -8.9439764023, TOL, "ridge (5,2)");
+    assert_close(hm.data()[5 * 8 + 1], -8.984_303, TOL, "ridge (5,1)");
+    assert_close(hm.data()[5 * 8 + 2], -8.943_976, TOL, "ridge (5,2)");
 }
 
 #[test]
@@ -208,16 +203,16 @@ fn ridge_erosion_far_rows_golden() {
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
     // Row 2 — two rows above ridge
-    assert_close(hm.data()[2 * 8 + 1], -0.6546280384, TOL, "ridge (2,1)");
-    assert_close(hm.data()[2 * 8 + 2], -0.6524378061, TOL, "ridge (2,2)");
+    assert_close(hm.data()[2 * 8 + 1], -0.654_628_04, TOL, "ridge (2,1)");
+    assert_close(hm.data()[2 * 8 + 2], -0.652_437_8, TOL, "ridge (2,2)");
 
     // Row 6 — two rows below ridge
-    assert_close(hm.data()[6 * 8 + 1], -0.6538521051, TOL, "ridge (6,1)");
-    assert_close(hm.data()[6 * 8 + 2], -0.6516621113, TOL, "ridge (6,2)");
+    assert_close(hm.data()[6 * 8 + 1], -0.653_852_1, TOL, "ridge (6,1)");
+    assert_close(hm.data()[6 * 8 + 2], -0.651_662_1, TOL, "ridge (6,2)");
 
     // Row 1 — faint effect
-    assert_close(hm.data()[1 * 8 + 1], -0.0287287701, TOL, "ridge (1,1)");
-    assert_close(hm.data()[1 * 8 + 2], -0.0286653042, TOL, "ridge (1,2)");
+    assert_close(hm.data()[8 + 1], -0.028_728_77, TOL, "ridge (1,1)");
+    assert_close(hm.data()[8 + 2], -0.028_665_304, TOL, "ridge (1,2)");
 }
 
 #[test]
@@ -225,7 +220,7 @@ fn ridge_erosion_bounds_golden() {
     let mut hm = ridge_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    assert_close(hm.min_height(), -8.9843034744, TOL, "ridge min_height");
+    assert_close(hm.min_height(), -8.984_303, TOL, "ridge min_height");
     assert_close(hm.max_height(), 50.0, TOL, "ridge max_height");
 }
 
@@ -243,10 +238,9 @@ fn peaked_border_row0_unchanged() {
     let mut hm = peaked_8x8();
     let before = hm.data().to_vec();
     hm.apply_hydraulic_erosion(1.0).unwrap();
-    for x in 0..8 {
+    for (x, (&after, &before)) in hm.data()[..8].iter().zip(&before[..8]).enumerate() {
         assert_eq!(
-            hm.data()[x],
-            before[x],
+            after, before,
             "Row 0, col {x} should be unchanged after erosion"
         );
     }
@@ -388,7 +382,7 @@ fn peaked_far_corner_deposition_positive() {
     let mut hm = peaked_8x8();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    let val = hm.data()[1 * 8 + 1];
+    let val = hm.data()[8 + 1];
     // Golden value: 0.0000002873 (very small positive)
     assert!(
         val > 0.0,
@@ -415,7 +409,7 @@ fn peaked_deposition_vs_erosion_sign_check() {
 
     // Far corner: deposition causes small positive values
     assert!(
-        hm.data()[1 * 8 + 1] > 0.0,
+        hm.data()[8 + 1] > 0.0,
         "(1,1) should be positive from deposition"
     );
 }
@@ -449,13 +443,8 @@ fn peaked_scan_order_asymmetry() {
     );
 
     // Exact golden values
-    assert_close(
-        before_center,
-        -17.0985431671,
-        TOL,
-        "peaked (3,4) scan-order",
-    );
-    assert_close(after_center, -17.0985813141, TOL, "peaked (5,4) scan-order");
+    assert_close(before_center, -17.098_543, TOL, "peaked (3,4) scan-order");
+    assert_close(after_center, -17.098_581, TOL, "peaked (5,4) scan-order");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -531,31 +520,26 @@ fn ridge_all_inner_cells_golden() {
 
     // Row 1 inner cells (z=1, x=1..6)
     let row1_expected = [
-        -0.0287287701,
-        -0.0286653042,
-        -0.0286653042,
-        -0.0286653042,
-        -0.0286653042,
-        -0.0287287701,
+        -0.028_728_77,
+        -0.028_665_304,
+        -0.028_665_304,
+        -0.028_665_304,
+        -0.028_665_304,
+        -0.028_728_77,
     ];
     for (i, &expected) in row1_expected.iter().enumerate() {
         let x = i + 1;
-        assert_close(
-            hm.data()[1 * 8 + x],
-            expected,
-            TOL,
-            &format!("ridge (1,{x})"),
-        );
+        assert_close(hm.data()[8 + x], expected, TOL, &format!("ridge (1,{x})"));
     }
 
     // Row 2 inner cells
     let row2_expected = [
-        -0.6546280384,
-        -0.6524378061,
-        -0.6524378061,
-        -0.6524378061,
-        -0.6524378061,
-        -0.6546280384,
+        -0.654_628_04,
+        -0.652_437_8,
+        -0.652_437_8,
+        -0.652_437_8,
+        -0.652_437_8,
+        -0.654_628_04,
     ];
     for (i, &expected) in row2_expected.iter().enumerate() {
         let x = i + 1;
@@ -569,12 +553,7 @@ fn ridge_all_inner_cells_golden() {
 
     // Row 3 inner cells
     let row3_expected = [
-        -8.9842901230,
-        -8.9439640045,
-        -8.9439640045,
-        -8.9439640045,
-        -8.9439640045,
-        -8.9842901230,
+        -8.984_29, -8.943_964, -8.943_964, -8.943_964, -8.943_964, -8.984_29,
     ];
     for (i, &expected) in row3_expected.iter().enumerate() {
         let x = i + 1;
@@ -588,12 +567,7 @@ fn ridge_all_inner_cells_golden() {
 
     // Row 4 inner cells (ridge row)
     let row4_expected = [
-        33.3996696472,
-        33.4792633057,
-        33.4792633057,
-        33.4792633057,
-        33.4792633057,
-        33.3996696472,
+        33.399_67, 33.479_263, 33.479_263, 33.479_263, 33.479_263, 33.399_67,
     ];
     for (i, &expected) in row4_expected.iter().enumerate() {
         let x = i + 1;
@@ -607,12 +581,7 @@ fn ridge_all_inner_cells_golden() {
 
     // Row 5 inner cells
     let row5_expected = [
-        -8.9843034744,
-        -8.9439764023,
-        -8.9439764023,
-        -8.9439764023,
-        -8.9439764023,
-        -8.9843034744,
+        -8.984_303, -8.943_976, -8.943_976, -8.943_976, -8.943_976, -8.984_303,
     ];
     for (i, &expected) in row5_expected.iter().enumerate() {
         let x = i + 1;
@@ -626,12 +595,12 @@ fn ridge_all_inner_cells_golden() {
 
     // Row 6 inner cells
     let row6_expected = [
-        -0.6538521051,
-        -0.6516621113,
-        -0.6516621113,
-        -0.6516621113,
-        -0.6516621113,
-        -0.6538521051,
+        -0.653_852_1,
+        -0.651_662_1,
+        -0.651_662_1,
+        -0.651_662_1,
+        -0.651_662_1,
+        -0.653_852_1,
     ];
     for (i, &expected) in row6_expected.iter().enumerate() {
         let x = i + 1;
@@ -657,7 +626,7 @@ fn peaked_all_inner_cells_golden() {
             0.0000002873,
             0.0000295108,
             0.0018464078,
-            -0.0583410040,
+            -0.058_341_004,
             0.0018464078,
             0.0000295107,
         ],
@@ -665,45 +634,45 @@ fn peaked_all_inner_cells_golden() {
         [
             0.0000295108,
             -0.0004636676,
-            -0.0965780765,
-            -1.2712671757,
-            -0.0965780765,
+            -0.096_578_08,
+            -1.271_267_2,
+            -0.096_578_08,
             -0.0004638379,
         ],
         // Row 3
         [
             0.0018464078,
-            -0.0965780765,
-            -1.7235434055,
-            -17.0985431671,
-            -1.7235438824,
-            -0.0965881869,
+            -0.096_578_08,
+            -1.723_543_4,
+            -17.098_543,
+            -1.723_543_9,
+            -0.096_588_19,
         ],
         // Row 4
         [
-            -0.0583410040,
-            -1.2712671757,
-            -17.0985431671,
-            56.1815605164,
-            -17.0985813141,
-            -1.2695193291,
+            -0.058_341_004,
+            -1.271_267_2,
+            -17.098_543,
+            56.181_56,
+            -17.098_581,
+            -1.269_519_3,
         ],
         // Row 5
         [
             0.0018464078,
-            -0.0965780765,
-            -1.7235438824,
-            -17.0985813141,
-            -1.7235444784,
-            -0.0965881944,
+            -0.096_578_08,
+            -1.723_543_9,
+            -17.098_581,
+            -1.723_544_5,
+            -0.096_588_194,
         ],
         // Row 6
         [
             0.0000295107,
             -0.0004638379,
-            -0.0965881869,
-            -1.2695193291,
-            -0.0965881944,
+            -0.096_588_19,
+            -1.269_519_3,
+            -0.096_588_194,
             -0.0004640076,
         ],
     ];
@@ -801,13 +770,11 @@ fn linear_gradient_no_change() {
     let before = hm.data().to_vec();
     hm.apply_hydraulic_erosion(1.0).unwrap();
 
-    for i in 0..64 {
+    for (i, (&after, &before)) in hm.data().iter().zip(&before).enumerate() {
         assert_eq!(
-            hm.data()[i],
-            before[i],
+            after, before,
             "Linear gradient cell {i} should not change: before={}, after={}",
-            before[i],
-            hm.data()[i]
+            before, after
         );
     }
 }

@@ -11,8 +11,8 @@
 //! - ErosionStats tracking
 
 use astraweave_terrain::{
-    AdvancedErosionSimulator, ErosionPreset, ErosionStats, Heightmap, HeightmapConfig,
-    HydraulicErosionConfig, ThermalErosionConfig, WindErosionConfig,
+    AdvancedErosionSimulator, ErosionPreset, ErosionStats, Heightmap, HydraulicErosionConfig,
+    ThermalErosionConfig, WindErosionConfig,
 };
 use glam::Vec2;
 
@@ -20,23 +20,9 @@ use glam::Vec2;
 // Helpers
 // ============================================================================
 
-fn make_heightmap(resolution: u32, heights: &[f32]) -> Heightmap {
-    Heightmap::from_data(heights.to_vec(), resolution).unwrap()
-}
-
 fn flat_hm(resolution: u32, height: f32) -> Heightmap {
     let data = vec![height; (resolution * resolution) as usize];
     Heightmap::from_data(data, resolution).unwrap()
-}
-
-/// 4×4 heightmap with known bilinear-testable values:
-///  row0: [0, 1, 2, 3]
-///  row1: [4, 5, 6, 7]
-///  row2: [8, 9, 10, 11]
-///  row3: [12, 13, 14, 15]
-fn grid_4x4() -> Heightmap {
-    let data: Vec<f32> = (0..16).map(|i| i as f32).collect();
-    Heightmap::from_data(data, 4).unwrap()
 }
 
 /// Sloped heightmap: height = x * scale
@@ -142,14 +128,14 @@ fn gradient_follows_slope_direction() {
     let res = 32u32;
     let left_change: f32 = (0..res)
         .map(|z| {
-            let idx = (z * res + 0) as usize;
-            (hm.data()[idx] - before_data[idx])
+            let idx = (z * res) as usize;
+            hm.data()[idx] - before_data[idx]
         })
         .sum();
     let right_change: f32 = (0..res)
         .map(|z| {
             let idx = (z * res + res - 2) as usize;
-            (hm.data()[idx] - before_data[idx])
+            hm.data()[idx] - before_data[idx]
         })
         .sum();
 
@@ -516,7 +502,7 @@ fn zero_capacity_factor_no_erosion() {
     let mut hm = peak_hm(32, 20.0);
     let original = hm.data().to_vec();
     let mut sim = AdvancedErosionSimulator::new(42);
-    let stats = sim.apply_hydraulic_erosion(&mut hm, &config);
+    let _stats = sim.apply_hydraulic_erosion(&mut hm, &config);
 
     // With zero capacity, the erode branch is never taken
     // (sediment > 0 == capacity), so terrain should barely change
@@ -891,7 +877,7 @@ fn thermal_conserves_material_approximately() {
 #[test]
 fn thermal_very_high_talus_no_erosion() {
     let mut hm = peak_hm(16, 20.0);
-    let before = hm.data().to_vec();
+    let _before = hm.data().to_vec();
     let sim = AdvancedErosionSimulator::new(42);
     let config = ThermalErosionConfig {
         iterations: 10,
@@ -1210,8 +1196,8 @@ fn wind_direction_affects_pattern() {
     let mut hm2 = sloped_x(32, 1.0);
     let sim = AdvancedErosionSimulator::new(42);
 
-    let stats1 = sim.apply_wind_erosion(&mut hm1, &config_east);
-    let stats2 = sim.apply_wind_erosion(&mut hm2, &config_north);
+    let _stats1 = sim.apply_wind_erosion(&mut hm1, &config_east);
+    let _stats2 = sim.apply_wind_erosion(&mut hm2, &config_north);
 
     // Different wind directions on x-sloped terrain should produce different erosion
     let diff_count = hm1

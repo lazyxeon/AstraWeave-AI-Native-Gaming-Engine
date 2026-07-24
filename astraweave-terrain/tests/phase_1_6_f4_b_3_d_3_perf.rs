@@ -22,8 +22,10 @@ use std::time::Instant;
 #[test]
 #[ignore]
 fn phase_1_6_f4_b_3_d_3_chunk_generation_time_continental_temperate() {
-    let mut config = WorldConfig::default(); // Continental Temperate archetype
-    config.seed = 12345;
+    let config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    }; // Continental Temperate archetype
     let gen = WorldGenerator::new(config);
 
     // Warmup chunk to amortize one-time costs (TerrainNoise construction is

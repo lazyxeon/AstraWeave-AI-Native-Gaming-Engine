@@ -31,8 +31,10 @@ fn phase_1_6_f3_phase_2_end_to_end_timing() {
     const SIDE: i32 = 5; // 25 chunks — extrapolate ×4.84 for 121 chunks.
     const FACTOR: f32 = 121.0 / 25.0;
 
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
 
     println!("======================================================");

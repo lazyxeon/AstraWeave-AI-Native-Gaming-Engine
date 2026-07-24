@@ -368,7 +368,7 @@ fn modifier_take_navmesh_dirty_regions() {
     ));
     modifier.tick(&mut grid);
 
-    let regions = modifier.take_navmesh_dirty_regions();
+    let _regions = modifier.take_navmesh_dirty_regions();
     // take should return previous regions and clear them
     let regions2 = modifier.take_navmesh_dirty_regions();
     assert!(regions2.is_empty(), "Second take should be empty");

@@ -432,7 +432,7 @@ fn droplet_travel_distance_characterization() {
 
     // Replicate the simulator's RNG + droplet loop to track trajectories.
     // Using the same xorshift logic as SimpleRng in the simulator.
-    let mut state = 42u64.max(1);
+    let mut state = 42u64;
     let next = |s: &mut u64| -> u64 {
         *s ^= *s << 13;
         *s ^= *s >> 7;

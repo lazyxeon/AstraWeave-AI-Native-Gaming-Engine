@@ -669,11 +669,10 @@ impl TerrainNoise {
         // `params.continental_scale`. continental_enabled, continental_min,
         // and the per-biome multiplier composition are unchanged.
         if self.config.mountains.enabled {
-            let noise_val = self.mountains.get([
-                x * params.mountains_scale as f64,
-                0.0,
-                z * params.mountains_scale as f64,
-            ]) as f32;
+            let noise_val =
+                self.mountains
+                    .get([x * params.mountains_scale, 0.0, z * params.mountains_scale])
+                    as f32;
             let mountain_height_raw = noise_val.abs() * params.mountains_amplitude;
 
             let mountain_height = if self.config.continental_enabled {
@@ -1305,8 +1304,10 @@ mod tests {
     /// [0, 1] and exhibits meaningful spatial variation (not constant).
     #[test]
     fn phase_1_6_f2_continental_output_range_and_variation() {
-        let mut config = NoiseConfig::default();
-        config.continental_enabled = true;
+        let config = NoiseConfig {
+            continental_enabled: true,
+            ..Default::default()
+        };
         let noise = TerrainNoise::new(&config, 12345);
 
         // Phase 1.6-F.4.B.2.F: sampling area scaled from 4000 to 16000 WU
@@ -1651,8 +1652,10 @@ mod tests {
     /// against a hand-computed sum of the three layers.
     #[test]
     fn phase_1_6_f2_continental_disabled_is_noop() {
-        let mut config = NoiseConfig::default();
-        config.continental_enabled = false;
+        let config = NoiseConfig {
+            continental_enabled: false,
+            ..Default::default()
+        };
         let noise = TerrainNoise::new(&config, 12345);
 
         // Sample at three positions; the result should match a manual sum

@@ -103,7 +103,7 @@ fn phase_1_x_f3_continental_temperate_byte_identical_to_f4b3d_d5fix() {
 /// Position selection: scan candidate positions at Continental Temperate
 /// seed 12345; pick the first position with baseline pre-erosion height
 /// > 100m, ensuring mountain layer contribution is dominant. Documented
-/// inline.
+/// > inline.
 #[test]
 fn phase_1_x_f3_spline_toggling_changes_terrain() {
     let config = NoiseConfig::default();

@@ -377,11 +377,11 @@ mod marching_cubes_sentinel {
             // Find first -1 in the row
             if let Some(pos) = row.iter().position(|&v| v == -1) {
                 // All entries after first -1 must also be -1
-                for j in pos..row.len() {
+                for (j, &value) in row.iter().enumerate().skip(pos) {
                     assert_eq!(
-                        row[j], -1,
+                        value, -1,
                         "MC_TRI_TABLE[{}][{}] should be -1 sentinel but was {}",
-                        case_idx, j, row[j]
+                        case_idx, j, value
                     );
                 }
             }
@@ -389,7 +389,7 @@ mod marching_cubes_sentinel {
             for (j, &val) in row.iter().enumerate() {
                 if val != -1 {
                     assert!(
-                        val >= 0 && val <= 11,
+                        (0..=11).contains(&val),
                         "MC_TRI_TABLE[{}][{}] has invalid index {}",
                         case_idx,
                         j,

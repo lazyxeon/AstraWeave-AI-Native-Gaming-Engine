@@ -4,8 +4,8 @@
 //! StreamingDiagnostics report generation — targeting operator mutations.
 
 use astraweave_terrain::{
-    ChunkId, ChunkLoadState, DiagnosticReport, FrameStats, HitchDetector, LodStats, MemoryStats,
-    StreamingDiagnostics, StreamingStats,
+    ChunkId, ChunkLoadState, HitchDetector, LodStats, MemoryStats, StreamingDiagnostics,
+    StreamingStats,
 };
 use glam::Vec3;
 

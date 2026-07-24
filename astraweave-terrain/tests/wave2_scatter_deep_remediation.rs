@@ -10,18 +10,19 @@
 
 use astraweave_terrain::scatter::{ScatterResult, VegetationInstance};
 use astraweave_terrain::{
-    BiomeConfig, BiomeType, ChunkId, Heightmap, HeightmapConfig, ScatterConfig, TerrainChunk,
-    VegetationScatter, WorldConfig,
+    BiomeConfig, BiomeType, ChunkId, Heightmap, ScatterConfig, TerrainChunk, VegetationScatter,
+    WorldConfig,
 };
 use glam::Vec3;
 
 // ─────────────────────────── Helpers ────────────────────────────
 
 fn fast_scatter_config() -> WorldConfig {
-    let mut config = WorldConfig::default();
-    config.heightmap_resolution = 16;
-    config.chunk_size = 64.0;
-    config
+    WorldConfig {
+        heightmap_resolution: 16,
+        chunk_size: 64.0,
+        ..WorldConfig::default()
+    }
 }
 
 fn flat_heightmap(resolution: u32, height: f32) -> Heightmap {
@@ -29,7 +30,7 @@ fn flat_heightmap(resolution: u32, height: f32) -> Heightmap {
     Heightmap::from_data(data, resolution).unwrap()
 }
 
-fn make_flat_chunk(chunk_size: f32, height: f32) -> TerrainChunk {
+fn make_flat_chunk(_chunk_size: f32, height: f32) -> TerrainChunk {
     let resolution = 16u32;
     let heightmap = flat_heightmap(resolution, height);
     let biome_map = vec![BiomeType::Forest; (resolution * resolution) as usize];
@@ -37,7 +38,7 @@ fn make_flat_chunk(chunk_size: f32, height: f32) -> TerrainChunk {
 }
 
 /// Create a chunk with a steep slope in the X direction (height increases linearly)
-fn make_steep_chunk(chunk_size: f32) -> TerrainChunk {
+fn make_steep_chunk(_chunk_size: f32) -> TerrainChunk {
     let resolution = 16u32;
     let mut data = Vec::with_capacity((resolution * resolution) as usize);
     for _z in 0..resolution {

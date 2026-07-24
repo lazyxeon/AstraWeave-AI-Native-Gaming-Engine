@@ -97,8 +97,10 @@ fn measure_archetype(archetype_id: WorldArchetypeId, label: &str, spatial_dump_c
     println!();
     println!("== {} ==", label);
 
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.climate.archetype = archetype_id.default_archetype();
     let dim_for_dump = config.heightmap_resolution as usize;
     let gen = WorldGenerator::new(config);

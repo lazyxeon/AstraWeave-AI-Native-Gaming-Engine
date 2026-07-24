@@ -757,7 +757,7 @@ fn morph_factor_always_in_unit_range() {
     for d in 0..100 {
         let f = b.compute_morph_factor(d as f32);
         assert!(
-            f >= 0.0 && f <= 1.0,
+            (0.0..=1.0).contains(&f),
             "morph_factor {} out of [0,1] at d={}",
             f,
             d

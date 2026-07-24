@@ -486,7 +486,7 @@ impl WorldGenerator {
     /// biome lookups + `N` parameter lookups per vertex. With `N=6`
     /// default, total per-vertex cost is roughly D.3b + 5 climate samples
     /// + 5 biome lookups. Climate sampling and biome lookup are both
-    /// pure functions of position — cache-friendly and SIMD-amenable.
+    ///   pure functions of position — cache-friendly and SIMD-amenable.
     fn apply_per_biome_modulation_to_halo(
         &self,
         halo: &mut heightmap::Heightmap,

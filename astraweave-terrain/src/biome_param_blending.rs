@@ -561,8 +561,10 @@ mod tests {
             // (test only exercises climate envelope blending behavior).
             bootstrap_splines: Default::default(),
         };
-        let mut config = ClimateConfig::default();
-        config.archetype = warm;
+        let config = ClimateConfig {
+            archetype: warm,
+            ..Default::default()
+        };
         let climate = ClimateMap::new(&config, 67890);
 
         let cfg = BiomeParamBlendConfig::default();

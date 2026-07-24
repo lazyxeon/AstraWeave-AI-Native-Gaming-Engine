@@ -11,10 +11,11 @@
 /// Fast config for scatter tests: smaller chunk (64 vs 256) + smaller heightmap (16 vs 128).
 /// Avoids 60s+ scatter generation per chunk.
 fn fast_scatter_config() -> WorldConfig {
-    let mut config = WorldConfig::default();
-    config.heightmap_resolution = 16;
-    config.chunk_size = 64.0;
-    config
+    WorldConfig {
+        heightmap_resolution: 16,
+        chunk_size: 64.0,
+        ..WorldConfig::default()
+    }
 }
 
 use astraweave_terrain::advanced_erosion::{

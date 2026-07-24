@@ -1154,7 +1154,8 @@ mod tests {
     /// different climate_input dimensions; F.2 ships infrastructure.
     #[test]
     fn bootstrap_splines_all_six_archetypes_reproduce_baseline_at_median_climate() {
-        let factories: &[(&str, fn() -> BootstrapSplineSet)] = &[
+        type BootstrapSplineFactory = fn() -> BootstrapSplineSet;
+        let factories: &[(&str, BootstrapSplineFactory)] = &[
             (
                 "Continental Temperate",
                 bootstrap_splines_continental_temperate,
@@ -1255,7 +1256,7 @@ mod tests {
             base_elevation_floor: 0.0,
         };
         let q = p; // Copy
-        let r = p.clone();
+        let r = p;
         // Debug compiles
         let _ = format!("{:?}", p);
         assert_eq!(q, r);

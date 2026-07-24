@@ -17,11 +17,12 @@ use astraweave_terrain::*;
 /// Default resolution of 128 takes ~60s per chunk generation;
 /// resolution 16 takes ~0.5s.
 fn fast_scatter_config() -> WorldConfig {
-    let mut config = WorldConfig::default();
-    config.heightmap_resolution = 16;
-    config.chunk_size = 64.0; // 64×64 instead of 256×256 — scatter is ~16× faster
-                              // Must be > 2*edge_buffer (20.0) to avoid empty range in structure generation
-    config
+    WorldConfig {
+        heightmap_resolution: 16,
+        chunk_size: 64.0, // 64×64 instead of 256×256 — scatter is ~16× faster
+        // Must be > 2*edge_buffer (20.0) to avoid empty range in structure generation
+        ..WorldConfig::default()
+    }
 }
 
 // ============================================================================
@@ -69,8 +70,10 @@ fn get_chunk_returns_none_for_unloaded() {
 
 #[test]
 fn config_returns_correct_seed() {
-    let mut config = WorldConfig::default();
-    config.seed = 99999;
+    let config = WorldConfig {
+        seed: 99999,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
 
     // If config() is mutated to return Default, seed would be 12345
@@ -83,8 +86,10 @@ fn config_returns_correct_seed() {
 
 #[test]
 fn config_returns_correct_chunk_size() {
-    let mut config = WorldConfig::default();
-    config.chunk_size = 512.0;
+    let config = WorldConfig {
+        chunk_size: 512.0,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
 
     assert!(
@@ -95,8 +100,10 @@ fn config_returns_correct_chunk_size() {
 
 #[test]
 fn config_returns_correct_resolution() {
-    let mut config = WorldConfig::default();
-    config.heightmap_resolution = 64;
+    let config = WorldConfig {
+        heightmap_resolution: 64,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
 
     assert_eq!(
@@ -425,8 +432,8 @@ fn scatter_seed_x_vs_z_differ() {
     // These use different seeds → different scatter output
     let something_differs = scatter_10.vegetation.len() != scatter_01.vegetation.len()
         || scatter_10.resources.len() != scatter_01.resources.len()
-        || (scatter_10.vegetation.len() > 0
-            && scatter_01.vegetation.len() > 0
+        || (!scatter_10.vegetation.is_empty()
+            && !scatter_01.vegetation.is_empty()
             && scatter_10.vegetation[0].position != scatter_01.vegetation[0].position);
 
     assert!(
@@ -455,8 +462,8 @@ fn scatter_seed_x_position_matters() {
 
     let something_differs = scatter_a.vegetation.len() != scatter_b.vegetation.len()
         || scatter_a.resources.len() != scatter_b.resources.len()
-        || (scatter_a.vegetation.len() > 0
-            && scatter_b.vegetation.len() > 0
+        || (!scatter_a.vegetation.is_empty()
+            && !scatter_b.vegetation.is_empty()
             && scatter_a.vegetation[0].position != scatter_b.vegetation[0].position);
 
     assert!(
@@ -639,10 +646,12 @@ fn full_pipeline_generates_valid_terrain() {
 
 #[test]
 fn config_accessor_matches_construction() {
-    let mut config = WorldConfig::default();
-    config.seed = 54321;
-    config.chunk_size = 128.0;
-    config.heightmap_resolution = 64;
+    let config = WorldConfig {
+        seed: 54321,
+        chunk_size: 128.0,
+        heightmap_resolution: 64,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
 
     let c = gen.config();

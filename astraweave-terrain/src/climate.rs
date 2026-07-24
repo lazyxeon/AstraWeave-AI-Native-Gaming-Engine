@@ -970,8 +970,10 @@ mod tests {
             latitude_temperature_drop_c: 15.0,
             ..WorldArchetype::default()
         };
-        let mut config = ClimateConfig::default();
-        config.archetype = arch;
+        let mut config = ClimateConfig {
+            archetype: arch,
+            ..Default::default()
+        };
         config.moisture.amplitude = 0.0; // also stabilize moisture noise
         let climate = ClimateMap::new(&config, 7);
 
@@ -1012,8 +1014,10 @@ mod tests {
             moisture_variance_mm: 0.0,
             ..WorldArchetype::default()
         };
-        let mut config = ClimateConfig::default();
-        config.archetype = arch;
+        let mut config = ClimateConfig {
+            archetype: arch,
+            ..Default::default()
+        };
         config.temperature.amplitude = 0.0;
         // Larger falloff so the effect is detectable across the world half-extent.
         config.moisture_distance_falloff = 0.001;

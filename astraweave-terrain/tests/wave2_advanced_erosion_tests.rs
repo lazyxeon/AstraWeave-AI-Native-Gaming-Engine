@@ -788,7 +788,7 @@ fn hydraulic_erosion_net_conservation_approximate() {
 #[test]
 fn hydraulic_erosion_stats_droplets_terminated() {
     let mut data: Vec<f32> = Vec::new();
-    for z in 0..32 {
+    for _ in 0..32 {
         for x in 0..32 {
             data.push(((x as f32 * 0.2).sin().abs() + 0.5) * 40.0);
         }
@@ -930,8 +930,10 @@ fn world_generator_stream_chunks_loads_center() {
 
 #[test]
 fn world_generator_config_returns_correct_seed() {
-    let mut config = WorldConfig::default();
-    config.seed = 99999;
+    let config = WorldConfig {
+        seed: 99999,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(config);
     assert_eq!(gen.config().seed, 99999);
 }

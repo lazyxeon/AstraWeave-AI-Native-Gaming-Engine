@@ -18,8 +18,10 @@ use astraweave_terrain::{
 use std::collections::HashMap;
 
 fn make_generator(erosion: bool) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.noise.erosion_enabled = erosion;
     WorldGenerator::new(config)
 }
@@ -31,8 +33,10 @@ fn make_generator(erosion: bool) -> WorldGenerator {
 /// filter-ON Y statistics for direct comparison against the filter-OFF
 /// baseline produced by `phase_4_b_1_scale_radius5_per_climate`.
 fn make_generator_runevision(erosion: bool) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.noise.erosion_enabled = erosion;
     config.noise.base_derivative_weighted = true;
     config.noise.runevision = Some(RunevisionConfig::default());

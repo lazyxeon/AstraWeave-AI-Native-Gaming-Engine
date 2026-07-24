@@ -560,10 +560,11 @@ use astraweave_terrain::{
 };
 
 fn fast_scatter_config() -> WorldConfig {
-    let mut config = WorldConfig::default();
-    config.heightmap_resolution = 16;
-    config.chunk_size = 64.0;
-    config
+    WorldConfig {
+        heightmap_resolution: 16,
+        chunk_size: 64.0,
+        ..WorldConfig::default()
+    }
 }
 
 fn flat_heightmap(resolution: u32, height: f32) -> Heightmap {
@@ -571,7 +572,7 @@ fn flat_heightmap(resolution: u32, height: f32) -> Heightmap {
     Heightmap::from_data(data, resolution).unwrap()
 }
 
-fn make_flat_chunk(chunk_size: f32, height: f32) -> TerrainChunk {
+fn make_flat_chunk(_chunk_size: f32, height: f32) -> TerrainChunk {
     let resolution = 16u32;
     let heightmap = flat_heightmap(resolution, height);
     let biome_map = vec![BiomeType::Forest; (resolution * resolution) as usize];

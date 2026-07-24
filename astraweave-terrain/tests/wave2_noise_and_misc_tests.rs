@@ -355,7 +355,7 @@ fn island_mask_edge_is_low() {
 fn island_mask_values_in_01() {
     let mask = astraweave_terrain::noise_gen::utils::create_island_mask(32, 16.0, 16.0, 10.0);
     for &v in &mask {
-        assert!(v >= 0.0 && v <= 1.0, "Mask value out of range: {v}");
+        assert!((0.0..=1.0).contains(&v), "Mask value out of range: {v}");
     }
 }
 

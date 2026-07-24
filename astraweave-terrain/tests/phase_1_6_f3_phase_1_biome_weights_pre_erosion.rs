@@ -9,8 +9,10 @@
 use astraweave_terrain::{ChunkId, ClimateBias, WorldConfig, WorldGenerator};
 
 fn make_generator() -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     WorldGenerator::new(config)
 }
 

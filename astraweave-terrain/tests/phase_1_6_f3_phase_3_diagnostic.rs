@@ -41,10 +41,10 @@ fn edge_divergences(chunks: &[Vec<astraweave_terrain::TerrainChunk>]) -> Vec<f32
     let mut samples = Vec::new();
 
     // X-axis: right column of (x,z) vs left column of (x+1,z).
-    for z in 0..n {
+    for row in chunks.iter().take(n) {
         for x in 0..(n - 1) {
-            let a = chunks[z][x].heightmap();
-            let b = chunks[z][x + 1].heightmap();
+            let a = row[x].heightmap();
+            let b = row[x + 1].heightmap();
             for zi in 0..dim {
                 samples.push((a.get_height(dim - 1, zi) - b.get_height(0, zi)).abs());
             }
@@ -79,8 +79,10 @@ fn distribution_summary(mut vals: Vec<f32>) -> (f32, f32, f32, f32, f32, f32) {
 }
 
 fn make_generator(erosion: bool) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.noise.erosion_enabled = erosion;
     WorldGenerator::new(config)
 }
@@ -221,8 +223,10 @@ fn phase_1_6_f3_phase_3_scale_compression_per_climate() {
 /// Method: for two adjacent chunks A=(0,0) and B=(1,0), their halos
 /// overlap in world-space X=[0, 256] × Z=[-256, 256]. Within each halo,
 /// the region mapping to chunk A's right edge (world X=256) is:
-///   - In A's halo: local x index 2*63 = 126 (out of 190).
-///   - In B's halo: local x index 1*63 = 63.
+///
+/// - In A's halo: local x index 2*63 = 126 (out of 190).
+/// - In B's halo: local x index 1*63 = 63.
+///
 /// Same world coordinates; different halo-local positions; different RNG
 /// seeds → different erosion output. Measured here so phase 3 can confirm
 /// the fix drops this divergence.

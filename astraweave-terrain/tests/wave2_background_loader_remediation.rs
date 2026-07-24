@@ -10,7 +10,6 @@
 
 use astraweave_terrain::background_loader::{
     ChunkPriority, StreamingConfig, StreamingStats, TerrainRateLimiter, TerrainTask,
-    TerrainTaskResult,
 };
 use glam::Vec3;
 

@@ -239,7 +239,7 @@ fn test_multi_zone_overlap_priority() {
     // results without error.
     for result in &results {
         // Each zone should produce a valid (possibly empty) result
-        assert!(result.placements.len() == 0 || result.placements.len() > 0);
+        assert!(result.placements.is_empty() || !result.placements.is_empty());
     }
 }
 

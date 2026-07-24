@@ -389,7 +389,7 @@ fn create_island_mask_far_corner_is_zero() {
 fn create_island_mask_values_in_01_range() {
     let mask = noise_gen::utils::create_island_mask(32, 16.0, 16.0, 15.0);
     for &v in &mask {
-        assert!(v >= 0.0 && v <= 1.0, "Mask value {v} outside [0,1]");
+        assert!((0.0..=1.0).contains(&v), "Mask value {v} outside [0,1]");
     }
 }
 

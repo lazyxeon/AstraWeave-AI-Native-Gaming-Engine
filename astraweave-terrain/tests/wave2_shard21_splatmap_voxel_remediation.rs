@@ -16,8 +16,8 @@ use glam::{IVec3, Vec3};
 /// Helper to extract weights array from SplatWeights
 fn weights_array(w: &SplatWeights) -> [f32; MAX_SPLAT_LAYERS] {
     let mut arr = [0.0f32; MAX_SPLAT_LAYERS];
-    for i in 0..MAX_SPLAT_LAYERS {
-        arr[i] = w.get_weight(i);
+    for (i, weight) in arr.iter_mut().enumerate() {
+        *weight = w.get_weight(i);
     }
     arr
 }

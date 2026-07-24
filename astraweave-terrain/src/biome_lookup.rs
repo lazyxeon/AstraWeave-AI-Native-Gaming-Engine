@@ -768,8 +768,10 @@ mod tests {
             .validate()
             .expect("test archetype must validate");
 
-        let mut config = ClimateConfig::default();
-        config.archetype = warm_archetype;
+        let config = ClimateConfig {
+            archetype: warm_archetype,
+            ..Default::default()
+        };
         let climate = ClimateMap::new(&config, 67890);
 
         let half = config.world_latitude_half_extent_wu as f64;

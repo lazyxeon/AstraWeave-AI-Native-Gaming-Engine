@@ -315,8 +315,10 @@ mod tests {
     /// Sample N random world positions through the given archetype's
     /// climate map and return a `BiomeId → fraction` distribution.
     fn distribution_for(archetype_id: WorldArchetypeId, seed: u64) -> HashMap<BiomeId, f32> {
-        let mut config = ClimateConfig::default();
-        config.archetype = archetype_id.default_archetype();
+        let config = ClimateConfig {
+            archetype: archetype_id.default_archetype(),
+            ..Default::default()
+        };
         let climate = ClimateMap::new(&config, seed);
 
         let half = config.world_latitude_half_extent_wu as f64;

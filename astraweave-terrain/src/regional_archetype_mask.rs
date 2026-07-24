@@ -388,13 +388,12 @@ impl RegionalArchetypeMask {
         // Unpainted (ID = 0) pixels stay at 255 regardless of distance —
         // sampler treats unpainted as Continental Temperate solo.
         let radius = self.falloff_radius_pixels.max(1) as f32;
-        for idx in 0..n {
+        for (idx, &d) in dist.iter().enumerate().take(n) {
             let id = self.ids[idx];
             if id == 0 {
                 self.falloff[idx] = 255;
                 continue;
             }
-            let d = dist[idx];
             let normalized = (d / radius).clamp(0.0, 1.0);
             self.falloff[idx] = (normalized * 255.0).round() as u8;
         }
@@ -610,7 +609,7 @@ impl<'a> RegionalArchetypeBlend<'a> {
         let mut min_distances: [(u8, f32); 8] = [(0, f32::INFINITY); 8];
         let mut n_distinct: usize = 0;
 
-        let r2 = (radius_f * radius_f) as f32;
+        let r2 = radius_f * radius_f;
         for dz in -radius..=radius {
             let nz = cz + dz;
             if nz < 0 || nz >= res_i {
@@ -653,8 +652,7 @@ impl<'a> RegionalArchetypeBlend<'a> {
         let mut weighted: [(WorldArchetypeId, f32); 8] =
             [(WorldArchetypeId::ContinentalTemperate, 0.0); 8];
         let mut n_weighted: usize = 0;
-        for i in 0..n_distinct {
-            let (id, dist) = min_distances[i];
+        for &(id, dist) in min_distances.iter().take(n_distinct) {
             let weight = (1.0 - dist / radius_f).clamp(0.0, 1.0);
             if weight < Self::PRUNE_WEIGHT_THRESHOLD {
                 continue;
@@ -687,8 +685,8 @@ impl<'a> RegionalArchetypeBlend<'a> {
             items: [(WorldArchetypeId::ContinentalTemperate, 0.0); 4],
             len: 0,
         };
-        for i in 0..take {
-            contributors.push(weighted[i].0, weighted[i].1);
+        for &(archetype, weight) in weighted.iter().take(take) {
+            contributors.push(archetype, weight);
         }
         contributors.normalize();
         contributors
@@ -1381,9 +1379,9 @@ mod tests {
             ];
             let mut pseudo_weights = [0.0f32; 4];
             let mut total = 0.0f32;
-            for i in 0..n {
+            for (i, weight) in pseudo_weights.iter_mut().enumerate().take(n) {
                 let pw = ((trial * 7 + i * 13) % 100) as f32 / 100.0 + 0.1;
-                pseudo_weights[i] = pw;
+                *weight = pw;
                 total += pw;
             }
             for i in 0..n {
@@ -1407,8 +1405,8 @@ mod tests {
             // Compute min/max amplitudes among contributors.
             let mut min_amp = f32::INFINITY;
             let mut max_amp = f32::NEG_INFINITY;
-            for i in 0..n {
-                let amp = match archetypes[i] {
+            for &archetype in archetypes.iter().take(n) {
+                let amp = match archetype {
                     WorldArchetypeId::ContinentalTemperate => amplitudes[0],
                     WorldArchetypeId::EquatorialTropical => amplitudes[1],
                     WorldArchetypeId::BorealSubarctic => amplitudes[2],

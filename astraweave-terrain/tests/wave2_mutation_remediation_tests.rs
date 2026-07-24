@@ -1088,8 +1088,10 @@ fn world_config_default_biome_types() {
 
 #[test]
 fn world_generator_stores_config() {
-    let mut cfg = WorldConfig::default();
-    cfg.seed = 99999;
+    let cfg = WorldConfig {
+        seed: 99999,
+        ..WorldConfig::default()
+    };
     let gen = WorldGenerator::new(cfg);
     assert_eq!(gen.config().seed, 99999);
     assert!((gen.config().chunk_size - 512.0).abs() < 1e-4);

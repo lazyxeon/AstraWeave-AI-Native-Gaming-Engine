@@ -279,8 +279,10 @@ mod tests {
 
     #[test]
     fn filter_is_no_op_when_strength_zero() {
-        let mut config = RunevisionConfig::default();
-        config.strength = 0.0;
+        let config = RunevisionConfig {
+            strength: 0.0,
+            ..Default::default()
+        };
         let h = apply_runevision_filter(100.0, (0.5, 0.3), 1234.5, 678.9, 12345, &config);
         assert_eq!(h, 100.0);
     }

@@ -1950,7 +1950,7 @@ mod climate_temperature_targeted {
             let h = (i as f32 * 50.0) % 200.0;
             let t = climate.sample_temperature(x, z, h);
             assert!(
-                t >= 0.0 && t <= 1.0,
+                (0.0..=1.0).contains(&t),
                 "Temperature should be [0,1]: {} at ({},{},{})",
                 t,
                 x,
@@ -2118,7 +2118,7 @@ mod climate_moisture_targeted {
             let h = (i as f32 * 50.0) % 200.0;
             let m = climate.sample_moisture(x, z, h);
             assert!(
-                m >= 0.0 && m <= 1.0,
+                (0.0..=1.0).contains(&m),
                 "Moisture should be [0,1]: {} at ({},{},{})",
                 m,
                 x,
@@ -2705,12 +2705,12 @@ mod calculate_normal_precise {
         // dx = (8 - 6) / (2*1) = 1.0
         // normal = Vec3(-1, 1, 0).normalize() = (-0.7071, 0.7071, 0)
         assert!(
-            (n.x - (-0.7071)).abs() < 0.02,
+            (n.x - (-std::f32::consts::FRAC_1_SQRT_2)).abs() < 0.02,
             "Boundary x=max normal.x should be -0.7071, got {}",
             n.x
         );
         assert!(
-            (n.y - 0.7071).abs() < 0.02,
+            (n.y - std::f32::consts::FRAC_1_SQRT_2).abs() < 0.02,
             "Boundary x=max normal.y should be 0.7071, got {}",
             n.y
         );
@@ -2725,7 +2725,7 @@ mod calculate_normal_precise {
         // dz = (2 - 0) / (2*1) = 1.0
         // normal = Vec3(0, 1, -1).normalize() = (0, 0.7071, -0.7071)
         assert!(
-            (n.z - (-0.7071)).abs() < 0.02,
+            (n.z - (-std::f32::consts::FRAC_1_SQRT_2)).abs() < 0.02,
             "Boundary z=0 normal.z should be -0.7071, got {}",
             n.z
         );
@@ -2739,7 +2739,7 @@ mod calculate_normal_precise {
         // up = h(2,3) = 6, down = h(2,4) = 8 (self, boundary)
         // dz = (8 - 6) / (2*1) = 1.0
         assert!(
-            (n.z - (-0.7071)).abs() < 0.02,
+            (n.z - (-std::f32::consts::FRAC_1_SQRT_2)).abs() < 0.02,
             "Boundary z=max normal.z should be -0.7071, got {}",
             n.z
         );
@@ -2808,7 +2808,7 @@ mod calculate_normal_precise {
         data[2 * 5 + 2] = 10.0; // center
         data[2 * 5 + 1] = 2.0; // left
         data[2 * 5 + 3] = 8.0; // right
-        data[1 * 5 + 2] = 1.0; // up
+        data[5 + 2] = 1.0; // up
         data[3 * 5 + 2] = 15.0; // down
         let hm = Heightmap::from_data(data, 5).unwrap();
         let n = hm.calculate_normal(2, 2, 1.0);
@@ -2903,8 +2903,8 @@ mod bilinear_boundary_tests {
         // On 4x4 grid: original clamps u=10 to 2.999, mutation allows larger values
         let mut data = vec![0.0; 16];
         // Make heights distinct so different positions give different results
-        for i in 0..16 {
-            data[i] = (i as f32 + 1.0) * 3.0;
+        for (i, value) in data.iter_mut().enumerate().take(16) {
+            *value = (i as f32 + 1.0) * 3.0;
         }
         let hm = Heightmap::from_data(data, 4).unwrap();
         // At u=10.0, v=0.0: original clamps to x=2.999
@@ -2922,8 +2922,8 @@ mod bilinear_boundary_tests {
     #[test]
     fn oob_v_clamps_correctly() {
         let mut data = vec![0.0; 16];
-        for i in 0..16 {
-            data[i] = (i as f32 + 1.0) * 3.0;
+        for (i, value) in data.iter_mut().enumerate().take(16) {
+            *value = (i as f32 + 1.0) * 3.0;
         }
         let hm = Heightmap::from_data(data, 4).unwrap();
         let val_oob = hm.sample_bilinear(0.0, 10.0);
@@ -2941,8 +2941,8 @@ mod bilinear_boundary_tests {
         // At u=2.5 on 4x4: x0=2, x1=3, fx=0.5
         // Should interpolate between column 2 and column 3
         let mut data = vec![0.0; 16];
-        for i in 0..16 {
-            data[i] = ((i % 4) as f32) * 10.0; // columns: 0, 10, 20, 30
+        for (i, value) in data.iter_mut().enumerate().take(16) {
+            *value = ((i % 4) as f32) * 10.0; // columns: 0, 10, 20, 30
         }
         let hm = Heightmap::from_data(data, 4).unwrap();
         let val = hm.sample_bilinear(2.5, 0.0);
@@ -3007,8 +3007,8 @@ mod smooth_precise_values {
         // Row 2: 11 12 20 14 15  (spike at center)
         // Row 3: 16 17 18 19 20
         // Row 4: 21 22 23 24 25
-        for i in 0..25 {
-            data[i] = (i + 1) as f32;
+        for (i, value) in data.iter_mut().enumerate().take(25) {
+            *value = (i + 1) as f32;
         }
         data[12] = 20.0; // Spike at (2,2) — was 13
 
@@ -3034,8 +3034,8 @@ mod smooth_precise_values {
         // sum = 6 + 8 + 2 + 12 + 7*4 = 56
         // smoothed = 56/8 = 7.0
         let mut data = vec![0.0; 25];
-        for i in 0..25 {
-            data[i] = (i + 1) as f32;
+        for (i, value) in data.iter_mut().enumerate().take(25) {
+            *value = (i + 1) as f32;
         }
         data[12] = 20.0;
 
@@ -3054,8 +3054,8 @@ mod smooth_precise_values {
     fn smooth_boundary_not_modified() {
         // Boundary points (x=0, x=res-1, z=0, z=res-1) should NOT be smoothed
         let mut data = vec![0.0; 25];
-        for i in 0..25 {
-            data[i] = (i + 1) as f32;
+        for (i, value) in data.iter_mut().enumerate().take(25) {
+            *value = (i + 1) as f32;
         }
         data[12] = 20.0;
 
@@ -3089,8 +3089,8 @@ mod smooth_precise_values {
         // Mutation would smooth x=resolution-1=4 positions, changing their values
         // Use spike at (4,2) so smoothing would change it
         let mut data = vec![0.0; 25];
-        for i in 0..25 {
-            data[i] = (i + 1) as f32;
+        for (i, value) in data.iter_mut().enumerate().take(25) {
+            *value = (i + 1) as f32;
         }
         data[2 * 5 + 4] = 50.0; // Spike at (4,2) = data[14]
                                 // Neighbors: left=data[13]=14, right=data[15]=16, up=data[9]=10, down=data[19]=20
@@ -3114,7 +3114,7 @@ mod smooth_precise_values {
         // At (2,2): set distinct neighbors
         data[2 * 5 + 1] = 100.0; // left = 100
         data[2 * 5 + 3] = 1.0; // right = 1
-        data[1 * 5 + 2] = 50.0; // up = 50
+        data[5 + 2] = 50.0; // up = 50
         data[3 * 5 + 2] = 200.0; // down = 200
         data[2 * 5 + 2] = 10.0; // center = 10
 
@@ -3329,7 +3329,7 @@ mod moisture_precise_v3 {
         // With correct formula, water_factor ≤ 1, so water contribution ≤ 0.3
         // Total moisture ≤ base*0.7 + 0.3 ≤ 1.0 (already clamped)
         // Key: just ensure moisture is within expected range
-        assert!(m >= 0.0 && m <= 1.0, "Moisture out of range: {}", m);
+        assert!((0.0..=1.0).contains(&m), "Moisture out of range: {}", m);
     }
 
     #[test]
@@ -3514,7 +3514,11 @@ mod fbm_targeted_v3 {
         // The mutation would give very different results
         let t = climate.sample_temperature(200.0, 200.0, 0.0);
         // With correct *= decay, values should be moderate
-        assert!(t >= 0.0 && t <= 1.0, "Temperature should be clamped: {}", t);
+        assert!(
+            (0.0..=1.0).contains(&t),
+            "Temperature should be clamped: {}",
+            t
+        );
         // The value should be noticeably below 1.0 or above 0.0 with amp=0.3
         // (noise ranges roughly ±1, so sum ≈ ±0.5625, plus offset 0 = [-0.56, 0.56] → clamp)
     }
@@ -3530,8 +3534,10 @@ mod temperature_enhanced_v3 {
         // Kills L90 `*→/`: height * gradient vs height / gradient
         // height=10, gradient=-0.0065: *gives -0.065, /gives -1538.5
         // After adding to base (~0.5) and clamping: * gives ~0.435, / gives 0.0
-        let mut config = ClimateConfig::default();
-        config.temperature_latitude_gradient = 0.0; // Isolate height effect
+        let config = ClimateConfig {
+            temperature_latitude_gradient: 0.0, // Isolate height effect
+            ..Default::default()
+        };
         let climate = ClimateMap::new(&config, 42);
         let t10 = climate.sample_temperature(500.0, 0.0, 10.0);
         // height 10 * -0.0065 = -0.065 adjustment (small)
@@ -3550,8 +3556,10 @@ mod temperature_enhanced_v3 {
         // +=: adds 0.841*0.8 = 0.673
         // -=: subtracts 0.673
         // /: adds 0.841/0.8 = 1.051
-        let mut config = ClimateConfig::default();
-        config.temperature_height_gradient = 0.0; // Isolate latitude
+        let mut config = ClimateConfig {
+            temperature_height_gradient: 0.0, // Isolate latitude
+            ..Default::default()
+        };
         config.temperature.offset = 0.3; // Lower base so latitude effect is visible
         config.temperature.amplitude = 0.1;
         let climate = ClimateMap::new(&config, 42);

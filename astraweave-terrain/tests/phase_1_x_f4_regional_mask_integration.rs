@@ -19,8 +19,10 @@ use astraweave_terrain::{ChunkId, ClimateBias, WorldConfig, WorldGenerator};
 /// Build a fresh WorldGenerator at Continental Temperate seed 12345
 /// (radius-0 single-chunk for fast tests; radius-10 for perf test).
 fn make_generator(seed: u64) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = seed;
+    let config = WorldConfig {
+        seed,
+        ..WorldConfig::default()
+    };
     WorldGenerator::new(config)
 }
 

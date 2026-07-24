@@ -18,8 +18,10 @@
 use astraweave_terrain::{ChunkId, ClimateBias, WorldConfig, WorldGenerator};
 
 fn make_generator(seed: u64) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = seed;
+    let config = WorldConfig {
+        seed,
+        ..WorldConfig::default()
+    };
     // Erosion ENABLED — this is the whole point of phase 2.
     WorldGenerator::new(config)
 }
@@ -94,10 +96,10 @@ fn adjacent_chunks_share_edges_under_real_erosion_grassland() {
     let mut z_edge_max: f32 = 0.0;
 
     // X-axis shared edges (right of (x,z) vs left of (x+1,z)).
-    for z in 0..3 {
+    for row in chunks.iter().take(3) {
         for x in 0..2 {
-            let a = chunks[z][x].heightmap();
-            let b = chunks[z][x + 1].heightmap();
+            let a = row[x].heightmap();
+            let b = row[x + 1].heightmap();
             for zi in 0..dim {
                 let av = a.get_height(dim - 1, zi);
                 let bv = b.get_height(0, zi);
@@ -279,8 +281,10 @@ fn real_erosion_moves_heights_noticeably() {
     let gen_erosion_on = make_generator(12345);
 
     // Generate same chunk with erosion disabled for comparison.
-    let mut cfg_off = WorldConfig::default();
-    cfg_off.seed = 12345;
+    let mut cfg_off = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     cfg_off.noise.erosion_enabled = false;
     let gen_erosion_off = WorldGenerator::new(cfg_off);
 

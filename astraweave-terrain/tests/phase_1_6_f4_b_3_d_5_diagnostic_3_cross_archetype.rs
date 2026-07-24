@@ -33,8 +33,10 @@ use std::time::Instant;
 const SAMPLE_CHUNKS: [(i32, i32); 5] = [(0, 0), (5, 5), (-3, 4), (0, -7), (8, 1)];
 
 fn make_generator(archetype: WorldArchetypeId) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.climate.archetype = archetype.default_archetype();
     WorldGenerator::new(config)
 }
@@ -188,8 +190,10 @@ fn measure_variance_decomposition(archetype: WorldArchetypeId, label: &str) {
         "=== §1.2: {} variance decomposition (chunk (0,0)) ===",
         label
     );
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.climate.archetype = archetype.default_archetype();
 
     // Reconstruct the underlying TerrainNoise for bootstrap-only sampling.
@@ -297,16 +301,18 @@ fn det_random(seed: u32, idx: u32) -> f32 {
 }
 
 fn measure_amplitude_distribution(archetype: WorldArchetypeId, label: &str) {
-    let mut config = ClimateConfig::default();
-    config.archetype = archetype.default_archetype();
+    let config = ClimateConfig {
+        archetype: archetype.default_archetype(),
+        ..ClimateConfig::default()
+    };
     let climate = ClimateMap::new(&config, 12345);
     let blend_cfg = BiomeParamBlendConfig::default();
 
     let half = config.world_latitude_half_extent_wu as f64;
     let mut amplitudes = Vec::<f32>::with_capacity(1000);
     for i in 0..1000u32 {
-        let x = (det_random(7, i * 2) * 2.0 - 1.0) as f32 * half as f32;
-        let z = (det_random(7, i * 2 + 1) * 2.0 - 1.0) as f32 * half as f32;
+        let x = (det_random(7, i * 2) * 2.0 - 1.0) * half as f32;
+        let z = (det_random(7, i * 2 + 1) * 2.0 - 1.0) * half as f32;
         let elev_t = det_random(11, i);
         let elevation = -10.0 + elev_t * 520.0;
         let blended = blend_biome_parameters(x, z, elevation, &climate, &blend_cfg);

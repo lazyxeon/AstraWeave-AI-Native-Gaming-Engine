@@ -176,7 +176,7 @@ fn sample_height_is_sum_of_layers() {
     for &(x, z) in &[(100.0, 200.0), (500.0, 500.0), (250.0, 750.0), (0.0, 0.0)] {
         let base = noise_base.sample_height(x, z);
         let mtn = noise_mtn.sample_height(x, z);
-        let det = noise_det.sample_height(x, z);
+        let _det = noise_det.sample_height(x, z);
         let combined = noise_all.sample_height(x, z);
 
         // Each layer's raw value is clamped via .max(0.0) independently,
@@ -287,8 +287,8 @@ fn base_scale_sensitivity() {
     let w_a = noise_wide.sample_height(0.0, 0.0);
     let w_b = noise_wide.sample_height(10.0, 10.0);
 
-    let narrow_diff = (n_a - n_b).abs();
-    let wide_diff = (w_a - w_b).abs();
+    let _narrow_diff = (n_a - n_b).abs();
+    let _wide_diff = (w_a - w_b).abs();
 
     // Higher scale → same physical distance maps to larger noise coordinate diff
     // → generally more variation between nearby points

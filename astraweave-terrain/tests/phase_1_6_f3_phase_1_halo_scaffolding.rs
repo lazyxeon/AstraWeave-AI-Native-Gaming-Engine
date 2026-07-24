@@ -15,8 +15,10 @@
 use astraweave_terrain::{ChunkId, ClimateBias, WorldConfig, WorldGenerator};
 
 fn make_generator(seed: u64) -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = seed;
+    let mut config = WorldConfig {
+        seed,
+        ..WorldConfig::default()
+    };
     // Phase 2 note: erosion disabled here so the halo+crop machinery is
     // testable in isolation. The MACHINERY (halo sampling at per-vertex
     // world coords, center crop, byte-identity to single-chunk SIMD

@@ -1343,7 +1343,10 @@ mod tests {
         let textures = detect_ground_textures(dir.path());
 
         // Should find cliff and sand groups, not flower
-        assert!(textures.len() >= 1, "Should detect at least cliff textures");
+        assert!(
+            !textures.is_empty(),
+            "Should detect at least cliff textures"
+        );
 
         let cliff = textures.iter().find(|t| t.name == "cliff");
         assert!(cliff.is_some(), "Should detect cliff ground textures");

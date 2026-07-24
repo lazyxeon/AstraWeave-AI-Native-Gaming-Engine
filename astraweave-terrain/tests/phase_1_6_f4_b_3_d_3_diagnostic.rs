@@ -16,8 +16,10 @@ use std::collections::HashSet;
 /// latitude effect is strongest, maximizing climate variation across a
 /// single chunk.
 fn make_edge_generator() -> WorldGenerator {
-    let mut config = WorldConfig::default();
-    config.seed = 12345;
+    let mut config = WorldConfig {
+        seed: 12345,
+        ..WorldConfig::default()
+    };
     config.noise.erosion_enabled = false; // Disable erosion to keep the test fast
     WorldGenerator::new(config)
 }
