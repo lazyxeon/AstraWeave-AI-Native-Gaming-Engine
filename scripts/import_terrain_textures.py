@@ -110,12 +110,26 @@ PROCEDURAL = ["sand", "snow"]
 # ── I/O helpers ──────────────────────────────────────────────────────────────
 
 def load(path: Path) -> np.ndarray:
-    """Load PNG/JPG/EXR → uint8 RGBA array."""
+    """Load PNG/JPG/EXR → uint8 RGBA array.
+
+    T.2a fix: 16-bit inputs are scaled to 8 bits BEFORE `convert`. PIL's
+    `convert()` clamps 16-bit modes (I;16 / I;16B / I;16L / I) to 255 rather
+    than rescaling, so every 16-bit source silently decoded to solid white.
+    That is what produced the shipped placeholder channels — the AO of
+    mountain_rock / forest_floor / stone / dirt collapsed to the constant 140
+    (`0.55 * 255`, the floor of `build_mra`'s curve when height is uniformly
+    1.0) and grass's roughness to 99.5%-flat 255 (from a source whose true
+    8-bit mean is 111.7, sd 40.6). Same class as the AD.4.A "D2" defect fixed
+    in `tools/material_cook/cook_1k.py::to_l8`; this reader never got it.
+    """
     if not path.exists():
         raise FileNotFoundError(path)
     if path.suffix.lower() == ".exr":
         return _load_exr(path)
-    return np.array(Image.open(path).convert("RGBA"))
+    img = Image.open(path)
+    if img.mode in ("I;16", "I;16B", "I;16L", "I"):
+        img = img.point(lambda v: v / 257.0).convert("L")
+    return np.array(img.convert("RGBA"))
 
 
 def _load_exr(path: Path) -> np.ndarray:
@@ -178,7 +192,24 @@ def normal_from_height(h_u8: np.ndarray, strength: float = 2.0) -> np.ndarray:
     return out
 
 
-def build_mra(rough: np.ndarray, disp_path) -> np.ndarray:
+def _cavity_ao(albedo_path: Path, size: int) -> np.ndarray:
+    """AO from albedo local relief, for families with no displacement map.
+
+    Delegates to `tools/material_cook/cook_1k.py` so the derivation exists in
+    exactly one place — two copies of an AO formula is precisely the parallel
+    -implementation drift this repo has paid for before.
+    """
+    import sys
+
+    cook_dir = Path(__file__).resolve().parent.parent / "tools" / "material_cook"
+    if str(cook_dir) not in sys.path:
+        sys.path.insert(0, str(cook_dir))
+    import cook_1k  # noqa: E402  (path must be set up first)
+
+    return cook_1k.ao_from_albedo_cavity(str(albedo_path), size=size)
+
+
+def build_mra(rough: np.ndarray, disp_path, albedo_path=None) -> np.ndarray:
     """Roughness RGBA + optional displacement → MRA RGBA."""
     h, w = rough.shape[:2]
     out = np.full((h, w, 4), 255, np.uint8)
@@ -187,11 +218,31 @@ def build_mra(rough: np.ndarray, disp_path) -> np.ndarray:
     if disp_path and disp_path.exists():
         d = resize(load(disp_path), h)
         hf = d[:, :, 0].astype(np.float32) / 255.0
-        ao = gaussian_filter(1.0 - hf, sigma=4.0)
+        # T.2a fix: AO rises WITH height. A peak is exposed and therefore less
+        # occluded; a crevice is occluded. This previously read `1.0 - hf`,
+        # which lit the crevices and darkened the peaks. Measured against
+        # same-scan ground truth (a real AO map correlated with its own
+        # displacement, both resampled to 1024): ganges_river_pebbles r=+0.478
+        # upright vs -0.478 inverted, forest_leaves_02 +0.230, aerial_rocks_01
+        # +0.122. The inversion reached the shipped pack — live
+        # assets/materials/mud_mra.png's AO correlates +0.991 with the
+        # inverted curve and -0.991 with this one.
+        ao = gaussian_filter(hf, sigma=4.0)
         ao = 0.55 + 0.45 * ao
         out[:, :, 2] = (np.clip(ao, 0, 1) * 255).astype(np.uint8)
+    elif albedo_path is not None:
+        # No height map for this family (grass, rock_slate). The previous
+        # behaviour wrote a flat constant 217, which is a silent lie — it
+        # reads downstream as "measured, uniformly unoccluded" and is
+        # indistinguishable from real data. Derive local cavity from the
+        # albedo instead; see cook_1k.py::ao_from_albedo_cavity for the
+        # method and its limits.
+        out[:, :, 2] = (np.clip(_cavity_ao(albedo_path, h), 0, 1) * 255).astype(np.uint8)
     else:
-        out[:, :, 2] = 217                                             # flat ~0.85
+        raise ValueError(
+            "build_mra: no displacement and no albedo to derive AO from — "
+            "refusing to write a flat placeholder channel"
+        )
     return out
 
 
@@ -346,7 +397,7 @@ def main():
             except Exception:
                 print("    roughness fallback: flat 0.80")
                 rgh = np.full((TARGET, TARGET, 4), 204, np.uint8)
-            mra = build_mra(rgh, s.get("disp"))
+            mra = build_mra(rgh, s.get("disp"), s.get("albedo"))
             save(mra, MATERIALS / f"{name}_mra.png")
 
         except Exception as exc:

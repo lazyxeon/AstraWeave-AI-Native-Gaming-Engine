@@ -96,6 +96,48 @@ def test_arm_to_mra_swap_and_guard():
     return True
 
 
+def test_ao_orientation_and_normal_integration():
+    """T.2a regression: AO must rise with height, and the normal-map
+    integration must recover height in the same orientation.
+
+    `scripts/import_terrain_textures.py::build_mra` shipped `1.0 - hf`, which
+    darkened peaks and lit crevices; the inversion reached the live pack
+    (mud_mra AO correlated +0.991 with the inverted curve). Both derivations
+    are pinned here so the sign cannot silently flip back.
+    """
+    import numpy as np
+    from PIL import Image
+    from cook_1k import ao_from_displacement, ao_from_normal_map
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # A smooth bump: bright (high) in the middle, dark (low) at the edges.
+        n = 256
+        yy, xx = np.mgrid[0:n, 0:n]
+        r = np.sqrt((xx - n / 2) ** 2 + (yy - n / 2) ** 2) / (n / 2)
+        height = np.clip(1.0 - r, 0.0, 1.0)
+
+        disp_p = os.path.join(tmp, "bump_disp.png")
+        Image.fromarray((height * 255).astype("uint8"), "L").save(disp_p)
+        ao = ao_from_displacement(disp_p, size=n)
+        # The peak must be LESS occluded (higher AO) than the rim.
+        peak, rim = ao[n // 2, n // 2], ao[4, 4]
+        assert peak > rim, f"AO inverted: peak {peak:.3f} <= rim {rim:.3f}"
+        assert np.corrcoef(ao.ravel(), height.ravel())[0, 1] > 0.9, "AO must track height"
+
+        # Encode the same bump as an OpenGL tangent-space normal map and check
+        # the integration recovers a height correlated with the original.
+        gy, gx = np.gradient(height)
+        nx, ny, nz = -gx, gy, np.ones_like(height) * 0.05
+        norm = np.sqrt(nx * nx + ny * ny + nz * nz)
+        rgb = np.dstack([(nx / norm * 0.5 + 0.5), (ny / norm * 0.5 + 0.5), (nz / norm * 0.5 + 0.5)])
+        nrm_p = os.path.join(tmp, "bump_n.png")
+        Image.fromarray((rgb * 255).astype("uint8"), "RGB").save(nrm_p)
+        ao_n = ao_from_normal_map(nrm_p, size=n)
+        c = np.corrcoef(ao_n.ravel(), height.ravel())[0, 1]
+        assert c > 0.5, f"normal-map AO orientation wrong (corr {c:+.3f})"
+    return True
+
+
 if __name__ == "__main__":
     ok = test_gravel_contract()
     print("PASS: cook_1k contract (1024x1024 RGBA PNG x3 maps)" if ok else "FAIL")
@@ -103,4 +145,6 @@ if __name__ == "__main__":
     print("PASS: pack_mra 16-bit-safe (D2 regression)" if ok2 else "FAIL: 16-bit")
     ok3 = test_arm_to_mra_swap_and_guard()
     print("PASS: ARM->MRA swap + guard (D1 regression)" if ok3 else "FAIL: ARM swap")
-    sys.exit(0 if (ok and ok2 and ok3) else 1)
+    ok4 = test_ao_orientation_and_normal_integration()
+    print("PASS: AO orientation + normal integration (T.2a regression)" if ok4 else "FAIL: AO orientation")
+    sys.exit(0 if (ok and ok2 and ok3 and ok4) else 1)
