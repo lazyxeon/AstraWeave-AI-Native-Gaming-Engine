@@ -208,3 +208,83 @@ No regression test is added: this beat convicted no defect, and a test asserting
 - The **LOD threshold ring** is predicted but never observed; §6.1 item 1 would confirm or kill it in one frame.
 - **The geometric floor at the T.2a station-01 focal is ~12 m** — closer cameras are inside local relief. A genuine "really close" sweep needs a focal on flat or raised ground; `sky_frac` now makes the failure self-evident rather than silent.
 - Not investigated: whether `camera-relative` (a declared feature of `astraweave-render`) is active in this path and interacts with `world_pos`-keyed terms.
+
+---
+
+# 9. Continuation (director, 2026-07-25) — census gap closed, boost hypothesis falsified, STOP for ED-2
+
+Three director corrections drove this pass: the symptom is **stationary-visible** (TAA demoted), the observations are from **camera Y 414.5 / 536.2** over **Desert** (not my 12–110 m range), and the sign is **nearer DARKER / farther BRIGHTER** — opposite to §2.1's gradient. Treating them as two phenomena, as instructed.
+
+## 9.1 Range correction — the director's SIGN is reproduced
+
+Experiment D added: Desert, camera placed at the director's two altitudes, profiled out past 1000 m.
+
+| ground distance | 200–300 | 400–500 | 600–700 | 800–900 | 1000–1100 m |
+|---|---|---|---|---|---|
+| mean luma (camY 414.5, pitch 30°) | 104.73 | 107.56 | 111.19 | 114.12 | **114.63** |
+
+**+9.5% from 250 m to 1050 m — nearer darker, farther brighter.** This is the director's sign, reproduced, and it is *opposite* to the §2.1 Mediterranean near-field gradient (+5.9% toward the camera). Confirms the two-phenomena split.
+
+## 9.2 But the BOUNDARY still does not reproduce — and my earlier method could not have seen one
+
+A methodological correction first: §2.2's row-profile **averages each screen row**, but iso-distance contours on a ground plane are curves, so a ring is smeared into a ramp by row-averaging. That method could not have detected the reported edge.
+
+Redone properly: every pixel's ray is intersected with the ground plane and luminance binned by **true 3D camera-to-fragment distance** — the quantity `compute_material_lod` and the CSM splits are keyed to.
+
+Result at camY 414.5 / pitch 30°, 25 m bins: largest binned step **−2.56 luma at ~962 m**, and the sequence oscillates (−1.55, +0.54, +0.29, −0.06, −1.28, +0.93, +1.33, …). That is dune and biome content, not a monotone edge. **No hard camera-anchored boundary at the director's altitudes either.**
+
+## 9.3 The mip0-boost hypothesis — FALSIFIED, three independent ways
+
+1. **It is not mip-gated.** `NORMAL_XY_STRENGTH` has exactly four occurrences workspace-wide (`pbr_terrain_forward.wgsl:327,331,333` plus one doc reference). It is an unconditional `let` inside the per-layer loop, multiplied into `n_ts.xy` for every fragment at every distance. There is no mip query, LOD branch, or distance term. The premise "at the mip0→mip1 crossover the boost stops" does not hold in this code.
+
+2. **The predicted crossover is off by two orders of magnitude** — the calculation requested, which turns out to falsify rather than confirm. At tiling 128 over a 512 WU chunk (one repeat per 4 m), fovy 60°, 768 px:
+
+   | array | texel density | mip0→mip1 crossover |
+   |---|---|---|
+   | albedo 1024² | 256 texels/m | **2.60 m** |
+   | aux (normal/ORM) 512² | 128 texels/m | **5.20 m** |
+
+   The director observes at **400–1500 m** ground distance — roughly eight mip levels past mip 0. Even if the boost *were* mip0-gated, its boundary would be a ~3–5 m ring at the camera's feet, not an edge at hundreds of metres.
+
+3. **Neutralizing it changes nothing at those altitudes.** A/B leg `NORMAL_XY_STRENGTH = 1.0`, Experiment D re-run:
+
+   | station | HEAD mean / max step | boost = 1.0 |
+   |---|---|---|
+   | camY 414.5, pitch 30° | 121.315 / 3.935 | 121.675 / 3.966 |
+   | camY 536.2, pitch 30° | 123.768 / 3.302 | 124.132 / 3.389 |
+
+   Under 0.3% difference. Expected on reflection: at 400–1000 m the sampled normals are heavily mipped toward flat, so scaling a near-zero XY by 1.4 versus 1.0 does almost nothing. **The boost is a near-field term; the observation is far-field.**
+
+The director's underlying *physical* intuition — a hard mip transition amplified by a normal-detail term — was worth testing and is also ruled out: `terrain-layer-sampler` (`terrain_material_manager.rs:1405-1417`) uses `mipmap_filter: Linear` with `anisotropy_clamp: 8`, so mip transitions are trilinear-interpolated and cannot hard-edge.
+
+## 9.4 The owed census: shadows and every other distance-tiered system
+
+| system | camera-derived? | range | can it ring the terrain? |
+|---|---|---|---|
+| **CSM** (`shadow_csm.rs`) | **YES** — `update_cascades(camera_pos, camera_view, camera_proj, near, far)` | splits **10 / 50 / 200 / 1000 m** | **NO — terrain never samples it.** `pbr_terrain_forward.wgsl` contains zero shadow sampling; the only two occurrences of "shadow" are comments saying there are none (`:20`, `:374`). |
+| `compute_material_lod` tiers | YES (`fwidth(world_pos)`) | thresholds 0.5 / 2.0 footprint | Possible in principle; §3.2 showed the sweep never crossed a threshold, and the boundary would sit ~240 m perpendicular |
+| terrain layer mips | YES | crossover 2.6 / 5.2 m | No — trilinear (§9.3) |
+| splat textures | n/a | — | **No — `mip_level_count: 1`** (`terrain_material_manager.rs:825,1165`), so the splat sampler's `mipmap_filter: Nearest` has no mip chain to step between |
+| fog | YES | — | Exonerated §3.5 (byte-identical with it removed) |
+
+**The CSM finding is the sharpest thing in this pass and it is a genuine contradiction to sit with:** the cascade system *is* camera-anchored and its 1000 m split falls squarely inside the director's observed 400–1500 m range — the right shape, the right range, and the symptom's own word ("shadows"). But the terrain shader cannot express it. Either the boundary is on something other than terrain (props, water, or a pass I have not instrumented), or the editor's live path shades terrain differently from this shader. Both possibilities point at §9.5.
+
+## 9.5 STOP — this needs ED-2 first
+
+Everything above is the **offscreen** path. The director's Gap #2 is now the leading explanation and I cannot close it with the current tooling.
+
+The offscreen harness reproduces the *gradient* and the *sign* but not the *boundary*. That split is exactly the ED-1 / T.W.1 precedent the director cited — headless `render()` being a no-op, the editor rendering via `draw_into`. To measure in the editor's own path I need to pin a camera to the observed coordinates and capture a frame from the live editor, and today:
+
+- `OrbitCamera::set_yaw` / `set_pitch` do not set the smoothing targets, so any programmatic camera restore drifts back within ~50 ms (T2A_OUTCOME.md §3.4);
+- there is no screenshot command — `polish.rs`'s `include_screenshot` / `screenshot: Option<PathBuf>` are settable-but-never-read dormant fields (T2A_OUTCOME.md §1).
+
+**That is ED-2, which the director has queued and offered to run first. I am stopping here rather than building a parallel one-off capture path** — a second camera-pinning mechanism is precisely the duplicate-implementation trap the CLAUDE.md scope rules forbid, and ED-2 produces the reusable version.
+
+**Also still needed:** the two Desert frames. They are not at `d:/tmp/t2d_staging/` (which holds only my six A/B legs), and there are no new PNGs under the repo, `Pictures`, `Desktop`, or `Downloads`. A path would let me measure the boundary's screen position and, with the Camera readout, convert it to a ground distance — which discriminates the CSM 1000 m split from the `compute_material_lod` ~240 m threshold in a single measurement.
+
+## 9.6 What is now established, regardless
+
+- The **+5.9% near-field gradient** (§2.1) and the **+9.5% far-field gradient with the director's sign** (§9.1) are both real, both camera-dependent, and both distinct from the boundary.
+- The **+9.5% multiscatter tier step** (§3.2) stands as a real defect.
+- `NORMAL_XY_STRENGTH` is **exonerated** for the reported symptom — and, usefully, is confirmed to be a near-field-only term, which bounds what T.2a's 1.8→1.4 change could ever have affected.
+- No fix applied. Options for the one convicted item remain as §6.2.

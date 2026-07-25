@@ -104,16 +104,54 @@ fn find_assets_dir() -> Option<PathBuf> {
     None
 }
 
-fn generate_world() -> Result<TerrainState> {
+fn generate_world_for(archetype: WorldArchetypeId, key: &str) -> Result<TerrainState> {
     let mut state = TerrainState::new();
     state.configure(SEED, PRIMARY_BIOME);
     state.set_noise_params(OCTAVES, LACUNARITY, PERSISTENCE, BASE_AMPLITUDE);
-    state.set_world_archetype(WorldArchetypeId::Mediterranean.default_archetype());
+    state.set_world_archetype(archetype.default_archetype());
     let n = state
         .generate_terrain(RADIUS)
         .context("generate_terrain failed")?;
-    println!("[t2d] world 'med' generated {n} chunks");
+    println!("[t2d] world '{key}' generated {n} chunks");
     Ok(state)
+}
+
+fn generate_world() -> Result<TerrainState> {
+    generate_world_for(WorldArchetypeId::Mediterranean, "med")
+}
+
+/// Experiment D — the director's actual observing altitudes (2026-07-25).
+///
+/// The first pass of this beat swept 12-110 m and found only a smooth ~6%
+/// gradient. The director's frames are from **camera Y 414.5 and 536.2** over
+/// Desert, where the relevant ground distances run to many hundreds of metres —
+/// entirely outside that range. Two facts make this range the interesting one:
+/// `compute_material_lod`'s footprint thresholds land here, and `shadow_csm`'s
+/// cascade splits are 10 / 50 / 200 / **1000** m.
+const DIRECTOR_CAMERA_Y: &[f32] = &[414.5, 536.2];
+
+/// T.2a's pinned desert close-up focal — a known point on the desert surface.
+const DESERT_FOCAL: [f32; 3] = [43.1, 36.3, -1961.8];
+
+/// Screen row -> horizontal ground distance from the camera, for locally flat
+/// ground at the focal height.
+///
+/// Camera altitude above ground `h`, look-down `pitch`, vertical FOV `fovy`.
+/// For row `y` the ray's depression below horizontal is
+/// `pitch - atan(ndc * tan(fovy/2))`, and flat-ground range is `h / tan(depr)`.
+/// Rows at or above the horizon return `None`.
+fn row_to_ground_distance(y: usize, height: u32, h: f32, pitch_rad: f32, fovy: f32) -> Option<f32> {
+    let ndc = 1.0 - 2.0 * (y as f32 + 0.5) / height as f32;
+    let depression = pitch_rad - (ndc * (fovy * 0.5).tan()).atan();
+    if depression <= 0.001 {
+        return None;
+    }
+    let d = h / depression.tan();
+    if d.is_finite() && d > 0.0 {
+        Some(d)
+    } else {
+        None
+    }
 }
 
 async fn acquire_device() -> Result<(Arc<wgpu::Device>, Arc<wgpu::Queue>)> {
@@ -484,6 +522,86 @@ fn t2d_characterize_camera_light() -> Result<()> {
             "[t2d]   identical rows across lateral offsets => the boundary is CAMERA-anchored;"
         );
         println!("[t2d]   rows that track terrain => WORLD-anchored.");
+
+        // ---- Experiment D: the director's altitudes, Desert, out to ~1000 m ----
+        println!("\n[t2d] === D: DESERT at the director's camera altitudes (414.5 / 536.2) ===");
+        let desert = generate_world_for(WorldArchetypeId::Desert, "desert")?;
+        viewport.upload_terrain_chunks_raw(&desert.get_gpu_chunks());
+        let d_focal = Vec3::from_array(DESERT_FOCAL);
+        let fovy = 60_f32.to_radians();
+
+        for &cam_y in DIRECTOR_CAMERA_Y {
+            for &pitch_deg in &[20.0_f32, 30.0] {
+                let pitch = pitch_deg.to_radians();
+                let altitude = cam_y - d_focal.y;
+                // Choose the orbit radius that puts the eye at this altitude.
+                let dist = altitude / pitch.sin();
+                let f = render_at(
+                    &mut viewport,
+                    &device,
+                    &queue,
+                    &target,
+                    &world,
+                    d_focal,
+                    dist,
+                    SWEEP_YAW_DEG,
+                    pitch_deg,
+                )
+                .await?;
+                let prof = row_profile(&f.luma, w, h);
+                let sky = sky_fraction(&f.luma);
+
+                // Largest step, reported in GROUND DISTANCE rather than row.
+                let mut best = 0.0f64;
+                let mut best_row = 0usize;
+                for y in 0..prof.len().saturating_sub(1) {
+                    // Only consider rows that actually see ground.
+                    if row_to_ground_distance(y, HEIGHT, altitude, pitch, fovy).is_none() {
+                        continue;
+                    }
+                    let dd = (prof[y + 1] - prof[y]).abs();
+                    if dd > best {
+                        best = dd;
+                        best_row = y;
+                    }
+                }
+                let best_dist = row_to_ground_distance(best_row, HEIGHT, altitude, pitch, fovy);
+                let mean = f.luma.iter().sum::<f64>() / f.luma.len() as f64;
+                println!(
+                    "[t2d] camY={cam_y:>7.1} pitch={pitch_deg:>4.0} orbit={dist:>7.1}  mean={mean:>7.3}  sky={sky:>5.3}  \
+                     max_step={best:>6.3} at row {best_row} (~{:.0} m)",
+                    best_dist.unwrap_or(f32::NAN)
+                );
+                csv.push_str(&format!(
+                    "director,{cam_y}/{pitch_deg},{:.4},{mean:.4},{sky:.4},{best:.4},{best_row},{:.5}\n",
+                    centre_patch_luma(&f.luma, w, h, 32),
+                    best / mean.max(1e-6)
+                ));
+
+                // Full luma-vs-ground-distance profile: this is the artifact that
+                // shows a boundary as a step against DISTANCE, not against row.
+                let name = format!("D_desert_y{cam_y:.0}_p{pitch_deg:.0}");
+                let mut dcsv = String::from("row,ground_dist_m,mean_luma,delta_to_next\n");
+                for y in 0..prof.len() {
+                    let gd = row_to_ground_distance(y, HEIGHT, altitude, pitch, fovy);
+                    let dd = if y + 1 < prof.len() {
+                        prof[y + 1] - prof[y]
+                    } else {
+                        0.0
+                    };
+                    dcsv.push_str(&format!(
+                        "{y},{},{:.5},{:.5}\n",
+                        gd.map(|v| format!("{v:.2}")).unwrap_or_default(),
+                        prof[y],
+                        dd
+                    ));
+                }
+                std::fs::write(out_dir.join(format!("{name}.csv")), dcsv)?;
+                image::RgbaImage::from_raw(WIDTH, HEIGHT, f.rgba)
+                    .context("RgbaImage::from_raw")?
+                    .save(out_dir.join(format!("{name}.png")))?;
+            }
+        }
 
         std::fs::write(out_dir.join("metrics.csv"), csv)?;
         println!("[t2d] metrics -> {}", out_dir.join("metrics.csv").display());
