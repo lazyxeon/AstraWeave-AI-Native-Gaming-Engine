@@ -10,6 +10,12 @@ pub struct MoveToAction {
     effects: BTreeMap<String, StateValue>,
 }
 
+impl Default for MoveToAction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveToAction {
     pub fn new() -> Self {
         let preconditions = BTreeMap::new();
@@ -47,6 +53,12 @@ impl Action for MoveToAction {
 pub struct ApproachEnemyAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for ApproachEnemyAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ApproachEnemyAction {
@@ -103,6 +115,12 @@ impl Action for ApproachEnemyAction {
 pub struct AttackAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for AttackAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AttackAction {
@@ -171,6 +189,12 @@ pub struct CoverFireAction {
     effects: BTreeMap<String, StateValue>,
 }
 
+impl Default for CoverFireAction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverFireAction {
     pub fn new() -> Self {
         let mut preconditions = BTreeMap::new();
@@ -211,6 +235,12 @@ impl Action for CoverFireAction {
 pub struct ReloadAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for ReloadAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ReloadAction {
@@ -256,6 +286,12 @@ impl Action for ReloadAction {
 pub struct TakeCoverAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for TakeCoverAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TakeCoverAction {
@@ -309,6 +345,12 @@ impl Action for TakeCoverAction {
 pub struct HealAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for HealAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HealAction {
@@ -365,6 +407,12 @@ pub struct ThrowSmokeAction {
     effects: BTreeMap<String, StateValue>,
 }
 
+impl Default for ThrowSmokeAction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ThrowSmokeAction {
     pub fn new() -> Self {
         let mut preconditions = BTreeMap::new();
@@ -411,6 +459,12 @@ impl Action for ThrowSmokeAction {
 pub struct RetreatAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for RetreatAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RetreatAction {
@@ -466,6 +520,12 @@ pub struct ReviveAction {
     effects: BTreeMap<String, StateValue>,
 }
 
+impl Default for ReviveAction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReviveAction {
     pub fn new() -> Self {
         let mut preconditions = BTreeMap::new();
@@ -505,6 +565,12 @@ impl Action for ReviveAction {
 pub struct ScanAction {
     preconditions: BTreeMap<String, StateValue>,
     effects: BTreeMap<String, StateValue>,
+}
+
+impl Default for ScanAction {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ScanAction {

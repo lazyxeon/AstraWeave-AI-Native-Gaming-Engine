@@ -197,14 +197,14 @@ impl PlanDiff {
             .action_types
             .iter()
             .filter(|a| !goap_set.contains(a))
-            .map(|s| s.clone())
+            .cloned()
             .collect();
 
         let unique_to_goap: Vec<String> = goap
             .action_types
             .iter()
             .filter(|a| !rule_set.contains(a))
-            .map(|s| s.clone())
+            .cloned()
             .collect();
 
         // Check if order differs (for common actions)

@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 
 /// Main configuration structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GOAPConfig {
     pub learning: LearningConfig,
     pub cost_tuning: CostTuningConfig,
@@ -14,19 +14,6 @@ pub struct GOAPConfig {
     pub telemetry: TelemetryConfig,
     pub planner: PlannerConfig,
     pub debug: DebugConfig,
-}
-
-impl Default for GOAPConfig {
-    fn default() -> Self {
-        Self {
-            learning: LearningConfig::default(),
-            cost_tuning: CostTuningConfig::default(),
-            persistence: PersistenceConfig::default(),
-            telemetry: TelemetryConfig::default(),
-            planner: PlannerConfig::default(),
-            debug: DebugConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -371,8 +371,7 @@ impl GoalValidator {
         }
 
         // Check for decomposition without sub-goals
-        if goal.decomposition.is_some() && goal.sub_goals.as_ref().map_or(true, |sg| sg.is_empty())
-        {
+        if goal.decomposition.is_some() && goal.sub_goals.as_ref().is_none_or(|sg| sg.is_empty()) {
             result.add(
                 ValidationError::warning(
                     "Decomposition strategy specified but no sub-goals defined",

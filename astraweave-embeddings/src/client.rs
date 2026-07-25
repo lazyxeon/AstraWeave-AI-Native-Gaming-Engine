@@ -279,7 +279,7 @@ pub struct CandleEmbeddingClient {
 impl CandleEmbeddingClient {
     /// Create a new Candle embedding client
     pub async fn new(model_path: String, tokenizer_path: String) -> Result<Self> {
-        use candle_core::{Device, Tensor};
+        use candle_core::Device;
         use candle_nn::VarBuilder;
         use candle_transformers::models::bert::{BertModel, Config};
 

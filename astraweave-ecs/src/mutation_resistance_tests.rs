@@ -16,7 +16,6 @@
 //! - lib.rs: World count/entities_with/remove/despawn/register_component/each_mut,
 //!   Schedule/Stage, App builder, Plugin trait
 
-#![cfg(test)]
 #![allow(clippy::manual_range_contains, clippy::len_zero)]
 
 // =============================================================================

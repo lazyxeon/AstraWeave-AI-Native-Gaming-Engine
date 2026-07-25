@@ -795,7 +795,7 @@ mod tests {
 
     #[test]
     fn test_tactical_summary_distance() {
-        let mut snap = make_test_snapshot();
+        let snap = make_test_snapshot();
         // Enemy at (10,10), companion at (5,5) → dist = 10
         let summary = SnapshotAdapter::tactical_summary(&snap);
         assert!(summary.contains("Dist:10"));

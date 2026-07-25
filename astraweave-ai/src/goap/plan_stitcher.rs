@@ -115,8 +115,8 @@ impl PlanStitcher {
                 if !action.can_execute(&simulated_state) {
                     // Find which conditions are missing
                     for (key, value) in action.preconditions() {
-                        if let Some(current_value) = simulated_state.get(&key) {
-                            if !current_value.satisfies(&value) {
+                        if let Some(current_value) = simulated_state.get(key) {
+                            if !current_value.satisfies(value) {
                                 conflicts.push(Conflict::PreconditionViolation {
                                     action: action_name.clone(),
                                     missing_condition: format!("{}={:?}", key, value),
@@ -173,7 +173,7 @@ impl PlanStitcher {
     fn are_incompatible(action1: &str, action2: &str) -> bool {
         // Define known incompatible pairs
         // (In a real system, this might be data-driven)
-        let incompatible_pairs = vec![
+        let incompatible_pairs = [
             ("attack", "heal"),       // Can't attack and heal at same time
             ("move_to", "move_to"),   // Conflicting movement
             ("take_cover", "attack"), // Can't attack while taking cover
@@ -200,7 +200,7 @@ impl PlanStitcher {
         let mut applied_effects = HashSet::new();
 
         for action_name in plan {
-            if let Some(action) = actions.iter().find(|a| a.name() == &action_name) {
+            if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 // Check if this action's effects are redundant
                 let mut is_redundant = true;
 

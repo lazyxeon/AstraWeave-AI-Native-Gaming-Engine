@@ -3,10 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Strategy for decomposing a goal into sub-goals
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum DecompositionStrategy {
     /// Sub-goals must be achieved in the order specified
+    #[default]
     Sequential,
     /// Sub-goals can be pursued in any order or simultaneously
     Parallel,
@@ -14,12 +15,6 @@ pub enum DecompositionStrategy {
     AnyOf,
     /// All sub-goals must be satisfied for parent goal to be satisfied
     AllOf,
-}
-
-impl Default for DecompositionStrategy {
-    fn default() -> Self {
-        DecompositionStrategy::Sequential
-    }
 }
 
 /// Goal with priority, deadline, and hierarchical decomposition support

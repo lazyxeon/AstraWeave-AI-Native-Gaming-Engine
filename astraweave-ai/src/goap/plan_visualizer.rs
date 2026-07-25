@@ -155,8 +155,8 @@ impl PlanVisualizer {
         // Header
         let _ = writeln!(
             &mut output,
-            "{:<6} | {:<20} | {:<30} | {}",
-            "Time", "Action", "State Changes", "Success"
+            "{:<6} | {:<20} | {:<30} | Success",
+            "Time", "Action", "State Changes"
         );
         let _ = writeln!(&mut output, "{}", "-".repeat(80));
 
