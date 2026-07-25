@@ -951,9 +951,111 @@ impl ViewportRenderer {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            // ED-2: COPY_SRC lets `capture_frame_png` read this texture back.
+            // It is the texture the viewport actually displays, so a capture
+            // is by construction the live path — not a re-render through some
+            // other route (the failure mode T.2d ran into).
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
         }))
+    }
+
+    /// ED-2 Concern 3: read back a rendered viewport texture and write it as a PNG.
+    ///
+    /// `texture` must be the very texture the viewport just rendered into (the
+    /// widget passes its `render_texture`), which is what makes this a capture
+    /// of the **live editor path** rather than of a parallel render.
+    ///
+    /// Returns the pixel dimensions written.
+    pub fn capture_frame_png(
+        &self,
+        texture: &wgpu::Texture,
+        path: &std::path::Path,
+    ) -> Result<(u32, u32)> {
+        let width = texture.width();
+        let height = texture.height();
+        if width == 0 || height == 0 {
+            anyhow::bail!("cannot capture a {width}x{height} texture");
+        }
+
+        let bytes_per_pixel = 4u32;
+        let unpadded = width * bytes_per_pixel;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let padded = unpadded.div_ceil(align) * align;
+
+        let staging = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("ed2-capture-staging"),
+            size: (padded as u64) * (height as u64),
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("ed2-capture-encoder"),
+            });
+        encoder.copy_texture_to_buffer(
+            wgpu::TexelCopyTextureInfo {
+                texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyBufferInfo {
+                buffer: &staging,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded),
+                    rows_per_image: Some(height),
+                },
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+        self.queue.submit(std::iter::once(encoder.finish()));
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        staging
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |res| {
+                let _ = tx.send(res);
+            });
+        loop {
+            if self.device.poll(wgpu::MaintainBase::Wait).is_ok() {
+                if let Ok(r) = rx.try_recv() {
+                    r.context("mapping the capture staging buffer failed")?;
+                    break;
+                }
+            }
+        }
+
+        let mut pixels = Vec::with_capacity((unpadded * height) as usize);
+        {
+            let mapped = staging.slice(..).get_mapped_range();
+            for y in 0..height as usize {
+                let src = y * padded as usize;
+                pixels.extend_from_slice(&mapped[src..src + unpadded as usize]);
+            }
+        }
+        staging.unmap();
+
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent)
+                    .with_context(|| format!("creating capture directory {}", parent.display()))?;
+            }
+        }
+        let img = image::RgbaImage::from_raw(width, height, pixels)
+            .context("capture buffer did not match the texture dimensions")?;
+        img.save(path)
+            .with_context(|| format!("writing capture PNG {}", path.display()))?;
+        Ok((width, height))
     }
 
     /// Get current viewport size

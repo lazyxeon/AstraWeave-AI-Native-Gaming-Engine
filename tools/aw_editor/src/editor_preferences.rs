@@ -1,5 +1,5 @@
 use crate::gizmo::snapping::SnappingConfig;
-use crate::viewport::camera::OrbitCamera;
+use crate::viewport::camera::{CameraStation, OrbitCamera};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -29,6 +29,13 @@ pub struct EditorPreferences {
     /// Directories to scan for .blend scene assets.
     #[serde(default = "default_blend_asset_directories")]
     pub blend_asset_directories: Vec<String>,
+    /// ED-2: named camera stations (pinned viewpoints) for visual A/B gates.
+    ///
+    /// `#[serde(default)]` so preference files written before ED-2 load
+    /// unchanged — the same backward-compatibility discipline the rest of this
+    /// struct uses.
+    #[serde(default)]
+    pub camera_stations: Vec<CameraStation>,
 }
 
 fn default_auto_save_count() -> usize {
@@ -55,6 +62,7 @@ impl Default for EditorPreferences {
             layout_json: None,
             tutorial_completed: false,
             blend_asset_directories: default_blend_asset_directories(),
+            camera_stations: Vec::new(),
         }
     }
 }
@@ -128,6 +136,7 @@ mod tests {
             layout_json: None,
             tutorial_completed: false,
             blend_asset_directories: vec!["test/blends".into()],
+            camera_stations: Vec::new(),
         };
 
         let json = serde_json::to_string(&prefs).expect("serialize");
@@ -164,5 +173,73 @@ mod tests {
     #[test]
     fn test_default_auto_save_count_fn() {
         assert_eq!(default_auto_save_count(), 3);
+    }
+
+    /// ED-2 Concern 2: named stations survive a real file round-trip.
+    #[test]
+    fn camera_stations_round_trip_through_a_file() {
+        use crate::viewport::camera::{CameraStation, OrbitCamera};
+
+        let mut cam = OrbitCamera::default();
+        cam.set_focal_point(glam::Vec3::new(-12.5, 33.25, 1971.75));
+        cam.set_distance(137.5);
+        cam.set_yaw(2.1);
+        cam.set_pitch(-0.45);
+        cam.set_fov(72.0);
+        cam.set_aspect(1024.0, 768.0);
+
+        let prefs = EditorPreferences {
+            camera_stations: vec![CameraStation {
+                name: "desert_overview".to_string(),
+                state: cam.capture_state(),
+            }],
+            ..EditorPreferences::default()
+        };
+
+        let dir = std::env::temp_dir().join("aw_ed2_prefs_round_trip");
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let file = dir.join("prefs.json");
+        let json = serde_json::to_string_pretty(&prefs).expect("serialize");
+        std::fs::write(&file, &json).expect("write");
+
+        let read = std::fs::read_to_string(&file).expect("read");
+        let restored: EditorPreferences = serde_json::from_str(&read).expect("deserialize");
+        assert_eq!(restored.camera_stations.len(), 1);
+        assert_eq!(restored.camera_stations[0].name, "desert_overview");
+        assert_eq!(
+            restored.camera_stations[0].state,
+            prefs.camera_stations[0].state
+        );
+
+        // And the restored state still reproduces the exact view.
+        let mut fresh = OrbitCamera::default();
+        fresh.set_aspect(1024.0, 768.0);
+        fresh.apply_state(&restored.camera_stations[0].state);
+        assert_eq!(
+            fresh.view_matrix().to_cols_array(),
+            cam.view_matrix().to_cols_array(),
+            "a station restored from disk must reproduce the pinned view exactly"
+        );
+
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// Preference files written before ED-2 have no `camera_stations` key and
+    /// must still load — the same backward-compat contract the rest of this
+    /// struct honours.
+    #[test]
+    fn preferences_without_camera_stations_still_load() {
+        let old = r#"{
+            "show_grid": true,
+            "auto_save_enabled": false,
+            "auto_save_interval_secs": 300.0,
+            "show_hierarchy_panel": true,
+            "show_inspector_panel": true,
+            "show_console_panel": true,
+            "camera": null,
+            "snapping": null
+        }"#;
+        let prefs: EditorPreferences = serde_json::from_str(old).expect("deserialize legacy prefs");
+        assert!(prefs.camera_stations.is_empty());
     }
 }

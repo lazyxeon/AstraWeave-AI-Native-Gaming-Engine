@@ -362,6 +362,18 @@ struct EditorApp {
     current_gizmo_mode: GizmoMode,
     selection_set: SelectionSet,
     snapping_config: SnappingConfig,
+
+    /// ED-2: named camera stations (pinned viewpoints), persisted in
+    /// `.editor_preferences.json`. Owned here because preferences are saved
+    /// from this struct; the viewport widget applies them.
+    camera_stations: Vec<crate::viewport::camera::CameraStation>,
+
+    /// ED-2: text buffer for the "name this station" field.
+    new_station_name: String,
+
+    /// ED-2: pending multi-station capture queue (station index, output path).
+    /// Drained one per frame so each capture gets its own rendered frame.
+    station_capture_queue: std::collections::VecDeque<usize>,
     last_frame_time: std::time::Instant,
     current_fps: f32,
     recent_files: RecentFilesManager,
@@ -625,6 +637,9 @@ impl Default for EditorApp {
             current_gizmo_mode: GizmoMode::Inactive,
             selection_set: SelectionSet::new(),
             snapping_config: SnappingConfig::default(),
+            camera_stations: prefs.camera_stations.clone(),
+            new_station_name: String::new(),
+            station_capture_queue: std::collections::VecDeque::new(),
             last_frame_time: std::time::Instant::now(),
             current_fps: 60.0,
             recent_files: RecentFilesManager::load(),
@@ -962,6 +977,7 @@ impl EditorApp {
             layout_json: self.dock_layout.to_json().ok(),
             tutorial_completed: !self.tutorial.active,
             blend_asset_directories: editor_preferences::default_blend_asset_directories(),
+            camera_stations: self.camera_stations.clone(),
         };
         prefs.save();
     }
@@ -1018,6 +1034,7 @@ impl EditorApp {
             layout_json: self.dock_layout.to_json().ok(),
             tutorial_completed: !self.tutorial.active,
             blend_asset_directories: editor_preferences::default_blend_asset_directories(),
+            camera_stations: self.camera_stations.clone(),
         };
         *self = Self::default();
         self.viewport = viewport;
@@ -8981,6 +8998,101 @@ impl MenuActionHandler for EditorApp {
         self.show_about_dialog = true;
     }
 
+    // ================================================================
+    // ED-2: camera stations + viewport capture
+    //
+    // All of these funnel into `ViewportWidget::request_capture` /
+    // `restore_camera_state`, the canonical entry points, so the menu and the
+    // Ctrl+Shift+C hotkey cannot take different routes.
+    // ================================================================
+
+    fn camera_station_names(&self) -> Vec<String> {
+        self.camera_stations
+            .iter()
+            .map(|s| s.name.clone())
+            .collect()
+    }
+
+    fn camera_station_name_buffer(&mut self) -> &mut String {
+        &mut self.new_station_name
+    }
+
+    fn on_pin_camera_station(&mut self) {
+        let Some(viewport) = self.viewport.as_ref() else {
+            self.log("Cannot pin a camera station: no viewport");
+            return;
+        };
+        let state = viewport.capture_camera_state();
+        let name = if self.new_station_name.trim().is_empty() {
+            format!("station_{}", self.camera_stations.len() + 1)
+        } else {
+            self.new_station_name.trim().to_string()
+        };
+        // Re-pinning an existing name overwrites it, which is what a user
+        // adjusting a station expects.
+        if let Some(existing) = self.camera_stations.iter_mut().find(|s| s.name == name) {
+            existing.state = state;
+            self.log(format!("Re-pinned camera station '{}'", name));
+        } else {
+            self.camera_stations
+                .push(crate::viewport::camera::CameraStation {
+                    name: name.clone(),
+                    state,
+                });
+            self.log(format!("Pinned camera station '{}'", name));
+        }
+        self.new_station_name.clear();
+        self.save_preferences();
+    }
+
+    fn on_restore_camera_station(&mut self, index: usize) {
+        let Some(station) = self.camera_stations.get(index).cloned() else {
+            return;
+        };
+        if let Some(viewport) = self.viewport.as_mut() {
+            viewport.restore_camera_state(&station.state);
+            self.log(format!("Restored camera station '{}'", station.name));
+        }
+    }
+
+    fn on_delete_camera_station(&mut self, index: usize) {
+        if index < self.camera_stations.len() {
+            let removed = self.camera_stations.remove(index);
+            self.log(format!("Deleted camera station '{}'", removed.name));
+            self.save_preferences();
+        }
+    }
+
+    fn on_capture_viewport(&mut self) {
+        if let Some(viewport) = self.viewport.as_mut() {
+            let path = crate::viewport::ViewportWidget::default_capture_path("viewport");
+            viewport.request_capture(path.clone());
+            self.log(format!("Capturing viewport -> {}", path.display()));
+        }
+    }
+
+    fn on_capture_station(&mut self, index: usize) {
+        let Some(station) = self.camera_stations.get(index).cloned() else {
+            return;
+        };
+        if let Some(viewport) = self.viewport.as_mut() {
+            let path = std::path::PathBuf::from("captures")
+                .join(format!("{}.png", sanitize_station_filename(&station.name)));
+            viewport.restore_and_capture(&station.state, path.clone());
+            self.log(format!("Station '{}' -> {}", station.name, path.display()));
+        }
+    }
+
+    fn on_capture_all_stations(&mut self) {
+        // Queued rather than looped: each capture must get its own rendered
+        // frame, and the widget services at most one per frame.
+        self.station_capture_queue = (0..self.camera_stations.len()).collect();
+        self.log(format!(
+            "Queued {} station captures",
+            self.station_capture_queue.len()
+        ));
+    }
+
     fn on_import_blend_scene(&mut self) {
         // Ensure the Blend Import panel is open
         if !self.dock_layout.has_panel(&PanelType::BlendImport) {
@@ -9571,6 +9683,17 @@ impl eframe::App for EditorApp {
         // Drain tracing events into the in-editor console panel each frame
         console_bridge::drain_log_sink(&mut self.console_panel);
 
+        // ED-2: service at most ONE queued station capture per frame.
+        //
+        // One-per-frame is required, not conservative: the widget captures the
+        // texture rendered by the frame in which the request was pending, so
+        // issuing several in one frame would overwrite the same image. Popping
+        // one per frame gives each station its own render.
+        if let Some(index) = self.station_capture_queue.pop_front() {
+            self.on_capture_station(index);
+            ctx.request_repaint();
+        }
+
         // Drain viewport entity-feed diagnostics (mesh load results, rebuild
         // summaries) into the docked console — tracing events don't reach it,
         // which made silent mesh→cube fallbacks invisible to users.
@@ -10058,6 +10181,26 @@ impl eframe::App for EditorApp {
 
         self.last_update_end = Some(std::time::Instant::now());
         astraweave_profiling::frame_mark!();
+    }
+}
+
+/// ED-2: make a station name safe for a filename (stations are user-named and
+/// their names become capture file stems).
+fn sanitize_station_filename(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if cleaned.is_empty() {
+        "station".to_string()
+    } else {
+        cleaned
     }
 }
 

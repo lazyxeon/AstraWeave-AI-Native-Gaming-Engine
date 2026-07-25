@@ -95,6 +95,16 @@ pub trait MenuActionHandler {
     fn on_show_tutorial(&mut self);
     fn on_show_about(&mut self);
 
+    // ED-2: camera stations + viewport capture
+    fn camera_station_names(&self) -> Vec<String>;
+    fn on_pin_camera_station(&mut self);
+    fn on_restore_camera_station(&mut self, index: usize);
+    fn on_delete_camera_station(&mut self, index: usize);
+    fn on_capture_viewport(&mut self);
+    fn on_capture_station(&mut self, index: usize);
+    fn on_capture_all_stations(&mut self);
+    fn camera_station_name_buffer(&mut self) -> &mut String;
+
     // Blend & Blueprint quick-access
     fn on_import_blend_scene(&mut self);
     fn on_toggle_blueprint_mode(&mut self);
@@ -105,7 +115,78 @@ pub trait MenuActionHandler {
 pub struct MenuBar;
 
 impl MenuBar {
+    /// ED-2 camera-station menu.
+    fn camera_menu(ui: &mut Ui, handler: &mut dyn MenuActionHandler) {
+        ui.menu_button("Camera", |ui| {
+            ui.label("Pin the current view as a named station:");
+            ui.horizontal(|ui| {
+                let buf = handler.camera_station_name_buffer();
+                ui.add(
+                    egui::TextEdit::singleline(buf)
+                        .desired_width(140.0)
+                        .hint_text("station name"),
+                );
+                if ui.button("Pin").clicked() {
+                    handler.on_pin_camera_station();
+                }
+            });
+
+            ui.separator();
+            let names = handler.camera_station_names();
+            if names.is_empty() {
+                ui.label("No stations pinned yet.");
+            } else {
+                for (i, name) in names.iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        ui.label(name);
+                        if ui
+                            .small_button("Go")
+                            .on_hover_text("Restore this view")
+                            .clicked()
+                        {
+                            handler.on_restore_camera_station(i);
+                            ui.close();
+                        }
+                        if ui
+                            .small_button("Shot")
+                            .on_hover_text("Restore this view and capture it")
+                            .clicked()
+                        {
+                            handler.on_capture_station(i);
+                            ui.close();
+                        }
+                        if ui.small_button("X").on_hover_text("Delete").clicked() {
+                            handler.on_delete_camera_station(i);
+                        }
+                    });
+                }
+                ui.separator();
+                if ui
+                    .button("Capture ALL stations")
+                    .on_hover_text("Restore and capture every station in turn (A/B sweep)")
+                    .clicked()
+                {
+                    handler.on_capture_all_stations();
+                    ui.close();
+                }
+            }
+
+            ui.separator();
+            if ui.button("Capture viewport      Ctrl+Shift+C").clicked() {
+                handler.on_capture_viewport();
+                ui.close();
+            }
+        });
+    }
+
     pub fn show(ui: &mut Ui, handler: &mut dyn MenuActionHandler) {
+        // ED-2: Camera menu — pinned stations + viewport capture.
+        //
+        // Every item here calls the same handler methods the Ctrl+Shift+C
+        // hotkey ultimately routes to (ViewportWidget::request_capture), so
+        // the menu and the shortcut cannot diverge.
+        Self::camera_menu(ui, handler);
+
         // File menu — consolidates all file operations
         ui.menu_button("File", |ui| {
             if ui.button("New                  Ctrl+N").clicked() {

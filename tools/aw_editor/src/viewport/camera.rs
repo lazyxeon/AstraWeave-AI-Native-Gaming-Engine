@@ -573,14 +573,32 @@ impl OrbitCamera {
         self.zoom_target = self.distance;
     }
 
-    /// Set yaw angle (for bookmark restore)
+    /// Set yaw angle (for bookmark restore).
+    ///
+    /// **Must also set `yaw_target`.** `smooth_update` runs every frame and
+    /// interpolates `yaw` toward `yaw_target` at k=20; a setter that moves the
+    /// value without the target is silently undone within ~50 ms. This was the
+    /// ED-2 Concern-1 defect (reported by T.2a §3.4): every F1-F12 bookmark
+    /// restore and every `ViewportCameraPreset` snapped for one frame and then
+    /// drifted back. Compare `set_focal_point` / `set_distance`, which always
+    /// had the correct shape, and the `sanitize` path, which syncs all four.
     pub fn set_yaw(&mut self, yaw: f32) {
         self.yaw = yaw;
+        self.yaw_target = yaw;
     }
 
-    /// Set pitch angle (for bookmark restore)
+    /// Set pitch angle (for bookmark restore).
+    ///
+    /// Sets `pitch_target` too — see [`OrbitCamera::set_yaw`] for why.
+    ///
+    /// Note the clamp is the historical hard-coded ±89°, deliberately left
+    /// as-is: widening it to `min_pitch`/`max_pitch` would be a behaviour
+    /// change beyond this beat's scope. The target is clamped identically so
+    /// value and target can never disagree.
     pub fn set_pitch(&mut self, pitch: f32) {
-        self.pitch = pitch.clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
+        let clamped = pitch.clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
+        self.pitch = clamped;
+        self.pitch_target = clamped;
     }
 
     /// Set the vertical field of view, taking **degrees** per the
@@ -869,6 +887,43 @@ impl OrbitCamera {
         let view_dir = (self.focal_point - position).normalize();
         RenderView::new(view, &projection, position, view_dir)
     }
+    /// Capture the complete view-determining state of this camera (ED-2).
+    ///
+    /// See [`CameraState`] for what is captured and why `aspect` is recorded
+    /// but not restored.
+    pub fn capture_state(&self) -> CameraState {
+        CameraState {
+            focal_point: self.focal_point.to_array(),
+            distance: self.distance,
+            yaw: self.yaw,
+            pitch: self.pitch,
+            fovy: self.fovy,
+            near: self.near,
+            far: self.far,
+            aspect: self.aspect,
+        }
+    }
+
+    /// Restore a captured state exactly.
+    ///
+    /// Every smoothed field is written through the target-syncing setters, so
+    /// the restored view is **stable**: `smooth_update` has nothing to
+    /// interpolate toward and the camera does not drift (ED-2 Concern 1).
+    ///
+    /// `aspect` is deliberately NOT applied — it is owned by the viewport's
+    /// current size, and forcing a stale value would distort the projection to
+    /// something the user is not looking at. Use
+    /// [`CameraState::aspect_matches`] to detect the mismatch when comparing
+    /// captures taken at different window sizes.
+    pub fn apply_state(&mut self, s: &CameraState) {
+        self.set_focal_point(Vec3::from_array(s.focal_point));
+        self.set_distance(s.distance);
+        self.set_yaw(s.yaw);
+        self.set_pitch(s.pitch);
+        self.fovy = s.fovy;
+        self.near = s.near;
+        self.far = s.far;
+    }
 }
 
 impl CameraProducer for OrbitCamera {
@@ -897,6 +952,66 @@ impl CameraProducer for OrbitCamera {
         let view_dir = (self.focal_point - position).normalize();
         RenderView::new(view, &projection, position, view_dir)
     }
+}
+
+/// A complete, serializable camera view state (ED-2).
+///
+/// **Enumerated from the `OrbitCamera` fields, not guessed.** The fields that
+/// determine what the camera sees are `focal_point`, `distance`, `yaw`,
+/// `pitch` (which together give `position()` and `view_matrix()`), plus
+/// `fovy`, `near`, `far` and `aspect` for the projection.
+///
+/// Deliberately excluded:
+/// * `zoom_target` / `focal_point_target` / `pitch_target` / `yaw_target` —
+///   smoothing scratch state. A restore sets them equal to the value via the
+///   setters, which is the point of Concern 1; persisting them would let a
+///   half-finished animation be saved into a station.
+/// * `min_distance` / `max_distance` / `min_pitch` / `max_pitch` —
+///   constraints belonging to the camera rig, not to a viewpoint.
+///
+/// `aspect` is captured for provenance (so an A/B comparison can detect that
+/// two frames were taken at different window sizes) but is not applied on
+/// restore — see [`OrbitCamera::apply_state`].
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct CameraState {
+    /// Focal point (orbit centre), world space.
+    pub focal_point: [f32; 3],
+    /// Orbit radius, metres.
+    pub distance: f32,
+    /// Yaw, radians.
+    pub yaw: f32,
+    /// Pitch, radians.
+    pub pitch: f32,
+    /// Vertical field of view, **radians** (`CAMERA_CONVENTIONS.md` §2.1).
+    pub fovy: f32,
+    /// Near clip plane, metres.
+    pub near: f32,
+    /// Far clip plane, metres.
+    pub far: f32,
+    /// Aspect ratio at capture time. Recorded for provenance; not restored.
+    pub aspect: f32,
+}
+
+impl CameraState {
+    /// Whether another state was captured at the same aspect ratio.
+    ///
+    /// Two captures with differing aspect are not directly comparable frames
+    /// even if every other field matches, because the projection differs.
+    pub fn aspect_matches(&self, other: &CameraState) -> bool {
+        (self.aspect - other.aspect).abs() < 1e-6
+    }
+}
+
+/// A named, persisted camera viewpoint (ED-2 Concern 2).
+///
+/// This is the unit the T.2a "pinned station" method needs: a name plus the
+/// complete state, round-trippable through `.editor_preferences.json`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CameraStation {
+    /// User-facing name; also used to name capture files.
+    pub name: String,
+    /// The pinned view.
+    pub state: CameraState,
 }
 
 /// Ray for picking (origin + direction)
@@ -1158,5 +1273,150 @@ mod tests {
     fn test_ray_direction_normalized() {
         let ray = Ray::new(Vec3::ZERO, Vec3::new(3.0, 4.0, 0.0));
         assert_relative_eq!(ray.direction.length(), 1.0, epsilon = 0.01);
+    }
+
+    // ================================================================
+    // ED-2 Concern 1: smoothing-target regression tests
+    //
+    // `smooth_update` interpolates value -> target every frame at k=20, so a
+    // setter that writes the value but not the target is silently undone.
+    // These tests step the smoother the way the widget does (60 Hz) and assert
+    // the programmatic set SURVIVES. Verified to fail on pre-fix code: with
+    // `set_yaw`/`set_pitch` restored to their old one-line bodies, both
+    // `set_yaw_survives_smoothing` and `set_pitch_survives_smoothing` fail,
+    // and the observed drift is back to the ORIGINAL default yaw/pitch.
+    // ================================================================
+
+    /// Step the smoother the way the viewport widget does.
+    fn settle(camera: &mut OrbitCamera, frames: usize) {
+        for _ in 0..frames {
+            camera.smooth_update(1.0 / 60.0);
+        }
+    }
+
+    #[test]
+    fn set_yaw_survives_smoothing() {
+        let mut camera = OrbitCamera::default();
+        let target = 1.234_f32;
+        camera.set_yaw(target);
+        settle(&mut camera, 30); // 0.5 s — 10x the ~50 ms settle constant
+        assert_relative_eq!(camera.yaw(), target, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn set_pitch_survives_smoothing() {
+        let mut camera = OrbitCamera::default();
+        let target = 0.789_f32;
+        camera.set_pitch(target);
+        settle(&mut camera, 30);
+        assert_relative_eq!(camera.pitch(), target, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn set_distance_and_focal_point_survive_smoothing() {
+        // These two setters were always correct; pinned so a future edit
+        // cannot regress them the way yaw/pitch were.
+        let mut camera = OrbitCamera::default();
+        camera.set_distance(87.5);
+        camera.set_focal_point(Vec3::new(10.0, -3.0, 42.0));
+        settle(&mut camera, 30);
+        assert_relative_eq!(camera.distance(), 87.5, epsilon = 1e-4);
+        assert_relative_eq!(camera.focal_point().x, 10.0, epsilon = 1e-4);
+        assert_relative_eq!(camera.focal_point().y, -3.0, epsilon = 1e-4);
+        assert_relative_eq!(camera.focal_point().z, 42.0, epsilon = 1e-4);
+    }
+
+    #[test]
+    fn smooth_update_reports_not_animating_after_a_programmatic_set() {
+        // The direct statement of the invariant: a restored camera has nothing
+        // left to interpolate, so the viewport does not keep requesting repaints.
+        let mut camera = OrbitCamera::default();
+        camera.set_yaw(2.0);
+        camera.set_pitch(0.5);
+        camera.set_distance(50.0);
+        camera.set_focal_point(Vec3::new(1.0, 2.0, 3.0));
+        settle(&mut camera, 2);
+        assert!(
+            !camera.smooth_update(1.0 / 60.0),
+            "a fully-applied camera state must not still be animating"
+        );
+    }
+
+    // ================================================================
+    // ED-2 Concern 2: capture / apply exactness
+    // ================================================================
+
+    fn a_distinctive_camera() -> OrbitCamera {
+        let mut c = OrbitCamera::default();
+        c.set_focal_point(Vec3::new(-12.5, 33.25, 1971.75));
+        c.set_distance(137.5);
+        c.set_yaw(2.1);
+        c.set_pitch(-0.45);
+        c.set_fov(72.0);
+        c.set_aspect(1024.0, 768.0);
+        c
+    }
+
+    #[test]
+    fn capture_apply_round_trip_reproduces_the_view_matrix_exactly() {
+        let src = a_distinctive_camera();
+        let state = src.capture_state();
+
+        let mut dst = OrbitCamera::default();
+        dst.set_aspect(1024.0, 768.0);
+        dst.apply_state(&state);
+
+        // Byte-identical view matrix is the contract an A/B gate depends on.
+        assert_eq!(
+            dst.view_matrix().to_cols_array(),
+            src.view_matrix().to_cols_array(),
+            "restored view matrix must be bit-identical to the captured one"
+        );
+        assert_eq!(dst.capture_state(), state, "round-tripped state must match");
+    }
+
+    #[test]
+    fn restored_view_does_not_drift_when_the_smoother_runs() {
+        // This is the test that ties Concern 1 to Concern 2: a restore is only
+        // useful if the view is still there a frame later.
+        let src = a_distinctive_camera();
+        let state = src.capture_state();
+
+        let mut dst = OrbitCamera::default();
+        dst.set_aspect(1024.0, 768.0);
+        dst.apply_state(&state);
+        let immediately = dst.view_matrix().to_cols_array();
+
+        settle(&mut dst, 60); // a full second
+        assert_eq!(
+            dst.view_matrix().to_cols_array(),
+            immediately,
+            "restored view drifted while the smoother ran"
+        );
+        assert_eq!(dst.capture_state(), state);
+    }
+
+    #[test]
+    fn camera_state_serde_round_trips() {
+        let state = a_distinctive_camera().capture_state();
+        let json = serde_json::to_string(&state).expect("serialize");
+        let back: CameraState = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back, state);
+    }
+
+    #[test]
+    fn aspect_is_recorded_but_not_applied() {
+        // Documented decision: aspect belongs to the viewport size, so a
+        // restore must not force a stale value; but it IS captured so an A/B
+        // comparison can detect that two frames are not comparable.
+        let src = a_distinctive_camera(); // captured at 1024x768
+        let state = src.capture_state();
+        assert_relative_eq!(state.aspect, 1024.0 / 768.0, epsilon = 1e-6);
+
+        let mut dst = OrbitCamera::default();
+        dst.set_aspect(1920.0, 1080.0);
+        dst.apply_state(&state);
+        assert_relative_eq!(dst.capture_state().aspect, 1920.0 / 1080.0, epsilon = 1e-6);
+        assert!(!dst.capture_state().aspect_matches(&state));
     }
 }

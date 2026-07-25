@@ -37,7 +37,7 @@ use anyhow::{Context, Result};
 use std::sync::{Arc, Mutex};
 use tracing::{debug, trace, warn};
 
-use super::camera::OrbitCamera;
+use super::camera::{CameraState, OrbitCamera};
 use super::renderer::ViewportRenderer;
 use super::toolbar::{GridType, ViewportToolbar};
 use crate::entity_manager::EntityManager;
@@ -87,14 +87,14 @@ impl ViewportLayout {
     }
 }
 
-/// Camera bookmark for F1-F12 quick recall
-#[derive(Clone, Debug)]
-struct CameraBookmark {
-    focal_point: glam::Vec3,
-    distance: f32,
-    yaw: f32,
-    pitch: f32,
-}
+/// Camera bookmark for F1-F12 quick recall.
+///
+/// ED-2: this was a partial copy of the camera state (focal/distance/yaw/pitch
+/// only, dropping fov/near/far) restored through setters that did not sync the
+/// smoothing targets — so every recall snapped for one frame and drifted back.
+/// It is now an alias for [`CameraState`], the single capture/apply surface
+/// shared with the named stations, which makes F1-F12 exact by construction.
+type CameraBookmark = CameraState;
 
 /// 3D viewport widget for egui
 ///
@@ -152,6 +152,17 @@ pub struct ViewportWidget {
 
     /// Camera bookmarks (F1-F12)
     camera_bookmarks: [Option<CameraBookmark>; 12],
+
+    /// ED-2: a pending viewport capture, consumed by the next completed render.
+    ///
+    /// Deferred rather than immediate because the capture must read the texture
+    /// the viewport ACTUALLY rendered this frame; requesting from a UI callback
+    /// and servicing it right after `renderer.render` is what keeps this on the
+    /// live path.
+    pending_capture: Option<std::path::PathBuf>,
+
+    /// ED-2: the last capture that completed, for UI feedback: (path, w, h).
+    last_capture: Option<(std::path::PathBuf, u32, u32)>,
 
     /// Clipboard for copy/paste operations
     clipboard: Option<crate::clipboard::ClipboardData>,
@@ -290,6 +301,8 @@ impl ViewportWidget {
             camera_bookmarks: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
             ],
+            pending_capture: None,
+            last_capture: None,
             clipboard: None,
             cached_entity_count: 0,
             terrain_brush_active: false,
@@ -353,6 +366,8 @@ impl ViewportWidget {
             camera_bookmarks: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
             ],
+            pending_capture: None,
+            last_capture: None,
             clipboard: None,
             cached_entity_count: 0,
             terrain_brush_active: false,
@@ -886,6 +901,28 @@ impl ViewportWidget {
                         warn!(error = %e, "Viewport render failed");
                     }
                 });
+            }
+
+            // ED-2: service a pending capture against the texture that was
+            // just rendered — this is what makes the capture the live path.
+            if let Some(dest) = self.pending_capture.take() {
+                let state = self.camera.capture_state();
+                let result = self.with_renderer("capture", |renderer| {
+                    renderer.capture_frame_png(&texture, &dest)
+                });
+                match result {
+                    Some(Ok((w, h))) => {
+                        if let Err(e) = Self::write_capture_sidecar(&dest, &state) {
+                            warn!(error = %e, "capture sidecar write failed");
+                        }
+                        tracing::info!(path = %dest.display(), width = w, height = h, "viewport captured");
+                        self.last_capture = Some((dest, w, h));
+                    }
+                    Some(Err(e)) => {
+                        warn!(error = %e, path = %dest.display(), "viewport capture failed")
+                    }
+                    None => warn!("viewport capture skipped: renderer unavailable"),
+                }
             }
 
             // Register/update native texture with egui-wgpu (zero-copy GPU-direct display)
@@ -1713,6 +1750,9 @@ impl ViewportWidget {
 
         let mut clipboard_json = None;
         // Gizmo hotkeys (G/R/S for translate/rotate/scale, X/Y/Z for axis constraints, Enter/Escape)
+        // ED-2: set inside the input closure, serviced after it (the closure
+        // already borrows `self` mutably for bookmarks).
+        let mut capture_hotkey = false;
         let returned_json = ctx.input(|i| {
             use winit::keyboard::KeyCode;
 
@@ -1922,6 +1962,19 @@ impl ViewportWidget {
                 debug!("Grid snap size: {:.2}m", self.grid_snap_size);
             }
 
+            // ED-2: Ctrl+Shift+C — capture the viewport to captures/.
+            //
+            // Ctrl+Z/Y/C/V/D are already bound in this handler, so Shift
+            // disambiguates from the Ctrl+C copy binding. This calls the same
+            // `request_capture` the toolbar button calls; there is deliberately
+            // no second capture code path (the 5.C hotkey lesson).
+            if (i.modifiers.command || i.modifiers.ctrl)
+                && i.modifiers.shift
+                && i.key_pressed(egui::Key::C)
+            {
+                capture_hotkey = true;
+            }
+
             // Camera bookmarks: F1-F12 (restore), Shift+F1-F12 (save)
             let bookmark_keys = [
                 egui::Key::F1,
@@ -1942,19 +1995,11 @@ impl ViewportWidget {
                 if i.key_pressed(*key) {
                     if i.modifiers.shift {
                         // SAVE bookmark
-                        self.camera_bookmarks[slot] = Some(CameraBookmark {
-                            focal_point: self.camera.focal_point(),
-                            distance: self.camera.distance(),
-                            yaw: self.camera.yaw(),
-                            pitch: self.camera.pitch(),
-                        });
+                        self.camera_bookmarks[slot] = Some(self.camera.capture_state());
                         debug!("Saved camera bookmark F{}", slot + 1);
-                    } else if let Some(bookmark) = &self.camera_bookmarks[slot] {
-                        // RESTORE bookmark
-                        self.camera.set_focal_point(bookmark.focal_point);
-                        self.camera.set_distance(bookmark.distance);
-                        self.camera.set_yaw(bookmark.yaw);
-                        self.camera.set_pitch(bookmark.pitch);
+                    } else if let Some(bookmark) = self.camera_bookmarks[slot] {
+                        // RESTORE bookmark (exact — see CameraBookmark)
+                        self.camera.apply_state(&bookmark);
                         debug!("Restored camera bookmark F{}", slot + 1);
                     } else {
                         debug!(
@@ -1968,6 +2013,10 @@ impl ViewportWidget {
 
             clipboard_json
         });
+
+        if capture_hotkey {
+            self.request_capture(Self::default_capture_path("viewport"));
+        }
 
         if let Some(json) = returned_json {
             ctx.copy_text(json);
@@ -2196,6 +2245,81 @@ impl ViewportWidget {
     /// Get camera (read-only)
     pub fn camera(&self) -> &OrbitCamera {
         &self.camera
+    }
+
+    // ================================================================
+    // ED-2: camera pin/restore + viewport capture
+    //
+    // These four methods are the ONLY entry points. The hotkey, the menu item
+    // and the station panel all call them, so there is a single canonical path
+    // — the 5.C lesson (a save hotkey that bypassed the fixed save path).
+    // ================================================================
+
+    /// Pin the current view — the complete state, not a partial copy.
+    pub fn capture_camera_state(&self) -> CameraState {
+        self.camera.capture_state()
+    }
+
+    /// Restore a pinned view exactly. Stable: it does not drift (ED-2 Concern 1).
+    pub fn restore_camera_state(&mut self, state: &CameraState) {
+        self.camera.apply_state(state);
+    }
+
+    /// Request a capture of the viewport's next rendered frame.
+    ///
+    /// **The canonical capture entry point.** Serviced immediately after the
+    /// next `renderer.render`, reading back the very texture the viewport
+    /// displays, so what lands on disk is what the editor drew.
+    pub fn request_capture(&mut self, path: impl Into<std::path::PathBuf>) {
+        self.pending_capture = Some(path.into());
+    }
+
+    /// The most recent completed capture: `(path, width, height)`.
+    pub fn last_capture(&self) -> Option<&(std::path::PathBuf, u32, u32)> {
+        self.last_capture.as_ref()
+    }
+
+    /// Default capture path: `captures/<stem>_<unix_seconds>.png`.
+    ///
+    /// Seconds-resolution is deliberate and sufficient — a capture is a manual
+    /// or per-station action, not a per-frame one, and a stable human-readable
+    /// name is worth more here than collision-proofing. Station captures pass
+    /// an explicit path and never reach this.
+    pub fn default_capture_path(stem: &str) -> std::path::PathBuf {
+        let secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        std::path::PathBuf::from("captures").join(format!("{stem}_{secs}.png"))
+    }
+
+    /// Restore a station and capture it in one action (ED-2 Concern 4).
+    ///
+    /// This is the A/B primitive the T.2a pinned-station method needs: the
+    /// caller never flies the camera by hand. Because the restore is exact and
+    /// non-drifting, the frame that gets captured is the pinned view.
+    pub fn restore_and_capture(
+        &mut self,
+        state: &CameraState,
+        path: impl Into<std::path::PathBuf>,
+    ) {
+        self.restore_camera_state(state);
+        self.request_capture(path);
+    }
+
+    /// Write the sidecar JSON that accompanies a capture.
+    ///
+    /// A sidecar (rather than filename encoding) because the full state is
+    /// what makes a capture reproducible: an A/B comparison can assert the two
+    /// frames came from the same view, including `aspect`, which filename
+    /// encoding would drop.
+    fn write_capture_sidecar(path: &std::path::Path, state: &CameraState) -> Result<()> {
+        let sidecar = path.with_extension("camera.json");
+        let json = serde_json::to_string_pretty(state)
+            .context("serializing camera state for the capture sidecar")?;
+        std::fs::write(&sidecar, json)
+            .with_context(|| format!("writing capture sidecar {}", sidecar.display()))?;
+        Ok(())
     }
 
     /// Compute the ground-plane (Y=0) intersection for a given screen position.
