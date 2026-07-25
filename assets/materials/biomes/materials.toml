@@ -23,18 +23,35 @@
 [biome]
 name = "biomes"
 
+# Grassland = PolyHaven aerial_grass_rock (T.2c, 2026-07-25). BEFORE: a
+# synthetic near-featureless green albedo (lap 3.62) paired with the normal map
+# of `grass_medium_01`, an ALPHA-CUTOUT foliage card — the card's transparent
+# regions carry meaningless normals that shaded as hard black shards scattered
+# through the grass (T2A_OUTCOME.md §3.1). Cooked via cook_1k.py
+# cook_family_from_maps (mra packed from rough+ao -> true-MRA, measured R=0.0).
+# Provenance: THIRD_PARTY_LICENSES.md §15; evidence:
+# docs/audits/evidence/t2c_materials_2026-07-25/.
+# NOTE: the output stem stays `grass` deliberately — palette_remap.rs joins
+# MaterialLibrary names to layers by ALBEDO FILE STEM; renaming drops the
+# paintable set 7 -> 4.
 [[layer]]
 key = "grassland"
-albedo = "../grass.png"
-normal = "../grass_n.png"
-mra    = "../grass_mra.png"
+albedo = "../derived_1k/grass.png"
+normal = "../derived_1k/grass_n.png"
+mra    = "../derived_1k/grass_mra.png"
 tiling = [128.0, 128.0]
 
+# Desert = PolyHaven sand_01 (T.2c, 2026-07-25). BEFORE: 100% procedural
+# (tools/pbr_gen) — a synthetic diagonal-ripple albedo with an effectively FLAT
+# normal map (sd 0.07, i.e. no relief at all), which is why it read as "flat and
+# shiny" (T2A_OUTCOME.md §3.2). Dry/uneven natural sand, deliberately distinct
+# from slot 6's damp coastal `coast_sand_01` — the T.1 row-6 amendment.
+# Provenance: THIRD_PARTY_LICENSES.md §15. Stem stays `sand` (palette join).
 [[layer]]
 key = "desert"
-albedo = "../sand.png"
-normal = "../sand_n.png"
-mra    = "../sand_mra.png"
+albedo = "../derived_1k/sand.png"
+normal = "../derived_1k/sand_n.png"
+mra    = "../derived_1k/sand_mra.png"
 tiling = [128.0, 128.0]
 
 # Forest ground = PolyHaven forest_leaves_02 (director-selected, 2026-07-03),
@@ -59,11 +76,18 @@ normal = "../mountain_rock_n.png"
 mra    = "../mountain_rock_mra.png"
 tiling = [64.0, 64.0]
 
+# Tundra = PolyHaven snow_02 (T.2c, 2026-07-25). BEFORE: 100% procedural
+# (tools/pbr_gen) — albedo sd 2.16 on all three channels and a normal map with
+# sd 0.02, i.e. a smooth tone with no material structure whatsoever
+# (T2A_OUTCOME.md §3.2). snow_02 is a real powdery snowfield scan; snow_04 was
+# measured and REJECTED despite winning every variance metric because it is a
+# plowed field whose furrows would tile as directional stripes (T2C_OUTCOME.md
+# §1). Provenance: THIRD_PARTY_LICENSES.md §15. Stem stays `snow` (palette join).
 [[layer]]
 key = "tundra"
-albedo = "../snow.png"
-normal = "../snow_n.png"
-mra    = "../snow_mra.png"
+albedo = "../derived_1k/snow.png"
+normal = "../derived_1k/snow_n.png"
+mra    = "../derived_1k/snow_mra.png"
 tiling = [128.0, 128.0]
 
 [[layer]]

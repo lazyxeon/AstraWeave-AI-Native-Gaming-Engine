@@ -9,7 +9,7 @@ lifecycle_status: active
 integration_status: wired
 summary: "Terrain material slice: 8-slot canonical biome pack + loader, splat bake, 32-layer GPU blend (complements terrain.md). terrain_materials.md"
 owns: []
-doc_version: "1.4"
+doc_version: "1.5"
 last_verified_commit: c0753b551
 ---
 
@@ -22,7 +22,7 @@ last_verified_commit: c0753b551
 | **System name** | Terrain Material System |
 | **Primary crates** | `astraweave-render`, `astraweave-terrain`, `tools/aw_editor` |
 | **Document version** | 1.4 |
-| **Last verified against commit** | `c0753b551` (v1.4: T.2a Phase-1 aux-channel repair — see §8 Invariant 8 and the Revision note); prior `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
+| **Last verified against commit** | `bf57b5f1d` (v1.5: T.2c — real PBR materials for slots 0/1/4; see the v1.5 addendum, the slot table rows and Invariant 9. The T.2c beat commit follows this one); prior `c0753b551` (v1.4: T.2a Phase-1 aux-channel repair — see §8 Invariant 8 and the Revision note); prior `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
 | **Last verified date** | 2026-07-24 (v1.4 T.2a aux-channel repair); 2026-07-21 (v1.3 slot-6 update; v1.2 full pass); 2026-05-10 (full trace) |
 | **Status** | Active (canonical 32-layer pipeline) with transitional legacy residue |
 | **Owner notes** | Canonical reference example for the architecture trace campaign. Derived from forensic data-flow analysis on 2026-05-11. |
@@ -57,11 +57,11 @@ Two upstream stages landed after v1.1 and now feed Stage 1; both verified first-
 
 | Slot | Key | Albedo (resolves to) | Tiling | Note |
 |---|---|---|---|---|
-| 0 | grassland | `assets/materials/grass.png` | 128 | |
-| 1 | desert | `assets/materials/sand.png` | 128 | |
+| 0 | grassland | `assets/materials/derived_1k/grass.png` | 128 | **T.2c (2026-07-25): real material EXECUTED.** Was a synthetic flat-green albedo (lap 3.62) paired with the normal map of `grass_medium_01`, an **alpha-cutout foliage card** whose transparent-region normals shaded as hard black shards. Now PolyHaven `aerial_grass_rock` via `cook_family_from_maps` (true-MRA, measured R=0.00/sd 0.00). Provenance §15; outcome `docs/audits/T2C_OUTCOME.md`. Stem stays `grass` — see Invariant 9 |
+| 1 | desert | `assets/materials/derived_1k/sand.png` | 128 | **T.2c (2026-07-25): real material EXECUTED.** Was 100% procedural (`tools/pbr_gen`) with a normal map at sd **0.07** (no relief at all). Now PolyHaven `sand_01`; normal sd 0.07 -> 17.41, albedo lap 5.55 -> 17.62. Chosen to stay distinct from slot 6's damp coastal sand (T.1 row-6 amendment) — `aerial_sand` was rejected for being coastal. Stem stays `sand` |
 | 2 | forest | `assets/materials/derived_1k/tree_leaves.png` | 128 | AD.5.A Fix-1 re-point (2026-07-15) off gitignored `_downloaded/`; same upstream `forest_leaves_02`, true-MRA (in-file comment, `materials.toml:40-47`) |
 | 3 | mountain | `assets/materials/mountain_rock.png` | **64** | one repeat / 8 m vs 4 m for ground slots |
-| 4 | tundra | `assets/materials/snow.png` | 128 | |
+| 4 | tundra | `assets/materials/derived_1k/snow.png` | 128 | **T.2c (2026-07-25): real material EXECUTED.** Was 100% procedural, albedo sd 2.16 / normal sd **0.02**. Now PolyHaven `snow_02`; normal sd 0.02 -> 3.99. `snow_04` was rejected despite winning every variance metric — it is a plowed field whose furrows would tile as directional stripes. Stem stays `snow` |
 | 5 | swamp | `assets/materials/mud.png` | 128 | |
 | 6 | beach | `assets/materials/derived_1k/beach.png` | 128 | **T.1 (2026-07-21): distinct material EXECUTED** (was byte-identical to slot 1) — PolyHaven `coast_sand_01` cooked via `cook_family_from_maps` (true-MRA, measured R=0.0); provenance `THIRD_PARTY_LICENSES.md` §14, evidence `docs/audits/evidence/t1_beach_2026-07-21/`, outcome `docs/audits/T1_BEACH_OUTCOME.md`. Slot 6 has no MaterialLibrary palette name → biome-paint-only by design (paintable set stays 7; `aw_editor.md` Invariants 26/27 unaffected) |
 | 7 | river | `assets/materials/derived_1k/gravel.png` | 128 | ratified 2026-07-20 as honest **riverbed**; water surfacing is the T.W beat pair |
@@ -308,6 +308,7 @@ Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canoni
 | 6 | Pack slot order is `arrays.toml`-driven and matches `biome_id_to_slot` 1:1 — the three surfaces (arrays.toml indices · `biome_id_to_slot` match arms · `terrain_biome_placeholder` slot order) move together or biome coloring breaks silently (v1.2) | Yes (greppable + compile-time) | `arrays.toml:2-3` contract comment; exhaustive match (new `BiomeId` variant = compile error); `aw_editor.md` Invariant 27 |
 | 7 | Aux-channel semantics at load: an `orm` key is verbatim (AO-R/rough-G/metal-B); an `mra` key is R↔B-swizzled to ORM; `orm` wins when both present. A mislabeled file (ARM bytes under an `mra` key or vice versa) double-flips channels and zeroes AO / inflates metal — the AD.4.A D1 defect class (v1.2) | Yes | `canonical_terrain_pack.rs:178-184`, `load_mra_as_orm_bytes` `:221-227`; per-file channel measurement per the close-out lesson ("ARM/MRA channel keys must be evidenced per file, never pattern-copied") |
 | 8 | **No aux channel of a live pack slot may be a placeholder constant, and AO must rise with height.** A channel whose modal value covers > 90% of pixels (or whose IQR is 0) is a placeholder, not data — standard deviation does **not** detect this (`grass_mra` roughness had sd 13.43 while 99.5% of it was exactly 255). Metallic is the sole exception: a hard constant 0 is the post-D1 dielectric contract. Separately, occlusion rises with displacement — a peak is exposed — so an AO derivation must be positively correlated with its height source (T.2a; the shipped `1.0 - h` inversion had reached `mud_mra` at r = +0.991) | Yes | `tools/material_cook/channel_stats.py` (modal/IQR detector); `tools/material_cook/test_cook_1k.py::test_ao_orientation_and_normal_integration` pins the orientation of both AO derivations |
+| 9 | **A pack layer's palette identity is its ALBEDO FILE STEM, not its path or its `key`.** `palette_remap.rs::resolve` joins each `MaterialLibrary` entry name to a layer by `albedo_stem.eq_ignore_ascii_case(name)`, so re-pointing a slot to a new file is safe **only if the stem is preserved**. Changing slot 0/1/4's stems from `grass`/`sand`/`snow` would silently drop the paintable set from 7 entries to 4 — no error, no warning, the UI simply greys them out. This is why T.2c cooked to `derived_1k/{grass,sand,snow}.png` rather than to slug-named files (v1.5). Related: `assets/materials/grass.png` is additionally load-bearing as the `find_assets_dir()` sentinel (`viewport/types.rs:224,235`) and must not be deleted as "unused" | Yes | `palette_remap.rs::biomes_pack_resolves_exactly_seven_entries` asserts the paintable set `[0,1,3,4,5,12,20]`; `canonical_terrain_pack.rs::loads_biomes_pack_forest_slot_from_derived_1k` asserts the full 8-stem set against the live pack on disk |
 
 ---
 
@@ -412,6 +413,26 @@ Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canoni
 The current architecture is the result of a unification: at an earlier stage, terrain vertices carried both `biome_weights_0/1` and `material_ids/material_weights` as separate fields, with the splat builder reading the biome path and ignoring the material path. The audit doc `docs/audits/terrain_material_flow_investigation_2026-04-19.md` documents this prior state forensically. The fields were subsequently unified so that `material_ids/material_weights` is the canonical material attribute set and the splat builder now reads from it. The biome layer (in `astraweave-terrain`) continues to exist for worldgen and ecological purposes but no longer drives splat generation.
 
 The 32-layer canonical material system in `astraweave-render` represents a separate evolution from the older 8-layer procedural splat system in `astraweave-terrain/src/texture_splatting.rs`. Both still exist in the codebase; their relationship is one of the open questions in Section 11.
+
+**v1.5 addendum (2026-07-25, beat T.2c — real materials for the three synthetic slots).** The
+director's T.2a-gate verdict on slots 0/1/4: they "read as flat and shiny ... they definitely don't
+read as proper PBR materials". T.2a had already surfaced why and ruled it an art-direction purchase
+rather than a defect repair (its §3.1-3.2): slot 0 was a synthetic flat-green albedo paired with the
+normal map of `grass_medium_01`, an **alpha-cutout foliage card** whose transparent-region normals
+shaded as hard black shards; slots 1 and 4 were 100% procedural with normals at sd 0.07 and 0.02 —
+i.e. no relief whatsoever. All three are now API-verified CC0 PolyHaven ground scans
+(`aerial_grass_rock`, `sand_01`, `snow_02`), cooked via `cook_family_from_maps` (rough+ao, so the
+ARM-order trap is avoided by construction) with **R metallic = 0.00 / sd 0.00** measured on all
+three and **0 flat channels** pack-wide. The black shards are gone. Two consequences are recorded as
+the director's calls rather than as wins: the tundra now reads considerably darker (a real snow
+scan's de-lit albedo is a 165 grey where the procedural was 231 near-white), and the hex-tile
+lattice is now *visible* on tundra because the flat material previously had no contrast to reveal
+it — exactly what T.2a predicted. Slot stems were deliberately preserved (Invariant 9). Two
+non-material findings: the `generate_attribution_file` overwrite bug did **not** fire this time (the
+5.C fix holds — 18 -> 21 slugs, zero lost), and **T.2a's tundra station no longer frames tundra**,
+because T.2a's own Phase 3 reclassified the ground under the pin — station coordinates are only
+valid for the classification that produced them. Full evidence, per-channel tables, rejected
+candidates and station A/B: `docs/audits/T2C_OUTCOME.md`.
 
 **v1.4 addendum (2026-07-24, beat T.2a — Phase 1 data repair, commit `c0753b551`).** The pack's
 aux content was measurably corrupt and had been since the traced-9 import. Two independent defects

@@ -200,6 +200,30 @@ const STATIONS: &[Station] = &[
         yaw_deg: 45.0,
         pitch_deg: 32.0,
     },
+    // T.2c (2026-07-25) — slot 4 tundra, RE-PINNED.
+    //
+    // Station 05 above was pinned from the survey at `89fbe97eb`, when the
+    // Boreal world was 93.3% tundra. T.2a's own Phase 3 then widened the boreal
+    // band (`TUNDRA_MAX_TEMP_C` 0.0 -> -5.0), taking that world to 40.9% forest
+    // / 52.4% tundra — and the ground under station 05's pinned focal point
+    // reclassified to forest. Measured, not inferred: across the T.2c material
+    // swap, station 05's frame is BYTE-IDENTICAL in both legs while the boreal
+    // overview moves (lap 11.83 -> 19.38), which is only possible if 05 frames
+    // no slot-4 texels at all.
+    //
+    // Station 05 is deliberately LEFT IN PLACE — it is a T.2a A/B anchor and
+    // re-aiming it would silently invalidate the frames already registered to
+    // it. This station is the slot-4 probe instead, aimed at the CURRENT tundra
+    // representative vertex (weight >= 0.85, median-x) from a `T2A_MODE=survey`
+    // run at T.2c HEAD.
+    Station {
+        name: "07_boreal_tundra_t2c",
+        world: "boreal",
+        focal: [-43.1, 48.4, -1627.6],
+        distance: 20.0,
+        yaw_deg: 45.0,
+        pitch_deg: 55.0,
+    },
 ];
 
 fn out_root() -> PathBuf {

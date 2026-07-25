@@ -347,3 +347,21 @@ Executes the T-series ratification §2 **row-6 amendment** (director, 2026-07-20
 | `beach` | `coast_sand_01` | Coast Sand 01 / Rob Tuytel | 1 (texture) | 2048² |
 
 API-verified live 2026-07-21 (`api.polyhaven.com/info/coast_sand_01`: `type:1`, `authors {"Rob Tuytel":"All"}`, `max_resolution [8192,8192]`; description "damp coastal sand with brown, rough grain, scattered pebbles and gravel"). Prior related trace: §11.1's `coast_sand_01_1k.glb` (the Blender-baked wrapper in `assets/models/`) — that row traced the *model wrapper*; this row is the fresh provenance for the *texture-set acquisition* (a prior trace authorizes nothing by itself). Acquired via `tools/astraweave-assets fetch` (plain-HTTP Files API, no LFS traffic) → `assets/_downloaded/polyhaven/beach/beach_{albedo,normal,roughness,ao,arm}.png` (gitignored; manifest-pinned in `assets/asset_manifest.toml` T.1 block). Cooked to `assets/materials/derived_1k/beach{,_n,_mra}.png` — outcome doc: `docs/audits/T1_BEACH_OUTCOME.md`.
+
+## 15. T.2c — real PBR materials for the three synthetic biome slots (2026-07-25)
+
+Executes the director's T.2a-gate observation (2026-07-25): slots 0/1/4 of `assets/materials/biomes/` "read as flat and shiny … they definitely don't read as proper PBR materials". Slot 0 was a synthetic flat-green albedo paired with the normal map of an **alpha-cutout foliage card** (`grass_medium_01`), whose transparent regions shaded as hard black shards; slots 1 and 4 were 100% procedural (`tools/pbr_gen`) with effectively flat normals. Diagnosis: `docs/audits/T2A_OUTCOME.md` §3.1–3.2. Evidence: `docs/audits/evidence/t2c_materials_2026-07-25/` (raw `/info` + `/files` API captures, plus a capture of the site licence page). Site license: <https://polyhaven.com/license> (CC0 — "All assets … are all licensed as CC0").
+
+| slot | Poly Haven slug | name / author (API) | type | scan dims | acquired |
+|---|---|---|---|---|---|
+| 0 grassland | `aerial_grass_rock` | Aerial Grass Rock / Rob Tuytel | 1 (texture) | 15.0 × 15.0 m | 2048² |
+| 1 desert | `sand_01` | Sand 01 / Rob Tuytel | 1 (texture) | 1.5 × 1.5 m | 2048² |
+| 4 tundra | `snow_02` | Snow 02 / Rob Tuytel | 1 (texture) | 2.0 × 2.0 m | 2048² |
+
+All three API-verified live 2026-07-25 (`api.polyhaven.com/info/<slug>` + `/files`): `type:1` texture, `max_resolution [8192,8192]`, each shipping Diffuse + `nor_gl` + Rough + AO at 1k–8k. Each acquisition carries its **own fresh row** — no prior trace of any of these slugs is relied upon. Note `snow_02` is a *different* slug from the pre-existing `snow` manifest handle (which pins `snow_03`); the T.2c entries use distinct handles (`grassland`, `desert_sand`, `tundra_snow`) so no existing manifest row is disturbed.
+
+Acquired via `tools/astraweave-assets fetch` (provider flow, session manifest mirroring the permanent `assets/asset_manifest.toml` T.2c block) → `assets/_downloaded/polyhaven/{grassland,desert_sand,tundra_snow}/*_{albedo,normal,roughness,ao,arm}.png` (gitignored). Cooked via `cook_1k.py::cook_family_from_maps` (rough+ao path — the ARM-order trap avoided by construction; the fetched `_arm.png` files are deliberately unused) to `assets/materials/derived_1k/{grass,sand,snow}{,_n,_mra}.png`. Outcome doc: `docs/audits/T2C_OUTCOME.md`.
+
+**Attribution merge verified, not assumed:** the `generate_attribution_file` overwrite bug that fired in AD.4 and again in T.1 did **not** fire this time (the 5.C fix holds) — `assets/_downloaded/polyhaven/ATTRIBUTION.txt` went 18 → 21 slugs with **zero** lost entries (set-difference check against a pre-fetch baseline copy).
+
+**Also evaluated and rejected, recorded so the reasoning is not re-derived:** `leafy_grass` (2 m, real detail — but its shipped AO map is a hard constant 255, modal 100%, i.e. a flat placeholder, and its tone duplicates slot 2's leaf litter); `snow_04` (4.0 m, exact 1:1 tiling and the highest variance of any candidate — but it is a **plowed field** whose furrows would tile as directional stripes); `aerial_sand` (tags `costal`/`seaside`/`ocean`, which would undo the T.1 desert≠beach distinction); `sparse_grass` (too dark, R79/G61/B21, for a surface covering 91% of a world); `grass_path_2`/`_3` (a path runs through the scan — it would repeat as a visible stripe every 4 m).
