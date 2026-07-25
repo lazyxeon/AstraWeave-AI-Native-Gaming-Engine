@@ -545,10 +545,17 @@ unconditionally — is corrected in the same edit, since it now describes what t
 | | desert (ColdDesert) | 0.000% | 0.083% |
 | | grassland / swamp / beach / river | 0.000% | 0.000% |
 
-**Collateral shift is not "small", it is zero** — the three warm archetypes' censuses are identical
-in every slot, exactly as the temperature measurement predicted. Snow keeps the plurality on
-Boreal (52.4% tundra + 6.7% mountain rock vs 40.9% forest) with forest threading the warmer valley
-ground.
+**Collateral census shift is not "small", it is zero** — the three warm archetypes' censuses are
+identical in every slot, exactly as the temperature measurement predicted. Snow keeps the plurality
+on Boreal (52.4% tundra + 6.7% mountain rock vs 40.9% forest) with forest threading the warmer
+valley ground.
+
+**Scope of that claim, stated precisely:** it covers the per-archetype slot censuses, which is what
+was measured here. It is *not* a claim of zero collateral in the test suite. The full `--release`
+sweep — which had not landed when this section was written — surfaced exactly one test that this
+change breaks (`phase_1_6_f4_b_3_d_3_mixed_climate_chunk_produces_varied_biomes`), proven by
+flipping the constant. It is named, attributed and classified in §8.1. The census claim and the
+test-suite claim are separate, and only the first was verified at the time this table was produced.
 
 Measured 40.9% against the histogram's predicted 30.7%: the probe sampled a single lowland
 elevation while real terrain varies with the lapse rate and the coastal gate, so the prediction was
@@ -647,16 +654,23 @@ which is precisely why they were measured apart.
 | `cargo test -p aw_editor --test mutation_resistant_terrain` | **70 passed / 0 failed** |
 | `cargo run -p aw_trace_sync -- --check` | **in sync** — 26 traces, 133 crates; CLAUDE.md trace table + map links match front-matter |
 
-**One ladder item is still in flight, stated rather than glossed:** the full
-`cargo test -p astraweave-terrain --no-fail-fast` sweep (the ~2,439/63 figure `terrain.md` §10
-records from 2026-07-20) had not finished when this note was written. **It is genuinely slow, not
-stuck** — an earlier reading of "cargo at 2.5 s CPU over 37 minutes" was misdiagnosed here as a
-build-lock deadlock; the CPU was being burned by the *test binary* cargo was waiting on, and one
-target alone (`phase_1_6_f3_phase_4_diagnostic`) accumulated **2,820 s of CPU** in the debug
-profile. Two runs were killed on that bad reading before it was corrected. The sweep is being
-re-taken with `--release`, which is how this repo runs its heavy terrain suites (cf.
-`tw1_dip_census`). Partial debug-profile total at 13 of ~56 targets: 967 passed / 12 failed /
-5 ignored.
+**The full sweep has now landed** (it was in flight when this note was first written):
+
+```
+cargo test -p astraweave-terrain --release --no-fail-fast
+TOTAL passed=2440 failed=64 ignored=15
+```
+
+against the `terrain.md` §10 baseline of **2,439 passed / 63 failed** (measured 2026-07-20). Delta:
+**+1 passed, +1 failed** — and the +1 failure is caused by this beat. It is named and attributed in
+§8.1 rather than folded into the rot count.
+
+The sweep is genuinely slow, not stuck — an earlier reading of "cargo at 2.5 s CPU over 37 minutes"
+was misdiagnosed here as a build-lock deadlock; the CPU was being burned by the *test binary* cargo
+was waiting on, and one target alone (`phase_1_6_f3_phase_4_diagnostic`) accumulated **2,820 s of
+CPU** in the debug profile. Two runs were killed on that bad reading before it was corrected. The
+landed number above is `--release`, which is how this repo runs its heavy terrain suites (cf.
+`tw1_dip_census`).
 
 The rigorous comparison for this beat is the `--lib` row above, which was measured *at both ends*
 (base `89fbe97eb` and HEAD) in this session and matches name-for-name.
@@ -666,10 +680,42 @@ The rigorous comparison for this beat is the `--lib` row above, which was measur
 The seven `astraweave-terrain --lib` failures are **unchanged in name and count** by this beat.
 Four are the pre-E3 D5FIX/golden family already adjudicated in `E3_PREFLIGHT_2026-07.md` §2.4, and
 three (`temperature_golden_value_default_config`, the two `fbm_*_affects_output`) were already
-failing at the base. **Phase 3 added no new baseline rot** — it changed a classification threshold
-that no test asserts, and the assertions that *do* bound it (canonical-tundra, the Equatorial and
-Desert `BorealForest < 0.005` distribution tests, `every_biome_appears_in_some_archetype`) all
-still pass.
+failing at the base.
+
+**Phase 3 added exactly one new failure, and it is _not_ baseline rot.** An earlier revision of this
+section claimed Phase 3 "changed a classification threshold that no test asserts". The full sweep
+falsified that, so the claim is retracted and replaced with the measurement:
+
+```
+phase_1_6_f4_b_3_d_3_diagnostic::phase_1_6_f4_b_3_d_3_mixed_climate_chunk_produces_varied_biomes
+  → edge-of-world chunk should produce at least 2 distinct BiomeIds; got 1 unique IDs: {BorealForest}
+```
+
+Causation was proven by flipping the single constant and re-running the same target in the same
+profile — nothing else changed:
+
+| `TUNDRA_MAX_TEMP_C` | `--test phase_1_6_f4_b_3_d_3_diagnostic` |
+|---|---|
+| `0.0` (pre-T.2a) | **6 passed / 0 failed** |
+| `-5.0` (T.2a Phase 3) | 5 passed / **1 failed** |
+
+**T.G must not inherit this as re-bake work.** The other 63 are golden/baseline assertions that
+re-bake together against ratified-final terrain. This one is a *structural liveness* test — its own
+header states the intent: "if every vertex in a varied-climate chunk gets the same biome ID, the
+refactor failed." It asserts that per-vertex biome lookup is wired, not that a specific value holds.
+So the split T.G inherits is **63 re-bake-class + 1 structural**.
+
+**The invariant it guards is intact.** Widening the boreal band did not make the world uniform; it
+made *this sampled chunk* uniform. Probed across chunks (−8..=8 step 4, seed 12345) under all six
+`ClimateBias` values: **15 of 25 chunks (60%) still contain ≥2 distinct BiomeIds**, with six biomes
+present across the sample (TemperateDeciduousForest 19, BorealForest 11, Alpine 8, SnowCap 6,
+TemperateGrassland 4, Beach 3). Chunk (8,8) is simply one of the 40% that now resolve uniformly.
+
+**Deliberately not repaired in this beat.** Re-pointing the test at a chunk that still straddles
+would make it green, but the correct sample depends on the *final* threshold — and `TUNDRA_MAX_TEMP_C`
+is one of the three one-line values the director may amend at this gate (§5.2). Fixing the test
+before the constant is ratified would bake in a sample chosen for a value that may not survive. It
+is therefore left failing, fully attributed, as a gate item.
 
 ### 8.2 A pre-existing failure this beat found but did not fix
 
