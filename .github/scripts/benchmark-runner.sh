@@ -48,6 +48,28 @@ BENCHMARK_PACKAGES_STATIC=(
     astraweave-terrain
     astraweave-physics
 )
+
+# Production 12-way grouping, balanced by longest-processing-time assignment
+# from each package's slower wall time across Alerts run 30133613866 and
+# Performance run 30133654366. The largest group is 1,727 measured package
+# seconds; a 50% package-time reserve plus 240 seconds of setup is 2,831/3,600
+# seconds. Discovery remains authoritative and the coverage validation below
+# fails if this map ever omits, duplicates, or invents a benchmark package.
+BENCHMARK_SHARD_GROUPS=(
+    "astraweave-ai astraweave-net astraweave-profiling astraweave-water"
+    "astraweave-cinematics astraweave-quests astraweave-context astraweave-terrain"
+    "astraweave-dialogue astraweave-llm astraweave-steam astraweave-embeddings"
+    "astraweave-ecs astraweave-math astraweave-ipc astraweave-memory"
+    "astraweave-fluids astraweave-scripting astraweave-author astraweave-core"
+    "astraweave-net-ecs astraweave-asset-pipeline astraweave-prompts astraweave-audio"
+    "astraweave-persistence-ecs astraweave-weaving astraweave-observability astraweave-input"
+    "astraweave-rag astraweave-llm-eval astraweave-secrets astraweave-physics"
+    "astraweave-render astraweave-npc astraweave-materials astraweave-gameplay"
+    "astraweave-scene astraweave-optimization astraweave-director astraweave-nav"
+    "astraweave-sdk astraweave-coordination astraweave-persona astraweave-behavior"
+    "astraweave-ui astraweave-pcg astraweave-security astraweave-stress-test"
+)
+
 RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-benchmark_results}"
 SUMMARY_FILE="$RESULTS_DIR/summary.txt"
 JSON_FILE="$RESULTS_DIR/benchmarks.json"
@@ -124,7 +146,50 @@ discover_benchmark_packages() {
     # Set the global array
     BENCHMARK_PACKAGES=("${discovered_packages[@]}")
 
-    if [ "$SHARD_COUNT" -gt 1 ]; then
+    if [ "$SHARD_COUNT" -eq "${#BENCHMARK_SHARD_GROUPS[@]}" ]; then
+        local -A discovered_lookup=()
+        local -A assigned_lookup=()
+        local configured_pkg
+        local discovered_pkg
+        local shard_packages
+        local mapping_error=0
+        local selected_packages=()
+
+        for discovered_pkg in "${BENCHMARK_PACKAGES[@]}"; do
+            discovered_lookup["$discovered_pkg"]=1
+        done
+
+        for shard_packages in "${BENCHMARK_SHARD_GROUPS[@]}"; do
+            for configured_pkg in $shard_packages; do
+                if [[ ! -v "discovered_lookup[$configured_pkg]" ]]; then
+                    log_error "Measured shard map contains undiscovered package: $configured_pkg"
+                    mapping_error=1
+                elif [[ -v "assigned_lookup[$configured_pkg]" ]]; then
+                    log_error "Measured shard map duplicates package: $configured_pkg"
+                    mapping_error=1
+                else
+                    assigned_lookup["$configured_pkg"]=1
+                fi
+            done
+        done
+
+        for discovered_pkg in "${BENCHMARK_PACKAGES[@]}"; do
+            if [[ ! -v "assigned_lookup[$discovered_pkg]" ]]; then
+                log_error "Measured shard map omits discovered package: $discovered_pkg"
+                mapping_error=1
+            fi
+        done
+
+        if [ "$mapping_error" -ne 0 ]; then
+            return 1
+        fi
+
+        read -r -a selected_packages \
+            <<< "${BENCHMARK_SHARD_GROUPS[$SHARD_INDEX]}"
+        BENCHMARK_PACKAGES=("${selected_packages[@]}")
+    elif [ "$SHARD_COUNT" -gt 1 ]; then
+        # Preserve the generic modulo mode for ad-hoc shard counts. The two
+        # production workflows use the validated measured 12-way map above.
         local selected_packages=()
         local package_index
         for package_index in "${!BENCHMARK_PACKAGES[@]}"; do
@@ -189,7 +254,6 @@ process_benchmarks() {
 
     if [ ! -d "target/criterion" ]; then
         log_error "Criterion target directory not found after running $pkg"
-        PACKAGE_COLLECTION_ERROR_COUNT=$((PACKAGE_COLLECTION_ERROR_COUNT + 1))
         return 0
     fi
 

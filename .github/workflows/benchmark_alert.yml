@@ -140,12 +140,16 @@ jobs:
           unique_package_count=$(jq '[.[].package] | unique | length' benchmark_results/package-status.json)
           collected_package_count=$(jq '[.[] | select(.collection_status == "collected")] | length' benchmark_results/package-status.json)
           exception_count=$(jq '[.[] | select(.collection_status == "exception")] | length' benchmark_results/package-status.json)
+          no_output_failure_count=$(jq '[.[] | select(
+            .execution_status != "success" and .benchmark_count == 0
+          )] | length' benchmark_results/package-status.json)
           failed_package_count=$(jq '[.[] | select(
             .execution_status != "success" or
             (.collection_status != "collected" and .collection_status != "exception")
           )] | length' benchmark_results/package-status.json)
           benchmark_count=$(jq 'length' benchmark_results/benchmarks.json)
-          accounted_count=$((collected_package_count + exception_count))
+          collection_accounted_count=$((collected_package_count + exception_count))
+          record_accounted_count=$unique_package_count
 
           jq -r '.[] | select(
             .execution_status != "success" or
@@ -165,7 +169,7 @@ jobs:
           healthy=false
           if [ "$complete" = true ] &&
              [ "$failed_package_count" -eq 0 ] &&
-             [ "$accounted_count" -eq 48 ]; then
+             [ "$collection_accounted_count" -eq 48 ]; then
             healthy=true
           fi
 
@@ -175,9 +179,11 @@ jobs:
             echo "Shard status files: ${#status_files[@]}/12"
             echo "Shard timing files: ${#timing_files[@]}/12"
             echo "Package records: $package_count (unique: $unique_package_count; expected: 48)"
+            echo "Package records accounted for: $record_accounted_count/48"
             echo "Packages with collected results: $collected_package_count"
             echo "Named collection exceptions: $exception_count"
-            echo "Packages accounted for: $accounted_count/48"
+            echo "Named no-output execution failures: $no_output_failure_count"
+            echo "Packages with collection output or exception: $collection_accounted_count/48"
             echo "Failed packages: $failed_package_count"
             echo "Benchmark results collected: $benchmark_count"
             echo "Complete: $complete"
@@ -197,7 +203,8 @@ jobs:
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
           echo "healthy=$healthy" >> "$GITHUB_OUTPUT"
           echo "package_count=$package_count" >> "$GITHUB_OUTPUT"
-          echo "accounted_count=$accounted_count" >> "$GITHUB_OUTPUT"
+          echo "record_accounted_count=$record_accounted_count" >> "$GITHUB_OUTPUT"
+          echo "collection_accounted_count=$collection_accounted_count" >> "$GITHUB_OUTPUT"
           echo "failed_package_count=$failed_package_count" >> "$GITHUB_OUTPUT"
           echo "benchmark_count=$benchmark_count" >> "$GITHUB_OUTPUT"
 
