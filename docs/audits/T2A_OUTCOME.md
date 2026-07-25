@@ -647,12 +647,19 @@ which is precisely why they were measured apart.
 | `cargo test -p aw_editor --test mutation_resistant_terrain` | **70 passed / 0 failed** |
 | `cargo run -p aw_trace_sync -- --check` | **in sync** — 26 traces, 133 crates; CLAUDE.md trace table + map links match front-matter |
 
-**One ladder item was not completed, stated rather than glossed:** the full
+**One ladder item is still in flight, stated rather than glossed:** the full
 `cargo test -p astraweave-terrain --no-fail-fast` sweep (the ~2,439/63 figure `terrain.md` §10
-records from 2026-07-20) was launched but deadlocked on the cargo build lock against this session's
-other invocations — 2.5 s of CPU in 37 minutes — and was killed at a partial 967/12/5, which is
-**not** a citable full-suite number. The rigorous comparison is the `--lib` one in the row above,
-which was measured *at both ends* (base and HEAD) in this session and matches name-for-name.
+records from 2026-07-20) had not finished when this note was written. **It is genuinely slow, not
+stuck** — an earlier reading of "cargo at 2.5 s CPU over 37 minutes" was misdiagnosed here as a
+build-lock deadlock; the CPU was being burned by the *test binary* cargo was waiting on, and one
+target alone (`phase_1_6_f3_phase_4_diagnostic`) accumulated **2,820 s of CPU** in the debug
+profile. Two runs were killed on that bad reading before it was corrected. The sweep is being
+re-taken with `--release`, which is how this repo runs its heavy terrain suites (cf.
+`tw1_dip_census`). Partial debug-profile total at 13 of ~56 targets: 967 passed / 12 failed /
+5 ignored.
+
+The rigorous comparison for this beat is the `--lib` row above, which was measured *at both ends*
+(base `89fbe97eb` and HEAD) in this session and matches name-for-name.
 
 ### 8.1 Golden/baseline rot for T.G — the numbers to inherit
 
