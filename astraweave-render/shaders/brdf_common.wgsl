@@ -46,47 +46,27 @@ fn diffuse_burley(NdotV: f32, NdotL: f32, VdotH: f32, roughness: f32) -> f32 {
 }
 
 // ======================================================================
-// Material LOD: coverage-based shading simplification
+// Unified PBR BRDF
 // ======================================================================
 
-// Returns material LOD level based on screen-space coverage of a fragment.
-// Uses fwidth() to estimate the world-space area covered by a single pixel:
-//   LOD 0: full quality (Burley diffuse + GGX + Kulla-Conty multiscatter)
-//   LOD 1: standard quality (Burley diffuse + GGX, skip multiscatter)
-//   LOD 2: minimal (Lambertian diffuse + Schlick specular approx)
-fn compute_material_lod(world_pos: vec3<f32>) -> u32 {
-    // fwidth(world_pos) = abs(dpdx) + abs(dpdy): world-space extent of this pixel.
-    let pixel_footprint = length(fwidth(world_pos));
-    if (pixel_footprint < 0.5) {
-        return 0u; // Close: full quality
-    }
-    if (pixel_footprint < 2.0) {
-        return 1u; // Medium: skip multiscatter
-    }
-    return 2u; // Far: Lambertian + approximate specular
-}
+// T.2d.F (2026-07-25, director-ratified): the material-LOD tiers are RETIRED.
+// The LOD1|2 threshold (pixel footprint 2.0) was a visible camera-anchored
+// detail boundary, and because fwidth(world_pos) includes the height
+// derivative the per-pixel tier selection dithered over rough ground (40-55%
+// of far-field high-frequency energy was tier flicker). Every fragment now
+// shades with the one full BRDF below, so appearance judgments no longer
+// depend on where the camera was. Do NOT reintroduce a stepped shading tier
+// (`renderer.rs::material_lod_tiers_are_retired` enforces this); the ratified
+// fallback for any future perf need is a falloff CONTINUOUS in footprint.
+// Full trail: docs/audits/T2D_CAMERA_LIGHT.md §10, docs/audits/T2DF_OUTCOME.md.
 
-// ======================================================================
-// Unified PBR BRDF with LOD tiers
-// ======================================================================
-
-// Unified PBR BRDF: Cook-Torrance specular + Burley diffuse.
-// Returns (diffuse + specular) * NdotL — ready to multiply by radiance and shadow.
+// Unified PBR BRDF: Cook-Torrance specular + Burley diffuse + Kulla-Conty
+// multiscatter energy compensation.
+// Returns (diffuse + specular + multiscatter) * NdotL — ready to multiply by
+// radiance and shadow.
 fn evaluate_brdf(
     N: vec3<f32>, V: vec3<f32>, L: vec3<f32>,
     base_color: vec3<f32>, metallic: f32, roughness: f32, F0: vec3<f32>
-) -> vec3<f32> {
-    return evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, 0u);
-}
-
-// LOD-aware PBR BRDF. Callers pass lod from compute_material_lod().
-// LOD 0: full (GGX + Burley + Kulla-Conty multiscatter)
-// LOD 1: standard (GGX + Burley, no multiscatter — saves ~15 ALU)
-// LOD 2: minimal (Lambertian + Schlick specular approx — saves ~30 ALU)
-fn evaluate_brdf_lod(
-    N: vec3<f32>, V: vec3<f32>, L: vec3<f32>,
-    base_color: vec3<f32>, metallic: f32, roughness: f32, F0: vec3<f32>,
-    lod: u32
 ) -> vec3<f32> {
     let H = normalize(V + L);
     let NdotL = max(dot(N, L), 0.0);
@@ -94,20 +74,6 @@ fn evaluate_brdf_lod(
     let NdotH = max(dot(N, H), 0.0);
     let VdotH = max(dot(V, H), 0.0);
 
-    // LOD 2: minimal — Lambertian diffuse + Schlick specular approximation.
-    // Skips GGX NDF, Smith visibility, Burley retroreflection, and multiscatter.
-    if (lod >= 2u) {
-        let kd = (vec3<f32>(1.0) - F0) * (1.0 - metallic);
-        let diffuse = kd * base_color * INV_PI;
-        let F = fresnel_schlick(VdotH, F0);
-        // Approximate specular: Fresnel reflection scaled to conserve energy.
-        // At high roughness this over-estimates, but sub-pixel fragments are
-        // imperceptibly small so the visual error is negligible.
-        let spec_approx = F * 0.25;
-        return (diffuse + spec_approx) * NdotL;
-    }
-
-    // LOD 0 and 1: full GGX specular + Burley diffuse
     let D = distribution_ggx(NdotH, roughness);
     let Vis = visibility_smith_ggx(NdotV, NdotL, roughness);
     let F = fresnel_schlick(VdotH, F0);
@@ -116,14 +82,9 @@ fn evaluate_brdf_lod(
     let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
     let diffuse = kd * base_color * diffuse_burley(NdotV, NdotL, VdotH, roughness);
 
-    // LOD 1: skip Kulla-Conty multiscatter (saves ~15 ALU per fragment).
-    if (lod >= 1u) {
-        return (diffuse + specular) * NdotL;
-    }
-
-    // LOD 0: full quality with Kulla-Conty multiscatter energy compensation
-    // (Turquin 2019 analytical approximation). Single-scatter BRDF loses
-    // 20-40% energy at roughness > 0.5; this recovers the inter-reflection energy.
+    // Kulla-Conty multiscatter energy compensation (Turquin 2019 analytical
+    // approximation). Single-scatter BRDF loses 20-40% energy at
+    // roughness > 0.5; this recovers the inter-reflection energy.
     let a = roughness * roughness;
     let E = 1.0 - 1.4594 * a * NdotV + 0.8868 * a * a * NdotV * NdotV
           + 0.5716 * a * NdotV - 0.0159 * a * a;

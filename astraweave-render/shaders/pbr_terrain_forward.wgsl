@@ -14,7 +14,7 @@
 // splat textures are bound at group(2).
 //
 // Phase 1 lighting scope (per TERRAIN_MATERIAL_SYSTEM_CAMPAIGN.md §3):
-//   - Sun direct lighting: Cook-Torrance + Burley via evaluate_brdf_lod
+//   - Sun direct lighting: Cook-Torrance + Burley via evaluate_brdf
 //   - Ambient fallback: SHADER_SRC's 0.35×ambient_color formula
 //   - Distance fog: SHADER_SRC's apply_scene_fog linear+exp blend
 //   - NO shadows, IBL, SSGI, cloud shadows, or screen tint (Phase 3 re-adds
@@ -365,11 +365,11 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let roughness = clamp(final_roughness, 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04), base_color, metallic);
 
-    // 5. LOD-aware BRDF (Cook-Torrance + Burley) — same helper SHADER_SRC uses.
-    let mat_lod = compute_material_lod(in.world_pos);
-    let brdf_result = evaluate_brdf_lod(
-        N, V, L, base_color, metallic, roughness, F0, mat_lod,
-    );
+    // 5. Unified BRDF (Cook-Torrance + Burley + multiscatter) — same helper
+    //    SHADER_SRC uses. The material-LOD tiers were retired in T.2d.F: the
+    //    LOD1|2 footprint threshold was the director-observed camera-anchored
+    //    boundary on this very terrain (docs/audits/T2D_CAMERA_LIGHT.md §10).
+    let brdf_result = evaluate_brdf(N, V, L, base_color, metallic, roughness, F0);
 
     // 6. Direct sun lighting (no shadow cascade in Phase 1).
     let radiance = uScene.sun_color * uScene.sun_intensity;

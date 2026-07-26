@@ -160,14 +160,15 @@ const TERRAIN_SPLAT_SHADER: &str = concat!(
 
 /// Concatenated WGSL source for the Phase 1 forward-lit splat pipeline.
 ///
-/// Composed as `constants.wgsl` + `brdf_common.wgsl` + `stochastic_tiling.wgsl`
-/// + `pbr_terrain_forward.wgsl`, the same ordering the shader-validation test
-/// uses (see
+/// Composed as `constants.wgsl`, then `brdf_common.wgsl`, then
+/// `stochastic_tiling.wgsl`, then `pbr_terrain_forward.wgsl` — the same
+/// ordering the shader-validation test uses (see
 /// `astraweave-render/tests/shader_validation.rs::test_pbr_terrain_forward_validates_with_prefix`).
 /// The forward shader references `PI` from constants.wgsl, calls
-/// `evaluate_brdf_lod` + `compute_material_lod` from brdf_common.wgsl, and
-/// `hex_offsets` from stochastic_tiling.wgsl (E3-terrain 2026-07-03: hex-tile
-/// stochastic sampling to break texture repetition at real-world tiling).
+/// `evaluate_brdf` from brdf_common.wgsl (the material-LOD tiers were retired
+/// in T.2d.F — docs/audits/T2DF_OUTCOME.md), and `hex_offsets` from
+/// stochastic_tiling.wgsl (E3-terrain 2026-07-03: hex-tile stochastic
+/// sampling to break texture repetition at real-world tiling).
 const TERRAIN_FORWARD_SHADER: &str = concat!(
     include_str!("../shaders/constants.wgsl"),
     "\n",

@@ -227,11 +227,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
 
-    // Material LOD: simplify shading for sub-pixel or distant fragments.
-    let mat_lod = compute_material_lod(input.world_pos);
-
-    // Unified BRDF: Cook-Torrance specular + Burley diffuse (from brdf_common.wgsl)
-    let brdf_result = evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, mat_lod);
+    // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
+    // (from brdf_common.wgsl). One BRDF for every fragment — the material-LOD
+    // tiers were retired in T.2d.F (visible footprint-2.0 boundary + tier
+    // dithering; docs/audits/T2DF_OUTCOME.md).
+    let brdf_result = evaluate_brdf(N, V, L, base_color, metallic, roughness, F0);
 
     let radiance = uScene.sun_color * uScene.sun_intensity; // from SceneEnv UBO
 
@@ -290,18 +290,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let cloud_shadow = sample_cloud_shadow(input.world_pos);
     var lit_color = brdf_result * radiance * shadow * cloud_shadow;
 
-    // IBL indirect lighting — skip for distant (LOD 2) fragments.
-    // At LOD 2, fragments are sub-pixel or far away: 3 cubemap samples
-    // are wasted on invisible detail. Use a cheap ambient approximation.
-    if (mat_lod < 2u) {
-        let ibl_color = compute_ibl(N, V, base_color, metallic, roughness, F0);
-        lit_color = lit_color + ibl_color;
-    } else {
-        // Approximate IBL as diffuse-only irradiance (1 cubemap sample).
-        let kd = (1.0 - metallic);
-        let approx_irr = textureSampleLevel(ibl_irradiance, ibl_sampler, N, 0.0).rgb;
-        lit_color = lit_color + base_color * kd * approx_irr * uIbl.ibl_intensity;
-    }
+    // IBL indirect lighting. Formerly gated on the material-LOD tier (distant
+    // fragments got a 1-sample diffuse-only approximation) — that gate shared
+    // the tiers' footprint-2.0 threshold and died with them in T.2d.F, so
+    // every fragment now takes the full IBL path.
+    let ibl_color = compute_ibl(N, V, base_color, metallic, roughness, F0);
+    lit_color = lit_color + ibl_color;
 
     // Screen-space GI: sample indirect diffuse from SSGI/Lumen pipeline.
     // When no GI pass is active, gi_tex is a 1x1 black texture → adds zero.
@@ -567,11 +561,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     var roughness = clamp(uMaterial.roughness, 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
 
-    // Material LOD: simplify shading for distant / sub-pixel skinned fragments.
-    let mat_lod = compute_material_lod(input.world_pos);
-
-    // Unified BRDF: Cook-Torrance specular + Burley diffuse (from brdf_common.wgsl)
-    let brdf_result = evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, mat_lod);
+    // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
+    // (from brdf_common.wgsl). One BRDF for every fragment — the material-LOD
+    // tiers were retired in T.2d.F (docs/audits/T2DF_OUTCOME.md).
+    let brdf_result = evaluate_brdf(N, V, L, base_color, metallic, roughness, F0);
 
     let radiance = uScene.sun_color * uScene.sun_intensity;
     // Cascaded shadow sampling with edge fade (same as static path)
@@ -7949,44 +7942,51 @@ mod tests {
         );
     }
 
+    /// T.2d.F (2026-07-25, director-ratified): the material-LOD tiers are
+    /// RETIRED. `compute_material_lod`'s LOD1|2 threshold (pixel footprint
+    /// 2.0) was convicted as a visible camera-anchored detail boundary
+    /// (matched to 4 px in two independent frames), and the per-pixel tier
+    /// selection dithered over rough ground — 40-55% of far-field
+    /// high-frequency energy was tier flicker. Full trail:
+    /// `docs/audits/T2D_CAMERA_LIGHT.md` §10, `docs/audits/T2DF_OUTCOME.md`.
+    ///
+    /// This test asserts the ABSENCE of the tier machinery in every shader
+    /// that carried it — it fails on pre-T.2d.F code by construction, and it
+    /// fails again if anyone reintroduces a stepped shading tier. The ratified
+    /// fallback for any future perf need is a falloff CONTINUOUS in footprint,
+    /// never a threshold.
     #[test]
-    fn brdf_common_contains_material_lod_functions() {
+    fn material_lod_tiers_are_retired() {
         let brdf_src = include_str!("../shaders/brdf_common.wgsl");
+        let terrain_src = include_str!("../shaders/pbr_terrain_forward.wgsl");
+        for (name, src) in [
+            ("brdf_common.wgsl", brdf_src),
+            ("SHADER_SRC (static PBR)", SHADER_SRC),
+            ("SKINNED_SHADER_SRC", SKINNED_SHADER_SRC),
+            ("pbr_terrain_forward.wgsl", terrain_src),
+        ] {
+            assert!(
+                !src.contains("compute_material_lod"),
+                "{name}: compute_material_lod is retired (T.2d.F) and must not reappear"
+            );
+            assert!(
+                !src.contains("evaluate_brdf_lod"),
+                "{name}: evaluate_brdf_lod is retired (T.2d.F); use evaluate_brdf"
+            );
+            assert!(
+                !src.contains("mat_lod"),
+                "{name}: no mat_lod plumbing may remain after the tier retirement"
+            );
+        }
+        // The single unified BRDF survives, multiscatter included — deleting
+        // the tiers must not have deleted the full-quality path itself.
         assert!(
-            brdf_src.contains("compute_material_lod"),
-            "brdf_common.wgsl must contain compute_material_lod"
+            brdf_src.contains("fn evaluate_brdf("),
+            "brdf_common.wgsl must keep the unified evaluate_brdf"
         );
         assert!(
-            brdf_src.contains("evaluate_brdf_lod"),
-            "brdf_common.wgsl must contain evaluate_brdf_lod"
-        );
-        // evaluate_brdf should delegate to evaluate_brdf_lod
-        assert!(
-            brdf_src
-                .contains("evaluate_brdf_lod(N, V, L, base_color, metallic, roughness, F0, 0u)"),
-            "evaluate_brdf should delegate to evaluate_brdf_lod with LOD 0"
-        );
-    }
-
-    #[test]
-    fn shader_uses_material_lod() {
-        let shader = SHADER_SRC;
-        assert!(
-            shader.contains("compute_material_lod"),
-            "static PBR shader should compute material LOD"
-        );
-        assert!(
-            shader.contains("evaluate_brdf_lod"),
-            "static PBR shader should call evaluate_brdf_lod"
-        );
-        let skinned = SKINNED_SHADER_SRC;
-        assert!(
-            skinned.contains("compute_material_lod"),
-            "skinned PBR shader should compute material LOD"
-        );
-        assert!(
-            skinned.contains("evaluate_brdf_lod"),
-            "skinned PBR shader should call evaluate_brdf_lod"
+            brdf_src.contains("multiscatter"),
+            "the Kulla-Conty multiscatter term must survive the tier removal"
         );
     }
 }

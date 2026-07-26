@@ -1,11 +1,17 @@
-# T.2d — The camera-light defect: diagnosis (IDENTIFIED as of §10 — STOP for the director on the fix)
+# T.2d — The camera-light defect: diagnosis (FIXED as of §11/T.2d.F — awaiting the director’s closing check)
 
+> **STATUS, fourth pass (T.2d.F, 2026-07-25): FIXED.** The director ratified §10.7 option A the same
+> day; the tiers are deleted, the boundary signature and dithering are measured gone, close range is
+> untouched to 1 LSB, and min-spec is 1% faster. **See §11** (closing pointer) and
+> `docs/audits/T2DF_OUTCOME.md` (the evidence). What remains open: the §2.1 near-field gradient, the
+> §9.1 far-field normal-variance gradient, and the director's closing station check.
+>
 > **STATUS, third pass (2026-07-25):** the boundary is **identified** — it is `compute_material_lod`'s
 > **LOD1|2 threshold, pixel footprint = 2.0** (`brdf_common.wgsl:63`), matched in both director frames
 > to within 4 screen pixels. It is a **detail** edge, not a brightness edge, which is why §2.2 and §9.2
-> could not see it with a row-mean-luminance metric. **No fix applied** — `compute_material_lod` is called
-> engine-wide from three shaders, so the choice is a STOP-with-options (§10.7). Read **§10 first**;
-> §§1-9 are the two earlier passes and their retired hypotheses, kept as the ledger.
+> could not see it with a row-mean-luminance metric. At this pass no fix was applied —
+> `compute_material_lod` was called engine-wide, so the choice was a STOP-with-options (§10.7).
+> Read **§10 first**; §§1-9 are the two earlier passes and their retired hypotheses, kept as the ledger.
 >
 > **Beat:** T.2d (terrain series) · **Date:** 2026-07-25 · **Baseline commit:** `c2dbf8400`
 > **Symptom (director, 2026-07-25):** *"the camera itself is a light source — as I get really close to the terrain it gets brighter and casts shadows at the borders of the light boundary like a light source."*
@@ -480,3 +486,31 @@ Alternatively, just the terrain settings from those sessions (archetype, and whe
 Frames and CSVs: `d:/tmp/t2d_staging/{E_head,E_lodviz,E_lod1const,F_head}/`.
 
 No regression test is added, for the same reason as §7: nothing is fixed yet, and a test asserting today's behaviour would pin the bug. The instrument is the deliverable — Experiments E and F are permanent and `#[ignore]`d like the rest.
+
+---
+
+# 11. T.2d.F (2026-07-25) — the convicted defect is FIXED; this file closes
+
+The director ratified §10.7 **option A** the same day: delete the tiers, with a pre-authorized
+continuous-falloff fallback if min-spec perf regressed materially (a stepped tier may not return
+under any outcome). Executed as beat **T.2d.F**; the full evidence chain is
+**`docs/audits/T2DF_OUTCOME.md`** — this section is only the closing pointer.
+
+What the fix measured, against this file's findings:
+
+| this file's finding | T.2d.F result |
+|---|---|
+| LOD1\|2 boundary at footprint 2.0 (§10.3) | threshold deleted from every shader; no contour step at the footprint-2.0 row (grain ratio ×1.05/×0.97 ≈ 1) |
+| LOD 2 tier dithering = 40–55% of far-field HF energy (§10.5) | far-field grain **−48.6% / −51.7%** at the two boundary stations — inside the diagnosed band; grain field now flat across the frame |
+| multiscatter tier step, close range (§3.2, §6.2) | gone by construction (no LOD0\|1 divide); close range measured unchanged — **1 px of 786,432, 1 LSB** |
+| far field expected to brighten ~10% under option A (§6.2) | **+2.9 → +10.7 luma over 300–1500 m (≤ +9.5%)** — accepted consequence; T.2a/T.2c far-field frames rot |
+| §2.1 near-field gradient (+5.9%, 12–110 m) | **NOT closed** — §3.2 already proved the tiers were not its cause; residual still open (§3.4 specular lead) |
+| §9.1 far-field gradient (near-darker/far-brighter) | **survives as it must** (+13.5% over 300–1500 m post-fix) — normal-variance class, unratified, untouched |
+| min-spec cost of the tiers' removal | **−1.0%** (27.055 → 26.773 ms median, 1660 Ti Max-Q, 1080p, n=300) — the tiers were saving nothing measurable; fallback not triggered |
+
+The re-judgment list (§5, §10.9) transfers to `T2DF_OUTCOME.md` §6.2 unchanged in substance, with
+one addition: distant-terrain absolute reads made before the fix are superseded by post-fix frames.
+
+The director's closing check is **Camera → Go** on the five `t2df_*` stations now pinned in
+`.editor_preferences.json` (script: `T2DF_OUTCOME.md` §7). That verdict closes T.2d and releases
+the terrain lane.

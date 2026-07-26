@@ -44,5 +44,92 @@
   "blend_asset_directories": [
     "assets/blends",
     "assets/scenes"
+  ],
+  "camera_stations": [
+    {
+      "name": "t2df_boundary_y414",
+      "state": {
+        "focal_point": [
+          -1029.9,
+          36.3,
+          254.7
+        ],
+        "distance": 529.6,
+        "yaw": 0.7941248,
+        "pitch": 0.7958701,
+        "fovy": 1.0471976,
+        "near": 0.5,
+        "far": 40000.0,
+        "aspect": 1.9201597
+      }
+    },
+    {
+      "name": "t2df_boundary_y536",
+      "state": {
+        "focal_point": [
+          -1029.9,
+          36.3,
+          254.7
+        ],
+        "distance": 700.0,
+        "yaw": 0.7941248,
+        "pitch": 0.7958701,
+        "fovy": 1.0471976,
+        "near": 0.5,
+        "far": 40000.0,
+        "aspect": 1.9201597
+      }
+    },
+    {
+      "name": "t2df_desert_close_20m",
+      "state": {
+        "focal_point": [
+          43.1,
+          36.3,
+          -1961.8
+        ],
+        "distance": 20.0,
+        "yaw": 0.7853982,
+        "pitch": 0.9599311,
+        "fovy": 1.0471976,
+        "near": 0.5,
+        "far": 40000.0,
+        "aspect": 1.3333334
+      }
+    },
+    {
+      "name": "t2df_lod01_contour",
+      "state": {
+        "focal_point": [
+          43.1,
+          36.3,
+          -1961.8
+        ],
+        "distance": 46.7,
+        "yaw": 0.7853982,
+        "pitch": 0.6981317,
+        "fovy": 1.0471976,
+        "near": 0.5,
+        "far": 40000.0,
+        "aspect": 1.3333334
+      }
+    },
+    {
+      "name": "t2df_profile_far",
+      "state": {
+        "focal_point": [
+          43.1,
+          36.3,
+          -1961.8
+        ],
+        "distance": 523.1,
+        "yaw": 0.7853982,
+        "pitch": 0.61086524,
+        "fovy": 1.0471976,
+        "near": 0.5,
+        "far": 40000.0,
+        "aspect": 1.3333334
+      }
+    }
   ]
 }
