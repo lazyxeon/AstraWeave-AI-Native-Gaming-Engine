@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["WGSL_FOG_FUNCTIONS","WGSL_SCENE_ENVIRONMENT"],"struct":["SceneEnvironment","SceneEnvironmentUBO"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_EXPOSURE","WGSL_FOG_FUNCTIONS","WGSL_SCENE_ENVIRONMENT"],"struct":["SceneEnvironment","SceneEnvironmentUBO"]};
