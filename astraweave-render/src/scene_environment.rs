@@ -15,7 +15,7 @@
 //!   ambient_color:    vec3<f32> + ambient_intensity   (16 bytes)  offset 32
 //!   tint_color:       vec3<f32> + tint_alpha: f32     (16 bytes)  offset 48
 //!   blend_factor:     f32 + debug_mode: f32           (16 bytes)  offset 64
-//!     + _pad_align: vec2<f32>
+//!     + exposure: f32 + _pad_align: f32
 //!   sun_color:        vec3<f32> + sun_intensity: f32  (16 bytes)  offset 80
 //! ```
 //!
@@ -28,6 +28,13 @@
 
 use crate::biome_transition::{BiomeVisuals, TransitionEffect};
 use bytemuck::{Pod, Zeroable};
+
+/// The canonical tonemap exposure (L.1). This is the exact value the post
+/// pass hardcoded before L.1 wired the exposure control end-to-end
+/// (`renderer.rs` POST_SHADER, "exposure = 1.35") — pinned here so defaults
+/// stay visually neutral. The editor World panel's Exposure slider and
+/// `TerrainLightingParams::default()` mirror this constant.
+pub const DEFAULT_EXPOSURE: f32 = 1.35;
 
 // ─── GPU Uniform ─────────────────────────────────────────────────────────
 
@@ -74,8 +81,13 @@ pub struct SceneEnvironmentUBO {
     /// the 96-byte layout is unchanged. Driven by the editor's viewport
     /// shading dropdown; 0 in all game/runtime paths.
     pub debug_mode: f32,
+    /// L.1: tonemap exposure consumed by the post pass (`uPostScene.exposure`).
+    /// Occupies the second former `_pad_align` float — 96-byte layout still
+    /// unchanged. Defaults to [`DEFAULT_EXPOSURE`] (1.35, the value the post
+    /// shader hardcoded pre-L.1, so defaults are visually neutral).
+    pub exposure: f32,
     /// Padding to keep `sun_color` at its 16-byte boundary.
-    pub _pad_align: [f32; 2],
+    pub _pad_align: [f32; 1],
 
     /// Sun color (linear RGB) for directional light in PBR shader.
     pub sun_color: [f32; 3],
@@ -110,7 +122,8 @@ impl SceneEnvironmentUBO {
             tint_alpha,
             blend_factor,
             debug_mode: 0.0,
-            _pad_align: [0.0; 2],
+            exposure: DEFAULT_EXPOSURE,
+            _pad_align: [0.0; 1],
             sun_color: [1.0, 0.98, 0.9], // warm white default
             sun_intensity: 1.0,
         }
@@ -172,6 +185,10 @@ pub struct SceneEnvironment {
     /// ED-3 debug shading mode (0 = lit, 1 = unlit, 2 = normals, 3 = UVs).
     /// Editor-only; stays 0 in game/runtime paths.
     pub debug_mode: u32,
+    /// L.1: tonemap exposure applied by the post pass. Driven by the editor
+    /// World panel's Exposure slider; [`DEFAULT_EXPOSURE`] in all paths that
+    /// never touch it (visually neutral vs. the pre-L.1 hardcode).
+    pub exposure: f32,
 }
 
 impl Default for SceneEnvironment {
@@ -188,6 +205,7 @@ impl Default for SceneEnvironment {
             wetness: 0.0,
             snow_amount: 0.0,
             debug_mode: 0,
+            exposure: DEFAULT_EXPOSURE,
         }
     }
 }
@@ -225,6 +243,7 @@ impl SceneEnvironment {
         ubo.wetness = self.wetness.clamp(0.0, 1.0);
         ubo.snow_amount = self.snow_amount.clamp(0.0, 1.0);
         ubo.debug_mode = self.debug_mode as f32;
+        ubo.exposure = self.exposure;
         ubo
     }
 
@@ -322,7 +341,7 @@ struct SceneEnvironment {
     tint_color:         vec3<f32>,
     tint_alpha:         f32,
     blend_factor:       f32,
-    debug_mode: f32, _pad1y: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, _pad1z: f32,
     sun_color:          vec3<f32>,
     sun_intensity:      f32,
 };
@@ -1096,6 +1115,70 @@ mod tests {
         let bytes = bytemuck::bytes_of(&ubo);
         let val = f32::from_le_bytes([bytes[28], bytes[29], bytes[30], bytes[31]]);
         assert!((val - 0.77).abs() < 1e-6);
+    }
+
+    // ── L.1 exposure tests ───────────────────────────────────────────────
+
+    #[test]
+    fn l1_exposure_byte_offset_72_and_size_unchanged() {
+        // exposure occupies the second former _pad_align float; the 96-byte
+        // layout must not grow.
+        assert_eq!(std::mem::size_of::<SceneEnvironmentUBO>(), 96);
+        let mut ubo = SceneEnvironmentUBO::zeroed();
+        ubo.exposure = 2.25;
+        let bytes = bytemuck::bytes_of(&ubo);
+        let val = f32::from_le_bytes([bytes[72], bytes[73], bytes[74], bytes[75]]);
+        assert!((val - 2.25).abs() < 1e-6);
+    }
+
+    #[test]
+    fn l1_exposure_defaults_to_pre_l1_hardcode() {
+        // Visual-neutrality contract: every path that never touches exposure
+        // must deliver exactly the value the post shader hardcoded pre-L.1.
+        assert_eq!(DEFAULT_EXPOSURE, 1.35);
+        assert_eq!(SceneEnvironmentUBO::default().exposure, DEFAULT_EXPOSURE);
+        assert_eq!(SceneEnvironment::default().exposure, DEFAULT_EXPOSURE);
+        assert_eq!(
+            SceneEnvironment::default().to_ubo().exposure,
+            DEFAULT_EXPOSURE
+        );
+    }
+
+    #[test]
+    fn l1_exposure_flows_scene_env_to_ubo() {
+        let mut env = SceneEnvironment::default();
+        env.exposure = 0.5;
+        assert_eq!(env.to_ubo().exposure, 0.5);
+    }
+
+    #[test]
+    #[cfg(not(feature = "postfx"))]
+    fn l1_post_shader_consumes_exposure_uniform() {
+        // The post pass must read exposure from the scene-env UBO, not a
+        // literal. Pre-L.1 this was `let exposure = 1.35;` (T2F §1.2 row 10).
+        let post = crate::renderer::POST_SHADER;
+        assert!(
+            post.contains("uPostScene.exposure"),
+            "POST_SHADER must read exposure from the scene-env uniform"
+        );
+        assert!(
+            !post.contains("let exposure = 1.35"),
+            "POST_SHADER must not hardcode the exposure"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "postfx")]
+    fn l1_post_shader_fx_consumes_exposure_uniform() {
+        let post = crate::renderer::POST_SHADER_FX;
+        assert!(
+            post.contains("uPostScene.exposure"),
+            "POST_SHADER_FX must read exposure from the scene-env uniform"
+        );
+        assert!(
+            !post.contains("let exposure = 1.35"),
+            "POST_SHADER_FX must not hardcode the exposure"
+        );
     }
 
     #[test]

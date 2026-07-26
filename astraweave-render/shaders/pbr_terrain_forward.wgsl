@@ -92,7 +92,9 @@ struct TerrainSceneEnv {
     blend_factor: f32,
     // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
     debug_mode: f32,
-    _pad1y: f32,
+    // L.1: tonemap exposure (post-pass concern; never read here — declared
+    // for byte-layout parity with SceneEnvironmentUBO).
+    exposure: f32,
     _pad1z: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,

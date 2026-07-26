@@ -80,6 +80,14 @@ pub struct ViewportRenderer {
     /// Whether engine adapter initialization was attempted and failed permanently
     engine_adapter_init_failed: bool,
 
+    /// L.1: lighting push received before the async engine adapter existed.
+    /// Pre-L.1 such a push was silently DROPPED and the caller's cache then
+    /// recorded it as delivered, so the World panel's frame-1 push never
+    /// landed and the panel lied about the scene state until a slider was
+    /// touched (T2F_LIGHTING_RECON.md §3). Now the push is parked here and
+    /// delivered by `init_engine_adapter` the moment the adapter exists.
+    pending_lighting_params: Option<TerrainLightingParams>,
+
     /// Enable engine rendering (PBR meshes) vs cube rendering
     render_mode: RenderMode,
 
@@ -191,6 +199,7 @@ impl ViewportRenderer {
             scatter_placements: Vec::new(),
             engine_adapter: None,
             engine_adapter_init_failed: false,
+            pending_lighting_params: None,
             render_mode: RenderMode::EnginePBR,
             engine_ldr_texture: None,
             engine_ldr_view: None,
@@ -1577,11 +1586,24 @@ impl ViewportRenderer {
         }
     }
 
-    /// Set lighting parameters for PBR terrain shading
+    /// Set lighting parameters for PBR terrain shading.
+    ///
+    /// L.1: if the engine adapter does not exist yet (the async-init window
+    /// the live editor's frame-1 push lands in), the params are PARKED and
+    /// delivered by `init_engine_adapter` — never silently dropped. The
+    /// caller's change-cache therefore stays truthful: a cached push is a
+    /// push that has been or will be delivered.
     pub fn set_lighting_params(&mut self, params: TerrainLightingParams) {
-        // Forward to engine adapter (handles all scene lighting)
         if let Some(adapter) = &mut self.engine_adapter {
             adapter.set_lighting_params(&params);
+            self.pending_lighting_params = None;
+        } else {
+            tracing::info!(
+                "Lighting push parked until engine adapter init (sun_intensity {}, exposure {})",
+                params.sun_intensity,
+                params.exposure
+            );
+            self.pending_lighting_params = Some(params);
         }
     }
 
@@ -1794,10 +1816,21 @@ impl ViewportRenderer {
             (1920, 1080)
         };
 
-        let adapter =
+        let mut adapter =
             EngineRenderAdapter::new(self.device.clone(), self.queue.clone(), width, height)
                 .await
                 .context("Failed to initialize engine render adapter")?;
+
+        // L.1: deliver any lighting push parked while the adapter didn't
+        // exist (the frame-1 race, T2F_LIGHTING_RECON.md §3).
+        if let Some(params) = self.pending_lighting_params.take() {
+            tracing::info!(
+                "Delivering parked lighting push (sun_intensity {}, exposure {})",
+                params.sun_intensity,
+                params.exposure
+            );
+            adapter.set_lighting_params(&params);
+        }
 
         self.engine_adapter = Some(adapter);
         Ok(())

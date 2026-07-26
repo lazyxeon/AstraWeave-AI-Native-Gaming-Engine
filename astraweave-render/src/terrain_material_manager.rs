@@ -269,7 +269,8 @@ impl Default for CameraForwardGpu {
 /// * `tint_alpha`       — f32         offset 60, size 4  → 64
 /// * `blend_factor`     — f32         offset 64, size 4
 /// * `debug_mode`       — f32         offset 68, size 4 (ED-3 debug shading)
-/// * `_pad1`            — [f32; 2]    offset 72, size 8  → 80
+/// * `exposure`         — f32         offset 72, size 4 (L.1; post-pass only)
+/// * `_pad1`            — f32         offset 76, size 4  → 80
 /// * `sun_color`        — vec3<f32>   offset 80, size 12
 /// * `sun_intensity`    — f32         offset 92, size 4  → 96
 #[repr(C, align(16))]
@@ -287,7 +288,11 @@ pub struct TerrainSceneEnvGpu {
     pub blend_factor: f32,
     /// ED-3 debug shading mode (mirrors `SceneEnvironmentUBO::debug_mode`).
     pub debug_mode: f32,
-    pub _pad1: [f32; 2],
+    /// L.1 tonemap exposure (mirrors `SceneEnvironmentUBO::exposure`).
+    /// Present for byte-layout parity; the terrain shader never reads it —
+    /// exposure is applied by the post pass.
+    pub exposure: f32,
+    pub _pad1: f32,
     pub sun_color: [f32; 3],
     pub sun_intensity: f32,
 }
@@ -306,7 +311,8 @@ impl Default for TerrainSceneEnvGpu {
             tint_alpha: 0.0,
             blend_factor: 0.0,
             debug_mode: 0.0,
-            _pad1: [0.0; 2],
+            exposure: crate::scene_environment::DEFAULT_EXPOSURE,
+            _pad1: 0.0,
             sun_color: [1.0, 0.98, 0.92],
             sun_intensity: 1.5,
         }
@@ -1688,9 +1694,10 @@ mod tests {
         assert_eq!(offset_of!(TerrainSceneEnvGpu, tint_alpha), 60);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, blend_factor), 64);
         // ED-3: debug_mode occupies the first former pad float (offset 68);
-        // the remaining pad shrinks to [f32; 2]. Total size stays 96.
+        // L.1: exposure the second (offset 72). Total size stays 96.
         assert_eq!(offset_of!(TerrainSceneEnvGpu, debug_mode), 68);
-        assert_eq!(offset_of!(TerrainSceneEnvGpu, _pad1), 72);
+        assert_eq!(offset_of!(TerrainSceneEnvGpu, exposure), 72);
+        assert_eq!(offset_of!(TerrainSceneEnvGpu, _pad1), 76);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, sun_color), 80);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, sun_intensity), 92);
         assert_eq!(std::mem::size_of::<TerrainSceneEnvGpu>(), 96);

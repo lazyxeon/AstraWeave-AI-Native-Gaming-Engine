@@ -37,17 +37,23 @@ impl Default for RenderMode {
 ///
 /// Controls shadow quality and post-processing complexity to balance
 /// visual fidelity vs. frame time in the editor viewport.
+/// L.1 honesty pass: the variant docs below describe what each preset
+/// ACTUALLY changes in the editor's render path. Post-chain flags other than
+/// `bloom_enabled` drive no passes here (T2F_LIGHTING_RECON.md §1.2 row 8);
+/// SSAO/TAA claims were removed from these docs when the flags were zeroed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorQualityPreset {
-    /// Full game-quality rendering: 2 CSM cascades at full resolution,
-    /// all post-processing effects enabled. Use for final preview.
+    /// Full game-quality rendering: 2 CSM cascades (static meshes receive;
+    /// forward terrain neither receives nor casts), cloud shadows, bloom
+    /// compute (output currently not composited — P.3 residue). Use for
+    /// final preview.
     GameQuality,
-    /// Editor default: reduced shadow quality (smaller PCF, narrower cascades),
-    /// only SSAO + Bloom + Tonemap post-processing. Good balance for editing.
+    /// Editor default: 2 tight CSM cascades for static meshes + ACES
+    /// tonemap. Good balance for editing.
     EditorDefault,
-    /// Terrain-optimised: 2-cascade shadows, SSAO, bloom + tonemap.
-    /// Applied automatically when terrain is loaded. Strikes a balance
-    /// between visual fidelity (grounded shadows, AO) and performance.
+    /// Terrain-optimised: ALL shadows disabled (the cost of re-rendering
+    /// 4M+ terrain triangles into cascades), ACES tonemap only. Applied
+    /// automatically when terrain is loaded.
     EditorTerrain,
     /// Minimal: shadows disabled, tonemap only. Maximum performance for
     /// large scenes or weak GPUs.
@@ -976,9 +982,13 @@ impl EngineRenderAdapter {
 
     /// Apply an editor quality preset, configuring shadows and post-processing.
     ///
-    /// - `GameQuality`: Full shadows + all post-processing (for final preview)
-    /// - `EditorDefault`: Reduced shadows + SSAO/Bloom/Tonemap only (balanced)
-    /// - `Minimal`: No shadows + tonemap only (maximum performance)
+    /// - `GameQuality`: full static-mesh shadows + cloud shadows + bloom compute
+    /// - `EditorDefault`: reduced static-mesh shadows, tonemap
+    /// - `EditorTerrain`: shadows off, tonemap
+    /// - `Minimal`: shadows off, tonemap only
+    ///
+    /// See the `EditorQualityPreset` variant docs for the honest per-preset
+    /// inventory (L.1).
     pub fn apply_quality_preset(&mut self, preset: EditorQualityPreset) {
         tracing::info!(target: "aw_editor::viewport", "Quality preset changed to: {:?}", preset);
         self.quality_preset = preset;
@@ -993,7 +1003,13 @@ impl EngineRenderAdapter {
                 self.renderer.set_cascade_lambda(0.75);
                 self.renderer.set_max_draw_distance(0.0); // fog-based
 
-                // Full post-processing chain
+                // Post chain. L.1 honesty: in the editor's render path the
+                // ONLY consumed flag is `bloom_enabled` (and bloom's output
+                // is computed but not composited — P.3 residue). taa_enabled
+                // was `true` here, but NO TAA pass exists in this path
+                // (T2F §1.2 row 8) — set false so the config states what
+                // actually runs. The TAA/hdr_pipeline machinery itself stays
+                // (dormant, not deleted).
                 let chain = astraweave_render::hdr_pipeline::PostProcessChain {
                     ssao_enabled: false,
                     ssr_enabled: false,
@@ -1001,7 +1017,7 @@ impl EngineRenderAdapter {
                     god_rays_enabled: false,
                     auto_exposure_enabled: false,
                     bloom_enabled: true,
-                    taa_enabled: true,
+                    taa_enabled: false,
                     dof_enabled: false, // DoF off by default even in game quality
                     motion_blur_enabled: false,
                     color_grading_enabled: true,
@@ -1030,11 +1046,17 @@ impl EngineRenderAdapter {
                 // (downsample + upsample mip chain) adds ~1-3ms per frame
                 // from write_buffer + compute dispatch overhead.
                 //
-                // SSAO enabled at default quality: restores base-of-trunk
-                // darkening, crevice contact, and general shape definition
-                // without noticeable cost at 1920×1080.
+                // L.1 honesty: this preset formerly set `ssao_enabled: true`
+                // with a comment claiming it "restores base-of-trunk
+                // darkening, crevice contact, and general shape definition".
+                // NO SSAO pass exists in this render path — the renderer
+                // consumes only `bloom_enabled`, and the SSAO pipeline
+                // objects are built into discarded `_` bindings
+                // (T2F_LIGHTING_RECON.md §1.2 row 8). The flag is now false
+                // so the config states what actually runs; the SSAO
+                // machinery (post.rs WGSL) stays on disk, dormant.
                 let chain = astraweave_render::hdr_pipeline::PostProcessChain {
-                    ssao_enabled: true,
+                    ssao_enabled: false,
                     ssr_enabled: false,
                     ssgi_enabled: false,
                     god_rays_enabled: false,
@@ -1060,11 +1082,14 @@ impl EngineRenderAdapter {
                 // Bloom disabled for terrain editing — the multi-pass compute
                 // pipeline adds constant overhead per frame.
                 //
-                // SSAO enabled: restores crevice/contact shading on the
-                // terrain and around scattered props without the cost of
-                // full shadow cascades.
+                // L.1 honesty: this preset formerly set `ssao_enabled: true`
+                // claiming it "restores crevice/contact shading" — no SSAO
+                // pass exists in this render path (only `bloom_enabled` is
+                // consumed; T2F §1.2 row 8, the preset fiction the T.2f
+                // census convicted). False now, so the config matches
+                // reality; the dormant SSAO machinery is untouched.
                 let chain = astraweave_render::hdr_pipeline::PostProcessChain {
-                    ssao_enabled: true,
+                    ssao_enabled: false,
                     ssr_enabled: false,
                     ssgi_enabled: false,
                     god_rays_enabled: false,
@@ -1768,9 +1793,11 @@ impl EngineRenderAdapter {
             env.visuals.fog_start = 60000.0;
             env.visuals.fog_end = 120000.0;
             env.visuals.fog_density = 0.0; // pure linear fog (no exponential)
-                                           // Ambient fill so shadowed areas aren't pitch black
-            env.visuals.ambient_color = glam::Vec3::new(0.45, 0.50, 0.55);
-            env.visuals.ambient_intensity = 0.35;
+                                           // Ambient fill so shadowed areas aren't pitch black.
+                                           // L.1: these are the pinned defaults the World panel
+                                           // now displays (types.rs DEFAULT_AMBIENT_*).
+            env.visuals.ambient_color = glam::Vec3::from(super::types::DEFAULT_AMBIENT_COLOR);
+            env.visuals.ambient_intensity = super::types::DEFAULT_AMBIENT_INTENSITY;
             tracing::debug!(
                 "Ground fill plane set at Y={ground_y:.1}, extent={extent:.0}, \
                  fog_start={:.0}, fog_density={:.5}",
@@ -1783,8 +1810,13 @@ impl EngineRenderAdapter {
             self.renderer.set_sky_config(sky);
 
             // ── Sun ────────────────────────────────────────────────────
-            // A warm directional light at ~35° elevation for visible
-            // terrain shadows and natural surface shading.
+            // A warm directional light at ≈43° elevation for natural
+            // surface shading. L.1: this is the delivered default direction
+            // the World panel's elevation/azimuth defaults now mirror
+            // (types.rs DEFAULT_SUN_DIR = the negation of this vector; the
+            // bit-identity is pinned by types.rs' L.1 tests). NOTE the
+            // intensity argument is write-only (T2F §3 item 3) — delivered
+            // sun radiance is env.sun_color × env.sun_intensity.
             let sun_dir = glam::Vec3::new(-0.5, -0.6, -0.4).normalize();
             self.renderer.set_light_direction_override(sun_dir, 1.5);
 
@@ -3805,12 +3837,16 @@ impl EngineRenderAdapter {
     /// Updates ambient lighting in the SceneEnvironment, and overrides the
     /// sun direction + intensity in the CameraUBO so the PBR shader uses
     /// the world panel's lighting settings instead of the internal TimeOfDay.
+    /// L.1: also delivers `params.exposure` into the scene environment (the
+    /// post pass reads it from the UBO); pre-L.1 the field was dropped here
+    /// and the World panel's Exposure slider was inert (T2F §1.2 row 10).
     pub fn set_lighting_params(&mut self, params: &TerrainLightingParams) {
         let env = self.renderer.scene_environment_mut();
         env.visuals.ambient_color = glam::Vec3::from(params.ambient_color);
         env.visuals.ambient_intensity = params.ambient_intensity;
         env.sun_color = params.sun_color;
         env.sun_intensity = params.sun_intensity;
+        env.exposure = params.exposure;
 
         // Negate: sun_dir points TO the sun (positive Y = sun above),
         // but the shader convention for light_dir is direction FROM the

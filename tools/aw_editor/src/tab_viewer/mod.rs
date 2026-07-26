@@ -942,18 +942,23 @@ impl EditorTabViewer {
             asset_search: String::new(),
             asset_type_filter: 0, // All
             asset_view_mode: 0,   // List
-            // World settings
-            world_ambient_color: [0.65, 0.58, 0.50],
+            // World settings — lighting defaults are the L.1 pinned
+            // DELIVERED state (viewport/types.rs constants): the panel must
+            // display the values the renderer actually holds from frame 1,
+            // and pushing them must be visually neutral (T2F §3; proven
+            // byte-identical by l1_proof.rs). Do not retune these without
+            // retuning the delivered state to match.
+            world_ambient_color: crate::viewport::types::DEFAULT_AMBIENT_COLOR,
             world_fog_enabled: false,
             world_fog_density: 0.0,
             world_fog_start: 800.0,
             world_fog_end: 1800.0,
-            world_sun_intensity: 2.2,
-            world_sun_elevation: 55.0,
-            world_sun_azimuth: 35.0,
-            world_sun_color: [1.0, 0.96, 0.88],
-            world_ambient_intensity: 0.45,
-            world_exposure: 1.3,
+            world_sun_intensity: crate::viewport::types::DEFAULT_SUN_INTENSITY,
+            world_sun_elevation: crate::viewport::types::DEFAULT_SUN_ELEVATION_DEG,
+            world_sun_azimuth: crate::viewport::types::DEFAULT_SUN_AZIMUTH_DEG,
+            world_sun_color: crate::viewport::types::DEFAULT_SUN_COLOR,
+            world_ambient_intensity: crate::viewport::types::DEFAULT_AMBIENT_INTENSITY,
+            world_exposure: crate::viewport::types::DEFAULT_EXPOSURE,
             world_gravity: -9.81,
             // Transform settings
             transform_snap_value: 1.0,

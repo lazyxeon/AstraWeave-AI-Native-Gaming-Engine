@@ -95,7 +95,7 @@ struct SceneEnv {
     tint_alpha: f32,
     blend_factor: f32,
     // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
-    debug_mode: f32, _pad1y: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, _pad1z: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -366,7 +366,10 @@ struct PostSceneEnv {
     tint_color: vec3<f32>,
     tint_alpha: f32,
     blend_factor: f32,
-    _pad1: vec3<f32>,
+    // L.1: exposure rides the former pad (same 96-B UBO as the main pass).
+    debug_mode: f32,
+    exposure: f32,
+    _pad1z: f32,
 };
 @group(1) @binding(0) var<uniform> uPostScene: PostSceneEnv;
 
@@ -382,7 +385,10 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
 @fragment
 fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0);
-    let exposure = 1.35;
+    // L.1: exposure comes from the scene-env UBO (editor World panel slider);
+    // defaults to 1.35 — the exact pre-L.1 hardcode — so untouched paths are
+    // visually neutral.
+    let exposure = uPostScene.exposure;
     var color = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b) * exposure);
     // Screen-space tint overlay from biome transitions
     color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
@@ -424,7 +430,10 @@ struct PostSceneEnv {
     tint_color: vec3<f32>,
     tint_alpha: f32,
     blend_factor: f32,
-    _pad1: vec3<f32>,
+    // L.1: exposure rides the former pad (same 96-B UBO as the main pass).
+    debug_mode: f32,
+    exposure: f32,
+    _pad1z: f32,
 };
 @group(1) @binding(0) var<uniform> uPostScene: PostSceneEnv;
 
@@ -443,7 +452,8 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let comp = hdr * (1.0 - ao * ao_strength) + gi * gi_strength;
     // Exposure boost before ACES gives the tonemapper proper HDR range,
     // producing richer contrast and more vivid highlights.
-    let exposure = 1.35;
+    // L.1: driven by the scene-env UBO (default 1.35 = the former hardcode).
+    let exposure = uPostScene.exposure;
     var color = aces_tonemap(comp * exposure);
     // Screen-space tint overlay from biome transitions
     color = mix(color, uPostScene.tint_color, uPostScene.tint_alpha);
@@ -514,7 +524,7 @@ struct SceneEnv {
     tint_alpha: f32,
     blend_factor: f32,
     // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
-    debug_mode: f32, _pad1y: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, _pad1z: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -4251,6 +4261,15 @@ fn vs(input: VSIn) -> VSOut {
     }
 
     fn update_cascade_splits(&mut self, view: &RenderView, light_dir: glam::Vec3) {
+        // L.1 note: this runs every frame even when shadows are disabled
+        // (cascades then have no consumer — T2F §1.2 row 3). It is NOT
+        // trivially safe to skip on `!self.shadows_enabled`, because this
+        // function is also the delivery path for `light_buf`'s extras.x
+        // sentinel (-1.0 = shadows off, written below) — skipping wholesale
+        // would leave a stale positive pcf radius in the UBO and re-enable
+        // garbage shadow sampling in the static shader. L.3 (terrain CSM)
+        // will consume the cascades anyway; leave as is.
+        //
         // C.3.A migration: signature changed from `&Camera` to `&RenderView`
         // per CAMERA_CONVENTIONS.md §2.9. The pre-C.3.A lossy yaw/pitch
         // reconstruction at the original line 4001 (in update_camera_matrices)
@@ -4686,9 +4705,15 @@ fn vs(input: VSIn) -> VSOut {
 
     /// Set the post-processing chain configuration.
     ///
-    /// Controls which post-processing effects are active (SSAO, SSR, Bloom, TAA,
-    /// DoF, Motion Blur, Color Grading) and the tonemapping operator.
-    /// Disabled effects are skipped entirely with zero GPU cost.
+    /// L.1 honesty note: in the current render paths (`render()` and
+    /// `draw_into()`), the ONLY consumed field is `bloom_enabled` — and the
+    /// bloom pass's output is computed but not composited by the canonical
+    /// POST shader (P.3 residue, see the comment at the bloom dispatch).
+    /// The SSAO/SSR/SSGI/TAA/DoF/motion-blur/color-grading/auto-exposure
+    /// flags and `tonemap_operator` are stored but drive no passes here;
+    /// the corresponding machinery (`post.rs` WGSL, `hdr_pipeline.rs` chain)
+    /// exists but is not wired into these paths. Do not set a flag expecting
+    /// a visual change (T2F_LIGHTING_RECON.md §1.2 rows 8/11).
     pub fn set_post_process_chain(&mut self, chain: crate::hdr_pipeline::PostProcessChain) {
         self.post_chain = chain;
     }

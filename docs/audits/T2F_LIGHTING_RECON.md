@@ -248,16 +248,26 @@ would pin defects.
 
 ## 7. Residue for the ledgers (found in passing, not fixed — recon only)
 
-1. **§3 dropped-push race + poisoned cache** — silent-failure class; also makes the World
-   panel's whole Lighting section a lie until the second interaction.
-2. **Inert Exposure slider** (types.rs:99 → dropped at engine_adapter.rs:3808-3823) — ED-3-class
-   "settable-but-never-read", missed by ED-3's three because it dies one hop deeper than the UI.
-3. **EditorTerrain preset claims SSAO + GameQuality claims TAA** — neither pass exists in the
-   editor's render path (renderer.rs:6109 is the chain's only read).
-4. **Bloom computes but never composites** when enabled (renderer.rs:6143-6152) — pre-recorded
-   in P.3, still true.
-5. **`set_light_direction_override` intensity is write-only** (`light_dir_pad[3]`).
-6. **Cascade splits computed for no consumer** every frame while shadows are disabled.
+> **L.1 update (2026-07-26):** items 1–3 are **CLOSED** by beat L.1 (see
+> `docs/audits/L1_OUTCOME.md`); items 4–7 remain open, with 6 now documented in code as
+> deliberately-left (not trivially safe to skip).
+
+1. ~~**§3 dropped-push race + poisoned cache**~~ — **CLOSED by L.1**: pre-adapter pushes are
+   parked and delivered at `init_engine_adapter` (never dropped, observable via log); panel
+   defaults reconciled to the delivered state, pinned by constants + tests.
+2. ~~**Inert Exposure slider**~~ — **CLOSED by L.1**: exposure rides the scene-env UBO's second
+   pad float (offset 72) into the post pass (`uPostScene.exposure`); default 1.35 = the former
+   hardcode, proven pixel-neutral.
+3. ~~**EditorTerrain preset claims SSAO + GameQuality claims TAA**~~ — **CLOSED by L.1**: flags
+   zeroed, preset/enum/setter docs rewritten to state what actually runs; dormant machinery
+   untouched.
+4. **Bloom computes but never composites** when enabled (renderer.rs bloom dispatch comment) —
+   pre-recorded in P.3, still true.
+5. **`set_light_direction_override` intensity is write-only** (`light_dir_pad[3]`; now noted at
+   the terrain-upload call site).
+6. **Cascade splits computed for no consumer** every frame while shadows are disabled — left
+   deliberately (L.1): `update_cascade_splits` is also the delivery path for the `extras.x`
+   shadows-off sentinel, so skipping it wholesale is not safe; L.3 consumes the cascades anyway.
 7. **Static meshes sample no texture AO at all** (mr_tex = metallic/roughness only) — props
    lane, relevant the day statics matter in terrain scenes.
 

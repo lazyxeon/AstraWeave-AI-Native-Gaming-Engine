@@ -88,6 +88,39 @@ impl Default for TerrainFogParams {
 
 // ─── Lighting Parameters ─────────────────────────────────────────────────────
 
+// L.1 pinned lighting defaults — THE DELIVERED STATE, single source of truth.
+//
+// Pre-L.1 the World panel displayed one set of values (sun 2.2×) while the
+// renderer delivered another (sun 1.0×), because the frame-1 push was
+// silently dropped in the adapter-init race (T2F_LIGHTING_RECON.md §3).
+// These constants pin the panel, `TerrainLightingParams::default()`, and the
+// engine adapter's terrain-upload block to the state the renderer actually
+// holds at defaults, so the UI tells the truth and pushing the defaults is
+// visually neutral (proven byte-identical by `l1_proof.rs`).
+
+/// Direction TO the sun. Negated + normalized this reproduces the terrain-
+/// upload block's hardcoded light direction `normalize(-0.5, -0.6, -0.4)`
+/// bit-for-bit (same `Vec3::normalize` on exactly negated components).
+pub const DEFAULT_SUN_DIR: [f32; 3] = [0.5, 0.6, 0.4];
+/// `SceneEnvironment::default()`'s sun colour (astraweave-render).
+pub const DEFAULT_SUN_COLOR: [f32; 3] = [1.0, 0.98, 0.9];
+/// `SceneEnvironment::default()`'s sun intensity.
+pub const DEFAULT_SUN_INTENSITY: f32 = 1.0;
+/// The terrain-upload block's ambient (engine_adapter.rs; the value every
+/// T-series judgment was made under).
+pub const DEFAULT_AMBIENT_COLOR: [f32; 3] = [0.45, 0.50, 0.55];
+pub const DEFAULT_AMBIENT_INTENSITY: f32 = 0.35;
+/// Mirrors `astraweave_render::scene_environment::DEFAULT_EXPOSURE` (the
+/// pre-L.1 POST-shader hardcode); equality is asserted by test.
+pub const DEFAULT_EXPOSURE: f32 = 1.35;
+/// `DEFAULT_SUN_DIR` expressed in the World panel's elevation/azimuth
+/// degrees (asin(0.6/|v|) resp. atan2(0.4, 0.5)). The panel's trig
+/// reconstruction lands within <0.1° of the hardcoded direction; the
+/// delivered direction stays the terrain-upload hardcode until a slider is
+/// touched.
+pub const DEFAULT_SUN_ELEVATION_DEG: f32 = 43.15;
+pub const DEFAULT_SUN_AZIMUTH_DEG: f32 = 38.66;
+
 /// Lighting parameters passed to terrain/scene shaders.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TerrainLightingParams {
@@ -102,12 +135,12 @@ pub struct TerrainLightingParams {
 impl Default for TerrainLightingParams {
     fn default() -> Self {
         Self {
-            sun_dir: [0.5, 0.7, 0.35],
-            sun_color: [1.0, 0.95, 0.85],
-            sun_intensity: 1.8,
-            ambient_color: [0.55, 0.52, 0.48],
-            ambient_intensity: 0.35,
-            exposure: 1.1,
+            sun_dir: DEFAULT_SUN_DIR,
+            sun_color: DEFAULT_SUN_COLOR,
+            sun_intensity: DEFAULT_SUN_INTENSITY,
+            ambient_color: DEFAULT_AMBIENT_COLOR,
+            ambient_intensity: DEFAULT_AMBIENT_INTENSITY,
+            exposure: DEFAULT_EXPOSURE,
         }
     }
 }
@@ -330,4 +363,62 @@ pub struct GltfAnimationClip {
     pub duration: f32,
     /// Animation channels.
     pub channels: Vec<GltfAnimChannel>,
+}
+
+// ─── L.1 defaults-honesty tests ──────────────────────────────────────────────
+
+#[cfg(test)]
+mod l1_lighting_defaults_tests {
+    use super::*;
+
+    /// The pinned sun direction must reproduce the terrain-upload block's
+    /// hardcoded light direction BIT-FOR-BIT through the same
+    /// `set_lighting_params` math (negate, then `Vec3::normalize`).
+    #[test]
+    fn l1_pinned_sun_dir_matches_upload_hardcode_bitwise() {
+        let via_params = (-glam::Vec3::from(DEFAULT_SUN_DIR)).normalize();
+        let upload_hardcode = glam::Vec3::new(-0.5, -0.6, -0.4).normalize();
+        assert_eq!(via_params.to_array(), upload_hardcode.to_array());
+    }
+
+    /// The editor-side exposure default must equal the render crate's
+    /// canonical constant (the pre-L.1 POST-shader hardcode).
+    #[test]
+    fn l1_exposure_default_matches_render_crate() {
+        assert_eq!(
+            DEFAULT_EXPOSURE,
+            astraweave_render::scene_environment::DEFAULT_EXPOSURE
+        );
+    }
+
+    /// `TerrainLightingParams::default()` is the pinned delivered state —
+    /// pre-L.1 it advertised sun 1.8× / exposure 1.1, values no path
+    /// delivered (T2F §1.2 row 1, §3).
+    #[test]
+    fn l1_default_params_are_the_delivered_state() {
+        let d = TerrainLightingParams::default();
+        assert_eq!(d.sun_dir, DEFAULT_SUN_DIR);
+        assert_eq!(d.sun_color, [1.0, 0.98, 0.9]);
+        assert_eq!(d.sun_intensity, 1.0);
+        assert_eq!(d.ambient_color, [0.45, 0.50, 0.55]);
+        assert_eq!(d.ambient_intensity, 0.35);
+        assert_eq!(d.exposure, 1.35);
+    }
+
+    /// The panel's elevation/azimuth defaults reconstruct the pinned sun
+    /// direction to within 0.1° (the panel works in whole-degree sliders;
+    /// the delivered direction remains the upload hardcode until touched).
+    #[test]
+    fn l1_elevation_azimuth_round_trip() {
+        let elev = DEFAULT_SUN_ELEVATION_DEG.to_radians();
+        let azim = DEFAULT_SUN_AZIMUTH_DEG.to_radians();
+        let dir = glam::Vec3::new(elev.cos() * azim.cos(), elev.sin(), elev.cos() * azim.sin())
+            .normalize();
+        let pinned = glam::Vec3::from(DEFAULT_SUN_DIR).normalize();
+        let angle_deg = dir.dot(pinned).clamp(-1.0, 1.0).acos().to_degrees();
+        assert!(
+            angle_deg < 0.1,
+            "panel-derived direction is {angle_deg:.4}° off the pinned direction"
+        );
+    }
 }
