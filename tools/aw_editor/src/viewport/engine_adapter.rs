@@ -879,6 +879,16 @@ impl EngineRenderAdapter {
     /// consumers (e.g., editor depth-pick at viewport/renderer.rs:read_depth_at_pixel) to read
     /// terrain depth post-render. When `None`, falls back to internal depth target.
     /// See Sub-phase 3 Mediator Brush Real-Fix per Round-5-Closure 569415a7a §12 Option (a).
+    /// ED-3: forward the viewport's debug-shading selection to the engine.
+    pub fn set_debug_shading(&mut self, mode: u32, wireframe: bool) {
+        self.renderer.set_debug_shading(mode, wireframe);
+    }
+
+    /// ED-3: whether the device carries the wireframe pipeline variants.
+    pub fn wireframe_supported(&self) -> bool {
+        self.renderer.wireframe_supported()
+    }
+
     pub fn render_to_texture(
         &mut self,
         target: &wgpu::TextureView,

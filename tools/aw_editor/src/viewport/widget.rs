@@ -881,6 +881,14 @@ impl ViewportWidget {
                 // Force entity rebuild when gizmo is actively dragging (transforms changing)
                 let gizmo_dragging = self.gizmo_state.is_active();
 
+                // ED-3: keep the toolbar's wireframe availability in sync so
+                // the dropdown never offers a mode this device cannot draw.
+                if let Some(supported) =
+                    self.with_renderer("wireframe_supported", |r| r.wireframe_supported())
+                {
+                    self.toolbar.wireframe_supported = supported;
+                }
+
                 self.with_renderer("render", |renderer| {
                     if gizmo_dragging {
                         renderer.invalidate_entity_cache();

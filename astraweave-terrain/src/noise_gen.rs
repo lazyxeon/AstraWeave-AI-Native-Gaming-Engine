@@ -9,6 +9,23 @@ use serde::{Deserialize, Serialize};
 pub struct NoiseConfig {
     /// Base elevation noise settings
     pub base_elevation: NoiseLayer,
+    /// ED-3: user scale factor on the SPLINE-DERIVED base-elevation
+    /// amplitude, default 1.0 (bit-identical to pre-ED-3 output — `x * 1.0`
+    /// is exact in IEEE 754, preserving the D5FIX byte-identity contract).
+    ///
+    /// Context: under the climate path (the editor default), the amplitude
+    /// consumed by `sample_height_with_params` is
+    /// `params.base_elevation_amplitude`, blended from per-archetype splines
+    /// (`regional_archetype_mask.rs::blend_bootstrap_params`) — the
+    /// `base_elevation.amplitude` field above is NOT read there, which is
+    /// how the editor's Base Amplitude slider shipped inert (proven
+    /// byte-identical across three values; T2D_CAMERA_LIGHT.md §10.6 /
+    /// T2DF_OUTCOME.md §8). The archetype splines stay the authority
+    /// (E3 Phase A.2, ratified); this multiplier is the editor's explicit,
+    /// honest lever on top of them, surfaced for T.3's amplitude-finality
+    /// gate.
+    #[serde(default = "default_base_amplitude_scale")]
+    pub base_amplitude_scale: f32,
     /// Mountain ridge noise settings
     pub mountains: NoiseLayer,
     /// Detail noise for fine features
@@ -106,6 +123,10 @@ pub struct NoiseConfig {
     /// algorithmic and provenance details.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runevision: Option<crate::runevision_erosion::RunevisionConfig>,
+}
+
+fn default_base_amplitude_scale() -> f32 {
+    1.0
 }
 
 fn default_cave_frequency() -> f64 {
@@ -213,6 +234,7 @@ impl Default for NoiseConfig {
             // non-editor consumers) see Target B scale. Editor overrides
             // per-preset via `apply_biome_noise_preset` + Mountain Drama
             // slider.
+            base_amplitude_scale: default_base_amplitude_scale(),
             base_elevation: NoiseLayer {
                 enabled: true,
                 scale: 0.005,
@@ -660,7 +682,10 @@ impl TerrainNoise {
                     z * self.config.base_elevation.scale,
                 ]) as f32
             };
-            height += noise_val * params.base_elevation_amplitude;
+            // ED-3: the editor's amplitude lever — a scale on the
+            // spline-derived amplitude, default 1.0 (exact identity).
+            height +=
+                noise_val * (params.base_elevation_amplitude * self.config.base_amplitude_scale);
         }
 
         // Mountains — replaces `self.config.mountains.amplitude` with

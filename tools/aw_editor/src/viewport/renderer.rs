@@ -555,7 +555,7 @@ impl ViewportRenderer {
     /// * `physics_debug_lines` - Optional physics debug lines from PhysicsWorld
     /// * `show_grid` - Whether to render the grid at all
     /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
-    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe
+    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe, 3=Normals (world-space), 4=UVs
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -567,7 +567,7 @@ impl ViewportRenderer {
         physics_debug_lines: Option<&[astraweave_physics::DebugLine]>,
         show_grid: bool,
         crosshair_mode: bool,
-        _shading_mode: u32,
+        shading_mode: u32,
     ) -> Result<()> {
         astraweave_profiling::span!("viewport_render");
         // Ensure depth buffer matches target size
@@ -694,6 +694,17 @@ impl ViewportRenderer {
                     use astraweave_camera::CameraProducer;
                     adapter.update_water(&camera.to_render_view(), water_time);
                 }
+                // ED-3: the toolbar's shading mode goes live here — a debug
+                // value in the scene-env UBO (unlit/normals/UVs) plus the
+                // wireframe pipeline swap. Same pipelines, same passes.
+                let (debug_mode, wireframe) = match shading_mode {
+                    1 => (1u32, false), // Unlit
+                    2 => (0u32, true),  // Wireframe (lit)
+                    3 => (2u32, false), // Normals (world-space)
+                    4 => (3u32, false), // UVs
+                    _ => (0u32, false), // Lit
+                };
+                adapter.set_debug_shading(debug_mode, wireframe);
                 adapter.feed_entities(world, &self.entity_mesh_map, &self.selected_entities);
                 // Real-Fix.A per Round-5-Closure 569415a7a §12 Option (a):
                 // pass self.depth_view as the depth attachment so terrain + sky passes
@@ -1810,6 +1821,14 @@ impl ViewportRenderer {
     }
 
     /// Get mutable reference to engine adapter (if initialized)
+    /// ED-3: whether the wireframe pipeline variants exist on this device.
+    /// `false` until the engine adapter is initialized.
+    pub fn wireframe_supported(&self) -> bool {
+        self.engine_adapter
+            .as_ref()
+            .is_some_and(|a| a.wireframe_supported())
+    }
+
     pub fn engine_adapter_mut(&mut self) -> Option<&mut EngineRenderAdapter> {
         self.engine_adapter.as_mut()
     }

@@ -14,7 +14,8 @@
 //!     + snow_amount: f32
 //!   ambient_color:    vec3<f32> + ambient_intensity   (16 bytes)  offset 32
 //!   tint_color:       vec3<f32> + tint_alpha: f32     (16 bytes)  offset 48
-//!   blend_factor:     f32 + _pad_align: vec3<f32>     (16 bytes)  offset 64
+//!   blend_factor:     f32 + debug_mode: f32           (16 bytes)  offset 64
+//!     + _pad_align: vec2<f32>
 //!   sun_color:        vec3<f32> + sun_intensity: f32  (16 bytes)  offset 80
 //! ```
 //!
@@ -68,8 +69,13 @@ pub struct SceneEnvironmentUBO {
     /// Current transition blend factor (0.0 = source biome, 1.0 = target biome).
     /// Useful for shader effects that want to know about the transition.
     pub blend_factor: f32,
-    /// Padding to align `_pad1` to 16-byte boundary (WGSL vec3 alignment).
-    pub _pad_align: [f32; 3],
+    /// ED-3 debug shading mode (0 = lit, 1 = unlit albedo, 2 = world-space
+    /// normals, 3 = UVs). Occupies the first former `_pad_align` float, so
+    /// the 96-byte layout is unchanged. Driven by the editor's viewport
+    /// shading dropdown; 0 in all game/runtime paths.
+    pub debug_mode: f32,
+    /// Padding to keep `sun_color` at its 16-byte boundary.
+    pub _pad_align: [f32; 2],
 
     /// Sun color (linear RGB) for directional light in PBR shader.
     pub sun_color: [f32; 3],
@@ -103,7 +109,8 @@ impl SceneEnvironmentUBO {
             tint_color,
             tint_alpha,
             blend_factor,
-            _pad_align: [0.0; 3],
+            debug_mode: 0.0,
+            _pad_align: [0.0; 2],
             sun_color: [1.0, 0.98, 0.9], // warm white default
             sun_intensity: 1.0,
         }
@@ -162,6 +169,9 @@ pub struct SceneEnvironment {
     /// Snow accumulation level (0.0–1.0).
     /// Accumulates during snow, melts when warm.
     pub snow_amount: f32,
+    /// ED-3 debug shading mode (0 = lit, 1 = unlit, 2 = normals, 3 = UVs).
+    /// Editor-only; stays 0 in game/runtime paths.
+    pub debug_mode: u32,
 }
 
 impl Default for SceneEnvironment {
@@ -177,6 +187,7 @@ impl Default for SceneEnvironment {
             sun_intensity: 1.0,
             wetness: 0.0,
             snow_amount: 0.0,
+            debug_mode: 0,
         }
     }
 }
@@ -213,6 +224,7 @@ impl SceneEnvironment {
         ubo.sun_intensity = self.sun_intensity;
         ubo.wetness = self.wetness.clamp(0.0, 1.0);
         ubo.snow_amount = self.snow_amount.clamp(0.0, 1.0);
+        ubo.debug_mode = self.debug_mode as f32;
         ubo
     }
 
@@ -310,7 +322,7 @@ struct SceneEnvironment {
     tint_color:         vec3<f32>,
     tint_alpha:         f32,
     blend_factor:       f32,
-    _pad1x: f32, _pad1y: f32, _pad1z: f32,
+    debug_mode: f32, _pad1y: f32, _pad1z: f32,
     sun_color:          vec3<f32>,
     sun_intensity:      f32,
 };

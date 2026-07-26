@@ -5202,14 +5202,18 @@ impl EditorApp {
                         "Viewport view mode: {}",
                         mode_names.get(mode).unwrap_or(&"Unknown")
                     );
-                    // Sync to actual viewport shading mode
+                    // Sync to actual viewport shading mode. ED-3: all five
+                    // entries are real now — Normals and UVs were formerly
+                    // advertised here and silently mapped to Lit.
                     if let Some(viewport) = &mut self.viewport {
                         use crate::viewport::toolbar::ShadingMode;
                         let shading = match mode {
                             0 => ShadingMode::Lit,       // Shaded
                             1 => ShadingMode::Wireframe, // Wireframe
                             2 => ShadingMode::Unlit,     // Unlit
-                            _ => ShadingMode::Lit,       // Normals/UVs → fallback to Lit
+                            3 => ShadingMode::Normals,   // Normals (world-space)
+                            4 => ShadingMode::Uvs,       // UVs
+                            _ => ShadingMode::Lit,
                         };
                         viewport.toolbar_mut().shading_mode = shading;
                     }

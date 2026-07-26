@@ -223,6 +223,10 @@ pub struct TerrainPanel {
     lacunarity: f32,
     persistence: f32,
     base_amplitude: f32,
+    /// ED-3: multiplier on the spline-derived base amplitude (1.0 = the
+    /// archetype-authored value). Replaces the inert absolute slider as the
+    /// user-facing lever; surfaced for T.3's amplitude-finality gate.
+    amplitude_scale: f32,
 
     // Phase 1.6-F.4.B.3.D.5b: Mountain Drama slider REMOVED per §1.4.
     // The slider was inert since D.3c (no preset to multiply). Per-biome
@@ -507,6 +511,7 @@ impl Default for TerrainPanel {
             lacunarity: 2.0,
             persistence: 0.5,
             base_amplitude: 50.0,
+            amplitude_scale: 1.0,
             erosion_preset: ErosionPresetType::Mountain,
             hydraulic_erosion: HydraulicErosionParams::default(),
             thermal_erosion: ThermalErosionParams::default(),
@@ -1058,10 +1063,17 @@ impl TerrainPanel {
                     .changed();
             });
 
+            // ED-3: the old absolute "Amplitude" slider was INERT under the
+            // climate path (archetype splines own the amplitude; proven
+            // byte-identical across three values, T2DF_OUTCOME.md §8). The
+            // honest control is a MULTIPLIER on the spline-derived value.
             ui.horizontal(|ui| {
-                ui.label("Amplitude:");
+                ui.label("Amplitude × (spline scale):");
                 changed |= ui
-                    .add(egui::Slider::new(&mut self.base_amplitude, 10.0..=200.0))
+                    .add(egui::Slider::new(&mut self.amplitude_scale, 0.25..=2.0))
+                    .on_hover_text(
+                        "Scales the archetype-spline base-elevation amplitude.                          1.0 = the authored value.",
+                    )
                     .changed();
             });
 
@@ -1085,6 +1097,7 @@ impl TerrainPanel {
                 self.lacunarity = 2.0;
                 self.persistence = 0.5;
                 self.base_amplitude = 50.0;
+                self.amplitude_scale = 1.0;
                 self.terrain_state.configure(self.seed, &self.primary_biome);
             }
         });
@@ -1984,11 +1997,11 @@ impl TerrainPanel {
         }
 
         tracing::info!(
-            "regenerate_terrain: biome='{}', seed={}, chunk_radius={}, base_amp={}",
+            "regenerate_terrain: biome='{}', seed={}, chunk_radius={}, amplitude_scale={}",
             self.primary_biome,
             self.seed,
             self.chunk_radius,
-            self.base_amplitude
+            self.amplitude_scale
         );
 
         // Prepare a fresh TerrainState with current config on the background thread.
@@ -2019,6 +2032,8 @@ impl TerrainPanel {
             self.persistence as f64,
             self.base_amplitude,
         );
+        // ED-3: the live amplitude lever (scale on the archetype splines).
+        state.set_amplitude_scale(self.amplitude_scale);
         // Apply the selected world archetype to the climate config.
         let archetype = if self.world_archetype_id
             == astraweave_terrain::world_archetypes::WorldArchetypeId::Custom
@@ -2658,6 +2673,9 @@ mod tests {
     fn test_terrain_generation_settings() {
         let panel = TerrainPanel::new();
         assert!((panel.base_amplitude - 50.0).abs() < 0.01);
+        // ED-3: the user-facing amplitude lever is a multiplier on the
+        // spline-derived amplitude, defaulting to the authored value.
+        assert!((panel.amplitude_scale - 1.0).abs() < f32::EPSILON);
         assert_eq!(panel.seed, 12345);
     }
 

@@ -168,6 +168,19 @@ impl TerrainState {
         self.terrain_dirty = true;
     }
 
+    /// ED-3: scale factor on the SPLINE-DERIVED base-elevation amplitude
+    /// (default 1.0 = bit-identical output). This is the lever the panel's
+    /// "Amplitude ×" slider drives — under the climate path the archetype
+    /// splines own the amplitude and `set_noise_params`'s `amplitude`
+    /// argument is not consumed (the defect T.2d Experiment F proved
+    /// byte-identical; see `docs/audits/T2DF_OUTCOME.md` §8).
+    pub fn set_amplitude_scale(&mut self, scale: f32) {
+        if self.config.noise.base_amplitude_scale != scale {
+            self.config.noise.base_amplitude_scale = scale;
+            self.terrain_dirty = true;
+        }
+    }
+
     // Phase 1.6-F.4.B.3.D.3c: `apply_biome_noise_preset` REMOVED. Per-vertex
     // biome assignment now lives in `WorldGenerator::generate_chunk_with_climate`
     // (terrain crate). Editor's `regenerate_terrain` no longer mutates

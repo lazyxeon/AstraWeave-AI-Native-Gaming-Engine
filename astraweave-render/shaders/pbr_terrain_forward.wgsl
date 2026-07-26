@@ -90,7 +90,8 @@ struct TerrainSceneEnv {
     tint_color: vec3<f32>,
     tint_alpha: f32,
     blend_factor: f32,
-    _pad1x: f32,
+    // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
+    debug_mode: f32,
     _pad1y: f32,
     _pad1z: f32,
     sun_color: vec3<f32>,
@@ -364,6 +365,20 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let metallic = clamp(final_metallic, 0.0, 1.0);
     let roughness = clamp(final_roughness, 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04), base_color, metallic);
+
+    // ED-3 debug shading (uniform branch — same pipeline, same pass). The UV
+    // view shows the CHUNK parameterization (fract(in.uv)); per-layer tiling
+    // multiplies this by uv_scale uniformly, so chunk-level wrap/scale
+    // problems are what this view exposes.
+    if (uScene.debug_mode > 0.5) {
+        if (uScene.debug_mode < 1.5) {
+            return vec4<f32>(base_color, 1.0);               // 1: unlit albedo
+        }
+        if (uScene.debug_mode < 2.5) {
+            return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
+        }
+        return vec4<f32>(fract(in.uv), 0.0, 1.0);            // 3: UVs
+    }
 
     // 5. Unified BRDF (Cook-Torrance + Burley + multiscatter) — same helper
     //    SHADER_SRC uses. The material-LOD tiers were retired in T.2d.F: the

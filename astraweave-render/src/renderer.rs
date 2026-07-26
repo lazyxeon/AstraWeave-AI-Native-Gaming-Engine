@@ -94,7 +94,8 @@ struct SceneEnv {
     tint_color: vec3<f32>,
     tint_alpha: f32,
     blend_factor: f32,
-    _pad1x: f32, _pad1y: f32, _pad1z: f32,
+    // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
+    debug_mode: f32, _pad1y: f32, _pad1z: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -226,6 +227,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     roughness = clamp(min(roughness, max(mr.g, 0.04)), 0.04, 1.0);
 
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
+
+    // ED-3 debug shading (uniform branch — same pipeline, same pass; the
+    // editor's viewport dropdown drives uScene.debug_mode, 0 in game paths).
+    if (uScene.debug_mode > 0.5) {
+        if (uScene.debug_mode < 1.5) {
+            return vec4<f32>(base_color, 1.0);               // 1: unlit albedo
+        }
+        if (uScene.debug_mode < 2.5) {
+            return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
+        }
+        return vec4<f32>(fract(input.uv), 0.0, 1.0);         // 3: UVs
+    }
 
     // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
     // (from brdf_common.wgsl). One BRDF for every fragment — the material-LOD
@@ -500,7 +513,8 @@ struct SceneEnv {
     tint_color: vec3<f32>,
     tint_alpha: f32,
     blend_factor: f32,
-    _pad1x: f32, _pad1y: f32, _pad1z: f32,
+    // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
+    debug_mode: f32, _pad1y: f32, _pad1z: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -560,6 +574,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     var metallic = clamp(uMaterial.metallic, 0.0, 1.0);
     var roughness = clamp(uMaterial.roughness, 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
+
+    // ED-3 debug shading. The skinned vertex format carries no UVs, so mode 3
+    // renders a mid-gray sentinel rather than lying with garbage data.
+    if (uScene.debug_mode > 0.5) {
+        if (uScene.debug_mode < 1.5) {
+            return vec4<f32>(base_color, 1.0);               // 1: unlit albedo
+        }
+        if (uScene.debug_mode < 2.5) {
+            return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
+        }
+        return vec4<f32>(vec3<f32>(0.5), 1.0);               // 3: UVs (none — sentinel)
+    }
 
     // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
     // (from brdf_common.wgsl). One BRDF for every fragment — the material-LOD
@@ -713,6 +739,11 @@ pub struct Renderer {
     #[allow(dead_code)]
     shader: wgpu::ShaderModule,
     pipeline: wgpu::RenderPipeline,
+    /// ED-3 wireframe variant (polygon_mode Line); `None` without
+    /// `POLYGON_MODE_LINE`.
+    pipeline_wire: Option<wgpu::RenderPipeline>,
+    /// ED-3: draw meshes/terrain with the wireframe variants this frame.
+    wireframe_enabled: bool,
     material_buf: wgpu::Buffer,
     material_bg: wgpu::BindGroup,
     post_pipeline: wgpu::RenderPipeline,
@@ -2334,6 +2365,61 @@ impl Renderer {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
+
+        // ED-3: wireframe variant of the main static-mesh pipeline —
+        // identical descriptor, polygon_mode Line. Feature-gated: the
+        // editor's device requests POLYGON_MODE_LINE when the adapter
+        // supports it; without it the UI hides the Wireframe entry, so the
+        // fill fallback in `main_mesh_pipeline()` is never user-reachable.
+        let pipeline_wire = if device
+            .features()
+            .contains(wgpu::Features::POLYGON_MODE_LINE)
+        {
+            Some(
+                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    cache: pipeline_cache.as_ref(),
+                    label: Some("pipeline-wire"),
+                    layout: Some(&pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: Some("vs"),
+                        buffers: &[
+                            crate::types::Vertex::layout(),
+                            crate::types::InstanceRaw::layout(),
+                        ],
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: Some("fs"),
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: wgpu::TextureFormat::Rgba16Float,
+                            blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    }),
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: Some(wgpu::Face::Back),
+                        polygon_mode: wgpu::PolygonMode::Line,
+                        ..Default::default()
+                    },
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: depth.format,
+                        depth_write_enabled: true,
+                        depth_compare: wgpu::CompareFunction::Less,
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState::default(),
+                    }),
+                    multisample: wgpu::MultisampleState::default(),
+                    multiview: None,
+                }),
+            )
+        } else {
+            None
+        };
         // after instance_buf creation
         let weather = crate::effects::WeatherFx::new(&device, 800);
 
@@ -3236,6 +3322,8 @@ fn vs(input: VSIn) -> VSOut {
             depth,
             shader,
             pipeline,
+            pipeline_wire,
+            wireframe_enabled: false,
             material_buf,
             material_bg,
             post_pipeline,
@@ -3387,6 +3475,35 @@ fn vs(input: VSIn) -> VSOut {
     }
 
     /// Returns the GPU profiler, if timestamp queries are supported.
+    /// ED-3: set the viewport debug-shading state for subsequent frames.
+    ///
+    /// `mode`: 0 = lit, 1 = unlit albedo, 2 = world-space normals, 3 = UVs —
+    /// written into the scene-env UBO and branched on uniformly in the main,
+    /// skinned, and terrain-forward fragment shaders (same pipelines, same
+    /// passes; no second render path). `wireframe` swaps the mesh and terrain
+    /// pipelines for their polygon-mode-Line variants; it is ignored (kept
+    /// false) when the device lacks `POLYGON_MODE_LINE` — callers should gate
+    /// their UI on [`Self::wireframe_supported`] so that cannot silently
+    /// no-op.
+    pub fn set_debug_shading(&mut self, mode: u32, wireframe: bool) {
+        self.scene_env.debug_mode = mode;
+        self.wireframe_enabled = wireframe && self.pipeline_wire.is_some();
+    }
+
+    /// ED-3: whether the device carries the wireframe pipeline variants.
+    pub fn wireframe_supported(&self) -> bool {
+        self.pipeline_wire.is_some()
+    }
+
+    /// The main static-mesh pipeline for this frame (fill or wire).
+    fn main_mesh_pipeline(&self) -> &wgpu::RenderPipeline {
+        if self.wireframe_enabled {
+            self.pipeline_wire.as_ref().unwrap_or(&self.pipeline)
+        } else {
+            &self.pipeline
+        }
+    }
+
     pub fn gpu_profiler(&self) -> Option<&crate::gpu_profiler::GpuProfiler> {
         self.gpu_profiler.as_ref()
     }
@@ -5232,7 +5349,7 @@ fn vs(input: VSIn) -> VSOut {
                 occlusion_query_set: None,
             });
 
-            rp.set_pipeline(&self.pipeline);
+            rp.set_pipeline(self.main_mesh_pipeline());
             rp.set_bind_group(0, &self.camera_bind_group, &[]);
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
@@ -5771,6 +5888,9 @@ fn vs(input: VSIn) -> VSOut {
                 if let Some(tf) = self.terrain_forward.as_mut() {
                     tf.manager
                         .ensure_forward_pipeline(&self.device, color_format, depth_format);
+                    // ED-3: keep the terrain manager's wireframe selection in
+                    // lockstep with the frame's debug-shading state.
+                    tf.manager.set_wireframe(self.wireframe_enabled);
                     tf.manager
                         .update_forward_camera(&self.queue, view_proj, light_dir, camera_pos);
                     tf.manager
@@ -5810,7 +5930,7 @@ fn vs(input: VSIn) -> VSOut {
                 occlusion_query_set: None,
             });
 
-            rp.set_pipeline(&self.pipeline);
+            rp.set_pipeline(self.main_mesh_pipeline());
             rp.set_bind_group(0, &self.camera_bind_group, &[]);
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
@@ -5939,7 +6059,7 @@ fn vs(input: VSIn) -> VSOut {
                 // water, weather) inherits the pipeline/bindings it
                 // expects. Cheap — each set_bind_group is O(1).
                 if !tf.chunks.is_empty() {
-                    rp.set_pipeline(&self.pipeline);
+                    rp.set_pipeline(self.main_mesh_pipeline());
                     rp.set_bind_group(0, &self.camera_bind_group, &[]);
                     rp.set_bind_group(1, &self.material_bg, &[]);
                     rp.set_bind_group(2, &self.light_bg, &[]);
@@ -7955,6 +8075,37 @@ mod tests {
     /// fails again if anyone reintroduces a stepped shading tier. The ratified
     /// fallback for any future perf need is a falloff CONTINUOUS in footprint,
     /// never a threshold.
+    /// ED-3: the viewport shading dropdown must reach the shaders. The
+    /// scene-env UBO carries `debug_mode` (a commandeered pad float, layout
+    /// unchanged at 96 B), and every surface the editor shades — static PBR,
+    /// skinned, terrain-forward — branches on it. This test fails on
+    /// pre-ED-3 code (no `debug_mode` existed anywhere) and fails again if
+    /// a shader loses the branch while the UI still offers the modes.
+    #[test]
+    fn ed3_debug_shading_reaches_every_shader_surface() {
+        let terrain_src = include_str!("../shaders/pbr_terrain_forward.wgsl");
+        for (name, src) in [
+            ("SHADER_SRC (static PBR)", SHADER_SRC),
+            ("SKINNED_SHADER_SRC", SKINNED_SHADER_SRC),
+            ("pbr_terrain_forward.wgsl", terrain_src),
+        ] {
+            assert!(
+                src.contains("debug_mode: f32"),
+                "{name}: SceneEnv must declare debug_mode (the shading dropdown's uniform)"
+            );
+            assert!(
+                src.contains("uScene.debug_mode"),
+                "{name}: the fragment shader must branch on uScene.debug_mode —                  without it the viewport shading dropdown is inert again (the ED-3 defect)"
+            );
+        }
+        // The UBO stays 96 bytes — debug_mode occupies a former pad float.
+        assert_eq!(
+            std::mem::size_of::<crate::scene_environment::SceneEnvironmentUBO>(),
+            96,
+            "SceneEnvironmentUBO layout must not grow: debug_mode replaces padding"
+        );
+    }
+
     #[test]
     fn material_lod_tiers_are_retired() {
         let brdf_src = include_str!("../shaders/brdf_common.wgsl");

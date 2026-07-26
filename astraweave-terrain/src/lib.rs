@@ -985,4 +985,46 @@ mod tests {
 
         Ok(())
     }
+
+    /// ED-3: `base_amplitude_scale` is the editor's LIVE amplitude lever on
+    /// the climate path — the path where the old `base_elevation.amplitude`
+    /// slider was proven inert (three values rendered byte-identical;
+    /// T2DF_OUTCOME.md §8). Two contracts, one test:
+    ///
+    /// 1. **Identity at 1.0** — the default must be BIT-identical to the
+    ///    pre-ED-3 output (`x * 1.0` is exact in IEEE 754), preserving the
+    ///    D5FIX byte-identity discipline.
+    /// 2. **Live at 0.5** — a non-unit scale must change generated heights,
+    ///    which is exactly the check that proved the old control dead.
+    ///
+    /// This test fails on pre-ED-3 code at compile time (the field did not
+    /// exist), and fails at runtime on any regression that disconnects the
+    /// scale from `sample_height_with_params`.
+    #[test]
+    fn ed3_base_amplitude_scale_is_live_and_identity_at_default() -> anyhow::Result<()> {
+        let chunk_id = ChunkId::new(0, 0);
+        let heights = |scale: f32| -> anyhow::Result<Vec<f32>> {
+            let mut config = WorldConfig::default();
+            config.noise.base_amplitude_scale = scale;
+            let generator = WorldGenerator::new(config);
+            let chunk = generator.generate_chunk_with_climate(chunk_id, ClimateBias::Temperate)?;
+            Ok(chunk.heightmap().data().to_vec())
+        };
+
+        let baseline = heights(1.0)?;
+        let default_cfg = heights(WorldConfig::default().noise.base_amplitude_scale)?;
+        assert_eq!(
+            baseline, default_cfg,
+            "scale 1.0 must be the default and bit-identical to it"
+        );
+
+        let halved = heights(0.5)?;
+        assert_ne!(
+            baseline, halved,
+            "a non-unit amplitude scale must change generated heights — \
+             if this fails, the editor's amplitude lever has gone inert again \
+             (the T.2d Experiment F defect)"
+        );
+        Ok(())
+    }
 }

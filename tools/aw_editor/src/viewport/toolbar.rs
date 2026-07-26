@@ -79,6 +79,12 @@ pub struct ViewportToolbar {
     /// Current shading mode
     pub shading_mode: ShadingMode,
 
+    /// ED-3: whether the device carries the wireframe pipeline variants.
+    /// Synced each frame by the viewport widget from the renderer; when
+    /// false the Wireframe entry is not offered (a control that cannot work
+    /// must not be shown).
+    pub wireframe_supported: bool,
+
     /// Grid visibility
     pub show_grid: bool,
 
@@ -132,6 +138,7 @@ impl Default for ViewportToolbar {
     fn default() -> Self {
         Self {
             shading_mode: ShadingMode::Lit,
+            wireframe_supported: true,
             show_grid: true,
             grid_type: GridType::Infinite,
             snap_enabled: false,
@@ -191,24 +198,19 @@ impl ViewportToolbar {
                     ui.horizontal(|ui| {
                         // Shading Mode
                         egui::ComboBox::from_id_salt("shading_mode")
-                            .selected_text(format!("{:?}", self.shading_mode))
-                            .width(90.0)
+                            .selected_text(self.shading_mode.name())
+                            .width(110.0)
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut self.shading_mode,
-                                    ShadingMode::Lit,
-                                    "Lit",
-                                );
-                                ui.selectable_value(
-                                    &mut self.shading_mode,
-                                    ShadingMode::Unlit,
-                                    "Unlit",
-                                );
-                                ui.selectable_value(
-                                    &mut self.shading_mode,
-                                    ShadingMode::Wireframe,
-                                    "Wireframe",
-                                );
+                                for mode in ShadingMode::all() {
+                                    // ED-3: never offer a mode that cannot
+                                    // work — Wireframe needs the device's
+                                    // POLYGON_MODE_LINE pipelines.
+                                    if *mode == ShadingMode::Wireframe && !self.wireframe_supported
+                                    {
+                                        continue;
+                                    }
+                                    ui.selectable_value(&mut self.shading_mode, *mode, mode.name());
+                                }
                             });
 
                         ui.separator();
@@ -461,12 +463,25 @@ pub enum ShadingMode {
 
     /// Wireframe overlay
     Wireframe,
+
+    /// ED-3: world-space normal visualisation (N * 0.5 + 0.5)
+    Normals,
+
+    /// ED-3: UV visualisation (fract(uv); terrain shows the chunk
+    /// parameterization; skinned meshes carry no UVs and render mid-gray)
+    Uvs,
 }
 
 impl ShadingMode {
     /// Get all shading modes
     pub fn all() -> &'static [ShadingMode] {
-        &[ShadingMode::Lit, ShadingMode::Unlit, ShadingMode::Wireframe]
+        &[
+            ShadingMode::Lit,
+            ShadingMode::Unlit,
+            ShadingMode::Wireframe,
+            ShadingMode::Normals,
+            ShadingMode::Uvs,
+        ]
     }
 
     /// Display name for UI
@@ -475,6 +490,8 @@ impl ShadingMode {
             ShadingMode::Lit => "Lit",
             ShadingMode::Unlit => "Unlit",
             ShadingMode::Wireframe => "Wireframe",
+            ShadingMode::Normals => "Normals (world)",
+            ShadingMode::Uvs => "UVs",
         }
     }
 
@@ -484,6 +501,8 @@ impl ShadingMode {
             ShadingMode::Lit => "[Lt]",
             ShadingMode::Unlit => "[Un]",
             ShadingMode::Wireframe => "[Wf]",
+            ShadingMode::Normals => "[Nm]",
+            ShadingMode::Uvs => "[UV]",
         }
     }
 
@@ -502,7 +521,9 @@ impl ShadingMode {
         match self {
             ShadingMode::Lit => ShadingMode::Unlit,
             ShadingMode::Unlit => ShadingMode::Wireframe,
-            ShadingMode::Wireframe => ShadingMode::Lit,
+            ShadingMode::Wireframe => ShadingMode::Normals,
+            ShadingMode::Normals => ShadingMode::Uvs,
+            ShadingMode::Uvs => ShadingMode::Lit,
         }
     }
 
@@ -511,6 +532,8 @@ impl ShadingMode {
             ShadingMode::Lit => 0,
             ShadingMode::Unlit => 1,
             ShadingMode::Wireframe => 2,
+            ShadingMode::Normals => 3,
+            ShadingMode::Uvs => 4,
         }
     }
 }
@@ -605,6 +628,18 @@ mod tests {
         assert_eq!(ShadingMode::Lit.to_u32(), 0);
         assert_eq!(ShadingMode::Unlit.to_u32(), 1);
         assert_eq!(ShadingMode::Wireframe.to_u32(), 2);
+        // ED-3: the formerly phantom debug views are real modes now. These
+        // values are the render-path contract (ViewportRenderer::render maps
+        // them to the scene-env debug uniform / wireframe pipeline swap).
+        assert_eq!(ShadingMode::Normals.to_u32(), 3);
+        assert_eq!(ShadingMode::Uvs.to_u32(), 4);
+        assert_eq!(ShadingMode::all().len(), 5);
+        // The cycle visits every mode and returns to start.
+        let mut m = ShadingMode::Lit;
+        for _ in 0..5 {
+            m = m.cycle();
+        }
+        assert_eq!(m, ShadingMode::Lit);
     }
 
     #[test]
@@ -688,11 +723,16 @@ mod tests {
 
     #[test]
     fn test_shading_mode_all() {
+        // ED-3: Normals and UVs joined the enum as REAL modes (they were
+        // formerly advertised in the docked dropdown and silently mapped
+        // to Lit).
         let all = ShadingMode::all();
-        assert_eq!(all.len(), 3);
+        assert_eq!(all.len(), 5);
         assert!(all.contains(&ShadingMode::Lit));
         assert!(all.contains(&ShadingMode::Unlit));
         assert!(all.contains(&ShadingMode::Wireframe));
+        assert!(all.contains(&ShadingMode::Normals));
+        assert!(all.contains(&ShadingMode::Uvs));
     }
 
     #[test]
@@ -734,7 +774,10 @@ mod tests {
     fn test_shading_mode_cycle() {
         assert_eq!(ShadingMode::Lit.cycle(), ShadingMode::Unlit);
         assert_eq!(ShadingMode::Unlit.cycle(), ShadingMode::Wireframe);
-        assert_eq!(ShadingMode::Wireframe.cycle(), ShadingMode::Lit);
+        // ED-3: the cycle continues through the new debug views.
+        assert_eq!(ShadingMode::Wireframe.cycle(), ShadingMode::Normals);
+        assert_eq!(ShadingMode::Normals.cycle(), ShadingMode::Uvs);
+        assert_eq!(ShadingMode::Uvs.cycle(), ShadingMode::Lit);
     }
 
     #[test]

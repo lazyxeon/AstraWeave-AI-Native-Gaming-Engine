@@ -268,7 +268,8 @@ impl Default for CameraForwardGpu {
 /// * `tint_color`       — vec3<f32>   offset 48, size 12
 /// * `tint_alpha`       — f32         offset 60, size 4  → 64
 /// * `blend_factor`     — f32         offset 64, size 4
-/// * `_pad1`            — [f32; 3]    offset 68, size 12 → 80
+/// * `debug_mode`       — f32         offset 68, size 4 (ED-3 debug shading)
+/// * `_pad1`            — [f32; 2]    offset 72, size 8  → 80
 /// * `sun_color`        — vec3<f32>   offset 80, size 12
 /// * `sun_intensity`    — f32         offset 92, size 4  → 96
 #[repr(C, align(16))]
@@ -284,7 +285,9 @@ pub struct TerrainSceneEnvGpu {
     pub tint_color: [f32; 3],
     pub tint_alpha: f32,
     pub blend_factor: f32,
-    pub _pad1: [f32; 3],
+    /// ED-3 debug shading mode (mirrors `SceneEnvironmentUBO::debug_mode`).
+    pub debug_mode: f32,
+    pub _pad1: [f32; 2],
     pub sun_color: [f32; 3],
     pub sun_intensity: f32,
 }
@@ -302,7 +305,8 @@ impl Default for TerrainSceneEnvGpu {
             tint_color: [1.0, 1.0, 1.0],
             tint_alpha: 0.0,
             blend_factor: 0.0,
-            _pad1: [0.0; 3],
+            debug_mode: 0.0,
+            _pad1: [0.0; 2],
             sun_color: [1.0, 0.98, 0.92],
             sun_intensity: 1.5,
         }
@@ -368,6 +372,13 @@ pub struct TerrainMaterialManager {
     forward_camera_bg: wgpu::BindGroup,
     forward_terrain_bg: wgpu::BindGroup,
     forward_pipeline: Option<wgpu::RenderPipeline>,
+    /// ED-3 wireframe variant of `forward_pipeline` (polygon_mode Line).
+    /// `None` when the device lacks `POLYGON_MODE_LINE`; rebuilt alongside
+    /// the fill pipeline on any format change.
+    forward_pipeline_wire: Option<wgpu::RenderPipeline>,
+    /// ED-3: draw with the wireframe variant this frame (viewport shading
+    /// dropdown). Synced by `Renderer` before terrain draws.
+    wireframe: bool,
     forward_pipeline_formats: Option<(wgpu::TextureFormat, Option<wgpu::TextureFormat>)>,
     forward_chunk_splats: HashMap<ChunkKey, ChunkSplatForward>,
 }
@@ -626,6 +637,8 @@ impl TerrainMaterialManager {
             forward_camera_bg,
             forward_terrain_bg,
             forward_pipeline: None,
+            forward_pipeline_wire: None,
+            wireframe: false,
             forward_pipeline_formats: None,
             forward_chunk_splats: HashMap::new(),
         })
@@ -1041,48 +1054,71 @@ impl TerrainMaterialManager {
                     bias: wgpu::DepthBiasState::default(),
                 });
 
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("terrain-forward-pipeline"),
-                    layout: Some(&pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module: &shader,
-                        entry_point: Some("vs_main"),
-                        buffers: &[TerrainSplatVertex::LAYOUT],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &shader,
-                        entry_point: Some("fs_main"),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: color_format,
-                            // REPLACE: terrain is opaque and writes over whatever
-                            // geometry has already been drawn to this pixel.
-                            // Depth test gates occlusion correctness.
-                            blend: Some(wgpu::BlendState::REPLACE),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    }),
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
-                        strip_index_format: None,
-                        front_face: wgpu::FrontFace::Ccw,
-                        cull_mode: Some(wgpu::Face::Back),
-                        unclipped_depth: false,
-                        polygon_mode: wgpu::PolygonMode::Fill,
-                        conservative: false,
-                    },
-                    depth_stencil,
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview: None,
-                    cache: None,
-                })
+                let build = |polygon_mode: wgpu::PolygonMode, label: &str| {
+                    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                        label: Some(label),
+                        layout: Some(&pipeline_layout),
+                        vertex: wgpu::VertexState {
+                            module: &shader,
+                            entry_point: Some("vs_main"),
+                            buffers: &[TerrainSplatVertex::LAYOUT],
+                            compilation_options: wgpu::PipelineCompilationOptions::default(),
+                        },
+                        fragment: Some(wgpu::FragmentState {
+                            module: &shader,
+                            entry_point: Some("fs_main"),
+                            targets: &[Some(wgpu::ColorTargetState {
+                                format: color_format,
+                                // REPLACE: terrain is opaque and writes over whatever
+                                // geometry has already been drawn to this pixel.
+                                // Depth test gates occlusion correctness.
+                                blend: Some(wgpu::BlendState::REPLACE),
+                                write_mask: wgpu::ColorWrites::ALL,
+                            })],
+                            compilation_options: wgpu::PipelineCompilationOptions::default(),
+                        }),
+                        primitive: wgpu::PrimitiveState {
+                            topology: wgpu::PrimitiveTopology::TriangleList,
+                            strip_index_format: None,
+                            front_face: wgpu::FrontFace::Ccw,
+                            cull_mode: Some(wgpu::Face::Back),
+                            unclipped_depth: false,
+                            polygon_mode,
+                            conservative: false,
+                        },
+                        depth_stencil: depth_stencil.clone(),
+                        multisample: wgpu::MultisampleState::default(),
+                        multiview: None,
+                        cache: None,
+                    })
+                };
+                // ED-3: wireframe variant, feature-gated. The editor's device
+                // requests POLYGON_MODE_LINE when the adapter supports it
+                // (main.rs device setup); when absent the UI hides the
+                // Wireframe entry rather than silently no-op'ing.
+                self.forward_pipeline_wire = if device
+                    .features()
+                    .contains(wgpu::Features::POLYGON_MODE_LINE)
+                {
+                    Some(build(
+                        wgpu::PolygonMode::Line,
+                        "terrain-forward-pipeline-wire",
+                    ))
+                } else {
+                    None
+                };
+                build(wgpu::PolygonMode::Fill, "terrain-forward-pipeline")
             }
         };
 
         self.forward_pipeline_formats = Some((color_format, depth_format));
         // `Option::insert` stores and returns `&mut T`, reborrowed as `&T`.
         self.forward_pipeline.insert(pipeline)
+    }
+
+    /// ED-3: select fill vs wireframe for subsequent `draw_chunk_forward`s.
+    pub fn set_wireframe(&mut self, on: bool) {
+        self.wireframe = on;
     }
 
     /// Write the Phase 1 forward-path camera UBO (96 B, matches SHADER_SRC Camera).
@@ -1247,6 +1283,14 @@ impl TerrainMaterialManager {
     ) -> bool {
         let Some(pipeline) = self.forward_pipeline.as_ref() else {
             return false;
+        };
+        // ED-3: swap in the wireframe variant when requested. Falls back to
+        // fill only if the variant is absent (device without
+        // POLYGON_MODE_LINE — in which case the UI never offers Wireframe).
+        let pipeline = if self.wireframe {
+            self.forward_pipeline_wire.as_ref().unwrap_or(pipeline)
+        } else {
+            pipeline
         };
         let Some(splat) = self.forward_chunk_splats.get(&chunk) else {
             return false;
@@ -1643,9 +1687,13 @@ mod tests {
         assert_eq!(offset_of!(TerrainSceneEnvGpu, tint_color), 48);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, tint_alpha), 60);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, blend_factor), 64);
-        assert_eq!(offset_of!(TerrainSceneEnvGpu, _pad1), 68);
+        // ED-3: debug_mode occupies the first former pad float (offset 68);
+        // the remaining pad shrinks to [f32; 2]. Total size stays 96.
+        assert_eq!(offset_of!(TerrainSceneEnvGpu, debug_mode), 68);
+        assert_eq!(offset_of!(TerrainSceneEnvGpu, _pad1), 72);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, sun_color), 80);
         assert_eq!(offset_of!(TerrainSceneEnvGpu, sun_intensity), 92);
+        assert_eq!(std::mem::size_of::<TerrainSceneEnvGpu>(), 96);
     }
 
     #[test]
