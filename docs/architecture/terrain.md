@@ -9,8 +9,8 @@ lifecycle_status: active
 integration_status: mixed
 summary: "Voxel meshing/biome/noise/scatter/streaming (complements terrain_materials.md). terrain.md"
 owns: [astraweave-terrain]
-doc_version: "1.4"
-last_verified_commit: 611c8edc7
+doc_version: "1.5"
+last_verified_commit: 03f9d9a2d
 ---
 
 # Architecture Trace: Terrain System (Generation, Voxels, Biomes, Noise, Scatter, Streaming)
@@ -21,9 +21,9 @@ last_verified_commit: 611c8edc7
 |---|---|
 | **System name** | Terrain System (procedural generation, voxel meshing, biome/noise pipeline, scatter, chunk streaming) |
 | **Primary crates** | `astraweave-terrain` (with reverse dep into `astraweave-gameplay`); consumers in `tools/aw_editor`, `examples/hybrid_voxel_demo`, `astraweave-render` |
-| **Document version** | 1.3 |
-| **Last verified against commit** | `611c8edc7` (v1.3: T.2a boreal band + `expect()` retirement); prior `8232b150b` |
-| **Last verified date** | 2026-07-24 |
+| **Document version** | 1.5 |
+| **Last verified against commit** | `03f9d9a2d` (v1.5: T.2d third pass, two new §11 Open Questions); prior `611c8edc7` (v1.3/v1.4: T.2a boreal band + `expect()` retirement), `8232b150b`. Note: v1.4 bumped the front-matter `doc_version` and the revision table only, leaving this row at 1.3 — corrected here. |
+| **Last verified date** | 2026-07-25 (v1.5) |
 | **Status** | Active (editor heightmap path wired; voxel-meshing, streaming/LOD, and multi-archetype paths are in-design-but-tested / dormant — see §5, §6) |
 | **Owner notes** | Complements [`terrain_materials.md`](terrain_materials.md), which covers ONLY the material/splat-weight slice. This trace covers the REST: noise → heightmap → biome → erosion → chunk generation, voxel meshing, scatter/vegetation, and chunk streaming. Where the two overlap (biome semantics, `astraweave-render` terrain paths) this doc cross-references rather than duplicates. |
 
@@ -424,6 +424,8 @@ Wiredness verified by workspace grep for non-test/non-example production callers
 - **Does `WgpuTerrainAccelerator` (the `TerrainGpuAccelerator` impl in `astraweave-render`) have any intended caller?** The impl compiles but nothing invokes it outside its own file. GPU-accelerated heightmap/erosion is therefore dormant.
 - **Is the CLAUDE.md claim that `AdvancedErosionSimulator` and `RegionalArchetypePanel` were "removed" stale, or did a prior commit remove and re-add them?** Both are present and (for erosion) wired at `7c29b8182`. This trace verified only current state. [NEEDS VERIFICATION of git history.]
 - **Should the gameplay reverse dependency be inverted?** [`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md):148 flags it as a directional anomaly with HIGH blast radius. It is working code; the question is parked, not a recommendation.
+- **The Terrain panel's "Base Amplitude" slider is inert — restore it, or remove it?** (T.2d third pass, 2026-07-25.) `terrain_panel.rs:1064` (slider, 10..200) → `terrain_panel.rs:2016` `set_noise_params(..)` → `terrain_integration.rs:167` `config.noise.base_elevation.amplitude`; but `noise_gen.rs:575` documents that read as **replaced** by `params.base_elevation_amplitude` (applied at `:663`), which `regional_archetype_mask.rs:469` blends from archetype splines and never from `config`. Octaves / lacunarity / persistence are still read — amplitude alone is dead. `terrain_panel.rs:2004-2005`'s comment still claims all four "flow through", so this is doc-drift as well as a settable-but-never-read field (Integration-Completeness §3). Proven empirically: `tools/aw_editor/tests/t2d_camera_light.rs` Experiment F renders amplitudes 50/20/6 **byte-identical**. Decisional — the fix could be re-plumbing the slider into `BootstrapParams`, or deleting it because per-archetype splines are now the intended authority.
+- **`compute_material_lod`'s hard tiers produce a visible boundary and far-field dithering on terrain.** (T.2d, 2026-07-25 — see `docs/audits/T2D_CAMERA_LIGHT.md` §10.) The LOD1|2 threshold (footprint = 2.0, `brdf_common.wgsl:63`) is the director-observed hard edge, located to within 4 px in two independent frames; and because `fwidth(world_pos)` includes the height derivative, the tier flickers per-pixel over rough ground, costing 40-55% of far-field high-frequency energy. The fix is cross-material (three call sites, engine-wide) and is a **STOP-with-options** parked for the director — options in §10.7 of that audit.
 
 ---
 
@@ -478,6 +480,7 @@ Wiredness verified by workspace grep for non-test/non-example production callers
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-07-25 | **T.2d third pass — two new Open Questions, no code change.** (1) The Terrain panel's *Base Amplitude* slider is **inert**: it reaches `config.noise.base_elevation.amplitude`, but `noise_gen.rs:575` documents that read as replaced by `params.base_elevation_amplitude` (applied `:663`), which `regional_archetype_mask.rs:469` blends from archetype splines and never from `config`. Octaves/lacunarity/persistence are still read; amplitude alone is dead, and `terrain_panel.rs:2004-2005`'s comment claiming all four "flow through" is doc-drift. Proven by `t2d_camera_light.rs` Experiment F rendering amplitudes 50/20/6 **byte-identical**. (2) `compute_material_lod`'s hard tiers are convicted of the director-observed terrain boundary (LOD1|2 at footprint 2.0, matched to 4 px in two frames) and of 40-55% of far-field high-frequency energy as per-pixel tier dithering — `fwidth(world_pos)` includes the height derivative, so the tier flickers over rough ground. Cross-material fix, parked as a STOP-with-options: `docs/audits/T2D_CAMERA_LIGHT.md` §10. |
 | 1.4 | 2026-07-24 | **T.2a post-sweep correction.** The full `--release` terrain sweep landed after v1.3 was written and falsified its "no new baseline rot" claim. §10 known-failing surface re-measured at T.2a HEAD: **2,440 passed / 64 failed / 15 ignored** (baseline 2,439/63). The +1 is `phase_1_6_f4_b_3_d_3_mixed_climate_chunk_produces_varied_biomes`, caused by the v1.3 `TUNDRA_MAX_TEMP_C` change and proven by flipping the constant (6/0 at `0.0`, 5/1 at `-5.0`). Classified **structural, not re-bake** — so T.G inherits 63 + 1, not 64. Invariant intact (15/25 probed chunks still carry >=2 BiomeIds); left failing pending threshold ratification. |
 | 1.3 | 2026-07-24 | **T.2a** (`611c8edc7`, `c0753b551`). §5 `spline_types` row: the six production `expect()`s are retired via `Spline1D::from_literal_control_points` + a CI invariant test (the `Result` route is blocked by two infallible `Default` impls); the long-cited :571/… line numbers were +4 stale from `1ef81c239`. §8: added Invariants 8 (the boreal band's binding test bounds) and 9 (elevation overlays preempt the Whittaker polygon). `TUNDRA_MAX_TEMP_C` lowered 0.0 -> **-5.0** so boreal forest threads through snow — measured, not guessed: the Boreal climate field is 100% below 0 degC (mean -7.46, p50 -6.55), which is why the census read 0.017% forest / 93.3% tundra, while Mediterranean / Continental Temperate / Desert each have **0.0%** below 0 degC and so cannot be reached by the change. Evidence, census tables and the per-archetype before/after: `docs/audits/T2A_OUTCOME.md`. |
 | 1.2 | 2026-07-21 | **T.0 trace-sync — pays the E3 build's documentation debt** (build `d506658d8` 2026-07-03 updated no traces; reconstruction: `docs/audits/E3_PREFLIGHT_2026-07.md`). Corrected the §2 Stage-2 None-mask statement (was: "evaluates Continental Temperate splines only" — reversed by E3 Phase A.2: reads the SELECTED archetype's splines, lib.rs:568-577). Added: provisional-height seam fix (Stage 2, Invariant 4b), six distinct per-archetype spline factories + production `expect()` inventory (§5 spline_types row), E3 noise-regime defaults incl. deliberate continental-off (§5 noise_gen row), rewritten Invariant 4 (D5FIX byte-identity retired), E3 decision-log entry, the measured 63-test by-design failing surface (§10), updated mask-branch line cites (:618-643) + SP5 status (§6, §11). Prior §2/§6/§8 line cites in the :595-645 range shifted; verified at `8232b150b`. |

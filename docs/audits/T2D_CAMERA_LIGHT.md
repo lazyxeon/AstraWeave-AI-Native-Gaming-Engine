@@ -1,5 +1,12 @@
-# T.2d — The camera-light defect: diagnosis (NOT CONVICTED — STOP for the director)
+# T.2d — The camera-light defect: diagnosis (IDENTIFIED as of §10 — STOP for the director on the fix)
 
+> **STATUS, third pass (2026-07-25):** the boundary is **identified** — it is `compute_material_lod`'s
+> **LOD1|2 threshold, pixel footprint = 2.0** (`brdf_common.wgsl:63`), matched in both director frames
+> to within 4 screen pixels. It is a **detail** edge, not a brightness edge, which is why §2.2 and §9.2
+> could not see it with a row-mean-luminance metric. **No fix applied** — `compute_material_lod` is called
+> engine-wide from three shaders, so the choice is a STOP-with-options (§10.7). Read **§10 first**;
+> §§1-9 are the two earlier passes and their retired hypotheses, kept as the ledger.
+>
 > **Beat:** T.2d (terrain series) · **Date:** 2026-07-25 · **Baseline commit:** `c2dbf8400`
 > **Symptom (director, 2026-07-25):** *"the camera itself is a light source — as I get really close to the terrain it gets brighter and casts shadows at the borders of the light boundary like a light source."*
 > **Outcome:** the phenomenon is **partially reproduced**. Camera-dependent shading is **confirmed and measured**. The *dramatic* part of the description — the bright region with a visible boundary — **did not reproduce** in the offscreen path. **No fix has been applied**, because nothing has been convicted at the magnitude the symptom describes.
@@ -288,3 +295,188 @@ The offscreen harness reproduces the *gradient* and the *sign* but not the *boun
 - The **+9.5% multiscatter tier step** (§3.2) stands as a real defect.
 - `NORMAL_XY_STRENGTH` is **exonerated** for the reported symptom — and, usefully, is confirmed to be a near-field-only term, which bounds what T.2a's 1.8→1.4 change could ever have affected.
 - No fix applied. Options for the one convicted item remain as §6.2.
+
+---
+
+# 10. Third pass (2026-07-25) — the boundary IDENTIFIED, the shading path settled, three new defects
+
+Two things this pass had that neither predecessor did: the **director's two frames**, and **ED-2**. The frames turned out to be worth more than the tooling, because they carry the camera readout — and the camera is recoverable from it.
+
+**Headline:** the boundary is not a brightness edge at all. It is a **detail edge**, and it sits at **`compute_material_lod`'s LOD1|2 threshold — pixel footprint = 2.0** — in both frames, to within 4 screen pixels of a prediction with one fitted parameter. That threshold is a hard `if` on a per-pixel continuous quantity, called engine-wide.
+
+**Why two passes missed it:** §2.2 and §9.2 both measured **row-mean luminance**. Across this boundary luminance moves under 2% — §2.2's own number, and it was correct. Grain energy across the same edge moves **68%**. The metric was wrong, not the observation.
+
+---
+
+## 10.1 Phase 5 — the editor shading path (ANSWERED; the CSM contradiction dissolves)
+
+Traced end to end, then adversarially re-verified against the cited lines:
+
+- `ViewportRenderer::render` → `EngineRenderAdapter::render_to_texture` (`renderer.rs:703`) → `Renderer::draw_into` (`engine_adapter.rs:889`) → `main render pass` → `TerrainMaterialManager::draw_chunk_forward` per chunk (`astraweave-render/src/renderer.rs:5933-5943`).
+- That pipeline's module is `TERRAIN_FORWARD_SHADER` (`terrain_material_manager.rs:171-179`), which is `constants.wgsl + brdf_common.wgsl + stochastic_tiling.wgsl + **pbr_terrain_forward.wgsl**`, built by `ensure_forward_pipeline` (`:1005-1054`) and bound at `:1247-1253`.
+- The rival `pbr_terrain.wgsl` deferred pipeline is **dead**: its only callers are in `viewport/terrain_splat.rs`, whose own header says `//! **SUPERSEDED**`, and that type is never constructed. `clipmap_terrain.wgsl` has zero references.
+
+**So `pbr_terrain_forward.wgsl` IS what the director sees**, and §9.4's contradiction resolves the boring way: the terrain genuinely samples no shadow map, so **CSM cannot produce a boundary on terrain**. Cascade splits are retired as a hypothesis. (The census also corrected a stale number carried in §9.4: the editor sets `set_cascade_extents(80.0, 250.0)`, lambda 0.7 — not 10/50/200/1000.)
+
+### 10.1.1 The "Lit" dropdown is inert — a defect found in passing
+
+`ShadingMode { Lit, Unlit, Wireframe }` (`toolbar.rs:455-464`) is converted at `widget.rs:880` and passed to `ViewportRenderer::render`, whose parameter is **`_shading_mode: u32`** (`renderer.rs:570`) — unused. No match, no branch, no uniform write. `has_lighting()` / `is_wireframe()` have zero non-test callers.
+
+Worse, there are **two** dropdowns: the docked Viewport panel offers five entries (`tab_viewer/mod.rs:2082` — Shaded/Wireframe/Unlit/**Normals**/**UVs**) and `main.rs:5208-5214` maps Normals and UVs silently to `Lit`. So the editor advertises a debug-visualisation facility it does not have. Selecting any mode changes nothing.
+
+This is not the cause of the defect, but it is a live Integration-Completeness §3 violation and it is why "check it in Normals mode" was never an option.
+
+---
+
+## 10.2 Recovering the camera from the two readouts
+
+The readouts give eye positions only. `OrbitCamera::position()` (`camera.rs:530-537`) places the eye at `focal + distance·(cos y·cos p, sin p, sin y·cos p)`, so a pure zoom — the mouse wheel, which changes `distance` alone — translates the eye exactly along that unit vector. The two eyes differ by `(83.6, 121.7, 85.0)`, `|Δ| = 170.4`:
+
+| component | value | implies |
+|---|---|---|
+| `sin(pitch) = 121.7/170.4` | 0.7142 | **pitch 45.6°** |
+| `cos(yaw) = (83.6/170.4)/cos p` | 0.7010 | **yaw 45.5°** |
+| `sin(yaw) = (85.0/170.4)/cos p` | 0.7127 | yaw 45.4° |
+
+Two independent components agreeing to 0.1°, landing on `OrbitCamera::default()`'s 45° yaw, is what makes this a recovery rather than a guess. It is confirmed by the render: at this pitch the harness reports **`sky_frac` 0.000** — no horizon in frame, exactly as in both director frames.
+
+The focal point is underdetermined (any focal on the same ray reproduces the eye) and does not need determining: the image depends only on eye + yaw + pitch + fov + aspect.
+
+**Viewport geometry**, measured from the UI chrome in both screenshots (the render area runs x 224..1186, y 105..606): **962 × 501 px, aspect 1.920**. Identical in both frames.
+
+---
+
+## 10.3 Deliverable 1 — the boundary's position, and what it matches
+
+Edge rows measured from grain energy (`|L − 3×3 box mean|`), not luminance:
+
+| frame | edge (normalised row) | camera above ground | ground distance at the edge | **pixel footprint there** |
+|---|---|---|---|---|
+| y414.5 | 0.527 | 378.5 m | **514 m** (3D) / 348 m (horizontal) | **2.000** |
+| y536.2 | 0.749 | 500.2 m | **569 m** (3D) / 270 m (horizontal) | **1.984** |
+
+`compute_material_lod`'s LOD1|2 constant is **2.0** (`brdf_common.wgsl:63`).
+
+**The distance is not constant** (514 vs 569 m 3D; 348 vs 270 m horizontal), which by itself rules out anything keyed to a distance threshold. The footprint is constant, at the value the code thresholds on.
+
+### 10.3.1 How much of that is a fit
+
+One free parameter: the local ground height under the camera. Fitted to frame y414 it comes out at **36.0 m** — against T.2a's independently established desert ground height of **36.3 m**. Using it, frame y536's edge lands at footprint **1.984**, i.e. **0.8% from the constant, −4 px on a 501-row frame.** That is a genuine prediction, not a second fit.
+
+### 10.3.2 The rivals, tested the same way
+
+Each rival has two unknowns (threshold + ground) against two constraints, so each fits *exactly* — the question is what it must assume:
+
+| keyed quantity | required ground height | required threshold | corresponds to a code constant? |
+|---|---|---|---|
+| **pixel footprint** | **+36.0 m** (T.2a: 36.3 m) | **2.0** — fixed, not fitted | **yes — `brdf_common.wgsl:63`** |
+| view-space depth | −86.1 m | 680 m | no; and terrain samples no shadow (§10.1) |
+| true 3D distance | −208.1 m | 846 m | no; fog is 60000/120000 at density 0 |
+
+Both rivals need the desert floor tens to hundreds of metres below sea level and a threshold matching nothing in the source.
+
+### 10.3.3 LOD 0 is unreachable at these altitudes
+
+Directly measured from a false-colour render of `mat_lod`: **LOD 0 share = 0.000** in every configuration tested, and the analytic model agrees (footprint 0.5 is never reached anywhere in either frame).
+
+**This retires §3.2 and §6.2 from this symptom entirely.** The Kulla-Conty multiscatter tier step — the one thing pass 1 convicted, at +9.5% — lives at the LOD0|1 boundary, which the director's view never contains. The two phenomena are now fully separated: the multiscatter step is a **close-range** defect (§5 items 1-4 stand), the boundary is a **far-range** one.
+
+---
+
+## 10.4 Phase 2 — reproduction: partial, and the delta is named
+
+Experiment E (new, permanent) renders the recovered camera against the editor's own world settings — chunk_radius **10** (21×21 = 441 chunks, matching the "Terrain (441 chunks)" in the director's Hierarchy panel; both prior harnesses used radius 6) — at aspect 1.920 and three resolutions.
+
+**What reproduced:** the camera (`sky_frac` 0.000), the desert tone (frame mean luma 110.1/109.4 vs the director's 117.7/119.0; the ContinentalTemperate alternative gives 74.7 and is excluded), and a real LOD1|2 contour in the frame.
+
+**What did not:** a *clean line*. In the harness the contour is a wide band of **per-pixel salt-and-pepper** instead.
+
+**The delta, named:** it is **world content**, not editor state. The census checked every state surface the live editor touches that the harness does not — fog (60000/120000, density 0), ambient ([0.45,0.50,0.55] @ 0.35), sun ((−0.5,−0.6,−0.4) @ 1.5), cascade extents/lambda/filter, quality preset, time-of-day (12.0 both), biome pack, post-process — and found them **identical in steady state**. What differs is the terrain: radius-10 Desert generates a mountainous world; the director's frames are gentle dunes.
+
+That matters mechanically, not cosmetically: **`fwidth(world_pos)` differentiates the full world position, height included.** On rough ground the height derivative dominates and swings the footprint across 2.0 from one pixel to the next, so the tier boundary shatters into dithering; on smooth ground the footprint grows monotonically with distance and the same threshold resolves into a single contour. The false-colour LOD map shows exactly this: the per-column LOD1|2 boundary row scatters over **53 rows** in the rocky repro, where the flat-ground model predicts a smooth curve.
+
+**This is the leading explanation for the reproduce/not-reproduce split and it is NOT proven** — see §10.6 for why the test that would prove it could not be run.
+
+---
+
+## 10.5 Phase 3 — the A/B, and a second real defect
+
+Leg: `let mat_lod = 1u;` (LOD 2 removed everywhere; LOD 0 never occurs, so this isolates LOD 2 exactly). Reverted — `git diff astraweave-render/` is empty.
+
+**Result 1 — the threshold is nearly invisible as a luminance step.** Comparing LOD1 against LOD2 pixels within the mixed band, where terrain content is comparable: **+1.4% (y414), −2.0% (y536)** — and **the sign flips between frames**. The two tiers happen to agree near the threshold and diverge only deep in the far field (up to **+11.5 luma, +10.4%**, in the top 70 rows). So `compute_material_lod` produces a **gradient**, not an edge, in *luminance*.
+
+**Result 2 — LOD 2 adds per-pixel dithering.** Pinning the tier removes **40-55%** of far-field high-frequency energy (grain ratio 0.44-0.58 in the top rows) while changing the near field not at all (ratio 1.00 at rows 400-480). The difference image is a field of salt-and-pepper confined exactly to the LOD2 region.
+
+**This is a genuine, previously unrecorded defect**: distant terrain carries shading noise from tier flicker, and it will shimmer under camera motion. It is independent of whether the boundary question resolves the same way.
+
+**The honest tension:** the geometry says footprint = 2.0 to within 4 px in both frames; the A/B says that threshold produces dithering rather than a clean edge *on a rough world*. §10.4's mechanism reconciles them. It is a hypothesis with direct supporting evidence (the 53-row contour scatter), not a proof.
+
+---
+
+## 10.6 The test that would close it — and why it did not run
+
+Experiment F sweeps terrain amplitude (50 / 20 / 6) at the recovered camera, to show the contour sharpening as the ground smooths. **All three legs came back byte-identical.** Per this harness's own rule (§1.1), identical output across a swept parameter is not a measurement — so the guard fired, and the cause is worth recording on its own:
+
+> **The editor's Terrain-panel "Base Amplitude" slider is inert.**
+> `terrain_panel.rs:1064` (slider, 10..200) → `terrain_panel.rs:2016` `set_noise_params(..)` → `terrain_integration.rs:167` `config.noise.base_elevation.amplitude`. But `noise_gen.rs:575` documents that read as **replaced** by `params.base_elevation_amplitude`, applied at `:663`, and `regional_archetype_mask.rs:469` blends that from **archetype splines** — never from `config`. Octaves, lacunarity and persistence are still read; amplitude alone is dead. `terrain_panel.rs:2004-2005`'s comment still claims all four "flow through", which is doc-drift.
+
+Third Integration-Completeness §3 violation this pass (with the Lit dropdown and the Normals/UVs modes). Experiment F is kept, with a permanent `DEGENERATE` flag generalising the `sky_frac` rule: **a swept parameter that produces identical output has not been measured.**
+
+---
+
+## 10.7 STOP — this is a cross-material change, so it is the director's call
+
+`compute_material_lod` is called from **three** places — `renderer.rs:231` (static PBR), `renderer.rs:571` (skinned PBR), `pbr_terrain_forward.wgsl:369` (terrain). Any change alters the appearance of every material at distance, engine-wide. Per this beat's own rule that is a STOP-with-options, not an agent decision.
+
+| option | what it fixes | what it costs |
+|---|---|---|
+| **A. Delete the tiers — always LOD 0** | Removes the boundary, the dithering, and the §3.2 close-range multiscatter step in one move. One BRDF everywhere; every judgment becomes comparable. | Loses the ALU saving (~30 ALU/fragment at LOD 2). Far-field terrain gains multiscatter and brightens; rots far-field frames in T.2a/T.2c. |
+| **B. Blend across the thresholds** instead of `if` | Removes the visible boundary and most of the dithering while keeping the saving. | Real shader work + its own A/B. Does not remove the *tier* concept, so some camera-dependence remains. |
+| **C. Key the tier on view-space depth instead of `fwidth`** | Kills the dithering outright (depth is smooth where `fwidth` is not) and makes the tier boundary predictable. | Loses the property the tiers were designed around — screen coverage, which is what actually justifies simplifying the BRDF. Boundary becomes a hard horizontal line, arguably *more* visible. |
+| **D. Leave it, document it** | No churn. | Distant terrain keeps shimmering; the boundary stays. |
+
+**My recommendation: A**, and I would not have said that before this pass. The tiers are buying ~30 ALU/fragment on a shader whose cost is dominated by **24 `textureSampleGrad` calls per fragment** (8 layers × 3 hex taps); the saving is in the noise. Against that they cost a visible boundary, far-field dithering, a ±10% close-range brightness step, and — the thing that has cost this campaign the most — **every appearance judgment sitting on a different BRDF depending on where the camera was**. Deleting the tiers makes T.G's gate frames comparable to each other for the first time.
+
+If A is chosen, the far-field brightening must be measured and the affected T.2a/T.2c frames re-shot — that is a beat, not a patch.
+
+---
+
+## 10.8 What I still need, if you want certainty before choosing
+
+One capture, and ED-2 now makes it cheap. Pin a station at the recovered camera and shoot it:
+
+```
+focal (−1029.9, 36.3, 254.7)   yaw 45.5°   pitch 45.6°   distance 529.6  (= eye 414.5)
+                                                          distance 700.0  (= eye 536.2)
+fovy 60°
+```
+
+**Camera → name → Pin**, then **Shot**. The `.camera.json` sidecar records the exact state and the render size — which also settles whether the viewport is natively 962×501 (my assumption throughout §10.3; the whole footprint calculation scales with it).
+
+Alternatively, just the terrain settings from those sessions (archetype, and whether the ground was sculpted) would let me regenerate the world and finish Experiment F's job with a live lever.
+
+---
+
+## 10.9 Re-judgment list — updated
+
+§5's list stands, with one narrowing and one addition:
+
+- **Narrowed:** items 1-4 are close-range judgments and are affected by the §3.2 multiscatter tier step, which is a **LOD0|1** effect. §10.3.3 confirms LOD 0 is only reachable close in — so the list is correctly scoped, and the far-range boundary does not add to it.
+- **Added (5):** any judgment of *distant* terrain — silhouette, biome banding, large-scale colour — carries the LOD2 dithering measured in §10.5 and the LOD1|2 boundary. T.2a's far-field station frames are the ones at risk. Their A/B *deltas* survive (identical cameras per leg, so the offset cancels); their absolute reads do not.
+
+---
+
+## 10.10 Verification
+
+| rung | result |
+|---|---|
+| `cargo fmt -p aw_editor` | clean |
+| `cargo check -p aw_editor --test t2d_camera_light` | **exit 0** |
+| `git diff astraweave-render/` | **empty** — both temporary shader legs (LOD false-colour, `mat_lod = 1u`) reverted |
+| Experiment E, 12 renders × 2 legs | 1 passed / 0 failed each |
+| Experiment F (amplitude sweep) | 1 passed / 0 failed; **DEGENERATE flag fires on all 3 legs** — the finding of §10.6 |
+| LOD false-colour leg | LOD 0 share **0.000** in all 12 configurations |
+
+Frames and CSVs: `d:/tmp/t2d_staging/{E_head,E_lodviz,E_lod1const,F_head}/`.
+
+No regression test is added, for the same reason as §7: nothing is fixed yet, and a test asserting today's behaviour would pin the bug. The instrument is the deliverable — Experiments E and F are permanent and `#[ignore]`d like the rest.
