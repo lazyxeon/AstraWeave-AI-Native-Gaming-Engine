@@ -13,17 +13,20 @@
 // texture sets into the arrays bound at group(1) bindings 3-5. Per-chunk
 // splat textures are bound at group(2).
 //
-// Phase 1 lighting scope (per TERRAIN_MATERIAL_SYSTEM_CAMPAIGN.md §3):
+// Lighting scope (L.2, 2026-07-27 — supersedes the Phase 1 "no IBL" scope):
 //   - Sun direct lighting: Cook-Torrance + Burley via evaluate_brdf
-//   - Ambient fallback: SHADER_SRC's 0.35×ambient_color formula
+//   - Environment: full split-sum IBL via the shared compute_ibl
+//     (ibl_common.wgsl) — diffuse irradiance + prefiltered specular + BRDF
+//     LUT, bound at group(3), multiplied by material AO. This REPLACES the
+//     Phase-1 flat 0.35×ambient fill (no double-count).
 //   - Distance fog: SHADER_SRC's apply_scene_fog linear+exp blend
-//   - NO shadows, IBL, SSGI, cloud shadows, or screen tint (Phase 3 re-adds
-//     these once terrain is visibly working). Follows the plan's "plumbing
-//     is the gate, not aesthetic" success criterion.
+//   - Still absent: shadows (L.3), SSGI, cloud shadows, screen tint.
 //
-// The PI, INV_PI constants and all BRDF helpers are prepended at pipeline
-// build time via `concat!(include_str!("constants.wgsl"),
-// include_str!("brdf_common.wgsl"), include_str!("pbr_terrain_forward.wgsl"))`.
+// The PI, INV_PI constants, all BRDF helpers, and compute_ibl are prepended
+// at pipeline build time via `concat!(include_str!("constants.wgsl"),
+// include_str!("brdf_common.wgsl"), include_str!("ibl_common.wgsl"),
+// include_str!("stochastic_tiling.wgsl"),
+// include_str!("pbr_terrain_forward.wgsl"))`.
 
 // ============================================================================
 // Uniforms
@@ -126,6 +129,16 @@ struct TerrainSceneEnv {
 // leftmost biome weights at every chunk boundary — the root cause of the
 // visible chunk seam grid.
 @group(2) @binding(8) var splat_sampler: sampler;
+
+// L.2: IBL resources (same names ibl_common.wgsl's compute_ibl expects; the
+// static PBR shader binds the identical set at group(5)). The bind group is
+// renderer-owned (`terrain_ibl_bind_group`) and shares the engine's baked
+// views, params buffer, and sampler — rebuilt by rebuild_ibl_bind_group.
+@group(3) @binding(0) var ibl_specular: texture_cube<f32>;
+@group(3) @binding(1) var ibl_irradiance: texture_cube<f32>;
+@group(3) @binding(2) var ibl_brdf_lut: texture_2d<f32>;
+@group(3) @binding(3) var ibl_sampler: sampler;
+@group(3) @binding(4) var<uniform> uIbl: IblParams;
 
 // ============================================================================
 // Vertex stage
@@ -392,9 +405,15 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     let radiance = uScene.sun_color * uScene.sun_intensity;
     var lit_color = brdf_result * radiance;
 
-    // 7. Ambient fallback — mirrors SHADER_SRC's 0.35× ambient fill (line 314).
-    let ambient = uScene.ambient_color * uScene.ambient_intensity * 0.35;
-    lit_color = lit_color + base_color * ambient * final_ao;
+    // 7. Environment light — full split-sum IBL (L.2), REPLACING the Phase-1
+    //    flat ambient fill (`ambient_color * ambient_intensity * 0.35`); the
+    //    scene must not double-count. AO multiplies the indirect terms only
+    //    (never direct sun) — this is where the T.2a-repaired material AO
+    //    finally becomes visible (T2F §4 measured it at 0.00% of pixels).
+    //    NOTE: uScene.ambient_* is no longer read here; it still drives the
+    //    static-mesh ambient floor (SHADER_SRC).
+    let ibl_color = compute_ibl(N, V, base_color, metallic, roughness, F0);
+    lit_color = lit_color + ibl_color * final_ao;
 
     // 8. Distance fog — matches SHADER_SRC's formula.
     let frag_dist = length(in.world_pos - uCamera.camera_pos);

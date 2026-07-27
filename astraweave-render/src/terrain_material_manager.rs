@@ -174,6 +174,9 @@ const TERRAIN_FORWARD_SHADER: &str = concat!(
     "\n",
     include_str!("../shaders/brdf_common.wgsl"),
     "\n",
+    // L.2: shared IblParams + compute_ibl (same fragment SHADER_SRC prepends).
+    include_str!("../shaders/ibl_common.wgsl"),
+    "\n",
     include_str!("../shaders/stochastic_tiling.wgsl"),
     "\n",
     include_str!("../shaders/pbr_terrain_forward.wgsl"),
@@ -1022,11 +1025,64 @@ impl TerrainMaterialManager {
     /// The pipeline is cached by `(color_format, depth_format)`; calling
     /// with the same formats is a no-op. Called from `Renderer::draw_into`
     /// once the renderer knows its HDR + depth formats.
+    /// The terrain-forward IBL bind group layout (group 3): specular cube,
+    /// irradiance cube, BRDF LUT, sampler, `IblParams` uniform — the exact
+    /// subset of the engine's group-5 layout `compute_ibl` reads (L.2).
+    ///
+    /// One shared constructor so `Renderer::new` and the pipeline tests can
+    /// never drift apart on the layout.
+    pub fn create_terrain_ibl_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        let cube_entry = |binding: u32| wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                multisampled: false,
+                view_dimension: wgpu::TextureViewDimension::Cube,
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            },
+            count: None,
+        };
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("terrain_ibl_bgl"),
+            entries: &[
+                cube_entry(0),
+                cube_entry(1),
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+        })
+    }
+
     pub fn ensure_forward_pipeline(
         &mut self,
         device: &wgpu::Device,
         color_format: wgpu::TextureFormat,
         depth_format: Option<wgpu::TextureFormat>,
+        ibl_bgl: &wgpu::BindGroupLayout,
     ) -> &wgpu::RenderPipeline {
         // Reuse the cached pipeline when formats match; otherwise rebuild.
         // `take()` first so the build branch can borrow `&self.*_bgl` without
@@ -1048,6 +1104,11 @@ impl TerrainMaterialManager {
                             &self.forward_camera_bgl,
                             &self.forward_terrain_bgl,
                             &self.forward_splat_bgl,
+                            // L.2: group(3) — renderer-owned terrain IBL group
+                            // (5 entries; the 9-entry group-5 layout would put
+                            // the fragment stage at the 16-texture device
+                            // limit and block L.3's shadow map).
+                            ibl_bgl,
                         ],
                         push_constant_ranges: &[],
                     });

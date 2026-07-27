@@ -1312,6 +1312,14 @@ fn dir_to_equirect_uv(dir: vec3<f32>) -> vec2<f32> {
 /// different HDRIs produce consistent terrain lighting.
 #[cfg(feature = "textures")]
 fn compute_hdr_avg_luminance(img: &image::DynamicImage) -> f32 {
+    // L.2 CALIBRATION NOTE (measured, kloppenheim_02): this averages
+    // `to_rgba8()` bytes, clamping every HDR value > 1.0 — but the deeper
+    // issue is the scheme: a linear image-average of a puresky WITHOUT its
+    // sun spike reads ~0.146 (unclamped stride-4: 0.1459; clamped: 0.1397;
+    // full-res incl. sun core: 0.2292; log-avg: 0.1004), driving
+    // ibl_intensity to 2.4–2.5 and over-lighting terrain ~1.6–2.5× vs the
+    // director-previewed placements. Left as-is pending the L.2 calibration
+    // ratification (docs/audits/L2_OUTCOME.md §5).
     let rgba = img.to_rgba8();
     let (w, h) = (rgba.width() as usize, rgba.height() as usize);
     // Sample every 4th pixel for speed on large HDRIs

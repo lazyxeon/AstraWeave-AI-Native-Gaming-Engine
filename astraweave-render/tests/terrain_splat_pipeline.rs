@@ -323,11 +323,14 @@ fn terrain_manager_forward_round_trip() {
 
         device.push_error_scope(wgpu::ErrorFilter::Validation);
 
-        // 1. Build the pipeline (HDR forward target + depth).
+        // 1. Build the pipeline (HDR forward target + depth). L.2: the
+        //    forward layout now includes the group-3 IBL BGL.
+        let ibl_bgl = TerrainMaterialManager::create_terrain_ibl_bgl(&device);
         let _pipeline = manager.ensure_forward_pipeline(
             &device,
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
+            &ibl_bgl,
         );
 
         // 2. Write camera + scene UBOs with sensible defaults.
@@ -410,10 +413,12 @@ fn terrain_manager_forward_pipeline_builds_without_validation_errors() {
 
         // Build for the engine's forward-pass targets: Rgba16Float HDR +
         // Depth32Float (same as `hdr_view` / `depth` in Renderer).
+        let ibl_bgl = TerrainMaterialManager::create_terrain_ibl_bgl(&device);
         let _pipeline = manager.ensure_forward_pipeline(
             &device,
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
+            &ibl_bgl,
         );
 
         // Calling with the same formats must be idempotent.
@@ -421,6 +426,7 @@ fn terrain_manager_forward_pipeline_builds_without_validation_errors() {
             &device,
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
+            &ibl_bgl,
         );
 
         if let Some(err) = device.pop_error_scope().await {

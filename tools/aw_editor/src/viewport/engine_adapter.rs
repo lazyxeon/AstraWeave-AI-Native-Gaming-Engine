@@ -783,7 +783,58 @@ impl EngineRenderAdapter {
         // closure target. WYSIWYG OFF indicator for non-canonical preset
         // selection is logged as post-P.7 follow-up per P.4 spec.
         adapter.apply_quality_preset(EditorQualityPreset::GameQuality);
+        // L.2: bake the environment once per adapter lifetime so terrain (and
+        // statics) receive a real IBL instead of the fallback sky-fill cube.
+        adapter.bake_default_environment();
         Ok(adapter)
+    }
+
+    /// L.2 — one-time IBL bake at adapter construction.
+    ///
+    /// Source: the git-tracked neutral-daylight HDRI
+    /// `assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr` (catalog entry
+    /// `kloppenheim_daytime`, CC0 — THIRD_PARTY_LICENSES.md). Tracked in a
+    /// bare clone, so no asset-pack fetch is required. Tier: Medium — the
+    /// convention of both pre-existing editor bake sites (`load_hdri`,
+    /// `clear_hdri`).
+    ///
+    /// Failure policy: warn-and-continue. A missing file or failed bake must
+    /// never fail adapter init — the renderer then keeps its fallback IBL
+    /// bind groups (moderate sky-fill cube), which is the pre-L.2 state.
+    fn bake_default_environment(&mut self) {
+        // Same asset-root probing the editor harnesses use: repo root CWD
+        // (`cargo editor`) or a crate-relative CWD (`tools/aw_editor`).
+        const HDRI_REL: &str = "hdri/polyhaven/kloppenheim_02_puresky_2k.hdr";
+        let path = ["assets", "../../assets"]
+            .iter()
+            .map(|root| std::path::Path::new(root).join(HDRI_REL))
+            .find(|p| p.is_file());
+        let Some(path) = path else {
+            tracing::warn!(
+                "L.2 default IBL: {HDRI_REL} not found under assets/ or ../../assets/ — \
+                 skipping bake; terrain keeps the fallback sky-fill environment"
+            );
+            return;
+        };
+        let path_str = path.to_string_lossy().to_string();
+        let started = std::time::Instant::now();
+        self.renderer.ibl_mut().mode = astraweave_render::ibl::SkyMode::HdrPath {
+            biome: "editor-default".to_string(),
+            path: path_str.clone(),
+        };
+        match self
+            .renderer
+            .bake_environment(astraweave_render::ibl::IblQuality::Medium)
+        {
+            Ok(()) => tracing::info!(
+                "L.2 default IBL baked: source={path_str}, tier=Medium, took {:.1} ms",
+                started.elapsed().as_secs_f64() * 1000.0
+            ),
+            Err(e) => tracing::warn!(
+                "L.2 default IBL bake failed ({e:#}); terrain keeps the fallback \
+                 sky-fill environment"
+            ),
+        }
     }
 
     pub fn is_initialized(&self) -> bool {

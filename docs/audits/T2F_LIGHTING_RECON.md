@@ -272,3 +272,44 @@ would pin defects.
    lane, relevant the day statics matter in terrain scenes.
 
 The director ratifies which of §5's options become execution beats.
+
+---
+
+## 8. L.2 corrections (append-only, 2026-07-27) — the recon's record self-corrects
+
+L.2's Phase-0 re-verification (`docs/audits/L2_PHASE0_STOP.md`) and its fixing campaign
+falsified three claims this recon made. Per the append-only convention the original text
+above stands; this section is the correction of record.
+
+1. **"Statics… currently multiplying black" (§5 option B cell; also the census's
+   1×1-black-fallback framing) — FALSE, including at this recon's own commit.** The
+   fallback cube has been a moderate, mildly-directional **sky-fill** (+Y `(140,160,200)`,
+   sides `(100,115,140)`, −Y `(70,65,50)` sRGB) since commit `07b3d2137` (2026-04-10) —
+   ten weeks before T.2f. The recon read the stale `// Fallback 1x1 black cubemap`
+   comment instead of the texel upload seven lines below it. The corrected pre-L.2
+   statement: un-baked static IBL contributed a small non-zero directional fill, and the
+   fallback BRDF LUT (`[255,0,0]`) made its specular term `prefiltered * F`,
+   roughness-invariant.
+2. **"Full bake chain complete / reference `compute_ibl`" — the chain existed but was
+   defective in two ways this recon did not audit.** (a) The irradiance convolution was
+   **face-blind** (normal derived with z pinned to 1.0, no face index bound — all six
+   faces held the same +Z convolution); (b) **every bake write pass stored its target
+   vertically flipped** (uv derived from clip space without the v-flip), which mangled
+   ±Y irradiance, roughness-flipped the BRDF LUT, and left specular only *looking* right
+   through a double-flip cancellation. Both fixed and regression-locked in L.2
+   (`b1295b93f`, `astraweave-render/tests/ibl_irradiance_faces.rs`: six-face probe vs an
+   independent CPU reference, agreement ≤2.1% post-fix, spread 0.00% → 74% pre→post).
+3. **Option B's "procedural default" framing** — the procedural sky bake (`SKY_WGSL`) is
+   a self-labelled face-blind placeholder producing a near-isotropic blue cube; it could
+   never have delivered the promised directional fill. L.2 baked the **git-tracked**
+   `kloppenheim_02_puresky_2k.hdr` (catalog `kloppenheim_daytime`, CC0) instead. The
+   placeholder remains the "Remove HDRI" rebake source — logged residue.
+4. **New residue found by L.2** (logged, not fixed — director-ratified): the IBL intensity
+   normaliser `compute_hdr_avg_luminance` clamps HDR to 8-bit before averaging;
+   `hdri_catalog.toml`'s `default` names a non-existent entry; the specular prefilter
+   hardcodes a 512 env size in its solid-angle term (exact for Medium, biased for
+   Low/High); the deferred `TERRAIN_SPLAT_SHADER` fails naga under `--features gpu-tests`
+   (`height_blend` invalid call — pre-existing, stash-proven); the shader-validation
+   vacuity floor was stale-red at baseline (recalibrated 60 → 55 in L.2 with forensics).
+
+See `docs/audits/L2_OUTCOME.md` for the full fixing record and the A/B.

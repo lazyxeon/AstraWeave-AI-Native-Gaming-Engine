@@ -108,9 +108,20 @@ fn probe_face_centres(
     cube: &wgpu::TextureView,
     sampler: &wgpu::Sampler,
 ) -> Result<[[f32; 4]; 6]> {
+    probe_six(device, queue, cube, sampler, PROBE_WGSL)
+}
+
+/// Run any 6-direction probe shader against a cube view.
+fn probe_six(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    cube: &wgpu::TextureView,
+    sampler: &wgpu::Sampler,
+    wgsl: &str,
+) -> Result<[[f32; 4]; 6]> {
     let sm = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("ibl-irr-probe-sm"),
-        source: wgpu::ShaderSource::Wgsl(PROBE_WGSL.into()),
+        source: wgpu::ShaderSource::Wgsl(wgsl.into()),
     });
     let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("ibl-irr-probe-bgl"),
@@ -272,6 +283,32 @@ fn probe_face_centres(
 fn luma(px: [f32; 4]) -> f32 {
     0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]
 }
+
+/// Tilt-fan probe: six directions within ~14° of +Y. True irradiance is
+/// low-frequency, so neighbouring directions must agree closely; a large
+/// spread means the convolution's fixed 60×30 quadrature is aliasing a
+/// concentrated source (the HDRI's sun core) into per-texel fireflies.
+const FAN_PROBE_WGSL: &str = r#"
+struct VsOut { @builtin(position) pos: vec4<f32> };
+@vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
+    var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
+    var out: VsOut;
+    out.pos = vec4<f32>(p[vi], 0.0, 1.0);
+    return out;
+}
+@group(0) @binding(0) var cube: texture_cube<f32>;
+@group(0) @binding(1) var samp: sampler;
+@fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
+    let i = i32(in.pos.x); // 0..5
+    var dir = vec3<f32>( 0.10, 1.0,  0.00);
+    if (i == 1) { dir = vec3<f32>(-0.10, 1.0,  0.00); }
+    if (i == 2) { dir = vec3<f32>( 0.00, 1.0,  0.10); }
+    if (i == 3) { dir = vec3<f32>( 0.00, 1.0, -0.10); }
+    if (i == 4) { dir = vec3<f32>( 0.17, 1.0,  0.17); }
+    if (i == 5) { dir = vec3<f32>(-0.17, 1.0, -0.17); }
+    return textureSampleLevel(cube, samp, normalize(dir), 0.0);
+}
+"#;
 
 /// LUT probe: pixel 0 samples (NdotV 0.9, roughness 0.05), pixel 1 samples
 /// (NdotV 0.9, roughness 0.95). The split-sum scale term A falls with
@@ -538,9 +575,47 @@ fn ibl_irradiance_faces_are_distinct_and_sky_up() -> Result<()> {
             biome: "l2-test".to_string(),
             path: HDRI_PATH.to_string(),
         };
+        let bake_started = std::time::Instant::now();
         let res = ibl
             .bake_environment(&device, &queue, IblQuality::Medium)
             .context("bake_environment failed")?;
+        println!(
+            "[l2-bake] decode+bake (Medium, cold cache): {:.1} ms",
+            bake_started.elapsed().as_secs_f64() * 1000.0
+        );
+
+        // Diagnostic for the intensity-normalisation residue (L2_OUTCOME §6):
+        // what the engine derives (from an 8-bit-clamped average) vs the true
+        // linear/log averages of the HDR source.
+        let engine_intensity = res
+            .avg_luminance
+            .map(|a| (0.35 / a).clamp(0.3, 3.0))
+            .unwrap_or(1.0);
+        println!(
+            "[l2-int] engine avg_luminance={:?} -> ibl_intensity={engine_intensity:.3}",
+            res.avg_luminance
+        );
+        {
+            let img = image::open(HDRI_PATH)
+                .context("decode HDRI for luminance diagnostic")?
+                .to_rgb32f();
+            let mut lin = 0.0f64;
+            let mut log = 0.0f64;
+            let n = (img.width() * img.height()) as f64;
+            for p in img.pixels() {
+                let l = (0.2126 * p.0[0] + 0.7152 * p.0[1] + 0.0722 * p.0[2]) as f64;
+                lin += l;
+                log += (l.max(1e-6)).ln();
+            }
+            let lin_avg = lin / n;
+            let log_avg = (log / n).exp();
+            println!(
+                "[l2-int] true HDR: linear avg {lin_avg:.4} (-> intensity {:.3}), \
+                 log avg {log_avg:.4} (-> intensity {:.3})",
+                (0.35 / lin_avg).clamp(0.3, 3.0),
+                (0.35 / log_avg).clamp(0.3, 3.0)
+            );
+        }
 
         const FACE_NAMES: [&str; 6] = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"];
 
@@ -667,6 +742,28 @@ fn ibl_irradiance_faces_are_distinct_and_sky_up() -> Result<()> {
                 }
             }
         }
+
+        // Diagnostic (no assertion yet — L.2 calibration STOP): tilt-fan
+        // around +Y. True irradiance is low-frequency; large spread between
+        // near-neighbour directions = sun-core quadrature fireflies.
+        let fan = probe_six(
+            &device,
+            &queue,
+            &res.irradiance_cube,
+            ibl.sampler(),
+            FAN_PROBE_WGSL,
+        )?;
+        let fan_lumas: Vec<f32> = fan.iter().map(|p| luma(*p)).collect();
+        let fmax = fan_lumas.iter().cloned().fold(f32::MIN, f32::max);
+        let fmin = fan_lumas.iter().cloned().fold(f32::MAX, f32::min);
+        println!(
+            "[l2-fan] +Y tilt-fan lumas: {:?} — spread {:.1}% of max",
+            fan_lumas
+                .iter()
+                .map(|l| (l * 1e4).round() / 1e4)
+                .collect::<Vec<_>>(),
+            100.0 * (fmax - fmin) / fmax.max(1e-6)
+        );
 
         // 5. The BRDF LUT must not be roughness-flipped: A(NdotV .9, r .05)
         //    must exceed A(NdotV .9, r .95). Pre-fix the v-flipped write

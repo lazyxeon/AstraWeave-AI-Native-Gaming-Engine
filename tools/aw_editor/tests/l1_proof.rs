@@ -402,9 +402,15 @@ fn l1_late_push_lands() -> Result<()> {
         // BEFORE the async engine adapter exists.
         let mut viewport = ViewportRenderer::new(device.clone(), queue.clone())
             .context("ViewportRenderer::new failed")?;
+        // L.2 recalibration: terrain is now IBL-lit, and the lighting push
+        // cannot scale the IBL term — a landed sun-0.15 push renders ~155
+        // (was ~46 pre-L.2) vs ~178 dropped, too thin a margin. Push a dark
+        // exposure too (exposure IS park-and-delivered — that's the point of
+        // this test), which widens landed (~87) vs dropped (~178).
         let dark = TerrainLightingParams {
             sun_intensity: 0.15,
             ambient_intensity: 0.0,
+            exposure: 0.5,
             ..pinned_defaults()
         };
         viewport.set_lighting_params(dark); // adapter is None here
@@ -435,12 +441,12 @@ fn l1_late_push_lands() -> Result<()> {
         let (mean, _) = luma_stats(&png)?;
 
         // NOTE: the terrain upload overwrites ambient (engine_adapter.rs
-        // terrain-upload block), but NOT sun colour/intensity — so a landed
-        // push at sun_intensity 0.15 must render far darker than the ~112
-        // default (T2F §4.1). Pre-L.1 the push was dropped → default
-        // brightness → this assertion fails.
+        // terrain-upload block), but NOT sun colour/intensity/exposure — so a
+        // landed dark push must render far darker than the delivered default
+        // (~178 under the L.2 IBL fill; was ~112 pre-L.2). Pre-L.1 the push
+        // was dropped → default brightness → this assertion fails.
         assert!(
-            mean < 70.0,
+            mean < 140.0,
             "late (pre-init) lighting push must land after adapter init; \
              mean luma {mean:.2} indicates the push was dropped (T2F §3 race)"
         );

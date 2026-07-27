@@ -18,6 +18,9 @@ use astraweave_materials::MaterialPackage;
 pub(crate) const SHADER_SRC: &str = concat!(
     include_str!("../shaders/constants.wgsl"),
     include_str!("../shaders/brdf_common.wgsl"),
+    // L.2: IblParams + compute_ibl live in the shared fragment (also consumed
+    // by the terrain-forward concat in terrain_material_manager.rs).
+    include_str!("../shaders/ibl_common.wgsl"),
     r#"
 struct VSIn {
     @location(0) position: vec3<f32>,
@@ -111,11 +114,7 @@ struct SceneEnv {
 // IBL sampler
 @group(5) @binding(3) var ibl_sampler: sampler;
 
-struct IblParams {
-    ibl_intensity: f32,
-    max_spec_lod: f32,
-    _pad: vec2<f32>,
-};
+// IblParams struct + compute_ibl come from ibl_common.wgsl (prepended).
 @group(5) @binding(4) var<uniform> uIbl: IblParams;
 
 // Screen-space GI (from SSGI/Lumen pipeline). Fallback is 1x1 black.
@@ -173,34 +172,8 @@ fn vs(input: VSIn) -> VSOut {
     return out;
 }
 
-// IBL uses fresnel_schlick_roughness from brdf_common.wgsl
-// All samples use textureSampleLevel (explicit LOD) so this function
-// is safe inside non-uniform control flow (e.g., LOD branches).
-fn compute_ibl(
-    N: vec3<f32>,
-    V: vec3<f32>,
-    base_color: vec3<f32>,
-    metallic: f32,
-    roughness: f32,
-    F0: vec3<f32>,
-) -> vec3<f32> {
-    let NdotV = max(dot(N, V), 0.0);
-    let F = fresnel_schlick_roughness(NdotV, F0, roughness);
-
-    // Diffuse IBL: irradiance cubemap sampled by normal (pre-convolved, mip 0)
-    let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
-    let irradiance = textureSampleLevel(ibl_irradiance, ibl_sampler, N, 0.0).rgb;
-    let diffuse_ibl = kd * base_color * irradiance;
-
-    // Specular IBL: prefiltered environment map + BRDF LUT
-    let R = reflect(-V, N);
-    let mip = roughness * uIbl.max_spec_lod;
-    let prefiltered = textureSampleLevel(ibl_specular, ibl_sampler, R, mip).rgb;
-    let brdf = textureSampleLevel(ibl_brdf_lut, ibl_sampler, vec2<f32>(NdotV, roughness), 0.0).rg;
-    let specular_ibl = prefiltered * (F * brdf.x + brdf.y);
-
-    return (diffuse_ibl + specular_ibl) * uIbl.ibl_intensity;
-}
+// compute_ibl is defined in ibl_common.wgsl (prepended) — hoisted there in
+// L.2 so the terrain-forward path shares the same implementation.
 
 @fragment
 fn fs(input: VSOut) -> @location(0) vec4<f32> {
@@ -934,6 +907,10 @@ pub struct Renderer {
     pub ibl: crate::ibl::IblManager,
     pub ibl_resources: Option<crate::ibl::IblResources>,
     ibl_bind_group: wgpu::BindGroup,
+    // L.2: terrain-forward group(3) — same views/params buffer as
+    // `ibl_bind_group` in a 5-entry layout; rebuilt together on every bake.
+    terrain_ibl_bgl: wgpu::BindGroupLayout,
+    terrain_ibl_bind_group: wgpu::BindGroup,
     ibl_params_buf: wgpu::Buffer,
 
     // Screen-space Global Illumination (composite into PBR via group(5) bindings 5-6)
@@ -2322,6 +2299,45 @@ impl Renderer {
             ],
         });
 
+        // L.2: terrain-forward IBL group (group 3 of the terrain pipeline).
+        // A dedicated 5-entry layout rather than the 9-entry group-5 layout:
+        // reusing the full layout would put the terrain fragment stage at the
+        // 16-sampled-texture device default (3 layer arrays + 8 splats + 5),
+        // blocking L.3's shadow map. The bind group shares the SAME views,
+        // params buffer, and sampler as `ibl_bind_group` (§7.7: one logical
+        // resource, one owner) and is rebuilt alongside it on every bake in
+        // `rebuild_ibl_bind_group`.
+        let terrain_ibl_bgl =
+            crate::terrain_material_manager::TerrainMaterialManager::create_terrain_ibl_bgl(
+                &device,
+            );
+        let terrain_ibl_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("terrain_ibl_fallback_bg"),
+            layout: &terrain_ibl_bgl,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&fallback_cube_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&fallback_cube_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&fallback_brdf_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&ibl_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: ibl_params_buf.as_entire_binding(),
+                },
+            ],
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
             // Group indices: 0: camera, 1: material, 2: shadow/light, 3: textures, 4: scene env, 5: IBL
@@ -3437,6 +3453,8 @@ fn vs(input: VSIn) -> VSOut {
             ibl,
             ibl_resources: None,
             ibl_bind_group,
+            terrain_ibl_bgl,
+            terrain_ibl_bind_group,
             ibl_params_buf,
             gi_fallback_view,
             gi_sampler,
@@ -3745,6 +3763,36 @@ fn vs(input: VSIn) -> VSOut {
                     resource: wgpu::BindingResource::Sampler(
                         self.cloud_shadow_pass.shadow_sampler(),
                     ),
+                },
+            ],
+        });
+
+        // L.2: the terrain-forward group(3) mirror — same baked views, same
+        // params buffer, same sampler. Rebuilt here (and only here) so the
+        // two binding tables can never diverge (§7.7).
+        self.terrain_ibl_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("terrain_ibl_bg"),
+            layout: &self.terrain_ibl_bgl,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&res.specular_cube),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&res.irradiance_cube),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&res.brdf_lut),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: self.ibl_params_buf.as_entire_binding(),
                 },
             ],
         });
@@ -5911,8 +5959,12 @@ fn vs(input: VSIn) -> VSOut {
                     bytemuck::cast(engine_scene_ubo);
 
                 if let Some(tf) = self.terrain_forward.as_mut() {
-                    tf.manager
-                        .ensure_forward_pipeline(&self.device, color_format, depth_format);
+                    tf.manager.ensure_forward_pipeline(
+                        &self.device,
+                        color_format,
+                        depth_format,
+                        &self.terrain_ibl_bgl,
+                    );
                     // ED-3: keep the terrain manager's wireframe selection in
                     // lockstep with the frame's debug-shading state.
                     tf.manager.set_wireframe(self.wireframe_enabled);
@@ -6070,6 +6122,12 @@ fn vs(input: VSIn) -> VSOut {
             // has been deleted; the forward-lit splat path is canonical.
             #[cfg(feature = "terrain-splat-arrays")]
             if let Some(tf) = self.terrain_forward.as_ref() {
+                // L.2: bind the terrain IBL group once for the whole chunk
+                // loop — draw_chunk_forward sets groups 0/1/2 per chunk and
+                // never touches 3. Fallback or baked, the group always exists.
+                if !tf.chunks.is_empty() {
+                    rp.set_bind_group(3, &self.terrain_ibl_bind_group, &[]);
+                }
                 for (key, chunk_gpu) in &tf.chunks {
                     let _ = tf.manager.draw_chunk_forward(
                         &mut rp,

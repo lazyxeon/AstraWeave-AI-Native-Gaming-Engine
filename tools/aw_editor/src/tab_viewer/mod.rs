@@ -4609,9 +4609,16 @@ impl TabViewer for EditorTabViewer {
                 egui::CollapsingHeader::new("Environment")
                     .default_open(false)
                     .show(ui, |ui| {
-                        // Ambient color
+                        // Ambient color. L.2 honesty: terrain no longer reads
+                        // the flat ambient (it is environment-lit via IBL);
+                        // this control still drives the static-mesh ambient
+                        // floor — labelled so it cannot read as a terrain
+                        // control that silently no-ops (ED-3 principle).
                         ui.horizontal(|ui| {
-                            ui.label("Ambient Color:");
+                            ui.label("Ambient Color (statics):").on_hover_text(
+                                "Since L.2, terrain is lit by the baked environment (IBL); \
+                                 this ambient affects only static meshes' ambient floor.",
+                            );
                             let mut color = egui::Color32::from_rgb(
                                 (self.world_ambient_color[0] * 255.0) as u8,
                                 (self.world_ambient_color[1] * 255.0) as u8,
@@ -4710,7 +4717,12 @@ impl TabViewer for EditorTabViewer {
                         });
                         ui.add_space(4.0);
                         ui.horizontal(|ui| {
-                            ui.label("Ambient Intensity:");
+                            // L.2 honesty: statics-only — terrain is IBL-lit
+                            // (see the Environment section's ambient note).
+                            ui.label("Ambient Intensity (statics):").on_hover_text(
+                                "Since L.2, terrain is lit by the baked environment (IBL); \
+                                 this ambient affects only static meshes' ambient floor.",
+                            );
                             ui.add(
                                 egui::Slider::new(&mut self.world_ambient_intensity, 0.0..=2.0)
                                     .text(""),
