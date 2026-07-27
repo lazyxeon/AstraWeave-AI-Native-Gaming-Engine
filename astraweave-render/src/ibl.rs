@@ -269,7 +269,24 @@ impl IblManager {
                 }],
             });
 
-        // Separate layouts: sky has no bindings; irradiance samples env (group 0); spec samples env (group 0) + params (group 1)
+        // Per-face index uniform BGL, shared by the equirect pass and (since the
+        // L.2 face-blindness fix) the irradiance convolution.
+        let eqr_face_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("ibl-eqr-face-bgl"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        // Separate layouts: sky has no bindings; irradiance samples env (group 0)
+        // + face index (group 1, L.2 fix); spec samples env (group 0) + params (group 1)
         let sky_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ibl-sky-pl"),
             bind_group_layouts: &[],
@@ -277,7 +294,7 @@ impl IblManager {
         });
         let conv_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ibl-conv-pl"),
-            bind_group_layouts: &[&env_bgl],
+            bind_group_layouts: &[&env_bgl, &eqr_face_bgl],
             push_constant_ranges: &[],
         });
         let spec_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -388,19 +405,6 @@ impl IblManager {
                     count: None,
                 },
             ],
-        });
-        let eqr_face_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("ibl-eqr-face-bgl"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
         });
         let eqr_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ibl-eqr-pl"),
@@ -819,6 +823,22 @@ impl IblManager {
                 label: Some("ibl-irr-enc"),
             });
             for face in 0..6u32 {
+                // L.2 face-blindness fix: pass the face index to the shader via
+                // the same per-face uniform pattern the equirect pass uses.
+                let face_data: [u32; 4] = [face, 0, 0, 0];
+                let face_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("ibl-irr-face-ub"),
+                    contents: bytemuck::bytes_of(&face_data),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+                let irr_face_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("ibl-irr-face-bg"),
+                    layout: &self.eqr_face_bgl,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: face_buf.as_entire_binding(),
+                    }],
+                });
                 let dst_face = irr_tex.create_view(&wgpu::TextureViewDescriptor {
                     usage: None,
                     label: Some("ibl-irr-face"),
@@ -846,6 +866,7 @@ impl IblManager {
                 });
                 rp.set_pipeline(&self.irr_pipeline);
                 rp.set_bind_group(0, &env_bg, &[]);
+                rp.set_bind_group(1, &irr_face_bg, &[]);
                 rp.draw(0..3, 0..1);
                 drop(rp);
             }
@@ -1021,7 +1042,11 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.uv = (xy+1.0)*0.5;
+    // L.2 orientation fix: framebuffer row 0 is NDC y=+1, but sampled texture
+    // v=0 is row 0 — flip v so written content matches hardware sampling.
+    // Pre-fix, every bake target was stored vertically flipped (cube faces
+    // v-flipped per face; BRDF LUT roughness-flipped). See L2_OUTCOME.md.
+    out.uv = vec2<f32>((xy.x+1.0)*0.5, (1.0-xy.y)*0.5);
     return out;
 }
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
@@ -1036,27 +1061,45 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 }
 "#;
 
-// Irradiance convolution (Lambertian diffuse): proper cosine-weighted hemisphere sampling
-// Note: This shader is executed per-face, so we derive the normal from clip-space position
+// Irradiance convolution (Lambertian diffuse): proper cosine-weighted hemisphere sampling.
+// L.2 fix (docs/audits/L2_PHASE0_STOP.md §2): the pre-fix shader derived N with
+// z pinned to 1.0 and no face index was bound, so all six cube faces received
+// the identical +Z-hemisphere convolution. The normal now comes from the same
+// per-face uniform + face table the equirect (EQUIRECT_TO_CUBE_WGSL `uv_to_dir`)
+// and specular-prefilter (`uv_to_cube_dir`) passes already use.
 const IRRADIANCE_WGSL: &str = r#"
-struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) clip_pos: vec2<f32> };
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+struct FaceIndex { idx: u32 };
+@group(1) @binding(0) var<uniform> u_face: FaceIndex;
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.clip_pos = xy;
+    // L.2 orientation fix: framebuffer row 0 is NDC y=+1, but sampled texture
+    // v=0 is row 0 — flip v so written content matches hardware sampling.
+    // Pre-fix, every bake target was stored vertically flipped (cube faces
+    // v-flipped per face; BRDF LUT roughness-flipped). See L2_OUTCOME.md.
+    out.uv = vec2<f32>((xy.x+1.0)*0.5, (1.0-xy.y)*0.5);
     return out;
 }
 @group(0) @binding(0) var env_cube: texture_cube<f32>;
 @group(0) @binding(1) var samp: sampler;
+fn uv_to_dir(face: i32, uv: vec2<f32>) -> vec3<f32> {
+    let a = uv*2.0 - 1.0;
+    if (face == 0) { return normalize(vec3<f32>( 1.0,    -a.y,   -a.x)); }
+    if (face == 1) { return normalize(vec3<f32>(-1.0,    -a.y,    a.x)); }
+    if (face == 2) { return normalize(vec3<f32>( a.x,     1.0,    a.y)); }
+    if (face == 3) { return normalize(vec3<f32>( a.x,    -1.0,   -a.y)); }
+    if (face == 4) { return normalize(vec3<f32>( a.x,    -a.y,    1.0)); }
+    return normalize(vec3<f32>(-a.x,   -a.y,   -1.0));
+}
 
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
-    // Normal derived from clip-space coordinates (-1 to 1)
-    // This works because we render one face at a time
-    // The Z component will be 1.0 (facing outward from cube center)
-    let N = normalize(vec3<f32>(in.clip_pos.x, in.clip_pos.y, 1.0));
-    
+    // Per-face outward direction (CPU passes the face index via uniform,
+    // exactly like the equirect pass).
+    let N = uv_to_dir(i32(u_face.idx), in.uv);
+
     // Build orthonormal basis for tangent space
     let up = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), abs(N.z) < 0.999);
     let T = normalize(cross(up, N));
@@ -1110,7 +1153,11 @@ struct PrefilterParams { roughness: f32, face_idx: u32, sample_count: u32, _pad:
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.uv = (xy+1.0)*0.5;
+    // L.2 orientation fix: framebuffer row 0 is NDC y=+1, but sampled texture
+    // v=0 is row 0 — flip v so written content matches hardware sampling.
+    // Pre-fix, every bake target was stored vertically flipped (cube faces
+    // v-flipped per face; BRDF LUT roughness-flipped). See L2_OUTCOME.md.
+    out.uv = vec2<f32>((xy.x+1.0)*0.5, (1.0-xy.y)*0.5);
     out.face_idx = params.face_idx;
     return out;
 }
@@ -1176,7 +1223,11 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.uv = (xy+1.0)*0.5;
+    // L.2 orientation fix: framebuffer row 0 is NDC y=+1, but sampled texture
+    // v=0 is row 0 — flip v so written content matches hardware sampling.
+    // Pre-fix, every bake target was stored vertically flipped (cube faces
+    // v-flipped per face; BRDF LUT roughness-flipped). See L2_OUTCOME.md.
+    out.uv = vec2<f32>((xy.x+1.0)*0.5, (1.0-xy.y)*0.5);
     return out;
 }
 fn radicalInverseVdC(bitsIn: u32) -> f32 { var bits = bitsIn; bits = (bits << 16u) | (bits >> 16u); bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u); bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u); bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u); bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u); return f32(bits) * 2.3283064365386963e-10; }
@@ -1219,7 +1270,11 @@ struct FaceIndex { idx: u32 };
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.uv = (xy+1.0)*0.5;
+    // L.2 orientation fix: framebuffer row 0 is NDC y=+1, but sampled texture
+    // v=0 is row 0 — flip v so written content matches hardware sampling.
+    // Pre-fix, every bake target was stored vertically flipped (cube faces
+    // v-flipped per face; BRDF LUT roughness-flipped). See L2_OUTCOME.md.
+    out.uv = vec2<f32>((xy.x+1.0)*0.5, (1.0-xy.y)*0.5);
     return out;
 }
 @group(0) @binding(0) var hdr_equirect: texture_2d<f32>;
