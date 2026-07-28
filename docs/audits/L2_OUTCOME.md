@@ -1,6 +1,6 @@
-# L.2 Outcome — IBL for editor terrain: engine fixed, wiring shipped, A/B measured; STOPPED at the calibration gate
+# L.2 Outcome — IBL for editor terrain: engine fixed, wiring shipped, A/B measured; calibration ratified and shipped
 
-**Session**: L.2 (Option A as ratified 2026-07-27) · **Baseline**: `2e938ff9d` (L.1) · STOP report: `L2_PHASE0_STOP.md` (`4c139460d`)
+**Session**: L.2 (Option A as ratified 2026-07-27; calibration A+B+E ratified 2026-07-28) · **Baseline**: `2e938ff9d` (L.1) · STOP report: `L2_PHASE0_STOP.md` (`4c139460d`)
 **Machine**: GTX 1660 Ti Max-Q · Vulkan · driver 592.82 (min-spec)
 
 ## 0. Status
@@ -9,10 +9,51 @@
 |---|---|
 | Irradiance face-blindness fix (ratified, test-first) | **DONE** — `b1295b93f`, regression test run-and-FAILED at `4c139460d` first (spread 0.00%) |
 | v-flipped bake-writes fix (found by the test's CPU reference) | **DONE** — same commit; all six irradiance faces now agree with an independent CPU reference to ≤2.1% |
-| Wiring: bake-at-init, group(3) bind, sample, ambient replaced, AO on IBL | **DONE** — this commit; design exactly as ratified |
+| Wiring: bake-at-init, group(3) bind, sample, ambient replaced, AO on IBL | **DONE** — `5b78fdd78`; design exactly as ratified |
 | A/B at the four pinned stations + AO delta + attribution | **DONE** — §3; AO went 0.00% → 99.91–100% of pixels |
 | Perf gate | **PASS** — §6; IBL cost below run-to-run noise |
-| **Default calibration** | **STOPPED** — §4/§5; the ratified STOP condition fired, with a deeper diagnosis than the LDR clamp; candidate placements previewed for one-round-trip ratification |
+| **Calibration (director-ratified 2026-07-28: A + B, E accepted with no-block condition, C deferred)** | **SHIPPED** — §4.1; bake-cube sun-clamp + fixed intensity 1.5 + worker-thread bake; final A/B: desert +33, grass +22, sd 9.9–15.6, glitter-free. Awaiting the director's render gate (script in the session closing report). |
+
+## 0.1 The shipped calibration (§5 menu as ratified)
+
+- **A — bake-cube sun-clamp**: `min(rgb, 2.0)` in `EQUIRECT_TO_CUBE_WGSL` (bake path only;
+  the visible sky reads the unclamped `hdr_equirect` and keeps its sun disk). The firefly
+  probe was promoted to a **hard assertion** — and redesigned: the original ±14° fan
+  measures the sky's *real* anisotropy gradient (25.6% post-clamp — legitimate, +X horizon
+  is 2× −X), so the committed guard is a **~2° neighbour cluster** near +Y where true
+  irradiance varies ~1%: measured **2.4%** clamped (assert < 5%), and **15.9%** with the
+  clamp temporarily removed (fails — the assertion's discriminating power is proven, not
+  assumed).
+- **B — fixed default intensity 1.5** replacing the image-average scheme (comment in
+  `rebuild_ibl_bind_group` documents 1.0 as the one-line conservative fallback pending the
+  gate). `avg_luminance` still computed/logged for diagnostics.
+- **E — the bake does not block the UI thread**: the init bake moved to a **worker
+  thread** (a second `IblManager` on that thread bakes and channels `IblResources` back;
+  wgpu device/queue handles are internally synchronized and views keep the thread-created
+  textures alive). The UI thread's only involvement is a per-frame `try_recv` in
+  `poll_env_bake` (called from `render_to_texture`) and a bind-group rebuild on arrival
+  (`Renderer::install_baked_environment`). Measured off-thread cost: decode ≈ 0.63 s +
+  encode/submit ≈ 1.91 s (cold total 2.54 s); until it lands, frames render on the
+  fallback sky-fill environment — a one-time visible transition ~2.5 s after adapter
+  init. Capture harnesses call `wait_env_bake` for a deterministic post-bake state.
+- **C — deferred** (logged residue §8: the LDR clamp remains for `avg_luminance`'s
+  remaining diagnostic consumers).
+- **Final A/B at the shipped calibration** (`d:/tmp/l2_staging/after_final/`; the ratified
+  preview legs are ~1.2 luma lower because they inadvertently still carried the
+  diffuse-only diagnostic edit — the shipped state adds the clamped, glitter-free
+  specular term):
+
+| Station | before → after_final (mean) | sd | differing |
+|---|---|---|---|
+| desert_boundary_y414 | 114.31 → **147.19** (+32.87) | 9.17 → 9.90 | 100.00% |
+| desert_close_20m | 112.63 → **146.09** (+33.45) | 11.27 → 12.79 | 100.00% |
+| grass_close_20m | 82.31 → **104.76** (+22.45) | 12.49 → 15.55 | 100.00% |
+| grass_mid_47m | 83.93 → **106.31** (+22.38) | 9.87 → 11.91 | 100.00% |
+
+  Normals-debug frames remain byte-identical (zero sky pixels — attribution complete).
+  L.1 controls re-certified at this state: defaults-push honesty **0 differing pixels**;
+  exposure 0.5/1.35/3.0 → 79.07/146.09/197.21; late-push landed 50.19 vs ~146 dropped
+  (threshold 140).
 
 ## 1. The engine fixes (commit `b1295b93f`)
 

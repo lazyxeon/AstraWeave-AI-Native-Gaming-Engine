@@ -648,6 +648,13 @@ pub struct EngineRenderAdapter {
     /// only offers entries the loaded pack can honestly render.
     #[cfg(feature = "terrain-splat-arrays")]
     palette_remap: Option<super::palette_remap::PaletteRemap>,
+
+    /// L.2: receiver for the worker-thread init IBL bake. `Some` while the
+    /// bake is in flight; drained by `poll_env_bake` (live editor, per frame)
+    /// or `wait_env_bake` (capture harnesses). `None` after delivery, failure,
+    /// or when the HDRI was absent at init.
+    pending_env_bake:
+        Option<std::sync::mpsc::Receiver<anyhow::Result<astraweave_render::IblResources>>>,
 }
 
 impl EngineRenderAdapter {
@@ -768,6 +775,7 @@ impl EngineRenderAdapter {
             pending_biome_pack: None,
             #[cfg(feature = "terrain-splat-arrays")]
             palette_remap: None,
+            pending_env_bake: None,
         };
         // Editor-Engine Render Parity P.4 (quality preset seam closure):
         // canonical viewport now uses GameQuality unconditionally — the
@@ -785,11 +793,15 @@ impl EngineRenderAdapter {
         adapter.apply_quality_preset(EditorQualityPreset::GameQuality);
         // L.2: bake the environment once per adapter lifetime so terrain (and
         // statics) receive a real IBL instead of the fallback sky-fill cube.
-        adapter.bake_default_environment();
+        // The bake runs on a WORKER THREAD (director condition E: it must not
+        // block the UI thread — measured cost is ~0.6 s decode + ~1.9 s
+        // encode/submit); results are installed by `poll_env_bake` from
+        // `render_to_texture`.
+        adapter.spawn_default_environment_bake(&device, &queue);
         Ok(adapter)
     }
 
-    /// L.2 — one-time IBL bake at adapter construction.
+    /// L.2 — one-time IBL bake at adapter construction, on a worker thread.
     ///
     /// Source: the git-tracked neutral-daylight HDRI
     /// `assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr` (catalog entry
@@ -798,10 +810,18 @@ impl EngineRenderAdapter {
     /// convention of both pre-existing editor bake sites (`load_hdri`,
     /// `clear_hdri`).
     ///
+    /// Threading: a second `IblManager` lives on the worker thread (wgpu
+    /// device/queue handles are internally synchronized; the resulting
+    /// `IblResources` views keep the thread-created textures alive). The UI
+    /// thread's only involvement is the per-frame `try_recv` in
+    /// [`Self::poll_env_bake`] and a bind-group rebuild on arrival. Until the
+    /// bake lands (~2.5 s after init) frames render on the fallback sky-fill
+    /// environment — a one-time visible transition at startup.
+    ///
     /// Failure policy: warn-and-continue. A missing file or failed bake must
     /// never fail adapter init — the renderer then keeps its fallback IBL
     /// bind groups (moderate sky-fill cube), which is the pre-L.2 state.
-    fn bake_default_environment(&mut self) {
+    fn spawn_default_environment_bake(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         // Same asset-root probing the editor harnesses use: repo root CWD
         // (`cargo editor`) or a crate-relative CWD (`tools/aw_editor`).
         const HDRI_REL: &str = "hdri/polyhaven/kloppenheim_02_puresky_2k.hdr";
@@ -817,24 +837,93 @@ impl EngineRenderAdapter {
             return;
         };
         let path_str = path.to_string_lossy().to_string();
-        let started = std::time::Instant::now();
-        self.renderer.ibl_mut().mode = astraweave_render::ibl::SkyMode::HdrPath {
-            biome: "editor-default".to_string(),
-            path: path_str.clone(),
+        let (tx, rx) = std::sync::mpsc::channel();
+        let device = device.clone();
+        let queue = queue.clone();
+        std::thread::Builder::new()
+            .name("l2-env-bake".to_string())
+            .spawn(move || {
+                let started = std::time::Instant::now();
+                let result = (|| -> anyhow::Result<astraweave_render::IblResources> {
+                    let mut ibl = astraweave_render::IblManager::new(
+                        &device,
+                        astraweave_render::ibl::IblQuality::Medium,
+                    )?;
+                    ibl.mode = astraweave_render::ibl::SkyMode::HdrPath {
+                        biome: "editor-default".to_string(),
+                        path: path_str.clone(),
+                    };
+                    ibl.bake_environment(
+                        &device,
+                        &queue,
+                        astraweave_render::ibl::IblQuality::Medium,
+                    )
+                })();
+                match &result {
+                    Ok(_) => tracing::info!(
+                        "L.2 default IBL baked (worker thread): source={path_str}, \
+                         tier=Medium, took {:.1} ms",
+                        started.elapsed().as_secs_f64() * 1000.0
+                    ),
+                    Err(e) => tracing::warn!(
+                        "L.2 default IBL bake failed ({e:#}); terrain keeps the \
+                         fallback sky-fill environment"
+                    ),
+                }
+                // Receiver may be gone if the adapter died first — fine.
+                let _ = tx.send(result);
+            })
+            .map_or_else(
+                |e| {
+                    tracing::warn!("L.2 default IBL: worker thread spawn failed ({e}); skipping");
+                },
+                |_join_handle| {
+                    self.pending_env_bake = Some(rx);
+                },
+            );
+    }
+
+    /// Install the worker-thread bake result if it has arrived (cheap
+    /// per-frame poll; UI thread never blocks on the bake).
+    fn poll_env_bake(&mut self) {
+        let Some(rx) = &self.pending_env_bake else {
+            return;
         };
-        match self
-            .renderer
-            .bake_environment(astraweave_render::ibl::IblQuality::Medium)
-        {
-            Ok(()) => tracing::info!(
-                "L.2 default IBL baked: source={path_str}, tier=Medium, took {:.1} ms",
-                started.elapsed().as_secs_f64() * 1000.0
-            ),
-            Err(e) => tracing::warn!(
-                "L.2 default IBL bake failed ({e:#}); terrain keeps the fallback \
-                 sky-fill environment"
-            ),
+        match rx.try_recv() {
+            Ok(Ok(resources)) => {
+                self.renderer.install_baked_environment(resources);
+                self.pending_env_bake = None;
+                tracing::info!("L.2 default IBL installed (bind groups rebuilt, sky flipped)");
+            }
+            Ok(Err(_)) => {
+                // Already logged by the worker.
+                self.pending_env_bake = None;
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => {}
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                tracing::warn!("L.2 default IBL: worker thread vanished without a result");
+                self.pending_env_bake = None;
+            }
         }
+    }
+
+    /// Block until the init bake lands (or `timeout`). For the capture
+    /// harnesses, which need a deterministic post-bake state before their
+    /// first frame; the live editor only ever polls. Returns whether a baked
+    /// environment is installed.
+    pub fn wait_env_bake(&mut self, timeout: std::time::Duration) -> bool {
+        if let Some(rx) = &self.pending_env_bake {
+            match rx.recv_timeout(timeout) {
+                Ok(Ok(resources)) => {
+                    self.renderer.install_baked_environment(resources);
+                    tracing::info!("L.2 default IBL installed (waited)");
+                }
+                Ok(Err(_)) => {}
+                Err(e) => tracing::warn!("L.2 default IBL: wait_env_bake timed out/failed ({e})"),
+            }
+            self.pending_env_bake = None;
+        }
+        self.renderer.ibl_resources.is_some()
     }
 
     pub fn is_initialized(&self) -> bool {
@@ -952,6 +1041,8 @@ impl EngineRenderAdapter {
         depth_view: Option<&wgpu::TextureView>,
         encoder: &mut wgpu::CommandEncoder,
     ) -> Result<()> {
+        // L.2: install the worker-thread init bake the frame it arrives.
+        self.poll_env_bake();
         let t0 = std::time::Instant::now();
         self.renderer
             .draw_into(target, depth_view, encoder)

@@ -153,6 +153,9 @@ async fn build_viewport(
             .context("engine adapter missing")?;
         adapter.set_time_of_day(TIME_OF_DAY);
         adapter.set_biome_pack(Some(biome_dir));
+        // L.2: the init IBL bake runs on a worker thread — block so captures
+        // see the deterministic post-bake state.
+        adapter.wait_env_bake(std::time::Duration::from_secs(60));
     }
     Ok(viewport)
 }
@@ -424,6 +427,8 @@ fn l1_late_push_lands() -> Result<()> {
                 .context("engine adapter missing")?;
             adapter.set_time_of_day(TIME_OF_DAY);
             adapter.set_biome_pack(Some(biome_dir));
+            // L.2: deterministic post-bake state (worker-thread init bake).
+            adapter.wait_env_bake(std::time::Duration::from_secs(60));
         }
         let state = generate_world(WorldArchetypeId::Desert, 6)?;
         viewport.upload_terrain_chunks_raw(&state.get_gpu_chunks());

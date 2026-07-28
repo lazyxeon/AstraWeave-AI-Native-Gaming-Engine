@@ -1301,7 +1301,14 @@ fn dir_to_equirect_uv(dir: vec3<f32>) -> vec2<f32> {
     let dir = uv_to_dir(i32(u_face.idx), in.uv);
     let uv = dir_to_equirect_uv(dir);
     let c = textureSample(hdr_equirect, samp, uv);
-    return vec4<f32>(c.rgb, 1.0);
+    // L.2 calibration (director-ratified 2026-07-28): clamp the BAKE CUBE's
+    // radiance. The env cube feeds the irradiance/specular convolutions,
+    // where the HDRI's concentrated sun (a) aliases through the fixed
+    // quadrature into per-texel fireflies (measured 35.1% irradiance spread
+    // within 14 deg of +Y pre-clamp) and (b) double-counts the scene's
+    // analytic sun. The VISIBLE sky is unaffected: SkyRenderer prefers the
+    // unclamped `hdr_equirect` texture and keeps the real sun disk.
+    return vec4<f32>(min(c.rgb, vec3<f32>(2.0)), 1.0);
 }
 "#;
 

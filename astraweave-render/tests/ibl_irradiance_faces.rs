@@ -284,10 +284,12 @@ fn luma(px: [f32; 4]) -> f32 {
     0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]
 }
 
-/// Tilt-fan probe: six directions within ~14° of +Y. True irradiance is
-/// low-frequency, so neighbouring directions must agree closely; a large
-/// spread means the convolution's fixed 60×30 quadrature is aliasing a
-/// concentrated source (the HDRI's sun core) into per-texel fireflies.
+/// Firefly cluster probe: six directions within ~2° of a 10°-tilted centre
+/// (off the pole to avoid basis symmetries) — about ±1 texel of the 64² +Y
+/// face. TRUE irradiance varies ~1% at this separation (even under a
+/// strongly anisotropic sky, whose real gradient is what a WIDE fan
+/// measures); per-texel quadrature fireflies from a concentrated source
+/// (the HDRI's sun core) produce far larger neighbour-to-neighbour spread.
 const FAN_PROBE_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
@@ -300,12 +302,12 @@ struct VsOut { @builtin(position) pos: vec4<f32> };
 @group(0) @binding(1) var samp: sampler;
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
     let i = i32(in.pos.x); // 0..5
-    var dir = vec3<f32>( 0.10, 1.0,  0.00);
-    if (i == 1) { dir = vec3<f32>(-0.10, 1.0,  0.00); }
-    if (i == 2) { dir = vec3<f32>( 0.00, 1.0,  0.10); }
-    if (i == 3) { dir = vec3<f32>( 0.00, 1.0, -0.10); }
-    if (i == 4) { dir = vec3<f32>( 0.17, 1.0,  0.17); }
-    if (i == 5) { dir = vec3<f32>(-0.17, 1.0, -0.17); }
+    var dir = vec3<f32>( 0.170, 1.0,  0.000);
+    if (i == 1) { dir = vec3<f32>( 0.186, 1.0,  0.000); }
+    if (i == 2) { dir = vec3<f32>( 0.154, 1.0,  0.000); }
+    if (i == 3) { dir = vec3<f32>( 0.170, 1.0,  0.016); }
+    if (i == 4) { dir = vec3<f32>( 0.170, 1.0, -0.016); }
+    if (i == 5) { dir = vec3<f32>( 0.181, 1.0,  0.011); }
     return textureSampleLevel(cube, samp, normalize(dir), 0.0);
 }
 "#;
@@ -547,7 +549,12 @@ fn cpu_reference_irradiance(img: &image::Rgb32FImage, n: glam::Vec3) -> [f32; 3]
             // dir_to_equirect_uv from EQUIRECT_TO_CUBE_WGSL
             let u = dir.z.atan2(dir.x) / (2.0 * std::f32::consts::PI) + 0.5;
             let v = dir.y.clamp(-1.0, 1.0).acos() / std::f32::consts::PI;
-            let l = sample_equirect(img, u, v);
+            let mut l = sample_equirect(img, u, v);
+            // Mirror of the bake-cube radiance clamp (L.2 calibration,
+            // EQUIRECT_TO_CUBE_WGSL) so the reference matches the GPU input.
+            for c in l.iter_mut() {
+                *c = c.min(2.0);
+            }
             let wgt = theta.cos() * theta.sin();
             for c in 0..3 {
                 acc[c] += l[c] * wgt;
@@ -576,23 +583,35 @@ fn ibl_irradiance_faces_are_distinct_and_sky_up() -> Result<()> {
             path: HDRI_PATH.to_string(),
         };
         let bake_started = std::time::Instant::now();
-        let res = ibl
+        let _cold_res = ibl
             .bake_environment(&device, &queue, IblQuality::Medium)
             .context("bake_environment failed")?;
         println!(
             "[l2-bake] decode+bake (Medium, cold cache): {:.1} ms",
             bake_started.elapsed().as_secs_f64() * 1000.0
         );
+        // Warm rebake (decode cached in `hdr_cache`): isolates the pure
+        // upload/encode/submit cost from the image-decode cost — the number
+        // that matters for the editor's deferred-decode init design.
+        let warm_started = std::time::Instant::now();
+        let res = ibl
+            .bake_environment(&device, &queue, IblQuality::Medium)
+            .context("warm bake_environment failed")?;
+        println!(
+            "[l2-bake] bake only (Medium, warm cache): {:.1} ms",
+            warm_started.elapsed().as_secs_f64() * 1000.0
+        );
 
-        // Diagnostic for the intensity-normalisation residue (L2_OUTCOME §6):
-        // what the engine derives (from an 8-bit-clamped average) vs the true
-        // linear/log averages of the HDR source.
-        let engine_intensity = res
+        // Diagnostic for the intensity residue (L2_OUTCOME §5, item C
+        // deferred): what the RETIRED image-average scheme would have derived
+        // (the shipped default is the fixed 1.5 in rebuild_ibl_bind_group)
+        // vs the true linear/log averages of the HDR source.
+        let retired_scheme_intensity = res
             .avg_luminance
             .map(|a| (0.35 / a).clamp(0.3, 3.0))
             .unwrap_or(1.0);
         println!(
-            "[l2-int] engine avg_luminance={:?} -> ibl_intensity={engine_intensity:.3}",
+            "[l2-int] avg_luminance={:?} -> retired image-avg scheme would give {retired_scheme_intensity:.3} (shipped: fixed 1.5)",
             res.avg_luminance
         );
         {
@@ -743,9 +762,13 @@ fn ibl_irradiance_faces_are_distinct_and_sky_up() -> Result<()> {
             }
         }
 
-        // Diagnostic (no assertion yet — L.2 calibration STOP): tilt-fan
-        // around +Y. True irradiance is low-frequency; large spread between
-        // near-neighbour directions = sun-core quadrature fireflies.
+        // 6. Firefly guard (hard assertion since the L.2 calibration
+        //    ratification): a ~2° neighbour cluster near +Y. True irradiance
+        //    varies ~1% at this separation; per-texel sun-core quadrature
+        //    aliasing (the L.2 terrain glitter — 35.1% over a wide fan
+        //    pre-clamp) blows the neighbour spread up. The bake-cube radiance
+        //    clamp (EQUIRECT_TO_CUBE_WGSL) bounds a single quadrature
+        //    sample's contribution and collapses this.
         let fan = probe_six(
             &device,
             &queue,
@@ -756,13 +779,21 @@ fn ibl_irradiance_faces_are_distinct_and_sky_up() -> Result<()> {
         let fan_lumas: Vec<f32> = fan.iter().map(|p| luma(*p)).collect();
         let fmax = fan_lumas.iter().cloned().fold(f32::MIN, f32::max);
         let fmin = fan_lumas.iter().cloned().fold(f32::MAX, f32::min);
+        let fan_spread = (fmax - fmin) / fmax.max(1e-6);
         println!(
-            "[l2-fan] +Y tilt-fan lumas: {:?} — spread {:.1}% of max",
+            "[l2-fan] +Y neighbour-cluster lumas: {:?} — spread {:.1}% of max",
             fan_lumas
                 .iter()
                 .map(|l| (l * 1e4).round() / 1e4)
                 .collect::<Vec<_>>(),
-            100.0 * (fmax - fmin) / fmax.max(1e-6)
+            100.0 * fan_spread
+        );
+        anyhow::ensure!(
+            fan_spread < 0.05,
+            "irradiance neighbour-cluster spread {:.1}% exceeds 5% — sun-core \
+             quadrature fireflies (the L.2 terrain glitter; check the \
+             EQUIRECT_TO_CUBE_WGSL bake-cube radiance clamp)",
+            100.0 * fan_spread
         );
 
         // 5. The BRDF LUT must not be roughness-flipped: A(NdotV .9, r .05)

@@ -130,12 +130,12 @@ async fn build_viewport(
             .context("engine adapter missing")?;
         adapter.set_time_of_day(TIME_OF_DAY);
         adapter.set_biome_pack(Some(biome_dir));
-        // L.2 diagnostic: confirm the init bake actually landed (the bake's
-        // tracing output is invisible here — no subscriber in tests).
+        // L.2: the init bake runs on a worker thread — block here so every
+        // capture sees the deterministic post-bake state.
+        let baked = adapter.wait_env_bake(std::time::Duration::from_secs(60));
         let res = adapter.renderer().ibl_resources.as_ref();
         println!(
-            "[l2] ibl baked: {} (avg_luminance {:?})",
-            res.is_some(),
+            "[l2] ibl baked: {baked} (avg_luminance {:?})",
             res.and_then(|r| r.avg_luminance)
         );
     }

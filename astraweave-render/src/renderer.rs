@@ -3674,6 +3674,18 @@ fn vs(input: VSIn) -> VSOut {
         Ok(())
     }
 
+    /// Install an environment baked elsewhere (L.2: the editor's worker-thread
+    /// init bake — a second `IblManager` on that thread bakes and sends its
+    /// `IblResources` back; wgpu resources are internally refcounted, so the
+    /// views keep the thread-created textures alive after the thread's
+    /// manager drops). Identical tail to [`Self::bake_environment`]: rebuilds
+    /// BOTH IBL bind groups (group 5 + the terrain group 3) and flips the sky
+    /// to the baked environment.
+    pub fn install_baked_environment(&mut self, resources: crate::ibl::IblResources) {
+        self.rebuild_ibl_bind_group(&resources);
+        self.ibl_resources = Some(resources);
+    }
+
     /// Rebuild the IBL bind group from loaded IBL resources.
     fn rebuild_ibl_bind_group(&mut self, res: &crate::ibl::IblResources) {
         // IBL texture pointers are changing — invalidate the sky renderer's
@@ -3695,13 +3707,16 @@ fn vs(input: VSIn) -> VSOut {
             max_spec_lod: f32,
             _pad: [f32; 2],
         }
-        // Normalise IBL intensity so different HDRIs produce similar terrain
-        // brightness.  Target average luminance ≈ 0.35 (mid-grey).  For
-        // procedural sky (avg_luminance = None) use 1.0.
-        let ibl_intensity = match res.avg_luminance {
-            Some(avg) if avg > 0.01 => (0.35 / avg).clamp(0.3, 3.0),
-            _ => 1.0,
-        };
+        // L.2 calibration (director-ratified 2026-07-28): fixed default IBL
+        // intensity, replacing the former image-average normalisation
+        // (`0.35/avg_luminance`). Measured for kloppenheim_02: the linear
+        // image average of a puresky WITHOUT its sun spike reads ~0.146 and
+        // drove the fill to 2.4-2.5x — ~1.5-2x the analytic sun's own diffuse
+        // (the L.2 wash; docs/audits/L2_OUTCOME.md §4). Director-previewed
+        // placements: 1.5 (shipped) and 1.0 (the one-line conservative
+        // fallback pending the render gate). `res.avg_luminance` is still
+        // computed and logged for diagnostics (residue item C, deferred).
+        let ibl_intensity = 1.5f32;
         log::info!(
             "IBL bake: avg_luminance={:?}, ibl_intensity={:.3}, mips_specular={}",
             res.avg_luminance,
