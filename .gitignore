@@ -278,3 +278,6 @@ __pycache__/
 /assets_src/materials/
 /assets_src/textures/
 # <<< AW-PACK-IGNORE
+
+# Editor-generated recent-files state (local only)
+/.recent_files.json
