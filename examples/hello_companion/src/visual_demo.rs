@@ -162,11 +162,6 @@ impl TerrainSystem {
                 let u = x as f32 / self.resolution as f32;
                 let v = z as f32 / self.resolution as f32;
 
-                // Color based on height (green grass to brown rock)
-                // Color based on height (green grass to brown rock)
-                // Use white to allow texture to show clearly
-                let color = [1.0, 1.0, 1.0, 1.0];
-
                 vertices.push(Vertex {
                     position: [world_x, height, world_z],
                     normal: [normal.x, normal.y, normal.z],

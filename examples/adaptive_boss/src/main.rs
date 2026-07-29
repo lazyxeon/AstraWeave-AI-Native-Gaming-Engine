@@ -1,4 +1,5 @@
 use astraweave_core::*;
+#[cfg(not(feature = "veilweaver_slice"))]
 use astraweave_director::BossDirector;
 #[cfg(feature = "veilweaver_slice")]
 use astraweave_director::OathboundWardenDirector;
