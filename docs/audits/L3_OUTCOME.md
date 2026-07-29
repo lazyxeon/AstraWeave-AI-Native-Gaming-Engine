@@ -327,3 +327,18 @@ defaults; pre-L.3 the distinction was unobservable (no terrain shadow surface ex
 - `astraweave-render/tests/{shader_validation,terrain_splat_pipeline,test_utils}.rs` —
   concat mirror + skips; shared-BGL call sites; bind-group limit.
 - `docs/audits/T2F_LIGHTING_RECON.md` — §7 item 6 struck (CLOSED by L.3); §9 appended.
+
+---
+
+## Appendix (L.3.A, 2026-07-29) — the render gate rejected; the boundary fixed
+
+The director's render gate REJECTED this beat from a moving survey camera: "the
+shadows seem to be attached to the camera boundary instead of the world." The cause
+was §4's own residue item — the 500 m `shadow_far` cap + 100 m fade, a camera-centered
+bubble that the static pinned stations could not see (y414's zero-pixel result was its
+fingerprint). §9 residue item 7 is CLOSED by L.3.A: a third (survey) cascade extends
+coverage to 3000 m with the fade widened to the last 30%, c0/c1 kept bit-identical
+(close/mid frames byte-match this document's A/B), and the y414 station now shows its
+relief shadowed (147.19→116.27 default / 130.07→103.71 rake). The verification bar
+this minted: camera-fitted systems get camera-MOTION legs (`l3a_proof.rs`). Full
+record: `docs/audits/L3A_OUTCOME.md`.

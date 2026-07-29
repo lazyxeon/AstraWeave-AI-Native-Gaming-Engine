@@ -21,18 +21,27 @@
 struct MainLightUbo {
     view_proj0: mat4x4<f32>,
     view_proj1: mat4x4<f32>,
-    splits: vec2<f32>,
-    extras: vec2<f32>, // x: pcf_radius_px, y: depth_bias; z: slope_scale in skinned path extras.x reused; keep 2 vec2s for alignment
+    // L.3.A: third cascade — the survey span (500 → shadow_far). Added after
+    // the L.3 render gate caught the 500 m coverage cap as a camera-anchored
+    // shadow boundary from a moving survey camera.
+    view_proj2: mat4x4<f32>,
+    // x: split0 (c0|c1), y: split1 (c1|c2), z: shadow_far (coverage end),
+    // w: fade_start (the wide far fade begins here — L.3.A widened it from
+    // the last 20% of 500 m to the last 30% of shadow_far, because a narrow
+    // fade at plainly-visible range reads as a moving edge).
+    splits: vec4<f32>,
+    extras: vec2<f32>, // x: pcf_radius_px or -1.0 shadows-off sentinel, y: depth_bias
 };
 
 // Cascade-selected 3x3 PCF shadow factor in [0, 1] (1.0 = fully lit).
 //
-// Cascade select is a hard switch on view distance at splits.x (the engine's
-// idiom); the visible seam is softened by two fades ported unchanged from the
-// static path: a distance fade over the outer 20% of shadow range, and a UV
-// edge fade at each cascade's ortho boundary. Depth bias: constant receiver
-// bias from extras.y here, plus the caster pipelines' hardware slope-scaled
-// bias (DepthBiasState) — the acne/peter-pan tuning pair.
+// Cascade select is a hard 3-way switch on view distance at splits.x /
+// splits.y (the engine's idiom); the visible seam is softened by two fades:
+// a WIDE distance fade over splits.w → splits.z (L.3.A — the last 30% of
+// coverage), and a UV edge fade at each cascade's ortho boundary. Depth
+// bias: constant receiver bias from extras.y here, plus the caster
+// pipelines' hardware slope-scaled bias (DepthBiasState) — the
+// acne/peter-pan tuning pair.
 fn csm_shadow_factor(
     light: MainLightUbo,
     shadow_map: texture_depth_2d_array,
@@ -41,10 +50,21 @@ fn csm_shadow_factor(
     frag_dist: f32,
 ) -> f32 {
     var shadow: f32 = 1.0;
-    let shadow_far = light.splits.y;
-    let use_c0 = frag_dist < light.splits.x;
+    let shadow_far = light.splits.z;
+    // Cascade select: hard switch on view distance (the engine's idiom),
+    // 3-way since L.3.A. c0: 0..split0, c1: split0..split1, c2: split1..far.
     var lvp: mat4x4<f32>;
-    if (use_c0) { lvp = light.view_proj0; } else { lvp = light.view_proj1; }
+    var layer: i32;
+    if (frag_dist < light.splits.x) {
+        lvp = light.view_proj0;
+        layer = 0;
+    } else if (frag_dist < light.splits.y) {
+        lvp = light.view_proj1;
+        layer = 1;
+    } else {
+        lvp = light.view_proj2;
+        layer = 2;
+    }
     let lp = lvp * vec4<f32>(world_pos, 1.0);
     let ndc_shadow = lp.xyz / lp.w;
     let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
@@ -53,8 +73,6 @@ fn csm_shadow_factor(
     let bias = max(base_bias, 0.00001);
 
     if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && frag_dist < shadow_far) {
-        var layer: i32;
-        if (use_c0) { layer = 0; } else { layer = 1; }
         // PCF 3x3 (scaled by pcf radius in texels from extras.x)
         let dims = vec2<f32>(textureDimensions(shadow_map).xy);
         let texel = 1.0 / dims;
@@ -68,11 +86,13 @@ fn csm_shadow_factor(
         }
         shadow = sum / 9.0;
 
-        // Fade shadow to 1.0 at cascade boundary edges to eliminate
-        // the hard square cutoff. Fade in the outer 20% of shadow range.
-        let fade_start = shadow_far * 0.8;
+        // Fade shadow to 1.0 toward the coverage end. L.3.A: the band is
+        // splits.w → splits.z (the last 30% of shadow_far — ~900 m), wide
+        // enough that no edge is perceptible from a moving camera; the L.3
+        // 100 m band at 400→500 m was the render-gate rejection's arc.
+        let fade_start = light.splits.w;
         if (frag_dist > fade_start) {
-            let fade = (frag_dist - fade_start) / (shadow_far - fade_start);
+            let fade = (frag_dist - fade_start) / max(shadow_far - fade_start, 1.0);
             shadow = mix(shadow, 1.0, clamp(fade, 0.0, 1.0));
         }
 

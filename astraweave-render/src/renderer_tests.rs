@@ -128,8 +128,9 @@ mod tests {
         pollster::block_on(async {
             let (device, _queue) = create_test_device().await;
 
-            // MainLightUbo: 2x mat4 + 2x vec2 + 2x vec2 = 128 + 16 + 16 = 160 bytes
-            let light_size = 160u64;
+            // MainLightUbo (L.3.A): 3x mat4 + vec4 splits + vec2 extras + pad
+            // = 192 + 16 + 16 = 224 bytes (mirrors renderer.rs light_buf)
+            let light_size = 224u64;
 
             let buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("light_ubo"),
@@ -344,7 +345,8 @@ mod tests {
             let (device, _queue) = create_test_device().await;
 
             let shadow_res = 2048u32;
-            let cascade_count = 2u32;
+            // L.3.A: 3 cascades (near / mid / survey)
+            let cascade_count = 3u32;
 
             let shadow_tex = device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("shadow_tex"),
@@ -378,7 +380,7 @@ mod tests {
                 size: wgpu::Extent3d {
                     width: 2048,
                     height: 2048,
-                    depth_or_array_layers: 2,
+                    depth_or_array_layers: 3,
                 },
                 mip_level_count: 1,
                 sample_count: 1,

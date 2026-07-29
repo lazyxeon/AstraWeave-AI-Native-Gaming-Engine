@@ -249,12 +249,14 @@ fn shoot(
         .renderer()
         .terrain_shadow_stats();
     println!(
-        "[l3] {}{suffix}: mean luma {mean:.2} sd {sd:.2} casters c0 {}/{} c1 {}/{} -> {}",
+        "[l3] {}{suffix}: mean luma {mean:.2} sd {sd:.2} casters c0 {}/{} c1 {}/{} c2 {}/{} -> {}",
         s.name,
         stats[0].0,
         stats[0].1,
         stats[1].0,
         stats[1].1,
+        stats[2].0,
+        stats[2].1,
         png.display()
     );
     Ok(png)
