@@ -41,9 +41,11 @@ aid_event = 100
     /// Catches: adjudicator.rs:151 — config() returns leaked default
     #[test]
     fn test_config_returns_custom_config() {
-        let mut custom = WeaveConfig::default();
-        custom.budget_per_tick = 999;
-        custom.min_priority = 0.99;
+        let custom = WeaveConfig {
+            budget_per_tick: 999,
+            min_priority: 0.99,
+            ..Default::default()
+        };
 
         let adj = WeaveAdjudicator::with_config(custom);
         let cfg = adj.config();
@@ -60,9 +62,11 @@ aid_event = 100
     /// Additional test: from_toml round-trip via to_toml
     #[test]
     fn test_toml_round_trip() {
-        let mut original = WeaveConfig::default();
-        original.budget_per_tick = 77;
-        original.min_priority = 0.55;
+        let original = WeaveConfig {
+            budget_per_tick: 77,
+            min_priority: 0.55,
+            ..Default::default()
+        };
 
         let toml_str = original.to_toml().unwrap();
         let parsed = WeaveConfig::from_toml(&toml_str).unwrap();
@@ -74,9 +78,11 @@ aid_event = 100
     /// Verify config accessor returns the actual stored config, not a default
     #[test]
     fn test_config_accessor_not_default() {
-        let mut custom = WeaveConfig::default();
-        custom.budget_per_tick = 1;
-        custom.min_priority = 0.01;
+        let mut custom = WeaveConfig {
+            budget_per_tick: 1,
+            min_priority: 0.01,
+            ..Default::default()
+        };
         custom.cooldowns.insert("test_cd".to_string(), 42);
 
         let adj = WeaveAdjudicator::with_config(custom);
@@ -2412,7 +2418,7 @@ mod particle_tests {
         //   so position = initial + velocity * dt exactly
         let ex = 5.0 + 2.0 * dt;
         let ey = 5.0 + 3.0 * dt;
-        let ez = 5.0 + (-1.0) * dt;
+        let ez = 5.0 + -dt;
         assert!(
             (p.position.x - ex).abs() < 1e-4,
             "pos.x: {} != {}",

@@ -3228,7 +3228,7 @@ mod weave_portals_mutation_tests {
     /// since j is always a NEIGHBOR index (never equal to self).
     /// However, with j <= i, when j == i (a triangle is its own neighbor),
     /// it would skip. This IS equivalent behavior. Mark as equivalent.
-
+    ///
     /// Catches: string_pull various mutations
     /// Test that string_pull produces correct intermediate waypoints.
     #[test]
@@ -3529,7 +3529,7 @@ mod weave_portals_mutation_tests {
 
         let start = Vec3::new(0.0, 0.0, 2.5);
         let goal = Vec3::new(4.0, 0.0, 0.5);
-        let waypoints = string_pull(&nav, &pg, &vec![0, 1, 2], start, goal);
+        let waypoints = string_pull(&nav, &pg, &[0, 1, 2], start, goal);
 
         // Strict: no consecutive duplicate waypoints
         for (idx, w) in waypoints.windows(2).enumerate() {

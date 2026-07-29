@@ -2166,13 +2166,10 @@ mod partitioned_scene_mutation_tests {
         // The entity IDs must encode the coord.x value in bits 40+
         let e0 = entities[0];
         let extracted_x = (e0 >> 40) as i32;
-        assert_eq!(extracted_x, coord.x as i32, "x must be encoded at bits 40+");
+        assert_eq!(extracted_x, coord.x, "x must be encoded at bits 40+");
 
         let extracted_y = ((e0 >> 20) & 0xFFFFF) as i32;
-        assert_eq!(
-            extracted_y, coord.y as i32,
-            "y must be encoded at bits 20-39"
-        );
+        assert_eq!(extracted_y, coord.y, "y must be encoded at bits 20-39");
     }
 
     /// Different cells must produce different entity IDs even for the same index.
@@ -3119,9 +3116,9 @@ mod ecs_system_mutation_tests {
             .get::<CTransformLocal>(attached)
             .expect("must have local transform after bone sync with parent");
         let expected_local = parent_world.inverse() * joint_mat;
-        let (exp_s, exp_r, exp_t) = expected_local.to_scale_rotation_translation();
+        let (_exp_s, exp_r, exp_t) = expected_local.to_scale_rotation_translation();
         let local_mat = local_t.0.matrix();
-        let (got_s, got_r, got_t) = local_mat.to_scale_rotation_translation();
+        let (_got_s, got_r, got_t) = local_mat.to_scale_rotation_translation();
         assert!(
             (got_t - exp_t).length() < 0.01,
             "local translation mismatch: expected {:?}, got {:?}",

@@ -4,7 +4,7 @@
 
 #![allow(clippy::bool_assert_comparison, clippy::manual_range_contains)]
 
-use astraweave_dialogue::runner::{DialogueRunner, RunnerState};
+use astraweave_dialogue::runner::DialogueRunner;
 use astraweave_dialogue::{DialogueGraph, DialogueNode, DialogueResponse};
 
 // ============================= DialogueNode Construction =============================
