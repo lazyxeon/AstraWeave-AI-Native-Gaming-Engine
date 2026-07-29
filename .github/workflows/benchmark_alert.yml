@@ -149,6 +149,8 @@ jobs:
           )] | length' benchmark_results/package-status.json)
           benchmark_count=$(jq 'length' benchmark_results/benchmarks.json)
           collection_accounted_count=$((collected_package_count + exception_count))
+          named_accounting_exception_count=$((exception_count + no_output_failure_count))
+          outcome_accounted_count=$((collected_package_count + named_accounting_exception_count))
           record_accounted_count=$unique_package_count
 
           jq -r '.[] | select(
@@ -183,7 +185,8 @@ jobs:
             echo "Packages with collected results: $collected_package_count"
             echo "Named collection exceptions: $exception_count"
             echo "Named no-output execution failures: $no_output_failure_count"
-            echo "Packages with collection output or exception: $collection_accounted_count/48"
+            echo "Packages with Criterion output or collection exception: $collection_accounted_count/48"
+            echo "Outcome accounting: $collected_package_count collected + $named_accounting_exception_count named accounting exceptions = $outcome_accounted_count/48"
             echo "Failed packages: $failed_package_count"
             echo "Benchmark results collected: $benchmark_count"
             echo "Complete: $complete"
