@@ -1045,8 +1045,8 @@ fn retrieval_engine_limit_respected() {
 ///   correct: 1/(1+2*0.5) = 1/2 = 0.5
 ///   + → *:   1/(1*2*0.5) = 1/1 = 1.0 (no decay modifier effect)
 ///   * → +:   1/(1+2+0.5) = 1/3.5 ≈ 0.286 (different decay)
-/// We compare two memories with different importance: if the arithmetic is wrong,
-/// the decay difference between high/low importance will be distorted.
+///     We compare two memories with different importance: if the arithmetic is wrong,
+///     the decay difference between high/low importance will be distorted.
 #[test]
 fn decay_modifier_formula_importance_matters() {
     let config = ForgettingConfig {
@@ -1276,7 +1276,7 @@ fn statistics_weak_count_and_average_strength() {
     let old_ts = (chrono::Utc::now().timestamp() - 72000) as u64; // 20 hours ago
     let m_old = make_memory_with_timestamp("old", "old mem", old_ts, 0.0);
 
-    let (retained, _) = engine2.process_forgetting(vec![m_recent, m_old]).unwrap();
+    let (_retained, _) = engine2.process_forgetting(vec![m_recent, m_old]).unwrap();
 
     let stats = engine2.get_statistics();
 

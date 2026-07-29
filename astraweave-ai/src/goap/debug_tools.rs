@@ -193,8 +193,8 @@ impl PlanDebugger {
 
         let mut preconditions_met = Vec::new();
         for (key, value) in action.preconditions() {
-            if let Some(current_value) = state.get(&key) {
-                if current_value.satisfies(&value) {
+            if let Some(current_value) = state.get(key) {
+                if current_value.satisfies(value) {
                     preconditions_met.push(format!("{}={:?}", key, current_value));
                 }
             }

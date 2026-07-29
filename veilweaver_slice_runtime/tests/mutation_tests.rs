@@ -952,13 +952,7 @@ mod recap_panel_tests {
     fn finalize_default_5_metrics_gives_a() {
         let mut panel = RecapPanel::new();
         for i in 0..5 {
-            panel.record_int(
-                &format!("m{}", i),
-                "M",
-                i as i64,
-                MetricCategory::Combat,
-                "",
-            );
+            panel.record_int(format!("m{}", i), "M", i as i64, MetricCategory::Combat, "");
         }
         panel.finalize_default();
         assert_eq!(
@@ -971,13 +965,7 @@ mod recap_panel_tests {
     fn finalize_default_3_metrics_gives_b() {
         let mut panel = RecapPanel::new();
         for i in 0..3 {
-            panel.record_int(
-                &format!("m{}", i),
-                "M",
-                i as i64,
-                MetricCategory::Combat,
-                "",
-            );
+            panel.record_int(format!("m{}", i), "M", i as i64, MetricCategory::Combat, "");
         }
         panel.finalize_default();
         assert_eq!(
@@ -1036,7 +1024,10 @@ mod recap_panel_tests {
     #[test]
     fn metric_value_as_f64() {
         assert_eq!(MetricValue::Integer(42).as_f64(), 42.0);
-        assert_eq!(MetricValue::Float(3.14).as_f64(), 3.14);
+        assert_eq!(
+            MetricValue::Float(std::f64::consts::PI).as_f64(),
+            std::f64::consts::PI
+        );
         assert_eq!(MetricValue::Text("hello".into()).as_f64(), 0.0);
     }
 
@@ -3132,7 +3123,7 @@ mod cinematic_player_extended_tests {
         player.play("t").unwrap();
         // Very short duration — progress should be valid
         let p = player.progress();
-        assert!(p >= 0.0 && p <= 1.0);
+        assert!((0.0..=1.0).contains(&p));
     }
 
     #[test]
@@ -3377,7 +3368,7 @@ end = true
         player.play("b").unwrap();
         // At exactly 0.0, progress should be 0.0.
         let p0 = player.progress();
-        assert!(p0 >= 0.0 && p0 <= 1.0);
+        assert!((0.0..=1.0).contains(&p0));
         // At duration boundary, progress should be clamp to 1.0
         player.tick(1.0);
         let p1 = player.progress();
@@ -3611,7 +3602,7 @@ mod beat_progression_via_zones {
     fn trigger_zone_entry(orch: &mut SliceOrchestrator, zone_name: &str, coord: GridCoord) {
         orch.game_loop.zone_registry.register(zone_name, coord);
         orch.game_loop
-            .register_trigger_action("zt", &format!("zone.transition:{}", zone_name));
+            .register_trigger_action("zt", format!("zone.transition:{}", zone_name));
         orch.game_loop.notify_trigger_enter(vec!["zt".to_string()]);
         orch.tick(0.016);
         // Clear trigger for reuse

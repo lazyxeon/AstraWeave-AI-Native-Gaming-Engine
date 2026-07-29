@@ -683,7 +683,7 @@ mod tests {
         let goal = Goal::new("impossible_goal", desired).with_priority(5.0);
         scheduler.add_goal(goal);
 
-        let mut planner = AdvancedGOAP::new();
+        let planner = AdvancedGOAP::new();
         // No actions registered → planning will fail
         let world = WorldState::new();
 

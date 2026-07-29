@@ -241,7 +241,7 @@ mod tests {
         let result = parse_server_name("localhost");
         assert!(result.is_ok());
 
-        let result = parse_server_name("192.168.1.1");
+        let _result = parse_server_name("192.168.1.1");
         // IP addresses should fail for SNI (domain names only)
         // This depends on rustls version behavior
     }

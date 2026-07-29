@@ -189,7 +189,7 @@ impl GoalDefinition {
             Some(
                 goal.sub_goals
                     .iter()
-                    .map(|g| GoalDefinition::from_goal(g))
+                    .map(GoalDefinition::from_goal)
                     .collect(),
             )
         };

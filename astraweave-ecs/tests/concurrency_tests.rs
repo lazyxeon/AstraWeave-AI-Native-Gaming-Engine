@@ -187,12 +187,12 @@ fn concurrent_component_read() {
 
         let t1 = thread::spawn(move || {
             let w = world1.lock().unwrap();
-            w.get::<Position>(entity).map(|p| *p)
+            w.get::<Position>(entity).copied()
         });
 
         let t2 = thread::spawn(move || {
             let w = world2.lock().unwrap();
-            w.get::<Position>(entity).map(|p| *p)
+            w.get::<Position>(entity).copied()
         });
 
         let pos1 = t1.join().unwrap();
@@ -388,7 +388,7 @@ fn concurrent_is_alive_check() {
             w.despawn(entity);
         });
 
-        let alive = t1.join().unwrap();
+        let _alive = t1.join().unwrap();
         t2.join().unwrap();
 
         // is_alive result depends on interleaving

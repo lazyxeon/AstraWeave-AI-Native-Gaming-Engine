@@ -177,7 +177,7 @@ fn display_metric_category() {
 fn display_metric_value() {
     use veilweaver_slice_runtime::recap_panel::MetricValue;
     assert_eq!(MetricValue::Integer(42).to_string(), "42");
-    assert_eq!(MetricValue::Float(3.14).to_string(), "3.1");
+    assert_eq!(MetricValue::Float(std::f64::consts::PI).to_string(), "3.1");
     assert_eq!(MetricValue::Text("hello".into()).to_string(), "hello");
 }
 

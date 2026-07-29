@@ -64,10 +64,7 @@ impl ActionHistory {
 
     /// Record a successful action execution
     pub fn record_success(&mut self, action_name: &str, duration: f32) {
-        let stats = self
-            .stats
-            .entry(action_name.to_string())
-            .or_insert_with(ActionStats::new);
+        let stats = self.stats.entry(action_name.to_string()).or_default();
 
         stats.executions += 1;
         stats.successes += 1;
@@ -83,10 +80,7 @@ impl ActionHistory {
 
     /// Record a failed action execution
     pub fn record_failure(&mut self, action_name: &str) {
-        let stats = self
-            .stats
-            .entry(action_name.to_string())
-            .or_insert_with(ActionStats::new);
+        let stats = self.stats.entry(action_name.to_string()).or_default();
 
         stats.executions += 1;
         stats.failures += 1;
@@ -141,10 +135,7 @@ impl ActionHistory {
     /// Useful for sharing learning across entities
     pub fn merge(&mut self, other: &ActionHistory) {
         for (action_name, other_stats) in &other.stats {
-            let stats = self
-                .stats
-                .entry(action_name.clone())
-                .or_insert_with(ActionStats::new);
+            let stats = self.stats.entry(action_name.clone()).or_default();
 
             // Merge statistics
             let total_exec = stats.executions + other_stats.executions;

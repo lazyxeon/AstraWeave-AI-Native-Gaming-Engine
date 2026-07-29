@@ -14,7 +14,7 @@ use veilweaver_slice_runtime::boss_hud::BossPhase;
 use veilweaver_slice_runtime::companion_hud::AffinityRank;
 use veilweaver_slice_runtime::decision_ui::DecisionPhase;
 use veilweaver_slice_runtime::storm_choice::StormChoice;
-use veilweaver_slice_runtime::walkthrough::{SliceOrchestrator, WalkthroughBeat, WalkthroughEvent};
+use veilweaver_slice_runtime::walkthrough::{SliceOrchestrator, WalkthroughBeat};
 
 const DT: f32 = 1.0 / 60.0;
 

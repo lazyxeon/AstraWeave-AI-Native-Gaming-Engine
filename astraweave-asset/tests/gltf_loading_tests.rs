@@ -447,7 +447,6 @@ mod gltf_tests {
         );
         if attempted == 0 {
             eprintln!("⚠ No real GLB assets found (Git LFS objects may not be pulled) — skipping assertion");
-            return;
         }
     }
 }
