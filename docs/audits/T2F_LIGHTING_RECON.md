@@ -265,9 +265,12 @@ would pin defects.
    pre-recorded in P.3, still true.
 5. **`set_light_direction_override` intensity is write-only** (`light_dir_pad[3]`; now noted at
    the terrain-upload call site).
-6. **Cascade splits computed for no consumer** every frame while shadows are disabled — left
+6. ~~**Cascade splits computed for no consumer** every frame while shadows are disabled — left
    deliberately (L.1): `update_cascade_splits` is also the delivery path for the `extras.x`
-   shadows-off sentinel, so skipping it wholesale is not safe; L.3 consumes the cascades anyway.
+   shadows-off sentinel, so skipping it wholesale is not safe; L.3 consumes the cascades anyway.~~
+   — **CLOSED by L.3** (2026-07-28, docs/audits/L3_OUTCOME.md): terrain casts into and receives
+   from both cascades in the editor terrain scene (`EditorTerrain` preset re-enables shadows);
+   the cascades have consumers every frame. The sentinel-delivery coupling stands unchanged.
 7. **Static meshes sample no texture AO at all** (mr_tex = metallic/roughness only) — props
    lane, relevant the day statics matter in terrain scenes.
 
@@ -313,3 +316,28 @@ above stands; this section is the correction of record.
    vacuity floor was stale-red at baseline (recalibrated 60 → 55 in L.2 with forensics).
 
 See `docs/audits/L2_OUTCOME.md` for the full fixing record and the A/B.
+
+## 9. L.3 corrections (append-only, 2026-07-28) — the CSM consumption beat's record
+
+L.3 (terrain CSM cast + receive, `docs/audits/L3_OUTCOME.md`) confirmed this recon's §1.2
+row 3 census in full — 2048²×2-layer Depth32Float, static/skinned samplers the complete
+receiver list, terrain absent from both caster and receiver sides, the `extras.x`
+sentinel — with two corrections and one attribution:
+
+1. **§5 option A's "cascade-0's 80 m extent ≈ 7.8 cm/texel" was never a real number.**
+   The 80 m figure traces to the terrain-upload block's `set_cascade_extents(80.0, 250.0)`
+   call — which is a **no-op**: `cascade0_extent`/`cascade1_extent` are written and never
+   read (sphere-fitted ortho bounds replaced them; the fields survived). The live cascade-0
+   ortho extent is the sphere fit of the 0.5→split0 frustum slice. At the editor camera
+   (fovy 60°, split0 ≈ 86 m at the upload path's λ=0.7) that is a ~230 m square →
+   ~11 cm/texel — same order, different mechanism, and tunable only through the splits,
+   not through the dead setter. Logged residue: the no-op `set_cascade_extents` API and
+   its two editor call sites.
+2. **The in-source "split0 ≈ 16 units" comment was the λ=1.0 pure-log value.** Actual
+   splits at the editor camera: split0 ≈ 74.4 (λ=0.75) / ≈ 86.1 (the terrain-upload
+   λ=0.7); split1 = 500. Comment corrected in L.3.
+3. **Attribution note:** a dormant parallel CSM implementation exists at
+   `astraweave-render/src/shadow_csm.rs` (`CsmRenderer`: 4 cascades, splits 10/50/200/1000,
+   zero production callers — tests/examples only). Any account of "the CSM" quoting
+   4 cascades or those splits describes that dormant module, not the live 2-cascade
+   machinery in `renderer.rs` that L.3 consumed. Logged as architecture-drift residue.

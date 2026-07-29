@@ -324,13 +324,17 @@ fn terrain_manager_forward_round_trip() {
         device.push_error_scope(wgpu::ErrorFilter::Validation);
 
         // 1. Build the pipeline (HDR forward target + depth). L.2: the
-        //    forward layout now includes the group-3 IBL BGL.
+        //    forward layout now includes the group-3 IBL BGL; L.3 adds the
+        //    group-4 shadow-receive BGL (same shared constructors the
+        //    renderer uses — no layout drift).
         let ibl_bgl = TerrainMaterialManager::create_terrain_ibl_bgl(&device);
+        let shadow_bgl = TerrainMaterialManager::create_shadow_bgl(&device);
         let _pipeline = manager.ensure_forward_pipeline(
             &device,
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
             &ibl_bgl,
+            &shadow_bgl,
         );
 
         // 2. Write camera + scene UBOs with sensible defaults.
@@ -412,13 +416,16 @@ fn terrain_manager_forward_pipeline_builds_without_validation_errors() {
         device.push_error_scope(wgpu::ErrorFilter::Validation);
 
         // Build for the engine's forward-pass targets: Rgba16Float HDR +
-        // Depth32Float (same as `hdr_view` / `depth` in Renderer).
+        // Depth32Float (same as `hdr_view` / `depth` in Renderer). L.3: the
+        // layout gains the group-4 shadow-receive BGL.
         let ibl_bgl = TerrainMaterialManager::create_terrain_ibl_bgl(&device);
+        let shadow_bgl = TerrainMaterialManager::create_shadow_bgl(&device);
         let _pipeline = manager.ensure_forward_pipeline(
             &device,
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
             &ibl_bgl,
+            &shadow_bgl,
         );
 
         // Calling with the same formats must be idempotent.
@@ -427,6 +434,7 @@ fn terrain_manager_forward_pipeline_builds_without_validation_errors() {
             wgpu::TextureFormat::Rgba16Float,
             Some(wgpu::TextureFormat::Depth32Float),
             &ibl_bgl,
+            &shadow_bgl,
         );
 
         if let Some(err) = device.pop_error_scope().await {

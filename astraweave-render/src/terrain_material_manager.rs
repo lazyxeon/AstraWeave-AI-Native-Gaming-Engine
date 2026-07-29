@@ -177,10 +177,34 @@ const TERRAIN_FORWARD_SHADER: &str = concat!(
     // L.2: shared IblParams + compute_ibl (same fragment SHADER_SRC prepends).
     include_str!("../shaders/ibl_common.wgsl"),
     "\n",
+    // L.3: shared MainLightUbo + csm_shadow_factor (same fragment SHADER_SRC
+    // prepends) — the terrain receiver samples the SAME CSM implementation.
+    include_str!("../shaders/shadow_common.wgsl"),
+    "\n",
     include_str!("../shaders/stochastic_tiling.wgsl"),
     "\n",
     include_str!("../shaders/pbr_terrain_forward.wgsl"),
 );
+
+/// Depth-only terrain shadow-caster shader (L.3). Terrain chunk positions are
+/// already world-space (`TerrainSplatVertex` docs), so the vertex stage is a
+/// single cascade view-proj multiply — no model matrix, no instance buffer
+/// (contrast the static caster in renderer.rs, which is instanced). Only
+/// `@location(0)` is consumed; the buffer layout still strides the full
+/// 32-byte vertex.
+const TERRAIN_SHADOW_SHADER: &str = r#"
+struct VSIn { @location(0) position: vec3<f32> };
+struct VSOut { @builtin(position) pos: vec4<f32> };
+struct Light { view_proj: mat4x4<f32> };
+@group(0) @binding(0) var<uniform> uLight: Light;
+@vertex
+fn vs(input: VSIn) -> VSOut {
+    var out: VSOut;
+    out.pos = uLight.view_proj * vec4<f32>(input.position, 1.0);
+    return out;
+}
+@fragment fn fs() { }
+"#;
 
 /// Per-chunk bind group storing the eight splat maps (group 2 bindings 1..8).
 ///
@@ -389,6 +413,9 @@ pub struct TerrainMaterialManager {
     /// dropdown). Synced by `Renderer` before terrain draws.
     wireframe: bool,
     forward_pipeline_formats: Option<(wgpu::TextureFormat, Option<wgpu::TextureFormat>)>,
+    /// L.3: depth-only shadow-caster pipeline for terrain chunks. Built once
+    /// by `ensure_shadow_pipeline` (Depth32Float, no format variance).
+    shadow_pipeline: Option<wgpu::RenderPipeline>,
     forward_chunk_splats: HashMap<ChunkKey, ChunkSplatForward>,
 }
 
@@ -649,6 +676,7 @@ impl TerrainMaterialManager {
             forward_pipeline_wire: None,
             wireframe: false,
             forward_pipeline_formats: None,
+            shadow_pipeline: None,
             forward_chunk_splats: HashMap::new(),
         })
     }
@@ -1077,12 +1105,129 @@ impl TerrainMaterialManager {
         })
     }
 
+    /// The CSM shadow-receive bind group layout (L.3): light UBO
+    /// (`MainLightUbo`), 2-layer depth array, comparison sampler — the shape
+    /// of the renderer's `shadow_bgl`/`light_bg` (the static path's group(2),
+    /// which terrain binds at group(4)).
+    ///
+    /// One shared constructor so `Renderer::new` and the pipeline tests can
+    /// never drift apart on the layout (same discipline as
+    /// `create_terrain_ibl_bgl`). The renderer's `light_bg` is created from
+    /// THIS layout, so pipeline-layout compatibility is by identity, not by
+    /// structural luck.
+    pub fn create_shadow_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("shadow bgl"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Depth,
+                        view_dimension: wgpu::TextureViewDimension::D2Array,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                    count: None,
+                },
+            ],
+        })
+    }
+
+    /// L.3: build (once) and return the depth-only terrain shadow-caster
+    /// pipeline. `light_bgl` is the renderer's single-mat4 `shadow_bgl_light`
+    /// — the caster pass binds the per-cascade UBO bind groups created from
+    /// it (`shadow_cascade_bgs`), one draw set per cascade layer.
+    ///
+    /// Depth bias matches the static caster pipeline's convention (constant 2,
+    /// slope_scale 2.0, back-face culling, LessEqual) — the slope-scaled
+    /// hardware bias is the acne control; the receiver adds `extras.y` as a
+    /// constant comparison bias (see shadow_common.wgsl).
+    pub fn ensure_shadow_pipeline(
+        &mut self,
+        device: &wgpu::Device,
+        light_bgl: &wgpu::BindGroupLayout,
+    ) -> &wgpu::RenderPipeline {
+        match self.shadow_pipeline {
+            Some(ref p) => p,
+            None => {
+                let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                    label: Some("terrain-shadow-shader"),
+                    source: wgpu::ShaderSource::Wgsl(TERRAIN_SHADOW_SHADER.into()),
+                });
+                let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("terrain-shadow-pipeline-layout"),
+                    bind_group_layouts: &[light_bgl],
+                    push_constant_ranges: &[],
+                });
+                let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some("terrain-shadow-pipeline"),
+                    layout: Some(&layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: Some("vs"),
+                        buffers: &[TerrainSplatVertex::LAYOUT],
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    },
+                    fragment: None,
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: Some(wgpu::Face::Back),
+                        unclipped_depth: false,
+                        polygon_mode: wgpu::PolygonMode::Fill,
+                        conservative: false,
+                    },
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: wgpu::TextureFormat::Depth32Float,
+                        depth_write_enabled: true,
+                        depth_compare: wgpu::CompareFunction::LessEqual,
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState {
+                            constant: 2,
+                            slope_scale: 2.0,
+                            clamp: 0.0,
+                        },
+                    }),
+                    multisample: wgpu::MultisampleState::default(),
+                    multiview: None,
+                    cache: None,
+                });
+                // `Option::insert` stores and returns `&mut T`, reborrowed as `&T`.
+                self.shadow_pipeline.insert(pipeline)
+            }
+        }
+    }
+
+    /// The caster pipeline, if `ensure_shadow_pipeline` has run — the shadow
+    /// pass borrows `self` immutably, so it reads through this getter.
+    pub fn shadow_pipeline(&self) -> Option<&wgpu::RenderPipeline> {
+        self.shadow_pipeline.as_ref()
+    }
+
     pub fn ensure_forward_pipeline(
         &mut self,
         device: &wgpu::Device,
         color_format: wgpu::TextureFormat,
         depth_format: Option<wgpu::TextureFormat>,
         ibl_bgl: &wgpu::BindGroupLayout,
+        shadow_bgl: &wgpu::BindGroupLayout,
     ) -> &wgpu::RenderPipeline {
         // Reuse the cached pipeline when formats match; otherwise rebuild.
         // `take()` first so the build branch can borrow `&self.*_bgl` without
@@ -1109,6 +1254,11 @@ impl TerrainMaterialManager {
                             // the fragment stage at the 16-texture device
                             // limit and block L.3's shadow map).
                             ibl_bgl,
+                            // L.3: group(4) — the renderer's shadow-receive
+                            // layout (`create_shadow_bgl` shape); the bound
+                            // group is the SAME `light_bg` the static path
+                            // samples. Fragment stage: 15/16 sampled textures.
+                            shadow_bgl,
                         ],
                         push_constant_ranges: &[],
                     });

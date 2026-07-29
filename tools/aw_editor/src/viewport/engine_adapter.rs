@@ -51,8 +51,10 @@ pub enum EditorQualityPreset {
     /// Editor default: 2 tight CSM cascades for static meshes + ACES
     /// tonemap. Good balance for editing.
     EditorDefault,
-    /// Terrain-optimised: ALL shadows disabled (the cost of re-rendering
-    /// 4M+ terrain triangles into cascades), ACES tonemap only. Applied
+    /// Terrain-optimised: CSM shadows ON — terrain casts into and receives
+    /// from both cascades since L.3 (per-cascade chunk culling keeps the
+    /// caster passes affordable; measured in docs/audits/L3_OUTCOME.md).
+    /// Cloud shadows and bloom stay off. ACES tonemap. Applied
     /// automatically when terrain is loaded.
     EditorTerrain,
     /// Minimal: shadows disabled, tonemap only. Maximum performance for
@@ -1126,7 +1128,7 @@ impl EngineRenderAdapter {
     ///
     /// - `GameQuality`: full static-mesh shadows + cloud shadows + bloom compute
     /// - `EditorDefault`: reduced static-mesh shadows, tonemap
-    /// - `EditorTerrain`: shadows off, tonemap
+    /// - `EditorTerrain`: terrain CSM shadows on (L.3), tonemap
     /// - `Minimal`: shadows off, tonemap only
     ///
     /// See the `EditorQualityPreset` variant docs for the honest per-preset
@@ -1213,11 +1215,22 @@ impl EngineRenderAdapter {
                 self.renderer.set_post_process_chain(chain);
             }
             EditorQualityPreset::EditorTerrain => {
-                // Terrain-optimised: shadows disabled to maintain interactive
-                // framerates with 4M+ terrain triangles. Cloud shadows also
-                // disabled — the 512px transmittance map produces visible
-                // noise on large terrain surfaces.
-                self.renderer.set_shadows_enabled(false);
+                // L.3: shadows ON — terrain now casts into and receives from
+                // the CSM (the cost this preset once disabled shadows to
+                // avoid is now paid deliberately; measured on min-spec in
+                // docs/audits/L3_OUTCOME.md). NOTE this also re-arms the
+                // static-mesh receiver path (same sentinel) — pre-existing
+                // machinery, disclosed, not new surface. The filter params
+                // are set explicitly so this preset no longer inherits
+                // whatever the previously-applied preset left behind:
+                // pcf radius 1.5 px, receiver depth bias 0.005 (extras.y),
+                // slope-scale arg 1.5 is WRITE-ONLY (never uploaded — the
+                // caster pipelines' baked DepthBiasState is the real
+                // slope-scaled bias; logged residue).
+                // Cloud shadows stay disabled — the 512px transmittance map
+                // produces visible noise on large terrain surfaces.
+                self.renderer.set_shadows_enabled(true);
+                self.renderer.set_shadow_filter(1.5, 0.0005, 1.5);
                 self.renderer.set_cloud_shadows_enabled(false);
                 self.renderer.set_max_draw_distance(1200.0);
 
@@ -1968,6 +1981,12 @@ impl EngineRenderAdapter {
             // near-field shadow quality.
             self.renderer.set_cascade_extents(80.0, 250.0);
             self.renderer.set_cascade_lambda(0.7);
+            // L.3 shipped calibration (bracketed by the deliberate failure legs
+            // in docs/audits/L3_OUTCOME.md §5): pcf 1.5 px, receiver comparison
+            // bias 0.0005 — the value between the measured over-shadowing
+            // (caster margin inverted) and peter-panning (0.05) failure modes.
+            // NOTE the slope-scale arg is write-only (never uploaded — the
+            // caster pipelines' baked DepthBiasState is the real slope bias).
             self.renderer.set_shadow_filter(1.5, 0.0005, 1.0);
 
             // ── Quality preset ─────────────────────────────────────────

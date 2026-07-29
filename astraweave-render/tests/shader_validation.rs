@@ -106,6 +106,9 @@ const SHADER_VALIDATION_SKIPS: &[(&str, &str)] = &[
     // L.2: shared IblParams + compute_ibl; references ibl_* globals its
     // consumers (SHADER_SRC, TERRAIN_FORWARD_SHADER) declare in their concat.
     ("shaders/ibl_common.wgsl", "concatenation-fragment: see test_pbr_terrain_forward_validates_with_prefix"),
+    // L.3: shared MainLightUbo + csm_shadow_factor; same contract as
+    // ibl_common (consumers declare the shadow globals at their own group).
+    ("shaders/shadow_common.wgsl", "concatenation-fragment: see test_pbr_terrain_forward_validates_with_prefix"),
 ];
 
 #[test]
@@ -362,6 +365,11 @@ fn test_pbr_terrain_forward_validates_with_prefix() {
     // `compute_ibl` (group(3) IBL bindings).
     let ibl_common =
         std::fs::read_to_string(shaders_dir.join("ibl_common.wgsl")).expect("read ibl_common.wgsl");
+    // L.3: shadow_common.wgsl added — pbr_terrain_forward.wgsl calls its
+    // `csm_shadow_factor` (group(4) shadow bindings). Same order as
+    // TERRAIN_FORWARD_SHADER in terrain_material_manager.rs.
+    let shadow_common = std::fs::read_to_string(shaders_dir.join("shadow_common.wgsl"))
+        .expect("read shadow_common.wgsl");
     // E3-terrain 2026-07-03: stochastic_tiling.wgsl added to the concat —
     // pbr_terrain_forward.wgsl calls its `hex_offsets` for hex-tile sampling.
     let stochastic = std::fs::read_to_string(shaders_dir.join("stochastic_tiling.wgsl"))
@@ -370,8 +378,8 @@ fn test_pbr_terrain_forward_validates_with_prefix() {
         .expect("read pbr_terrain_forward.wgsl");
 
     let concatenated = format!(
-        "{}{}{}{}{}",
-        constants, brdf_common, ibl_common, stochastic, terrain_forward
+        "{}{}{}{}{}{}",
+        constants, brdf_common, ibl_common, shadow_common, stochastic, terrain_forward
     );
 
     let module = wgsl::parse_str(&concatenated)

@@ -21,6 +21,9 @@ pub(crate) const SHADER_SRC: &str = concat!(
     // L.2: IblParams + compute_ibl live in the shared fragment (also consumed
     // by the terrain-forward concat in terrain_material_manager.rs).
     include_str!("../shaders/ibl_common.wgsl"),
+    // L.3: MainLightUbo + csm_shadow_factor live in the shared fragment (also
+    // consumed by the terrain-forward concat) — one CSM sampling implementation.
+    include_str!("../shaders/shadow_common.wgsl"),
     r#"
 struct VSIn {
     @location(0) position: vec3<f32>,
@@ -68,12 +71,9 @@ struct MaterialUbo {
 
 @group(1) @binding(0) var<uniform> uMaterial: MaterialUbo;
 
-struct MainLightUbo {
-    view_proj0: mat4x4<f32>,
-    view_proj1: mat4x4<f32>,
-    splits: vec2<f32>,
-    extras: vec2<f32>, // x: pcf_radius_px, y: depth_bias; z: slope_scale in skinned path extras.x reused; keep 2 vec2s for alignment
-};
+// MainLightUbo struct + csm_shadow_factor come from shadow_common.wgsl
+// (prepended) — hoisted there in L.3 so the terrain-forward path shares the
+// same cascade-select + PCF implementation.
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
 @group(2) @binding(2) var shadow_sampler: sampler_comparison;
@@ -230,47 +230,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     // entire block for all warps — saves 9 PCF comparison samples + ALU.
     var shadow: f32 = 1.0;
     if (uLight.extras.x >= 0.0) {
-        let shadow_far = uLight.splits.y;
-        let use_c0 = frag_dist < uLight.splits.x;
-        var lvp: mat4x4<f32>;
-        if (use_c0) { lvp = uLight.view_proj0; } else { lvp = uLight.view_proj1; }
-        let lp = lvp * vec4<f32>(input.world_pos, 1.0);
-        let ndc_shadow = lp.xyz / lp.w;
-        let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
-        let depth = ndc_shadow.z;
-        let base_bias = uLight.extras.y;
-        let bias = max(base_bias, 0.00001);
-
-        if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && frag_dist < shadow_far) {
-            var layer: i32;
-            if (use_c0) { layer = 0; } else { layer = 1; }
-            // PCF 3x3 (scaled by pcf radius in texels from extras.x)
-            let dims = vec2<f32>(textureDimensions(shadow_tex).xy);
-            let texel = 1.0 / dims;
-            let r = max(0.0, uLight.extras.x);
-            var sum = 0.0;
-            for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
-                for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
-                    let o = vec2<f32>(f32(dx), f32(dy)) * texel * r;
-                    sum = sum + textureSampleCompare(shadow_tex, shadow_sampler, uv + o, layer, depth - bias);
-                }
-            }
-            shadow = sum / 9.0;
-
-            // Fade shadow to 1.0 at cascade boundary edges to eliminate
-            // the hard square cutoff. Fade in the outer 20% of shadow range.
-            let fade_start = shadow_far * 0.8;
-            if (frag_dist > fade_start) {
-                let fade = (frag_dist - fade_start) / (shadow_far - fade_start);
-                shadow = mix(shadow, 1.0, clamp(fade, 0.0, 1.0));
-            }
-
-            // Also fade at UV edges to soften the ortho projection boundary
-            let edge_fade_x = min(uv.x, 1.0 - uv.x) * 10.0;
-            let edge_fade_y = min(uv.y, 1.0 - uv.y) * 10.0;
-            let edge_fade = clamp(min(edge_fade_x, edge_fade_y), 0.0, 1.0);
-            shadow = mix(1.0, shadow, edge_fade);
-        }
+        // Cascade select + PCF 3x3 + boundary fades — shared implementation
+        // in shadow_common.wgsl (hoisted verbatim in L.3; the terrain-forward
+        // path calls the same function at its own group(4) bindings).
+        shadow = csm_shadow_factor(uLight, shadow_tex, shadow_sampler, input.world_pos, frag_dist);
     }
     // Direct lighting (evaluate_brdf already includes NdotL)
     let cloud_shadow = sample_cloud_shadow(input.world_pos);
@@ -676,6 +639,11 @@ pub struct TerrainChunkGpu {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub index_count: u32,
+    /// L.3: world-space bounds, computed by `upload_terrain_chunk` from the
+    /// uploaded vertices (positions are world-space). Consumed by per-cascade
+    /// frustum culling in the terrain shadow-caster pass.
+    pub aabb_min: [f32; 3],
+    pub aabb_max: [f32; 3],
 }
 
 /// Owns the forward-lit terrain rendering state inside `Renderer`.
@@ -785,6 +753,9 @@ pub struct Renderer {
     shadow_cascade_bgs: [wgpu::BindGroup; 2],
     #[allow(dead_code)]
     shadow_bgl: wgpu::BindGroupLayout,
+    /// L.3: the single-mat4 caster-pass layout (`shadow_cascade_bgs`' layout),
+    /// retained so the terrain caster pipeline can be (re)built lazily.
+    shadow_bgl_light: wgpu::BindGroupLayout,
     // Cascade data cached on CPU for shadow passes
     cascade0: glam::Mat4,
     cascade1: glam::Mat4,
@@ -979,6 +950,10 @@ pub struct Renderer {
     /// `self.models`-based terrain path (registered via `add_model_with_bounds`).
     #[cfg(feature = "terrain-splat-arrays")]
     pub(crate) terrain_forward: Option<TerrainForwardRenderer>,
+    /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
+    /// `[(drawn, total); 2]`. Written by `draw_into` after the shadow passes;
+    /// `(0, 0)` when the passes were skipped (shadows off / no casters).
+    terrain_shadow_stats: [(u32, u32); 2],
 }
 
 impl Renderer {
@@ -1877,38 +1852,12 @@ impl Renderer {
         #[cfg(feature = "postfx")]
         let post_bgl = post_fx_bgl;
 
-        // Shadow bind group layout (declared early so we can include it in main pipeline layout)
-        let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("shadow bgl"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Depth,
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
-                    count: None,
-                },
-            ],
-        });
+        // Shadow bind group layout (declared early so we can include it in main
+        // pipeline layout). L.3: created via the shared constructor so the
+        // terrain-forward pipeline tests build the identical group(4) layout —
+        // same no-drift discipline as `create_terrain_ibl_bgl`.
+        let shadow_bgl =
+            crate::terrain_material_manager::TerrainMaterialManager::create_shadow_bgl(&device);
 
         // Combined textures + skin bind group layout (group 3): albedo, mr, normal textures + samplers, plus optional skin storage buffer
         // bindings: 0: albedo tex, 1: albedo samp, 2: mr tex, 3: mr samp, 4: normal tex, 5: normal samp, 6: skin palette (storage)
@@ -3371,6 +3320,8 @@ fn vs(input: VSIn) -> VSOut {
             light_buf,
             light_bg,
             shadow_bgl,
+            shadow_bgl_light,
+            terrain_shadow_stats: [(0, 0); 2],
             shadow_cascade_bufs,
             shadow_cascade_bgs,
             cascade0: glam::Mat4::IDENTITY,
@@ -4324,14 +4275,16 @@ fn vs(input: VSIn) -> VSOut {
     }
 
     fn update_cascade_splits(&mut self, view: &RenderView, light_dir: glam::Vec3) {
-        // L.1 note: this runs every frame even when shadows are disabled
-        // (cascades then have no consumer — T2F §1.2 row 3). It is NOT
-        // trivially safe to skip on `!self.shadows_enabled`, because this
-        // function is also the delivery path for `light_buf`'s extras.x
-        // sentinel (-1.0 = shadows off, written below) — skipping wholesale
-        // would leave a stale positive pcf radius in the UBO and re-enable
-        // garbage shadow sampling in the static shader. L.3 (terrain CSM)
-        // will consume the cascades anyway; leave as is.
+        // L.1 note (as amended by L.3): this runs every frame even when
+        // shadows are disabled. It is NOT safe to skip on
+        // `!self.shadows_enabled`, because this function is also the delivery
+        // path for `light_buf`'s extras.x sentinel (-1.0 = shadows off,
+        // written below) — skipping wholesale would leave a stale positive
+        // pcf radius in the UBO and re-enable garbage shadow sampling. Since
+        // L.3 the cascades DO have consumers every frame the editor terrain
+        // scene renders with shadows on: the terrain caster pass draws with
+        // `shadow_cascade_bufs`, and both the static and terrain-forward
+        // fragment shaders sample via `light_buf`'s matrices/splits.
         //
         // C.3.A migration: signature changed from `&Camera` to `&RenderView`
         // per CAMERA_CONVENTIONS.md §2.9. The pre-C.3.A lossy yaw/pitch
@@ -4346,9 +4299,11 @@ fn vs(input: VSIn) -> VSOut {
         let shadow_far = 500.0_f32.min(view.zfar);
 
         // PSSM practical split (lambda blends log vs linear).
-        // With n=0.5, shadow_far=500, lambda=0.75:
-        //   split0 ≈ 16 units — close-up detail
-        //   split1 = 500      — landscape shadows
+        // With n=0.5, shadow_far=500 (the editor camera): l = 15.81,
+        // u = 250.25, split = λ·l + (1−λ)·u — so λ=0.75 → split0 ≈ 74.4 and
+        // the editor terrain-upload's λ=0.7 → split0 ≈ 86.1. (The pre-L.3
+        // "≈ 16 units" claim here was the λ=1.0 pure-log value, not the
+        // blend.) split1 = 500 — landscape shadows.
         let c = 2.0;
         let i = 1.0f32;
         let u = n + (shadow_far - n) * (i / c);
@@ -5298,9 +5253,9 @@ fn vs(input: VSIn) -> VSOut {
                 }
             }
             // Named models cast shadows — scatter skipped (negligible
-            // visual contribution), terrain only in cascade 0.
+            // visual contribution).
             // Shadow frustum culling: skip models outside the cascade's
-            // ortho frustum to avoid rendering distant terrain into shadows.
+            // ortho frustum.
             let cascade_vp = if idx == 0 {
                 self.cascade0
             } else {
@@ -5756,8 +5711,23 @@ fn vs(input: VSIn) -> VSOut {
 
         // Shadow passes — skip entirely when shadows disabled or no geometry visible.
         // Each shadow pass costs ~2-3ms even for an empty scene.
+        // L.3: terrain-forward chunks are casters (`tf.chunks` — they never
+        // lived in `self.models`, which is why terrain cast nothing before).
+        #[cfg(feature = "terrain-splat-arrays")]
+        let terrain_casts = self
+            .terrain_forward
+            .as_ref()
+            .is_some_and(|tf| !tf.chunks.is_empty() && tf.manager.shadow_pipeline().is_some());
+        #[cfg(not(feature = "terrain-splat-arrays"))]
+        let terrain_casts = false;
         let has_shadow_casters = self.shadows_enabled
-            && (vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty());
+            && (vis_count > 0
+                || self.mesh_external.is_some()
+                || !self.models.is_empty()
+                || terrain_casts);
+        // L.3: per-cascade (drawn, total) terrain-chunk counts for the frame,
+        // written to `self.terrain_shadow_stats` after the passes close.
+        let mut terrain_stats = [(0u32, 0u32); 2];
 
         for (idx, layer_view) in [&self.shadow_layer0_view, &self.shadow_layer1_view]
             .iter()
@@ -5817,16 +5787,13 @@ fn vs(input: VSIn) -> VSOut {
                     sp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
                 }
             }
-            // Named models cast shadows — but only terrain (terrain_c*) in
-            // cascade 0 (near).  Scatter objects (scatter_*) are skipped
-            // entirely because small vegetation/debris shadows are
-            // imperceptible and the draw call cost is severe (~25+ calls ×
-            // 2 cascades at 4M+ triangles total).
+            // Named models cast shadows. Scatter objects (scatter_*) are
+            // skipped entirely because small vegetation/debris shadows are
+            // imperceptible and the draw call cost is severe.
             //
             // Shadow frustum culling: build frustum planes from the cascade
-            // VP matrix and skip terrain chunks outside the shadow camera's
-            // view. This typically culls ~90% of terrain chunks since the
-            // near cascade covers only ~16 units around the camera.
+            // VP matrix; models AND terrain chunks (the L.3 block below the
+            // model loop) are tested against it per cascade.
             let cascade_vp = if idx == 0 {
                 self.cascade0
             } else {
@@ -5842,13 +5809,14 @@ fn vs(input: VSIn) -> VSOut {
                 if name.starts_with("scatter_") {
                     continue;
                 }
-                // Cascade 1 (far) skips terrain — self-shadows on distant
-                // terrain are invisible and cost millions of triangles.
-                if idx == 1 && name.starts_with("terrain_c") {
-                    continue;
-                }
+                // (L.3: the former `terrain_c*` cascade-1 skip was deleted —
+                // dead code; no producer of that model naming has existed
+                // since the 2026-05-08 cluster-path removal. Terrain now
+                // casts via the dedicated depth-only chunk path, both
+                // cascades.)
+                //
                 // Frustum cull against the shadow cascade's ortho projection.
-                // Terrain chunks outside the shadow camera's frustum don't
+                // Models outside the shadow camera's frustum don't
                 // contribute to visible shadows and are expensive to render.
                 if let Some((aabb_min, aabb_max)) = &model.aabb {
                     let center = glam::Vec3::new(
@@ -5875,7 +5843,53 @@ fn vs(input: VSIn) -> VSOut {
                     sp.draw_indexed(0..primitive.mesh.index_count, 0, 0..model.instance_count);
                 }
             }
+            // L.3: terrain chunks cast. Depth-only terrain pipeline (chunk
+            // positions are world-space — no instance buffer), culled per
+            // cascade against the same `shadow_frustum` the models use.
+            // Statics keep casting via `shadow_pipeline` above, so future
+            // static casters (T.3 scatter and friends) are additive: this
+            // block only APPENDS terrain draws to the same per-cascade pass.
+            // Both cascades render terrain — cascade 1 (out to shadow_far
+            // 500 m) is precisely the mid-range dune shadowing this beat
+            // exists to deliver.
+            #[cfg(feature = "terrain-splat-arrays")]
+            if let Some(tf) = self.terrain_forward.as_ref() {
+                if let Some(pl) = tf.manager.shadow_pipeline() {
+                    if !tf.chunks.is_empty() {
+                        sp.set_pipeline(pl);
+                        sp.set_bind_group(0, &self.shadow_cascade_bgs[idx], &[]);
+                        let total = tf.chunks.len() as u32;
+                        let mut drawn = 0u32;
+                        for chunk in tf.chunks.values() {
+                            let center = glam::Vec3::new(
+                                (chunk.aabb_min[0] + chunk.aabb_max[0]) * 0.5,
+                                (chunk.aabb_min[1] + chunk.aabb_max[1]) * 0.5,
+                                (chunk.aabb_min[2] + chunk.aabb_max[2]) * 0.5,
+                            );
+                            let extent = glam::Vec3::new(
+                                (chunk.aabb_max[0] - chunk.aabb_min[0]) * 0.5,
+                                (chunk.aabb_max[1] - chunk.aabb_min[1]) * 0.5,
+                                (chunk.aabb_max[2] - chunk.aabb_min[2]) * 0.5,
+                            );
+                            if !shadow_frustum.test_aabb(center, extent) {
+                                continue;
+                            }
+                            sp.set_vertex_buffer(0, chunk.vertex_buffer.slice(..));
+                            sp.set_index_buffer(
+                                chunk.index_buffer.slice(..),
+                                wgpu::IndexFormat::Uint32,
+                            );
+                            sp.draw_indexed(0..chunk.index_count, 0, 0..1);
+                            drawn += 1;
+                        }
+                        terrain_stats[idx] = (drawn, total);
+                    }
+                }
+            }
         }
+        // L.3: publish the per-cascade culling counts (observable via
+        // `terrain_shadow_stats()`; the l3 harness prints them).
+        self.terrain_shadow_stats = terrain_stats;
         // light_buf already contains the full [cascade0, cascade1, splits, extras]
         // data from update_camera(); no restore needed since shadow passes now use
         // their own per-cascade buffers (shadow_cascade_bufs).
@@ -5979,7 +5993,12 @@ fn vs(input: VSIn) -> VSOut {
                         color_format,
                         depth_format,
                         &self.terrain_ibl_bgl,
+                        &self.shadow_bgl,
                     );
+                    // L.3: the depth-only caster pipeline (built once; the
+                    // shadow pass below reads it via `shadow_pipeline()`).
+                    tf.manager
+                        .ensure_shadow_pipeline(&self.device, &self.shadow_bgl_light);
                     // ED-3: keep the terrain manager's wireframe selection in
                     // lockstep with the frame's debug-shading state.
                     tf.manager.set_wireframe(self.wireframe_enabled);
@@ -6139,9 +6158,15 @@ fn vs(input: VSIn) -> VSOut {
             if let Some(tf) = self.terrain_forward.as_ref() {
                 // L.2: bind the terrain IBL group once for the whole chunk
                 // loop — draw_chunk_forward sets groups 0/1/2 per chunk and
-                // never touches 3. Fallback or baked, the group always exists.
+                // never touches 3 or 4. Fallback or baked, the group always
+                // exists.
+                // L.3: group(4) is the SAME `light_bg` the static path
+                // samples at its group(2) — light UBO (cascade matrices,
+                // splits, extras sentinel) + 2-layer shadow map + comparison
+                // sampler. One owner (Renderer), no parallel resource (§7.7).
                 if !tf.chunks.is_empty() {
                     rp.set_bind_group(3, &self.terrain_ibl_bind_group, &[]);
+                    rp.set_bind_group(4, &self.light_bg, &[]);
                 }
                 for (key, chunk_gpu) in &tf.chunks {
                     let _ = tf.manager.draw_chunk_forward(
@@ -6365,6 +6390,12 @@ fn vs(input: VSIn) -> VSOut {
         self.terrain_forward.as_ref()
     }
 
+    /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
+    /// `[(drawn, total); 2]`. `(0, 0)` when the shadow passes were skipped.
+    pub fn terrain_shadow_stats(&self) -> [(u32, u32); 2] {
+        self.terrain_shadow_stats
+    }
+
     /// Mutable accessor for the forward-lit terrain renderer.
     #[cfg(feature = "terrain-splat-arrays")]
     pub fn terrain_forward_mut(&mut self) -> Option<&mut TerrainForwardRenderer> {
@@ -6432,12 +6463,26 @@ fn vs(input: VSIn) -> VSOut {
         tf.manager
             .set_chunk_splat_forward(&self.device, &self.queue, key, splats, splat_dims)?;
 
+        // L.3: chunk bounds from the uploaded world-space positions — the
+        // single source of truth for shadow-pass culling (no caller-supplied
+        // duplicate of the same logical data).
+        let mut aabb_min = [f32::INFINITY; 3];
+        let mut aabb_max = [f32::NEG_INFINITY; 3];
+        for v in vertices {
+            for i in 0..3 {
+                aabb_min[i] = aabb_min[i].min(v.position[i]);
+                aabb_max[i] = aabb_max[i].max(v.position[i]);
+            }
+        }
+
         tf.chunks.insert(
             key,
             TerrainChunkGpu {
                 vertex_buffer,
                 index_buffer,
                 index_count: indices.len() as u32,
+                aabb_min,
+                aabb_max,
             },
         );
         Ok(())

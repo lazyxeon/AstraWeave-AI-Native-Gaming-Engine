@@ -9,7 +9,7 @@ lifecycle_status: active
 integration_status: wired
 summary: "Terrain material slice: 8-slot canonical biome pack + loader, splat bake, 32-layer GPU blend (complements terrain.md). terrain_materials.md"
 owns: []
-doc_version: "1.5"
+doc_version: "1.6"
 last_verified_commit: c0753b551
 ---
 
@@ -21,8 +21,8 @@ last_verified_commit: c0753b551
 |---|---|
 | **System name** | Terrain Material System |
 | **Primary crates** | `astraweave-render`, `astraweave-terrain`, `tools/aw_editor` |
-| **Document version** | 1.4 |
-| **Last verified against commit** | `bf57b5f1d` (v1.5: T.2c — real PBR materials for slots 0/1/4; see the v1.5 addendum, the slot table rows and Invariant 9. The T.2c beat commit follows this one); prior `c0753b551` (v1.4: T.2a Phase-1 aux-channel repair — see §8 Invariant 8 and the Revision note); prior `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
+| **Document version** | 1.6 |
+| **Last verified against commit** | L.3 working tree over `d6f53c00e` (v1.6: §2 Stage 3 bind-group table completed — the L.2 group(3) IBL row was missing (two-beat drift) and the L.3 group(4) shadow-receive row + depth-only caster pipeline added; see `docs/audits/L3_OUTCOME.md`); prior `bf57b5f1d` (v1.5: T.2c — real PBR materials for slots 0/1/4; see the v1.5 addendum, the slot table rows and Invariant 9. The T.2c beat commit follows this one); prior `c0753b551` (v1.4: T.2a Phase-1 aux-channel repair — see §8 Invariant 8 and the Revision note); prior `7e52c290c`+T.1 worktree (v1.3: slot-6 beach material executed — T-series ratification §2 row-6 amendment); prior `8232b150b` (v1.2, T.0 trace-sync: canonical-pack era — E3 build `d506658d8` + AD.4/AD.5.A re-points; see Revision note in §2.0 and the Appendix B addendum); `67c9de7e1` |
 | **Last verified date** | 2026-07-24 (v1.4 T.2a aux-channel repair); 2026-07-21 (v1.3 slot-6 update; v1.2 full pass); 2026-05-10 (full trace) |
 | **Status** | Active (canonical 32-layer pipeline) with transitional legacy residue |
 | **Owner notes** | Canonical reference example for the architecture trace campaign. Derived from forensic data-flow analysis on 2026-05-11. |
@@ -139,6 +139,9 @@ Loaded by `tools/aw_editor/src/viewport/canonical_terrain_pack.rs` (`load_canoni
 - Group 0: camera UBO (`forward_camera_bg`)
 - Group 1: `TerrainMaterialGpu` UBO + `TerrainSceneEnvGpu` UBO + filtering sampler + 3 layer texture arrays (albedo, normal, ORM; height omitted in Phase 1 forward path)
 - Group 2: per-chunk splat textures — 8 splat textures (`splat_map_0..7`) + ClampToEdge sampler
+- Group 3 (L.2, 2026-07-27): terrain IBL — spec cube, irradiance cube, BRDF LUT, sampler, `IblParams` UBO. Layout from the shared `TerrainMaterialManager::create_terrain_ibl_bgl`; bind group renderer-owned (`terrain_ibl_bind_group`), rebuilt only in `rebuild_ibl_bind_group`, bound once before the chunk loop in `draw_into`.
+- Group 4 (L.3, 2026-07-28): CSM shadow receive — `MainLightUbo` (cascade matrices/splits/extras sentinel), 2-layer depth array, comparison sampler. Layout from the shared `TerrainMaterialManager::create_shadow_bgl`; the bound group is the renderer's existing `light_bg` (the static path's group 2 — one owner, §7.7). Fragment stage totals 15/16 sampled textures.
+- L.3 also adds the depth-only shadow-caster pipeline (`ensure_shadow_pipeline`: `TerrainSplatVertex` position-only, single per-cascade mat4 UBO at group 0, no instancing) — terrain chunks draw into both cascade layers of the renderer's shadow passes with per-cascade AABB culling (`TerrainChunkGpu.aabb_*`, computed at upload).
 
 #### Stage 4: Vertex stage
 **Files:** `astraweave-render/shaders/pbr_terrain_vs.wgsl`, `astraweave-render/src/terrain_material_manager.rs`

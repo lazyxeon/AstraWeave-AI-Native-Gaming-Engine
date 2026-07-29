@@ -23,11 +23,16 @@ pub async fn create_headless_device() -> (Device, Queue) {
         .await
         .expect("Failed to find adapter");
 
+    // L.3: the terrain-forward pipeline layout has 5 bind groups (camera,
+    // terrain, splat, IBL, shadow) — downlevel_defaults' max_bind_groups is 4,
+    // so raise it (same approach as headless_integration.rs).
+    let mut limits = wgpu::Limits::downlevel_defaults();
+    limits.max_bind_groups = limits.max_bind_groups.max(5);
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor {
             label: Some("test_device"),
             required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::downlevel_defaults(),
+            required_limits: limits,
             memory_hints: wgpu::MemoryHints::default(),
             trace: Default::default(),
         })

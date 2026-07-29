@@ -13,18 +13,22 @@
 // texture sets into the arrays bound at group(1) bindings 3-5. Per-chunk
 // splat textures are bound at group(2).
 //
-// Lighting scope (L.2, 2026-07-27 — supersedes the Phase 1 "no IBL" scope):
-//   - Sun direct lighting: Cook-Torrance + Burley via evaluate_brdf
+// Lighting scope (L.3, 2026-07-28 — supersedes the L.2 "no shadows" line):
+//   - Sun direct lighting: Cook-Torrance + Burley via evaluate_brdf,
+//     multiplied by the CSM shadow factor (shared csm_shadow_factor from
+//     shadow_common.wgsl at group(4); extras.x < 0 sentinel disables)
 //   - Environment: full split-sum IBL via the shared compute_ibl
 //     (ibl_common.wgsl) — diffuse irradiance + prefiltered specular + BRDF
 //     LUT, bound at group(3), multiplied by material AO. This REPLACES the
-//     Phase-1 flat 0.35×ambient fill (no double-count).
+//     Phase-1 flat 0.35×ambient fill (no double-count). The shadow term does
+//     NOT touch these indirect terms — shadowed ground stays skylit.
 //   - Distance fog: SHADER_SRC's apply_scene_fog linear+exp blend
-//   - Still absent: shadows (L.3), SSGI, cloud shadows, screen tint.
+//   - Still absent: SSGI, cloud shadows, screen tint.
 //
-// The PI, INV_PI constants, all BRDF helpers, and compute_ibl are prepended
-// at pipeline build time via `concat!(include_str!("constants.wgsl"),
-// include_str!("brdf_common.wgsl"), include_str!("ibl_common.wgsl"),
+// The PI, INV_PI constants, all BRDF helpers, compute_ibl, and
+// csm_shadow_factor are prepended at pipeline build time via
+// `concat!(include_str!("constants.wgsl"), include_str!("brdf_common.wgsl"),
+// include_str!("ibl_common.wgsl"), include_str!("shadow_common.wgsl"),
 // include_str!("stochastic_tiling.wgsl"),
 // include_str!("pbr_terrain_forward.wgsl"))`.
 
@@ -139,6 +143,16 @@ struct TerrainSceneEnv {
 @group(3) @binding(2) var ibl_brdf_lut: texture_2d<f32>;
 @group(3) @binding(3) var ibl_sampler: sampler;
 @group(3) @binding(4) var<uniform> uIbl: IblParams;
+
+// L.3: CSM shadow resources (same names the static PBR shader binds at its
+// group(2); MainLightUbo + csm_shadow_factor come from shadow_common.wgsl,
+// prepended). The bind group is the renderer's EXISTING `light_bg` — the same
+// light UBO, 2-layer depth array, and comparison sampler the static path
+// samples; terrain binds it at group(4). One owner, no parallel resource
+// (§7.7). Sampled-texture budget: this is the fragment stage's 15th of 16.
+@group(4) @binding(0) var<uniform> uLight: MainLightUbo;
+@group(4) @binding(1) var shadow_tex: texture_depth_2d_array;
+@group(4) @binding(2) var shadow_sampler: sampler_comparison;
 
 // ============================================================================
 // Vertex stage
@@ -374,6 +388,9 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
 
     let V = normalize(uCamera.camera_pos - in.world_pos);
     let L = normalize(-uCamera.light_dir);
+    // View distance — consumed by the CSM cascade select (block 6) and the
+    // distance fog (block 8). Computed once.
+    let frag_dist = length(in.world_pos - uCamera.camera_pos);
     let base_color = final_albedo;
     // Clamp to the range SHADER_SRC uses (metallic full, roughness >= 0.04
     // to avoid singular GGX at perfect mirrors).
@@ -401,9 +418,19 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     //    boundary on this very terrain (docs/audits/T2D_CAMERA_LIGHT.md §10).
     let brdf_result = evaluate_brdf(N, V, L, base_color, metallic, roughness, F0);
 
-    // 6. Direct sun lighting (no shadow cascade in Phase 1).
+    // 6. Direct sun lighting × CSM shadow (L.3). The shadow factor multiplies
+    //    the DIRECT term only — never the IBL below — so shadowed ground
+    //    stays skylit instead of going black (same term discipline as AO on
+    //    indirect-only, per the L.2 ratified directive). extras.x < 0 is the
+    //    shadows-off sentinel (uniform branch, same gate as SHADER_SRC); in
+    //    that state shadow stays 1.0 and this block is arithmetically
+    //    identical to the pre-L.3 shader.
+    var shadow: f32 = 1.0;
+    if (uLight.extras.x >= 0.0) {
+        shadow = csm_shadow_factor(uLight, shadow_tex, shadow_sampler, in.world_pos, frag_dist);
+    }
     let radiance = uScene.sun_color * uScene.sun_intensity;
-    var lit_color = brdf_result * radiance;
+    var lit_color = brdf_result * radiance * shadow;
 
     // 7. Environment light — full split-sum IBL (L.2), REPLACING the Phase-1
     //    flat ambient fill (`ambient_color * ambient_intensity * 0.35`); the
@@ -416,7 +443,6 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
     lit_color = lit_color + ibl_color * final_ao;
 
     // 8. Distance fog — matches SHADER_SRC's formula.
-    let frag_dist = length(in.world_pos - uCamera.camera_pos);
     lit_color = apply_terrain_fog(lit_color, frag_dist);
 
     return vec4<f32>(lit_color, 1.0);
