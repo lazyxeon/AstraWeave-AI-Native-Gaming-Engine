@@ -86,7 +86,11 @@ Constants (`renderer.rs::update_cascade_splits`): `SHADOW_FAR_SURVEY = 3000.0`,
 - **c2 (survey)**: sphere-fit of the 500→3000 m frustum slice, same rotation-stable
   ortho construction, same per-cascade separate UBO (the write-race invariant), same
   per-cascade AABB chunk culling, drawn in both `render()` and `draw_into` pass loops.
-- **Texel-density trade, stated with its arithmetic**: c2's ortho square is the
+- **Texel-density trade, stated with its arithmetic** — **CORRECTED by L.3.B, the figures
+  below were ~2× optimistic; see `docs/audits/L3B_OUTCOME.md` §4 for the measured values
+  (c2 radius 3424 m, half-extent 3826 m, 7649 m across, **3.737 m/texel**; c1 0.559 m;
+  c0 0.102 m) and for the 6.4× c1|c2 rendition ratio that follows from them.** Original
+  text, left standing per the append-only convention: c2's ortho square is the
   sphere fit of the 500→3000 m slice plus the 400 m drift margin — at the survey
   framing ≈ 1.5 km radius → ~3.8 km across 2048 texels ≈ **1.9 m/texel**. That is
   appropriate for content viewed at 500 m+ (a 1.9 m shadow texel subtends well under

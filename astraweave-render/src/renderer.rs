@@ -783,6 +783,16 @@ pub struct Renderer {
     /// that renders layer 2. Never assume the map is filled because the
     /// matrix was computed — the passes can be skipped entirely.
     c2_render_pending: bool,
+    /// L.3.B refresh telemetry: monotonic refresh count, the trigger that
+    /// fired last (`"invalid"`/`"sun"`/`"drift"`/`"tick"`), and this frame's
+    /// window drift in metres. Read via [`Self::shadow_survey_telemetry`] —
+    /// the continuous-capture harness correlates observed frame-steps against
+    /// refresh events with it.
+    c2_refresh_count: u32,
+    c2_refresh_reason: &'static str,
+    c2_last_drift: f32,
+    /// The window (centre, radius) committed at the last refresh.
+    c2_window: (glam::Vec3, f32),
     split0: f32,
     split1: f32,
     // Tunable cascade ortho extents (half-width/height)
@@ -2477,7 +2487,7 @@ impl Renderer {
         // Shadow map resources (3-layer array for CSM — L.3.A added the
         // survey cascade after the 500 m coverage cap read as a
         // camera-anchored shadow boundary from a moving editor camera)
-        let shadow_size: u32 = 2048;
+        let shadow_size: u32 = SHADOW_MAP_SIZE;
         let shadow_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("shadow map"),
             size: wgpu::Extent3d {
@@ -3385,6 +3395,10 @@ fn vs(input: VSIn) -> VSOut {
             c2_tick: 0,
             c2_valid: false,
             c2_render_pending: false,
+            c2_refresh_count: 0,
+            c2_refresh_reason: "none",
+            c2_last_drift: 0.0,
+            c2_window: (glam::Vec3::ZERO, 0.0),
             split0: 60.0,
             split1: 120.0,
             cascade0_extent: 40.0,
@@ -4417,6 +4431,11 @@ fn vs(input: VSIn) -> VSOut {
                 light_dist + radius + margin,
             )
         };
+        // L.3.B measured texel snapping here (all three cascades) and did NOT
+        // ship it: it moved 0.25% of pixels (max delta 26) and improved no
+        // robust stability metric, while breaking the L.3 station byte-identity
+        // guarantee. The technique and its measurement are recorded in
+        // docs/audits/L3B_OUTCOME.md for whichever beat demonstrates a need.
         self.cascade0 = ortho(radius0, light_dist0) * view0;
         self.cascade1 = ortho(radius1, light_dist1) * view1;
 
@@ -4447,19 +4466,50 @@ fn vs(input: VSIn) -> VSOut {
         const C2_DRIFT_MARGIN: f32 = 400.0;
         const C2_DRIFT_LIMIT: f32 = 300.0;
         self.c2_tick = self.c2_tick.wrapping_add(1) % C2_REFRESH_INTERVAL;
-        let window_moved = (center2 - self.c2_center).length() > C2_DRIFT_LIMIT;
+        let drift = (center2 - self.c2_center).length();
+        let window_moved = drift > C2_DRIFT_LIMIT;
         let sun_moved = light_dir.dot(self.c2_light_dir) < 0.9999;
-        if !self.c2_valid || window_moved || sun_moved || self.c2_tick == 0 {
+        // L.3.B instrumentation: which trigger fired, in precedence order, so
+        // a per-frame capture can correlate observed frame-steps with refresh
+        // events (the director's L.3.A gate rejection: "changes in STEPS
+        // between adjacent frames").
+        let reason = if !self.c2_valid {
+            Some("invalid")
+        } else if sun_moved {
+            Some("sun")
+        } else if window_moved {
+            Some("drift")
+        } else if self.c2_tick == 0 {
+            Some("tick")
+        } else {
+            None
+        };
+        if let Some(reason) = reason {
             let view2 = glam::Mat4::look_to_rh(center2 - light_dir * light_dist2, light_dir, up);
             self.cascade2 = ortho(radius2 + C2_DRIFT_MARGIN, light_dist2) * view2;
             self.c2_center = center2;
             self.c2_light_dir = light_dir;
             self.c2_render_pending = true;
+            self.c2_refresh_count = self.c2_refresh_count.wrapping_add(1);
+            self.c2_refresh_reason = reason;
+            self.c2_last_drift = drift;
+            self.c2_window = (center2, radius2);
+            // `AW_CSM_LOG=1` prints the refresh stream (this crate has no
+            // tracing dependency; the harness also reads the telemetry
+            // accessor directly, which is the machine-checked path).
+            if std::env::var_os("AW_CSM_LOG").is_some() {
+                eprintln!(
+                    "[csm] survey refresh #{} ({reason}): centre ({:.1},{:.1},{:.1}) radius {:.1} drift {:.1}",
+                    self.c2_refresh_count, center2.x, center2.y, center2.z, radius2, drift
+                );
+            }
             self.queue.write_buffer(
                 &self.shadow_cascade_bufs[2],
                 0,
                 bytemuck::cast_slice(&self.cascade2.to_cols_array()),
             );
+        } else {
+            self.c2_last_drift = drift;
         }
 
         self.queue.write_buffer(
@@ -6022,6 +6072,12 @@ fn vs(input: VSIn) -> VSOut {
                                 (chunk.aabb_max[1] - chunk.aabb_min[1]) * 0.5,
                                 (chunk.aabb_max[2] - chunk.aabb_min[2]) * 0.5,
                             );
+                            // L.3.B verified this cull omits nothing that
+                            // matters at the survey framing: drawing EVERY
+                            // chunk into every cascade produced byte-identical
+                            // frames (0/786432 differing pixels), refuting the
+                            // classic "lateral occluder culled but its shadow
+                            // falls inside the box" CSM bug here.
                             if !shadow_frustum.test_aabb(center, extent) {
                                 continue;
                             }
@@ -6552,9 +6608,29 @@ fn vs(input: VSIn) -> VSOut {
     }
 
     /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
-    /// `[(drawn, total); 2]`. `(0, 0)` when the shadow passes were skipped.
+    /// `[(drawn, total); 3]`. `(0, 0)` when the shadow passes were skipped;
+    /// the c2 entry holds its last refresh's counts on cached frames.
     pub fn terrain_shadow_stats(&self) -> [(u32, u32); 3] {
         self.terrain_shadow_stats
+    }
+
+    /// L.3.B survey-cascade refresh telemetry: `(refresh_count, last_trigger,
+    /// window_drift_m, render_pending)`. The trigger is one of
+    /// `"none"`/`"invalid"`/`"sun"`/`"drift"`/`"tick"`. The continuous-capture
+    /// harness uses this to correlate visual frame-steps with refresh events.
+    pub fn shadow_survey_telemetry(&self) -> (u32, &'static str, f32, bool) {
+        (
+            self.c2_refresh_count,
+            self.c2_refresh_reason,
+            self.c2_last_drift,
+            self.c2_render_pending,
+        )
+    }
+
+    /// L.3.B: the survey cascade's committed window `(centre, radius)` from its
+    /// last refresh — the transform half of the refresh telemetry.
+    pub fn shadow_survey_window(&self) -> (glam::Vec3, f32) {
+        self.c2_window
     }
 
     /// Mutable accessor for the forward-lit terrain renderer.
@@ -8171,6 +8247,12 @@ fn inside_frustum_sphere(center: glam::Vec3, radius: f32, planes: &[(glam::Vec3,
 }
 
 // --- CSM utilities ---
+
+/// Shadow-map edge length (square, per cascade layer). Single source of truth
+/// for the allocation and for L.3.B's texel snapping — the two MUST agree or
+/// the snap quantum stops matching a real texel.
+pub(crate) const SHADOW_MAP_SIZE: u32 = 2048;
+
 fn frustum_corners_ws(view: &RenderView, near: f32, far: f32) -> [glam::Vec3; 8] {
     // C.3.A migration: signature changed from `&Camera` to `&RenderView` per
     // CAMERA_CONVENTIONS.md §2.9. The view direction comes directly from
