@@ -248,15 +248,13 @@ fn shoot(
         .context("engine adapter missing")?
         .renderer()
         .terrain_shadow_stats();
+    // Destructured, not indexed: the arity is compiler-enforced, so adding a
+    // cascade cannot silently leave one out of the report.
+    let [c0, c1, c2, c3] = stats;
     println!(
-        "[l3] {}{suffix}: mean luma {mean:.2} sd {sd:.2} casters c0 {}/{} c1 {}/{} c2 {}/{} -> {}",
+        "[l3] {}{suffix}: mean luma {mean:.2} sd {sd:.2} casters c0 {}/{} c1 {}/{} c2 {}/{} c3 {}/{} -> {}",
         s.name,
-        stats[0].0,
-        stats[0].1,
-        stats[1].0,
-        stats[1].1,
-        stats[2].0,
-        stats[2].1,
+        c0.0, c0.1, c1.0, c1.1, c2.0, c2.1, c3.0, c3.1,
         png.display()
     );
     Ok(png)

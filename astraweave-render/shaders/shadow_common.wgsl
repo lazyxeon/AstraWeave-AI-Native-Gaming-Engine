@@ -21,17 +21,31 @@
 struct MainLightUbo {
     view_proj0: mat4x4<f32>,
     view_proj1: mat4x4<f32>,
-    // L.3.A: third cascade — the survey span (500 → shadow_far). Added after
-    // the L.3 render gate caught the 500 m coverage cap as a camera-anchored
-    // shadow boundary from a moving survey camera.
+    // L.3.A: the survey span. L.3.C split it in two (500→1400, 1400→3000)
+    // because a single 500→3000 cascade rendered 3.74 m texels, and the
+    // resulting 6.4x step at the 500 m seam made >50% of this dune world's
+    // relief unable to cast beyond it (docs/audits/L3C_OUTCOME.md).
     view_proj2: mat4x4<f32>,
+    view_proj3: mat4x4<f32>,
     // x: split0 (c0|c1), y: split1 (c1|c2), z: shadow_far (coverage end),
     // w: fade_start (the wide far fade begins here — L.3.A widened it from
     // the last 20% of 500 m to the last 30% of shadow_far, because a narrow
     // fade at plainly-visible range reads as a moving edge).
     splits: vec4<f32>,
-    extras: vec2<f32>, // x: pcf_radius_px or -1.0 shadows-off sentinel, y: depth_bias
+    // x: pcf_radius_px or -1.0 shadows-off sentinel, y: depth_bias,
+    // z: split2 (c2|c3 — L.3.C put it in a lane that was already padding so
+    // splits' lanes and extras.x/.y keep their offsets), w: reserved.
+    extras: vec4<f32>,
 };
+
+// L.3.C receiver-bias caps for the cached far cascades, as multipliers on the
+// shipped NDC bias. Each is (c1_world_bias / this_cascade_depth_range) /
+// shipped_ndc_bias, i.e. "same world-space slack c1 has, expressed in this
+// cascade's NDC" — derived from the measured fits in L3C_OUTCOME: c1 depth
+// 1762 m, c2 4714 m, c3 10309 m. Constants rather than uniforms because the
+// cascade slice geometry is fixed; if the split distances change, recompute.
+const C2_BIAS_SCALE: f32 = 0.374;   // 1762 / 4714
+const C3_BIAS_SCALE: f32 = 0.171;   // 1762 / 10309
 
 // Cascade-selected 3x3 PCF shadow factor in [0, 1] (1.0 = fully lit).
 //
@@ -52,24 +66,39 @@ fn csm_shadow_factor(
     var shadow: f32 = 1.0;
     let shadow_far = light.splits.z;
     // Cascade select: hard switch on view distance (the engine's idiom),
-    // 3-way since L.3.A. c0: 0..split0, c1: split0..split1, c2: split1..far.
+    // 4-way since L.3.C. c0: 0..split0, c1: split0..split1,
+    // c2: split1..split2, c3: split2..shadow_far.
     var lvp: mat4x4<f32>;
     var layer: i32;
+    // L.3.C: per-cascade receiver bias. `extras.y` is an NDC bias, so one
+    // value meant wildly different WORLD slack per cascade — their ortho depth
+    // ranges span 30x (355 m at c0, 10.3 km at c3), which put 5.4 m of the
+    // survey cascade's 13.4 m total slack in the receiver term alone and was
+    // half the reason dune relief could not cast out there. The far cascades
+    // are CAPPED at c1's world-space equivalent; c0/c1 keep exactly the bias
+    // they shipped with (never raised), which is what preserves the pinned
+    // station frames.
+    var bias_scale: f32 = 1.0;
     if (frag_dist < light.splits.x) {
         lvp = light.view_proj0;
         layer = 0;
     } else if (frag_dist < light.splits.y) {
         lvp = light.view_proj1;
         layer = 1;
-    } else {
+    } else if (frag_dist < light.extras.z) {
         lvp = light.view_proj2;
         layer = 2;
+        bias_scale = C2_BIAS_SCALE;
+    } else {
+        lvp = light.view_proj3;
+        layer = 3;
+        bias_scale = C3_BIAS_SCALE;
     }
     let lp = lvp * vec4<f32>(world_pos, 1.0);
     let ndc_shadow = lp.xyz / lp.w;
     let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
     let depth = ndc_shadow.z;
-    let base_bias = light.extras.y;
+    let base_bias = light.extras.y * bias_scale;
     let bias = max(base_bias, 0.00001);
 
     if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && frag_dist < shadow_far) {

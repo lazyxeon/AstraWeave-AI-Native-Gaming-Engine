@@ -605,8 +605,15 @@ fn l3b_continuous_flight() -> Result<()> {
         state.configure(SEED, PRIMARY_BIOME);
         state.set_noise_params(6, 2.0, 0.5, 50.0);
         state.set_world_archetype(WorldArchetypeId::Desert.default_archetype());
-        let n = state.generate_terrain(10).context("generate_terrain")?;
-        println!("[l3b] Desert radius 10: {n} chunks");
+        // L.3.C: the RECORDING's world is radius 8 = 289 chunks (the director's
+        // video chunk count). The L.3/L.3.A harnesses flew radius 10 = 441 and
+        // were therefore measuring a different world than the gate rejected.
+        let radius: i32 = std::env::var("L3B_RADIUS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(8);
+        let n = state.generate_terrain(radius).context("generate_terrain")?;
+        println!("[l3b] Desert radius {radius}: {n} chunks");
         viewport.upload_terrain_chunks_raw(&state.get_gpu_chunks());
         viewport
             .engine_adapter_mut()

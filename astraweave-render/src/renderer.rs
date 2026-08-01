@@ -436,7 +436,7 @@ struct MaterialUbo { base_color: vec4<f32>, metallic: f32, roughness: f32, alpha
 // L.3.A: layout matches shadow_common.wgsl's MainLightUbo (3 cascades +
 // vec4 splits). This dormant pipeline's shadow code still samples only
 // c0/c1 via splits.x/.y — offsets stay correct, behavior legacy.
-struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, splits: vec4<f32>, extras: vec2<f32> };
+struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, view_proj3: mat4x4<f32>, splits: vec4<f32>, extras: vec4<f32> };
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
 @group(2) @binding(2) var shadow_sampler: sampler_comparison;
@@ -741,10 +741,8 @@ pub struct Renderer {
     shadow_tex: wgpu::Texture,
     #[allow(dead_code)]
     shadow_view: wgpu::TextureView, // array view for sampling
-    shadow_layer0_view: wgpu::TextureView,
-    shadow_layer1_view: wgpu::TextureView,
-    /// L.3.A: the survey cascade's render target (layer 2).
-    shadow_layer2_view: wgpu::TextureView,
+    /// One render target per cascade (layer of the shadow array).
+    shadow_layer_views: [wgpu::TextureView; CASCADE_COUNT],
     #[allow(dead_code)]
     shadow_sampler: wgpu::Sampler,
     shadow_pipeline: wgpu::RenderPipeline,
@@ -754,35 +752,38 @@ pub struct Renderer {
     // Using separate buffers avoids the queue.write_buffer race where all
     // writes resolve before the command buffer executes, causing both shadow
     // passes to read the same (last-written) cascade matrix.
-    shadow_cascade_bufs: [wgpu::Buffer; 3],
-    shadow_cascade_bgs: [wgpu::BindGroup; 3],
+    shadow_cascade_bufs: [wgpu::Buffer; CASCADE_COUNT],
+    shadow_cascade_bgs: [wgpu::BindGroup; CASCADE_COUNT],
     #[allow(dead_code)]
     shadow_bgl: wgpu::BindGroupLayout,
     /// L.3: the single-mat4 caster-pass layout (`shadow_cascade_bgs`' layout),
     /// retained so the terrain caster pipeline can be (re)built lazily.
     shadow_bgl_light: wgpu::BindGroupLayout,
     // Cascade data cached on CPU for shadow passes
-    cascade0: glam::Mat4,
-    cascade1: glam::Mat4,
-    /// L.3.A: survey cascade (split1 → shadow_far) — added after the 500 m
-    /// coverage cap read as a camera-anchored boundary from a moving camera.
-    cascade2: glam::Mat4,
-    /// L.3.A cached-cascade state: the survey cascade re-fits and re-renders
-    /// on refresh (sun move / window drift / slow tick) instead of every
-    /// frame — its caster pass draws most of the world (+2.6 ms/frame
-    /// unthrottled on min-spec). The ortho box is padded beyond the drift
-    /// limit so a frozen window still covers the ideal slice.
-    c2_center: glam::Vec3,
-    c2_light_dir: glam::Vec3,
+    /// Per-cascade light view-projections, index 0 = nearest. An ARRAY, not
+    /// named fields: the L.3.C inventory found that the two pass loops selected
+    /// the culling matrix with `match idx { 0 =>.., 1 =>.., _ => last }`, which
+    /// would have silently culled a newly-added cascade against its
+    /// predecessor's frustum. Indexing panics instead.
+    cascades: [glam::Mat4; CASCADE_COUNT],
+    /// Cached-cascade state, one entry per cascade at or beyond
+    /// [`FIRST_CACHED_CASCADE`]. Those cascades re-fit and re-render only on
+    /// refresh (sun move / window drift / slow tick) instead of every frame —
+    /// their caster passes draw most of the world. Each ortho box is padded
+    /// beyond the drift limit so a frozen window still covers its ideal slice.
+    c_far_center: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+    c_far_light_dir: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     c2_tick: u32,
-    /// True once a shadow pass has actually filled layer 2 with the CURRENT
-    /// `cascade2` matrix. Set by the pass, cleared whenever the map's
-    /// contents can no longer be trusted (shadows disabled).
-    c2_valid: bool,
-    /// STICKY: set when `cascade2` changes, cleared ONLY by a shadow pass
-    /// that renders layer 2. Never assume the map is filled because the
-    /// matrix was computed — the passes can be skipped entirely.
-    c2_render_pending: bool,
+    /// True once a shadow pass has actually filled that layer with its CURRENT
+    /// matrix. Set by the PASS, cleared whenever the map's contents can no
+    /// longer be trusted (shadows disabled).
+    c_far_valid: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+    /// STICKY: set when a cached cascade's matrix changes, cleared ONLY by a
+    /// shadow pass that renders that layer. Never assume a map is filled
+    /// because its matrix was computed — the passes can be skipped entirely
+    /// (the L.3.A bug: on the first frame after terrain upload the caster
+    /// pipeline does not exist yet, so every pass is skipped).
+    c_far_pending: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     /// L.3.B refresh telemetry: monotonic refresh count, the trigger that
     /// fired last (`"invalid"`/`"sun"`/`"drift"`/`"tick"`), and this frame's
     /// window drift in metres. Read via [`Self::shadow_survey_telemetry`] —
@@ -795,6 +796,9 @@ pub struct Renderer {
     c2_window: (glam::Vec3, f32),
     split0: f32,
     split1: f32,
+    /// L.3.C: the c2|c3 boundary (1400 m). Delivered to the shader in
+    /// `extras.z`.
+    split2: f32,
     // Tunable cascade ortho extents (half-width/height)
     cascade0_extent: f32,
     cascade1_extent: f32,
@@ -985,9 +989,9 @@ pub struct Renderer {
     #[cfg(feature = "terrain-splat-arrays")]
     pub(crate) terrain_forward: Option<TerrainForwardRenderer>,
     /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
-    /// `[(drawn, total); 2]`. Written by `draw_into` after the shadow passes;
+    /// `[(drawn, total); CASCADE_COUNT]`. Written by `draw_into` after the passes;
     /// `(0, 0)` when the passes were skipped (shadows off / no casters).
-    terrain_shadow_stats: [(u32, u32); 3],
+    terrain_shadow_stats: [(u32, u32); CASCADE_COUNT],
 }
 
 impl Renderer {
@@ -2484,16 +2488,19 @@ impl Renderer {
         // Canonical post_pipeline now runs unconditionally for both windowed
         // runtime and headless editor invocations.
 
-        // Shadow map resources (3-layer array for CSM — L.3.A added the
-        // survey cascade after the 500 m coverage cap read as a
-        // camera-anchored shadow boundary from a moving editor camera)
+        // Shadow map resources (4-layer array for CSM). L.3.A added the third
+        // (survey) cascade after the 500 m coverage cap read as a
+        // camera-anchored boundary; L.3.C added the fourth because the relief
+        // census measured a 6.4x rendition step at the 500 m seam that left
+        // >50% of this dune world's features unable to cast beyond it
+        // (docs/audits/L3C_OUTCOME.md). Splits: 86 / 500 / 1400 / 3000 m.
         let shadow_size: u32 = SHADOW_MAP_SIZE;
         let shadow_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("shadow map"),
             size: wgpu::Extent3d {
                 width: shadow_size,
                 height: shadow_size,
-                depth_or_array_layers: 3,
+                depth_or_array_layers: CASCADE_COUNT as u32,
             },
             mip_level_count: 1,
             sample_count: 1,
@@ -2514,39 +2521,20 @@ impl Renderer {
             base_array_layer: 0,
             array_layer_count: None,
         });
-        // Per-layer views for rendering
-        let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
-            label: Some("shadow layer0 view"),
-            format: Some(wgpu::TextureFormat::Depth32Float),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 0,
-            array_layer_count: Some(1),
-        });
-        let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
-            label: Some("shadow layer1 view"),
-            format: Some(wgpu::TextureFormat::Depth32Float),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 1,
-            array_layer_count: Some(1),
-        });
-        let shadow_layer2_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
-            label: Some("shadow layer2 view"),
-            format: Some(wgpu::TextureFormat::Depth32Float),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 2,
-            array_layer_count: Some(1),
+        // Per-layer views for rendering, one per cascade. Built from
+        // CASCADE_COUNT so a new cascade cannot be left without a target.
+        let shadow_layer_views: [wgpu::TextureView; CASCADE_COUNT] = std::array::from_fn(|i| {
+            shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
+                label: Some(&format!("shadow layer{i} view")),
+                format: Some(wgpu::TextureFormat::Depth32Float),
+                dimension: Some(wgpu::TextureViewDimension::D2),
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: i as u32,
+                array_layer_count: Some(1),
+            })
         });
         let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("shadow sampler"),
@@ -2559,9 +2547,12 @@ impl Renderer {
         // shadow_bgl already created above
         let light_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("light ubo"),
-            // L.3.A layout: 3 mat4 (192) + vec4 splits (16) + vec2 extras +
-            // pad (16) => 224 — must cover shadow_common.wgsl's MainLightUbo.
-            size: 224,
+            // L.3.C layout: 4 mat4 (256) + vec4 splits (16) + vec4 extras (16)
+            // => 288 — must cover shadow_common.wgsl's MainLightUbo. `extras`
+            // widened from vec2 to vec4 to carry split2 in a lane that was
+            // already padding, so `splits`' lanes and `extras.x`/`.y` keep
+            // their offsets (the sentinel contract test depends on extras.x).
+            size: 288,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -2602,52 +2593,26 @@ impl Renderer {
         // that the shadow vertex shader reads as its view_proj. Written once per
         // frame in update_camera(), avoiding the queue.write_buffer race that
         // previously caused both shadow passes to use the same cascade matrix.
-        let shadow_cascade_bufs = [
+        // Built from CASCADE_COUNT so the array can never fall behind the
+        // cascade count (the shape that panicked loudly in L.3.C when it did).
+        let shadow_cascade_bufs: [wgpu::Buffer; CASCADE_COUNT] = std::array::from_fn(|i| {
             device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("shadow cascade0 ubo"),
+                label: Some(&format!("shadow cascade{i} ubo")),
                 size: 64,
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
-            }),
-            device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("shadow cascade1 ubo"),
-                size: 64,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }),
-            device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("shadow cascade2 ubo"),
-                size: 64,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }),
-        ];
-        let shadow_cascade_bgs = [
+            })
+        });
+        let shadow_cascade_bgs: [wgpu::BindGroup; CASCADE_COUNT] = std::array::from_fn(|i| {
             device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("shadow cascade0 bg"),
+                label: Some(&format!("shadow cascade{i} bg")),
                 layout: &shadow_bgl_light,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: shadow_cascade_bufs[0].as_entire_binding(),
+                    resource: shadow_cascade_bufs[i].as_entire_binding(),
                 }],
-            }),
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("shadow cascade1 bg"),
-                layout: &shadow_bgl_light,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: shadow_cascade_bufs[1].as_entire_binding(),
-                }],
-            }),
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("shadow cascade2 bg"),
-                layout: &shadow_bgl_light,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: shadow_cascade_bufs[2].as_entire_binding(),
-                }],
-            }),
-        ];
+            })
+        });
 
         // Shadow map pipeline (depth-only)
         let shadow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -3375,32 +3340,29 @@ fn vs(input: VSIn) -> VSOut {
             postfx_dummy_view,
             shadow_tex,
             shadow_view,
-            shadow_layer0_view,
-            shadow_layer1_view,
-            shadow_layer2_view,
+            shadow_layer_views,
             shadow_sampler,
             shadow_pipeline,
             light_buf,
             light_bg,
             shadow_bgl,
             shadow_bgl_light,
-            terrain_shadow_stats: [(0, 0); 3],
+            terrain_shadow_stats: [(0, 0); CASCADE_COUNT],
             shadow_cascade_bufs,
             shadow_cascade_bgs,
-            cascade0: glam::Mat4::IDENTITY,
-            cascade1: glam::Mat4::IDENTITY,
-            cascade2: glam::Mat4::IDENTITY,
-            c2_center: glam::Vec3::ZERO,
-            c2_light_dir: glam::Vec3::ZERO,
+            cascades: [glam::Mat4::IDENTITY; CASCADE_COUNT],
+            c_far_center: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c_far_light_dir: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
             c2_tick: 0,
-            c2_valid: false,
-            c2_render_pending: false,
+            c_far_valid: [false; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c_far_pending: [false; CASCADE_COUNT - FIRST_CACHED_CASCADE],
             c2_refresh_count: 0,
             c2_refresh_reason: "none",
             c2_last_drift: 0.0,
             c2_window: (glam::Vec3::ZERO, 0.0),
             split0: 60.0,
             split1: 120.0,
+            split2: 1400.0,
             cascade0_extent: 40.0,
             cascade1_extent: 80.0,
             cascade_lambda: 0.5,
@@ -4375,6 +4337,11 @@ fn vs(input: VSIn) -> VSOut {
         // the last 30% of coverage, not a 100 m band at 400 m.
         const SHADOW_FAR_SURVEY: f32 = 3000.0;
         const SHADOW_FADE_FRACTION: f32 = 0.7;
+        // L.3.C: the c2|c3 boundary. Splitting 500..3000 here takes the 500 m
+        // seam's rendition step from 6.4x to 2.0x, which is what lets dune
+        // relief keep casting across it (relief census: >50% of this world's
+        // dune features could not cast beyond the old single seam).
+        const SHADOW_SPLIT2: f32 = 1400.0;
         let n = view.znear.max(0.5);
         let shadow_mid = 500.0_f32.min(view.zfar);
         let shadow_far = SHADOW_FAR_SURVEY.min(view.zfar).max(shadow_mid + 1.0);
@@ -4395,156 +4362,153 @@ fn vs(input: VSIn) -> VSOut {
         self.split0 = split;
         self.split1 = shadow_mid;
 
-        let frustum0 = frustum_corners_ws(view, n, self.split0);
-        let frustum1 = frustum_corners_ws(view, self.split0, shadow_mid);
-        let frustum2 = frustum_corners_ws(view, shadow_mid, shadow_far);
+        self.split2 = SHADOW_SPLIT2;
+
+        // Per-cascade slice bounds. c0/c1 are unchanged from L.3 — their fits
+        // are still computed against `shadow_mid` = 500 — which is what keeps
+        // the pinned station frames byte-identical across this change.
+        let bounds: [(f32, f32); CASCADE_COUNT] = [
+            (n, self.split0),
+            (self.split0, shadow_mid),
+            (shadow_mid, self.split2),
+            (self.split2, shadow_far),
+        ];
         let up = glam::Vec3::Y;
-        let center0 = frustum_center(&frustum0);
-        let center1 = frustum_center(&frustum1);
-        let center2 = frustum_center(&frustum2);
 
-        // Use sphere-based fitting for stable shadows (rotation-invariant).
-        // The sphere radius determines the ortho projection extent, so shadows
-        // don't shimmer when the camera rotates.
-        let radius0 = sphere_radius(&frustum0, center0);
-        let radius1 = sphere_radius(&frustum1, center1);
-        let radius2 = sphere_radius(&frustum2, center2);
+        // Cached-cascade policy (L.3.A, generalised to the far pair in L.3.C).
+        // Cascades at or beyond FIRST_CACHED_CASCADE re-fit and re-render only
+        // on a REFRESH: sun move, ideal-window drift past C2_DRIFT_LIMIT, a
+        // slow periodic tick (so terrain edits appear), or a map not
+        // known-good. A frozen window is CORRECT, not stale: shadow positions
+        // are world-anchored, sampling uses the same frozen matrix the map was
+        // rendered with, and the ortho box is padded by C2_DRIFT_MARGIN (>
+        // the drift limit) so a drifted window still fully contains its ideal
+        // slice — no coverage gap can open at its near edge between refreshes.
+        //
+        // TWO-PHASE COMMIT (the L.3.A bug this shape exists to prevent):
+        // `c_far_pending` is STICKY — set here, cleared ONLY by a shadow pass
+        // that actually renders that layer. A map must never be treated as
+        // filled just because its matrix was computed: on the first frame
+        // after terrain upload the caster pipeline does not exist yet
+        // (`ensure_shadow_pipeline` runs after the passes), so
+        // `has_shadow_casters` is false and every pass is skipped — a cache
+        // that trusted the matrix sampled a never-written map (measured:
+        // y414 108.37 vs 116.31 correct).
+        const C2_REFRESH_INTERVAL: u32 = 8;
+        const C2_DRIFT_MARGIN: f32 = 400.0;
+        const C2_DRIFT_LIMIT: f32 = 300.0;
+        self.c2_tick = self.c2_tick.wrapping_add(1) % C2_REFRESH_INTERVAL;
 
-        // Position the light far enough behind the sphere to capture tall
-        // shadow casters (trees, buildings) above the frustum.
-        let light_dist0 = radius0 * 2.0 + 50.0;
-        let light_dist1 = radius1 * 2.0 + 50.0;
-        let light_dist2 = radius2 * 2.0 + 50.0;
-
-        let view0 = glam::Mat4::look_to_rh(center0 - light_dir * light_dist0, light_dir, up);
-        let view1 = glam::Mat4::look_to_rh(center1 - light_dir * light_dist1, light_dir, up);
-
-        // Sphere-based orthographic bounds (rotationally stable)
-        let margin = 2.0_f32;
-        let ortho = |radius: f32, light_dist: f32| {
-            glam::Mat4::orthographic_rh(
+        for (i, (near, far)) in bounds.iter().copied().enumerate() {
+            let frustum = frustum_corners_ws(view, near, far);
+            let center = frustum_center(&frustum);
+            // Sphere-based fitting for stable shadows (rotation-invariant):
+            // the sphere radius sets the ortho extent, so shadows don't
+            // shimmer when the camera rotates.
+            let radius = sphere_radius(&frustum, center);
+            // Position the light far enough behind the sphere to capture tall
+            // casters above the frustum.
+            let light_dist = radius * 2.0 + 50.0;
+            let cached = i >= FIRST_CACHED_CASCADE;
+            // Only cached cascades carry the drift pad; the every-frame pair
+            // keeps the 2 m margin they have always had (station identity).
+            let margin = if cached { C2_DRIFT_MARGIN } else { 2.0 };
+            let ortho = glam::Mat4::orthographic_rh(
                 -radius - margin,
                 radius + margin,
                 -radius - margin,
                 radius + margin,
                 0.1,
                 light_dist + radius + margin,
-            )
-        };
-        // L.3.B measured texel snapping here (all three cascades) and did NOT
-        // ship it: it moved 0.25% of pixels (max delta 26) and improved no
-        // robust stability metric, while breaking the L.3 station byte-identity
-        // guarantee. The technique and its measurement are recorded in
-        // docs/audits/L3B_OUTCOME.md for whichever beat demonstrates a need.
-        self.cascade0 = ortho(radius0, light_dist0) * view0;
-        self.cascade1 = ortho(radius1, light_dist1) * view1;
-
-        // L.3.A cached survey cascade. c2's caster pass draws most of the
-        // world (measured +2.6 ms/frame if re-rendered every frame on
-        // min-spec), so it re-fits + re-renders only on a REFRESH: when the
-        // sun moves, when the ideal window drifts past C2_DRIFT_LIMIT, on a
-        // slow periodic tick (so terrain edits appear), or when the map is
-        // not known-good.
-        //
-        // A frozen c2 is CORRECT, not stale: shadow positions are
-        // world-anchored; only the coverage WINDOW is held, sampling uses the
-        // same frozen matrix the map was rendered with, and the ortho box is
-        // padded by C2_DRIFT_MARGIN (> the drift limit) so a drifted window
-        // still fully contains the ideal 500→far slice — no coverage gap can
-        // open at the near edge between refreshes.
-        //
-        // TWO-PHASE COMMIT (the L.3.A bug this shape exists to prevent):
-        // `c2_render_pending` is STICKY — set here, cleared ONLY by a shadow
-        // pass that actually renders layer 2. The map must never be treated
-        // as filled just because the matrix was computed: on the first frame
-        // after terrain upload the caster pipeline does not exist yet
-        // (`ensure_shadow_pipeline` runs after the passes), so
-        // `has_shadow_casters` is false and every pass is skipped — a cache
-        // that trusted the matrix sampled a never-written map (measured:
-        // y414 108.37 vs 116.27 correct).
-        const C2_REFRESH_INTERVAL: u32 = 8;
-        const C2_DRIFT_MARGIN: f32 = 400.0;
-        const C2_DRIFT_LIMIT: f32 = 300.0;
-        self.c2_tick = self.c2_tick.wrapping_add(1) % C2_REFRESH_INTERVAL;
-        let drift = (center2 - self.c2_center).length();
-        let window_moved = drift > C2_DRIFT_LIMIT;
-        let sun_moved = light_dir.dot(self.c2_light_dir) < 0.9999;
-        // L.3.B instrumentation: which trigger fired, in precedence order, so
-        // a per-frame capture can correlate observed frame-steps with refresh
-        // events (the director's L.3.A gate rejection: "changes in STEPS
-        // between adjacent frames").
-        let reason = if !self.c2_valid {
-            Some("invalid")
-        } else if sun_moved {
-            Some("sun")
-        } else if window_moved {
-            Some("drift")
-        } else if self.c2_tick == 0 {
-            Some("tick")
-        } else {
-            None
-        };
-        if let Some(reason) = reason {
-            let view2 = glam::Mat4::look_to_rh(center2 - light_dir * light_dist2, light_dir, up);
-            self.cascade2 = ortho(radius2 + C2_DRIFT_MARGIN, light_dist2) * view2;
-            self.c2_center = center2;
-            self.c2_light_dir = light_dir;
-            self.c2_render_pending = true;
-            self.c2_refresh_count = self.c2_refresh_count.wrapping_add(1);
-            self.c2_refresh_reason = reason;
-            self.c2_last_drift = drift;
-            self.c2_window = (center2, radius2);
-            // `AW_CSM_LOG=1` prints the refresh stream (this crate has no
-            // tracing dependency; the harness also reads the telemetry
-            // accessor directly, which is the machine-checked path).
-            if std::env::var_os("AW_CSM_LOG").is_some() {
-                eprintln!(
-                    "[csm] survey refresh #{} ({reason}): centre ({:.1},{:.1},{:.1}) radius {:.1} drift {:.1}",
-                    self.c2_refresh_count, center2.x, center2.y, center2.z, radius2, drift
-                );
-            }
-            self.queue.write_buffer(
-                &self.shadow_cascade_bufs[2],
-                0,
-                bytemuck::cast_slice(&self.cascade2.to_cols_array()),
             );
-        } else {
-            self.c2_last_drift = drift;
+
+            if !cached {
+                let light_view =
+                    glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
+                self.cascades[i] = ortho * light_view;
+                self.queue.write_buffer(
+                    &self.shadow_cascade_bufs[i],
+                    0,
+                    bytemuck::cast_slice(&self.cascades[i].to_cols_array()),
+                );
+                continue;
+            }
+
+            let c = i - FIRST_CACHED_CASCADE;
+            let drift = (center - self.c_far_center[c]).length();
+            // Which trigger fired, in precedence order — the telemetry the
+            // continuous-flight harness correlates observed frame-steps with.
+            let reason = if !self.c_far_valid[c] {
+                Some("invalid")
+            } else if light_dir.dot(self.c_far_light_dir[c]) < 0.9999 {
+                Some("sun")
+            } else if drift > C2_DRIFT_LIMIT {
+                Some("drift")
+            } else if self.c2_tick == 0 {
+                Some("tick")
+            } else {
+                None
+            };
+            if let Some(reason) = reason {
+                let light_view =
+                    glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
+                self.cascades[i] = ortho * light_view;
+                self.c_far_center[c] = center;
+                self.c_far_light_dir[c] = light_dir;
+                self.c_far_pending[c] = true;
+                // Telemetry tracks the OUTERMOST cascade (the one whose window
+                // moves furthest and whose refresh is most consequential).
+                if i == CASCADE_COUNT - 1 {
+                    self.c2_refresh_count = self.c2_refresh_count.wrapping_add(1);
+                    self.c2_refresh_reason = reason;
+                    self.c2_last_drift = drift;
+                    self.c2_window = (center, radius);
+                    // `AW_CSM_LOG=1` prints the refresh stream (this crate has
+                    // no tracing dependency; the harness reads the telemetry
+                    // accessor directly, which is the machine-checked path).
+                    if std::env::var_os("AW_CSM_LOG").is_some() {
+                        eprintln!(
+                            "[csm] survey refresh #{} ({reason}): centre ({:.1},{:.1},{:.1}) radius {:.1} drift {:.1}",
+                            self.c2_refresh_count, center.x, center.y, center.z, radius, drift
+                        );
+                    }
+                }
+                self.queue.write_buffer(
+                    &self.shadow_cascade_bufs[i],
+                    0,
+                    bytemuck::cast_slice(&self.cascades[i].to_cols_array()),
+                );
+            } else if i == CASCADE_COUNT - 1 {
+                self.c2_last_drift = drift;
+            }
         }
 
-        self.queue.write_buffer(
-            &self.shadow_cascade_bufs[0],
-            0,
-            bytemuck::cast_slice(&self.cascade0.to_cols_array()),
-        );
-        self.queue.write_buffer(
-            &self.shadow_cascade_bufs[1],
-            0,
-            bytemuck::cast_slice(&self.cascade1.to_cols_array()),
-        );
-
-        // MainLightUbo (shadow_common.wgsl): 3×mat4, splits vec4
-        // (split0, split1, shadow_far, fade_start), extras vec2 + pad — 224 B.
-        let mut data: Vec<f32> = Vec::with_capacity(56);
-        data.extend_from_slice(&self.cascade0.to_cols_array());
-        data.extend_from_slice(&self.cascade1.to_cols_array());
-        data.extend_from_slice(&self.cascade2.to_cols_array());
+        // MainLightUbo (shadow_common.wgsl): 4×mat4 (256) + splits vec4
+        // (split0, split1, shadow_far, fade_start) + extras vec4
+        // (pcf_or_sentinel, depth_bias, split2, pad) = 288 B. `split2` rides a
+        // lane that was already padding, so `splits` and `extras.x`/`.y` keep
+        // their offsets — the sentinel contract test reads `extras.x`.
+        let mut data: Vec<f32> = Vec::with_capacity(72);
+        for m in &self.cascades {
+            data.extend_from_slice(&m.to_cols_array());
+        }
         data.push(self.split0);
         data.push(self.split1);
         data.push(shadow_far);
         data.push(shadow_far * SHADOW_FADE_FRACTION);
         let extras_x = if self.force_shadow_override {
-            // Shadows off: the passes are skipped, so the c2 map goes stale —
-            // force a refresh on the frame shadows re-enable.
-            self.c2_valid = false;
+            // Shadows off: the passes are skipped, so the cached maps go stale
+            // — force a refresh on the frame shadows re-enable.
+            self.c_far_valid = [false; CASCADE_COUNT - FIRST_CACHED_CASCADE];
             -1.0
         } else {
             self.shadow_pcf_radius_px
         };
         data.push(extras_x);
         data.push(self.shadow_depth_bias);
+        data.push(self.split2);
         data.push(0.0);
-        data.push(0.0);
+        debug_assert_eq!(data.len() * 4, 288, "MainLightUbo layout drift");
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
@@ -5235,17 +5199,17 @@ fn vs(input: VSIn) -> VSOut {
             .gpu_profiler
             .as_mut()
             .and_then(|p| p.allocate_pass("cluster_bin"));
-        let ts_shadow = [
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_0")),
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_1")),
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_2")),
+        const SHADOW_PASS_LABELS_R: [&str; CASCADE_COUNT] = [
+            "shadow_cascade_0",
+            "shadow_cascade_1",
+            "shadow_cascade_2",
+            "shadow_cascade_3",
         ];
+        let ts_shadow: [Option<(u32, u32)>; CASCADE_COUNT] = std::array::from_fn(|i| {
+            self.gpu_profiler
+                .as_mut()
+                .and_then(|p| p.allocate_pass(SHADOW_PASS_LABELS_R[i]))
+        });
         let ts_main = self
             .gpu_profiler
             .as_mut()
@@ -5364,24 +5328,19 @@ fn vs(input: VSIn) -> VSOut {
         // Shadow passes (depth only) — skip when no shadow-casting geometry.
         let has_shadow_casters_r =
             vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty();
-        // L.3.A: does layer 2 get drawn this frame? (Two-phase commit — the
+        // Which cached layers get drawn this frame? (Two-phase commit — the
         // flags advance below, AFTER the passes actually ran.)
-        let c2_rendered = has_shadow_casters_r && (!self.c2_valid || self.c2_render_pending);
+        let far_rendered: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE] = std::array::from_fn(|c| {
+            has_shadow_casters_r && (!self.c_far_valid[c] || self.c_far_pending[c])
+        });
 
-        for (idx, layer_view) in [
-            &self.shadow_layer0_view,
-            &self.shadow_layer1_view,
-            &self.shadow_layer2_view,
-        ]
-        .iter()
-        .enumerate()
-        {
+        for (idx, layer_view) in self.shadow_layer_views.iter().enumerate() {
             if !has_shadow_casters_r {
                 continue;
             }
-            // L.3.A cached survey cascade: skip its pass when the map is
-            // known-filled with the current matrix and no refresh is pending.
-            if idx == 2 && !c2_rendered {
+            // Cached cascades: skip the pass when that layer's map is
+            // known-filled with its current matrix and no refresh is pending.
+            if idx >= FIRST_CACHED_CASCADE && !far_rendered[idx - FIRST_CACHED_CASCADE] {
                 continue;
             }
             let shadow_ts = ts_shadow[idx].and_then(|(b, e)| {
@@ -5439,11 +5398,7 @@ fn vs(input: VSIn) -> VSOut {
             // visual contribution).
             // Shadow frustum culling: skip models outside the cascade's
             // ortho frustum.
-            let cascade_vp = match idx {
-                0 => self.cascade0,
-                1 => self.cascade1,
-                _ => self.cascade2,
-            };
+            let cascade_vp = self.cascades[idx];
             let shadow_frustum = crate::culling::FrustumPlanes::from_view_proj(&cascade_vp);
             for (name, model) in &self.models {
                 if model.instance_count == 0 {
@@ -5478,11 +5433,13 @@ fn vs(input: VSIn) -> VSOut {
                 }
             }
         }
-        // L.3.A: commit the cached-cascade state only now that the passes have
+        // Commit the cached-cascade state only now that the passes have
         // actually run (two-phase commit — see `update_cascade_splits`).
-        if c2_rendered {
-            self.c2_valid = true;
-            self.c2_render_pending = false;
+        for (c, rendered) in far_rendered.iter().enumerate() {
+            if *rendered {
+                self.c_far_valid[c] = true;
+                self.c_far_pending[c] = false;
+            }
         }
         // light_buf already contains the full [cascade0, cascade1, splits, extras]
         // data from update_camera(); no restore needed since shadow passes now use
@@ -5769,17 +5726,19 @@ fn vs(input: VSIn) -> VSOut {
             .gpu_profiler
             .as_mut()
             .and_then(|p| p.allocate_pass("cluster_bin"));
-        let di_ts_shadow = [
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_0")),
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_1")),
-            self.gpu_profiler
-                .as_mut()
-                .and_then(|p| p.allocate_pass("shadow_cascade_2")),
+        // One profiler pass per cascade — labels are static strings indexed by
+        // cascade so the array cannot fall behind CASCADE_COUNT.
+        const SHADOW_PASS_LABELS: [&str; CASCADE_COUNT] = [
+            "shadow_cascade_0",
+            "shadow_cascade_1",
+            "shadow_cascade_2",
+            "shadow_cascade_3",
         ];
+        let di_ts_shadow: [Option<(u32, u32)>; CASCADE_COUNT] = std::array::from_fn(|i| {
+            self.gpu_profiler
+                .as_mut()
+                .and_then(|p| p.allocate_pass(SHADOW_PASS_LABELS[i]))
+        });
         let di_ts_main = self
             .gpu_profiler
             .as_mut()
@@ -5914,27 +5873,22 @@ fn vs(input: VSIn) -> VSOut {
                 || self.mesh_external.is_some()
                 || !self.models.is_empty()
                 || terrain_casts);
-        // L.3.A: does layer 2 get drawn this frame? (Two-phase commit — the
+        // Which cached layers get drawn this frame? (Two-phase commit — the
         // flags are only advanced below, AFTER the passes actually ran.)
-        let c2_rendered = has_shadow_casters && (!self.c2_valid || self.c2_render_pending);
+        let far_rendered: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE] = std::array::from_fn(|c| {
+            has_shadow_casters && (!self.c_far_valid[c] || self.c_far_pending[c])
+        });
         // L.3: per-cascade (drawn, total) terrain-chunk counts for the frame,
         // written to `self.terrain_shadow_stats` after the passes close.
-        let mut terrain_stats = [(0u32, 0u32); 3];
+        let mut terrain_stats = [(0u32, 0u32); CASCADE_COUNT];
 
-        for (idx, layer_view) in [
-            &self.shadow_layer0_view,
-            &self.shadow_layer1_view,
-            &self.shadow_layer2_view,
-        ]
-        .iter()
-        .enumerate()
-        {
+        for (idx, layer_view) in self.shadow_layer_views.iter().enumerate() {
             if !has_shadow_casters {
                 continue;
             }
-            // L.3.A cached survey cascade: skip its pass when the map is
-            // known-filled with the current matrix and no refresh is pending.
-            if idx == 2 && !c2_rendered {
+            // Cached cascades: skip the pass when that layer's map is
+            // known-filled with its current matrix and no refresh is pending.
+            if idx >= FIRST_CACHED_CASCADE && !far_rendered[idx - FIRST_CACHED_CASCADE] {
                 continue;
             }
             let shadow_ts = di_ts_shadow[idx].and_then(|(b, e)| {
@@ -5995,11 +5949,7 @@ fn vs(input: VSIn) -> VSOut {
             // Shadow frustum culling: build frustum planes from the cascade
             // VP matrix; models AND terrain chunks (the L.3 block below the
             // model loop) are tested against it per cascade.
-            let cascade_vp = match idx {
-                0 => self.cascade0,
-                1 => self.cascade1,
-                _ => self.cascade2,
-            };
+            let cascade_vp = self.cascades[idx];
             let shadow_frustum = crate::culling::FrustumPlanes::from_view_proj(&cascade_vp);
             for (name, model) in &self.models {
                 if model.instance_count == 0 {
@@ -6094,15 +6044,18 @@ fn vs(input: VSIn) -> VSOut {
                 }
             }
         }
-        // L.3.A: commit the cached-cascade state only now that the passes
-        // have actually run (two-phase commit).
-        if c2_rendered {
-            self.c2_valid = true;
-            self.c2_render_pending = false;
-        } else {
-            // Not redrawn this frame — keep the last rendered counts rather
-            // than reporting a misleading 0/0.
-            terrain_stats[2] = self.terrain_shadow_stats[2];
+        // Commit the cached-cascade state only now that the passes have
+        // actually run (two-phase commit — see `update_cascade_splits`).
+        for (c, rendered) in far_rendered.iter().enumerate() {
+            let idx = c + FIRST_CACHED_CASCADE;
+            if *rendered {
+                self.c_far_valid[c] = true;
+                self.c_far_pending[c] = false;
+            } else {
+                // Not redrawn this frame — keep that layer's last rendered
+                // counts rather than reporting a misleading 0/0.
+                terrain_stats[idx] = self.terrain_shadow_stats[idx];
+            }
         }
         // L.3: publish the per-cascade culling counts (observable via
         // `terrain_shadow_stats()`; the l3 harness prints them).
@@ -6610,7 +6563,7 @@ fn vs(input: VSIn) -> VSOut {
     /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
     /// `[(drawn, total); 3]`. `(0, 0)` when the shadow passes were skipped;
     /// the c2 entry holds its last refresh's counts on cached frames.
-    pub fn terrain_shadow_stats(&self) -> [(u32, u32); 3] {
+    pub fn terrain_shadow_stats(&self) -> [(u32, u32); CASCADE_COUNT] {
         self.terrain_shadow_stats
     }
 
@@ -6623,7 +6576,7 @@ fn vs(input: VSIn) -> VSOut {
             self.c2_refresh_count,
             self.c2_refresh_reason,
             self.c2_last_drift,
-            self.c2_render_pending,
+            self.c_far_pending[CASCADE_COUNT - 1 - FIRST_CACHED_CASCADE],
         )
     }
 
@@ -8248,10 +8201,21 @@ fn inside_frustum_sphere(center: glam::Vec3, radius: f32, planes: &[(glam::Vec3,
 
 // --- CSM utilities ---
 
-/// Shadow-map edge length (square, per cascade layer). Single source of truth
-/// for the allocation and for L.3.B's texel snapping — the two MUST agree or
-/// the snap quantum stops matching a real texel.
+/// Shadow-map edge length (square, per cascade layer).
 pub(crate) const SHADOW_MAP_SIZE: u32 = 2048;
+
+/// Number of CSM cascades. Single source of truth for the layer count, the
+/// per-cascade UBO/bind-group arrays, the pass loops, and the caster stats —
+/// so adding a cascade cannot leave one of those behind (the L.3.C inventory's
+/// silent-failure class: a `match idx { .., _ => last }` that quietly culls a
+/// new cascade against an old cascade's frustum).
+pub(crate) const CASCADE_COUNT: usize = 4;
+
+/// Cascades `>= FIRST_CACHED_CASCADE` re-fit and re-render only on refresh
+/// (sun move / window drift / slow tick) instead of every frame — their caster
+/// sets are most of the world. See `update_cascade_splits` for the two-phase
+/// commit that makes a cached map safe to sample.
+pub(crate) const FIRST_CACHED_CASCADE: usize = 2;
 
 fn frustum_corners_ws(view: &RenderView, near: f32, far: f32) -> [glam::Vec3; 8] {
     // C.3.A migration: signature changed from `&Camera` to `&RenderView` per
