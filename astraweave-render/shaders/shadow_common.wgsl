@@ -36,16 +36,23 @@ struct MainLightUbo {
     // z: split2 (c2|c3 — L.3.C put it in a lane that was already padding so
     // splits' lanes and extras.x/.y keep their offsets), w: reserved.
     extras: vec4<f32>,
+    // Per-cascade receiver-bias multipliers, one lane each (x=c0 … w=c3).
+    //
+    // `extras.y` is a single NDC bias, so its WORLD magnitude scales with each
+    // cascade's ortho depth range — 30x across the set (359 m at c0, 10 km at
+    // c3), which put 5.4 m of the survey cascade's slack in the receiver term
+    // alone and was half the reason dune relief could not cast out there. Each
+    // lane caps that cascade at c1's world-space slack: min(1, c1_depth_range /
+    // this_depth_range). It is a CAP, never a raise, so c0 and c1 always get
+    // exactly 1.0 and the pinned close/mid station frames are preserved.
+    //
+    // L.3.C hard-coded these as constants (0.374, 0.171) derived from a MODEL
+    // of the fits — and got c2's wrong by 8.5%, because the model priced a
+    // cached cascade with the every-frame ortho pad. The renderer now derives
+    // them from the fits it just computed, so they cannot drift when a split,
+    // a pad, or the far-cascade refresh policy changes.
+    bias_scales: vec4<f32>,
 };
-
-// L.3.C receiver-bias caps for the cached far cascades, as multipliers on the
-// shipped NDC bias. Each is (c1_world_bias / this_cascade_depth_range) /
-// shipped_ndc_bias, i.e. "same world-space slack c1 has, expressed in this
-// cascade's NDC" — derived from the measured fits in L3C_OUTCOME: c1 depth
-// 1762 m, c2 4714 m, c3 10309 m. Constants rather than uniforms because the
-// cascade slice geometry is fixed; if the split distances change, recompute.
-const C2_BIAS_SCALE: f32 = 0.374;   // 1762 / 4714
-const C3_BIAS_SCALE: f32 = 0.171;   // 1762 / 10309
 
 // Cascade-selected 3x3 PCF shadow factor in [0, 1] (1.0 = fully lit).
 //
@@ -78,21 +85,23 @@ fn csm_shadow_factor(
     // are CAPPED at c1's world-space equivalent; c0/c1 keep exactly the bias
     // they shipped with (never raised), which is what preserves the pinned
     // station frames.
-    var bias_scale: f32 = 1.0;
+    var bias_scale: f32;
     if (frag_dist < light.splits.x) {
         lvp = light.view_proj0;
         layer = 0;
+        bias_scale = light.bias_scales.x;
     } else if (frag_dist < light.splits.y) {
         lvp = light.view_proj1;
         layer = 1;
+        bias_scale = light.bias_scales.y;
     } else if (frag_dist < light.extras.z) {
         lvp = light.view_proj2;
         layer = 2;
-        bias_scale = C2_BIAS_SCALE;
+        bias_scale = light.bias_scales.z;
     } else {
         lvp = light.view_proj3;
         layer = 3;
-        bias_scale = C3_BIAS_SCALE;
+        bias_scale = light.bias_scales.w;
     }
     let lp = lvp * vec4<f32>(world_pos, 1.0);
     let ndc_shadow = lp.xyz / lp.w;

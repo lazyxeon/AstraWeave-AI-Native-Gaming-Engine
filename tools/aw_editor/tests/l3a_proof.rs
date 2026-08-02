@@ -49,6 +49,13 @@ use glam::Vec3;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+/// Shared relief arithmetic (`tests/common/mod.rs`) — the same
+/// `min_castable_relief` / `prominence` the CPU census uses, so the perf leg
+/// can price the world against the renderer's EMITTED fits without a second
+/// implementation. Referenced path-qualified: this file has its own `SEED` and
+/// `PRIMARY_BIOME` with the same values, and importing would shadow them.
+mod common;
+
 const SEED: u64 = 12345;
 const PRIMARY_BIOME: &str = "grassland";
 /// L.3 rake sun: elevation 20.0°, azimuth 51.3° (same as l3_proof).
@@ -136,11 +143,25 @@ fn survey_camera(focal: Vec3, altitude: f32) -> (OrbitCamera, Vec3) {
 /// every few frames AND rotates the frozen coverage relative to the view,
 /// which a straight-line strafe barely exercises.
 fn survey_camera_yaw(focal: Vec3, altitude: f32, yaw_deg: f32) -> (OrbitCamera, Vec3) {
+    survey_camera_res(focal, altitude, yaw_deg, W, H)
+}
+
+/// The survey camera at an explicit render resolution. The capture legs all use
+/// the module's W×H; the perf leg also times 1920×1080 (the L.3 perf
+/// resolution), and aspect must follow the target or the framing is not the
+/// same framing.
+fn survey_camera_res(
+    focal: Vec3,
+    altitude: f32,
+    yaw_deg: f32,
+    w: u32,
+    h: u32,
+) -> (OrbitCamera, Vec3) {
     let pitch = PITCH_DEG.to_radians();
     let yaw = yaw_deg.to_radians();
     let distance = (altitude - focal.y) / pitch.sin();
     let mut cam = OrbitCamera::new(focal, distance, yaw, pitch);
-    cam.set_aspect(W as f32, H as f32);
+    cam.set_aspect(w as f32, h as f32);
     let eye = focal
         + distance
             * Vec3::new(
@@ -258,6 +279,58 @@ fn set_shadows(viewport: &mut ViewportRenderer, on: bool) -> Result<()> {
     Ok(())
 }
 
+/// Build the survey world and viewport: seed 12345 Desert at `radius`, IBL
+/// baked, terrain uploaded. `sun_dir` overrides the lighting params through the
+/// honest panel path; `None` leaves the editor defaults (sun elevation 43.14°,
+/// the sun the gate recording was made under and the one the relief census
+/// prices `h_min` at — `set_time_of_day` is inert in terrain scenes).
+///
+/// Single-sourced across every leg in this file so two harnesses cannot drift
+/// into flying two different worlds — which is precisely what happened between
+/// the L.3/L.3.A legs (radius 10, 441 chunks) and the director's gate recording
+/// (radius 8, 289 chunks).
+/// Returns the viewport AND the `TerrainState` it was built from, so a leg can
+/// price the world's relief against the fits the renderer actually used without
+/// regenerating the terrain (or, worse, modelling it).
+async fn build_survey_session(
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
+    radius: i32,
+    sun_dir: Option<[f32; 3]>,
+    tag: &str,
+) -> Result<(ViewportRenderer, TerrainState)> {
+    let assets = find_assets_dir().context("assets dir not found")?;
+    let biome_dir = assets.join("materials").join("biomes");
+    let mut viewport =
+        ViewportRenderer::new(device, queue).context("ViewportRenderer::new failed")?;
+    viewport.init_engine_adapter().await?;
+    {
+        let adapter = viewport
+            .engine_adapter_mut()
+            .context("engine adapter missing")?;
+        adapter.set_biome_pack(Some(biome_dir));
+        let baked = adapter.wait_env_bake(std::time::Duration::from_secs(60));
+        println!("[{tag}] ibl baked: {baked}");
+    }
+    let mut state = TerrainState::new();
+    state.configure(SEED, PRIMARY_BIOME);
+    state.set_noise_params(6, 2.0, 0.5, 50.0);
+    state.set_world_archetype(WorldArchetypeId::Desert.default_archetype());
+    let n = state.generate_terrain(radius).context("generate_terrain")?;
+    println!("[{tag}] Desert radius {radius}: {n} chunks");
+    viewport.upload_terrain_chunks_raw(&state.get_gpu_chunks());
+    if let Some(sun) = sun_dir {
+        viewport
+            .engine_adapter_mut()
+            .context("engine adapter missing")?
+            .set_lighting_params(&TerrainLightingParams {
+                sun_dir: sun,
+                ..TerrainLightingParams::default()
+            });
+    }
+    Ok((viewport, state))
+}
+
 fn shoot_pair(
     viewport: &mut ViewportRenderer,
     texture: &wgpu::Texture,
@@ -311,12 +384,33 @@ fn patch_luma(img: &image::RgbaImage, x: u32, y: u32, k: u32) -> f64 {
     sum / n as f64
 }
 
-fn survey_telemetry(viewport: &mut ViewportRenderer) -> Result<(u32, &'static str, f32, bool)> {
+/// Refresh telemetry for one far cascade (`far_index` 0 = c2, 1 = c3).
+///
+/// L.3.C resolution made this indexed. The shipped policy is `live-c2`, which
+/// changes c2 and leaves c3 cached — so telemetry that reported only the
+/// OUTERMOST cascade (as it did through L.3.B) would describe the one cascade
+/// the policy does not touch, and a `live-c2` run would be numerically
+/// indistinguishable from `cached`.
+fn far_telemetry(
+    viewport: &mut ViewportRenderer,
+    far_index: usize,
+) -> Result<(u32, &'static str, f32, bool)> {
     Ok(viewport
         .engine_adapter_mut()
         .context("engine adapter missing")?
         .renderer()
-        .shadow_survey_telemetry())
+        .shadow_far_telemetry(far_index))
+}
+
+/// Which far-cascade refresh policy the build under test is running. Printed by
+/// every leg: a measurement that cannot name its own configuration is not
+/// evidence.
+fn far_policy(viewport: &mut ViewportRenderer) -> Result<&'static str> {
+    Ok(viewport
+        .engine_adapter_mut()
+        .context("engine adapter missing")?
+        .renderer()
+        .shadow_far_policy())
 }
 
 /// L.3.B band metrics. The whole-frame mean is a weak detector for a far-field
@@ -402,34 +496,9 @@ fn l3a_boundary_evidence() -> Result<()> {
             info.name, info.backend, info.driver_info
         );
 
-        let assets = find_assets_dir().context("assets dir not found")?;
-        let biome_dir = assets.join("materials").join("biomes");
-        let mut viewport =
-            ViewportRenderer::new(device, queue).context("ViewportRenderer::new failed")?;
-        viewport.init_engine_adapter().await?;
-        {
-            let adapter = viewport
-                .engine_adapter_mut()
-                .context("engine adapter missing")?;
-            adapter.set_biome_pack(Some(biome_dir));
-            let baked = adapter.wait_env_bake(std::time::Duration::from_secs(60));
-            println!("[l3a] ibl baked: {baked}");
-        }
-        let mut state = TerrainState::new();
-        state.configure(SEED, PRIMARY_BIOME);
-        state.set_noise_params(6, 2.0, 0.5, 50.0);
-        state.set_world_archetype(WorldArchetypeId::Desert.default_archetype());
-        let n = state.generate_terrain(10).context("generate_terrain")?;
-        println!("[l3a] Desert radius 10: {n} chunks");
-        viewport.upload_terrain_chunks_raw(&state.get_gpu_chunks());
         // Raking sun through the honest panel path (TimeOfDay is inert here).
-        viewport
-            .engine_adapter_mut()
-            .context("engine adapter missing")?
-            .set_lighting_params(&TerrainLightingParams {
-                sun_dir: RAKE_SUN_DIR,
-                ..TerrainLightingParams::default()
-            });
+        let (mut viewport, _state) =
+            build_survey_session(device, queue, 10, Some(RAKE_SUN_DIR), "l3a").await?;
         let texture = viewport.create_render_texture(W, H)?;
         let focal = Vec3::from_array(DESERT_FOCAL);
 
@@ -588,23 +657,6 @@ fn l3b_continuous_flight() -> Result<()> {
             info.name, info.backend, info.driver_info
         );
 
-        let assets = find_assets_dir().context("assets dir not found")?;
-        let biome_dir = assets.join("materials").join("biomes");
-        let mut viewport =
-            ViewportRenderer::new(device, queue).context("ViewportRenderer::new failed")?;
-        viewport.init_engine_adapter().await?;
-        {
-            let adapter = viewport
-                .engine_adapter_mut()
-                .context("engine adapter missing")?;
-            adapter.set_biome_pack(Some(biome_dir));
-            let baked = adapter.wait_env_bake(std::time::Duration::from_secs(60));
-            println!("[l3b] ibl baked: {baked}");
-        }
-        let mut state = TerrainState::new();
-        state.configure(SEED, PRIMARY_BIOME);
-        state.set_noise_params(6, 2.0, 0.5, 50.0);
-        state.set_world_archetype(WorldArchetypeId::Desert.default_archetype());
         // L.3.C: the RECORDING's world is radius 8 = 289 chunks (the director's
         // video chunk count). The L.3/L.3.A harnesses flew radius 10 = 441 and
         // were therefore measuring a different world than the gate rejected.
@@ -612,16 +664,8 @@ fn l3b_continuous_flight() -> Result<()> {
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(8);
-        let n = state.generate_terrain(radius).context("generate_terrain")?;
-        println!("[l3b] Desert radius {radius}: {n} chunks");
-        viewport.upload_terrain_chunks_raw(&state.get_gpu_chunks());
-        viewport
-            .engine_adapter_mut()
-            .context("engine adapter missing")?
-            .set_lighting_params(&TerrainLightingParams {
-                sun_dir: RAKE_SUN_DIR,
-                ..TerrainLightingParams::default()
-            });
+        let (mut viewport, _state) =
+            build_survey_session(device, queue, radius, Some(RAKE_SUN_DIR), "l3b").await?;
         let texture = viewport.create_render_texture(W, H)?;
         let focal0 = Vec3::from_array(DESERT_FOCAL);
 
@@ -692,39 +736,46 @@ fn l3b_continuous_flight() -> Result<()> {
         }
         println!("[l3b] tracking {} world-anchored features", features.len());
 
-        // The survey window's own geometry, straight from the renderer — the
-        // decisive numbers for whether its UV edge-fade band and its coverage
+        // The far cascades' own geometry, straight from the renderer — the
+        // decisive numbers for whether a UV edge-fade band or a coverage
         // boundary can intrude on the VISIBLE far field (rather than sitting
         // safely outside it).
+        //
+        // L.3.C resolution: the pad comes from `shadow_cascade_fits()`, not
+        // from a hard-coded 400.0. Under a live policy the real pad is 2 m, and
+        // the previous hard-coded version over-reported the half-extent by
+        // 398 m, the texel by ~26%, and the edge-fade band by ~80 m — as
+        // `println!`, not `assert!`, so no test would ever have caught it.
         {
-            let (centre, radius) = viewport
+            let policy = far_policy(&mut viewport)?;
+            let fits = viewport
                 .engine_adapter_mut()
                 .context("engine adapter missing")?
                 .renderer()
-                .shadow_survey_window();
-            let half_extent = radius + 400.0; // C2_DRIFT_MARGIN
-            let texel_m = 2.0 * half_extent / 2048.0;
-            // csm_shadow_factor's edge fade: min(uv, 1-uv) * 10 clamped to 1,
-            // i.e. shadow is attenuated across the outer 10% of UV on each side.
-            let edge_fade_m = 0.10 * 2.0 * half_extent;
-            println!(
-                "[l3b] survey window: centre ({:.0},{:.0},{:.0}) radius {:.0} m -> half-extent \
-                 {:.0} m ({:.0} m across), texel {:.2} m, UV edge-fade band {:.0} m per side",
-                centre.x,
-                centre.y,
-                centre.z,
-                radius,
-                half_extent,
-                2.0 * half_extent,
-                texel_m,
-                edge_fade_m
-            );
-            println!(
-                "[l3b]   window centre is ~{:.0} m from the camera; the visible survey slice \
-                 spans 500..3000 m, so the fade band starts {:.0} m from the window edge",
-                (centre - eye0).length(),
-                edge_fade_m
-            );
+                .shadow_cascade_fits();
+            println!("[l3b] far-cascade policy: {policy}");
+            for (i, f) in fits.iter().enumerate().skip(2) {
+                let half_extent = f.radius + f.margin;
+                // csm_shadow_factor's edge fade: min(uv, 1-uv) * 10 clamped to
+                // 1, i.e. shadow is attenuated across the outer 10% of UV on
+                // each side.
+                let edge_fade_m = 0.10 * 2.0 * half_extent;
+                println!(
+                    "[l3b] c{i} window: centre ({:.0},{:.0},{:.0}) radius {:.0} m + pad {:.0} m \
+                     -> half-extent {:.0} m ({:.0} m across), texel {:.2} m, UV edge-fade band \
+                     {:.0} m per side; centre is ~{:.0} m from the camera",
+                    f.center.x,
+                    f.center.y,
+                    f.center.z,
+                    f.radius,
+                    f.margin,
+                    half_extent,
+                    2.0 * half_extent,
+                    f.texel_m,
+                    edge_fade_m,
+                    (f.center - eye0).length()
+                );
+            }
         }
 
         struct FrameRec {
@@ -736,9 +787,10 @@ fn l3b_continuous_flight() -> Result<()> {
             near_shadow: f64,
             feats: Vec<Option<f64>>,
             feat_dist: Vec<f32>,
-            refreshes: u32,
-            reason: &'static str,
-            drift: f32,
+            /// Per far cascade (index 0 = c2, 1 = c3) — see `far_telemetry`.
+            refreshes: [u32; 2],
+            reason: [&'static str; 2],
+            drift: [f32; 2],
         }
         let mut recs: Vec<FrameRec> = Vec::new();
 
@@ -754,7 +806,9 @@ fn l3b_continuous_flight() -> Result<()> {
             };
             let basis = camera_basis(eye, focal);
             let img = grab_one(&mut viewport, &texture, &cam, &out, &format!("f{i:03}"))?;
-            let (refreshes, reason, drift, _pending) = survey_telemetry(&mut viewport)?;
+            let t2 = far_telemetry(&mut viewport, 0)?;
+            let t3 = far_telemetry(&mut viewport, 1)?;
+            let (refreshes, reason, drift) = ([t2.0, t3.0], [t2.1, t3.1], [t2.2, t3.2]);
             let mut mean = 0.0f64;
             for p in img.pixels() {
                 mean += 0.2126 * p.0[0] as f64 + 0.7152 * p.0[1] as f64 + 0.0722 * p.0[2] as f64;
@@ -808,9 +862,24 @@ fn l3b_continuous_flight() -> Result<()> {
         let mut worst_band_step = 0.0f64;
         let mut worst_shadow_step = 0.0f64;
         let mut worst_feat_step = 0.0f64;
-        let mut worst_at = (0usize, "none", false);
+        let mut worst_at = (0usize, String::from("none"), false);
         // Split the worst-step statistics by whether the step landed ON a
         // refresh frame — the discrimination the director asked for.
+        //
+        // L.3.C resolution: a cascade that refreshes on EVERY frame pair cannot
+        // produce a refresh JUMP (there is no "between" for it), so it is
+        // excluded from the attribution. That rule is derived from the data
+        // rather than from the policy name: under `live-c2` c2 is live and only
+        // c3 can still jump, and a split that counted c2 would call every frame
+        // a refresh frame and report a tautology as a finding.
+        let jump_capable: [bool; 2] = std::array::from_fn(|c| {
+            recs.windows(2)
+                .any(|w| w[1].refreshes[c] == w[0].refreshes[c])
+        });
+        println!(
+            "[l3b] jump-capable far cascades (refresh on SOME frames, not all): c2 {} · c3 {}",
+            jump_capable[0], jump_capable[1]
+        );
         let mut worst_shadow_on_refresh = 0.0f64;
         let mut worst_shadow_off_refresh = 0.0f64;
         let mut worst_near_shadow_step = 0.0f64;
@@ -821,7 +890,17 @@ fn l3b_continuous_flight() -> Result<()> {
             let d_mean = (b.mean - a.mean).abs();
             let d_band = (b.band_mean - a.band_mean).abs();
             let d_shadow = (b.band_shadow - a.band_shadow).abs() * 100.0;
-            let refreshed = b.refreshes > a.refreshes;
+            let refreshed = (0..2).any(|c| jump_capable[c] && b.refreshes[c] > a.refreshes[c]);
+            let trigger = (0..2)
+                .filter(|&c| b.refreshes[c] > a.refreshes[c])
+                .map(|c| format!("c{}:{}", c + 2, b.reason[c]))
+                .collect::<Vec<_>>()
+                .join(",");
+            let trigger = if trigger.is_empty() {
+                "-".to_string()
+            } else {
+                trigger
+            };
             let mut feat_str = String::new();
             let mut max_feat = 0.0f64;
             for (i, (fa, fb)) in a.feats.iter().zip(b.feats.iter()).enumerate() {
@@ -860,7 +939,7 @@ fn l3b_continuous_flight() -> Result<()> {
                 }
             }
             println!(
-                "[l3b] {:5}  {:9.2} {:9.2}  {:7.2} {:8.2} {:6.2}  {:7}  {:>7}  {:6.1} {}",
+                "[l3b] {:5}  {:9.2} {:9.2}  {:7.2} {:8.2} {:6.2}  {:7}  {:>12}  {:6.1}/{:6.1} {}",
                 b.idx,
                 b.band_mean,
                 d_band,
@@ -868,13 +947,14 @@ fn l3b_continuous_flight() -> Result<()> {
                 d_shadow,
                 d_mean,
                 if refreshed { "REFRESH" } else { "" },
-                b.reason,
-                b.drift,
+                trigger,
+                b.drift[0],
+                b.drift[1],
                 feat_str
             );
             if d_shadow > worst_shadow_step {
                 worst_shadow_step = d_shadow;
-                worst_at = (b.idx, b.reason, refreshed);
+                worst_at = (b.idx, trigger.clone(), refreshed);
             }
             if refreshed {
                 worst_shadow_on_refresh = worst_shadow_on_refresh.max(d_shadow);
@@ -890,9 +970,25 @@ fn l3b_continuous_flight() -> Result<()> {
                 worst_near_shadow_step.max((b.near_shadow - a.near_shadow).abs() * 100.0);
             worst_near_mean_step = worst_near_mean_step.max((b.near_mean - a.near_mean).abs());
         }
-        let total_refreshes = recs.last().map(|r| r.refreshes).unwrap_or(0)
-            - recs.first().map(|r| r.refreshes).unwrap_or(0);
-        println!("[l3b] {frames} frames at {step_m} m/frame: {total_refreshes} survey refreshes");
+        let total_refreshes: [u32; 2] = std::array::from_fn(|c| {
+            recs.last().map(|r| r.refreshes[c]).unwrap_or(0)
+                - recs.first().map(|r| r.refreshes[c]).unwrap_or(0)
+        });
+        // Name the route in the summary line, not just at setup: it previously
+        // read "N frames at 40 m/frame" even on a yaw route, where `step_m` is
+        // unused — a summary that misdescribes its own configuration is how a
+        // matched control silently stops being matched.
+        let route = if yaw_step != 0.0 {
+            format!("yaw {yaw_step} deg/frame")
+        } else {
+            format!("{step_m} m/frame")
+        };
+        println!(
+            "[l3b] {frames} frames at {route} (policy {}): c2 {} refreshes, c3 {} refreshes",
+            far_policy(&mut viewport)?,
+            total_refreshes[0],
+            total_refreshes[1]
+        );
         println!(
             "[l3b] worst steps — survey-band shadow area {worst_shadow_step:.2} pp \
              (frame {}, trigger {}, on-refresh {}); band mean {worst_band_step:.2}; \
@@ -940,6 +1036,185 @@ fn l3b_continuous_flight() -> Result<()> {
             println!("[l3b] measurement leg (L3B_EXPECT unset — no assertions armed)");
         }
         println!("[l3b] label '{}' -> {}", label(), out.display());
+        Ok(())
+    })
+}
+
+/// L.3.C resolution — min-spec frame timing at the SURVEY framing on the
+/// RECORDING's world (seed 12345, Desert radius 8 = 289 chunks), for the
+/// director's "measure before shipping" ruling on the far-cascade refresh
+/// policy.
+///
+/// Methodology is L.3's (`l3_proof::l3_perf_stations`): wall time per frame
+/// with a forced GPU sync, 60 warm-up + 300 timed frames, median / p10 / p90.
+/// TIMESTAMP_QUERY hangs this driver, so wall clock plus `device.poll(Wait)` is
+/// the instrument.
+///
+/// Each resolution is timed TWICE — shadows on, then shadows off — and the
+/// figure reported is the SHADOW SYSTEM'S OWN COST (on − off), not a frame
+/// total that a driver mood can swamp. The off leg is policy-independent, so it
+/// doubles as a drift control across policy runs: if two runs disagree on the
+/// off leg, the machine moved and their on legs are not comparable.
+///
+/// Default sun (elevation 43.14°) — the recording's sun and the one the relief
+/// census prices `h_min` at, not the 20° rake the capture legs use.
+///
+/// Run once per policy:
+/// ```text
+/// AW_CSM_FAR_POLICY=cached  cargo test -p aw_editor --profile release-fast \
+///     --test l3a_proof -- --ignored --nocapture l3c_perf_survey
+/// ```
+#[test]
+#[ignore = "GPU + radius-8 terrain generation; run explicitly (see module docs)"]
+fn l3c_perf_survey() -> Result<()> {
+    pollster::block_on(async {
+        let (device, queue, info) = acquire_device().await?;
+        println!(
+            "[l3c-perf] adapter: {} · {:?} · driver {}",
+            info.name, info.backend, info.driver_info
+        );
+        let radius: i32 = std::env::var("L3B_RADIUS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(8);
+        let (mut viewport, terrain) =
+            build_survey_session(device.clone(), queue, radius, None, "l3c-perf").await?;
+        let focal = Vec3::from_array(DESERT_FOCAL);
+
+        const WARMUP: usize = 60;
+        const TIMED: usize = 300;
+        fn stats(mut v: Vec<f64>) -> (f64, f64, f64, usize) {
+            v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            let n = v.len();
+            (v[n / 2], v[n / 10], v[n - 1 - n / 10], n)
+        }
+
+        // Stations: the L.3 perf resolution (1080p) and the capture resolution
+        // the gate evidence was produced at. Caster-pass cost is
+        // resolution-independent (the maps are 2048² either way) while receiver
+        // sampling scales with pixels, so the pair separates the two.
+        let stations: [(u32, u32); 2] = [(1920, 1080), (W, H)];
+        let mut results: Vec<(u32, u32, f64, f64)> = Vec::new();
+
+        for (w, h) in stations {
+            // The two stations must differ in SIZE: `ViewportRenderer` only
+            // invalidates its cached LDR view inside `resize()`, so two
+            // same-size stations in this loop would silently share a stale
+            // view. Adding a third station at an existing size arms that.
+            let texture = viewport.create_render_texture(w, h)?;
+            let (cam, _eye) = survey_camera_res(focal, ALT_HIGH, YAW_DEG, w, h);
+            let mut leg_ms = [0.0f64; 2];
+            // ON before OFF, and WARMUP >= C2_REFRESH_INTERVAL (8), are both
+            // load-bearing: disabling shadows clears `c_far_valid` every frame,
+            // so the frames right after re-enabling them re-render every cached
+            // cascade. The warm-up absorbs that; a shorter one would fold a
+            // cache-refill spike into the timed window.
+            for (slot, shadows_on) in [true, false].into_iter().enumerate() {
+                set_shadows(&mut viewport, shadows_on)?;
+                let mut wall_ms: Vec<f64> = Vec::with_capacity(TIMED);
+                for i in 0..(WARMUP + TIMED) {
+                    let world = World::new();
+                    let t0 = std::time::Instant::now();
+                    viewport
+                        .render(&texture, &cam, &world, None, None, None, false, false, 0)
+                        .context("render failed")?;
+                    device
+                        .poll(wgpu::MaintainBase::Wait)
+                        .ok()
+                        .context("device poll failed")?;
+                    let dt = t0.elapsed().as_secs_f64() * 1000.0;
+                    if i >= WARMUP {
+                        wall_ms.push(dt);
+                    }
+                }
+                let (med, p10, p90, n) = stats(wall_ms);
+                println!(
+                    "[l3c-perf] {w}x{h} shadows {}: median {med:.3} ms  p10 {p10:.3}  p90 {p90:.3}  (n={n})",
+                    if shadows_on { "ON " } else { "OFF" }
+                );
+                leg_ms[slot] = med;
+            }
+            set_shadows(&mut viewport, true)?;
+            results.push((w, h, leg_ms[0], leg_ms[1]));
+        }
+
+        // Report the policy and the fits the renderer ACTUALLY used, after the
+        // timed frames, then price the world's relief against THOSE — closing
+        // the director's "census against the renderer's emitted fits" item.
+        // L.3.C priced a cached c2 with the every-frame ortho pad and published
+        // a `h_min` 0.6 m better than the one the shader was actually applying;
+        // nothing below is modelled.
+        let (policy, fits, caster_stats) = {
+            let r = viewport
+                .engine_adapter_mut()
+                .context("engine adapter missing")?
+                .renderer();
+            (
+                r.shadow_far_policy(),
+                r.shadow_cascade_fits(),
+                r.terrain_shadow_stats(),
+            )
+        };
+        println!("[l3c-perf] far-cascade policy: {policy}");
+        for (i, f) in fits.iter().enumerate() {
+            println!(
+                "[l3c-perf]   c{i} {:>6.0}..{:<6.0} m  radius {:>7.1}  pad {:>5.0}  \
+                 texel {:>6.3} m  depth {:>7.0} m  refreshed {}",
+                f.near, f.far, f.radius, f.margin, f.texel_m, f.depth_range, f.refreshed
+            );
+        }
+        println!("[l3c-perf]   terrain casters drawn/total per cascade: {caster_stats:?}");
+
+        // Minimum castable relief per cascade, from the emitted fits and the
+        // per-cascade receiver-bias cap the shader receives
+        // (`min(1, c1_depth / this_depth)` — the same expression the renderer
+        // writes into `MainLightUbo.bias_scales`), against the dune world's
+        // measured local prominence.
+        {
+            let sun = common::DEFAULT_SUN_ELEV_DEG;
+            let c1_depth = fits[1].depth_range as f64;
+            let grid = common::main_grid(&terrain);
+            let mut p25 = common::prominence(&grid, 25.0);
+            p25.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            println!(
+                "[l3c-perf] --- castable relief from EMITTED fits (sun {sun:.2}°, dune scale \
+                 R=25 m, {} samples) ---",
+                p25.len()
+            );
+            let mut prev: Option<(usize, f64, f64)> = None;
+            for (i, f) in fits.iter().enumerate() {
+                let bias_scale = (c1_depth / f.depth_range as f64).min(1.0);
+                let h_min = common::min_castable_relief(
+                    f.texel_m as f64,
+                    f.depth_range as f64,
+                    common::RECEIVER_BIAS_NDC * bias_scale,
+                    sun,
+                );
+                let unrep = common::frac_below(&p25, h_min);
+                println!(
+                    "[l3c-perf]   c{i} bias x{bias_scale:.3}  h_min {h_min:>5.2} m  \
+                     unrepresentable {unrep:>5.1}%"
+                );
+                if let Some((pi, ph, pu)) = prev {
+                    println!(
+                        "[l3c-perf]        ^ seam c{pi}|c{i} at {:>6.0} m: {ph:.2} -> {h_min:.2} m \
+                         ({:.1}x)  LOST ACROSS SEAM {:>5.1} pp",
+                        f.near,
+                        h_min / ph,
+                        unrep - pu
+                    );
+                }
+                prev = Some((i, h_min, unrep));
+            }
+        }
+
+        println!("[l3c-perf] --- shadow-system cost (median ON − median OFF) ---");
+        for (w, h, on, off) in &results {
+            println!(
+                "[l3c-perf] {w}x{h}: ON {on:.3} ms  OFF {off:.3} ms  ->  SHADOW COST {:.3} ms",
+                on - off
+            );
+        }
         Ok(())
     })
 }

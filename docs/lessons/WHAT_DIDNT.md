@@ -364,6 +364,77 @@
 
 ---
 
+## Measurement & Verification
+
+### 19. ❌ Believing a Metric That Was Never Challenged (L.3.B, 2026-07-29)
+
+**What we tried**: Diagnose a far-field shadow artefact by tracking a metric — first an
+aggregate over a screen band, then per-feature luma of world-anchored points — and report
+the result to the director as soon as it moved (or didn't).
+
+**Why it failed**:
+- **Insensitive aggregate**: the band metric averaged mostly near/mid-field pixels, which
+  cascades 0/1 own and which were never suspect. The far-field signal was swamped. On that
+  basis texel snapping was reported REFUTED.
+- **Contaminated per-feature metric**: at 40 m/frame a tracked world point's patch moves
+  several luma from terrain mip level, hex-tile phase and LOD alone (measured: 6.35 luma at
+  a point whose shadow factor was provably constant). On that basis texel snapping was then
+  reported as THE FIX.
+- Both reports were retracted. The proof they were artefact: three builds — baseline,
+  snapped, and cull-disabled — produced the **identical** 13.24 / 22.57 figures, and two of
+  the three were byte-identical frames.
+
+**Evidence**:
+- L.3.B: two public retractions in one beat (`docs/audits/L3B_OUTCOME.md` §3).
+- The director independently retracted a "discrete stepping between frames" claim from
+  frame analysis of a screen recording — 1 Hz sampling cannot support a per-frame claim.
+  **Both sides of the review made the same class of error in the same beat.**
+
+**Lesson**: **Verify that a metric RESPONDS to a known change before believing what it says
+about an unknown one.** Feed it a change whose sign you already know — disable the feature,
+break it deliberately, or compare against a byte-identical rebuild. A metric that cannot
+move is not evidence, and a metric that moves for reasons other than the effect is worse
+than none. State the sampling rate of any observation before drawing a conclusion from it.
+
+**What worked instead**: **Twin deterministic flights, differenced.** The identical camera
+path is flown twice, shadows on and shadows off, and the frames are subtracted
+(`off[i] − on[i]`). Everything view-dependent that is not shadow cancels exactly, leaving
+the shadow field alone. That instrument survived realistic flight speed and is the metric
+of record for the whole arc (`scripts/l3b/l3b_shadow_diff.py`).
+
+---
+
+### 20. ❌ Pricing a System From a Model of Itself (L.3.C, 2026-08-01)
+
+**What we tried**: Price cascade quality (minimum castable relief) from a calibrated MODEL
+of the renderer's shadow-cascade fits — sphere radius, ortho pad, depth range, texel size —
+rather than from the fits the renderer emits.
+
+**Why it failed**: The model was fed the wrong ortho pad for one cascade. `FIRST_CACHED_CASCADE
+= 2` means BOTH far cascades carry the 400 m drift pad, but the layout was priced with the
+2 m every-frame pad on the inner one. Consequences, all published before being caught:
+- c2's texel understated 1.908 → 1.520 m, its depth range 5112 → 4714 m, and therefore its
+  minimum castable relief **3.39 → 2.82 m**;
+- the headline seam recovery overstated (500 m seam loss 26.7 pp reported as 20.5 pp);
+- a shader constant (`C2_BIAS_SCALE`) derived from the wrong depth range, leaving that
+  cascade's receiver bias 8.5% looser than the value it was meant to cap at.
+
+**Evidence**: `docs/audits/L3C_OUTCOME.md` §2 (corrected in place, with the original figures
+retained and labelled — they turned out to describe a configuration worth shipping, which is
+why the slip was recoverable rather than merely wrong).
+
+**Lesson**: **A model of the fit is not the fit.** When a downstream number is derived from
+values a system computes at runtime, make the system PUBLISH them and check the model against
+that. Calibrating a model against a few measured samples (as this one was) proves it
+interpolates; it does not prove you fed it the right inputs.
+
+**What worked instead**: `Renderer::shadow_cascade_fits()` — every cascade's near/far,
+centre, radius, pad, depth range and texel size exactly as computed, printed by the perf
+harness alongside the policy in force, so a published quality figure can be traced to
+ground truth.
+
+---
+
 ## Conclusion
 
 **Key Insight**: Failed approaches are valuable—they guide future decisions

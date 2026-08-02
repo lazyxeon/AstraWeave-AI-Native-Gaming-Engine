@@ -31,34 +31,11 @@ use anyhow::{Context, Result};
 use astraweave_terrain::world_archetypes::WorldArchetypeId;
 use aw_editor_lib::terrain_integration::TerrainState;
 
-const SEED: u64 = 12345;
-const PRIMARY_BIOME: &str = "grassland";
-/// The recording's world: 289 chunks = (2*8+1)^2.
-const RADIUS: i32 = 8;
-/// The desert anchor the T/L-series stations use.
-const FOCAL: [f32; 2] = [43.1, -1961.8];
-
-/// Sampling grid: 4 m spacing over a 1.6 km box centred on the anchor —
-/// dense enough to resolve dune-scale relief, cheap enough to run on CPU.
-const GRID_STEP: f32 = 4.0;
-const BOX_HALF: f32 = 800.0;
-
-/// Dune-scale prominence radii (metres).
-const PROMINENCE_RADII: [f32; 3] = [10.0, 25.0, 50.0];
-
-/// Minimum castable relief per cascade: h_min = b * sin(elevation), where the
-/// total depth slack b = receiver_bias_ndc * ortho_depth_range
-///                     + caster_slope_scale * texel * cot(elevation).
-///
-/// Values are derived from the live fits (L3B_OUTCOME §4) at the editor's
-/// delivered filter config: receiver bias 0.0005 NDC, caster DepthBiasState
-/// slope_scale 2.0, and the editor's default sun elevation 43.14 deg.
-fn min_castable_relief(texel_m: f64, depth_range_m: f64, sun_elev_deg: f64) -> f64 {
-    let e = sun_elev_deg.to_radians();
-    let receiver = 0.0005 * depth_range_m;
-    let caster = 2.0 * texel_m * (1.0 / e.tan());
-    (receiver + caster) * e.sin()
-}
+mod common;
+use common::{
+    frac_below, main_grid, min_castable_relief, percentile, prominence, BOX_HALF, GRID_STEP,
+    PRIMARY_BIOME, PROMINENCE_RADII, RADIUS, RECEIVER_BIAS_NDC, SEED,
+};
 
 struct Cascade {
     name: &'static str,
@@ -97,64 +74,6 @@ fn shipped_three() -> Vec<Cascade> {
     ]
 }
 
-fn main_grid(state: &TerrainState) -> Vec<Vec<f32>> {
-    let n = ((BOX_HALF * 2.0) / GRID_STEP) as usize;
-    let mut grid = vec![vec![f32::NAN; n]; n];
-    for (iz, row) in grid.iter_mut().enumerate() {
-        let z = FOCAL[1] - BOX_HALF + iz as f32 * GRID_STEP;
-        for (ix, cell) in row.iter_mut().enumerate() {
-            let x = FOCAL[0] - BOX_HALF + ix as f32 * GRID_STEP;
-            if let Some(h) = state.get_height_at(x, z) {
-                *cell = h;
-            }
-        }
-    }
-    grid
-}
-
-/// Local prominence: height above the minimum within a disc of `radius`.
-fn prominence(grid: &[Vec<f32>], radius: f32) -> Vec<f64> {
-    let k = (radius / GRID_STEP).round() as isize;
-    let n = grid.len() as isize;
-    let mut out = Vec::new();
-    for iz in 0..n {
-        for ix in 0..n {
-            let h = grid[iz as usize][ix as usize];
-            if h.is_nan() {
-                continue;
-            }
-            let mut lo = f32::INFINITY;
-            for dz in -k..=k {
-                for dx in -k..=k {
-                    if dx * dx + dz * dz > k * k {
-                        continue;
-                    }
-                    let (zz, xx) = (iz + dz, ix + dx);
-                    if zz < 0 || xx < 0 || zz >= n || xx >= n {
-                        continue;
-                    }
-                    let v = grid[zz as usize][xx as usize];
-                    if !v.is_nan() && v < lo {
-                        lo = v;
-                    }
-                }
-            }
-            if lo.is_finite() {
-                out.push((h - lo) as f64);
-            }
-        }
-    }
-    out
-}
-
-fn percentile(sorted: &[f64], p: f64) -> f64 {
-    if sorted.is_empty() {
-        return 0.0;
-    }
-    let i = ((sorted.len() - 1) as f64 * p).round() as usize;
-    sorted[i]
-}
-
 #[test]
 #[ignore = "terrain generation (CPU, ~1 min); run explicitly (see module docs)"]
 fn l3c_relief_census() -> Result<()> {
@@ -185,10 +104,11 @@ fn l3c_relief_census() -> Result<()> {
     for sun in [43.14_f64, 20.0] {
         println!("\n[l3c] minimum castable relief per cascade, sun elevation {sun:.1} deg:");
         for c in shipped_three() {
-            let h = min_castable_relief(c.texel_m, c.depth_range_m, sun);
+            let h = min_castable_relief(c.texel_m, c.depth_range_m, RECEIVER_BIAS_NDC, sun);
             println!(
-                "[l3c]   {:<12} range {:>6.0}..{:<6.0} m  texel {:>6.3} m  depth {:>8.0} m  ->  h_min {:>6.2} m",
-                c.name, c.range.0, c.range.1, c.texel_m, c.depth_range_m, h
+                "[l3c]   {:<12} range {:>6.0}..{:<6.0} m  radius {:>7.1} m  texel {:>6.3} m  \
+                 depth {:>8.0} m  ->  h_min {:>6.2} m",
+                c.name, c.range.0, c.range.1, c.radius_m, c.texel_m, c.depth_range_m, h
             );
         }
     }
@@ -196,8 +116,18 @@ fn l3c_relief_census() -> Result<()> {
     println!("\n[l3c] dune relief distribution (local prominence):");
     let sun = 43.14_f64;
     let three = shipped_three();
-    let h_c1 = min_castable_relief(three[1].texel_m, three[1].depth_range_m, sun);
-    let h_c2 = min_castable_relief(three[2].texel_m, three[2].depth_range_m, sun);
+    let h_c1 = min_castable_relief(
+        three[1].texel_m,
+        three[1].depth_range_m,
+        RECEIVER_BIAS_NDC,
+        sun,
+    );
+    let h_c2 = min_castable_relief(
+        three[2].texel_m,
+        three[2].depth_range_m,
+        RECEIVER_BIAS_NDC,
+        sun,
+    );
     for r in PROMINENCE_RADII {
         let mut p = prominence(&grid, r);
         p.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -271,7 +201,6 @@ fn price_layout(
     sun_elev_deg: f64,
     world_bias_m: Option<f64>,
 ) -> Vec<LayoutCascade> {
-    let e: f64 = sun_elev_deg.to_radians();
     let mut out = Vec::new();
     for i in 0..splits.len() - 1 {
         let (near, far) = (splits[i], splits[i + 1]);
@@ -280,19 +209,25 @@ fn price_layout(
         let light_dist = r * 2.0 + 50.0;
         let depth_range = light_dist + r + pad - 0.1;
         let texel = 2.0 * (r + pad) / resolution;
-        let shipped = 0.0005 * depth_range;
-        let receiver = match world_bias_m {
+        let shipped = RECEIVER_BIAS_NDC * depth_range;
+        let receiver_world = match world_bias_m {
             Some(b) => shipped.min(b),
             None => shipped,
         };
-        let caster = 2.0 * texel * (1.0 / e.tan());
         out.push(LayoutCascade {
             name: format!("c{i}"),
             near,
             far,
             texel_m: texel,
             depth_range_m: depth_range,
-            h_min: (receiver + caster) * e.sin(),
+            // One implementation of h_min (tests/common), fed the EFFECTIVE
+            // per-cascade NDC bias this layout would deliver.
+            h_min: min_castable_relief(
+                texel,
+                depth_range,
+                receiver_world / depth_range,
+                sun_elev_deg,
+            ),
         });
     }
     out
@@ -317,8 +252,7 @@ fn l3c_layout_comparison() -> Result<()> {
     let grid = main_grid(&state);
     let mut p25 = prominence(&grid, 25.0);
     p25.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let frac_below =
-        |t: f64| p25.iter().filter(|v| **v < t).count() as f64 / p25.len() as f64 * 100.0;
+    let frac_below = |t: f64| frac_below(&p25, t);
 
     let sun = 43.14;
     // c1's shipped world-space receiver bias: 0.0005 NDC x its 1762 m depth
@@ -326,23 +260,43 @@ fn l3c_layout_comparison() -> Result<()> {
     // untouched (station byte-identity) while removing the silent 30x scaling.
     let c1_world_bias = 0.0005 * 1761.6;
 
+    // PAD CORRECTION (L.3.C resolution). `FIRST_CACHED_CASCADE = 2`, so the
+    // shipped 4-cascade renderer gives BOTH far cascades the 400 m drift pad.
+    // The L.3.C run priced c2 with a 2 m pad — the every-frame value — which
+    // understated its texel (1.520 vs the shipped 1.908 m) and its depth range
+    // (4714 vs 5112 m), and therefore its h_min (2.82 vs 3.44 m). The rows
+    // below now state which refresh policy each pad set corresponds to, since
+    // the pad is a CONSEQUENCE of the policy: a frozen window needs the pad to
+    // keep covering its ideal slice; a window re-fitted every frame does not.
     let layouts: Vec<(&str, Vec<f64>, Vec<f64>, Option<f64>)> = vec![
         (
-            "shipped 3-cascade (L.3.A)",
+            "shipped 3-cascade (L.3.A) — survey cascade cached",
             vec![0.5, 86.1, 500.0, 3000.0],
             vec![2.0, 2.0, 400.0],
             None,
         ),
         (
-            "authorised 4-cascade",
+            "4-cascade, far pair CACHED, shipped single NDC bias",
             vec![0.5, 86.1, 500.0, 1400.0, 3000.0],
-            vec![2.0, 2.0, 2.0, 400.0],
+            vec![2.0, 2.0, 400.0, 400.0],
             None,
         ),
         (
-            "4-cascade + world-normalised receiver bias",
+            "4-cascade AS SHIPPED at 154d723aa (far pair CACHED + bias cap)",
+            vec![0.5, 86.1, 500.0, 1400.0, 3000.0],
+            vec![2.0, 2.0, 400.0, 400.0],
+            Some(c1_world_bias),
+        ),
+        (
+            "4-cascade, c2 LIVE / c3 cached (fallback a) + bias cap",
             vec![0.5, 86.1, 500.0, 1400.0, 3000.0],
             vec![2.0, 2.0, 2.0, 400.0],
+            Some(c1_world_bias),
+        ),
+        (
+            "4-cascade, far pair LIVE (no drift pad) + bias cap",
+            vec![0.5, 86.1, 500.0, 1400.0, 3000.0],
+            vec![2.0, 2.0, 2.0, 2.0],
             Some(c1_world_bias),
         ),
     ];

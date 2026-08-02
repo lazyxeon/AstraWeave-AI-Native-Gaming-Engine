@@ -37,18 +37,31 @@ features flip while the band's total shadowed fraction — dominated by the big 
 
 ## 2. Item 2 — the 4th cascade, as authorised
 
+> **CORRECTED 2026-08-02 (L.3.C resolution).** The table below originally priced c2 with
+> the **every-frame 2 m ortho pad** while the shipped renderer gives it the **400 m drift
+> pad** — `FIRST_CACHED_CASCADE = 2`, so BOTH far cascades are cached and both carry the
+> pad. The corrected shipped row and the (unchanged) figures the original row actually
+> describes are both shown. The census now prints the policy each pad set belongs to, and
+> `Renderer::shadow_cascade_fits()` publishes the fits the renderer actually computed, so
+> the model can be checked against ground truth instead of trusted. **A model of the fit is
+> not the fit.**
+
 Layout `86.1 / 500 / 1400 / 3000 m`. Cascades 0 and 1 still fit against `shadow_mid = 500`,
 so their matrices are arithmetically unchanged — that is what makes §4 possible.
 
-| cascade | range | radius | texel | depth range | h_min (sun 43.1°) |
-|---|---|---|---|---|---|
-| c0 | 0.5–86.1 m | 102.5 m | 0.101 m | 355 m | **0.27 m** (unchanged) |
-| c1 | 86.1–500 m | 569.9 m | 0.559 m | 1762 m | **1.42 m** (unchanged) |
-| c2 | 500–1400 m | 1554 m | 1.520 m | 4714 m | **2.82 m** |
-| c3 | 1400–3000 m | 3286 m | 3.600 m | 10309 m | **5.86 m** |
+| cascade | range | radius | pad | texel | depth range | h_min (sun 43.1°) |
+|---|---|---|---|---|---|---|
+| c0 | 0.5–86.1 m | 102.5 m | 2 m | 0.101 m | 355 m | **0.27 m** (unchanged) |
+| c1 | 86.1–500 m | 569.9 m | 2 m | 0.559 m | 1762 m | **1.42 m** (unchanged) |
+| c2 **as shipped (cached)** | 500–1400 m | 1554 m | **400 m** | **1.908 m** | **5112 m** | **3.39 m** |
+| c2 *if run live (2 m pad)* | 500–1400 m | 1554 m | 2 m | 1.520 m | 4714 m | *2.82 m* |
+| c3 | 1400–3000 m | 3286 m | 400 m | 3.600 m | 10309 m | **5.86 m** |
 
-Seam losses (R = 25 m dune scale): **500 m seam 54.2 pp → 20.5 pp**; new 1400 m seam
-27.0 pp, sitting where dune shadows subtend few pixels. Worst castable relief 9.12 → 5.86 m.
+Seam losses (R = 25 m dune scale), **as shipped**: 500 m seam **54.2 pp → 26.7 pp**; new
+1400 m seam 20.9 pp, sitting where dune shadows subtend few pixels. Worst castable relief
+9.12 → 5.86 m. (The originally published 20.5 pp / 27.0 pp pair is what the layout delivers
+with c2 running LIVE — see the L.3.C-resolution outcome doc, where that becomes a shipping
+option rather than a modelling slip.)
 
 Beyond the literal authorisation, and free: the receiver bias was a single **NDC** value, so
 its WORLD magnitude scaled with each cascade's depth range — 0.18 m at c0, 5.36 m at the old
@@ -56,7 +69,12 @@ survey cascade, i.e. 40% of that cascade's total slack came from a bias nobody c
 cascades are now **capped** at c1's world-space equivalent (`C2_BIAS_SCALE` 0.374,
 `C3_BIAS_SCALE` 0.171 in `shadow_common.wgsl`). It is a cap, never a raise, so c0/c1 keep
 exactly the bias they shipped with. Without it the authorised change alone would deliver
-1.42 → 3.83 m at the 500 m seam (31.0 pp lost) instead of 2.82 m (20.5 pp).
+1.42 → 4.53 m at the 500 m seam (37.5 pp lost) instead of 3.39 m (26.7 pp).
+
+> **Same correction applies to the constants.** `C2_BIAS_SCALE = 1762 / 4714` was derived
+> from the *unpadded* c2 depth range; against the shipped padded 5112 m it caps c2's
+> receiver bias at 0.96 m rather than c1's 0.88 m — 8.5% looser than intended. It is exact
+> for a c2 that runs live. Tracked in the L.3.C-resolution outcome doc.
 
 ## 3. Implementation notes
 

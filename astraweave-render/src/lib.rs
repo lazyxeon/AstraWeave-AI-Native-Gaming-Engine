@@ -139,7 +139,7 @@ pub use environment::{
     SkyConfig, SkyRenderer, TimeOfDay, WeatherParticles, WeatherSystem, WeatherType,
 };
 pub use error::{RenderError, RenderResult};
-pub use renderer::{ModelSurfaceMaps, Renderer};
+pub use renderer::{CascadeFit, FarCascadePolicy, ModelSurfaceMaps, Renderer};
 pub use terrain::{TerrainMesh, TerrainRenderer, TerrainVertex, VegetationRenderInstance};
 pub use texture::Texture;
 pub use types::{Instance, Material, Mesh, SkinnedVertex, Vertex};

@@ -433,10 +433,11 @@ struct Camera { view_proj: mat4x4<f32>, light_dir: vec3<f32>, _pad: f32, camera_
 struct MaterialUbo { base_color: vec4<f32>, metallic: f32, roughness: f32, alpha_cutoff: f32, _pad: f32 };
 @group(1) @binding(0) var<uniform> uMaterial: MaterialUbo;
 
-// L.3.A: layout matches shadow_common.wgsl's MainLightUbo (3 cascades +
-// vec4 splits). This dormant pipeline's shadow code still samples only
-// c0/c1 via splits.x/.y — offsets stay correct, behavior legacy.
-struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, view_proj3: mat4x4<f32>, splits: vec4<f32>, extras: vec4<f32> };
+// L.3.A: layout matches shadow_common.wgsl's MainLightUbo. This dormant
+// pipeline's shadow code still samples only c0/c1 via splits.x/.y — offsets
+// stay correct, behavior legacy. `bias_scales` (L.3.C resolution) is declared
+// for layout parity only; this shader never reads it.
+struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, view_proj3: mat4x4<f32>, splits: vec4<f32>, extras: vec4<f32>, bias_scales: vec4<f32> };
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
 @group(2) @binding(2) var shadow_sampler: sampler_comparison;
@@ -774,6 +775,12 @@ pub struct Renderer {
     c_far_center: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     c_far_light_dir: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     c2_tick: u32,
+    /// Which refresh policy the far cascades run under this session
+    /// (`AW_CSM_FAR_POLICY`, read once at construction).
+    far_policy: FarCascadePolicy,
+    /// Per-cascade fits as ACTUALLY computed, published via
+    /// [`Self::shadow_cascade_fits`]. Ground truth for the relief census.
+    cascade_fits: [CascadeFit; CASCADE_COUNT],
     /// True once a shadow pass has actually filled that layer with its CURRENT
     /// matrix. Set by the PASS, cleared whenever the map's contents can no
     /// longer be trusted (shadows disabled).
@@ -784,16 +791,22 @@ pub struct Renderer {
     /// (the L.3.A bug: on the first frame after terrain upload the caster
     /// pipeline does not exist yet, so every pass is skipped).
     c_far_pending: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE],
-    /// L.3.B refresh telemetry: monotonic refresh count, the trigger that
-    /// fired last (`"invalid"`/`"sun"`/`"drift"`/`"tick"`), and this frame's
-    /// window drift in metres. Read via [`Self::shadow_survey_telemetry`] —
-    /// the continuous-capture harness correlates observed frame-steps against
+    /// L.3.B refresh telemetry, **per far cascade**: monotonic refresh count,
+    /// the trigger that fired last
+    /// (`"invalid"`/`"policy"`/`"sun"`/`"drift"`/`"tick"`), this frame's window
+    /// drift in metres, and the window `(centre, radius)` committed at the last
+    /// refresh. Read via [`Self::shadow_far_telemetry`] — the
+    /// continuous-capture harness correlates observed frame-steps against
     /// refresh events with it.
-    c2_refresh_count: u32,
-    c2_refresh_reason: &'static str,
-    c2_last_drift: f32,
-    /// The window (centre, radius) committed at the last refresh.
-    c2_window: (glam::Vec3, f32),
+    ///
+    /// L.3.C resolution widened these from scalars tracking only the OUTERMOST
+    /// cascade: under the shipped `LiveC2` policy the outermost cascade is the
+    /// one the policy does *not* change, so scalar telemetry made a `LiveC2`
+    /// run numerically indistinguishable from `Cached`.
+    c_far_refresh_count: [u32; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+    c_far_refresh_reason: [&'static str; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+    c_far_last_drift: [f32; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+    c_far_window: [(glam::Vec3, f32); CASCADE_COUNT - FIRST_CACHED_CASCADE],
     split0: f32,
     split1: f32,
     /// L.3.C: the c2|c3 boundary (1400 m). Delivered to the shader in
@@ -2547,12 +2560,14 @@ impl Renderer {
         // shadow_bgl already created above
         let light_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("light ubo"),
-            // L.3.C layout: 4 mat4 (256) + vec4 splits (16) + vec4 extras (16)
-            // => 288 — must cover shadow_common.wgsl's MainLightUbo. `extras`
-            // widened from vec2 to vec4 to carry split2 in a lane that was
-            // already padding, so `splits`' lanes and `extras.x`/`.y` keep
-            // their offsets (the sentinel contract test depends on extras.x).
-            size: 288,
+            // L.3.C-resolution layout: 4 mat4 (256) + vec4 splits (16) + vec4
+            // extras (16) + vec4 bias_scales (16) => 304 — must cover
+            // shadow_common.wgsl's MainLightUbo. `extras` widened from vec2 to
+            // vec4 (L.3.C) to carry split2 in a lane that was already padding,
+            // so `splits`' lanes and `extras.x`/`.y` keep their offsets (the
+            // sentinel contract test depends on extras.x); `bias_scales` was
+            // appended, so every earlier offset is likewise untouched.
+            size: 304,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -3353,13 +3368,15 @@ fn vs(input: VSIn) -> VSOut {
             cascades: [glam::Mat4::IDENTITY; CASCADE_COUNT],
             c_far_center: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
             c_far_light_dir: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            far_policy: FarCascadePolicy::from_env(),
+            cascade_fits: [CascadeFit::default(); CASCADE_COUNT],
             c2_tick: 0,
             c_far_valid: [false; CASCADE_COUNT - FIRST_CACHED_CASCADE],
             c_far_pending: [false; CASCADE_COUNT - FIRST_CACHED_CASCADE],
-            c2_refresh_count: 0,
-            c2_refresh_reason: "none",
-            c2_last_drift: 0.0,
-            c2_window: (glam::Vec3::ZERO, 0.0),
+            c_far_refresh_count: [0; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c_far_refresh_reason: ["none"; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c_far_last_drift: [0.0; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c_far_window: [(glam::Vec3::ZERO, 0.0); CASCADE_COUNT - FIRST_CACHED_CASCADE],
             split0: 60.0,
             split1: 120.0,
             split2: 1400.0,
@@ -4409,10 +4426,15 @@ fn vs(input: VSIn) -> VSOut {
             // Position the light far enough behind the sphere to capture tall
             // casters above the frustum.
             let light_dist = radius * 2.0 + 50.0;
-            let cached = i >= FIRST_CACHED_CASCADE;
-            // Only cached cascades carry the drift pad; the every-frame pair
-            // keeps the 2 m margin they have always had (station identity).
-            let margin = if cached { C2_DRIFT_MARGIN } else { 2.0 };
+            let far_idx = i.checked_sub(FIRST_CACHED_CASCADE);
+            // The drift pad is carried ONLY by a window that can stay frozen
+            // across frames — that is what it is for. It is not free: it
+            // enlarges the ortho box, so a padded c2 renders 1.91 m texels
+            // where a c2 re-fitted every frame renders 1.52 m. Near cascades,
+            // and far cascades running live, keep the 2 m margin (which is what
+            // preserves the pinned close/mid station frames).
+            let frozen = far_idx.is_some_and(|c| self.far_policy.frozen(c));
+            let margin = if frozen { C2_DRIFT_MARGIN } else { 2.0 };
             let ortho = glam::Mat4::orthographic_rh(
                 -radius - margin,
                 radius + margin,
@@ -4421,25 +4443,43 @@ fn vs(input: VSIn) -> VSOut {
                 0.1,
                 light_dist + radius + margin,
             );
+            // The fit as ACTUALLY computed — published for the relief census,
+            // which otherwise has to model it (and modelled c2's pad wrong).
+            let fit = CascadeFit {
+                near,
+                far,
+                center,
+                radius,
+                margin,
+                depth_range: light_dist + radius + margin - 0.1,
+                texel_m: 2.0 * (radius + margin) / SHADOW_MAP_SIZE as f32,
+                refreshed: true,
+            };
 
-            if !cached {
+            let Some(c) = far_idx else {
                 let light_view =
                     glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
                 self.cascades[i] = ortho * light_view;
+                self.cascade_fits[i] = fit;
                 self.queue.write_buffer(
                     &self.shadow_cascade_bufs[i],
                     0,
                     bytemuck::cast_slice(&self.cascades[i].to_cols_array()),
                 );
                 continue;
-            }
+            };
 
-            let c = i - FIRST_CACHED_CASCADE;
             let drift = (center - self.c_far_center[c]).length();
             // Which trigger fired, in precedence order — the telemetry the
             // continuous-flight harness correlates observed frame-steps with.
             let reason = if !self.c_far_valid[c] {
                 Some("invalid")
+            } else if self.far_policy.forces_refresh(c, self.c2_tick) {
+                // Live / live-c2 / alternate: the policy pre-empts the
+                // sun/drift/tick triggers, which stay in place beneath it so
+                // that a policy which only refreshes SOME frames still cannot
+                // let a window lag past the pad it was fitted with.
+                Some("policy")
             } else if light_dir.dot(self.c_far_light_dir[c]) < 0.9999 {
                 Some("sun")
             } else if drift > C2_DRIFT_LIMIT {
@@ -4453,42 +4493,71 @@ fn vs(input: VSIn) -> VSOut {
                 let light_view =
                     glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
                 self.cascades[i] = ortho * light_view;
+                self.cascade_fits[i] = fit;
                 self.c_far_center[c] = center;
                 self.c_far_light_dir[c] = light_dir;
+                // LOAD-BEARING: this one write is what makes BOTH pass gates
+                // policy-aware. The gates in `render()` and `draw_into` test
+                // `!c_far_valid[c] || c_far_pending[c]` and know nothing about
+                // `FarCascadePolicy`; a live cascade re-renders every frame
+                // only because the policy branch sets this flag every frame.
+                // Bypassing it for live cascades would update the matrix while
+                // the depth map stayed frozen — right matrix, stale map, wrong
+                // shadows, no panic. That is the L.3.A bug in mirror image.
                 self.c_far_pending[c] = true;
-                // Telemetry tracks the OUTERMOST cascade (the one whose window
-                // moves furthest and whose refresh is most consequential).
-                if i == CASCADE_COUNT - 1 {
-                    self.c2_refresh_count = self.c2_refresh_count.wrapping_add(1);
-                    self.c2_refresh_reason = reason;
-                    self.c2_last_drift = drift;
-                    self.c2_window = (center, radius);
-                    // `AW_CSM_LOG=1` prints the refresh stream (this crate has
-                    // no tracing dependency; the harness reads the telemetry
-                    // accessor directly, which is the machine-checked path).
-                    if std::env::var_os("AW_CSM_LOG").is_some() {
-                        eprintln!(
-                            "[csm] survey refresh #{} ({reason}): centre ({:.1},{:.1},{:.1}) radius {:.1} drift {:.1}",
-                            self.c2_refresh_count, center.x, center.y, center.z, radius, drift
-                        );
-                    }
+                // Telemetry is per far cascade — see the field docs for why a
+                // scalar tracking only the outermost one was not enough.
+                self.c_far_refresh_count[c] = self.c_far_refresh_count[c].wrapping_add(1);
+                self.c_far_refresh_reason[c] = reason;
+                self.c_far_last_drift[c] = drift;
+                self.c_far_window[c] = (center, radius);
+                // `AW_CSM_LOG=1` prints the refresh stream (this crate has no
+                // tracing dependency; the harness reads the telemetry accessor
+                // directly, which is the machine-checked path). Refreshes the
+                // POLICY forced are suppressed: under `live`/`live-c2` that is
+                // every frame for that cascade, which would drown the
+                // sun/drift/tick triggers this stream exists to expose.
+                if reason != "policy" && std::env::var_os("AW_CSM_LOG").is_some() {
+                    eprintln!(
+                        "[csm] c{i} refresh #{} ({reason}, policy {}): centre ({:.1},{:.1},{:.1}) \
+                         radius {:.1} drift {:.1} pad {:.0} texel {:.3} m depth {:.0} m",
+                        self.c_far_refresh_count[c],
+                        self.far_policy.as_str(),
+                        center.x,
+                        center.y,
+                        center.z,
+                        radius,
+                        drift,
+                        fit.margin,
+                        fit.texel_m,
+                        fit.depth_range
+                    );
                 }
                 self.queue.write_buffer(
                     &self.shadow_cascade_bufs[i],
                     0,
                     bytemuck::cast_slice(&self.cascades[i].to_cols_array()),
                 );
-            } else if i == CASCADE_COUNT - 1 {
-                self.c2_last_drift = drift;
+            } else {
+                // Frozen this frame: the published fit stays the one the map
+                // was actually rendered with, flagged as not-refreshed.
+                self.cascade_fits[i].refreshed = false;
+                self.c_far_last_drift[c] = drift;
             }
         }
 
         // MainLightUbo (shadow_common.wgsl): 4×mat4 (256) + splits vec4
         // (split0, split1, shadow_far, fade_start) + extras vec4
-        // (pcf_or_sentinel, depth_bias, split2, pad) = 288 B. `split2` rides a
-        // lane that was already padding, so `splits` and `extras.x`/`.y` keep
-        // their offsets — the sentinel contract test reads `extras.x`.
-        let mut data: Vec<f32> = Vec::with_capacity(72);
+        // (pcf_or_sentinel, depth_bias, split2, pad) + bias_scales vec4
+        // (per-cascade receiver-bias cap) = 304 B. `split2` rides a lane that
+        // was already padding, so `splits` and `extras.x`/`.y` keep their
+        // offsets — the sentinel contract test reads `extras.x`.
+        //
+        // FOUR sites carry this size and must move together: `light_buf`'s
+        // `size:`, this capacity, the `debug_assert_eq!` below (compiled OUT in
+        // release-fast, so it is not a runtime guard), and
+        // `renderer_tests.rs::test_light_uniform_buffer`.
+        let mut data: Vec<f32> = Vec::with_capacity(76);
         for m in &self.cascades {
             data.extend_from_slice(&m.to_cols_array());
         }
@@ -4508,7 +4577,21 @@ fn vs(input: VSIn) -> VSOut {
         data.push(self.shadow_depth_bias);
         data.push(self.split2);
         data.push(0.0);
-        debug_assert_eq!(data.len() * 4, 288, "MainLightUbo layout drift");
+        // Per-cascade receiver-bias caps, derived from the fits JUST computed
+        // above rather than from constants. `extras.y` is one NDC value whose
+        // WORLD magnitude scales with each cascade's ortho depth range (30x
+        // across the set), so every cascade is capped at c1's world slack —
+        // `min(1, c1_depth / this_depth)`, a cap and never a raise, which is
+        // what keeps c0/c1 (and therefore the pinned close/mid stations) at
+        // exactly the bias they shipped with. L.3.C hard-coded these from a
+        // MODEL of the fits and got c2's 8.5% wrong by pricing a cached
+        // cascade with the every-frame pad; a value read off the fit cannot
+        // drift when a split, a pad or the refresh policy changes.
+        let c1_depth = self.cascade_fits[1].depth_range.max(1.0);
+        for f in &self.cascade_fits {
+            data.push((c1_depth / f.depth_range.max(1.0)).min(1.0));
+        }
+        debug_assert_eq!(data.len() * 4, 304, "MainLightUbo layout drift");
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
@@ -5325,9 +5408,21 @@ fn vs(input: VSIn) -> VSOut {
             self.queue
                 .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&vis_raws));
         }
-        // Shadow passes (depth only) — skip when no shadow-casting geometry.
-        let has_shadow_casters_r =
-            vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty();
+        // Shadow passes (depth only) — skip when shadows are disabled or there
+        // is no shadow-casting geometry.
+        //
+        // L.3.C resolution: `self.shadows_enabled` was missing here while
+        // `draw_into` (the editor path) has always had it — two gates for one
+        // logical decision. With shadows off, `update_cascade_splits` clears
+        // `c_far_valid` every frame (the sentinel branch), so this path re-ran
+        // ALL FOUR caster passes every frame to fill maps the shader is
+        // sentinel-gated never to sample: an accidental every-frame policy,
+        // paid for by every `render()` consumer (the game runtime and 13
+        // examples). `terrain_casts` is deliberately NOT added — this path
+        // draws no terrain chunks, so gating on them would be a lie in the
+        // other direction.
+        let has_shadow_casters_r = self.shadows_enabled
+            && (vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty());
         // Which cached layers get drawn this frame? (Two-phase commit — the
         // flags advance below, AFTER the passes actually ran.)
         let far_rendered: [bool; CASCADE_COUNT - FIRST_CACHED_CASCADE] = std::array::from_fn(|c| {
@@ -6561,29 +6656,58 @@ fn vs(input: VSIn) -> VSOut {
     }
 
     /// L.3: last frame's terrain shadow-caster culling counts, per cascade —
-    /// `[(drawn, total); 3]`. `(0, 0)` when the shadow passes were skipped;
-    /// the c2 entry holds its last refresh's counts on cached frames.
+    /// `[(drawn, total); CASCADE_COUNT]`. `(0, 0)` when the shadow passes were
+    /// skipped; a frozen cascade's entry holds its last refresh's counts.
     pub fn terrain_shadow_stats(&self) -> [(u32, u32); CASCADE_COUNT] {
         self.terrain_shadow_stats
     }
 
-    /// L.3.B survey-cascade refresh telemetry: `(refresh_count, last_trigger,
-    /// window_drift_m, render_pending)`. The trigger is one of
-    /// `"none"`/`"invalid"`/`"sun"`/`"drift"`/`"tick"`. The continuous-capture
-    /// harness uses this to correlate visual frame-steps with refresh events.
-    pub fn shadow_survey_telemetry(&self) -> (u32, &'static str, f32, bool) {
+    /// L.3.B refresh telemetry for one far cascade: `(refresh_count,
+    /// last_trigger, window_drift_m, render_pending)`. The trigger is one of
+    /// `"none"`/`"invalid"`/`"policy"`/`"sun"`/`"drift"`/`"tick"`. The
+    /// continuous-capture harness uses this to correlate visual frame-steps
+    /// with refresh events.
+    ///
+    /// `far_index` is 0-based **within the far pair** — 0 is the first cached
+    /// cascade (c2), 1 the outermost (c3). L.3.C resolution made this indexed:
+    /// it previously reported only the outermost, which under the shipped
+    /// `LiveC2` policy is the cascade the policy does not touch.
+    pub fn shadow_far_telemetry(&self, far_index: usize) -> (u32, &'static str, f32, bool) {
         (
-            self.c2_refresh_count,
-            self.c2_refresh_reason,
-            self.c2_last_drift,
-            self.c_far_pending[CASCADE_COUNT - 1 - FIRST_CACHED_CASCADE],
+            self.c_far_refresh_count[far_index],
+            self.c_far_refresh_reason[far_index],
+            self.c_far_last_drift[far_index],
+            self.c_far_pending[far_index],
         )
     }
 
-    /// L.3.B: the survey cascade's committed window `(centre, radius)` from its
-    /// last refresh — the transform half of the refresh telemetry.
-    pub fn shadow_survey_window(&self) -> (glam::Vec3, f32) {
-        self.c2_window
+    /// L.3.B: a far cascade's committed window `(centre, radius)` from its last
+    /// refresh — the transform half of [`Self::shadow_far_telemetry`], same
+    /// `far_index` convention.
+    pub fn shadow_far_window(&self, far_index: usize) -> (glam::Vec3, f32) {
+        self.c_far_window[far_index]
+    }
+
+    /// How many cascades run under the far-cascade refresh policy — the valid
+    /// range of `far_index` for the two accessors above.
+    pub fn shadow_far_cascade_count(&self) -> usize {
+        CASCADE_COUNT - FIRST_CACHED_CASCADE
+    }
+
+    /// L.3.C resolution: every cascade's fit exactly as the renderer computed
+    /// it. Ground truth for the relief census, which prices minimum castable
+    /// relief from texel size and ortho depth range and had been modelling
+    /// c2's ortho pad as the every-frame 2 m when the shipped renderer gave it
+    /// the 400 m drift pad.
+    pub fn shadow_cascade_fits(&self) -> [CascadeFit; CASCADE_COUNT] {
+        self.cascade_fits
+    }
+
+    /// Which far-cascade refresh policy this session is running
+    /// (`AW_CSM_FAR_POLICY`) — reported by the perf and continuous-flight
+    /// harnesses so a measurement can never be attributed to the wrong build.
+    pub fn shadow_far_policy(&self) -> &'static str {
+        self.far_policy.as_str()
     }
 
     /// Mutable accessor for the forward-lit terrain renderer.
@@ -8211,11 +8335,156 @@ pub(crate) const SHADOW_MAP_SIZE: u32 = 2048;
 /// new cascade against an old cascade's frustum).
 pub(crate) const CASCADE_COUNT: usize = 4;
 
-/// Cascades `>= FIRST_CACHED_CASCADE` re-fit and re-render only on refresh
-/// (sun move / window drift / slow tick) instead of every frame — their caster
-/// sets are most of the world. See `update_cascade_splits` for the two-phase
-/// commit that makes a cached map safe to sample.
+/// Cascades `>= FIRST_CACHED_CASCADE` are subject to the [`FarCascadePolicy`]:
+/// under the default they re-fit and re-render only on refresh (sun move /
+/// window drift / slow tick) instead of every frame, because their caster sets
+/// are most of the world. See `update_cascade_splits` for the two-phase commit
+/// that makes a frozen map safe to sample.
 pub(crate) const FIRST_CACHED_CASCADE: usize = 2;
+
+/// Refresh policy for the far cascades — the L.3.C measurement lever.
+///
+/// L.3.C shipped [`Cached`](Self::Cached) and then measured that the 4-cascade
+/// layout **triples** far-field frame-to-frame stepping versus the 3-cascade one
+/// (survey band worst step 2.01 → 6.44 pp): c2's finer texels finally RESOLVE
+/// dune shadows, so a frozen window's jump at a refresh now has real detail to
+/// shift. This enum exists so the alternatives are measurable in ONE binary
+/// against ONE world — a matched control rather than a rebuild comparison.
+///
+/// Chosen once at construction from `AW_CSM_FAR_POLICY`
+/// (`cached` | `live` | `live-c2` | `alternate`); unset or unrecognised values
+/// use the shipped default. It is a diagnostic lever in the same family as
+/// `AW_CSM_LOG`, not a user-facing setting.
+///
+/// **Measured** (min-spec 1660 Ti Max-Q, Vulkan, 1920×1080, survey framing on
+/// the recording's radius-8 world, median of 3 replicates, shadow-system cost =
+/// median ON − median OFF; the ~2.5 ms line is L.3's STOP threshold):
+///
+/// | policy | cost | verdict |
+/// |---|---|---|
+/// | `Cached` | 1.069 ms | cheapest; triples far-field frame-to-frame stepping (L.3.C §5) |
+/// | **`LiveC2`** | **1.726 ms** | **shipped** — fits with 0.77 ms headroom |
+/// | `Alternate` | 2.363 ms | dominated: dearer than `LiveC2` AND keeps the padded 1.880 m texels |
+/// | `Live` | 2.860 ms | **over budget** |
+///
+/// The split is informative: uncaching c2 costs +0.657 ms, uncaching c3 a
+/// further +1.134 ms. c3 is the expensive one (radius 3185 m, 202/289 chunks)
+/// and the one whose stepping was accepted for three beats; c2 is the affordable
+/// one that carries the newly-resolved dune detail.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum FarCascadePolicy {
+    /// Both far cascades hold a frozen window between refreshes.
+    Cached,
+    /// Both far cascades re-fit and re-render every frame — no frozen window,
+    /// therefore no refresh jump, and no drift pad (which buys texel density).
+    Live,
+    /// c2 every frame, c3 still cached — **the shipped default**. c2 carries
+    /// the newly-resolved detail that made the jumps visible; c3's coarse
+    /// stepping was accepted for three beats and is what makes this affordable.
+    /// (The director's pre-authorised fallback (a).)
+    #[default]
+    LiveC2,
+    /// The far pair is staggered: exactly one of the two re-fits per frame, so
+    /// each is at most one frame stale and the per-frame far cost is half
+    /// [`Live`](Self::Live)'s. Note it is *four times* `Cached`'s under a
+    /// static camera (1 refresh/frame vs ~0.25), and because a window frozen
+    /// for even one frame still needs the drift pad, it keeps `Cached`'s
+    /// coarser texels — measured dearer than `LiveC2` on both axes. (Fallback
+    /// (b), measured and rejected.)
+    Alternate,
+}
+
+impl FarCascadePolicy {
+    fn from_env() -> Self {
+        let raw = std::env::var("AW_CSM_FAR_POLICY").unwrap_or_default();
+        if raw.is_empty() {
+            return Self::default();
+        }
+        // EVERY policy needs an arm, including the one that is not the default.
+        // When `LiveC2` became the default, `cached` had no arm and fell into
+        // `_` — so an A/B run with `AW_CSM_FAR_POLICY=cached` silently measured
+        // `LiveC2` against itself and reported 0 differing pixels, which reads
+        // exactly like "the change has no effect". An unrecognised value is now
+        // LOUD rather than silently the default: a measurement lever that can
+        // quietly do nothing is worse than no lever.
+        match raw.to_ascii_lowercase().as_str() {
+            "cached" => Self::Cached,
+            "live" => Self::Live,
+            "live-c2" | "live_c2" | "livec2" => Self::LiveC2,
+            "alternate" | "alt" => Self::Alternate,
+            other => {
+                eprintln!(
+                    "[csm] AW_CSM_FAR_POLICY={other:?} is not a policy \
+                     (cached|live|live-c2|alternate) — using the default {:?}",
+                    Self::default()
+                );
+                Self::default()
+            }
+        }
+    }
+
+    /// Can far cascade `c` (0-based within the far pair) hold a FROZEN window
+    /// across frames? Only a frozen window needs the drift pad, and the pad is
+    /// not free: it enlarges the ortho box, so c2 padded renders 1.91 m texels
+    /// where c2 re-fitted every frame renders 1.52 m.
+    fn frozen(self, c: usize) -> bool {
+        match self {
+            Self::Cached => true,
+            Self::Live => false,
+            Self::LiveC2 => c != 0,
+            // Frozen for exactly one frame — still needs the pad, because the
+            // drift trigger (and therefore the drift limit the pad covers) is
+            // still what bounds how far the window may lag.
+            Self::Alternate => true,
+        }
+    }
+
+    /// Force a refresh this frame, regardless of the sun / drift / tick
+    /// triggers. `tick` is the periodic counter (its modulus is even, so its
+    /// parity is a valid frame alternation).
+    fn forces_refresh(self, c: usize, tick: u32) -> bool {
+        match self {
+            Self::Cached => false,
+            Self::Live => true,
+            Self::LiveC2 => c == 0,
+            Self::Alternate => (tick as usize % 2) == c,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Cached => "cached",
+            Self::Live => "live",
+            Self::LiveC2 => "live-c2",
+            Self::Alternate => "alternate",
+        }
+    }
+}
+
+/// One cascade's fit exactly as the renderer computed it — ground truth for the
+/// relief census, which prices `h_min` from texel size and ortho depth range.
+///
+/// It exists because the L.3.C census priced c2 with the every-frame 2 m pad
+/// while the shipped renderer gave it the 400 m drift pad, understating its
+/// texel (1.52 vs 1.91 m), its depth range (4714 vs 5112 m) and therefore its
+/// minimum castable relief (2.82 vs 3.44 m). A model of the fit is not the fit.
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CascadeFit {
+    /// View-distance bounds of the slice this cascade covers.
+    pub near: f32,
+    pub far: f32,
+    /// Centre and radius of the fitted frustum sphere (world space).
+    pub center: glam::Vec3,
+    pub radius: f32,
+    /// Ortho half-extent padding beyond `radius` (the drift pad, or 2 m).
+    pub margin: f32,
+    /// Ortho depth range (light-space far − near).
+    pub depth_range: f32,
+    /// World size of one shadow-map texel.
+    pub texel_m: f32,
+    /// Whether this cascade re-fitted on the most recent update.
+    pub refreshed: bool,
+}
 
 fn frustum_corners_ws(view: &RenderView, near: f32, far: f32) -> [glam::Vec3; 8] {
     // C.3.A migration: signature changed from `&Camera` to `&RenderView` per

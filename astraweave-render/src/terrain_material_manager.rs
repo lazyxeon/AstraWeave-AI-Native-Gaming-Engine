@@ -37,7 +37,10 @@
 //! 5. During the render pass, call [`TerrainMaterialManager::draw_chunk`] with
 //!    the chunk's vertex/index buffers and the camera bind group.
 
-#![cfg(feature = "terrain-splat-arrays")]
+// (Pre-existing, found by clippy while gating this beat: the module-level
+// `#![cfg(feature = "terrain-splat-arrays")]` that stood here duplicated the
+// `#[cfg]` on `pub mod terrain_material_manager;` in lib.rs:107, which is the
+// one that actually gates compilation. `-D warnings` rejected the pair.)
 
 use std::collections::HashMap;
 
