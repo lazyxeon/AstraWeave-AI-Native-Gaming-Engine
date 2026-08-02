@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ModelSurfaceMaps","RenderModel","RenderModelPrimitive","Renderer","TerrainChunkGpu","TerrainForwardRenderer"]};
+window.SIDEBAR_ITEMS = {"enum":["FarCascadePolicy"],"struct":["CascadeFit","ModelSurfaceMaps","RenderModel","RenderModelPrimitive","Renderer","TerrainChunkGpu","TerrainForwardRenderer"]};
