@@ -1,10 +1,17 @@
 # L.3.C resolution — measure before shipping: the far-cascade refresh policy
 
 > **Beat:** L.3.C resolution (executes the director's "MEASURE BEFORE SHIPPING" ruling)
-> **Date:** 2026-08-02 · **Base:** `154d723aa` (L.3.C)
+> **Date:** 2026-08-02 · **Base:** `154d723aa` (L.3.C) · **Shipped:** `ed35b3b35`
 > **Machine:** GTX 1660 Ti Max-Q · Vulkan · driver 592.82 · 1920×1080 and 1024×768
 > **World:** the recording's — seed 12345, Desert, **radius 8 = 289 chunks**, survey
 > framing (eye Y ≈ 219 m, pitch 25°, yaw 45°), default sun (elevation 43.14°).
+>
+> **STATUS: L.3.C CLOSED** (director ruling, 2026-08-02). `FarCascadePolicy::LiveC2` is the
+> shipped default. The far-policy trade (§8) is **decided at the director's gate flight** —
+> both policies via the `AW_CSM_FAR_POLICY` knob, on the recording's route — not here. The
+> unbuilt levers in §8 are HELD and activate only if that flight rejects both. Invariant 20's
+> final wording and the trace updates are accepted as landed. Still pending from the flight:
+> the policy ruling and the `AW_CSM_LOG=1` observation.
 
 > ## ⚠ HEADLINE: fallback (a) fits the budget but does NOT fix the stepping
 >
@@ -150,7 +157,8 @@ offset — including the `extras.x` sentinel the contract test greps for — is 
 sites carry that size and are called out in the code comment, one of which (`debug_assert_eq!`)
 is compiled out in the editor's release profile and therefore is *not* the guard.
 
-**H4 — the two draw paths disagreed on when to run shadow passes (pre-existing).**
+**H4 — the two draw paths disagreed on when to run shadow passes (pre-existing).** *(Named
+engine-wide win — see §9 for the landing confirmation and its evidence boundary.)*
 `draw_into` has always gated on `self.shadows_enabled`; `Renderer::render()` never did. With
 shadows off, `update_cascade_splits` clears `c_far_valid` every frame, so `render()` re-ran
 all four caster passes every frame to fill maps the shader is sentinel-gated never to sample
@@ -316,7 +324,104 @@ magnitude scales with how far the window is allowed to lag, so a 100 m limit sho
 roughly a third of the current step at roughly three times the refresh rate — landing
 between `cached` and `live` on both axes. One constant, directly interpolating the trade.
 
-## 7. Files touched
+> **Director ruling 2026-08-02 — both levers are HELD, priced-but-unbuilt.** They activate
+> only if the gate flight rejects *both* `cached`/`live-c2` and `live`. Do not build either
+> speculatively: the caster-reduction criterion is unsound as stated above, and the
+> drift-limit tightening would move a shipped constant ahead of the verdict that decides
+> whether it is needed. L.3.C closes with `live-c2` as the shipped default; the far-policy
+> trade is decided at the director's gate flight — both policies via the `AW_CSM_FAR_POLICY`
+> knob, on the recording's route.
+
+## 9. Named engine-wide win: the shadows-off waste, confirmed landed
+
+**Landed in `ed35b3b35`.** The committed hunk, verified at HEAD:
+
+```rust
+-        let has_shadow_casters_r =
+-            vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty();
++        let has_shadow_casters_r = self.shadows_enabled
++            && (vis_count > 0 || self.mesh_external.is_some() || !self.models.is_empty());
+```
+
+`draw_into` (the editor path) has always carried `self.shadows_enabled`. `Renderer::render()`
+never did. Because `update_cascade_splits` clears `c_far_valid` on every frame the
+shadows-off sentinel is set, that path re-ran **all four caster passes every frame** to fill
+depth maps the shader is sentinel-gated never to sample — an accidental every-frame policy,
+paid for by `aw_game_runtime` and 13 examples, for exactly as long as shadows were off.
+One logical decision that had two expressions, and only one of them was right.
+
+**Evidence, stated precisely — the off-state 12/12 is bit-exactness, not path coverage.**
+
+| what | result | what it establishes |
+|---|---|---|
+| Off-state stations, 12/12 byte-identical vs the L.3.A baseline | **0 differing pixels on every station, both suns, normals and rake variants** | The shadows-off *output* is unchanged by everything in this push, including this fix. The waste was pure cost: no pixel ever depended on those passes. |
+| The sentinel contract (`extras.x < 0` → `shadow = 1.0`, contract-tested) | holds | Skipping the passes **cannot** change output while shadows are off, whatever the maps contain. This is why the win is free rather than a trade. |
+
+**What it does not establish.** Those stations are captured through `draw_into`, which already
+had the gate — so 12/12 proves the fix is *inert to output*, and the sentinel contract proves
+it *must* be, but neither exercises `Renderer::render()` at runtime. No frame was timed
+through the fixed path. Closing that properly means hoisting the gate into one shared
+expression both paths call, with a unit test — logged in §10 rather than done here, because
+the push is verified and the director's ask was the record, not new code.
+
+`terrain_casts` was deliberately **not** added to `render()`'s gate: that path draws no
+terrain chunks, so gating on them would be a lie in the other direction.
+
+## 10. HEALTH lane handoff — the clippy un-abort
+
+**The canonical gate is GREEN at HEAD**, verified after the push:
+
+```text
+cargo clippy -p astraweave-render --features terrain-splat-arrays -- -D warnings   → exit 0
+```
+
+It was red before `ed35b3b35` on a **duplicated `#[cfg]`**: `terrain_material_manager.rs`
+carried a module-level `#![cfg(feature = "terrain-splat-arrays")]` duplicating the `#[cfg]`
+on its `pub mod` declaration in `lib.rs:107`. That is an `error`-class lint, so it aborted
+compilation of the crate and clippy reported *nothing behind it*.
+
+**Correction to my first report: the revealed backlog is not "~12".** That figure came from a
+run that was still truncated. The honest inventory, taken with the aborting lint downgraded:
+
+> **153 distinct findings across 41 files** — 31 in `src/` (all inside `#[cfg(test)]`
+> modules, which is why the lib gate is green) and 122 in test/example targets.
+
+| count | class |
+|---|---|
+| **74** | `unexpected cfg condition value` — `ssao` / `bloom` |
+| 17 | `field_reassign_with_default` |
+| 13 | manual `Range`/`RangeInclusive::contains` |
+| 9 | `needless_range_loop` |
+| 7 | unused import |
+| 5 | `assert!(true)` — optimized out |
+| 5 | unused variable |
+| 5 | expression always evaluates to false |
+| 4 | unnecessary `mut` |
+| 14 | singletons (`unwrap()` on `Ok`, identity op, absurd comparison, useless `vec!`, bit-rotation, call-inside-`expect`, unit let-binding, too-many-args, useless type-limit comparison) |
+
+**The masking was two-layered, and the second layer is still live.** With the duplicated
+attribute fixed, the inventory *still* truncated: two deny-by-default
+`clippy::absurd_extreme_comparisons` errors in
+`tests/wave2_vertex_compression_remediation.rs:145-146` abort that target and hide everything
+after it. Only downgrading that lint produced the 153 above. **Any `-D warnings` sweep of this
+crate reports a floor, not a total, until those two are fixed** — the same lesson as the
+duplicated attribute, one layer down.
+
+**The 74 are not a style nit.** `#[cfg(feature = "ssao")]` and `#[cfg(feature = "bloom")]`
+gate test bodies on features that do not exist in `astraweave-render/Cargo.toml`, so that
+code **never compiles and never runs**. This is silent test vacuity, the same family as the
+already-recorded `shader_validation` vacuity floor (58 validated < floor 60). It should be
+triaged first: each site is either a test that should be running under a real feature name,
+or dead code to delete.
+
+**Not fixed ad hoc, by ruling.** These are pre-existing, span subsystems this beat did not
+touch (particles, TAA, virtual texture, snow, LTC area lights, vegetation, Disney material),
+and several are in golden/remediation suites where a "fix" could change what the test asserts.
+They are handed to the HEALTH lane as a named batch, alongside the two items this beat
+generated: the two `absurd_extreme_comparisons` errors above, and the shared shadow-pass gate
+expression from §9.
+
+## 11. Files touched
 
 - `astraweave-render/shaders/shadow_common.wgsl` — `bias_scales: vec4` in `MainLightUbo`;
   per-cascade bias from that lane; the two hard-coded scale constants deleted.
@@ -329,6 +434,8 @@ between `cached` and `live` on both axes. One constant, directly interpolating t
   suppresses policy-forced refreshes and reports pad/texel/depth.
 - `astraweave-render/src/lib.rs` — `CascadeFit`, `FarCascadePolicy` re-exports.
 - `astraweave-render/src/renderer_tests.rs` — light UBO 288 → 304 B.
+- `astraweave-render/src/terrain_material_manager.rs` — removed the duplicated module-level
+  `#![cfg]` that was aborting clippy for the whole crate (§10).
 - `tools/aw_editor/tests/common/mod.rs` — NEW: shared relief arithmetic.
 - `tools/aw_editor/tests/l3a_proof.rs` — `build_survey_session` (single-sourced world/viewport
   setup, now returning the `TerrainState`); `survey_camera_res`; `l3c_perf_survey` (min-spec
