@@ -15,7 +15,7 @@
 //!   ambient_color:    vec3<f32> + ambient_intensity   (16 bytes)  offset 32
 //!   tint_color:       vec3<f32> + tint_alpha: f32     (16 bytes)  offset 48
 //!   blend_factor:     f32 + debug_mode: f32           (16 bytes)  offset 64
-//!     + exposure: f32 + _pad_align: f32
+//!     + exposure: f32 + debug_flags: f32
 //!   sun_color:        vec3<f32> + sun_intensity: f32  (16 bytes)  offset 80
 //! ```
 //!
@@ -86,8 +86,12 @@ pub struct SceneEnvironmentUBO {
     /// unchanged. Defaults to [`DEFAULT_EXPOSURE`] (1.35, the value the post
     /// shader hardcoded pre-L.1, so defaults are visually neutral).
     pub exposure: f32,
-    /// Padding to keep `sun_color` at its 16-byte boundary.
-    pub _pad_align: [f32; 1],
+    /// L.3.D: per-frame CSM refresh bits — bit 0 = c2 re-fitted this frame,
+    /// bit 1 = c3. Read ONLY by the cascade-index debug view (shading mode 4),
+    /// where the re-fitting cascade flashes for that frame. Occupies the last
+    /// former `_pad_align` float, so the 96-byte layout is still unchanged
+    /// (third and final commandeered pad: ED-3 took the first, L.1 the second).
+    pub debug_flags: f32,
 
     /// Sun color (linear RGB) for directional light in PBR shader.
     pub sun_color: [f32; 3],
@@ -123,7 +127,7 @@ impl SceneEnvironmentUBO {
             blend_factor,
             debug_mode: 0.0,
             exposure: DEFAULT_EXPOSURE,
-            _pad_align: [0.0; 1],
+            debug_flags: 0.0,
             sun_color: [1.0, 0.98, 0.9], // warm white default
             sun_intensity: 1.0,
         }
@@ -189,6 +193,10 @@ pub struct SceneEnvironment {
     /// World panel's Exposure slider; [`DEFAULT_EXPOSURE`] in all paths that
     /// never touch it (visually neutral vs. the pre-L.1 hardcode).
     pub exposure: f32,
+    /// L.3.D: per-frame CSM refresh bits (bit 0 = c2 re-fitted, bit 1 = c3).
+    /// Written by the renderer's cascade fit every frame — NOT by a caller —
+    /// so it cannot go stale, and read only by the cascade-index debug view.
+    pub debug_flags: u32,
 }
 
 impl Default for SceneEnvironment {
@@ -206,6 +214,7 @@ impl Default for SceneEnvironment {
             snow_amount: 0.0,
             debug_mode: 0,
             exposure: DEFAULT_EXPOSURE,
+            debug_flags: 0,
         }
     }
 }
@@ -244,6 +253,7 @@ impl SceneEnvironment {
         ubo.snow_amount = self.snow_amount.clamp(0.0, 1.0);
         ubo.debug_mode = self.debug_mode as f32;
         ubo.exposure = self.exposure;
+        ubo.debug_flags = self.debug_flags as f32;
         ubo
     }
 
@@ -341,7 +351,7 @@ struct SceneEnvironment {
     tint_color:         vec3<f32>,
     tint_alpha:         f32,
     blend_factor:       f32,
-    debug_mode: f32, exposure: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, debug_flags: f32,
     sun_color:          vec3<f32>,
     sun_intensity:      f32,
 };

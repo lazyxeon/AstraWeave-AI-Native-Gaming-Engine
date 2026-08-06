@@ -102,7 +102,9 @@ struct TerrainSceneEnv {
     // L.1: tonemap exposure (post-pass concern; never read here — declared
     // for byte-layout parity with SceneEnvironmentUBO).
     exposure: f32,
-    _pad1z: f32,
+    // L.3.D: CSM refresh bits — bit 0 = c2 re-fitted this frame, bit 1 = c3.
+    // Read only by the cascade-index debug view (mode 4).
+    debug_flags: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 }
@@ -409,7 +411,17 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
         if (uScene.debug_mode < 2.5) {
             return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
         }
-        return vec4<f32>(fract(in.uv), 0.0, 1.0);            // 3: UVs
+        if (uScene.debug_mode < 3.5) {
+            return vec4<f32>(fract(in.uv), 0.0, 1.0);        // 3: UVs
+        }
+        // 4 (L.3.D): cascade index, flat colours, with the re-fitting cascade
+        // flashed white for its one frame. This is the overlay that makes the
+        // far-field temporal defect legible: the yellow c3 band flashes, and
+        // the shadows inside it reconfigure on that same frame.
+        return vec4<f32>(
+            csm_cascade_debug_color(uLight, frag_dist, u32(max(uScene.debug_flags, 0.0))),
+            1.0
+        );
     }
 
     // 5. Unified BRDF (Cook-Torrance + Burley + multiscatter) — same helper

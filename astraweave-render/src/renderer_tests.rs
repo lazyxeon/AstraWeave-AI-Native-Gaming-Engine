@@ -128,12 +128,13 @@ mod tests {
         pollster::block_on(async {
             let (device, _queue) = create_test_device().await;
 
-            // MainLightUbo (L.3.C resolution): 4x mat4 + vec4 splits + vec4
-            // extras + vec4 bias_scales = 256 + 16 + 16 + 16 = 304 bytes
-            // (mirrors renderer.rs light_buf; the `debug_assert_eq!` on the
-            // write is compiled out in release profiles, so this is the guard
-            // that actually runs)
-            let light_size = 304u64;
+            // MainLightUbo (L.3.D): 4x mat4 + vec4 splits + vec4 extras +
+            // vec4 bias_scales + mat4 view_proj_prev (c3's outgoing window,
+            // rung 2) = 256 + 16 + 16 + 16 + 64 = 368 bytes (mirrors
+            // renderer.rs light_buf; the `debug_assert_eq!` on the write is
+            // compiled out in release profiles, so this is the guard that
+            // actually runs)
+            let light_size = 368u64;
 
             let buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("light_ubo"),

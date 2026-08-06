@@ -564,7 +564,8 @@ impl ViewportRenderer {
     /// * `physics_debug_lines` - Optional physics debug lines from PhysicsWorld
     /// * `show_grid` - Whether to render the grid at all
     /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
-    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe, 3=Normals (world-space), 4=UVs
+    /// * `shading_mode` - 0=Lit, 1=Unlit, 2=Wireframe, 3=Normals (world-space),
+    ///   4=UVs, 5=CSM cascade index (L.3.D)
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -711,6 +712,7 @@ impl ViewportRenderer {
                     2 => (0u32, true),  // Wireframe (lit)
                     3 => (2u32, false), // Normals (world-space)
                     4 => (3u32, false), // UVs
+                    5 => (4u32, false), // L.3.D: CSM cascade index + refresh flash
                     _ => (0u32, false), // Lit
                 };
                 adapter.set_debug_shading(debug_mode, wireframe);

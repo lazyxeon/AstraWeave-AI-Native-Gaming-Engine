@@ -470,6 +470,12 @@ pub enum ShadingMode {
     /// ED-3: UV visualisation (fract(uv); terrain shows the chunk
     /// parameterization; skinned meshes carry no UVs and render mid-gray)
     Uvs,
+
+    /// L.3.D: per-pixel CSM cascade index as flat colours — c0 red, c1 green,
+    /// c2 blue, c3 yellow, beyond-coverage dark grey. The cascade that
+    /// re-fitted on a given frame flashes white for that frame, which is what
+    /// makes the far-field temporal defect legible in motion.
+    CascadeIndex,
 }
 
 impl ShadingMode {
@@ -481,6 +487,7 @@ impl ShadingMode {
             ShadingMode::Wireframe,
             ShadingMode::Normals,
             ShadingMode::Uvs,
+            ShadingMode::CascadeIndex,
         ]
     }
 
@@ -492,6 +499,7 @@ impl ShadingMode {
             ShadingMode::Wireframe => "Wireframe",
             ShadingMode::Normals => "Normals (world)",
             ShadingMode::Uvs => "UVs",
+            ShadingMode::CascadeIndex => "Cascade index",
         }
     }
 
@@ -503,6 +511,7 @@ impl ShadingMode {
             ShadingMode::Wireframe => "[Wf]",
             ShadingMode::Normals => "[Nm]",
             ShadingMode::Uvs => "[UV]",
+            ShadingMode::CascadeIndex => "[Cs]",
         }
     }
 
@@ -523,10 +532,13 @@ impl ShadingMode {
             ShadingMode::Unlit => ShadingMode::Wireframe,
             ShadingMode::Wireframe => ShadingMode::Normals,
             ShadingMode::Normals => ShadingMode::Uvs,
-            ShadingMode::Uvs => ShadingMode::Lit,
+            ShadingMode::Uvs => ShadingMode::CascadeIndex,
+            ShadingMode::CascadeIndex => ShadingMode::Lit,
         }
     }
 
+    /// Wire value consumed by `ViewportRenderer::render`'s `shading_mode`
+    /// parameter, which remaps it to the scene-env UBO's `debug_mode`.
     pub fn to_u32(self) -> u32 {
         match self {
             ShadingMode::Lit => 0,
@@ -534,6 +546,7 @@ impl ShadingMode {
             ShadingMode::Wireframe => 2,
             ShadingMode::Normals => 3,
             ShadingMode::Uvs => 4,
+            ShadingMode::CascadeIndex => 5,
         }
     }
 }

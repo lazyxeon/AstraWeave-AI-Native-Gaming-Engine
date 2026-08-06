@@ -5197,7 +5197,14 @@ impl EditorApp {
                     self.status = format!("Renamed entity to '{}'", new_name);
                 }
                 tab_viewer::PanelEvent::ViewportViewModeChanged(mode) => {
-                    let mode_names = ["Shaded", "Wireframe", "Unlit", "Normals", "UVs"];
+                    let mode_names = [
+                        "Shaded",
+                        "Wireframe",
+                        "Unlit",
+                        "Normals",
+                        "UVs",
+                        "Cascade index",
+                    ];
                     self.status = format!(
                         "Viewport view mode: {}",
                         mode_names.get(mode).unwrap_or(&"Unknown")
@@ -5208,11 +5215,12 @@ impl EditorApp {
                     if let Some(viewport) = &mut self.viewport {
                         use crate::viewport::toolbar::ShadingMode;
                         let shading = match mode {
-                            0 => ShadingMode::Lit,       // Shaded
-                            1 => ShadingMode::Wireframe, // Wireframe
-                            2 => ShadingMode::Unlit,     // Unlit
-                            3 => ShadingMode::Normals,   // Normals (world-space)
-                            4 => ShadingMode::Uvs,       // UVs
+                            0 => ShadingMode::Lit,          // Shaded
+                            1 => ShadingMode::Wireframe,    // Wireframe
+                            2 => ShadingMode::Unlit,        // Unlit
+                            3 => ShadingMode::Normals,      // Normals (world-space)
+                            4 => ShadingMode::Uvs,          // UVs
+                            5 => ShadingMode::CascadeIndex, // L.3.D
                             _ => ShadingMode::Lit,
                         };
                         viewport.toolbar_mut().shading_mode = shading;

@@ -361,9 +361,32 @@ fn grab_one(
     out: &std::path::Path,
     name: &str,
 ) -> Result<image::RgbaImage> {
+    grab_one_mode(viewport, texture, cam, out, name, 0)
+}
+
+/// `grab_one` with an explicit viewport shading mode (L.3.D: 5 = cascade
+/// index). 0 is the lit path every other leg uses.
+fn grab_one_mode(
+    viewport: &mut ViewportRenderer,
+    texture: &wgpu::Texture,
+    cam: &OrbitCamera,
+    out: &std::path::Path,
+    name: &str,
+    shading_mode: u32,
+) -> Result<image::RgbaImage> {
     let world = World::new();
     viewport
-        .render(texture, cam, &world, None, None, None, false, false, 0)
+        .render(
+            texture,
+            cam,
+            &world,
+            None,
+            None,
+            None,
+            false,
+            false,
+            shading_mode,
+        )
         .with_context(|| format!("render failed at {name}"))?;
     let png = out.join(format!("{name}.png"));
     viewport.capture_frame_png(texture, &png)?;
@@ -1215,6 +1238,384 @@ fn l3c_perf_survey() -> Result<()> {
                 on - off
             );
         }
+        Ok(())
+    })
+}
+
+/// Which cascade a debug-view pixel belongs to, recovered from its colour.
+///
+/// The overlay's flat colours pass through the live tonemap (ED-3's documented
+/// caveat), so exact RGB is not testable — but the four hues are far enough
+/// apart that dominant-channel classification survives it, and that is all the
+/// classifier needs.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum CascadeClass {
+    C0,
+    C1,
+    C2,
+    C3,
+    Beyond,
+    Other,
+}
+
+/// Thresholds are MEASURED off a captured frame, not assumed. The first
+/// version of this classifier used symmetric ±40 channel gaps picked by eye and
+/// silently dropped two classes: the live tonemap desaturates hard (c1's
+/// (0.22, 0.75, 0.28) lands at (176, 232, 191) — green only 41 above red), and
+/// the beyond-coverage swatch is a BLUE-dominant grey that a naive
+/// "blue is max" test reports as c2. Reference points from `c000.png`:
+///   c1 green   (176, 232, 191)  sat  56
+///   c3 yellow  (238, 234, 163)  sat  75
+///   beyond     (120, 134, 148)  sat ~27, dark
+///   sky        (231, 234, 238)  sat   7, bright
+fn classify_cascade_pixel(p: &image::Rgba<u8>) -> CascadeClass {
+    let (r, g, b) = (p.0[0] as i32, p.0[1] as i32, p.0[2] as i32);
+    let mx = r.max(g).max(b);
+    let mn = r.min(g).min(b);
+    let sat = mx - mn;
+    // Beyond-coverage: a DARK, weakly-saturated blue-grey. Both halves matter —
+    // saturation alone confuses it with c2, brightness alone with the sky.
+    if sat <= 40 {
+        return if mx < 190 && b >= r {
+            CascadeClass::Beyond
+        } else {
+            CascadeClass::Other // sky, UI, anything else
+        };
+    }
+    // Yellow first: r ~ g, both well above b. Tested before the single-channel
+    // cases because yellow is red-dominant AND green-dominant by small margins.
+    if r > b + 30 && g > b + 30 && (r - g).abs() < 40 {
+        return CascadeClass::C3;
+    }
+    if r > g + 25 && r > b + 25 {
+        return CascadeClass::C0;
+    }
+    if g > r + 25 && g > b + 25 {
+        return CascadeClass::C1;
+    }
+    if b > r + 25 && b > g + 25 {
+        return CascadeClass::C2;
+    }
+    CascadeClass::Other
+}
+
+/// L.3.D Phase 0 — VALIDATE THE INSTRUMENT before trusting anything it shows.
+///
+/// The cascade-index view (shading mode 5) and its refresh flash are the
+/// overlay this beat's diagnosis and the director's gate flight both lean on.
+/// Two ways it could lie, both of which have precedent in this campaign:
+///
+/// 1. It could not be the cascade index at all (a fall-through to another debug
+///    mode would still produce a plausible-looking coloured frame).
+/// 2. The flash could be decorrelated from the actual re-fit — the L.3.C
+///    control bug shipped exactly that shape, an env arm that silently resolved
+///    to the wrong thing and produced a confident, meaningless result.
+///
+/// So this test cross-checks the SHADER-side flash against the CPU-side
+/// telemetry frame by frame, on the same continuous route the defect lives on:
+///
+/// * **Band order** — classify every pixel by hue and require the mean screen
+///   row of c0 > c1 > c2 > c3. In the survey framing, view distance increases
+///   UP the frame, so a genuine cascade-index view must stack in that order.
+///   A fall-through view cannot satisfy this by accident.
+/// * **Flash correlation** — the frames whose c3 band is bright must be exactly
+///   the frames on which `shadow_far_telemetry(1)`'s refresh counter advanced.
+///   Agreement between two independently-derived signals (a GPU uniform bit and
+///   a CPU counter) is what makes both trustworthy.
+///
+/// ```text
+/// L3A_LABEL=<label> cargo test -p aw_editor --profile release-fast \
+///     --test l3a_proof -- --ignored --nocapture l3d_cascade_view_proof
+/// ```
+#[test]
+#[ignore = "GPU + radius-8 terrain generation; run explicitly (see module docs)"]
+fn l3d_cascade_view_proof() -> Result<()> {
+    pollster::block_on(async {
+        let out = out_root().join(label());
+        std::fs::create_dir_all(&out)?;
+        let (device, queue, info) = acquire_device().await?;
+        println!(
+            "[l3d] adapter: {} · {:?} · driver {}",
+            info.name, info.backend, info.driver_info
+        );
+        let radius: i32 = std::env::var("L3B_RADIUS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(8);
+        let (mut viewport, _terrain) =
+            build_survey_session(device, queue, radius, Some(RAKE_SUN_DIR), "l3d").await?;
+        let texture = viewport.create_render_texture(W, H)?;
+        let focal0 = Vec3::from_array(DESERT_FOCAL);
+        let yaw_step: f32 = std::env::var("L3B_YAW_STEP")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(3.0);
+        let frames: usize = std::env::var("L3B_FRAMES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(40);
+        println!(
+            "[l3d] policy {} · {frames} frames at yaw {yaw_step} deg/frame",
+            far_policy(&mut viewport)?
+        );
+
+        // Warm-up so frame 0 is not the pipeline-creation frame.
+        let (cam0, _eye0) = survey_camera(focal0, ALT_HIGH);
+        for _ in 0..3 {
+            let world = World::new();
+            viewport.render(&texture, &cam0, &world, None, None, None, false, false, 5)?;
+        }
+
+        struct Rec {
+            idx: usize,
+            c3_luma: f64,
+            c3_px: u64,
+            refreshed_c2: bool,
+            refreshed_c3: bool,
+        }
+        let mut recs: Vec<Rec> = Vec::new();
+        // Mean screen row per class, accumulated over the whole flight, plus
+        // luma mean/variance per class for the flat-band structural check.
+        let mut row_sum = [0.0f64; 4];
+        let mut row_n = [0u64; 4];
+        let mut luma_sum = [0.0f64; 4];
+        let mut luma_sq = [0.0f64; 4];
+        let mut beyond_px: u64 = 0;
+        let mut beyond_row_sum = 0.0f64;
+        let mut other_px: u64 = 0;
+        // Seed the refresh counters from the state AFTER warm-up, not from
+        // zero: the warm-up frames already re-fitted the cached cascades, so a
+        // zero seed reports a spurious refresh on frame 0 and costs an
+        // otherwise-perfect correlation one frame.
+        let mut prev = {
+            let a = far_telemetry(&mut viewport, 0)?;
+            let b = far_telemetry(&mut viewport, 1)?;
+            (a.0, b.0)
+        };
+
+        for i in 0..frames {
+            let yaw = YAW_DEG + yaw_step * i as f32;
+            let (cam, _eye) = survey_camera_yaw(focal0, ALT_HIGH, yaw);
+            let img = grab_one_mode(&mut viewport, &texture, &cam, &out, &format!("c{i:03}"), 5)?;
+            let t2 = far_telemetry(&mut viewport, 0)?;
+            let t3 = far_telemetry(&mut viewport, 1)?;
+            let (mut c3_sum, mut c3_px) = (0.0f64, 0u64);
+            for (x, y, p) in img.enumerate_pixels() {
+                let _ = x;
+                let luma = 0.2126 * p.0[0] as f64 + 0.7152 * p.0[1] as f64 + 0.0722 * p.0[2] as f64;
+                let cls = classify_cascade_pixel(p);
+                let idx = match cls {
+                    CascadeClass::C0 => Some(0),
+                    CascadeClass::C1 => Some(1),
+                    CascadeClass::C2 => Some(2),
+                    CascadeClass::C3 => Some(3),
+                    CascadeClass::Beyond => {
+                        beyond_px += 1;
+                        beyond_row_sum += y as f64;
+                        None
+                    }
+                    CascadeClass::Other => {
+                        other_px += 1;
+                        None
+                    }
+                };
+                if let Some(i) = idx {
+                    row_sum[i] += y as f64;
+                    row_n[i] += 1;
+                    luma_sum[i] += luma;
+                    luma_sq[i] += luma * luma;
+                    if i == 3 {
+                        c3_sum += luma;
+                        c3_px += 1;
+                    }
+                }
+            }
+            recs.push(Rec {
+                idx: i,
+                c3_luma: if c3_px > 0 {
+                    c3_sum / c3_px as f64
+                } else {
+                    0.0
+                },
+                c3_px,
+                refreshed_c2: t2.0 > prev.0,
+                refreshed_c3: t3.0 > prev.1,
+            });
+            prev = (t2.0, t3.0);
+        }
+
+        // EVERY pixel is accounted for, including `Other`. The first version of
+        // this report divided by (cascades + beyond) only, which quietly hid
+        // both the sky and a whole misclassified cascade behind a percentage
+        // that still summed to 100.
+        let total: u64 = row_n.iter().sum::<u64>() + beyond_px + other_px;
+        println!("[l3d] class pixel share over {frames} frames (total {total}):");
+        for (c, n) in row_n.iter().enumerate() {
+            let mean = luma_sum[c] / (*n).max(1) as f64;
+            let var = (luma_sq[c] / (*n).max(1) as f64) - mean * mean;
+            println!(
+                "[l3d]   c{c}: {:>9} px ({:>5.2}%)  mean row {:>6.1}  luma {:>6.1} sd {:>5.2}",
+                n,
+                *n as f64 / total as f64 * 100.0,
+                row_sum[c] / (*n).max(1) as f64,
+                mean,
+                var.max(0.0).sqrt()
+            );
+        }
+        println!(
+            "[l3d]   beyond coverage: {beyond_px} px ({:.2}%)  mean row {:.1}",
+            beyond_px as f64 / total as f64 * 100.0,
+            beyond_row_sum / beyond_px.max(1) as f64
+        );
+        println!(
+            "[l3d]   other (sky/UI): {other_px} px ({:.2}%)",
+            other_px as f64 / total as f64 * 100.0
+        );
+
+        // --- Check 1: FLAT BANDS. A debug flat colour has near-zero spatial
+        // variance within a class; the two views this could have fallen through
+        // to do not (UVs are a fract() gradient, normals vary continuously with
+        // the surface). Framing-independent, unlike "all four bands appear".
+        let (dom, dom_n) = row_n
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, n)| **n)
+            .map(|(i, n)| (i, *n))
+            .unwrap();
+        anyhow::ensure!(dom_n > 10_000, "no cascade class has enough pixels to test");
+        let mean = luma_sum[dom] / dom_n as f64;
+        let sd = ((luma_sq[dom] / dom_n as f64) - mean * mean)
+            .max(0.0)
+            .sqrt();
+        anyhow::ensure!(
+            sd < 4.0,
+            "dominant cascade class c{dom} has luma sd {sd:.2} — a flat debug colour \
+             cannot vary that much, so this view is not the cascade index (a UV or \
+             normal fall-through would look like this)"
+        );
+        println!("[l3d] FLAT BANDS OK: dominant class c{dom} luma sd {sd:.2} (< 4.0)");
+
+        // --- Check 2: band order over the classes that ACTUALLY APPEAR.
+        //
+        // Requiring all four was wrong and this test failed on it first time
+        // out: at the director's survey framing (eye Y 219 m, pitch 25°) c0
+        // (0–86 m) is never visible — the nearest ground in frame is ~223 m —
+        // and on this DUNE world a near ridge cuts the terrain silhouette at
+        // ~567 m, occluding the entire 500–1400 m ring, so c2 draws nothing
+        // either. That is a property of the world and the framing, not a defect,
+        // and it is itself a finding: the far field this beat is about is c3.
+        //
+        // What must hold regardless of which bands appear: view distance
+        // increases UP the frame, image row 0 is the TOP, so mean row must
+        // strictly DECREASE across the classes present, ending with
+        // beyond-coverage as the farthest of all.
+        let mut ladder: Vec<(String, f64)> = row_n
+            .iter()
+            .enumerate()
+            .filter(|(_, n)| **n > 1_000)
+            .map(|(c, n)| (format!("c{c}"), row_sum[c] / *n as f64))
+            .collect();
+        if beyond_px > 1_000 {
+            ladder.push(("beyond".to_string(), beyond_row_sum / beyond_px as f64));
+        }
+        anyhow::ensure!(
+            ladder.len() >= 3,
+            "only {} distance classes visible — too few to check ordering",
+            ladder.len()
+        );
+        for w in ladder.windows(2) {
+            anyhow::ensure!(
+                w[0].1 > w[1].1,
+                "band order violated: {} (mean row {:.1}) is not below {} ({:.1}) — \
+                 the view is not ordered by view distance",
+                w[0].0,
+                w[0].1,
+                w[1].0,
+                w[1].1
+            );
+        }
+        println!(
+            "[l3d] BAND ORDER OK (near -> far, bottom -> top): {}",
+            ladder
+                .iter()
+                .map(|(n, r)| format!("{n}@{r:.0}"))
+                .collect::<Vec<_>>()
+                .join(" > ")
+        );
+
+        // --- Check 3: pulse correlation against the CPU telemetry.
+        //
+        // Every frame must contribute a c3 sample, or the comparison is not
+        // between two signals — it is between one signal and a hole. (The first
+        // run failed exactly there: flashed frames classified as "not c3" and
+        // scored 0.0, which read as "dark" for the wrong reason.)
+        anyhow::ensure!(
+            recs.iter().all(|r| r.c3_px > 1_000),
+            "c3 vanished from {} of {} frames — the pulse must preserve hue so the \
+             band stays classifiable while it pulses; a class that disappears cannot \
+             be correlated with anything",
+            recs.iter().filter(|r| r.c3_px <= 1_000).count(),
+            recs.len()
+        );
+        let mut lumas: Vec<f64> = recs.iter().map(|r| r.c3_luma).collect();
+        lumas.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let med = lumas[lumas.len() / 2];
+        // The pulse scales the band by 0.35, so it is tens of luma away from
+        // steady state — far outside any tonemap wobble. Requiring a MINIMUM
+        // separation also refuses to score a degenerate series: if every frame
+        // has the same luma, there is no pulse to correlate and the test says
+        // so instead of silently splitting a constant down the middle (the
+        // second run's threshold collapsed to median == max exactly that way).
+        let spread = lumas.last().unwrap() - lumas.first().unwrap();
+        anyhow::ensure!(
+            spread > 20.0,
+            "c3 band luma spread is only {spread:.1} across {} frames — the refresh \
+             pulse is not reaching the shader, so there is nothing to correlate",
+            recs.len()
+        );
+        let thresh = med - 15.0;
+        let mut agree = 0usize;
+        let mut disagree: Vec<String> = Vec::new();
+        for r in &recs {
+            let pulsed = r.c3_luma < thresh;
+            if pulsed == r.refreshed_c3 {
+                agree += 1;
+            } else {
+                disagree.push(format!(
+                    "f{:03} pulsed={pulsed} telemetry_refresh={} (luma {:.1} vs thr {:.1})",
+                    r.idx, r.refreshed_c3, r.c3_luma, thresh
+                ));
+            }
+        }
+        let refreshes = recs.iter().filter(|r| r.refreshed_c3).count();
+        let c2_refreshes = recs.iter().filter(|r| r.refreshed_c2).count();
+        println!(
+            "[l3d] c3 refreshes (telemetry): {refreshes}/{frames} · c2 refreshes: \
+             {c2_refreshes}/{frames} · c3 band luma median {med:.1}, spread {spread:.1}, \
+             pulse threshold {thresh:.1}"
+        );
+        println!("[l3d] flash/telemetry agreement: {agree}/{}", recs.len());
+        for d in &disagree {
+            println!("[l3d]   DISAGREE {d}");
+        }
+        anyhow::ensure!(
+            refreshes > 0,
+            "c3 never re-fitted over {frames} frames — this route does not exercise the \
+             defect, so the flash cannot be validated against it"
+        );
+        anyhow::ensure!(
+            disagree.is_empty(),
+            "the shader's refresh flash and the CPU refresh telemetry disagree on \
+             {} of {} frames — one of the two is lying and neither can be used as \
+             evidence until that is resolved",
+            disagree.len(),
+            recs.len()
+        );
+        println!(
+            "[l3d] INSTRUMENT VALIDATED: cascade bands ordered, and the GPU flash agrees \
+             with the CPU refresh counter on every frame"
+        );
+        println!("[l3d] label '{}' -> {}", label(), out.display());
         Ok(())
     })
 }

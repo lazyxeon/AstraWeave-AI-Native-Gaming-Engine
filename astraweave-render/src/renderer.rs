@@ -98,7 +98,7 @@ struct SceneEnv {
     tint_alpha: f32,
     blend_factor: f32,
     // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
-    debug_mode: f32, exposure: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, debug_flags: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -201,6 +201,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
 
+    // Distance from camera — used for shadows, fog, LOD, and the L.3.D
+    // cascade-index debug view. Computed once, and hoisted above the debug
+    // branch because mode 4 needs it (it is a pure expression; nothing between
+    // its old and new position touched world_pos or camera_pos).
+    let frag_dist = length(input.world_pos - uCamera.camera_pos);
+
     // ED-3 debug shading (uniform branch — same pipeline, same pass; the
     // editor's viewport dropdown drives uScene.debug_mode, 0 in game paths).
     if (uScene.debug_mode > 0.5) {
@@ -210,7 +216,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         if (uScene.debug_mode < 2.5) {
             return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
         }
-        return vec4<f32>(fract(input.uv), 0.0, 1.0);         // 3: UVs
+        if (uScene.debug_mode < 3.5) {
+            return vec4<f32>(fract(input.uv), 0.0, 1.0);     // 3: UVs
+        }
+        // 4 (L.3.D): cascade index + refresh flash — same shared helper the
+        // terrain shader calls, so the two views cannot disagree.
+        return vec4<f32>(
+            csm_cascade_debug_color(uLight, frag_dist, u32(max(uScene.debug_flags, 0.0))),
+            1.0
+        );
     }
 
     // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
@@ -220,10 +234,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let brdf_result = evaluate_brdf(N, V, L, base_color, metallic, roughness, F0);
 
     let radiance = uScene.sun_color * uScene.sun_intensity; // from SceneEnv UBO
-
-    // Distance from camera — used for shadows, fog, and LOD.
-    // Computed once to avoid redundant length() per fragment.
-    let frag_dist = length(input.world_pos - uCamera.camera_pos);
 
     // Shadow sampling — skip ALL shadow work when disabled (extras.x < 0).
     // extras.x is uniform (same for every fragment), so the GPU skips the
@@ -437,7 +447,7 @@ struct MaterialUbo { base_color: vec4<f32>, metallic: f32, roughness: f32, alpha
 // pipeline's shadow code still samples only c0/c1 via splits.x/.y — offsets
 // stay correct, behavior legacy. `bias_scales` (L.3.C resolution) is declared
 // for layout parity only; this shader never reads it.
-struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, view_proj3: mat4x4<f32>, splits: vec4<f32>, extras: vec4<f32>, bias_scales: vec4<f32> };
+struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, view_proj2: mat4x4<f32>, view_proj3: mat4x4<f32>, splits: vec4<f32>, extras: vec4<f32>, bias_scales: vec4<f32>, view_proj_prev: mat4x4<f32> };
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
 @group(2) @binding(2) var shadow_sampler: sampler_comparison;
@@ -464,7 +474,7 @@ struct SceneEnv {
     tint_alpha: f32,
     blend_factor: f32,
     // ED-3: 0=lit, 1=unlit albedo, 2=world-space normals, 3=UVs (former pad).
-    debug_mode: f32, exposure: f32, _pad1z: f32,
+    debug_mode: f32, exposure: f32, debug_flags: f32,
     sun_color: vec3<f32>,
     sun_intensity: f32,
 };
@@ -534,7 +544,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         if (uScene.debug_mode < 2.5) {
             return vec4<f32>(N * 0.5 + vec3<f32>(0.5), 1.0); // 2: world-space normals
         }
-        return vec4<f32>(vec3<f32>(0.5), 1.0);               // 3: UVs (none — sentinel)
+        if (uScene.debug_mode < 3.5) {
+            return vec4<f32>(vec3<f32>(0.5), 1.0);           // 3: UVs (none — sentinel)
+        }
+        // 4 (L.3.D): cascade index. This dormant pipeline keeps its own inline
+        // 2-cascade sampler and never consumed shadow_common.wgsl, so it has no
+        // 4-cascade select to report. Magenta = "this view is not implemented
+        // on this path" — a sentinel, not a colour in the cascade palette, so
+        // it can never be mistaken for a cascade.
+        return vec4<f32>(1.0, 0.0, 1.0, 1.0);
     }
 
     // Unified BRDF: Cook-Torrance specular + Burley diffuse + multiscatter
@@ -775,6 +793,14 @@ pub struct Renderer {
     c_far_center: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     c_far_light_dir: [glam::Vec3; CASCADE_COUNT - FIRST_CACHED_CASCADE],
     c2_tick: u32,
+    /// L.3.D rung 2: c3's OUTGOING window matrix, the blend weight (1.0 = fully
+    /// on the current window, no transition in flight), and a request for the
+    /// draw path to snapshot layer 3 into the spare layer before it re-renders.
+    /// The snapshot is deliberately the draw path's job: it must land in the
+    /// same encoder, immediately before the pass that overwrites the source.
+    c3_prev_vp: glam::Mat4,
+    c3_fade: f32,
+    c3_copy_pending: bool,
     /// Which refresh policy the far cascades run under this session
     /// (`AW_CSM_FAR_POLICY`, read once at construction).
     far_policy: FarCascadePolicy,
@@ -2513,13 +2539,21 @@ impl Renderer {
             size: wgpu::Extent3d {
                 width: shadow_size,
                 height: shadow_size,
-                depth_or_array_layers: CASCADE_COUNT as u32,
+                // L.3.D: one layer WIDER than the cascade count. The extra
+                // layer holds c3's outgoing window during an incremental
+                // transition; nothing ever renders into it, it is filled by a
+                // layer copy at refresh time.
+                depth_or_array_layers: SHADOW_LAYER_COUNT,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            // COPY_SRC/DST for the c3 transition's layer copy (L.3.D rung 2).
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
         // Array view for sampling
@@ -2561,13 +2595,14 @@ impl Renderer {
         let light_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("light ubo"),
             // L.3.C-resolution layout: 4 mat4 (256) + vec4 splits (16) + vec4
-            // extras (16) + vec4 bias_scales (16) => 304 — must cover
+            // extras (16) + vec4 bias_scales (16) + mat4 view_proj_prev (64)
+            // => 368 — must cover
             // shadow_common.wgsl's MainLightUbo. `extras` widened from vec2 to
             // vec4 (L.3.C) to carry split2 in a lane that was already padding,
             // so `splits`' lanes and `extras.x`/`.y` keep their offsets (the
             // sentinel contract test depends on extras.x); `bias_scales` was
             // appended, so every earlier offset is likewise untouched.
-            size: 304,
+            size: 368,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -3368,6 +3403,9 @@ fn vs(input: VSIn) -> VSOut {
             cascades: [glam::Mat4::IDENTITY; CASCADE_COUNT],
             c_far_center: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
             c_far_light_dir: [glam::Vec3::ZERO; CASCADE_COUNT - FIRST_CACHED_CASCADE],
+            c3_prev_vp: glam::Mat4::IDENTITY,
+            c3_fade: 1.0,
+            c3_copy_pending: false,
             far_policy: FarCascadePolicy::from_env(),
             cascade_fits: [CascadeFit::default(); CASCADE_COUNT],
             c2_tick: 0,
@@ -4411,9 +4449,10 @@ fn vs(input: VSIn) -> VSOut {
         // `has_shadow_casters` is false and every pass is skipped — a cache
         // that trusted the matrix sampled a never-written map (measured:
         // y414 108.37 vs 116.31 correct).
+        // The drift limit and ortho pad moved onto `FarCascadePolicy` in L.3.D
+        // (`freeze_bounds`) — they are per-policy and coupled, not one global
+        // pair. Only the periodic tick remains global.
         const C2_REFRESH_INTERVAL: u32 = 8;
-        const C2_DRIFT_MARGIN: f32 = 400.0;
-        const C2_DRIFT_LIMIT: f32 = 300.0;
         self.c2_tick = self.c2_tick.wrapping_add(1) % C2_REFRESH_INTERVAL;
 
         for (i, (near, far)) in bounds.iter().copied().enumerate() {
@@ -4433,8 +4472,7 @@ fn vs(input: VSIn) -> VSOut {
             // where a c2 re-fitted every frame renders 1.52 m. Near cascades,
             // and far cascades running live, keep the 2 m margin (which is what
             // preserves the pinned close/mid station frames).
-            let frozen = far_idx.is_some_and(|c| self.far_policy.frozen(c));
-            let margin = if frozen { C2_DRIFT_MARGIN } else { 2.0 };
+            let margin = far_idx.map_or(LIVE_MARGIN, |c| self.far_policy.margin(c));
             let ortho = glam::Mat4::orthographic_rh(
                 -radius - margin,
                 radius + margin,
@@ -4482,7 +4520,7 @@ fn vs(input: VSIn) -> VSOut {
                 Some("policy")
             } else if light_dir.dot(self.c_far_light_dir[c]) < 0.9999 {
                 Some("sun")
-            } else if drift > C2_DRIFT_LIMIT {
+            } else if drift > self.far_policy.drift_limit(c) {
                 Some("drift")
             } else if self.c2_tick == 0 {
                 Some("tick")
@@ -4492,6 +4530,21 @@ fn vs(input: VSIn) -> VSOut {
             if let Some(reason) = reason {
                 let light_view =
                     glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
+                // The window this cascade is LEAVING — captured before the
+                // overwrite. A refresh log that shows only the destination
+                // cannot tell you how far the window jumped, which is the whole
+                // quantity the far-field pop is proportional to.
+                let old_center = self.c_far_center[c];
+                // L.3.D rung 2: open a transition on the outermost cascade.
+                // The outgoing MATRIX must be captured here for the same reason
+                // as the centre — one line later it is gone — and the map it
+                // addresses is snapshotted by the draw path before the pass
+                // that overwrites it.
+                if i == CASCADE_COUNT - 1 && self.far_policy.fades_c3() {
+                    self.c3_prev_vp = self.cascades[i];
+                    self.c3_fade = 0.0;
+                    self.c3_copy_pending = true;
+                }
                 self.cascades[i] = ortho * light_view;
                 self.cascade_fits[i] = fit;
                 self.c_far_center[c] = center;
@@ -4519,15 +4572,19 @@ fn vs(input: VSIn) -> VSOut {
                 // sun/drift/tick triggers this stream exists to expose.
                 if reason != "policy" && std::env::var_os("AW_CSM_LOG").is_some() {
                     eprintln!(
-                        "[csm] c{i} refresh #{} ({reason}, policy {}): centre ({:.1},{:.1},{:.1}) \
-                         radius {:.1} drift {:.1} pad {:.0} texel {:.3} m depth {:.0} m",
+                        "[csm] c{i} refit #{} ({reason}, policy {}): centre \
+                         ({:.0},{:.0},{:.0}) -> ({:.0},{:.0},{:.0}) jump {:.1} m \
+                         radius {:.0} pad {:.0} texel {:.3} m depth {:.0} m",
                         self.c_far_refresh_count[c],
                         self.far_policy.as_str(),
+                        old_center.x,
+                        old_center.y,
+                        old_center.z,
                         center.x,
                         center.y,
                         center.z,
-                        radius,
                         drift,
+                        radius,
                         fit.margin,
                         fit.texel_m,
                         fit.depth_range
@@ -4546,6 +4603,35 @@ fn vs(input: VSIn) -> VSOut {
             }
         }
 
+        // L.3.D rung 2: advance the c3 transition. Pinned at 1.0 (= no
+        // transition, sample the current window only) under every other policy,
+        // which is what makes this machinery inert unless it is selected.
+        self.c3_fade = if self.far_policy.fades_c3() {
+            (self.c3_fade + 1.0 / C3_FADE_FRAMES).min(1.0)
+        } else {
+            1.0
+        };
+
+        // L.3.D: publish which FAR cascades re-fitted this frame, for the
+        // cascade-index debug view's refresh flash (bit 0 = c2, bit 1 = c3).
+        // Derived from `cascade_fits`, which the fit loop above just wrote, so
+        // the overlay cannot disagree with what actually happened — and no
+        // caller has to remember to set it.
+        // Only cascades that CAN hold a frozen window pulse. A cascade running
+        // live re-fits every frame by construction, so a per-frame pulse on it
+        // is a constant, not an event — it carries no information, and worse it
+        // makes the band permanently pulsed, which is how the first validation
+        // run mistook a permanently-flashed c2 for "c2 is not in frame". Same
+        // reasoning as suppressing policy-forced refreshes in the AW_CSM_LOG
+        // stream: a signal that fires every frame is not a signal.
+        let mut refresh_bits = 0u32;
+        for c in 0..(CASCADE_COUNT - FIRST_CACHED_CASCADE) {
+            if self.far_policy.frozen(c) && self.cascade_fits[c + FIRST_CACHED_CASCADE].refreshed {
+                refresh_bits |= 1 << c;
+            }
+        }
+        self.scene_env.debug_flags = refresh_bits;
+
         // MainLightUbo (shadow_common.wgsl): 4×mat4 (256) + splits vec4
         // (split0, split1, shadow_far, fade_start) + extras vec4
         // (pcf_or_sentinel, depth_bias, split2, pad) + bias_scales vec4
@@ -4557,7 +4643,7 @@ fn vs(input: VSIn) -> VSOut {
         // `size:`, this capacity, the `debug_assert_eq!` below (compiled OUT in
         // release-fast, so it is not a runtime guard), and
         // `renderer_tests.rs::test_light_uniform_buffer`.
-        let mut data: Vec<f32> = Vec::with_capacity(76);
+        let mut data: Vec<f32> = Vec::with_capacity(92);
         for m in &self.cascades {
             data.extend_from_slice(&m.to_cols_array());
         }
@@ -4576,7 +4662,10 @@ fn vs(input: VSIn) -> VSOut {
         data.push(extras_x);
         data.push(self.shadow_depth_bias);
         data.push(self.split2);
-        data.push(0.0);
+        // extras.w: c3's transition blend weight (L.3.D rung 2). 1.0 means no
+        // transition in flight, and the sampler skips the second tap entirely —
+        // so every other policy pays nothing for this lane.
+        data.push(self.c3_fade);
         // Per-cascade receiver-bias caps, derived from the fits JUST computed
         // above rather than from constants. `extras.y` is one NDC value whose
         // WORLD magnitude scales with each cascade's ortho depth range (30x
@@ -4591,7 +4680,11 @@ fn vs(input: VSIn) -> VSOut {
         for f in &self.cascade_fits {
             data.push((c1_depth / f.depth_range.max(1.0)).min(1.0));
         }
-        debug_assert_eq!(data.len() * 4, 304, "MainLightUbo layout drift");
+        // L.3.D rung 2: c3's OUTGOING view-projection, appended LAST so every
+        // earlier offset — including the `extras.x` sentinel the contract test
+        // greps for — is untouched.
+        data.extend_from_slice(&self.c3_prev_vp.to_cols_array());
+        debug_assert_eq!(data.len() * 4, 368, "MainLightUbo layout drift");
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
@@ -5977,6 +6070,32 @@ fn vs(input: VSIn) -> VSOut {
         // written to `self.terrain_shadow_stats` after the passes close.
         let mut terrain_stats = [(0u32, 0u32); CASCADE_COUNT];
 
+        // L.3.D rung 2: snapshot c3's OUTGOING map into the spare layer before
+        // the pass below overwrites it. This has to be here, in this encoder,
+        // immediately ahead of that pass — a copy issued anywhere else either
+        // reads the new contents or races the pass that writes them. Gated on
+        // `has_shadow_casters` for the same reason the two-phase commit is: if
+        // the passes are skipped this frame, nothing is overwritten and the
+        // request must stay pending rather than snapshot a stale map.
+        if self.c3_copy_pending && has_shadow_casters {
+            let layer = |z: u32| wgpu::TexelCopyTextureInfo {
+                texture: &self.shadow_tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: 0, y: 0, z },
+                aspect: wgpu::TextureAspect::All,
+            };
+            enc.copy_texture_to_texture(
+                layer(CASCADE_COUNT as u32 - 1),
+                layer(C3_PREV_LAYER),
+                wgpu::Extent3d {
+                    width: SHADOW_MAP_SIZE,
+                    height: SHADOW_MAP_SIZE,
+                    depth_or_array_layers: 1,
+                },
+            );
+            self.c3_copy_pending = false;
+        }
+
         for (idx, layer_view) in self.shadow_layer_views.iter().enumerate() {
             if !has_shadow_casters {
                 continue;
@@ -6134,6 +6253,24 @@ fn vs(input: VSIn) -> VSOut {
                             sp.draw_indexed(0..chunk.index_count, 0, 0..1);
                             drawn += 1;
                         }
+                        // L.3.D: the caster-set DELTA belongs here, not at fit
+                        // time — this is the only place the caster set is known,
+                        // because it is the AABB cull against the freshly-fitted
+                        // frustum that decides it. A window jump and a caster-set
+                        // churn are different quantities and the far-field pop
+                        // needs both: the shadows that vanish on a refit are the
+                        // chunks that left the set.
+                        if idx >= FIRST_CACHED_CASCADE
+                            && self.far_policy.frozen(idx - FIRST_CACHED_CASCADE)
+                            && std::env::var_os("AW_CSM_LOG").is_some()
+                        {
+                            let prev = self.terrain_shadow_stats[idx].0;
+                            eprintln!(
+                                "[csm] c{idx} caster pass: {drawn}/{total} chunks \
+                                 (was {prev}, delta {:+})",
+                                drawn as i64 - prev as i64
+                            );
+                        }
                         terrain_stats[idx] = (drawn, total);
                     }
                 }
@@ -6247,7 +6384,10 @@ fn vs(input: VSIn) -> VSOut {
                 // TerrainSceneEnvGpu. Byte-layout equality is asserted by
                 // the `camera_forward_gpu_field_offsets_match_shader_src`
                 // test family; the two structs differ only in field names
-                // (wetness/snow_amount vs. _pad0; _pad_align vs. _pad1).
+                // (wetness/snow_amount vs. _pad0). L.3.D: `debug_flags` rides
+                // offset 76 in BOTH, so the cascade-index view's refresh bits
+                // reach the terrain shader through this cast — no second write
+                // path to keep in sync.
                 let engine_scene_ubo = self.scene_env.to_ubo();
                 let terrain_scene_gpu: crate::terrain_material_manager::TerrainSceneEnvGpu =
                     bytemuck::cast(engine_scene_ubo);
@@ -8392,7 +8532,59 @@ pub enum FarCascadePolicy {
     /// coarser texels — measured dearer than `LiveC2` on both axes. (Fallback
     /// (b), measured and rejected.)
     Alternate,
+    /// L.3.D rung 1: c2 every frame (as shipped) and **c3 on alternate
+    /// frames**. The L.3.C-resolution attribution put the whole far-field pop on
+    /// c3's multi-frame freeze, so this halves the interval c3 is allowed to lag
+    /// and therefore — to first order — halves the window jump each re-fit has
+    /// to absorb.
+    ///
+    /// Crucially it does NOT inherit `Cached`'s 400 m drift pad: a window that
+    /// lags one frame does not need a pad sized for 300 m of drift, and the pad
+    /// is not free (it enlarges the ortho box, coarsening texels and widening
+    /// the AABB cull). See [`Self::freeze_bounds`].
+    LiveC2AltC3,
+    /// L.3.D rung 2: c2 every frame, c3 cached at its normal cadence but with
+    /// its window replacement made **incremental** instead of atomic.
+    ///
+    /// Rung 1 attacked the jump's SIZE by refreshing twice as often and bought
+    /// only 36% (6.44 -> 4.09 pp) for nearly the whole budget. This attacks its
+    /// ATOMICITY instead: the outgoing window is retained in a second layer and
+    /// the receiver blends between the two over [C3_FADE_FRAMES], so the
+    /// per-frame change is a fraction of the replacement rather than all of it.
+    ///
+    /// Both maps are valid-at-their-own-time — the incoming one is fitted and
+    /// rendered on the refresh frame and is immediately authoritative — so
+    /// NEITHER needs an inflated pad. The blend is purely temporal, not a
+    /// coverage compromise, which is what keeps this at `Cached`'s caster
+    /// rate rather than `Live`'s.
+    LiveC2FadeC3,
 }
+
+/// L.3.D rung 2: the shadow array is one layer WIDER than the cascade count.
+/// The extra layer holds c3's OUTGOING window while a transition crossfades, so
+/// a window replacement stops being atomic. Nothing renders into it — it is
+/// filled by a layer copy on the refresh frame — which is why the pass loops
+/// still run over `CASCADE_COUNT` and only the array and the sampling view grow.
+pub(crate) const C3_PREV_LAYER: u32 = CASCADE_COUNT as u32;
+pub(crate) const SHADOW_LAYER_COUNT: u32 = CASCADE_COUNT as u32 + 1;
+
+/// Frames a c3 window replacement is blended over. Must stay BELOW the periodic
+/// refresh interval (8) so a transition always completes before the next one
+/// begins; a drift-triggered refresh can still truncate one, which is a smaller
+/// discontinuity than the atomic replacement it replaces and is counted in the
+/// telemetry when it happens.
+const C3_FADE_FRAMES: f32 = 4.0;
+
+/// Drift budget for a window frozen across many frames (the L.3.A cache).
+const CACHE_DRIFT_LIMIT: f32 = 300.0;
+const CACHE_DRIFT_PAD: f32 = 400.0;
+/// Drift budget for a window that lags at most one frame (L.3.D rung 1).
+const ALT_DRIFT_LIMIT: f32 = 150.0;
+const ALT_DRIFT_PAD: f32 = 200.0;
+/// Ortho pad for a cascade re-fitted every frame — it cannot lag, so this is
+/// just numerical headroom. Unchanged since L.3; it is what preserves the
+/// pinned close/mid station frames.
+const LIVE_MARGIN: f32 = 2.0;
 
 impl FarCascadePolicy {
     fn from_env() -> Self {
@@ -8412,10 +8604,13 @@ impl FarCascadePolicy {
             "live" => Self::Live,
             "live-c2" | "live_c2" | "livec2" => Self::LiveC2,
             "alternate" | "alt" => Self::Alternate,
+            "live-c2-alt-c3" | "alt-c3" | "rung1" => Self::LiveC2AltC3,
+            "live-c2-fade-c3" | "fade-c3" | "rung2" => Self::LiveC2FadeC3,
             other => {
                 eprintln!(
                     "[csm] AW_CSM_FAR_POLICY={other:?} is not a policy \
-                     (cached|live|live-c2|alternate) — using the default {:?}",
+                     (cached|live|live-c2|alternate|live-c2-alt-c3) — using the \
+                     default {:?}",
                     Self::default()
                 );
                 Self::default()
@@ -8423,20 +8618,53 @@ impl FarCascadePolicy {
         }
     }
 
-    /// Can far cascade `c` (0-based within the far pair) hold a FROZEN window
-    /// across frames? Only a frozen window needs the drift pad, and the pad is
-    /// not free: it enlarges the ortho box, so c2 padded renders 1.91 m texels
-    /// where c2 re-fitted every frame renders 1.52 m.
-    fn frozen(self, c: usize) -> bool {
+    /// How far far cascade `c` (0-based within the far pair) is allowed to lag
+    /// under this policy: `(drift_limit_m, ortho_pad_m)`, or `None` when it is
+    /// re-fitted every frame and therefore never lags.
+    ///
+    /// The two are returned as ONE value because they are one decision. The pad
+    /// exists solely to keep a frozen window covering its ideal slice while it
+    /// lags, so it must exceed the lag the drift trigger permits — and the pad
+    /// is not free: it enlarges the ortho box, coarsening texels (c2 padded
+    /// renders 1.91 m where live renders 1.52 m) and widening the AABB cull
+    /// (102 vs 70 of 289 chunks). Splitting them into a boolean and a constant
+    /// is what let `Alternate` pay `Cached`'s 400 m pad for a one-frame lag.
+    fn freeze_bounds(self, c: usize) -> Option<(f32, f32)> {
         match self {
-            Self::Cached => true,
-            Self::Live => false,
-            Self::LiveC2 => c != 0,
-            // Frozen for exactly one frame — still needs the pad, because the
-            // drift trigger (and therefore the drift limit the pad covers) is
-            // still what bounds how far the window may lag.
-            Self::Alternate => true,
+            Self::Cached | Self::Alternate => Some((CACHE_DRIFT_LIMIT, CACHE_DRIFT_PAD)),
+            Self::Live => None,
+            Self::LiveC2 => (c != 0).then_some((CACHE_DRIFT_LIMIT, CACHE_DRIFT_PAD)),
+            // c2 live; c3 lags one frame, so it gets a one-frame budget.
+            Self::LiveC2AltC3 => (c != 0).then_some((ALT_DRIFT_LIMIT, ALT_DRIFT_PAD)),
+            // c2 live; c3 keeps the cache's budget — the transition is made
+            // continuous by blending, not by shortening the lag.
+            Self::LiveC2FadeC3 => (c != 0).then_some((CACHE_DRIFT_LIMIT, CACHE_DRIFT_PAD)),
         }
+    }
+
+    /// Does this policy make c3's window replacement INCREMENTAL (rung 2)?
+    /// Only the fading policy allocates the transition machinery; every other
+    /// policy leaves the blend weight pinned at 1.0 and the spare layer unused,
+    /// so they render exactly as they did before L.3.D.
+    fn fades_c3(self) -> bool {
+        matches!(self, Self::LiveC2FadeC3)
+    }
+
+    /// Can far cascade `c` hold a frozen window across frames?
+    fn frozen(self, c: usize) -> bool {
+        self.freeze_bounds(c).is_some()
+    }
+
+    /// Ortho half-extent padding beyond the fitted sphere radius for cascade `c`.
+    fn margin(self, c: usize) -> f32 {
+        self.freeze_bounds(c).map_or(LIVE_MARGIN, |(_, pad)| pad)
+    }
+
+    /// Window drift that forces a re-fit for cascade `c`. Infinite for a live
+    /// cascade: it re-fits every frame anyway, so the trigger is unreachable.
+    fn drift_limit(self, c: usize) -> f32 {
+        self.freeze_bounds(c)
+            .map_or(f32::INFINITY, |(limit, _)| limit)
     }
 
     /// Force a refresh this frame, regardless of the sun / drift / tick
@@ -8448,6 +8676,10 @@ impl FarCascadePolicy {
             Self::Live => true,
             Self::LiveC2 => c == 0,
             Self::Alternate => (tick as usize % 2) == c,
+            // c2 every frame; c3 every other frame.
+            Self::LiveC2AltC3 => c == 0 || tick % 2 == 0,
+            // c2 every frame; c3 on its own sun/drift/tick triggers.
+            Self::LiveC2FadeC3 => c == 0,
         }
     }
 
@@ -8455,6 +8687,8 @@ impl FarCascadePolicy {
         match self {
             Self::Cached => "cached",
             Self::Live => "live",
+            Self::LiveC2AltC3 => "live-c2-alt-c3",
+            Self::LiveC2FadeC3 => "live-c2-fade-c3",
             Self::LiveC2 => "live-c2",
             Self::Alternate => "alternate",
         }
@@ -8678,6 +8912,29 @@ mod tests {
         assert!(
             shader.contains("uLight.extras.x >= 0.0"),
             "shader should gate shadows on the extras.x sentinel (conditional, not hardcoded)"
+        );
+    }
+
+    /// L.3.D rung 2: the spare shadow-array layer that holds c3's outgoing
+    /// window is named in TWO places — `C3_PREV_LAYER` here and a `const` of
+    /// the same name in `shadow_common.wgsl`. Nothing in the type system pairs
+    /// them: if they drift, the transition blends against the wrong layer and
+    /// the result is a plausible-looking-but-wrong far field, with no error.
+    /// This is the same silent-drift class as the `match idx { _ => last }` the
+    /// L.3.C inventory caught, so it gets a contract test.
+    #[test]
+    fn c3_prev_layer_index_matches_shader() {
+        let src = include_str!("../shaders/shadow_common.wgsl");
+        let expected = format!("const C3_PREV_LAYER: i32 = {};", C3_PREV_LAYER);
+        assert!(
+            src.contains(&expected),
+            "shadow_common.wgsl must declare `{expected}` to match the Rust-side \
+             C3_PREV_LAYER ({C3_PREV_LAYER}); the shader currently declares something else"
+        );
+        // And the spare layer must actually exist in the array.
+        assert!(
+            C3_PREV_LAYER < SHADOW_LAYER_COUNT,
+            "C3_PREV_LAYER {C3_PREV_LAYER} is outside the {SHADOW_LAYER_COUNT}-layer shadow array"
         );
     }
 
