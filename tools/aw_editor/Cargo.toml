@@ -37,7 +37,7 @@ impostor-bake = ["astraweave-render/impostor-bake"]
 [dependencies]
 eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
-egui-wgpu = "0.32.0"
+egui-wgpu = "0.33.3"
 egui_dock = { workspace = true }
 wgpu = { workspace = true }
 raw-window-handle = "0.6"
@@ -45,7 +45,7 @@ bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-ron = "0.8"
+ron = "0.12"
 toml = { workspace = true }
 notify = "8"
 anyhow = { workspace = true }
@@ -57,13 +57,13 @@ sha2 = { workspace = true }
 winit = { workspace = true }
 gltf = { version = "1.4", features = ["import", "extensions"] }
 glam = { workspace = true }
-rand = "0.8"
+rand = "0.9"
 rayon = "1.11"
-rfd = "0.15"
+rfd = "0.17"
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = "0.4"
-pollster = "0.4"
+pollster = "1.0"
 astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs" }
@@ -94,7 +94,7 @@ clap = { version = "4", features = ["derive"] }
 env_logger = "0.11"
 log = "0.4"
 zstd = "0.13"
-lz4_flex = "0.11"
+lz4_flex = "0.14"
 crc32fast = "1.4"
 # astraweave-asset-pipeline: dep removed 2026-06-30 (R-series M2/E4, relabel-and-defer) —
 # in-design / caller-less crate the editor never referenced (zero `use`). Re-add only when
@@ -102,11 +102,11 @@ crc32fast = "1.4"
 # docs/audits/e4_cook_path_recon_2026-06.md.
 tokio = { workspace = true }
 mp4 = "0.14"
-openh264 = "0.6"
-egui_kittest = { version = "0.32", optional = true }
+openh264 = "0.9"
+egui_kittest = { version = "0.33", optional = true }
 [dev-dependencies]
 approx = "0.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 tempfile = "3"
 # Editor-Engine Render Parity harness (tests/render_parity_harness.rs) decodes
 # Rgba16Float bytes for linear-space SAD attribution.
@@ -119,7 +119,7 @@ half = "2"
 # Headless WGSL validation (tests/wgsl_validation.rs) — editor shaders are
 # include_str!'d and only validated at pipeline creation at runtime; this
 # catches parse/validation errors at test time. Version matches wgpu 25's naga.
-naga = { version = "25", features = ["wgsl-in"] }
+naga = { version = "27", features = ["wgsl-in"] }
 
 [[bench]]
 name = "editor_performance"

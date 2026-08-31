@@ -24,9 +24,9 @@ chrono = { version = "0.4", features = ["serde"] }
 dashmap = "6.1"
 async-trait = "0.1"
 prometheus = { version = "0.14", optional = true }
-opentelemetry = { version = "0.31", optional = true }
+opentelemetry = { version = "0.32", optional = true }
 opentelemetry-jaeger = { version = "0.22", optional = true }
-histogram = "0.11"
+histogram = "1.5"
 hdrhistogram = "7.5"
 rand = "0.9"
 
@@ -37,4 +37,4 @@ opentelemetry = ["dep:opentelemetry", "dep:opentelemetry-jaeger"]
 
 [dev-dependencies]
 tempfile.workspace = true
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
