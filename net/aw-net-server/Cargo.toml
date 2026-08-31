@@ -8,8 +8,8 @@ license = "MIT"
 tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "time"] }
 axum = "0.8"
 hyper = { version = "1", features = ["http1", "server"] }
-tokio-tungstenite = "0.28"
-tungstenite = "0.28"
+tokio-tungstenite = "0.30"
+tungstenite = "0.30"
 futures = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -22,9 +22,9 @@ uuid = { version = "1", features = ["v4"] }
 time = { version = "0.3", features = ["macros"] }
 sled = "0.34"
 postcard = { version = "1", features = ["alloc"] }
-lz4_flex = "0.11"
-tokio-rustls = "0.25"
-rustls = "0.22"
+lz4_flex = "0.14"
+tokio-rustls = "0.26"
+rustls = "0.23"
 rustls-pemfile = "2.0"
 aw-net-proto = { path = "../aw-net-proto" }
 
@@ -39,6 +39,6 @@ tempfile = "3"
 # test), so the generated cert's SAN/CN is irrelevant — these tests validate the
 # HMAC SIGNATURE path over TLS, not TLS certificate validation. (rustls-pemfile
 # is NOT needed as a dev-dep: rcgen emits PEM and only the server parses it.)
-tokio-rustls = "0.25"
-rustls = "0.22"
+tokio-rustls = "0.26"
+rustls = "0.23"
 rcgen = "0.14"

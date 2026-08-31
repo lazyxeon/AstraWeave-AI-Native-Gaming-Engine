@@ -10,7 +10,7 @@ name = "steam_adversarial"
 harness = false
 
 [dependencies]
-steamworks = "0.12"
+steamworks = "0.13"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
@@ -18,7 +18,7 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 
 [features]
 default = []

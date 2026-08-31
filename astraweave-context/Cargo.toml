@@ -20,7 +20,7 @@ indexmap = "2.0"
 smallvec = "1.11"
 
 # Token counting
-tiktoken-rs = "0.7"
+tiktoken-rs = "0.12"
 
 # LLM integration
 astraweave-llm = { path = "../astraweave-llm" }
