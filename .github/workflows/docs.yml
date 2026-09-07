@@ -83,7 +83,7 @@ jobs:
 
       - name: Install Rust
         continue-on-error: true
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Cache Rust dependencies
         continue-on-error: true

@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
       
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
       
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
       
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
@@ -216,7 +216,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
       
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
@@ -257,7 +257,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
       
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
