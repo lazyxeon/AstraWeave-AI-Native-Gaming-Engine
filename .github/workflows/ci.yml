@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
         with:
           components: rustfmt, clippy
 
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
@@ -228,7 +228,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
@@ -382,7 +382,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
         with:
           components: rustfmt, clippy
 
@@ -467,7 +467,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Install system dependencies
         run: |
@@ -511,7 +511,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Install system dependencies
         run: |
@@ -591,7 +591,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Install system dependencies
         run: |

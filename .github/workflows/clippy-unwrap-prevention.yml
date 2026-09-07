@@ -48,7 +48,7 @@ jobs:
             libasound2-dev libpulse-dev libudev-dev
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
         with:
           components: clippy
       
@@ -129,7 +129,7 @@ jobs:
             libasound2-dev libpulse-dev libudev-dev
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
         with:
           components: clippy
       
